@@ -1,8 +1,18 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+import '../data/datasources/remote/auth_remote_datasource.dart';
+import '../data/models/auth/auth_error_model.dart';
+import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
 
 class AuthController extends GetxController {
+  AuthController({required AuthRepository authRepository})
+    : _authRepository = authRepository;
+
+  final AuthRepository _authRepository;
+
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final formKey = GlobalKey<FormState>();
@@ -12,19 +22,34 @@ class AuthController extends GetxController {
 
   void togglePasswordVisibility() => isPasswordVisible.toggle();
 
-  // Mock login — no backend in phase 1
   Future<void> login() async {
     if (!formKey.currentState!.validate()) return;
 
-    isLoading(true);
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
-    isLoading(false);
-
-    Get.offAllNamed(AppRoutes.home);
+    isLoading.value = true;
+    try {
+      await _authRepository.login(
+        emailController.text.trim(),
+        passwordController.text,
+      );
+      Get.offAllNamed(AppRoutes.home);
+    } on AuthErrorModel catch (e) {
+      Get.snackbar('Error', e.detail);
+    } on DioException catch (e) {
+      final parsed = parseAuthError(e);
+      if (parsed != null) {
+        Get.snackbar('Error', parsed.detail);
+      } else {
+        Get.snackbar('Error', e.message ?? 'Network error. Please try again.');
+      }
+    } catch (e) {
+      Get.snackbar('Error', e.toString());
+    } finally {
+      isLoading.value = false;
+    }
   }
 
-  void logout() {
+  Future<void> logout() async {
+    await _authRepository.logout();
     emailController.clear();
     passwordController.clear();
     Get.offAllNamed(AppRoutes.login);

@@ -39,7 +39,7 @@ class HomeView extends GetView<AttendanceController> {
         ),
         actions: [
           TextButton.icon(
-            onPressed: authController.logout,
+            onPressed: () => authController.logout(),
             icon: const Icon(
               Icons.logout_rounded,
               color: AppColors.primary,
@@ -218,7 +218,7 @@ class HomeView extends GetView<AttendanceController> {
                         width: double.infinity,
                         height: 52,
                         child: OutlinedButton.icon(
-                          onPressed: authController.logout,
+                          onPressed: () => authController.logout(),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.darkBrown,
                             side: const BorderSide(

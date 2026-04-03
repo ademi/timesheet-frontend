@@ -139,7 +139,7 @@ class LoginView extends GetView<AuthController> {
                               onPressed:
                                   controller.isLoading.value
                                       ? null
-                                      : controller.login,
+                                      : () => controller.login(),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: AppColors.textLight,
