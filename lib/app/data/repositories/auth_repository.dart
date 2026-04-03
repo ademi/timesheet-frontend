@@ -6,6 +6,8 @@ import '../datasources/remote/auth_remote_datasource.dart';
 import '../models/auth/auth_token_model.dart';
 import '../models/auth/login_request_model.dart';
 import '../models/auth/logout_request_model.dart';
+import '../models/auth/verify_user_request_model.dart';
+import '../models/auth/verify_user_response_model.dart';
 
 class AuthRepository {
   AuthRepository({
@@ -16,6 +18,18 @@ class AuthRepository {
 
   final AuthRemoteDataSource _remote;
   final GetStorage _storage;
+
+  Future<VerifyUserResponseModel> verifyUser(String email, String password) async {
+    try {
+      return await _remote.verifyUser(
+        VerifyUserRequestModel(email: email, password: password),
+      );
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
+    }
+  }
 
   Future<void> login(String email, String password) async {
     try {

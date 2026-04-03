@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/models/auth/auth_error_model.dart';
+import '../data/models/auth/verify_user_response_model.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
 
@@ -21,6 +22,11 @@ class AuthController extends GetxController {
   final isPasswordVisible = false.obs;
 
   void togglePasswordVisibility() => isPasswordVisible.toggle();
+
+  /// Delegates to [AuthRepository.verifyUser] (auth `plainDio` / existing [ApiClient]).
+  Future<VerifyUserResponseModel> verifyUser(String email, String password) {
+    return _authRepository.verifyUser(email, password);
+  }
 
   Future<void> login() async {
     if (!formKey.currentState!.validate()) return;

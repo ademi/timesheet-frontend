@@ -90,35 +90,36 @@ class AttendancePasswordDialog extends StatelessWidget {
                 }),
                 const SizedBox(height: 24),
                 Obx(
-                  () => Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: c.dialogSubmitting.value
-                              ? null
-                              : c.cancelAttendanceDialog,
-                          child: const Text('Cancel'),
+                  () {
+                    final busy =
+                        c.isVerifying.value || c.dialogSubmitting.value;
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: busy ? null : c.cancelAttendanceDialog,
+                            child: const Text('Cancel'),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: c.dialogSubmitting.value
-                              ? null
-                              : () => c.submitAttendanceDialog(),
-                          child: c.dialogSubmitting.value
-                              ? const SizedBox(
-                                  height: 22,
-                                  width: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text('Submit'),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed:
+                                busy ? null : () => c.submitAttendanceDialog(),
+                            child: busy
+                                ? const SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('Submit'),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),

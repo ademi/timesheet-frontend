@@ -4,20 +4,27 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 
 import '../data/datasources/remote/attendance_remote_datasource.dart';
+import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/models/attendance/attendance_error_model.dart';
+import '../data/models/auth/auth_error_model.dart';
 import '../data/models/attendance/attendance_request_model.dart';
 import '../data/models/attendance/employee_model.dart';
 import '../data/repositories/attendance_repository.dart';
+import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
 import '../views/widgets/attendance_password_dialog.dart';
 
 enum AttendanceDialogAction { clockIn, clockOut }
 
 class AttendanceController extends GetxController {
-  AttendanceController({required AttendanceRepository repository})
-      : _repository = repository;
+  AttendanceController({
+    required AttendanceRepository repository,
+    required AuthRepository authRepository,
+  })  : _repository = repository,
+        _authRepository = authRepository;
 
   final AttendanceRepository _repository;
+  final AuthRepository _authRepository;
 
   final scrollController = ScrollController();
   final passwordConfirmController = TextEditingController();
@@ -31,6 +38,7 @@ class AttendanceController extends GetxController {
   final Rxn<EmployeeModel> dialogEmployee = Rxn<EmployeeModel>();
   final dialogAction = Rxn<AttendanceDialogAction>();
   final dialogError = ''.obs;
+  final isVerifying = false.obs;
   final dialogSubmitting = false.obs;
 
   bool get hasMore => visibleCount.value < allEmployees.length;
@@ -39,7 +47,14 @@ class AttendanceController extends GetxController {
   void onInit() {
     super.onInit();
     scrollController.addListener(_onScroll);
+    passwordConfirmController.addListener(_clearDialogErrorOnPasswordChange);
     _loadEmployees();
+  }
+
+  void _clearDialogErrorOnPasswordChange() {
+    if (dialogError.value.isNotEmpty) {
+      dialogError.value = '';
+    }
   }
 
   Future<void> _loadEmployees() async {
@@ -107,7 +122,8 @@ class AttendanceController extends GetxController {
   }
 
   Future<void> submitAttendanceDialog() async {
-    if (passwordConfirmController.text.trim().isEmpty) {
+    final pwd = passwordConfirmController.text.trim();
+    if (pwd.isEmpty) {
       dialogError.value = 'Please enter your password to confirm';
       return;
     }
@@ -116,8 +132,32 @@ class AttendanceController extends GetxController {
     final action = dialogAction.value;
     if (emp == null || action == null) return;
 
-    dialogSubmitting.value = true;
+    isVerifying.value = true;
     dialogError.value = '';
+    try {
+      final verifyResult =
+          await _authRepository.verifyUser(emp.email.trim(), pwd);
+      if (!verifyResult.matched) {
+        dialogError.value = 'Verification failed. Please try again.';
+        return;
+      }
+    } on AuthErrorModel catch (e) {
+      dialogError.value = e.detail;
+      return;
+    } on DioException catch (e) {
+      final parsed = parseAuthError(e);
+      dialogError.value = parsed?.detail ??
+          e.message ??
+          'Unable to verify. Please try again.';
+      return;
+    } catch (e) {
+      dialogError.value = e.toString();
+      return;
+    } finally {
+      isVerifying.value = false;
+    }
+
+    dialogSubmitting.value = true;
     try {
       final position = await _determinePosition();
       final body = AttendanceRequestModel(
@@ -178,6 +218,7 @@ class AttendanceController extends GetxController {
   @override
   void onClose() {
     scrollController.removeListener(_onScroll);
+    passwordConfirmController.removeListener(_clearDialogErrorOnPasswordChange);
     scrollController.dispose();
     passwordConfirmController.dispose();
     super.onClose();

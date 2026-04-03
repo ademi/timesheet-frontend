@@ -6,6 +6,7 @@ import '../../core/network/attendance_api_client.dart';
 import '../controllers/attendance_controller.dart';
 import '../data/datasources/remote/attendance_remote_datasource.dart';
 import '../data/repositories/attendance_repository.dart';
+import '../data/repositories/auth_repository.dart';
 
 class HomeBinding extends Bindings {
   @override
@@ -37,6 +38,7 @@ class HomeBinding extends Bindings {
     Get.lazyPut<AttendanceController>(
       () => AttendanceController(
         repository: Get.find<AttendanceRepository>(),
+        authRepository: Get.find<AuthRepository>(),
       ),
     );
   }

@@ -4,6 +4,9 @@ abstract final class AppConstants {
 
   static const String baseUrl = 'http://localhost:9090';
 
+  /// Auth: verify credentials before sensitive actions (e.g. attendance).
+  static const String verifyUserPath = '/auth/verify_user';
+
   /// Attendance API (separate service).
   static const String attendanceBaseUrl = 'http://localhost:8000';
 
