@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 
 import '../bindings/auth_binding.dart';
 import '../bindings/home_binding.dart';
-import '../views/home_view.dart';
+import '../views/attendance_view.dart';
 import '../views/login_view.dart';
 import 'app_routes.dart';
 
@@ -20,7 +20,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.home,
-      page: () => const HomeView(),
+      page: () => const AttendanceView(),
       binding: HomeBinding(),
       transition: Transition.rightToLeft,
     ),
