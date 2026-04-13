@@ -3,6 +3,7 @@ import 'package:get_storage/get_storage.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../datasources/remote/auth_remote_datasource.dart';
+import '../models/auth/auth_error_model.dart';
 import '../models/auth/auth_token_model.dart';
 import '../models/auth/login_request_model.dart';
 import '../models/auth/logout_request_model.dart';
@@ -21,8 +22,13 @@ class AuthRepository {
 
   Future<VerifyUserResponseModel> verifyUser(String email, String password) async {
     try {
+      final token = _storage.read<String>(StorageKeys.accessToken)?.trim() ?? '';
+      if (token.isEmpty) {
+        throw const AuthErrorModel(detail: 'Session expired. Please login again.');
+      }
+
       return await _remote.verifyUser(
-        VerifyUserRequestModel(email: email, password: password),
+        VerifyUserRequestModel(email: email, password: password, token: token),
       );
     } on DioException catch (e) {
       final authErr = parseAuthError(e);
