@@ -19,18 +19,18 @@ class LoginView extends GetView<AuthController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
                   // ── Logo ──────────────────────────────────
                   _LogoWidget(),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
                   // ── Title ─────────────────────────────────
                   const Text(
                     'مطعم باب اليمن',
                     style: TextStyle(
-                      fontSize: 26,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: AppColors.darkBrown,
                       fontFamily: 'Cairo',
@@ -41,25 +41,25 @@ class LoginView extends GetView<AuthController> {
                   const Text(
                     'Staff Attendance Portal',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       color: AppColors.primaryDark,
-                      letterSpacing: 1.2,
+                      letterSpacing: 1.0,
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 34),
 
                   // ── Card ──────────────────────────────────
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: AppColors.cardBackground,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.12),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
@@ -69,7 +69,7 @@ class LoginView extends GetView<AuthController> {
                         const Text(
                           'Welcome Back',
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: AppColors.darkBrown,
                           ),
@@ -77,9 +77,9 @@ class LoginView extends GetView<AuthController> {
                         const SizedBox(height: 4),
                         const Text(
                           'Sign in to continue',
-                          style: TextStyle(fontSize: 13, color: Colors.grey),
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
 
                         // Email
                         _InputField(
@@ -98,7 +98,7 @@ class LoginView extends GetView<AuthController> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
 
                         // Password
                         Obx(
@@ -128,13 +128,13 @@ class LoginView extends GetView<AuthController> {
                             },
                           ),
                         ),
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 24),
 
                         // Login Button
                         Obx(
                           () => SizedBox(
                             width: double.infinity,
-                            height: 52,
+                            height: 48,
                             child: ElevatedButton(
                               onPressed:
                                   controller.isLoading.value
@@ -144,9 +144,9 @@ class LoginView extends GetView<AuthController> {
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: AppColors.textLight,
                                 disabledBackgroundColor: AppColors.primary
-                                    .withOpacity(0.6),
+                                    .withValues(alpha: 0.6),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                                 elevation: 4,
                               ),
@@ -163,9 +163,9 @@ class LoginView extends GetView<AuthController> {
                                       : const Text(
                                         'Login',
                                         style: TextStyle(
-                                          fontSize: 17,
+                                          fontSize: 15,
                                           fontWeight: FontWeight.bold,
-                                          letterSpacing: 0.8,
+                                          letterSpacing: 0.6,
                                         ),
                                       ),
                             ),
@@ -174,7 +174,7 @@ class LoginView extends GetView<AuthController> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -197,9 +197,9 @@ class _LogoWidget extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+            color: AppColors.primary.withValues(alpha: 0.2),
+            blurRadius: 18,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -250,39 +250,39 @@ class _InputField extends StatelessWidget {
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
-      style: const TextStyle(color: AppColors.textDark, fontSize: 15),
+      style: const TextStyle(color: AppColors.textDark, fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         prefixIcon: Icon(icon, color: AppColors.primary),
         suffixIcon: suffixIcon,
-        labelStyle: const TextStyle(color: AppColors.primaryDark, fontSize: 14),
-        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+        labelStyle: const TextStyle(color: AppColors.primaryDark, fontSize: 13),
+        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 12),
         filled: true,
         fillColor: AppColors.background,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.divider, width: 1.2),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.2),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error, width: 2),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.6),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
+          horizontal: 14,
+          vertical: 12,
         ),
       ),
     );

@@ -24,7 +24,7 @@ class AttendanceView extends GetView<AttendanceController> {
               'Yemen Gate',
               style: TextStyle(
                 color: AppColors.textLight,
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -32,8 +32,8 @@ class AttendanceView extends GetView<AttendanceController> {
               'Attendance',
               style: TextStyle(
                 color: AppColors.primary,
-                fontSize: 12,
-                letterSpacing: 0.8,
+                fontSize: 11,
+                letterSpacing: 0.7,
               ),
             ),
           ],
@@ -50,6 +50,7 @@ class AttendanceView extends GetView<AttendanceController> {
               'Logout',
               style: TextStyle(
                 color: AppColors.primary,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -60,16 +61,14 @@ class AttendanceView extends GetView<AttendanceController> {
       body: SafeArea(
         child: Obx(() {
           if (controller.employeesLoading.value) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
           if (controller.allEmployees.isEmpty) {
             return const Center(
               child: Text(
                 'No employees yet',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textDark,
                 ),
@@ -80,23 +79,25 @@ class AttendanceView extends GetView<AttendanceController> {
           final count = controller.visibleCount.value;
           return ListView.builder(
             controller: controller.scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             itemCount: count,
             itemBuilder: (context, index) {
               final emp = controller.allEmployees[index];
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 10),
                 child: _EmployeeCard(
                   fullName: emp.fullName,
                   email: emp.email,
-                  onClockIn: () => controller.openAttendanceDialog(
-                    emp,
-                    AttendanceDialogAction.clockIn,
-                  ),
-                  onClockOut: () => controller.openAttendanceDialog(
-                    emp,
-                    AttendanceDialogAction.clockOut,
-                  ),
+                  onClockIn:
+                      () => controller.openAttendanceDialog(
+                        emp,
+                        AttendanceDialogAction.clockIn,
+                      ),
+                  onClockOut:
+                      () => controller.openAttendanceDialog(
+                        emp,
+                        AttendanceDialogAction.clockOut,
+                      ),
                 ),
               );
             },
@@ -125,31 +126,26 @@ class _EmployeeCard extends StatelessWidget {
     return Card(
       elevation: 2,
       color: AppColors.cardBackground,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               fullName.isEmpty ? '—' : fullName,
               style: const TextStyle(
-                fontSize: 17,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppColors.darkBrown,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               email.isEmpty ? '—' : email,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
@@ -158,18 +154,21 @@ class _EmployeeCard extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.textLight,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 11),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: const Text(
                       'Clock In',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton(
                     onPressed: onClockOut,
@@ -179,14 +178,17 @@ class _EmployeeCard extends StatelessWidget {
                         color: AppColors.darkBrown,
                         width: 1.5,
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 11),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: const Text(
                       'Clock Out',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),

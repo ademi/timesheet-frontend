@@ -4,33 +4,15 @@ import 'package:flutter/foundation.dart';
 abstract final class AppConstants {
   AppConstants._();
 
-  /// Auth API base URL (Phase 2 `ApiClient` / `plainDio`).
-  ///
-  /// **Do not use `0.0.0.0` here** — that is only for binding a server, not for
-  /// clients to connect to.
-  ///
-  /// Defaults:
-  /// - **Android emulator (AVD)** → `http://10.0.2.2:9090` (**not** `127.0.0.1`;
-  ///   inside the emulator, `127.0.0.1` is the emulator itself, not your PC).
-  /// - **Genymotion** → often `http://10.0.3.2:9090` (use `AUTH_BASE_URL` override).
-  /// - **iOS simulator / Windows / macOS / Linux** → `127.0.0.1`.
-  ///
-  /// Optional: `adb reverse tcp:9090 tcp:9090` then you can point the app at
-  /// `http://127.0.0.1:9090` if you override `AUTH_BASE_URL` accordingly.
-  /// - **Physical phone** → run with
-  ///   `--dart-define=AUTH_BASE_URL=http://YOUR_PC_LAN_IP:9090`
-  ///   (e.g. `192.168.1.10`).
-  ///
-  /// Ensure the auth backend is running and listening (e.g. on port 9090).
   static String get baseUrl {
     const fromEnv = String.fromEnvironment('AUTH_BASE_URL', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
-    if (kIsWeb) return 'http://localhost:9090';
+    if (kIsWeb) return 'http://43.224.181.222:9090';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return 'http://11.0.0.176:9090';
+        return 'http://43.224.181.222:9090';
       default:
-        return 'http://11.0.0.176:9090';
+        return 'http://43.224.181.222:9090';
     }
   }
 
@@ -46,12 +28,12 @@ abstract final class AppConstants {
       defaultValue: '',
     );
     if (fromEnv.isNotEmpty) return fromEnv;
-    if (kIsWeb) return 'http://localhost:8000';
+    if (kIsWeb) return 'http://43.224.181.222:8000';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return 'http://11.0.0.176:8000';
+        return 'http://43.224.181.222:8000';
       default:
-        return 'http://11.0.0.176:8000';
+        return 'http://43.224.181.222:8000';
     }
   }
 
