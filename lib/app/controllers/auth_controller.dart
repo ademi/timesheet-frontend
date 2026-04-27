@@ -39,16 +39,20 @@ class AuthController extends GetxController {
       );
       Get.offAllNamed(AppRoutes.home);
     } on AuthErrorModel catch (e) {
-      Get.snackbar('Error', e.detail);
+      Get.snackbar('Error', e.detail, backgroundColor: Colors.red);
     } on DioException catch (e) {
       final parsed = parseAuthError(e);
       if (parsed != null) {
-        Get.snackbar('Error', parsed.detail);
+        Get.snackbar('Error', parsed.detail, backgroundColor: Colors.red);
       } else {
-        Get.snackbar('Error', e.message ?? 'Network error. Please try again.');
+        Get.snackbar(
+          'Error',
+          e.message ?? 'Network error. Please try again.',
+          backgroundColor: Colors.red,
+        );
       }
     } catch (e) {
-      Get.snackbar('Error', e.toString());
+      Get.snackbar('Error', e.toString(), backgroundColor: Colors.red);
     } finally {
       isLoading.value = false;
     }

@@ -20,8 +20,8 @@ class AttendanceController extends GetxController {
   AttendanceController({
     required AttendanceRepository repository,
     required AuthRepository authRepository,
-  })  : _repository = repository,
-        _authRepository = authRepository;
+  }) : _repository = repository,
+       _authRepository = authRepository;
 
   final AttendanceRepository _repository;
   final AuthRepository _authRepository;
@@ -80,9 +80,8 @@ class AttendanceController extends GetxController {
       visibleCount.value = 0;
       return;
     }
-    visibleCount.value = allEmployees.length < _pageSize
-        ? allEmployees.length
-        : _pageSize;
+    visibleCount.value =
+        allEmployees.length < _pageSize ? allEmployees.length : _pageSize;
   }
 
   void _onScroll() {
@@ -109,10 +108,7 @@ class AttendanceController extends GetxController {
     dialogAction.value = action;
     dialogError.value = '';
     passwordConfirmController.clear();
-    Get.dialog(
-      const AttendancePasswordDialog(),
-      barrierDismissible: false,
-    );
+    Get.dialog(const AttendancePasswordDialog(), barrierDismissible: false);
   }
 
   void cancelAttendanceDialog() {
@@ -135,8 +131,10 @@ class AttendanceController extends GetxController {
     isVerifying.value = true;
     dialogError.value = '';
     try {
-      final verifyResult =
-          await _authRepository.verifyUser(emp.email.trim(), pwd);
+      final verifyResult = await _authRepository.verifyUser(
+        emp.email.trim(),
+        pwd,
+      );
       if (!verifyResult.matched) {
         dialogError.value = 'Verification failed. Please try again.';
         return;
@@ -146,9 +144,8 @@ class AttendanceController extends GetxController {
       return;
     } on DioException catch (e) {
       final parsed = parseAuthError(e);
-      dialogError.value = parsed?.detail ??
-          e.message ??
-          'Unable to verify. Please try again.';
+      dialogError.value =
+          parsed?.detail ?? e.message ?? 'Unable to verify. Please try again.';
       return;
     } catch (e) {
       dialogError.value = e.toString();
@@ -171,12 +168,20 @@ class AttendanceController extends GetxController {
         await _repository.clockIn(body);
         Get.back();
         passwordConfirmController.clear();
-        Get.snackbar('Success', 'Clock-in recorded successfully');
+        Get.snackbar(
+          'Success',
+          'Clock-in recorded successfully',
+          backgroundColor: Colors.green,
+        );
       } else {
         await _repository.clockOut(body);
         Get.back();
         passwordConfirmController.clear();
-        Get.snackbar('Success', 'Clock-out recorded successfully');
+        Get.snackbar(
+          'Success',
+          'Clock-out recorded successfully',
+          backgroundColor: Colors.green,
+        );
       }
     } on AttendanceErrorModel catch (e) {
       dialogError.value = e.detail;
