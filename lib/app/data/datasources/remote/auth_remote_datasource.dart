@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../models/auth/auth_error_model.dart';
 import '../../models/auth/auth_token_model.dart';
+import '../../models/auth/change_password_request_model.dart';
 import '../../models/auth/login_request_model.dart';
 import '../../models/auth/logout_request_model.dart';
 import '../../models/auth/logout_response_model.dart';
@@ -86,6 +87,22 @@ class AuthRemoteDataSource {
       );
     }
     return LogoutResponseModel.fromJson(data);
+  }
+
+  /// Calls POST /auth/change_password on the auth service.
+  Future<String> changePassword(ChangePasswordRequestModel request) async {
+    final response = await _plainDio.post<Map<String, dynamic>>(
+      '/auth/change_password',
+      data: request.toJson(),
+    );
+    final data = response.data;
+    if (data == null) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        message: 'Empty change password response',
+      );
+    }
+    return data['message'] as String? ?? 'ok';
   }
 }
 

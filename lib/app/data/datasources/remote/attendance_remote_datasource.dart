@@ -21,7 +21,7 @@ class AttendanceRemoteDataSource {
 
   Future<List<EmployeeModel>> getEmployees() async {
     final response = await _dio.get<List<dynamic>>(
-      '/api/v1/employees',
+      '/api/v1/employees/clocked-in-status',
       queryParameters: {'branch_id': AppConstants.branchId},
     );
     final data = response.data;

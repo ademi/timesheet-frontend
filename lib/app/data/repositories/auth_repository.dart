@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../datasources/remote/auth_remote_datasource.dart';
 import '../models/auth/auth_error_model.dart';
 import '../models/auth/auth_token_model.dart';
+import '../models/auth/change_password_request_model.dart';
 import '../models/auth/login_request_model.dart';
 import '../models/auth/logout_request_model.dart';
 import '../models/auth/verify_user_request_model.dart';
@@ -14,17 +15,23 @@ class AuthRepository {
   AuthRepository({
     required AuthRemoteDataSource remote,
     required GetStorage storage,
-  })  : _remote = remote,
-        _storage = storage;
+  }) : _remote = remote,
+       _storage = storage;
 
   final AuthRemoteDataSource _remote;
   final GetStorage _storage;
 
-  Future<VerifyUserResponseModel> verifyUser(String email, String password) async {
+  Future<VerifyUserResponseModel> verifyUser(
+    String email,
+    String password,
+  ) async {
     try {
-      final token = _storage.read<String>(StorageKeys.accessToken)?.trim() ?? '';
+      final token =
+          _storage.read<String>(StorageKeys.accessToken)?.trim() ?? '';
       if (token.isEmpty) {
-        throw const AuthErrorModel(detail: 'Session expired. Please login again.');
+        throw const AuthErrorModel(
+          detail: 'Session expired. Please login again.',
+        );
       }
 
       return await _remote.verifyUser(
@@ -47,6 +54,26 @@ class AuthRepository {
         ),
       );
       await _persistTokens(tokens);
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
+    }
+  }
+
+  Future<String> changePassword(
+    String email,
+    String currentPassword,
+    String newPassword,
+  ) async {
+    try {
+      return await _remote.changePassword(
+        ChangePasswordRequestModel(
+          email: email,
+          currentPassword: currentPassword,
+          newPassword: newPassword,
+        ),
+      );
     } on DioException catch (e) {
       final authErr = parseAuthError(e);
       if (authErr != null) throw authErr;

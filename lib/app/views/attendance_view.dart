@@ -88,6 +88,7 @@ class AttendanceView extends GetView<AttendanceController> {
                 child: _EmployeeCard(
                   fullName: emp.fullName,
                   email: emp.email,
+                  isClockedIn: emp.clockedIn,
                   onClockIn:
                       () => controller.openAttendanceDialog(
                         emp,
@@ -112,12 +113,14 @@ class _EmployeeCard extends StatelessWidget {
   const _EmployeeCard({
     required this.fullName,
     required this.email,
+    required this.isClockedIn,
     required this.onClockIn,
     required this.onClockOut,
   });
 
   final String fullName;
   final String email;
+  final bool isClockedIn;
   final VoidCallback onClockIn;
   final VoidCallback onClockOut;
 
@@ -150,18 +153,23 @@ class _EmployeeCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: onClockIn,
+                    onPressed: isClockedIn ? null : onClockIn,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor:
+                          isClockedIn
+                              ? Colors.grey.shade400
+                              : AppColors.primary,
                       foregroundColor: AppColors.textLight,
+                      disabledBackgroundColor: Colors.grey.shade300,
+                      disabledForegroundColor: Colors.grey.shade600,
                       padding: const EdgeInsets.symmetric(vertical: 11),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text(
-                      'Clock In',
-                      style: TextStyle(
+                    child: Text(
+                      isClockedIn ? 'Clocked In' : 'Clock In',
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),

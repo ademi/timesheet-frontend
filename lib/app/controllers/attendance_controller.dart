@@ -13,6 +13,7 @@ import '../data/repositories/attendance_repository.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
 import '../views/widgets/attendance_password_dialog.dart';
+import '../views/widgets/change_password_dialog.dart';
 
 enum AttendanceDialogAction { clockIn, clockOut }
 
@@ -29,7 +30,12 @@ class AttendanceController extends GetxController {
   final scrollController = ScrollController();
   final passwordConfirmController = TextEditingController();
 
+  // Change-password dialog controllers
+  final newPasswordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+
   static const int _pageSize = 12;
+  static const String _defaultPassword = '123456';
 
   final employeesLoading = true.obs;
   final allEmployees = <EmployeeModel>[].obs;
@@ -40,6 +46,10 @@ class AttendanceController extends GetxController {
   final dialogError = ''.obs;
   final isVerifying = false.obs;
   final dialogSubmitting = false.obs;
+
+  // Change-password state
+  final changePasswordError = ''.obs;
+  final isChangingPassword = false.obs;
 
   bool get hasMore => visibleCount.value < allEmployees.length;
 
@@ -154,6 +164,90 @@ class AttendanceController extends GetxController {
       isVerifying.value = false;
     }
 
+    // ── Intercept default password for clock-in only ──
+    if (action == AttendanceDialogAction.clockIn && pwd == _defaultPassword) {
+      Get.back(); // close password dialog
+      passwordConfirmController.clear();
+      changePasswordError.value = '';
+      newPasswordController.clear();
+      confirmPasswordController.clear();
+      Get.dialog(const ChangePasswordDialog(), barrierDismissible: false);
+      return;
+    }
+
+    await _performClockAction(emp, action);
+  }
+
+  /// Submits the change-password form, then auto-proceeds with clock-in.
+  Future<void> submitChangePassword() async {
+    final newPwd = newPasswordController.text.trim();
+    final confirmPwd = confirmPasswordController.text.trim();
+
+    if (newPwd.isEmpty || confirmPwd.isEmpty) {
+      changePasswordError.value = 'Both fields are required';
+      return;
+    }
+    if (newPwd != confirmPwd) {
+      changePasswordError.value = 'Passwords do not match';
+      return;
+    }
+    if (newPwd == _defaultPassword) {
+      changePasswordError.value =
+          'New password cannot be the same as the default password';
+      return;
+    }
+
+    final emp = dialogEmployee.value;
+    if (emp == null) return;
+
+    isChangingPassword.value = true;
+    changePasswordError.value = '';
+    try {
+      await _authRepository.changePassword(
+        emp.email.trim(),
+        _defaultPassword,
+        newPwd,
+      );
+    } on AuthErrorModel catch (e) {
+      changePasswordError.value = e.detail;
+      return;
+    } on DioException catch (e) {
+      final parsed = parseAuthError(e);
+      changePasswordError.value =
+          parsed?.detail ?? e.message ?? 'Failed to change password';
+      return;
+    } catch (e) {
+      changePasswordError.value = e.toString();
+      return;
+    } finally {
+      isChangingPassword.value = false;
+    }
+
+    // Password changed — close dialog and auto clock-in
+    Get.back();
+    newPasswordController.clear();
+    confirmPasswordController.clear();
+
+    Get.snackbar(
+      'Password Changed',
+      'Your password has been updated successfully',
+      backgroundColor: Colors.green,
+    );
+
+    // Auto clock-in with the new password
+    dialogSubmitting.value = true;
+    try {
+      await _performClockAction(emp, AttendanceDialogAction.clockIn);
+    } finally {
+      dialogSubmitting.value = false;
+    }
+  }
+
+  /// Shared helper that executes the actual clock-in / clock-out API call.
+  Future<void> _performClockAction(
+    EmployeeModel emp,
+    AttendanceDialogAction action,
+  ) async {
     dialogSubmitting.value = true;
     try {
       final position = await _determinePosition();
@@ -226,6 +320,8 @@ class AttendanceController extends GetxController {
     passwordConfirmController.removeListener(_clearDialogErrorOnPasswordChange);
     scrollController.dispose();
     passwordConfirmController.dispose();
+    newPasswordController.dispose();
+    confirmPasswordController.dispose();
     super.onClose();
   }
 }

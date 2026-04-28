@@ -10,6 +10,7 @@ class EmployeeModel {
     required this.email,
     required this.dob,
     required this.isActive,
+    required this.clockedIn,
   });
 
   final String id;
@@ -22,19 +23,21 @@ class EmployeeModel {
   final String email;
   final String dob;
   final bool isActive;
+  final bool clockedIn;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'tenant_id': tenantId,
-        'branch_id': branchId,
-        'user_id': userId,
-        'employee_code': employeeCode,
-        'full_name': fullName,
-        'phone': phone,
-        'email': email,
-        'dob': dob,
-        'is_active': isActive,
-      };
+    'id': id,
+    'tenant_id': tenantId,
+    'branch_id': branchId,
+    'user_id': userId,
+    'employee_code': employeeCode,
+    'full_name': fullName,
+    'phone': phone,
+    'email': email,
+    'dob': dob,
+    'is_active': isActive,
+    'clockedin': clockedIn,
+  };
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
     return EmployeeModel(
@@ -48,6 +51,7 @@ class EmployeeModel {
       email: json['email'] as String? ?? '',
       dob: json['dob'] as String? ?? '',
       isActive: json['is_active'] as bool? ?? true,
+      clockedIn: json['clockedin'] as bool? ?? false,
     );
   }
 }
