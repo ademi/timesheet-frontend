@@ -7,6 +7,7 @@ import '../data/models/auth/auth_error_model.dart';
 import '../data/models/auth/verify_user_response_model.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
+import 'gateway_controller.dart';
 
 class AuthController extends GetxController {
   AuthController({required AuthRepository authRepository})
@@ -37,7 +38,12 @@ class AuthController extends GetxController {
         emailController.text.trim(),
         passwordController.text,
       );
-      Get.offAllNamed(AppRoutes.home);
+      final gateway = Get.find<GatewayController>();
+      final destination =
+          gateway.selectedRole.value == UserRole.admin
+              ? AppRoutes.adminPanel
+              : AppRoutes.home;
+      Get.offAllNamed(destination);
     } on AuthErrorModel catch (e) {
       Get.snackbar('Error', e.detail, backgroundColor: Colors.red);
     } on DioException catch (e) {
@@ -62,7 +68,7 @@ class AuthController extends GetxController {
     await _authRepository.logout();
     emailController.clear();
     passwordController.clear();
-    Get.offAllNamed(AppRoutes.login);
+    Get.offAllNamed(AppRoutes.gateway);
   }
 
   @override
