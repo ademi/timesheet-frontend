@@ -10,9 +10,9 @@ abstract final class AppConstants {
     if (kIsWeb) return 'http://43.224.181.222:9090';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return 'http://11.0.0.211:9090';
+        return 'http://43.224.181.222:8000';
       default:
-        return 'http://11.0.0.211:9090';
+        return 'http://43.224.181.222:8000';
     }
   }
 
@@ -31,9 +31,9 @@ abstract final class AppConstants {
     if (kIsWeb) return 'http://43.224.181.222:8000';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return 'http://11.0.0.211:8000';
+        return 'http://43.224.181.222:8000';
       default:
-        return 'http://11.0.0.211:8000';
+        return 'http://43.224.181.222:8000';
     }
   }
 
