@@ -21,10 +21,10 @@ void main() {
     await GetStorage.init();
   });
 
-  testWidgets('Yemen Gate app loads login screen', (WidgetTester tester) async {
+  testWidgets('Yemen Gate app loads gateway screen', (WidgetTester tester) async {
     await tester.pumpWidget(const YemenGateApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome Back'), findsOneWidget);
+    expect(find.text('Select Your Portal'), findsOneWidget);
   });
 }

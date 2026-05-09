@@ -5,6 +5,7 @@ import '../controllers/admin_panel_controller.dart';
 import '../controllers/attendance_report_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/create_employee_controller.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import 'widgets/attendance_report_tab.dart';
 
@@ -42,6 +43,11 @@ class AdminPanelView extends GetView<AdminPanelController> {
           ],
         ),
         actions: [
+          IconButton(
+            onPressed: () => Get.toNamed(AppRoutes.paymentMain),
+            icon: const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary),
+            tooltip: 'Payments',
+          ),
           AnimatedBuilder(
             animation: controller.tabController,
             builder: (context, child) {
