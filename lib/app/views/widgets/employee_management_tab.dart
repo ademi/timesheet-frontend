@@ -45,15 +45,13 @@ class EmployeeManagementTab extends GetView<EmployeeManagementController> {
           );
         }),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: controller.goToCreateEmployee,
+        tooltip: 'Create Employee',
+        heroTag: 'employee_management_create_fab',
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.textLight,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          'Create Employee',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
+        child: const Icon(Icons.add_rounded),
       ),
     );
   }

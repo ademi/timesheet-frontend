@@ -3,7 +3,7 @@ abstract final class AppConstants {
   AppConstants._();
 
   /// Unified API base URL for local development.
-  static const String baseUrl = 'http://0.0.0.0:8000';
+  static const String baseUrl = 'http://192.168.43.200:8000';
 
   /// Shared API version prefix for all versioned endpoints.
   static const String apiV1 = '/v1';

@@ -2,9 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 
 import '../../core/network/attendance_api_client.dart';
+import '../bindings/create_employee_binding.dart';
 import '../data/models/attendance/employee_model.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import '../views/create_employee_view.dart';
 
 class EmployeeManagementController extends GetxController {
   EmployeeManagementController({required Dio dio}) : _dio = dio;
@@ -41,7 +43,16 @@ class EmployeeManagementController extends GetxController {
   }
 
   Future<void> goToCreateEmployee() async {
-    final created = await Get.toNamed<bool>(AppRoutes.createEmployee);
+    bool? created;
+    try {
+      created = await Get.toNamed<bool>(AppRoutes.createEmployee);
+    } catch (_) {
+      // Fallback navigation keeps flow working even if route table is stale.
+      created = await Get.to<bool>(
+        () => const CreateEmployeeView(),
+        binding: CreateEmployeeBinding(),
+      );
+    }
     if (created == true) {
       await fetchEmployees();
     }
