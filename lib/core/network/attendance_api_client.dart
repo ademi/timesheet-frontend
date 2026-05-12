@@ -4,8 +4,7 @@ import 'package:get_storage/get_storage.dart';
 import '../constants/app_constants.dart';
 import 'auth_interceptor.dart';
 
-/// Attendance service Dio instance (`localhost:8000`) with the same
-/// [AuthInterceptor] as the auth [ApiClient] (refresh uses auth [plainDio]).
+/// Business API Dio (`/v1/...`) with [AuthInterceptor]; refresh uses [authPlainDio] (same host as login).
 class AttendanceApiClient {
   AttendanceApiClient._(GetStorage storage, Dio authPlainDio)
       : dio = Dio(

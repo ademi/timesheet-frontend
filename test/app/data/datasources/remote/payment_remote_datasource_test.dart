@@ -28,9 +28,9 @@ void main() {
         currencyCode: 'USD',
         paymentMethod: 'cash',
       );
-      when(() => dio.post('/api/v1/payments', data: any(named: 'data'))).thenAnswer(
+      when(() => dio.post('/v1/payments', data: any(named: 'data'))).thenAnswer(
         (_) async => Response(
-          requestOptions: RequestOptions(path: '/api/v1/payments'),
+          requestOptions: RequestOptions(path: '/v1/payments'),
           statusCode: 201,
           data: {
             'id': 'p-1',
@@ -53,15 +53,15 @@ void main() {
       final result = await dataSource.createPayment(request);
       expect(result.id, 'p-1');
 
-      verify(() => dio.post('/api/v1/payments', data: request.toJson())).called(1);
+      verify(() => dio.post('/v1/payments', data: request.toJson())).called(1);
     });
 
     test('getPaymentsReport passes query parameters', () async {
       when(
-        () => dio.get('/api/v1/payments/report', queryParameters: any(named: 'queryParameters')),
+        () => dio.get('/v1/payments/report', queryParameters: any(named: 'queryParameters')),
       ).thenAnswer(
         (_) async => Response(
-          requestOptions: RequestOptions(path: '/api/v1/payments/report'),
+          requestOptions: RequestOptions(path: '/v1/payments/report'),
           statusCode: 200,
           data: [
             {
@@ -91,7 +91,7 @@ void main() {
       expect(result, hasLength(1));
       verify(
         () => dio.get(
-          '/api/v1/payments/report',
+          '/v1/payments/report',
           queryParameters: {
             'from': '2026-05-01',
             'to': '2026-05-31',
@@ -103,33 +103,33 @@ void main() {
     });
 
     test('propagates 400/403/401 errors from backend', () async {
-      when(() => dio.post('/api/v1/payments', data: any(named: 'data'))).thenThrow(
+      when(() => dio.post('/v1/payments', data: any(named: 'data'))).thenThrow(
         DioException(
-          requestOptions: RequestOptions(path: '/api/v1/payments'),
+          requestOptions: RequestOptions(path: '/v1/payments'),
           response: Response(
-            requestOptions: RequestOptions(path: '/api/v1/payments'),
+            requestOptions: RequestOptions(path: '/v1/payments'),
             statusCode: 400,
             data: {'detail': 'bad request'},
           ),
         ),
       );
       when(
-        () => dio.get('/api/v1/payments/report', queryParameters: any(named: 'queryParameters')),
+        () => dio.get('/v1/payments/report', queryParameters: any(named: 'queryParameters')),
       ).thenThrow(
         DioException(
-          requestOptions: RequestOptions(path: '/api/v1/payments/report'),
+          requestOptions: RequestOptions(path: '/v1/payments/report'),
           response: Response(
-            requestOptions: RequestOptions(path: '/api/v1/payments/report'),
+            requestOptions: RequestOptions(path: '/v1/payments/report'),
             statusCode: 403,
             data: {'detail': 'forbidden'},
           ),
         ),
       );
-      when(() => dio.get('/api/v1/payments/employees/e-1')).thenThrow(
+      when(() => dio.get('/v1/payments/employees/e-1')).thenThrow(
         DioException(
-          requestOptions: RequestOptions(path: '/api/v1/payments/employees/e-1'),
+          requestOptions: RequestOptions(path: '/v1/payments/employees/e-1'),
           response: Response(
-            requestOptions: RequestOptions(path: '/api/v1/payments/employees/e-1'),
+            requestOptions: RequestOptions(path: '/v1/payments/employees/e-1'),
             statusCode: 401,
             data: {'detail': 'unauthorized'},
           ),

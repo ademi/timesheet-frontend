@@ -4,8 +4,8 @@ import 'package:get_storage/get_storage.dart';
 import '../constants/app_constants.dart';
 import 'auth_interceptor.dart';
 
-/// Auth service Dio singleton: [plainDio] for `/auth/login` and `/auth/refresh`;
-/// [dio] for other authenticated auth-service calls.
+/// Auth [ApiClient]: [plainDio] for unauthenticated auth calls (`/v1/auth/login`, `/v1/auth/refresh`);
+/// [dio] for authenticated auth calls (Bearer from [AuthInterceptor], e.g. `/v1/auth/logout`, `/v1/auth/change_password`).
 class ApiClient {
   ApiClient._(GetStorage storage)
       : plainDio = Dio(

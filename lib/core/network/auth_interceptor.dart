@@ -54,7 +54,7 @@ class AuthInterceptor extends Interceptor {
     if (refreshToken == null || refreshToken.isEmpty) {
       throw DioException(
         requestOptions: RequestOptions(
-          path: '/auth/refresh',
+          path: '/v1/auth/refresh',
           baseUrl: AppConstants.baseUrl,
         ),
         message: 'Missing refresh token',

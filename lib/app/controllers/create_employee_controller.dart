@@ -48,7 +48,7 @@ class CreateEmployeeController extends GetxController {
         'dob': _todayFormatted,
       };
 
-      final response = await dio.post('/api/v1/employees', data: payload);
+      final response = await dio.post('/v1/employees', data: payload);
 
       if (response.statusCode == 201) {
         _clearForm();
