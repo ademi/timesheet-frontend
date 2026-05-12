@@ -11,6 +11,7 @@ class EmployeeModel {
     required this.dob,
     required this.isActive,
     required this.clockedIn,
+    required this.clockedOut,
   });
 
   final String id;
@@ -24,6 +25,7 @@ class EmployeeModel {
   final String dob;
   final bool isActive;
   final bool clockedIn;
+  final bool clockedOut;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -37,6 +39,7 @@ class EmployeeModel {
     'dob': dob,
     'is_active': isActive,
     'clockedin': clockedIn,
+    'clockedout': clockedOut,
   };
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
@@ -52,6 +55,7 @@ class EmployeeModel {
       dob: json['dob'] as String? ?? '',
       isActive: json['is_active'] as bool? ?? true,
       clockedIn: json['clockedin'] as bool? ?? false,
+      clockedOut: json['clockedout'] as bool? ?? false,
     );
   }
 }

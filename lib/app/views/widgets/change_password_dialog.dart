@@ -93,7 +93,8 @@ class ChangePasswordDialog extends StatelessWidget {
                 }),
                 const SizedBox(height: 20),
                 Obx(() {
-                  final busy = c.isChangingPassword.value;
+                  final busy =
+                      c.isChangingPassword.value || c.dialogSubmitting.value;
                   return Row(
                     children: [
                       Expanded(
@@ -105,7 +106,7 @@ class ChangePasswordDialog extends StatelessWidget {
                                     c.changePasswordError.value = '';
                                     c.newPasswordController.clear();
                                     c.confirmPasswordController.clear();
-                                    Get.back();
+                                    Get.back(result: false);
                                   },
                           child: const Text('Cancel'),
                         ),
