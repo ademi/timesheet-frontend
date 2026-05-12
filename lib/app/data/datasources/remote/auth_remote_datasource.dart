@@ -17,7 +17,7 @@ Future<AuthTokenModel> executeRefreshRequest(
   String refreshToken,
 ) async {
   final response = await plainDio.post<Map<String, dynamic>>(
-    '/auth/refresh',
+    '/v1/auth/refresh',
     data: RefreshRequestModel(refreshToken: refreshToken).toJson(),
   );
   final data = response.data;
@@ -57,7 +57,7 @@ class AuthRemoteDataSource {
 
   Future<AuthTokenModel> login(LoginRequestModel request) async {
     final response = await _plainDio.post<Map<String, dynamic>>(
-      '/auth/login',
+      '/v1/auth/login',
       data: request.toJson(),
     );
     final data = response.data;
@@ -76,7 +76,7 @@ class AuthRemoteDataSource {
 
   Future<LogoutResponseModel> logout(LogoutRequestModel request) async {
     final response = await _authenticatedDio.post<Map<String, dynamic>>(
-      '/auth/logout',
+      '/v1/auth/logout',
       data: request.toJson(),
     );
     final data = response.data;
@@ -89,10 +89,10 @@ class AuthRemoteDataSource {
     return LogoutResponseModel.fromJson(data);
   }
 
-  /// Calls POST /auth/change_password on the auth service.
+  /// Calls POST /v1/auth/change_password on the auth service.
   Future<String> changePassword(ChangePasswordRequestModel request) async {
     final response = await _plainDio.post<Map<String, dynamic>>(
-      '/auth/change_password',
+      '/v1/auth/change_password',
       data: request.toJson(),
     );
     final data = response.data;

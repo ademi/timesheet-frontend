@@ -21,7 +21,7 @@ class AttendanceRemoteDataSource {
 
   Future<List<EmployeeModel>> getEmployees() async {
     final response = await _dio.get<List<dynamic>>(
-      '/api/v1/employees/clocked-in-status',
+      '/v1/employees/clocked-in-status',
       queryParameters: {'branch_id': AppConstants.branchId},
     );
     final data = response.data;
@@ -33,7 +33,7 @@ class AttendanceRemoteDataSource {
 
   Future<AttendanceResponseModel> clockIn(AttendanceRequestModel body) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/attendance/clock-in',
+      '/v1/attendance/clock-in',
       data: body.toJson(),
     );
     final map = response.data;
@@ -48,7 +48,7 @@ class AttendanceRemoteDataSource {
 
   Future<AttendanceResponseModel> clockOut(AttendanceRequestModel body) async {
     final response = await _dio.post<Map<String, dynamic>>(
-      '/api/v1/attendance/clock-out',
+      '/v1/attendance/clock-out',
       data: body.toJson(),
     );
     final map = response.data;

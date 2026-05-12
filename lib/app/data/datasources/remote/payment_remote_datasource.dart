@@ -11,7 +11,7 @@ class PaymentRemoteDataSource {
   final Dio _dio;
 
   Future<PaymentOut> createPayment(CreatePaymentRequest request) async {
-    final response = await _dio.post('/api/v1/payments', data: request.toJson());
+    final response = await _dio.post('/v1/payments', data: request.toJson());
     final data = response.data;
     if (data is Map<String, dynamic>) {
       return PaymentOut.fromJson(data);
@@ -35,7 +35,7 @@ class PaymentRemoteDataSource {
       if (branchId != null && branchId.isNotEmpty) 'branch_id': branchId,
     };
     final response = await _dio.get(
-      '/api/v1/payments/report',
+      '/v1/payments/report',
       queryParameters: queryParameters,
     );
     final data = response.data;
@@ -52,7 +52,7 @@ class PaymentRemoteDataSource {
   }
 
   Future<List<PaymentOut>> getEmployeePaymentHistory(String employeeId) async {
-    final response = await _dio.get('/api/v1/payments/employees/$employeeId');
+    final response = await _dio.get('/v1/payments/employees/$employeeId');
     final data = response.data;
     if (data is List) {
       return data.whereType<Map<String, dynamic>>().map(PaymentOut.fromJson).toList();
@@ -65,7 +65,7 @@ class PaymentRemoteDataSource {
 
   Future<List<EmployeeModel>> getEmployees({String? branchId}) async {
     final response = await _dio.get(
-      '/api/v1/employees/clocked-in-status',
+      '/v1/employees/clocked-in-status',
       queryParameters: {
         if (branchId != null && branchId.isNotEmpty) 'branch_id': branchId,
       },

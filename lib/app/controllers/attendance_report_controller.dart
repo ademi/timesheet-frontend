@@ -67,7 +67,7 @@ class AttendanceReportController extends GetxController {
 
       final dio = Get.find<AttendanceApiClient>().dio;
       final response = await dio.get(
-        '/api/v1/attendance/reports/weekly',
+        '/v1/attendance/reports/weekly',
         queryParameters: {
           'branch_id': AppConstants.branchId,
           'start': startStr,

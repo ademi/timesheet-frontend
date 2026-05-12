@@ -1,41 +1,15 @@
-import 'package:flutter/foundation.dart';
-
 /// Application-wide constants for networking and local storage keys.
 abstract final class AppConstants {
   AppConstants._();
 
-  static String get baseUrl {
-    const fromEnv = String.fromEnvironment('AUTH_BASE_URL', defaultValue: '');
-    if (fromEnv.isNotEmpty) return fromEnv;
-    if (kIsWeb) return 'http://43.224.181.222:9090';
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-        return 'http://43.224.181.222:8000';
-      default:
-        return 'http://43.224.181.222:8000';
-    }
-  }
+  /// Unified API base URL for local development.
+  static const String baseUrl = 'http://0.0.0.0:8000';
+
+  /// Shared API version prefix for all versioned endpoints.
+  static const String apiV1 = '/v1';
 
   /// Auth: verify credentials before sensitive actions (e.g. attendance).
-  static const String verifyUserPath = '/auth/verify_user';
-
-  /// Attendance API base URL (Phase 3 `AttendanceApiClient`).
-  ///
-  /// Override with `--dart-define=ATTENDANCE_BASE_URL=http://...:8000` when needed.
-  static String get attendanceBaseUrl {
-    const fromEnv = String.fromEnvironment(
-      'ATTENDANCE_BASE_URL',
-      defaultValue: '',
-    );
-    if (fromEnv.isNotEmpty) return fromEnv;
-    if (kIsWeb) return 'http://43.224.181.222:8000';
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-        return 'http://43.224.181.222:8000';
-      default:
-        return 'http://43.224.181.222:8000';
-    }
-  }
+  static const String verifyUserPath = '$apiV1/auth/verify_user';
 
   /// Fixed tenant identifier sent with every login request.
   static const String tenantId = 'e4db72d4-13c3-4337-ab79-f4207f9fc0bf';
