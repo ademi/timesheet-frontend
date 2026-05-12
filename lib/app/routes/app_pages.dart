@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../bindings/admin_panel_binding.dart';
 import '../bindings/auth_binding.dart';
 import '../bindings/create_payment_binding.dart';
+import '../bindings/create_employee_binding.dart';
 import '../bindings/employee_payment_history_binding.dart';
 import '../bindings/gateway_binding.dart';
 import '../bindings/home_binding.dart';
@@ -11,6 +12,7 @@ import '../bindings/payments_report_binding.dart';
 import '../views/admin_panel_view.dart';
 import '../views/attendance_view.dart';
 import '../views/create_payment_view.dart';
+import '../views/create_employee_view.dart';
 import '../views/employee_payment_history_view.dart';
 import '../views/gateway_view.dart';
 import '../views/login_view.dart';
@@ -46,6 +48,12 @@ class AppPages {
       name: AppRoutes.adminPanel,
       page: () => const AdminPanelView(),
       binding: AdminPanelBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.createEmployee,
+      page: () => const CreateEmployeeView(),
+      binding: CreateEmployeeBinding(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

@@ -27,9 +27,9 @@ class AuthInterceptor extends Interceptor {
 
   Future<void>? _refreshFuture;
 
-  bool _isAuthRefreshPath(String path) => path.contains('/auth/refresh');
+  bool _isAuthRefreshPath(String path) => path.contains('/v1/auth/refresh');
 
-  bool _isAuthLoginPath(String path) => path.contains('/auth/login');
+  bool _isAuthLoginPath(String path) => path.contains('/v1/auth/login');
 
   Future<void> _persistTokens(AuthTokenModel tokens) async {
     await _storage.write(StorageKeys.accessToken, tokens.accessToken);

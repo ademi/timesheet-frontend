@@ -63,6 +63,7 @@ class CreateEmployeeController extends GetxController {
           duration: const Duration(seconds: 3),
           icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
         );
+        Get.back(result: true);
       }
     } on DioException catch (e) {
       _showError(_extractErrorMessage(e));
