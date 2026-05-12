@@ -17,7 +17,7 @@ import '../views/widgets/change_password_dialog.dart';
 
 enum AttendanceDialogAction { clockIn, clockOut }
 
-enum _AttendanceDialogResult { completed, passwordChangeRequired }
+enum _AttendanceDialogResult { completed, passwordChangeRequired, cancelled }
 
 class AttendanceController extends GetxController {
   AttendanceController({
@@ -145,7 +145,7 @@ class AttendanceController extends GetxController {
   }
 
   void cancelAttendanceDialog() {
-    Get.back(result: false);
+    Get.back(result: _AttendanceDialogResult.cancelled);
     dialogError.value = '';
     passwordConfirmController.clear();
   }
