@@ -6,7 +6,7 @@ class AdminPanelController extends GetxController
   late final TabController tabController;
 
   final tabs = const <Tab>[
-    Tab(text: 'Create Employees'),
+    Tab(text: 'Employee Management'),
     Tab(text: 'Attendance Report'),
   ];
 

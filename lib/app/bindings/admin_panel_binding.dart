@@ -5,13 +5,12 @@ import '../../core/network/api_client.dart';
 import '../../core/network/attendance_api_client.dart';
 import '../controllers/admin_panel_controller.dart';
 import '../controllers/attendance_report_controller.dart';
-import '../controllers/create_employee_controller.dart';
+import '../controllers/employee_management_controller.dart';
 
 class AdminPanelBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<AdminPanelController>(() => AdminPanelController());
-    Get.lazyPut<CreateEmployeeController>(() => CreateEmployeeController());
     Get.lazyPut<AttendanceReportController>(() => AttendanceReportController());
 
     if (!Get.isRegistered<AttendanceApiClient>()) {
@@ -20,5 +19,9 @@ class AdminPanelBinding extends Bindings {
         permanent: true,
       );
     }
+
+    Get.lazyPut<EmployeeManagementController>(
+      EmployeeManagementController.createDefault,
+    );
   }
 }
