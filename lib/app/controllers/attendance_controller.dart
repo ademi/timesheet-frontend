@@ -17,6 +17,8 @@ import '../views/widgets/change_password_dialog.dart';
 
 enum AttendanceDialogAction { clockIn, clockOut }
 
+enum _AttendanceDialogResult { completed, passwordChangeRequired, cancelled }
+
 class AttendanceController extends GetxController {
   AttendanceController({
     required AttendanceRepository repository,
@@ -110,21 +112,46 @@ class AttendanceController extends GetxController {
         next > allEmployees.length ? allEmployees.length : next;
   }
 
-  void openAttendanceDialog(
+  Future<void> openAttendanceDialog(
     EmployeeModel employee,
     AttendanceDialogAction action,
-  ) {
+  ) async {
     dialogEmployee.value = employee;
     dialogAction.value = action;
     dialogError.value = '';
     passwordConfirmController.clear();
-    Get.dialog(const AttendancePasswordDialog(), barrierDismissible: false);
+    final result = await Get.dialog<_AttendanceDialogResult>(
+      const AttendancePasswordDialog(),
+      barrierDismissible: false,
+    );
+
+    if (result == _AttendanceDialogResult.passwordChangeRequired) {
+      changePasswordError.value = '';
+      newPasswordController.clear();
+      confirmPasswordController.clear();
+      final changed = await Get.dialog<bool>(
+        const ChangePasswordDialog(),
+        barrierDismissible: false,
+      );
+      if (changed == true) {
+        await refreshEmployees();
+      }
+      return;
+    }
+
+    if (result == _AttendanceDialogResult.completed) {
+      await refreshEmployees();
+    }
   }
 
   void cancelAttendanceDialog() {
-    Get.back();
+    Get.back(result: _AttendanceDialogResult.cancelled);
     dialogError.value = '';
     passwordConfirmController.clear();
+  }
+
+  Future<void> refreshEmployees() async {
+    await _loadEmployees();
   }
 
   Future<void> submitAttendanceDialog() async {
@@ -166,12 +193,8 @@ class AttendanceController extends GetxController {
 
     // ── Intercept default password for clock-in only ──
     if (action == AttendanceDialogAction.clockIn && pwd == _defaultPassword) {
-      Get.back(); // close password dialog
+      Get.back(result: _AttendanceDialogResult.passwordChangeRequired);
       passwordConfirmController.clear();
-      changePasswordError.value = '';
-      newPasswordController.clear();
-      confirmPasswordController.clear();
-      Get.dialog(const ChangePasswordDialog(), barrierDismissible: false);
       return;
     }
 
@@ -223,31 +246,36 @@ class AttendanceController extends GetxController {
       isChangingPassword.value = false;
     }
 
-    // Password changed — close dialog and auto clock-in
-    Get.back();
-    newPasswordController.clear();
-    confirmPasswordController.clear();
-
-    Get.snackbar(
-      'Password Changed',
-      'Your password has been updated successfully',
-      backgroundColor: Colors.green,
+    final clockInSucceeded = await _performClockAction(
+      emp,
+      AttendanceDialogAction.clockIn,
+      closeDialogOnSuccess: false,
     );
+    if (clockInSucceeded) {
+      Get.back(result: true);
+      newPasswordController.clear();
+      confirmPasswordController.clear();
 
-    // Auto clock-in with the new password
-    dialogSubmitting.value = true;
-    try {
-      await _performClockAction(emp, AttendanceDialogAction.clockIn);
-    } finally {
-      dialogSubmitting.value = false;
+      Get.snackbar(
+        'Password Changed',
+        'Your password has been updated successfully',
+        backgroundColor: Colors.green,
+      );
+      return;
+    }
+
+    if (dialogError.value.isNotEmpty) {
+      changePasswordError.value = dialogError.value;
+      dialogError.value = '';
     }
   }
 
   /// Shared helper that executes the actual clock-in / clock-out API call.
-  Future<void> _performClockAction(
+  Future<bool> _performClockAction(
     EmployeeModel emp,
-    AttendanceDialogAction action,
-  ) async {
+    AttendanceDialogAction action, {
+    bool closeDialogOnSuccess = true,
+  }) async {
     dialogSubmitting.value = true;
     try {
       final position = await _determinePosition();
@@ -260,7 +288,9 @@ class AttendanceController extends GetxController {
 
       if (action == AttendanceDialogAction.clockIn) {
         await _repository.clockIn(body);
-        Get.back();
+        if (closeDialogOnSuccess) {
+          Get.back(result: _AttendanceDialogResult.completed);
+        }
         passwordConfirmController.clear();
         Get.snackbar(
           'Success',
@@ -269,7 +299,9 @@ class AttendanceController extends GetxController {
         );
       } else {
         await _repository.clockOut(body);
-        Get.back();
+        if (closeDialogOnSuccess) {
+          Get.back(result: _AttendanceDialogResult.completed);
+        }
         passwordConfirmController.clear();
         Get.snackbar(
           'Success',
@@ -277,6 +309,7 @@ class AttendanceController extends GetxController {
           backgroundColor: Colors.green,
         );
       }
+      return true;
     } on AttendanceErrorModel catch (e) {
       dialogError.value = e.detail;
     } on DioException catch (e) {
@@ -287,6 +320,7 @@ class AttendanceController extends GetxController {
     } finally {
       dialogSubmitting.value = false;
     }
+    return false;
   }
 
   Future<Position> _determinePosition() async {

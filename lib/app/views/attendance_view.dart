@@ -89,6 +89,7 @@ class AttendanceView extends GetView<AttendanceController> {
                   fullName: emp.fullName,
                   email: emp.email,
                   isClockedIn: emp.clockedIn,
+                  isClockedOut: emp.clockedOut,
                   onClockIn:
                       () => controller.openAttendanceDialog(
                         emp,
@@ -114,6 +115,7 @@ class _EmployeeCard extends StatelessWidget {
     required this.fullName,
     required this.email,
     required this.isClockedIn,
+    required this.isClockedOut,
     required this.onClockIn,
     required this.onClockOut,
   });
@@ -121,6 +123,7 @@ class _EmployeeCard extends StatelessWidget {
   final String fullName;
   final String email;
   final bool isClockedIn;
+  final bool isClockedOut;
   final VoidCallback onClockIn;
   final VoidCallback onClockOut;
 
@@ -149,61 +152,83 @@ class _EmployeeCard extends StatelessWidget {
               style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
             ),
             const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: isClockedIn ? null : onClockIn,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          isClockedIn
-                              ? Colors.grey.shade400
-                              : AppColors.primary,
-                      foregroundColor: AppColors.textLight,
-                      disabledBackgroundColor: Colors.grey.shade300,
-                      disabledForegroundColor: Colors.grey.shade600,
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      isClockedIn ? 'Clocked In' : 'Clock In',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onClockOut,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.darkBrown,
-                      side: const BorderSide(
-                        color: AppColors.darkBrown,
-                        width: 1.5,
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Clock Out',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            _buildAttendanceActions(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAttendanceActions() {
+    final attendedToday = isClockedIn && isClockedOut;
+    if (attendedToday) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.35)),
+        ),
+        child: const Text(
+          'Employee has attended today',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.success,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
+
+    final showClockIn = !isClockedIn;
+    final showClockOut = !isClockedOut;
+
+    if (showClockIn && showClockOut) {
+      return Row(
+        children: [
+          Expanded(child: _buildClockInButton()),
+          const SizedBox(width: 10),
+          Expanded(child: _buildClockOutButton()),
+        ],
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: showClockIn ? _buildClockInButton() : _buildClockOutButton(),
+    );
+  }
+
+  Widget _buildClockInButton() {
+    return ElevatedButton(
+      onPressed: onClockIn,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textLight,
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: const Text(
+        'Clock In',
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  Widget _buildClockOutButton() {
+    return OutlinedButton(
+      onPressed: onClockOut,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.darkBrown,
+        side: const BorderSide(color: AppColors.darkBrown, width: 1.5),
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: const Text(
+        'Clock Out',
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
       ),
     );
   }
