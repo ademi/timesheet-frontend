@@ -42,6 +42,7 @@ void main() {
           dob: '1990-01-01',
           isActive: true,
           clockedIn: false,
+          clockedOut: false,
         ),
       ],
     );
