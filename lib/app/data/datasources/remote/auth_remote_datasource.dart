@@ -92,7 +92,7 @@ class AuthRemoteDataSource {
   /// Calls POST /v1/auth/change_password (requires Bearer access token).
   Future<String> changePassword(ChangePasswordRequestModel request) async {
     final response = await _authenticatedDio.post<Map<String, dynamic>>(
-      '/v1/auth/change_password',
+      '/v1/auth/set_initial_password',
       data: request.toJson(),
     );
     final data = response.data;

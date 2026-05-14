@@ -12,7 +12,7 @@ class AttendanceApiClient {
           BaseOptions(
             baseUrl: AppConstants.baseUrl,
             connectTimeout: const Duration(seconds: 30),
-            receiveTimeout: const Duration(seconds: 30),
+            receiveTimeout: const Duration(minutes: 1),
             headers: const {
               Headers.contentTypeHeader: Headers.jsonContentType,
               Headers.acceptHeader: Headers.jsonContentType,
