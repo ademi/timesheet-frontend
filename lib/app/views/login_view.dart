@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
@@ -83,7 +84,12 @@ class LoginView extends GetView<AuthController> {
 
                         // Email
                         _InputField(
-                          controller: controller.emailController,
+                          controller: controller.emailController
+                            ..text = controller.emailController.text.isEmpty && kDebugMode
+                                ? 'admin@demotenant.example'
+                                : controller.emailController.text,
+                   
+                          //controller: controller.emailController,
                           label: 'Email Address',
                           hint: 'staff@yemengate.com',
                           icon: Icons.email_outlined,
@@ -103,7 +109,12 @@ class LoginView extends GetView<AuthController> {
                         // Password
                         Obx(
                           () => _InputField(
-                            controller: controller.passwordController,
+                            controller: controller.passwordController
+                              ..text = controller.passwordController.text.isEmpty && kDebugMode
+                                  ? 'ChangeMe123!'
+                                  : controller.passwordController.text,
+                   
+                            //controller: controller.passwordController,
                             label: 'Password',
                             hint: '••••••••',
                             icon: Icons.lock_outline,
