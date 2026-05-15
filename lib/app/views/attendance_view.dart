@@ -160,40 +160,40 @@ class _EmployeeCard extends StatelessWidget {
   }
 
   Widget _buildAttendanceActions() {
-    final attendedToday = isClockedIn && isClockedOut;
-    if (attendedToday) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.success.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.success.withValues(alpha: 0.35)),
-        ),
-        child: const Text(
-          'Employee has attended today',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: AppColors.success,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      );
-    }
+    //final attendedToday = isClockedIn && isClockedOut;
+    //if (attendedToday) {
+    //  return Container(
+    //    width: double.infinity,
+    //    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    //    decoration: BoxDecoration(
+    //      color: AppColors.success.withValues(alpha: 0.12),
+    //      borderRadius: BorderRadius.circular(12),
+    //      border: Border.all(color: AppColors.success.withValues(alpha: 0.35)),
+    //    ),
+    //    child: const Text(
+    //      'Employee has attended today',
+    //      textAlign: TextAlign.center,
+    //      style: TextStyle(
+    //        color: AppColors.success,
+    //        fontSize: 13,
+    //        fontWeight: FontWeight.w600,
+    //      ),
+    //    ),
+    //  );
+    //}
 
     final showClockIn = !isClockedIn;
-    final showClockOut = !isClockedOut;
+    //final showClockOut = !isClockedOut;
 
-    if (showClockIn && showClockOut) {
-      return Row(
-        children: [
-          Expanded(child: _buildClockInButton()),
-          const SizedBox(width: 10),
-          Expanded(child: _buildClockOutButton()),
-        ],
-      );
-    }
+    //if (showClockIn && showClockOut) {
+    //  return Row(
+    //    children: [
+    //      Expanded(child: _buildClockInButton()),
+    //      const SizedBox(width: 10),
+    //      Expanded(child: _buildClockOutButton()),
+    //    ],
+    //  );
+    //}
 
     return SizedBox(
       width: double.infinity,
