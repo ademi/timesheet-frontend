@@ -86,7 +86,7 @@ class LoginView extends GetView<AuthController> {
                         _InputField(
                           controller: controller.emailController
                             ..text = controller.emailController.text.isEmpty && kDebugMode
-                                ? 'admin@demotenant.example'
+                                ? 'admin@yemengate.com'
                                 : controller.emailController.text,
                    
                           //controller: controller.emailController,
@@ -110,9 +110,7 @@ class LoginView extends GetView<AuthController> {
                         Obx(
                           () => _InputField(
                             controller: controller.passwordController
-                              ..text = controller.passwordController.text.isEmpty && kDebugMode
-                                  ? 'ChangeMe123!'
-                                  : controller.passwordController.text,
+                              ..text = controller.passwordController.text,
                    
                             //controller: controller.passwordController,
                             label: 'Password',

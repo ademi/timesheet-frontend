@@ -19,10 +19,10 @@ abstract final class AppConstants {
   static const String verifyUserPath = '$apiV1/auth/verify_user';
 
   /// Fixed tenant identifier sent with every login request.
-  static const String tenantId = 'a0000001-0001-4001-8001-000000000001';
+  static const String tenantId = 'a0000002-0001-4001-8001-000000000001';
 
   /// Fixed branch filter for employee list.
-  static const String branchId = 'a0000001-0001-4001-8001-000000000002';
+  static const String branchId = 'a0000002-0001-4001-8001-000000000002';
 
   /// Attendance clock-in/out source (device GPS).
   static const String attendanceSource = 'gps';
