@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../bindings/payroll_module_binding.dart';
 import '../controllers/admin_panel_controller.dart';
 import '../controllers/attendance_report_controller.dart';
 import '../controllers/auth_controller.dart';
@@ -43,6 +44,14 @@ class AdminPanelView extends GetView<AdminPanelController> {
           ],
         ),
         actions: [
+          IconButton(
+            onPressed: () {
+              PayrollModuleBinding.ensureDependencies();
+              Get.toNamed(AppRoutes.payrollMain);
+            },
+            icon: const Icon(Icons.receipt_long, color: AppColors.primary),
+            tooltip: 'Payroll',
+          ),
           IconButton(
             onPressed: () => Get.toNamed(AppRoutes.paymentMain),
             icon: const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary),

@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/network/attendance_api_client.dart';
+import '../bindings/payroll_module_binding.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 
 class CreateEmployeeController extends GetxController {
@@ -51,19 +53,27 @@ class CreateEmployeeController extends GetxController {
       final response = await dio.post('/v1/employees', data: payload);
 
       if (response.statusCode == 201) {
+        final data = response.data;
+        final newEmployeeId = data is Map<String, dynamic>
+            ? data['id'] as String?
+            : null;
         _clearForm();
-        Get.snackbar(
-          'Success',
-          'Employee created successfully',
-          backgroundColor: AppColors.success,
-          colorText: AppColors.textLight,
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-          duration: const Duration(seconds: 3),
-          icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
-        );
-        Get.back(result: true);
+        if (newEmployeeId != null && newEmployeeId.isNotEmpty) {
+          _offerInitialRate(newEmployeeId);
+        } else {
+          Get.snackbar(
+            'Success',
+            'Employee created successfully',
+            backgroundColor: AppColors.success,
+            colorText: AppColors.textLight,
+            snackPosition: SnackPosition.BOTTOM,
+            margin: const EdgeInsets.all(16),
+            borderRadius: 12,
+            duration: const Duration(seconds: 3),
+            icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+          );
+          Get.back(result: true);
+        }
       }
     } on DioException catch (e) {
       _showError(_extractErrorMessage(e));
@@ -75,6 +85,49 @@ class CreateEmployeeController extends GetxController {
   }
 
   // ── Private Helpers ───────────────────────────────────────────
+  void _offerInitialRate(String employeeId) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Employee Created'),
+        content: const Text(
+          'Would you like to set the initial payroll rate for this employee?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Get.back();
+              Get.snackbar(
+                'Success',
+                'Employee created successfully',
+                backgroundColor: AppColors.success,
+                colorText: AppColors.textLight,
+                snackPosition: SnackPosition.BOTTOM,
+                margin: const EdgeInsets.all(16),
+                borderRadius: 12,
+                duration: const Duration(seconds: 3),
+                icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+              );
+              Get.back(result: true);
+            },
+            child: const Text('Skip'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              PayrollModuleBinding.ensureDependencies();
+              Get.offNamed(
+                AppRoutes.payrollEmployeeRates,
+                arguments: employeeId,
+              );
+            },
+            child: const Text('Set Rate'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
   void _clearForm() {
     employeeCodeController.clear();
     fullNameController.clear();

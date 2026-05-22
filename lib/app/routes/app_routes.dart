@@ -8,4 +8,11 @@ abstract class AppRoutes {
   static const paymentCreate = '/payments/create';
   static const paymentReport = '/payments/report';
   static const paymentHistory = '/payments/history';
+  static const payrollMain = '/payroll';
+  static const payrollPeriods = '/payroll/periods';
+  static const payrollPeriodDetail = '/payroll/periods/detail';
+  static const payrollPeriodResults = '/payroll/periods/results';
+  static const payrollEmployeeRates = '/payroll/rates';
+  static const payrollEmployeeBalance = '/payroll/balance';
+  static const payrollSummaryReport = '/payroll/summary';
 }

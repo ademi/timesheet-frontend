@@ -35,7 +35,7 @@ class EmployeeManagementController extends GetxController {
       );
     } on DioException catch (e) {
       _showError(_extractErrorMessage(e));
-    } catch (_) {
+    } catch (e) {
       _showError('Failed to load employees.');
     } finally {
       isLoading.value = false;

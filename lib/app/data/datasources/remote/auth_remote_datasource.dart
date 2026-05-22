@@ -56,18 +56,24 @@ class AuthRemoteDataSource {
   }
 
   Future<AuthTokenModel> login(LoginRequestModel request) async {
-    final response = await _plainDio.post<Map<String, dynamic>>(
-      '/v1/auth/login',
-      data: request.toJson(),
-    );
-    final data = response.data;
-    if (data == null) {
-      throw DioException(
-        requestOptions: response.requestOptions,
-        message: 'Empty login response',
+    try {
+      final response = await _plainDio.post<Map<String, dynamic>>(
+        '/v1/auth/login',
+        data: request.toJson(),
       );
+      final data = response.data;
+      if (data == null) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          message: 'Empty login response',
+        );
+      }
+      return AuthTokenModel.fromJson(data);
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
     }
-    return AuthTokenModel.fromJson(data);
   }
 
   Future<AuthTokenModel> refresh(RefreshRequestModel request) {
