@@ -30,6 +30,14 @@ int payrollAsInt(dynamic value) {
   return 0;
 }
 
+int? payrollAsIntOrNull(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String && value.isNotEmpty) return int.tryParse(value);
+  return null;
+}
+
 String payrollTimeAsString(dynamic value) {
   if (value is String) return value;
   return value?.toString() ?? '';

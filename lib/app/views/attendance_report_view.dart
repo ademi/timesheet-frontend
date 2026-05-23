@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../controllers/attendance_report_controller.dart';
 import '../themes/app_colors.dart';
+import '../utils/attendance_report_matrix.dart';
 
 class AttendanceReportView extends GetView<AttendanceReportController> {
   const AttendanceReportView({super.key});
@@ -164,8 +165,10 @@ class AttendanceReportView extends GetView<AttendanceReportController> {
   }
 
   Widget _buildDataTable() {
-    final dates = controller.uniqueDates;
-    final minWidth = 200.0 + (dates.length * 80.0) + 100.0;
+    final matrix = AttendanceReportMatrix(controller.reports);
+    final dates = matrix.dates;
+    final employees = matrix.employees;
+    final minWidth = 120.0 + (employees.length * 100.0) + 90.0;
 
     return DataTable2(
       columnSpacing: 12,
@@ -175,33 +178,35 @@ class AttendanceReportView extends GetView<AttendanceReportController> {
           WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.1)),
       columns: [
         const DataColumn2(
-          label: Text('Employee Name'),
-          size: ColumnSize.L,
-          fixedWidth: 150,
+          label: Text('Date'),
+          size: ColumnSize.M,
+          fixedWidth: 110,
         ),
-        ...dates.map(
-          (date) => DataColumn2(
-            label: Text(_formatMmDd(date)),
+        ...employees.map(
+          (employee) => DataColumn2(
+            label: Text(
+              employee,
+              overflow: TextOverflow.ellipsis,
+            ),
             size: ColumnSize.S,
             numeric: true,
           ),
         ),
         const DataColumn2(
-          label: Text('Total Hrs'),
+          label: Text('Daily Total'),
           size: ColumnSize.S,
           numeric: true,
         ),
       ],
-      rows: controller.reports.map((report) {
-        final recordMap = {for (var r in report.dailyRecords) r.date: r.hours};
+      rows: dates.map((date) {
         return DataRow(
           cells: [
-            DataCell(Text(report.employeeName)),
-            ...dates.map((date) {
-              final hours = recordMap[date] ?? 0;
-              return DataCell(Text(hours.toString()));
+            DataCell(Text(_formatMmDd(date))),
+            ...employees.map((employee) {
+              final hours = matrix.hoursFor(date, employee);
+              return DataCell(Text(hours.toStringAsFixed(1)));
             }),
-            DataCell(Text(report.total.hours.toString())),
+            DataCell(Text(matrix.totalForDate(date).toStringAsFixed(1))),
           ],
         );
       }).toList(),

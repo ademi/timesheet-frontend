@@ -66,6 +66,7 @@ class EmployeeRateFormView extends GetView<EmployeeRateFormController> {
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(labelText: 'Base Rate'),
+              onEditingComplete: controller.applyBaseRateToDerivedRates,
             ),
             const SizedBox(height: 8),
             TextField(
@@ -93,7 +94,7 @@ class EmployeeRateFormView extends GetView<EmployeeRateFormController> {
               controller: controller.dailyThresholdController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Daily OT Threshold (mins)',
+                labelText: 'Daily OT Threshold (mins, optional)',
               ),
             ),
             const SizedBox(height: 8),
@@ -101,7 +102,7 @@ class EmployeeRateFormView extends GetView<EmployeeRateFormController> {
               controller: controller.weeklyThresholdController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Weekly OT Threshold (mins)',
+                labelText: 'Weekly OT Threshold (mins, optional)',
               ),
             ),
             const SizedBox(height: 8),

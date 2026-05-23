@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../core/constants/payment_currencies.dart';
 import '../data/models/attendance/employee_model.dart';
 import '../data/models/payment/create_payment_request.dart';
 import '../data/models/payroll/payroll_date_utils.dart';
@@ -38,7 +39,7 @@ class CreatePaymentController extends GetxController {
   final selectedResult = Rxn<ResultOut>();
 
   final paymentDate = DateTime.now().obs;
-  final selectedCurrencyCode = 'USD'.obs;
+  final selectedCurrencyCode = PaymentCurrencies.defaultCode.obs;
   final selectedPaymentMethod = RxnString();
   final isLoading = false.obs;
   final isLoadingPeriods = false.obs;
@@ -150,6 +151,7 @@ class CreatePaymentController extends GetxController {
 
   void selectEmployee(EmployeeModel employee) {
     selectedEmployee.value = employee;
+    selectedCurrencyCode.value = employee.defaultCurrencyCode;
     loadResultsForSelection();
   }
 
@@ -253,6 +255,7 @@ class CreatePaymentController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppColors.success,
         colorText: Colors.white,
+        icon: const Icon(Icons.check_circle, color: Colors.white),
       );
       clearForm();
       if (Get.key.currentState?.canPop() ?? false) {
@@ -305,6 +308,7 @@ class CreatePaymentController extends GetxController {
     SnackPosition snackPosition = SnackPosition.BOTTOM,
     Color? backgroundColor,
     Color? colorText,
+    Widget? icon,
   }) {
     if (Get.key.currentState?.overlay == null) return;
     Get.snackbar(
@@ -313,6 +317,7 @@ class CreatePaymentController extends GetxController {
       snackPosition: snackPosition,
       backgroundColor: backgroundColor,
       colorText: colorText,
+      icon: icon,
     );
   }
 
@@ -324,7 +329,7 @@ class CreatePaymentController extends GetxController {
     selectedPeriod.value = null;
     selectedResult.value = null;
     periodResults.clear();
-    selectedCurrencyCode.value = 'USD';
+    selectedCurrencyCode.value = PaymentCurrencies.defaultCode;
     selectedPaymentMethod.value = null;
     paymentDate.value = DateTime.now();
   }

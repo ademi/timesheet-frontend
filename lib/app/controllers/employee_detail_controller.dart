@@ -13,6 +13,7 @@ import '../data/models/payroll/rate_out.dart';
 import '../data/models/payroll/result_out.dart';
 import '../data/repositories/employee_repository.dart';
 import '../data/repositories/payroll_repository.dart';
+import '../core/constants/payment_currencies.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 
@@ -37,11 +38,13 @@ class EmployeeDetailController extends GetxController {
 
   final isLoading = false.obs;
   final isSaving = false.obs;
+  final isEditing = false.obs;
 
   final fullNameController = TextEditingController();
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
   final isActive = true.obs;
+  final defaultCurrencyCode = PaymentCurrencies.defaultCode.obs;
 
   @override
   void onInit() {
@@ -51,7 +54,11 @@ class EmployeeDetailController extends GetxController {
       Get.back();
       return;
     }
-    employeeId = args;
+    bindEmployeeId(args);
+  }
+
+  void bindEmployeeId(String id) {
+    employeeId = id;
     loadAll();
   }
 
@@ -118,6 +125,15 @@ class EmployeeDetailController extends GetxController {
     emailController.text = emp.email;
     phoneController.text = emp.phone;
     isActive.value = emp.isActive;
+    defaultCurrencyCode.value = emp.defaultCurrencyCode;
+  }
+
+  void startEditing() => isEditing.value = true;
+
+  void cancelEditing() {
+    final emp = employee.value;
+    if (emp != null) _populateForm(emp);
+    isEditing.value = false;
   }
 
   String periodLabel(PeriodOut period) {
@@ -139,9 +155,11 @@ class EmployeeDetailController extends GetxController {
           email: emailController.text.trim(),
           phone: phoneController.text.trim(),
           isActive: isActive.value,
+          defaultCurrencyCode: defaultCurrencyCode.value,
         ),
       );
       employee.value = updated;
+      isEditing.value = false;
       Get.snackbar(
         'Saved',
         'Employee details updated.',

@@ -12,6 +12,7 @@ class EmployeeModel {
     required this.isActive,
     required this.clockedIn,
     required this.clockedOut,
+    this.defaultCurrencyCode = 'AUD',
   });
 
   final String id;
@@ -26,6 +27,7 @@ class EmployeeModel {
   final bool isActive;
   final bool clockedIn;
   final bool clockedOut;
+  final String defaultCurrencyCode;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -40,6 +42,7 @@ class EmployeeModel {
     'is_active': isActive,
     'clockedin': clockedIn,
     'clockedout': clockedOut,
+    'default_currency_code': defaultCurrencyCode,
   };
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
@@ -56,6 +59,7 @@ class EmployeeModel {
       isActive: json['is_active'] as bool? ?? true,
       clockedIn: json['clockedin'] as bool? ?? false,
       clockedOut: json['clockedout'] as bool? ?? false,
+      defaultCurrencyCode: json['default_currency_code'] as String? ?? 'AUD',
     );
   }
 }

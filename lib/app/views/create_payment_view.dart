@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/create_payment_controller.dart';
+import '../core/constants/payment_currencies.dart';
 import '../data/models/payroll/period_out.dart';
 import '../data/models/payroll/result_out.dart';
 import '../themes/app_colors.dart';
@@ -165,10 +166,14 @@ class CreatePaymentView extends GetView<CreatePaymentController> {
                     Obx(
                       () => DropdownButtonFormField<String>(
                         value: controller.selectedCurrencyCode.value,
-                        items: const [
-                          DropdownMenuItem(value: 'USD', child: Text('USD')),
-                          DropdownMenuItem(value: 'AUD', child: Text('AUD')),
-                        ],
+                        items: PaymentCurrencies.supported
+                            .map(
+                              (code) => DropdownMenuItem(
+                                value: code,
+                                child: Text(code),
+                              ),
+                            )
+                            .toList(),
                         onChanged: (value) {
                           if (value != null) controller.selectedCurrencyCode.value = value;
                         },

@@ -11,8 +11,8 @@ class RateOut {
     required this.weekendRate,
     required this.nightRate,
     required this.overtimeRate,
-    required this.overtimeDailyThresholdMinutes,
-    required this.overtimeWeeklyThresholdMinutes,
+    this.overtimeDailyThresholdMinutes,
+    this.overtimeWeeklyThresholdMinutes,
     required this.nightShiftStart,
     required this.nightShiftEnd,
     required this.createdAt,
@@ -28,8 +28,8 @@ class RateOut {
   final double weekendRate;
   final double nightRate;
   final double overtimeRate;
-  final int overtimeDailyThresholdMinutes;
-  final int overtimeWeeklyThresholdMinutes;
+  final int? overtimeDailyThresholdMinutes;
+  final int? overtimeWeeklyThresholdMinutes;
   final String nightShiftStart;
   final String nightShiftEnd;
   final DateTime createdAt;
@@ -47,9 +47,9 @@ class RateOut {
       nightRate: payrollAsDouble(json['night_rate']),
       overtimeRate: payrollAsDouble(json['overtime_rate']),
       overtimeDailyThresholdMinutes:
-          payrollAsInt(json['overtime_daily_threshold_minutes']),
+          payrollAsIntOrNull(json['overtime_daily_threshold_minutes']),
       overtimeWeeklyThresholdMinutes:
-          payrollAsInt(json['overtime_weekly_threshold_minutes']),
+          payrollAsIntOrNull(json['overtime_weekly_threshold_minutes']),
       nightShiftStart: payrollTimeAsString(json['night_shift_start']),
       nightShiftEnd: payrollTimeAsString(json['night_shift_end']),
       createdAt: parsePayrollDate(json['created_at'] as String? ?? ''),

@@ -24,9 +24,9 @@ class EmployeeRateFormController extends GetxController {
   final baseRateController = TextEditingController();
   final weekendRateController = TextEditingController();
   final nightRateController = TextEditingController();
-  final overtimeRateController = TextEditingController(text: '0');
-  final dailyThresholdController = TextEditingController(text: '480');
-  final weeklyThresholdController = TextEditingController(text: '2400');
+  final overtimeRateController = TextEditingController();
+  final dailyThresholdController = TextEditingController();
+  final weeklyThresholdController = TextEditingController();
   final nightShiftStartController = TextEditingController(text: '22:00');
   final nightShiftEndController = TextEditingController(text: '06:00');
 
@@ -35,10 +35,15 @@ class EmployeeRateFormController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    final args = Get.arguments;
-    if (args is! EmployeeRateFormArgs || args.employeeId.isEmpty) {
+    if (!bindFromArgs(Get.arguments)) {
       Get.back();
-      return;
+    }
+  }
+
+  /// Binds route args. Returns false when args are invalid.
+  bool bindFromArgs(Object? args) {
+    if (args is! EmployeeRateFormArgs || args.employeeId.isEmpty) {
+      return false;
     }
     employeeId = args.employeeId;
     isEdit = args.isEdit;
@@ -47,6 +52,18 @@ class EmployeeRateFormController extends GetxController {
     } else {
       effectiveFrom.value = DateTime.now();
     }
+    return true;
+  }
+
+  /// Copies base rate into weekend, night, and overtime after base rate editing.
+  void applyBaseRateToDerivedRates() => _applyBaseRateToDerivedRates();
+
+  void _applyBaseRateToDerivedRates() {
+    final base = baseRateController.text.trim();
+    if (base.isEmpty) return;
+    weekendRateController.text = base;
+    nightRateController.text = base;
+    overtimeRateController.text = base;
   }
 
   void _populateFromRate(RateOut rate) {
@@ -58,9 +75,9 @@ class EmployeeRateFormController extends GetxController {
     nightRateController.text = rate.nightRate.toString();
     overtimeRateController.text = rate.overtimeRate.toString();
     dailyThresholdController.text =
-        rate.overtimeDailyThresholdMinutes.toString();
+        rate.overtimeDailyThresholdMinutes?.toString() ?? '';
     weeklyThresholdController.text =
-        rate.overtimeWeeklyThresholdMinutes.toString();
+        rate.overtimeWeeklyThresholdMinutes?.toString() ?? '';
     nightShiftStartController.text = rate.nightShiftStart;
     nightShiftEndController.text = rate.nightShiftEnd;
   }
@@ -88,6 +105,12 @@ class EmployeeRateFormController extends GetxController {
 
   void clearEffectiveTo() => effectiveTo.value = null;
 
+  int? _parseOptionalThreshold(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return null;
+    return int.tryParse(trimmed);
+  }
+
   Future<void> submit() async {
     if (effectiveFrom.value == null) {
       _showError('Effective from is required.');
@@ -102,6 +125,9 @@ class EmployeeRateFormController extends GetxController {
       return;
     }
 
+    final dailyThreshold = _parseOptionalThreshold(dailyThresholdController.text);
+    final weeklyThreshold = _parseOptionalThreshold(weeklyThresholdController.text);
+
     try {
       isSaving.value = true;
       if (!isEdit) {
@@ -115,10 +141,8 @@ class EmployeeRateFormController extends GetxController {
             nightRate: nightRate,
             overtimeRate:
                 double.tryParse(overtimeRateController.text.trim()) ?? 0,
-            overtimeDailyThresholdMinutes:
-                int.tryParse(dailyThresholdController.text.trim()) ?? 480,
-            overtimeWeeklyThresholdMinutes:
-                int.tryParse(weeklyThresholdController.text.trim()) ?? 2400,
+            overtimeDailyThresholdMinutes: dailyThreshold,
+            overtimeWeeklyThresholdMinutes: weeklyThreshold,
             nightShiftStart: nightShiftStartController.text.trim(),
             nightShiftEnd: nightShiftEndController.text.trim(),
           ),
@@ -132,10 +156,8 @@ class EmployeeRateFormController extends GetxController {
           'night_rate': nightRate,
           'overtime_rate':
               double.tryParse(overtimeRateController.text.trim()) ?? 0,
-          'overtime_daily_threshold_minutes':
-              int.tryParse(dailyThresholdController.text.trim()) ?? 480,
-          'overtime_weekly_threshold_minutes':
-              int.tryParse(weeklyThresholdController.text.trim()) ?? 2400,
+          'overtime_daily_threshold_minutes': dailyThreshold,
+          'overtime_weekly_threshold_minutes': weeklyThreshold,
           'night_shift_start': nightShiftStartController.text.trim(),
           'night_shift_end': nightShiftEndController.text.trim(),
         };

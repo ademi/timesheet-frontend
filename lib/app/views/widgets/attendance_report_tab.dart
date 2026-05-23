@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/attendance_report_controller.dart';
 import '../../themes/app_colors.dart';
+import '../../utils/attendance_report_matrix.dart';
 
 class AttendanceReportTab extends GetView<AttendanceReportController> {
   const AttendanceReportTab({super.key});
@@ -189,10 +190,10 @@ class AttendanceReportTab extends GetView<AttendanceReportController> {
   }
 
   Widget _buildDataTable() {
-    final dates = controller.uniqueDates;
-
-    // Minimum width based on columns to force horizontal scroll if needed
-    final minWidth = 200.0 + (dates.length * 80.0) + 100.0;
+    final matrix = AttendanceReportMatrix(controller.reports);
+    final dates = matrix.dates;
+    final employees = matrix.employees;
+    final minWidth = 120.0 + (employees.length * 100.0) + 90.0;
 
     return DataTable2(
       columnSpacing: 12,
@@ -215,32 +216,35 @@ class AttendanceReportTab extends GetView<AttendanceReportController> {
       ),
       columns: [
         const DataColumn2(
-          label: Text('Employee Name'),
-          size: ColumnSize.L,
-          fixedWidth: 150,
+          label: Text('Date'),
+          size: ColumnSize.M,
+          fixedWidth: 110,
         ),
-        ...dates.map((date) => DataColumn2(
-              label: Text(_formatMmDd(date)),
-              size: ColumnSize.S,
-              numeric: true,
-            )),
+        ...employees.map(
+          (employee) => DataColumn2(
+            label: Text(
+              employee,
+              overflow: TextOverflow.ellipsis,
+            ),
+            size: ColumnSize.S,
+            numeric: true,
+          ),
+        ),
         const DataColumn2(
-          label: Text('Total Hrs'),
+          label: Text('Daily Total'),
           size: ColumnSize.S,
           numeric: true,
         ),
       ],
-      rows: controller.reports.map((report) {
-        final recordMap = {for (var r in report.dailyRecords) r.date: r.hours};
-
+      rows: dates.map((date) {
         return DataRow(
           cells: [
-            DataCell(Text(report.employeeName)),
-            ...dates.map((date) {
-              final hours = recordMap[date] ?? 0;
+            DataCell(Text(_formatMmDd(date))),
+            ...employees.map((employee) {
+              final hours = matrix.hoursFor(date, employee);
               return DataCell(
                 Text(
-                  hours.toString(),
+                  hours.toStringAsFixed(1),
                   style: TextStyle(
                     color: hours == 0 ? Colors.grey.shade400 : AppColors.textDark,
                   ),
@@ -249,7 +253,7 @@ class AttendanceReportTab extends GetView<AttendanceReportController> {
             }),
             DataCell(
               Text(
-                report.total.hours.toString(),
+                matrix.totalForDate(date).toStringAsFixed(1),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),

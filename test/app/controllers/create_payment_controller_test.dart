@@ -33,6 +33,7 @@ void main() {
     isActive: true,
     clockedIn: false,
     clockedOut: false,
+    defaultCurrencyCode: 'NZD',
   );
 
   final period = PeriodOut(
@@ -91,10 +92,19 @@ void main() {
   });
 
   group('CreatePaymentController', () {
+    test('defaults currency to AUD', () {
+      expect(controller.selectedCurrencyCode.value, 'AUD');
+    });
+
     test('loads employees and updates reactive list', () async {
       await controller.loadEmployees();
       expect(controller.employees, hasLength(1));
       expect(controller.employees.first.fullName, 'Ahmed Ali');
+    });
+
+    test('selectEmployee applies employee default currency', () {
+      controller.selectEmployee(employee);
+      expect(controller.selectedCurrencyCode.value, 'NZD');
     });
 
     test('loads payable periods', () async {

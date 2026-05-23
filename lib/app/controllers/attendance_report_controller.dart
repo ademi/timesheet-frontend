@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/network/attendance_api_client.dart';
 import '../data/models/attendance_report_model.dart';
+import '../utils/attendance_report_matrix.dart';
 
 class AttendanceReportController extends GetxController {
   final startDate = Rx<DateTime?>(null);
@@ -17,17 +18,11 @@ class AttendanceReportController extends GetxController {
   final isLoading = false.obs;
   final reports = <AttendanceReportModel>[].obs;
 
-  // Computed unique dates for columns
-  List<String> get uniqueDates {
-    final dates = <String>{};
-    for (var report in reports) {
-      for (var record in report.dailyRecords) {
-        dates.add(record.date);
-      }
-    }
-    final sortedDates = dates.toList()..sort();
-    return sortedDates;
-  }
+  AttendanceReportMatrix get matrix => AttendanceReportMatrix(reports);
+
+  List<String> get reportDates => matrix.dates;
+
+  List<String> get reportEmployees => matrix.employees;
 
   void setStartDate(DateTime date) {
     startDate.value = date;
@@ -135,31 +130,24 @@ class AttendanceReportController extends GetxController {
         excel.delete('Sheet1');
       }
 
-      final dates = uniqueDates;
+      final dates = reportDates;
+      final employees = reportEmployees;
 
-      // Headers
       List<CellValue> headers = [
-        TextCellValue('Employee Name'),
-        ...dates.map((d) => TextCellValue(d)),
-        TextCellValue('Total Hours'),
+        TextCellValue('Date'),
+        ...employees.map(TextCellValue.new),
+        TextCellValue('Daily Total'),
       ];
       sheetObject.appendRow(headers);
 
-      // Rows
-      for (var report in reports) {
-        List<CellValue> row = [
-          TextCellValue(report.employeeName),
+      for (final date in dates) {
+        final row = <CellValue>[
+          TextCellValue(date),
+          ...employees.map(
+            (employee) => DoubleCellValue(matrix.hoursFor(date, employee)),
+          ),
+          DoubleCellValue(matrix.totalForDate(date)),
         ];
-
-        // Create a map for quick lookup
-        final recordMap = {for (var r in report.dailyRecords) r.date: r.hours};
-
-        for (var date in dates) {
-          final hours = recordMap[date] ?? 0;
-          row.add(DoubleCellValue(hours.toDouble()));
-        }
-
-        row.add(DoubleCellValue(report.total.hours.toDouble()));
         sheetObject.appendRow(row);
       }
 

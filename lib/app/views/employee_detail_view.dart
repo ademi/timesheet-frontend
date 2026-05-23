@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/employee_detail_controller.dart';
+import '../core/constants/payment_currencies.dart';
 import '../data/models/payroll/payroll_date_utils.dart';
 import '../themes/app_colors.dart';
 
@@ -57,79 +58,121 @@ class _DetailsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final emp = controller.employee.value;
-    return _SectionCard(
-      title: 'Employee Details',
-      icon: Icons.person_outline_rounded,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (emp != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Code: ${emp.employeeCode}',
-                style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+    return Obx(() {
+      final editing = controller.isEditing.value;
+      return _SectionCard(
+        title: 'Employee Details',
+        icon: Icons.person_outline_rounded,
+        trailing: editing
+            ? null
+            : TextButton.icon(
+                onPressed: controller.startEditing,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Edit'),
+              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (emp != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'Code: ${emp.employeeCode}',
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                ),
+              ),
+            TextField(
+              controller: controller.fullNameController,
+              readOnly: !editing,
+              decoration: const InputDecoration(
+                labelText: 'Full Name',
+                prefixIcon: Icon(Icons.badge_outlined),
               ),
             ),
-          TextField(
-            controller: controller.fullNameController,
-            decoration: const InputDecoration(
-              labelText: 'Full Name',
-              prefixIcon: Icon(Icons.badge_outlined),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller.emailController,
+              readOnly: !editing,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: controller.emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              prefixIcon: Icon(Icons.email_outlined),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller.phoneController,
+              readOnly: !editing,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Phone',
+                prefixIcon: Icon(Icons.phone_outlined),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: controller.phoneController,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Phone',
-              prefixIcon: Icon(Icons.phone_outlined),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Obx(
-            () => SwitchListTile(
+            if (editing) ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: controller.defaultCurrencyCode.value,
+                decoration: const InputDecoration(
+                  labelText: 'Default Payment Currency',
+                  prefixIcon: Icon(Icons.currency_exchange),
+                ),
+                items: PaymentCurrencies.supported
+                    .map(
+                      (code) => DropdownMenuItem(
+                        value: code,
+                        child: Text(code),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) controller.defaultCurrencyCode.value = value;
+                },
+              ),
+            ],
+            const SizedBox(height: 8),
+            SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Active'),
               value: controller.isActive.value,
               activeThumbColor: AppColors.primary,
-              onChanged: (v) => controller.isActive.value = v,
+              onChanged: editing ? (v) => controller.isActive.value = v : null,
             ),
-          ),
-          const SizedBox(height: 8),
-          Obx(
-            () => SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: controller.isSaving.value ? null : controller.saveDetails,
-                icon: controller.isSaving.value
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save_rounded),
-                label: Text(controller.isSaving.value ? 'Saving...' : 'Save Details'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.textLight,
-                ),
+            if (editing) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: controller.isSaving.value ? null : controller.cancelEditing,
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: controller.isSaving.value ? null : controller.saveDetails,
+                      icon: controller.isSaving.value
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save_rounded),
+                      label: Text(controller.isSaving.value ? 'Saving...' : 'Save'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.textLight,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
+            ],
+          ],
+        ),
+      );
+    });
   }
 }
 
@@ -271,11 +314,11 @@ class _AttendanceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final period = controller.displayPeriod.value;
     return _SectionCard(
       title: 'Attendance',
       icon: Icons.schedule_rounded,
       child: Obx(() {
+        final period = controller.displayPeriod.value;
         if (period == null) {
           return Text('Select a payroll period to view attendance.',
               style: TextStyle(color: Colors.grey.shade600));

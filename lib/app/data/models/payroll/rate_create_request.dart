@@ -8,8 +8,8 @@ class RateCreateRequest {
     required this.weekendRate,
     required this.nightRate,
     this.overtimeRate = 0,
-    this.overtimeDailyThresholdMinutes = 480,
-    this.overtimeWeeklyThresholdMinutes = 2400,
+    this.overtimeDailyThresholdMinutes,
+    this.overtimeWeeklyThresholdMinutes,
     this.nightShiftStart = '22:00',
     this.nightShiftEnd = '06:00',
   });
@@ -20,8 +20,8 @@ class RateCreateRequest {
   final double weekendRate;
   final double nightRate;
   final double overtimeRate;
-  final int overtimeDailyThresholdMinutes;
-  final int overtimeWeeklyThresholdMinutes;
+  final int? overtimeDailyThresholdMinutes;
+  final int? overtimeWeeklyThresholdMinutes;
   final String nightShiftStart;
   final String nightShiftEnd;
 
@@ -32,13 +32,17 @@ class RateCreateRequest {
       'weekend_rate': weekendRate,
       'night_rate': nightRate,
       'overtime_rate': overtimeRate,
-      'overtime_daily_threshold_minutes': overtimeDailyThresholdMinutes,
-      'overtime_weekly_threshold_minutes': overtimeWeeklyThresholdMinutes,
       'night_shift_start': nightShiftStart,
       'night_shift_end': nightShiftEnd,
     };
     if (effectiveTo != null) {
       json['effective_to'] = fmtPayrollDate(effectiveTo!);
+    }
+    if (overtimeDailyThresholdMinutes != null) {
+      json['overtime_daily_threshold_minutes'] = overtimeDailyThresholdMinutes;
+    }
+    if (overtimeWeeklyThresholdMinutes != null) {
+      json['overtime_weekly_threshold_minutes'] = overtimeWeeklyThresholdMinutes;
     }
     return json;
   }
