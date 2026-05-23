@@ -7,8 +7,6 @@ class PayrollMainBinding extends Bindings {
   @override
   void dependencies() {
     PayrollModuleBinding.ensureDependencies();
-    Get.lazyPut<PayrollMainController>(
-      () => PayrollMainController(repository: Get.find()),
-    );
+    Get.lazyPut<PayrollMainController>(() => PayrollMainController());
   }
 }

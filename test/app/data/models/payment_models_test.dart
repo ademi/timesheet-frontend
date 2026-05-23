@@ -8,6 +8,7 @@ void main() {
     test('CreatePaymentRequest toJson/fromJson matches backend contract', () {
       const request = CreatePaymentRequest(
         employeeId: 'emp-1',
+        periodId: 'period-1',
         paymentDate: '2026-05-09',
         amountPaid: 1250.0,
         currencyCode: 'USD',
@@ -19,6 +20,7 @@ void main() {
 
       final json = request.toJson();
       expect(json['employee_id'], 'emp-1');
+      expect(json['period_id'], 'period-1');
       expect(json['payment_date'], '2026-05-09');
       expect(json['amount_paid'], 1250.0);
       expect(json['currency_code'], 'USD');
@@ -34,6 +36,7 @@ void main() {
         'id': 'p-1',
         'tenant_id': 't-1',
         'employee_id': 'e-1',
+        'period_id': 'period-1',
         'payroll_result_id': null,
         'payment_date': '2026-05-09',
         'amount_paid': 500.5,

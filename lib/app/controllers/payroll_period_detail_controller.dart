@@ -96,6 +96,13 @@ class PayrollPeriodDetailController extends GetxController {
     Get.toNamed(AppRoutes.payrollPeriodResults, arguments: period.value.id);
   }
 
+  void recordPayment() {
+    Get.toNamed(
+      AppRoutes.paymentCreate,
+      arguments: {'periodId': period.value.id},
+    );
+  }
+
   String formatDate(DateTime date) => fmtPayrollDate(date);
 
   String _extractErrorMessage(DioException e) {

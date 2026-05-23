@@ -23,6 +23,7 @@ void main() {
     test('createPayment sends payload and parses response', () async {
       const request = CreatePaymentRequest(
         employeeId: 'emp-1',
+        periodId: 'period-1',
         paymentDate: '2026-05-09',
         amountPaid: 100.0,
         currencyCode: 'USD',
@@ -36,6 +37,7 @@ void main() {
             'id': 'p-1',
             'tenant_id': 't-1',
             'employee_id': 'emp-1',
+            'period_id': 'period-1',
             'payroll_result_id': null,
             'payment_date': '2026-05-09',
             'amount_paid': 100.0,
@@ -140,6 +142,7 @@ void main() {
         () => dataSource.createPayment(
           const CreatePaymentRequest(
             employeeId: 'e-1',
+            periodId: 'period-1',
             paymentDate: '2026-05-09',
             amountPaid: 100,
             currencyCode: 'USD',

@@ -5,24 +5,31 @@ import 'package:yemen_gate_attendance_app/app/controllers/payments_report_contro
 import 'package:yemen_gate_attendance_app/app/data/models/attendance/employee_model.dart';
 import 'package:yemen_gate_attendance_app/app/data/models/payment/payment_report_row.dart';
 import 'package:yemen_gate_attendance_app/app/data/repositories/payment_repository.dart';
+import 'package:yemen_gate_attendance_app/app/data/repositories/payroll_repository.dart';
 
 class MockPaymentRepository extends Mock implements PaymentRepository {}
 
+class MockPayrollRepository extends Mock implements PayrollRepository {}
+
 void main() {
-  late MockPaymentRepository repository;
+  late MockPaymentRepository paymentRepository;
+  late MockPayrollRepository payrollRepository;
   late PaymentsReportController controller;
 
   setUp(() {
     Get.testMode = true;
-    repository = MockPaymentRepository();
-    when(() => repository.getEmployees(branchId: any(named: 'branchId')))
+    paymentRepository = MockPaymentRepository();
+    payrollRepository = MockPayrollRepository();
+    when(() => paymentRepository.getEmployees(branchId: any(named: 'branchId')))
         .thenAnswer((_) async => <EmployeeModel>[]);
+    when(() => payrollRepository.getPeriods()).thenAnswer((_) async => []);
     when(
-      () => repository.getPaymentsReport(
+      () => paymentRepository.getPaymentsReport(
         from: any(named: 'from'),
         to: any(named: 'to'),
         employeeId: any(named: 'employeeId'),
         branchId: any(named: 'branchId'),
+        periodId: any(named: 'periodId'),
       ),
     ).thenAnswer(
       (_) async => const [
@@ -39,7 +46,10 @@ void main() {
         ),
       ],
     );
-    controller = PaymentsReportController(repository: repository);
+    controller = PaymentsReportController(
+      paymentRepository: paymentRepository,
+      payrollRepository: payrollRepository,
+    );
   });
 
   tearDown(Get.reset);

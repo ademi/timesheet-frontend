@@ -81,7 +81,10 @@ class EmployeePaymentHistoryView extends GetView<EmployeePaymentHistoryControlle
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
-                          'Date: ${payment.paymentDate}\nMethod: ${payment.paymentMethod ?? '-'}\nReference: ${payment.referenceNo ?? '-'}',
+                          'Date: ${payment.paymentDate}\n'
+                          'Period: ${payment.periodId ?? '—'}\n'
+                          'Method: ${payment.paymentMethod ?? '-'}\n'
+                          'Reference: ${payment.referenceNo ?? '-'}',
                         ),
                         leading: const Icon(Icons.account_balance_wallet_outlined),
                       ),

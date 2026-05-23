@@ -1,6 +1,7 @@
 class CreatePaymentRequest {
   const CreatePaymentRequest({
     required this.employeeId,
+    required this.periodId,
     required this.paymentDate,
     required this.amountPaid,
     required this.currencyCode,
@@ -11,6 +12,7 @@ class CreatePaymentRequest {
   });
 
   final String employeeId;
+  final String periodId;
   final String paymentDate;
   final double amountPaid;
   final String currencyCode;
@@ -21,6 +23,7 @@ class CreatePaymentRequest {
 
   Map<String, dynamic> toJson() => {
     'employee_id': employeeId,
+    'period_id': periodId,
     'payment_date': paymentDate,
     'amount_paid': amountPaid,
     'currency_code': currencyCode,
@@ -33,6 +36,7 @@ class CreatePaymentRequest {
   factory CreatePaymentRequest.fromJson(Map<String, dynamic> json) {
     return CreatePaymentRequest(
       employeeId: json['employee_id'] as String? ?? '',
+      periodId: json['period_id'] as String? ?? '',
       paymentDate: json['payment_date'] as String? ?? '',
       amountPaid: _asDouble(json['amount_paid']),
       currencyCode: json['currency_code'] as String? ?? 'USD',

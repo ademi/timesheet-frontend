@@ -4,8 +4,8 @@ import 'package:get/get.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/network/attendance_api_client.dart';
-import '../bindings/payroll_module_binding.dart';
 import '../routes/app_routes.dart';
+import '../routes/route_args.dart';
 import '../themes/app_colors.dart';
 
 class CreateEmployeeController extends GetxController {
@@ -86,45 +86,9 @@ class CreateEmployeeController extends GetxController {
 
   // ── Private Helpers ───────────────────────────────────────────
   void _offerInitialRate(String employeeId) {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Employee Created'),
-        content: const Text(
-          'Would you like to set the initial payroll rate for this employee?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Get.back();
-              Get.snackbar(
-                'Success',
-                'Employee created successfully',
-                backgroundColor: AppColors.success,
-                colorText: AppColors.textLight,
-                snackPosition: SnackPosition.BOTTOM,
-                margin: const EdgeInsets.all(16),
-                borderRadius: 12,
-                duration: const Duration(seconds: 3),
-                icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
-              );
-              Get.back(result: true);
-            },
-            child: const Text('Skip'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Get.back();
-              PayrollModuleBinding.ensureDependencies();
-              Get.offNamed(
-                AppRoutes.payrollEmployeeRates,
-                arguments: employeeId,
-              );
-            },
-            child: const Text('Set Rate'),
-          ),
-        ],
-      ),
-      barrierDismissible: false,
+    Get.offNamed(
+      AppRoutes.createEmployeeSuccess,
+      arguments: EmployeeCreatedArgs(employeeId: employeeId),
     );
   }
 

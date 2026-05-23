@@ -44,7 +44,7 @@ class EmployeeRatesView extends GetView<EmployeeRatesController> {
                 subtitle: Text(
                   'Base: ${rate.baseRate} | Weekend: ${rate.weekendRate} | Night: ${rate.nightRate}',
                 ),
-                onLongPress: () => controller.openEditForm(rate),
+                onTap: () => controller.openEditForm(rate),
               ),
             );
           },

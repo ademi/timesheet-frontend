@@ -44,10 +44,10 @@ class EmployeeModel {
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
     return EmployeeModel(
-      id: json['id'] as String,
-      tenantId: json['tenant_id'] as String,
-      branchId: json['branch_id'] as String,
-      userId: json['user_id'] as String,
+      id: json['id'] as String? ?? '',
+      tenantId: json['tenant_id'] as String? ?? '',
+      branchId: json['branch_id'] as String? ?? '',
+      userId: json['user_id'] as String? ?? '',
       employeeCode: json['employee_code'] as String? ?? '',
       fullName: json['full_name'] as String? ?? '',
       phone: json['phone'] as String? ?? '',

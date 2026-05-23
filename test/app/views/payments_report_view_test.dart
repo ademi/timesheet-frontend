@@ -6,24 +6,35 @@ import 'package:yemen_gate_attendance_app/app/controllers/payments_report_contro
 import 'package:yemen_gate_attendance_app/app/data/models/attendance/employee_model.dart';
 import 'package:yemen_gate_attendance_app/app/data/models/payment/payment_report_row.dart';
 import 'package:yemen_gate_attendance_app/app/data/repositories/payment_repository.dart';
+import 'package:yemen_gate_attendance_app/app/data/repositories/payroll_repository.dart';
 import 'package:yemen_gate_attendance_app/app/views/payments_report_view.dart';
 
 class MockPaymentRepository extends Mock implements PaymentRepository {}
 
+class MockPayrollRepository extends Mock implements PayrollRepository {}
+
 void main() {
-  late MockPaymentRepository repository;
+  late MockPaymentRepository paymentRepository;
+  late MockPayrollRepository payrollRepository;
 
   setUp(() {
     Get.testMode = true;
-    repository = MockPaymentRepository();
-    when(() => repository.getEmployees(branchId: any(named: 'branchId')))
+    paymentRepository = MockPaymentRepository();
+    payrollRepository = MockPayrollRepository();
+    when(() => paymentRepository.getEmployees(branchId: any(named: 'branchId')))
         .thenAnswer((_) async => <EmployeeModel>[]);
+    when(() => payrollRepository.getPeriods()).thenAnswer((_) async => []);
   });
 
   tearDown(Get.reset);
 
   testWidgets('PaymentsReportView renders DataTable2 when rows exist', (tester) async {
-    final controller = Get.put(PaymentsReportController(repository: repository));
+    final controller = Get.put(
+      PaymentsReportController(
+        paymentRepository: paymentRepository,
+        payrollRepository: payrollRepository,
+      ),
+    );
     controller.rows.assignAll(
       const [
         PaymentReportRow(

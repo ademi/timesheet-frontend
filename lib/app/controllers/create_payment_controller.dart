@@ -4,71 +4,171 @@ import 'package:get/get.dart';
 
 import '../data/models/attendance/employee_model.dart';
 import '../data/models/payment/create_payment_request.dart';
+import '../data/models/payroll/payroll_date_utils.dart';
+import '../data/models/payroll/period_out.dart';
+import '../data/models/payroll/result_out.dart';
 import '../data/repositories/payment_repository.dart';
+import '../data/repositories/payroll_repository.dart';
+import '../routes/app_navigation.dart';
+import '../routes/app_routes.dart';
+import '../routes/route_args.dart';
 import '../themes/app_colors.dart';
 
 class CreatePaymentController extends GetxController {
-  CreatePaymentController({required PaymentRepository repository}) : _repository = repository;
+  CreatePaymentController({
+    required PaymentRepository paymentRepository,
+    required PayrollRepository payrollRepository,
+  })  : _paymentRepository = paymentRepository,
+        _payrollRepository = payrollRepository;
 
-  final PaymentRepository _repository;
+  final PaymentRepository _paymentRepository;
+  final PayrollRepository _payrollRepository;
 
   final formKey = GlobalKey<FormState>();
 
   final amountController = TextEditingController();
   final referenceNoController = TextEditingController();
-  final payrollResultIdController = TextEditingController();
   final notesController = TextEditingController();
-  final employeeSearchController = TextEditingController();
-
   final employees = <EmployeeModel>[].obs;
-  final filteredEmployees = <EmployeeModel>[].obs;
+  final periods = <PeriodOut>[].obs;
+  final periodResults = <ResultOut>[].obs;
+
   final selectedEmployee = Rxn<EmployeeModel>();
+  final selectedPeriod = Rxn<PeriodOut>();
+  final selectedResult = Rxn<ResultOut>();
 
   final paymentDate = DateTime.now().obs;
   final selectedCurrencyCode = 'USD'.obs;
   final selectedPaymentMethod = RxnString();
   final isLoading = false.obs;
-  final isLoadingEmployees = false.obs;
+  final isLoadingPeriods = false.obs;
+  final isLoadingResults = false.obs;
 
   @override
   void onInit() {
     super.onInit();
     loadEmployees();
+    loadPeriods();
+    _applyRouteArguments();
+  }
+
+  void _applyRouteArguments() {
+    final args = Get.arguments;
+    if (args is Map) {
+      final periodId = args['periodId'] as String?;
+      if (periodId != null) {
+        ever(periods, (_) {
+          final match = periods.firstWhereOrNull((p) => p.id == periodId);
+          if (match != null) {
+            selectPeriod(match);
+          }
+        });
+      }
+      final employeeId = args['employeeId'] as String?;
+      if (employeeId != null) {
+        ever(employees, (_) {
+          final match = employees.firstWhereOrNull((e) => e.id == employeeId);
+          if (match != null) {
+            selectEmployee(match);
+          }
+        });
+      }
+    }
   }
 
   Future<void> loadEmployees() async {
     try {
-      isLoadingEmployees.value = true;
-      final items = await _repository.getEmployees();
+      final items = await _paymentRepository.getEmployees();
       employees.assignAll(items);
-      filteredEmployees.assignAll(items);
     } on DioException catch (e) {
       _showError(_extractErrorMessage(e));
     } catch (_) {
       _showError('Failed to load employees.');
-    } finally {
-      isLoadingEmployees.value = false;
     }
   }
 
-  void filterEmployees(String query) {
-    final normalized = query.trim().toLowerCase();
-    if (normalized.isEmpty) {
-      filteredEmployees.assignAll(employees);
+  Future<void> openEmployeePicker() async {
+    final result = await pushNamedResult<EmployeePickerResult>(
+      AppRoutes.employeePicker,
+      arguments: const EmployeePickerArgs(title: 'Select Employee'),
+    );
+    if (result != null) {
+      selectEmployee(result.employee);
+    }
+  }
+
+  Future<void> loadPeriods() async {
+    try {
+      isLoadingPeriods.value = true;
+      final all = await _payrollRepository.getPeriods();
+      periods.assignAll(
+        all.where((p) => p.status == 'calculated' || p.status == 'closed'),
+      );
+      final args = Get.arguments;
+      if (args is Map && args['periodId'] is String) {
+        final periodId = args['periodId'] as String;
+        final match = periods.firstWhereOrNull((p) => p.id == periodId);
+        if (match != null) selectPeriod(match);
+      }
+    } on DioException catch (e) {
+      _showError(_extractErrorMessage(e));
+    } catch (_) {
+      _showError('Failed to load payroll periods.');
+    } finally {
+      isLoadingPeriods.value = false;
+    }
+  }
+
+  Future<void> loadResultsForSelection() async {
+    final period = selectedPeriod.value;
+    final employee = selectedEmployee.value;
+    if (period == null || employee == null) {
+      periodResults.clear();
+      selectedResult.value = null;
       return;
     }
-    filteredEmployees.assignAll(
-      employees.where((employee) {
-        return employee.fullName.toLowerCase().contains(normalized) ||
-            employee.employeeCode.toLowerCase().contains(normalized);
-      }),
-    );
+
+    try {
+      isLoadingResults.value = true;
+      final all = await _payrollRepository.getPeriodResults(period.id);
+      periodResults.assignAll(
+        all.where((r) => r.employeeId == employee.id),
+      );
+      if (periodResults.length == 1) {
+        selectResult(periodResults.first);
+      } else {
+        selectedResult.value = null;
+      }
+    } on DioException catch (e) {
+      _showError(_extractErrorMessage(e));
+    } catch (_) {
+      _showError('Failed to load payroll results for this employee.');
+    } finally {
+      isLoadingResults.value = false;
+    }
   }
 
   void selectEmployee(EmployeeModel employee) {
     selectedEmployee.value = employee;
-    employeeSearchController.clear();
-    filteredEmployees.assignAll(employees);
+    loadResultsForSelection();
+  }
+
+  void selectPeriod(PeriodOut? period) {
+    selectedPeriod.value = period;
+    selectedResult.value = null;
+    periodResults.clear();
+    loadResultsForSelection();
+  }
+
+  void selectResult(ResultOut? result) {
+    selectedResult.value = result;
+    if (result != null) {
+      amountController.text = result.amountDue.toStringAsFixed(2);
+    }
+  }
+
+  String periodLabel(PeriodOut period) {
+    return '${fmtPayrollDate(period.periodStart)} → ${fmtPayrollDate(period.periodEnd)} (${period.status})';
   }
 
   Future<void> setPaymentDate(BuildContext context) async {
@@ -83,12 +183,7 @@ class CreatePaymentController extends GetxController {
     }
   }
 
-  String formatDate(DateTime date) {
-    final year = date.year.toString().padLeft(4, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '$year-$month-$day';
-  }
+  String formatDate(DateTime date) => fmtPayrollDate(date);
 
   String? validateAmount(String? value) {
     if (value == null || value.trim().isEmpty) return 'Amount is required';
@@ -103,10 +198,21 @@ class CreatePaymentController extends GetxController {
     if (!isFormValid) return;
 
     final employee = selectedEmployee.value;
+    final period = selectedPeriod.value;
     if (employee == null) {
       _showSnackbar(
         'Validation Error',
         'Please select an employee.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    if (period == null) {
+      _showSnackbar(
+        'Validation Error',
+        'Please select a payroll period.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppColors.error,
         colorText: Colors.white,
@@ -128,18 +234,19 @@ class CreatePaymentController extends GetxController {
 
     final request = CreatePaymentRequest(
       employeeId: employee.id,
+      periodId: period.id,
       paymentDate: formatDate(paymentDate.value),
       amountPaid: amount,
       currencyCode: selectedCurrencyCode.value,
       paymentMethod: selectedPaymentMethod.value,
       referenceNo: _toNullable(referenceNoController.text),
-      payrollResultId: _toNullable(payrollResultIdController.text),
+      payrollResultId: selectedResult.value?.id,
       notes: _toNullable(notesController.text),
     );
 
     try {
       isLoading.value = true;
-      await _repository.createPayment(request);
+      await _paymentRepository.createPayment(request);
       _showSnackbar(
         'Success',
         'Payment created successfully.',
@@ -176,7 +283,7 @@ class CreatePaymentController extends GetxController {
     final fallback = switch (code) {
       400 => 'Invalid payment payload. Please review all fields.',
       403 => 'You are not allowed to create payments.',
-      404 => 'Employee or payroll result was not found.',
+      404 => 'Employee, period, or payroll result was not found.',
       _ => 'Failed to create payment. Please try again.',
     };
     return detail ?? fallback;
@@ -212,9 +319,11 @@ class CreatePaymentController extends GetxController {
   void clearForm() {
     amountController.clear();
     referenceNoController.clear();
-    payrollResultIdController.clear();
     notesController.clear();
     selectedEmployee.value = null;
+    selectedPeriod.value = null;
+    selectedResult.value = null;
+    periodResults.clear();
     selectedCurrencyCode.value = 'USD';
     selectedPaymentMethod.value = null;
     paymentDate.value = DateTime.now();
@@ -224,9 +333,7 @@ class CreatePaymentController extends GetxController {
   void onClose() {
     amountController.dispose();
     referenceNoController.dispose();
-    payrollResultIdController.dispose();
     notesController.dispose();
-    employeeSearchController.dispose();
     super.onClose();
   }
 }

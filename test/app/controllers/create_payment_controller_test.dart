@@ -7,12 +7,17 @@ import 'package:yemen_gate_attendance_app/app/controllers/create_payment_control
 import 'package:yemen_gate_attendance_app/app/data/models/attendance/employee_model.dart';
 import 'package:yemen_gate_attendance_app/app/data/models/payment/create_payment_request.dart';
 import 'package:yemen_gate_attendance_app/app/data/models/payment/payment_out.dart';
+import 'package:yemen_gate_attendance_app/app/data/models/payroll/period_out.dart';
 import 'package:yemen_gate_attendance_app/app/data/repositories/payment_repository.dart';
+import 'package:yemen_gate_attendance_app/app/data/repositories/payroll_repository.dart';
 
 class MockPaymentRepository extends Mock implements PaymentRepository {}
 
+class MockPayrollRepository extends Mock implements PayrollRepository {}
+
 void main() {
-  late MockPaymentRepository repository;
+  late MockPaymentRepository paymentRepository;
+  late MockPayrollRepository payrollRepository;
   late CreatePaymentController controller;
 
   final employee = const EmployeeModel(
@@ -30,10 +35,20 @@ void main() {
     clockedOut: false,
   );
 
+  final period = PeriodOut(
+    id: 'period-1',
+    tenantId: 'tenant-1',
+    periodStart: DateTime(2026, 5, 1),
+    periodEnd: DateTime(2026, 5, 31),
+    status: 'calculated',
+    createdAt: DateTime(2026, 5, 1),
+  );
+
   setUpAll(() {
     registerFallbackValue(
       const CreatePaymentRequest(
         employeeId: 'emp',
+        periodId: 'period-1',
         paymentDate: '2026-01-01',
         amountPaid: 0,
         currencyCode: 'USD',
@@ -43,16 +58,19 @@ void main() {
 
   setUp(() {
     Get.testMode = true;
-    repository = MockPaymentRepository();
+    paymentRepository = MockPaymentRepository();
+    payrollRepository = MockPayrollRepository();
 
-    when(() => repository.getEmployees(branchId: any(named: 'branchId'))).thenAnswer(
-      (_) async => [employee],
-    );
-    when(() => repository.createPayment(any())).thenAnswer(
+    when(() => paymentRepository.getEmployees(branchId: any(named: 'branchId')))
+        .thenAnswer((_) async => [employee]);
+    when(() => payrollRepository.getPeriods()).thenAnswer((_) async => [period]);
+    when(() => payrollRepository.getPeriodResults(any())).thenAnswer((_) async => []);
+    when(() => paymentRepository.createPayment(any())).thenAnswer(
       (_) async => const PaymentOut(
         id: 'p-1',
         tenantId: 'tenant-1',
         employeeId: 'emp-1',
+        periodId: 'period-1',
         paymentDate: '2026-05-09',
         amountPaid: 100,
         currencyCode: 'USD',
@@ -61,7 +79,10 @@ void main() {
       ),
     );
 
-    controller = CreatePaymentController(repository: repository);
+    controller = CreatePaymentController(
+      paymentRepository: paymentRepository,
+      payrollRepository: payrollRepository,
+    );
     controller.onInit();
   });
 
@@ -73,7 +94,13 @@ void main() {
     test('loads employees and updates reactive list', () async {
       await controller.loadEmployees();
       expect(controller.employees, hasLength(1));
-      expect(controller.filteredEmployees.first.fullName, 'Ahmed Ali');
+      expect(controller.employees.first.fullName, 'Ahmed Ali');
+    });
+
+    test('loads payable periods', () async {
+      await controller.loadPeriods();
+      expect(controller.periods, hasLength(1));
+      expect(controller.periods.first.status, 'calculated');
     });
 
     test('validateAmount enforces numeric and non-negative values', () {
@@ -85,9 +112,11 @@ void main() {
 
     test('submitPayment toggles loading state and calls repository', () async {
       final completer = Completer<PaymentOut>();
-      when(() => repository.createPayment(any())).thenAnswer((_) => completer.future);
+      when(() => paymentRepository.createPayment(any()))
+          .thenAnswer((_) => completer.future);
 
       controller.selectedEmployee.value = employee;
+      controller.selectedPeriod.value = period;
       controller.amountController.text = '250';
       controller.selectedCurrencyCode.value = 'USD';
 
@@ -99,6 +128,7 @@ void main() {
           id: 'p-2',
           tenantId: 'tenant-1',
           employeeId: 'emp-1',
+          periodId: 'period-1',
           paymentDate: '2026-05-09',
           amountPaid: 250,
           currencyCode: 'USD',
@@ -109,7 +139,8 @@ void main() {
       await future;
 
       expect(controller.isLoading.value, isFalse);
-      verify(() => repository.createPayment(any(that: isA<CreatePaymentRequest>()))).called(1);
+      verify(() => paymentRepository.createPayment(any(that: isA<CreatePaymentRequest>())))
+          .called(1);
     });
   });
 }

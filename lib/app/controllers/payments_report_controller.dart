@@ -10,13 +10,21 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_constants.dart';
 import '../data/models/attendance/employee_model.dart';
 import '../data/models/payment/payment_report_row.dart';
+import '../data/models/payroll/payroll_date_utils.dart';
+import '../data/models/payroll/period_out.dart';
 import '../data/repositories/payment_repository.dart';
+import '../data/repositories/payroll_repository.dart';
 import '../themes/app_colors.dart';
 
 class PaymentsReportController extends GetxController {
-  PaymentsReportController({required PaymentRepository repository}) : _repository = repository;
+  PaymentsReportController({
+    required PaymentRepository paymentRepository,
+    required PayrollRepository payrollRepository,
+  })  : _paymentRepository = paymentRepository,
+        _payrollRepository = payrollRepository;
 
-  final PaymentRepository _repository;
+  final PaymentRepository _paymentRepository;
+  final PayrollRepository _payrollRepository;
 
   final fromDate = Rx<DateTime?>(null);
   final toDate = Rx<DateTime?>(null);
@@ -24,7 +32,9 @@ class PaymentsReportController extends GetxController {
   final rows = <PaymentReportRow>[].obs;
 
   final employees = <EmployeeModel>[].obs;
+  final periods = <PeriodOut>[].obs;
   final selectedEmployee = Rxn<EmployeeModel>();
+  final selectedPeriod = Rxn<PeriodOut>();
 
   final branchFilterOptions = const [
     BranchFilterOption(label: 'All Branches', branchId: null),
@@ -36,17 +46,32 @@ class PaymentsReportController extends GetxController {
   void onInit() {
     super.onInit();
     loadEmployees();
+    loadPeriods();
   }
 
   Future<void> loadEmployees() async {
     try {
-      final items = await _repository.getEmployees();
+      final items = await _paymentRepository.getEmployees();
       employees.assignAll(items);
     } on DioException catch (e) {
       _showError(_extractErrorMessage(e));
     } catch (_) {
       _showError('Failed to load employees.');
     }
+  }
+
+  Future<void> loadPeriods() async {
+    try {
+      periods.assignAll(await _payrollRepository.getPeriods());
+    } on DioException catch (e) {
+      _showError(_extractErrorMessage(e));
+    } catch (_) {
+      _showError('Failed to load payroll periods.');
+    }
+  }
+
+  String periodLabel(PeriodOut period) {
+    return '${fmtPayrollDate(period.periodStart)} → ${fmtPayrollDate(period.periodEnd)}';
   }
 
   Future<void> setFromDate(BuildContext context) async {
@@ -92,11 +117,12 @@ class PaymentsReportController extends GetxController {
 
     try {
       isLoading.value = true;
-      final data = await _repository.getPaymentsReport(
+      final data = await _paymentRepository.getPaymentsReport(
         from: formatDate(from),
         to: formatDate(to),
         employeeId: selectedEmployee.value?.id,
         branchId: selectedBranchId.value,
+        periodId: selectedPeriod.value?.id,
       );
       rows.assignAll(data);
       if (rows.isEmpty) {
@@ -140,6 +166,7 @@ class PaymentsReportController extends GetxController {
       sheet.appendRow([
         TextCellValue('Employee Name'),
         TextCellValue('Employee Code'),
+        TextCellValue('Period'),
         TextCellValue('Payment Date'),
         TextCellValue('Amount Paid'),
         TextCellValue('Currency'),
@@ -148,9 +175,13 @@ class PaymentsReportController extends GetxController {
       ]);
 
       for (final row in rows) {
+        final periodLabel = row.periodStart != null && row.periodEnd != null
+            ? '${row.periodStart} → ${row.periodEnd}'
+            : '-';
         sheet.appendRow([
           TextCellValue(row.employeeName),
           TextCellValue(row.employeeCode),
+          TextCellValue(periodLabel),
           TextCellValue(row.paymentDate),
           DoubleCellValue(row.amountPaid),
           TextCellValue(row.currencyCode),

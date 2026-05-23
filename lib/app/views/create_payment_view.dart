@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/create_payment_controller.dart';
+import '../data/models/payroll/period_out.dart';
+import '../data/models/payroll/result_out.dart';
 import '../themes/app_colors.dart';
 
 class CreatePaymentView extends GetView<CreatePaymentController> {
@@ -38,7 +40,7 @@ class CreatePaymentView extends GetView<CreatePaymentController> {
                     const SizedBox(height: 8),
                     Obx(
                       () => InkWell(
-                        onTap: () => _openEmployeePicker(context),
+                        onTap: controller.openEmployeePicker,
                         child: InputDecorator(
                           decoration: const InputDecoration(
                             hintText: 'Select employee',
@@ -58,6 +60,79 @@ class CreatePaymentView extends GetView<CreatePaymentController> {
                       ),
                     ),
                     const SizedBox(height: 14),
+                    const _Label('Payroll Period'),
+                    const SizedBox(height: 8),
+                    Obx(
+                      () => DropdownButtonFormField<PeriodOut?>(
+                        value: controller.selectedPeriod.value,
+                        isExpanded: true,
+                        items: controller.periods
+                            .map(
+                              (period) => DropdownMenuItem<PeriodOut?>(
+                                value: period,
+                                child: Text(controller.periodLabel(period)),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: controller.selectPeriod,
+                        decoration: const InputDecoration(
+                          hintText: 'Select payroll period',
+                          prefixIcon: Icon(Icons.date_range_rounded),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Obx(() {
+                      if (controller.selectedEmployee.value == null ||
+                          controller.selectedPeriod.value == null) {
+                        return const SizedBox.shrink();
+                      }
+                      if (controller.isLoadingResults.value) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: LinearProgressIndicator(),
+                        );
+                      }
+                      if (controller.periodResults.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            'No calculated payroll line for this employee in the selected period.',
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                          ),
+                        );
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _Label('Payroll Line (Optional)'),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<ResultOut?>(
+                            value: controller.selectedResult.value,
+                            isExpanded: true,
+                            items: [
+                              const DropdownMenuItem<ResultOut?>(
+                                value: null,
+                                child: Text('No specific line'),
+                              ),
+                              ...controller.periodResults.map(
+                                (result) => DropdownMenuItem<ResultOut?>(
+                                  value: result,
+                                  child: Text(
+                                    'Amount due: ${result.amountDue.toStringAsFixed(2)}',
+                                  ),
+                                ),
+                              ),
+                            ],
+                            onChanged: controller.selectResult,
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.receipt_long_outlined),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                      );
+                    }),
                     const _Label('Payment Date'),
                     const SizedBox(height: 8),
                     Obx(
@@ -132,16 +207,6 @@ class CreatePaymentView extends GetView<CreatePaymentController> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    const _Label('Payroll Result ID (Optional)'),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: controller.payrollResultIdController,
-                      decoration: const InputDecoration(
-                        hintText: 'uuid',
-                        prefixIcon: Icon(Icons.fingerprint),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
                     const _Label('Notes (Optional)'),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -187,64 +252,6 @@ class CreatePaymentView extends GetView<CreatePaymentController> {
     );
   }
 
-  Future<void> _openEmployeePicker(BuildContext context) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 12,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: controller.employeeSearchController,
-                  onChanged: controller.filterEmployees,
-                  decoration: const InputDecoration(
-                    hintText: 'Search employee by name or code',
-                    prefixIcon: Icon(Icons.search_rounded),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 320,
-                  child: Obx(() {
-                    if (controller.isLoadingEmployees.value) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (controller.filteredEmployees.isEmpty) {
-                      return const Center(child: Text('No employees found'));
-                    }
-                    return ListView.separated(
-                      itemBuilder: (context, index) {
-                        final employee = controller.filteredEmployees[index];
-                        return ListTile(
-                          title: Text(employee.fullName),
-                          subtitle: Text(employee.employeeCode),
-                          onTap: () {
-                            controller.selectEmployee(employee);
-                            Navigator.of(context).pop();
-                          },
-                        );
-                      },
-                      separatorBuilder: (_, _) => const Divider(height: 0),
-                      itemCount: controller.filteredEmployees.length,
-                    );
-                  }),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 }
 
 class _SectionCard extends StatelessWidget {

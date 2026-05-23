@@ -1,11 +1,16 @@
 import 'package:get/get.dart';
 
 import '../bindings/admin_panel_binding.dart';
+import '../bindings/attendance_report_binding.dart';
+import '../bindings/employee_detail_binding.dart';
+import '../bindings/employee_management_binding.dart';
 import '../bindings/auth_binding.dart';
 import '../bindings/create_payment_binding.dart';
 import '../bindings/create_employee_binding.dart';
 import '../bindings/employee_balance_binding.dart';
 import '../bindings/employee_payment_history_binding.dart';
+import '../bindings/employee_picker_binding.dart';
+import '../bindings/employee_rate_form_binding.dart';
 import '../bindings/employee_rates_binding.dart';
 import '../bindings/gateway_binding.dart';
 import '../bindings/home_binding.dart';
@@ -17,12 +22,19 @@ import '../bindings/payroll_period_results_binding.dart';
 import '../bindings/payroll_periods_binding.dart';
 import '../bindings/payroll_summary_report_binding.dart';
 import '../views/admin_panel_view.dart';
+import '../views/attendance_report_view.dart';
 import '../views/attendance_view.dart';
+import '../views/employee_detail_view.dart';
+import '../views/employee_management_view.dart';
 import '../views/create_payment_view.dart';
 import '../views/create_employee_view.dart';
 import '../views/employee_balance_view.dart';
 import '../views/employee_payment_history_view.dart';
+import '../views/employee_created_view.dart';
+import '../views/employee_picker_view.dart';
+import '../views/employee_rate_form_view.dart';
 import '../views/employee_rates_view.dart';
+import '../views/payroll_result_detail_view.dart';
 import '../views/gateway_view.dart';
 import '../views/login_view.dart';
 import '../views/payment_main_view.dart';
@@ -65,9 +77,38 @@ class AppPages {
       transition: Transition.rightToLeft,
     ),
     GetPage(
+      name: AppRoutes.adminEmployees,
+      page: () => const EmployeeManagementView(),
+      binding: EmployeeManagementBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.adminAttendanceReport,
+      page: () => const AttendanceReportView(),
+      binding: AttendanceReportBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.employeeDetail,
+      page: () => const EmployeeDetailView(),
+      binding: EmployeeDetailBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
       name: AppRoutes.createEmployee,
       page: () => const CreateEmployeeView(),
       binding: CreateEmployeeBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.createEmployeeSuccess,
+      page: () => const EmployeeCreatedView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.employeePicker,
+      page: () => const EmployeePickerView(),
+      binding: EmployeePickerBinding(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
@@ -122,6 +163,17 @@ class AppPages {
       name: AppRoutes.payrollEmployeeRates,
       page: () => const EmployeeRatesView(),
       binding: EmployeeRatesBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.payrollEmployeeRateForm,
+      page: () => const EmployeeRateFormView(),
+      binding: EmployeeRateFormBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.payrollPeriodResultDetail,
+      page: () => const PayrollResultDetailView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

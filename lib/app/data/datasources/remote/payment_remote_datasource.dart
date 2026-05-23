@@ -27,12 +27,14 @@ class PaymentRemoteDataSource {
     required String to,
     String? employeeId,
     String? branchId,
+    String? periodId,
   }) async {
     final queryParameters = <String, dynamic>{
       'from': from,
       'to': to,
       if (employeeId != null && employeeId.isNotEmpty) 'employee_id': employeeId,
       if (branchId != null && branchId.isNotEmpty) 'branch_id': branchId,
+      if (periodId != null && periodId.isNotEmpty) 'period_id': periodId,
     };
     final response = await _dio.get(
       '/v1/payments/report',

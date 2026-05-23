@@ -18,12 +18,14 @@ class PaymentRepository {
     required String to,
     String? employeeId,
     String? branchId,
+    String? periodId,
   }) {
     return _remote.getPaymentsReport(
       from: from,
       to: to,
       employeeId: employeeId,
       branchId: branchId,
+      periodId: periodId,
     );
   }
 

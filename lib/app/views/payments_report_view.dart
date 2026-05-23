@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../controllers/payments_report_controller.dart';
 import '../data/models/attendance/employee_model.dart';
+import '../data/models/payroll/period_out.dart';
 import '../themes/app_colors.dart';
 
 class PaymentsReportView extends GetView<PaymentsReportController> {
@@ -102,6 +103,30 @@ class PaymentsReportView extends GetView<PaymentsReportController> {
           ),
           const SizedBox(height: 10),
           Obx(
+            () => DropdownButtonFormField<PeriodOut?>(
+              value: controller.selectedPeriod.value,
+              isExpanded: true,
+              items: [
+                const DropdownMenuItem<PeriodOut?>(
+                  value: null,
+                  child: Text('All Periods'),
+                ),
+                ...controller.periods.map(
+                  (period) => DropdownMenuItem<PeriodOut?>(
+                    value: period,
+                    child: Text(controller.periodLabel(period)),
+                  ),
+                ),
+              ],
+              onChanged: (value) => controller.selectedPeriod.value = value,
+              decoration: const InputDecoration(
+                labelText: 'Payroll Period (Optional)',
+                prefixIcon: Icon(Icons.date_range_rounded),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Obx(
             () => DropdownButtonFormField<String>(
               value: controller.selectedBranchId.value,
               items: controller.branchFilterOptions
@@ -146,8 +171,9 @@ class PaymentsReportView extends GetView<PaymentsReportController> {
       horizontalMargin: 12,
       headingRowColor: WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.1)),
       columns: const [
-        DataColumn2(label: Text('Name/Code'), size: ColumnSize.L, fixedWidth: 220),
-        DataColumn2(label: Text('Payment Date'), size: ColumnSize.M, fixedWidth: 130),
+        DataColumn2(label: Text('Name/Code'), size: ColumnSize.L, fixedWidth: 200),
+        DataColumn2(label: Text('Period'), size: ColumnSize.M, fixedWidth: 180),
+        DataColumn2(label: Text('Payment Date'), size: ColumnSize.M, fixedWidth: 120),
         DataColumn2(label: Text('Amount'), size: ColumnSize.S, numeric: true),
         DataColumn2(label: Text('Currency'), size: ColumnSize.S),
         DataColumn2(label: Text('Method'), size: ColumnSize.M, fixedWidth: 160),
@@ -158,6 +184,13 @@ class PaymentsReportView extends GetView<PaymentsReportController> {
             (row) => DataRow(
               cells: [
                 DataCell(Text('${row.employeeName}\n${row.employeeCode}')),
+                DataCell(
+                  Text(
+                    row.periodStart != null && row.periodEnd != null
+                        ? '${row.periodStart} → ${row.periodEnd}'
+                        : '-',
+                  ),
+                ),
                 DataCell(Text(row.paymentDate)),
                 DataCell(Text(row.amountPaid.toStringAsFixed(2))),
                 DataCell(Text(row.currencyCode)),

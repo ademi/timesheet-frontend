@@ -3,6 +3,7 @@ class PaymentOut {
     required this.id,
     required this.tenantId,
     required this.employeeId,
+    this.periodId,
     this.payrollResultId,
     required this.paymentDate,
     required this.amountPaid,
@@ -18,6 +19,7 @@ class PaymentOut {
   final String id;
   final String tenantId;
   final String employeeId;
+  final String? periodId;
   final String? payrollResultId;
   final String paymentDate;
   final double amountPaid;
@@ -33,6 +35,7 @@ class PaymentOut {
     'id': id,
     'tenant_id': tenantId,
     'employee_id': employeeId,
+    'period_id': periodId,
     'payroll_result_id': payrollResultId,
     'payment_date': paymentDate,
     'amount_paid': amountPaid,
@@ -50,6 +53,7 @@ class PaymentOut {
       id: json['id'] as String? ?? '',
       tenantId: json['tenant_id'] as String? ?? '',
       employeeId: json['employee_id'] as String? ?? '',
+      periodId: json['period_id'] as String?,
       payrollResultId: json['payroll_result_id'] as String?,
       paymentDate: json['payment_date'] as String? ?? '',
       amountPaid: _asDouble(json['amount_paid']),

@@ -11,6 +11,9 @@ class PaymentReportRow {
     required this.employeeCode,
     required this.employeeName,
     this.branchId,
+    this.periodId,
+    this.periodStart,
+    this.periodEnd,
   });
 
   final String paymentId;
@@ -24,6 +27,9 @@ class PaymentReportRow {
   final String employeeCode;
   final String employeeName;
   final String? branchId;
+  final String? periodId;
+  final String? periodStart;
+  final String? periodEnd;
 
   Map<String, dynamic> toJson() => {
     'payment_id': paymentId,
@@ -37,6 +43,9 @@ class PaymentReportRow {
     'employee_code': employeeCode,
     'employee_name': employeeName,
     'branch_id': branchId,
+    'period_id': periodId,
+    'period_start': periodStart,
+    'period_end': periodEnd,
   };
 
   factory PaymentReportRow.fromJson(Map<String, dynamic> json) {
@@ -52,6 +61,9 @@ class PaymentReportRow {
       employeeCode: json['employee_code'] as String? ?? '',
       employeeName: json['employee_name'] as String? ?? '',
       branchId: json['branch_id'] as String?,
+      periodId: json['period_id'] as String?,
+      periodStart: json['period_start'] as String?,
+      periodEnd: json['period_end'] as String?,
     );
   }
 

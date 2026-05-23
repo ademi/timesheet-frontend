@@ -1,24 +1,21 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class AdminPanelController extends GetxController
-    with GetSingleTickerProviderStateMixin {
-  late final TabController tabController;
+import '../bindings/payment_module_binding.dart';
+import '../bindings/payroll_module_binding.dart';
+import '../routes/app_routes.dart';
 
-  final tabs = const <Tab>[
-    Tab(text: 'Employee Management'),
-    Tab(text: 'Attendance Report'),
-  ];
+class AdminPanelController extends GetxController {
+  void openEmployees() => Get.toNamed(AppRoutes.adminEmployees);
 
-  @override
-  void onInit() {
-    super.onInit();
-    tabController = TabController(length: tabs.length, vsync: this);
+  void openAttendanceReport() => Get.toNamed(AppRoutes.adminAttendanceReport);
+
+  void openPayroll() {
+    PayrollModuleBinding.ensureDependencies();
+    Get.toNamed(AppRoutes.payrollMain);
   }
 
-  @override
-  void onClose() {
-    tabController.dispose();
-    super.onClose();
+  void openPayments() {
+    PaymentModuleBinding.ensureDependencies();
+    Get.toNamed(AppRoutes.paymentMain);
   }
 }

@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 
 import '../controllers/payroll_period_results_controller.dart';
 import '../data/models/payroll/result_out.dart';
+import '../routes/app_routes.dart';
+import '../routes/route_args.dart';
 import '../themes/app_colors.dart';
 
 class PayrollPeriodResultsView extends GetView<PayrollPeriodResultsController> {
@@ -49,7 +51,7 @@ class PayrollPeriodResultsView extends GetView<PayrollPeriodResultsController> {
 
   DataRow _buildRow(BuildContext context, ResultOut result) {
     return DataRow(
-      onSelectChanged: (_) => _showDetailSheet(context, result),
+      onSelectChanged: (_) => _openResultDetail(result),
       cells: [
         DataCell(Text(result.employeeName ?? result.employeeId)),
         DataCell(Text('${result.regularMinutes}')),
@@ -61,36 +63,10 @@ class PayrollPeriodResultsView extends GetView<PayrollPeriodResultsController> {
     );
   }
 
-  void _showDetailSheet(BuildContext context, ResultOut result) {
-    Get.bottomSheet(
-      Padding(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                result.employeeName ?? result.employeeId,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text('Rate Snapshot', style: TextStyle(fontWeight: FontWeight.w600)),
-              ...result.rateSnapshot.entries.map(
-                (e) => Text('${e.key}: ${e.value}'),
-              ),
-              const SizedBox(height: 12),
-              const Text('Calc Snapshot', style: TextStyle(fontWeight: FontWeight.w600)),
-              ...result.calcSnapshot.entries.map(
-                (e) => Text('${e.key}: ${e.value}'),
-              ),
-            ],
-          ),
-        ),
-      ),
+  void _openResultDetail(ResultOut result) {
+    Get.toNamed(
+      AppRoutes.payrollPeriodResultDetail,
+      arguments: PayrollResultDetailArgs(result: result),
     );
   }
 }

@@ -56,6 +56,12 @@ class PayrollPeriodDetailView extends GetView<PayrollPeriodDetailController> {
                 ),
               if (period.status == 'calculated') ...[
                 _ActionButton(
+                  label: 'Record Payment',
+                  icon: Icons.payments,
+                  onPressed: controller.recordPayment,
+                ),
+                const SizedBox(height: 12),
+                _ActionButton(
                   label: 'Close Period',
                   icon: Icons.lock_outline,
                   onPressed: controller.isLoading.value
@@ -78,6 +84,12 @@ class PayrollPeriodDetailView extends GetView<PayrollPeriodDetailController> {
                 ),
               ],
               if (period.status == 'closed') ...[
+                _ActionButton(
+                  label: 'Record Payment',
+                  icon: Icons.payments,
+                  onPressed: controller.recordPayment,
+                ),
+                const SizedBox(height: 12),
                 _ActionButton(
                   label: 'View Results',
                   icon: Icons.table_chart,
