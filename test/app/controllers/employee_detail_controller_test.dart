@@ -56,6 +56,7 @@ void main() {
         currencyCode: 'AUD',
       ),
     );
+    when(() => employeeRepository.listRoleOptions()).thenAnswer((_) async => []);
 
     controller = EmployeeDetailController(
       employeeRepository: employeeRepository,
@@ -74,8 +75,8 @@ void main() {
       expect(controller.isEditing.value, isFalse);
     });
 
-    test('startEditing enables edit mode', () {
-      controller.startEditing();
+    test('startEditing enables edit mode', () async {
+      await controller.startEditing();
       expect(controller.isEditing.value, isTrue);
     });
 

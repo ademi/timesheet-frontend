@@ -66,7 +66,7 @@ class _DetailsSection extends StatelessWidget {
         trailing: editing
             ? null
             : TextButton.icon(
-                onPressed: controller.startEditing,
+                onPressed: () => controller.startEditing(),
                 icon: const Icon(Icons.edit_outlined, size: 18),
                 label: const Text('Edit'),
               ),
@@ -109,6 +109,39 @@ class _DetailsSection extends StatelessWidget {
                 prefixIcon: Icon(Icons.phone_outlined),
               ),
             ),
+            const SizedBox(height: 12),
+            if (editing)
+              DropdownButtonFormField<String>(
+                value: controller.selectedRoleId.value,
+                decoration: const InputDecoration(
+                  labelText: 'Organisation Role',
+                  prefixIcon: Icon(Icons.admin_panel_settings_outlined),
+                ),
+                items: controller.assignableRoles
+                    .map(
+                      (role) => DropdownMenuItem(
+                        value: role.id,
+                        child: Text(role.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) => controller.selectedRoleId.value = value,
+              )
+            else
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Organisation Role',
+                  prefixIcon: Icon(Icons.admin_panel_settings_outlined),
+                ),
+                child: Text(
+                  emp?.roleName ?? 'Not assigned',
+                  style: TextStyle(
+                    color: emp?.roleName != null
+                        ? AppColors.textDark
+                        : Colors.grey.shade600,
+                  ),
+                ),
+              ),
             if (editing) ...[
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(

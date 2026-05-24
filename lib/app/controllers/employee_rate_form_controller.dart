@@ -61,9 +61,15 @@ class EmployeeRateFormController extends GetxController {
   void _applyBaseRateToDerivedRates() {
     final base = baseRateController.text.trim();
     if (base.isEmpty) return;
-    weekendRateController.text = base;
-    nightRateController.text = base;
-    overtimeRateController.text = base;
+    _fillIfEmpty(weekendRateController, base);
+    _fillIfEmpty(nightRateController, base);
+    _fillIfEmpty(overtimeRateController, base);
+  }
+
+  void _fillIfEmpty(TextEditingController target, String value) {
+    if (target.text.trim().isEmpty) {
+      target.text = value;
+    }
   }
 
   void _populateFromRate(RateOut rate) {

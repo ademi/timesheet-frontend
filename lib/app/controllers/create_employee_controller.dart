@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/network/attendance_api_client.dart';
+import '../bindings/payroll_module_binding.dart';
+import '../routes/app_navigation.dart';
 import '../routes/app_routes.dart';
 import '../routes/route_args.dart';
 import '../themes/app_colors.dart';
@@ -58,22 +60,18 @@ class CreateEmployeeController extends GetxController {
             ? data['id'] as String?
             : null;
         _clearForm();
+        _showSuccess('Employee created successfully.');
         if (newEmployeeId != null && newEmployeeId.isNotEmpty) {
-          _offerInitialRate(newEmployeeId);
-        } else {
-          Get.snackbar(
-            'Success',
-            'Employee created successfully',
-            backgroundColor: AppColors.success,
-            colorText: AppColors.textLight,
-            snackPosition: SnackPosition.BOTTOM,
-            margin: const EdgeInsets.all(16),
-            borderRadius: 12,
-            duration: const Duration(seconds: 3),
-            icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
+          PayrollModuleBinding.ensureDependencies();
+          final rateSaved = await pushNamedBool(
+            AppRoutes.payrollEmployeeRateForm,
+            arguments: EmployeeRateFormArgs(employeeId: newEmployeeId),
           );
-          Get.back(result: true);
+          if (rateSaved == true) {
+            _showSuccess('Pay rate created successfully.');
+          }
         }
+        Get.back(result: true);
       }
     } on DioException catch (e) {
       _showError(_extractErrorMessage(e));
@@ -84,14 +82,21 @@ class CreateEmployeeController extends GetxController {
     }
   }
 
-  // ── Private Helpers ───────────────────────────────────────────
-  void _offerInitialRate(String employeeId) {
-    Get.offNamed(
-      AppRoutes.createEmployeeSuccess,
-      arguments: EmployeeCreatedArgs(employeeId: employeeId),
+  void _showSuccess(String message) {
+    Get.snackbar(
+      'Success',
+      message,
+      backgroundColor: AppColors.success,
+      colorText: AppColors.textLight,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(16),
+      borderRadius: 12,
+      duration: const Duration(seconds: 3),
+      icon: const Icon(Icons.check_circle_rounded, color: Colors.white),
     );
   }
 
+  // ── Private Helpers ───────────────────────────────────────────
   void _clearForm() {
     employeeCodeController.clear();
     fullNameController.clear();

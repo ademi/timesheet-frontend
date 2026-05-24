@@ -1,5 +1,6 @@
 import '../datasources/remote/employee_remote_datasource.dart';
 import '../models/attendance/employee_model.dart';
+import '../models/attendance/employee_role_option.dart';
 import '../models/attendance/employee_update_request.dart';
 import '../models/attendance/time_entry_out.dart';
 
@@ -18,6 +19,9 @@ class EmployeeRepository {
     EmployeeUpdateRequest body,
   ) =>
       _remote.updateEmployee(employeeId, body);
+
+  Future<List<EmployeeRoleOption>> listRoleOptions() =>
+      _remote.listRoleOptions();
 
   Future<List<TimeEntryOut>> listTimeEntries({
     required String employeeId,

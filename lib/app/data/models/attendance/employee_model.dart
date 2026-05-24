@@ -13,6 +13,8 @@ class EmployeeModel {
     required this.clockedIn,
     required this.clockedOut,
     this.defaultCurrencyCode = 'AUD',
+    this.roleId,
+    this.roleName,
   });
 
   final String id;
@@ -28,6 +30,8 @@ class EmployeeModel {
   final bool clockedIn;
   final bool clockedOut;
   final String defaultCurrencyCode;
+  final String? roleId;
+  final String? roleName;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -43,6 +47,8 @@ class EmployeeModel {
     'clockedin': clockedIn,
     'clockedout': clockedOut,
     'default_currency_code': defaultCurrencyCode,
+    if (roleId != null) 'role_id': roleId,
+    if (roleName != null) 'role_name': roleName,
   };
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
@@ -60,6 +66,8 @@ class EmployeeModel {
       clockedIn: json['clockedin'] as bool? ?? false,
       clockedOut: json['clockedout'] as bool? ?? false,
       defaultCurrencyCode: json['default_currency_code'] as String? ?? 'AUD',
+      roleId: json['role_id'] as String?,
+      roleName: json['role_name'] as String?,
     );
   }
 }

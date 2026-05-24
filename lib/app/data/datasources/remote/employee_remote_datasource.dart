@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../models/attendance/employee_model.dart';
+import '../../models/attendance/employee_role_option.dart';
 import '../../models/attendance/employee_update_request.dart';
 import '../../models/attendance/time_entry_out.dart';
 import '../../models/payroll/payroll_date_utils.dart';
@@ -49,6 +50,15 @@ class EmployeeRemoteDataSource {
       );
     }
     return EmployeeModel.fromJson(data);
+  }
+
+  Future<List<EmployeeRoleOption>> listRoleOptions() async {
+    final response = await _dio.get<List<dynamic>>('/v1/employees/role-options');
+    final data = response.data ?? <dynamic>[];
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(EmployeeRoleOption.fromJson)
+        .toList();
   }
 
   Future<List<TimeEntryOut>> listTimeEntries({

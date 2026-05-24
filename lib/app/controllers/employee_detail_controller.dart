@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../bindings/payroll_module_binding.dart';
 import '../data/models/attendance/employee_model.dart';
+import '../data/models/attendance/employee_role_option.dart';
 import '../data/models/attendance/employee_update_request.dart';
 import '../data/models/attendance/time_entry_out.dart';
 import '../data/models/payroll/employee_balance_out.dart';
@@ -45,6 +46,8 @@ class EmployeeDetailController extends GetxController {
   final phoneController = TextEditingController();
   final isActive = true.obs;
   final defaultCurrencyCode = PaymentCurrencies.defaultCode.obs;
+  final selectedRoleId = RxnString();
+  final assignableRoles = <EmployeeRoleOption>[].obs;
 
   @override
   void onInit() {
@@ -126,9 +129,24 @@ class EmployeeDetailController extends GetxController {
     phoneController.text = emp.phone;
     isActive.value = emp.isActive;
     defaultCurrencyCode.value = emp.defaultCurrencyCode;
+    selectedRoleId.value = emp.roleId;
   }
 
-  void startEditing() => isEditing.value = true;
+  Future<void> _loadRoleOptions() async {
+    if (assignableRoles.isNotEmpty) return;
+    try {
+      assignableRoles.assignAll(await _employeeRepository.listRoleOptions());
+    } on DioException catch (e) {
+      _showError(_extractErrorMessage(e));
+    } catch (_) {
+      _showError('Failed to load role options.');
+    }
+  }
+
+  Future<void> startEditing() async {
+    await _loadRoleOptions();
+    isEditing.value = true;
+  }
 
   void cancelEditing() {
     final emp = employee.value;
@@ -156,6 +174,7 @@ class EmployeeDetailController extends GetxController {
           phone: phoneController.text.trim(),
           isActive: isActive.value,
           defaultCurrencyCode: defaultCurrencyCode.value,
+          roleId: selectedRoleId.value,
         ),
       );
       employee.value = updated;
@@ -166,6 +185,7 @@ class EmployeeDetailController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppColors.success,
         colorText: AppColors.textLight,
+        icon: const Icon(Icons.check_circle, color: Colors.white),
       );
     } on DioException catch (e) {
       _showError(_extractErrorMessage(e));

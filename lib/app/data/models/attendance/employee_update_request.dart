@@ -8,6 +8,7 @@ class EmployeeUpdateRequest {
     this.dob,
     this.isActive,
     this.defaultCurrencyCode,
+    this.roleId,
   });
 
   final String? fullName;
@@ -16,6 +17,7 @@ class EmployeeUpdateRequest {
   final DateTime? dob;
   final bool? isActive;
   final String? defaultCurrencyCode;
+  final String? roleId;
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -26,6 +28,9 @@ class EmployeeUpdateRequest {
     if (isActive != null) json['is_active'] = isActive;
     if (defaultCurrencyCode != null) {
       json['default_currency_code'] = defaultCurrencyCode;
+    }
+    if (roleId != null) {
+      json['role_id'] = roleId;
     }
     return json;
   }

@@ -54,7 +54,17 @@ void main() {
   });
 
   group('EmployeeRateFormController', () {
-    test('applyBaseRateToDerivedRates copies base into other rate fields', () {
+    test('applyBaseRateToDerivedRates copies base into empty rate fields only', () {
+      controller.baseRateController.text = '42.5';
+      controller.weekendRateController.text = '10';
+      controller.applyBaseRateToDerivedRates();
+
+      expect(controller.weekendRateController.text, '10');
+      expect(controller.nightRateController.text, '42.5');
+      expect(controller.overtimeRateController.text, '42.5');
+    });
+
+    test('applyBaseRateToDerivedRates fills all when empty', () {
       controller.baseRateController.text = '42.5';
       controller.applyBaseRateToDerivedRates();
 

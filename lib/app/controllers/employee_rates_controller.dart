@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../data/models/payroll/payroll_date_utils.dart';
@@ -73,6 +74,7 @@ class EmployeeRatesController extends GetxController {
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: AppColors.success,
       colorText: AppColors.textLight,
+      icon: const Icon(Icons.check_circle, color: Colors.white),
     );
   }
 
