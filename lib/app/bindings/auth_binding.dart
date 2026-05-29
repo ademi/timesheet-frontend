@@ -5,6 +5,7 @@ import '../../core/network/api_client.dart';
 import '../controllers/auth_controller.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/repositories/auth_repository.dart';
+import '../services/push_notification_service.dart';
 
 class AuthBinding extends Bindings {
   @override
@@ -30,6 +31,12 @@ class AuthBinding extends Bindings {
           remote: Get.find<AuthRemoteDataSource>(),
           storage: storage,
         ),
+        permanent: true,
+      );
+    }
+    if (!Get.isRegistered<PushNotificationService>()) {
+      Get.put<PushNotificationService>(
+        PushNotificationService(authenticatedDio: Get.find<ApiClient>().dio),
         permanent: true,
       );
     }

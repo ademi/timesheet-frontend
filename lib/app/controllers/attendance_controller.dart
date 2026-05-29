@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'dart:async';
 
 import '../data/datasources/remote/attendance_remote_datasource.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
@@ -48,10 +49,12 @@ class AttendanceController extends GetxController {
   final dialogError = ''.obs;
   final isVerifying = false.obs;
   final dialogSubmitting = false.obs;
+  final elapsedTicker = 0.obs;
 
   // Change-password state
   final changePasswordError = ''.obs;
   final isChangingPassword = false.obs;
+  Timer? _elapsedTimer;
 
   bool get hasMore => visibleCount.value < allEmployees.length;
 
@@ -60,6 +63,9 @@ class AttendanceController extends GetxController {
     super.onInit();
     scrollController.addListener(_onScroll);
     passwordConfirmController.addListener(_clearDialogErrorOnPasswordChange);
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      elapsedTicker.value++;
+    });
     _loadEmployees();
   }
 
@@ -348,8 +354,33 @@ class AttendanceController extends GetxController {
     );
   }
 
+  String formatClockedInDuration(EmployeeModel employee) {
+    final base = employee.clockedInDurationSeconds;
+    final clockInAt = employee.currentClockInAt;
+    if (base == null && (clockInAt == null || clockInAt.isEmpty)) {
+      return '';
+    }
+
+    var totalSeconds = base ?? 0;
+    if (clockInAt != null && clockInAt.isNotEmpty) {
+      final parsed = DateTime.tryParse(clockInAt);
+      if (parsed != null) {
+        totalSeconds = DateTime.now().toUtc().difference(parsed.toUtc()).inSeconds;
+      }
+    }
+    if (totalSeconds < 0) totalSeconds = 0;
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+    final hh = hours.toString().padLeft(2, '0');
+    final mm = minutes.toString().padLeft(2, '0');
+    final ss = seconds.toString().padLeft(2, '0');
+    return '$hh:$mm:$ss';
+  }
+
   @override
   void onClose() {
+    _elapsedTimer?.cancel();
     scrollController.removeListener(_onScroll);
     passwordConfirmController.removeListener(_clearDialogErrorOnPasswordChange);
     scrollController.dispose();

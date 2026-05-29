@@ -12,6 +12,8 @@ class EmployeeModel {
     required this.isActive,
     required this.clockedIn,
     required this.clockedOut,
+    this.currentClockInAt,
+    this.clockedInDurationSeconds,
     this.defaultCurrencyCode = 'AUD',
     this.roleId,
     this.roleName,
@@ -29,6 +31,8 @@ class EmployeeModel {
   final bool isActive;
   final bool clockedIn;
   final bool clockedOut;
+  final String? currentClockInAt;
+  final int? clockedInDurationSeconds;
   final String defaultCurrencyCode;
   final String? roleId;
   final String? roleName;
@@ -46,6 +50,9 @@ class EmployeeModel {
     'is_active': isActive,
     'clockedin': clockedIn,
     'clockedout': clockedOut,
+    if (currentClockInAt != null) 'current_clock_in_at': currentClockInAt,
+    if (clockedInDurationSeconds != null)
+      'clocked_in_duration_seconds': clockedInDurationSeconds,
     'default_currency_code': defaultCurrencyCode,
     if (roleId != null) 'role_id': roleId,
     if (roleName != null) 'role_name': roleName,
@@ -65,6 +72,9 @@ class EmployeeModel {
       isActive: json['is_active'] as bool? ?? true,
       clockedIn: json['clockedin'] as bool? ?? false,
       clockedOut: json['clockedout'] as bool? ?? false,
+      currentClockInAt: json['current_clock_in_at'] as String?,
+      clockedInDurationSeconds:
+          (json['clocked_in_duration_seconds'] as num?)?.toInt(),
       defaultCurrencyCode: json['default_currency_code'] as String? ?? 'AUD',
       roleId: json['role_id'] as String?,
       roleName: json['role_name'] as String?,

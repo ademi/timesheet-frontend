@@ -60,6 +60,7 @@ class AttendanceView extends GetView<AttendanceController> {
       ),
       body: SafeArea(
         child: Obx(() {
+          controller.elapsedTicker.value;
           if (controller.employeesLoading.value) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -90,6 +91,7 @@ class AttendanceView extends GetView<AttendanceController> {
                   email: emp.email,
                   isClockedIn: emp.clockedIn,
                   isClockedOut: emp.clockedOut,
+                  durationText: controller.formatClockedInDuration(emp),
                   onClockIn:
                       () => controller.openAttendanceDialog(
                         emp,
@@ -116,6 +118,7 @@ class _EmployeeCard extends StatelessWidget {
     required this.email,
     required this.isClockedIn,
     required this.isClockedOut,
+    required this.durationText,
     required this.onClockIn,
     required this.onClockOut,
   });
@@ -124,6 +127,7 @@ class _EmployeeCard extends StatelessWidget {
   final String email;
   final bool isClockedIn;
   final bool isClockedOut;
+  final String durationText;
   final VoidCallback onClockIn;
   final VoidCallback onClockOut;
 
@@ -151,6 +155,17 @@ class _EmployeeCard extends StatelessWidget {
               email.isEmpty ? '—' : email,
               style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
             ),
+            if (isClockedIn && durationText.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Clocked in for $durationText',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.green.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
             const SizedBox(height: 14),
             _buildAttendanceActions(),
           ],

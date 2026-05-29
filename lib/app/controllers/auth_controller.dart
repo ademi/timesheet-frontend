@@ -7,6 +7,7 @@ import '../data/models/auth/auth_error_model.dart';
 import '../data/models/auth/verify_user_response_model.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
+import '../services/push_notification_service.dart';
 import '../themes/app_colors.dart';
 import 'gateway_controller.dart';
 
@@ -53,6 +54,9 @@ class AuthController extends GetxController {
         emailController.text.trim(),
         passwordController.text,
       );
+      if (Get.isRegistered<PushNotificationService>()) {
+        await Get.find<PushNotificationService>().registerCurrentDeviceToken();
+      }
       final gateway = Get.find<GatewayController>();
       final destination =
           gateway.selectedRole.value == UserRole.admin
