@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1069388513052",
+    "project_id": "temp-timesheet",
+    "storage_bucket": "temp-timesheet.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1069388513052:android:373db5c4b0f1d32af9c4d9",
+        "android_client_info": {
+          "package_name": "com.deepdownidea.temptimesheet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAv7HB0e8cI0lDsfhyy2Ij5v9P-WxUbfbY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
