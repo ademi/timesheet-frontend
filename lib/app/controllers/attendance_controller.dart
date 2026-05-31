@@ -13,12 +13,12 @@ import '../data/models/attendance/employee_model.dart';
 import '../data/repositories/attendance_repository.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
-import '../views/widgets/attendance_password_dialog.dart';
-import '../views/widgets/change_password_dialog.dart';
+import '../views/widgets/attendance_pin_dialog.dart';
+import '../views/widgets/set_pin_dialog.dart';
 
 enum AttendanceDialogAction { clockIn, clockOut }
 
-enum _AttendanceDialogResult { completed, passwordChangeRequired, cancelled }
+enum _AttendanceDialogResult { completed, cancelled }
 
 class AttendanceController extends GetxController {
   AttendanceController({
@@ -31,14 +31,9 @@ class AttendanceController extends GetxController {
   final AuthRepository _authRepository;
 
   final scrollController = ScrollController();
-  final passwordConfirmController = TextEditingController();
-
-  // Change-password dialog controllers
-  final newPasswordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
+  final pinConfirmController = TextEditingController();
 
   static const int _pageSize = 12;
-  static const String _defaultPassword = '123456';
 
   final employeesLoading = true.obs;
   final allEmployees = <EmployeeModel>[].obs;
@@ -51,9 +46,6 @@ class AttendanceController extends GetxController {
   final dialogSubmitting = false.obs;
   final elapsedTicker = 0.obs;
 
-  // Change-password state
-  final changePasswordError = ''.obs;
-  final isChangingPassword = false.obs;
   Timer? _elapsedTimer;
 
   bool get hasMore => visibleCount.value < allEmployees.length;
@@ -62,14 +54,14 @@ class AttendanceController extends GetxController {
   void onInit() {
     super.onInit();
     scrollController.addListener(_onScroll);
-    passwordConfirmController.addListener(_clearDialogErrorOnPasswordChange);
+    pinConfirmController.addListener(_clearDialogErrorOnPinChange);
     _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       elapsedTicker.value++;
     });
     _loadEmployees();
   }
 
-  void _clearDialogErrorOnPasswordChange() {
+  void _clearDialogErrorOnPinChange() {
     if (dialogError.value.isNotEmpty) {
       dialogError.value = '';
     }
@@ -125,25 +117,11 @@ class AttendanceController extends GetxController {
     dialogEmployee.value = employee;
     dialogAction.value = action;
     dialogError.value = '';
-    passwordConfirmController.clear();
+    pinConfirmController.clear();
     final result = await Get.dialog<_AttendanceDialogResult>(
-      const AttendancePasswordDialog(),
+      const AttendancePinDialog(),
       barrierDismissible: false,
     );
-
-    if (result == _AttendanceDialogResult.passwordChangeRequired) {
-      changePasswordError.value = '';
-      newPasswordController.clear();
-      confirmPasswordController.clear();
-      final changed = await Get.dialog<bool>(
-        const ChangePasswordDialog(),
-        barrierDismissible: false,
-      );
-      if (changed == true) {
-        await refreshEmployees();
-      }
-      return;
-    }
 
     if (result == _AttendanceDialogResult.completed) {
       await refreshEmployees();
@@ -153,7 +131,7 @@ class AttendanceController extends GetxController {
   void cancelAttendanceDialog() {
     Get.back(result: _AttendanceDialogResult.cancelled);
     dialogError.value = '';
-    passwordConfirmController.clear();
+    pinConfirmController.clear();
   }
 
   Future<void> refreshEmployees() async {
@@ -161,9 +139,9 @@ class AttendanceController extends GetxController {
   }
 
   Future<void> submitAttendanceDialog() async {
-    final pwd = passwordConfirmController.text.trim();
-    if (pwd.isEmpty) {
-      dialogError.value = 'Please enter your password to confirm';
+    final pin = pinConfirmController.text.trim();
+    if (pin.length != 4) {
+      dialogError.value = 'Please enter your 4-digit PIN';
       return;
     }
 
@@ -174,12 +152,18 @@ class AttendanceController extends GetxController {
     isVerifying.value = true;
     dialogError.value = '';
     try {
-      final verifyResult = await _authRepository.verifyUser(
+      final verifyResult = await _authRepository.verifyPin(
         emp.email.trim(),
-        pwd,
+        pin,
       );
+      if (verifyResult.pinNotSet) {
+        isVerifying.value = false;
+        await _promptSetPinForEmployee(emp, action);
+        return;
+      }
       if (!verifyResult.matched) {
-        dialogError.value = 'Verification failed. Please try again.';
+        dialogError.value = 'Incorrect PIN. Please try again.';
+        pinConfirmController.clear();
         return;
       }
     } on AuthErrorModel catch (e) {
@@ -197,86 +181,45 @@ class AttendanceController extends GetxController {
       isVerifying.value = false;
     }
 
-    // ── Intercept default password for clock-in only ──
-    if (action == AttendanceDialogAction.clockIn && pwd == _defaultPassword) {
-      Get.back(result: _AttendanceDialogResult.passwordChangeRequired);
-      passwordConfirmController.clear();
-      return;
-    }
-
     await _performClockAction(emp, action);
   }
 
-  /// Submits the change-password form, then auto-proceeds with clock-in.
-  Future<void> submitChangePassword() async {
-    final newPwd = newPasswordController.text.trim();
-    final confirmPwd = confirmPasswordController.text.trim();
-
-    if (newPwd.isEmpty || confirmPwd.isEmpty) {
-      changePasswordError.value = 'Both fields are required';
-      return;
-    }
-    if (newPwd != confirmPwd) {
-      changePasswordError.value = 'Passwords do not match';
-      return;
-    }
-    if (newPwd == _defaultPassword) {
-      changePasswordError.value =
-          'New password cannot be the same as the default password';
-      return;
-    }
-
-    final emp = dialogEmployee.value;
-    if (emp == null) return;
-
-    isChangingPassword.value = true;
-    changePasswordError.value = '';
-    try {
-      await _authRepository.changePassword(
-        emp.email.trim(),
-        _defaultPassword,
-        newPwd,
-      );
-    } on AuthErrorModel catch (e) {
-      changePasswordError.value = e.detail;
-      return;
-    } on DioException catch (e) {
-      final parsed = parseAuthError(e);
-      changePasswordError.value =
-          parsed?.detail ?? e.message ?? 'Failed to change password';
-      return;
-    } catch (e) {
-      changePasswordError.value = e.toString();
-      return;
-    } finally {
-      isChangingPassword.value = false;
-    }
-
-    final clockInSucceeded = await _performClockAction(
-      emp,
-      AttendanceDialogAction.clockIn,
-      closeDialogOnSuccess: false,
+  Future<void> _promptSetPinForEmployee(
+    EmployeeModel emp,
+    AttendanceDialogAction action,
+  ) async {
+    final email = emp.email.trim();
+    final newPin = await Get.dialog<String>(
+      SetPinDialog(
+        email: email,
+        title: 'Create your PIN',
+        subtitle: 'Set a 4-digit PIN for clock-in and clock-out.',
+        submitLabel: action == AttendanceDialogAction.clockIn
+            ? 'Save & Clock In'
+            : 'Save & Clock Out',
+        onSubmit: (pin, confirmPin) async {
+          await _authRepository.setPin(
+            email: email,
+            pin: pin,
+            confirmPin: confirmPin,
+          );
+          return true;
+        },
+      ),
+      barrierDismissible: false,
     );
-    if (clockInSucceeded) {
-      Get.back(result: true);
-      newPasswordController.clear();
-      confirmPasswordController.clear();
+    if (newPin == null || newPin.length != 4) return;
 
-      Get.snackbar(
-        'Password Changed',
-        'Your password has been updated successfully',
-        backgroundColor: Colors.green,
-      );
-      return;
-    }
-
-    if (dialogError.value.isNotEmpty) {
-      changePasswordError.value = dialogError.value;
-      dialogError.value = '';
+    final succeeded = await _performClockAction(
+      emp,
+      action,
+      closeDialogOnSuccess: true,
+    );
+    if (succeeded) {
+      await refreshEmployees();
     }
   }
 
-  /// Shared helper that executes the actual clock-in / clock-out API call.
   Future<bool> _performClockAction(
     EmployeeModel emp,
     AttendanceDialogAction action, {
@@ -297,7 +240,7 @@ class AttendanceController extends GetxController {
         if (closeDialogOnSuccess) {
           Get.back(result: _AttendanceDialogResult.completed);
         }
-        passwordConfirmController.clear();
+        pinConfirmController.clear();
         Get.snackbar(
           'Success',
           'Clock-in recorded successfully',
@@ -308,7 +251,7 @@ class AttendanceController extends GetxController {
         if (closeDialogOnSuccess) {
           Get.back(result: _AttendanceDialogResult.completed);
         }
-        passwordConfirmController.clear();
+        pinConfirmController.clear();
         Get.snackbar(
           'Success',
           'Clock-out recorded successfully',
@@ -382,11 +325,9 @@ class AttendanceController extends GetxController {
   void onClose() {
     _elapsedTimer?.cancel();
     scrollController.removeListener(_onScroll);
-    passwordConfirmController.removeListener(_clearDialogErrorOnPasswordChange);
+    pinConfirmController.removeListener(_clearDialogErrorOnPinChange);
     scrollController.dispose();
-    passwordConfirmController.dispose();
-    newPasswordController.dispose();
-    confirmPasswordController.dispose();
+    pinConfirmController.dispose();
     super.onClose();
   }
 }

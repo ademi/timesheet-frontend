@@ -18,6 +18,12 @@ abstract final class AppConstants {
   /// Auth: verify credentials before sensitive actions (e.g. attendance).
   static const String verifyUserPath = '$apiV1/auth/verify_user';
 
+  /// Auth: verify 4-digit PIN before clock-in/out.
+  static const String verifyPinPath = '$apiV1/auth/verify_pin';
+
+  /// Auth: set initial PIN when none exists.
+  static const String setPinPath = '$apiV1/auth/set_pin';
+
   /// Fixed tenant identifier sent with every login request.
   static const String tenantId = 'a0000001-0001-4001-8001-000000000001';
 

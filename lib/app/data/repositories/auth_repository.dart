@@ -3,13 +3,12 @@ import 'package:get_storage/get_storage.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../datasources/remote/auth_remote_datasource.dart';
-import '../models/auth/auth_error_model.dart';
 import '../models/auth/auth_token_model.dart';
-import '../models/auth/change_password_request_model.dart';
 import '../models/auth/login_request_model.dart';
 import '../models/auth/logout_request_model.dart';
-import '../models/auth/verify_user_request_model.dart';
-import '../models/auth/verify_user_response_model.dart';
+import '../models/auth/set_pin_request_model.dart';
+import '../models/auth/verify_pin_request_model.dart';
+import '../models/auth/verify_pin_response_model.dart';
 
 class AuthRepository {
   AuthRepository({
@@ -21,21 +20,30 @@ class AuthRepository {
   final AuthRemoteDataSource _remote;
   final GetStorage _storage;
 
-  Future<VerifyUserResponseModel> verifyUser(
-    String email,
-    String password,
-  ) async {
+  Future<VerifyPinResponseModel> verifyPin(String email, String pin) async {
     try {
-      final token =
-          _storage.read<String>(StorageKeys.accessToken)?.trim() ?? '';
-      if (token.isEmpty) {
-        throw const AuthErrorModel(
-          detail: 'Session expired. Please login again.',
-        );
-      }
+      return await _remote.verifyPin(
+        VerifyPinRequestModel(email: email, pin: pin),
+      );
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
+    }
+  }
 
-      return await _remote.verifyUser(
-        VerifyUserRequestModel(email: email, password: password, token: token),
+  Future<void> setPin({
+    required String email,
+    required String pin,
+    required String confirmPin,
+  }) async {
+    try {
+      await _remote.setPin(
+        SetPinRequestModel(
+          email: email,
+          pin: pin,
+          confirmPin: confirmPin,
+        ),
       );
     } on DioException catch (e) {
       final authErr = parseAuthError(e);
@@ -54,26 +62,6 @@ class AuthRepository {
         ),
       );
       await _persistTokens(tokens);
-    } on DioException catch (e) {
-      final authErr = parseAuthError(e);
-      if (authErr != null) throw authErr;
-      rethrow;
-    }
-  }
-
-  Future<String> changePassword(
-    String email,
-    String currentPassword,
-    String newPassword,
-  ) async {
-    try {
-      return await _remote.changePassword(
-        ChangePasswordRequestModel(
-          email: email,
-          currentPassword: currentPassword,
-          newPassword: newPassword,
-        ),
-      );
     } on DioException catch (e) {
       final authErr = parseAuthError(e);
       if (authErr != null) throw authErr;

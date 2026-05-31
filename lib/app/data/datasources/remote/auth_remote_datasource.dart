@@ -8,6 +8,9 @@ import '../../models/auth/login_request_model.dart';
 import '../../models/auth/logout_request_model.dart';
 import '../../models/auth/logout_response_model.dart';
 import '../../models/auth/refresh_request_model.dart';
+import '../../models/auth/set_pin_request_model.dart';
+import '../../models/auth/verify_pin_request_model.dart';
+import '../../models/auth/verify_pin_response_model.dart';
 import '../../models/auth/verify_user_request_model.dart';
 import '../../models/auth/verify_user_response_model.dart';
 
@@ -53,6 +56,42 @@ class AuthRemoteDataSource {
       );
     }
     return VerifyUserResponseModel.fromJson(data);
+  }
+
+  Future<VerifyPinResponseModel> verifyPin(VerifyPinRequestModel request) async {
+    final response = await _plainDio.post<Map<String, dynamic>>(
+      AppConstants.verifyPinPath,
+      data: request.toJson(),
+    );
+    final data = response.data;
+    if (data == null) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        message: 'Empty verify PIN response',
+      );
+    }
+    return VerifyPinResponseModel.fromJson(data);
+  }
+
+  Future<String> setPin(SetPinRequestModel request) async {
+    try {
+      final response = await _plainDio.post<Map<String, dynamic>>(
+        AppConstants.setPinPath,
+        data: request.toJson(),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          message: 'Empty set PIN response',
+        );
+      }
+      return data['message'] as String? ?? 'ok';
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
+    }
   }
 
   Future<AuthTokenModel> login(LoginRequestModel request) async {

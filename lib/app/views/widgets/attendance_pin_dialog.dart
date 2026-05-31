@@ -3,9 +3,10 @@ import 'package:get/get.dart';
 
 import '../../controllers/attendance_controller.dart';
 import '../../themes/app_colors.dart';
+import 'pin_input_field.dart';
 
-class AttendancePasswordDialog extends StatelessWidget {
-  const AttendancePasswordDialog({super.key});
+class AttendancePinDialog extends StatelessWidget {
+  const AttendancePinDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -42,50 +43,40 @@ class AttendancePasswordDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'Employee',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade700,
+                  emp.fullName.isNotEmpty ? emp.fullName : emp.email,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
                   ),
                 ),
                 const SizedBox(height: 4),
-                InputDecorator(
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: AppColors.background,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                  ),
-                  child: Text(
-                    emp.email,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textDark,
-                    ),
+                Text(
+                  emp.email,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Enter your 4-digit PIN',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.primaryDark,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: c.passwordConfirmController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    labelStyle: const TextStyle(
-                      color: AppColors.primaryDark,
-                      fontSize: 13,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.background,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                const SizedBox(height: 12),
+                PinInputField(
+                  controller: c.pinConfirmController,
+                  autofocus: true,
+                  enabled: !c.isVerifying.value && !c.dialogSubmitting.value,
+                  onCompleted: (_) {
+                    if (!c.isVerifying.value && !c.dialogSubmitting.value) {
+                      c.submitAttendanceDialog();
+                    }
+                  },
                 ),
                 Obx(() {
                   if (c.dialogError.value.isEmpty) {
@@ -95,6 +86,7 @@ class AttendancePasswordDialog extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 12),
                     child: Text(
                       c.dialogError.value,
+                      textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: AppColors.error,
                         fontSize: 12,

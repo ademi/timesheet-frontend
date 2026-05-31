@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../data/datasources/remote/auth_remote_datasource.dart';
-import '../data/models/auth/auth_error_model.dart';
-import '../data/models/auth/verify_user_response_model.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
 import '../services/push_notification_service.dart';
@@ -40,11 +38,6 @@ class AuthController extends GetxController {
     );
   }
 
-  /// Delegates to [AuthRepository.verifyUser] (auth `plainDio` / existing [ApiClient]).
-  Future<VerifyUserResponseModel> verifyUser(String email, String password) {
-    return _authRepository.verifyUser(email, password);
-  }
-
   Future<void> login() async {
     if (!formKey.currentState!.validate()) return;
 
@@ -63,8 +56,6 @@ class AuthController extends GetxController {
               ? AppRoutes.adminPanel
               : AppRoutes.home;
       Get.offAllNamed(destination);
-    } on AuthErrorModel catch (e) {
-      _showError(e.detail);
     } on DioException catch (e) {
       final parsed = parseAuthError(e);
       _showError(
