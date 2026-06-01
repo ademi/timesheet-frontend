@@ -1,13 +1,13 @@
 import 'package:dio/dio.dart';
-import 'package:get_storage/get_storage.dart';
 
 import '../constants/app_constants.dart';
+import '../services/token_storage.dart';
 import 'auth_interceptor.dart';
 
 /// Attendance service Dio instance that uses the same base URL and
 /// [AuthInterceptor] as the auth [ApiClient].
 class AttendanceApiClient {
-  AttendanceApiClient._(GetStorage storage, Dio authPlainDio)
+  AttendanceApiClient._(TokenStorage tokenStorage, Dio authPlainDio)
       : dio = Dio(
           BaseOptions(
             baseUrl: AppConstants.baseUrl,
@@ -21,7 +21,7 @@ class AttendanceApiClient {
         ) {
     dio.interceptors.add(
       AuthInterceptor(
-        storage: storage,
+        storage: tokenStorage,
         plainDio: authPlainDio,
         authenticatedDio: dio,
       ),
@@ -30,8 +30,8 @@ class AttendanceApiClient {
 
   static AttendanceApiClient? _instance;
 
-  factory AttendanceApiClient(GetStorage storage, Dio authPlainDio) {
-    return _instance ??= AttendanceApiClient._(storage, authPlainDio);
+  factory AttendanceApiClient(TokenStorage tokenStorage, Dio authPlainDio) {
+    return _instance ??= AttendanceApiClient._(tokenStorage, authPlainDio);
   }
 
   final Dio dio;

@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' as getx;
-import 'package:get_storage/get_storage.dart';
 
 import '../../app/data/datasources/remote/auth_remote_datasource.dart';
 import '../../app/data/models/auth/auth_token_model.dart';
 import '../../app/routes/app_routes.dart';
 import '../constants/app_constants.dart';
+import '../services/token_storage.dart';
 
 /// Marks a request that already went through one 401 → refresh → retry cycle.
 const String kAuth401RetriedExtra = 'auth_401_retried';
@@ -14,14 +14,14 @@ const String kAuth401RetriedExtra = 'auth_401_retried';
 /// and retries on [authenticatedDio].
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({
-    required GetStorage storage,
+    required TokenStorage storage,
     required Dio plainDio,
     required Dio authenticatedDio,
   })  : _storage = storage,
         _plainDio = plainDio,
         _authenticatedDio = authenticatedDio;
 
-  final GetStorage _storage;
+  final TokenStorage _storage;
   final Dio _plainDio;
   final Dio _authenticatedDio;
 
@@ -32,13 +32,14 @@ class AuthInterceptor extends Interceptor {
   bool _isAuthLoginPath(String path) => path.contains('/v1/auth/login');
 
   Future<void> _persistTokens(AuthTokenModel tokens) async {
-    await _storage.write(StorageKeys.accessToken, tokens.accessToken);
-    await _storage.write(StorageKeys.refreshToken, tokens.refreshToken);
+    await _storage.persist(
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    );
   }
 
   void _clearTokens() {
-    _storage.remove(StorageKeys.accessToken);
-    _storage.remove(StorageKeys.refreshToken);
+    _storage.clear();
   }
 
   void _redirectToLogin() {
@@ -50,7 +51,7 @@ class AuthInterceptor extends Interceptor {
       await _refreshFuture!;
       return;
     }
-    final refreshToken = _storage.read<String>(StorageKeys.refreshToken);
+    final refreshToken = _storage.refreshToken;
     if (refreshToken == null || refreshToken.isEmpty) {
       throw DioException(
         requestOptions: RequestOptions(
@@ -78,7 +79,7 @@ class AuthInterceptor extends Interceptor {
     if (_isAuthLoginPath(path) || _isAuthRefreshPath(path)) {
       return handler.next(options);
     }
-    final access = _storage.read<String>(StorageKeys.accessToken);
+    final access = _storage.accessToken;
     if (access != null && access.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $access';
     }
@@ -120,7 +121,7 @@ class AuthInterceptor extends Interceptor {
       return handler.reject(err);
     }
 
-    final newAccess = _storage.read<String>(StorageKeys.accessToken);
+    final newAccess = _storage.accessToken;
     final retry = options.copyWith(
       headers: Map<String, dynamic>.from(options.headers)
         ..['Authorization'] = 'Bearer $newAccess',

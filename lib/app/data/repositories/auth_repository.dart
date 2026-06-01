@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:get_storage/get_storage.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/token_storage.dart';
 import '../datasources/remote/auth_remote_datasource.dart';
 import '../models/auth/auth_token_model.dart';
 import '../models/auth/login_request_model.dart';
@@ -13,12 +13,12 @@ import '../models/auth/verify_pin_response_model.dart';
 class AuthRepository {
   AuthRepository({
     required AuthRemoteDataSource remote,
-    required GetStorage storage,
+    required TokenStorage storage,
   }) : _remote = remote,
        _storage = storage;
 
   final AuthRemoteDataSource _remote;
-  final GetStorage _storage;
+  final TokenStorage _storage;
 
   Future<VerifyPinResponseModel> verifyPin(String employeeId, String pin) async {
     try {
@@ -70,7 +70,7 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
-    final refresh = _storage.read<String>(StorageKeys.refreshToken);
+    final refresh = _storage.refreshToken;
     try {
       if (refresh != null && refresh.isNotEmpty) {
         await _remote.logout(LogoutRequestModel(refreshToken: refresh));
@@ -85,12 +85,13 @@ class AuthRepository {
   }
 
   Future<void> _persistTokens(AuthTokenModel tokens) async {
-    await _storage.write(StorageKeys.accessToken, tokens.accessToken);
-    await _storage.write(StorageKeys.refreshToken, tokens.refreshToken);
+    await _storage.persist(
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    );
   }
 
   void _clearTokens() {
-    _storage.remove(StorageKeys.accessToken);
-    _storage.remove(StorageKeys.refreshToken);
+    _storage.clear();
   }
 }

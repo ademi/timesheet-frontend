@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/services/token_storage.dart';
 import '../controllers/auth_controller.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/repositories/auth_repository.dart';
@@ -10,10 +11,17 @@ import '../services/push_notification_service.dart';
 class AuthBinding extends Bindings {
   @override
   void dependencies() {
-    final storage = GetStorage();
+    final rawStorage = GetStorage();
+
+    if (!Get.isRegistered<TokenStorage>()) {
+      Get.put<TokenStorage>(TokenStorage(storage: rawStorage), permanent: true);
+    }
 
     if (!Get.isRegistered<ApiClient>()) {
-      Get.put<ApiClient>(ApiClient(storage), permanent: true);
+      Get.put<ApiClient>(
+        ApiClient(rawStorage, Get.find<TokenStorage>()),
+        permanent: true,
+      );
     }
     if (!Get.isRegistered<AuthRemoteDataSource>()) {
       final client = Get.find<ApiClient>();
@@ -29,7 +37,7 @@ class AuthBinding extends Bindings {
       Get.put<AuthRepository>(
         AuthRepository(
           remote: Get.find<AuthRemoteDataSource>(),
-          storage: storage,
+          storage: Get.find<TokenStorage>(),
         ),
         permanent: true,
       );
