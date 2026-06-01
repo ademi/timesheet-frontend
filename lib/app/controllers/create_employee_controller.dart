@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../utils/phone_utils.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/network/attendance_api_client.dart';
+import '../../core/services/token_storage.dart';
 import '../bindings/payroll_module_binding.dart';
 import '../routes/app_navigation.dart';
 import '../routes/app_routes.dart';
@@ -49,11 +49,11 @@ class CreateEmployeeController extends GetxController {
         return;
       }
 
+      final branchId = Get.find<TokenStorage>().branchId;
       final payload = <String, dynamic>{
         'employee_code': employeeCodeController.text.trim(),
         'full_name': fullNameController.text.trim(),
-        'branch_id': AppConstants.branchId,
-        'tenant_id': AppConstants.tenantId,
+        if (branchId != null && branchId.isNotEmpty) 'branch_id': branchId,
         'phone': normalizedPhone,
         'email': emailController.text.trim(),
         'dob': _todayFormatted,

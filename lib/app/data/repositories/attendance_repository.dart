@@ -1,19 +1,24 @@
 import 'package:dio/dio.dart';
 
+import '../../../core/services/token_storage.dart';
 import '../datasources/remote/attendance_remote_datasource.dart';
 import '../models/attendance/attendance_request_model.dart';
 import '../models/attendance/attendance_response_model.dart';
 import '../models/attendance/employee_model.dart';
 
 class AttendanceRepository {
-  AttendanceRepository({required AttendanceRemoteDataSource remote})
-      : _remote = remote;
+  AttendanceRepository({
+    required AttendanceRemoteDataSource remote,
+    required TokenStorage tokenStorage,
+  })  : _remote = remote,
+        _tokenStorage = tokenStorage;
 
   final AttendanceRemoteDataSource _remote;
+  final TokenStorage _tokenStorage;
 
   Future<List<EmployeeModel>> fetchEmployees() async {
     try {
-      return await _remote.getEmployees();
+      return await _remote.getEmployees(branchId: _tokenStorage.branchId);
     } on DioException catch (e) {
       final parsed = parseAttendanceError(e);
       if (parsed != null) throw parsed;

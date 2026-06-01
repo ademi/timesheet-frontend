@@ -8,6 +8,8 @@ import 'package:yemen_gate_attendance_app/app/data/models/payment/payment_report
 import 'package:yemen_gate_attendance_app/app/data/repositories/payment_repository.dart';
 import 'package:yemen_gate_attendance_app/app/data/repositories/payroll_repository.dart';
 import 'package:yemen_gate_attendance_app/app/views/payments_report_view.dart';
+import 'package:yemen_gate_attendance_app/core/services/token_storage.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class MockPaymentRepository extends Mock implements PaymentRepository {}
 
@@ -18,7 +20,9 @@ void main() {
   late MockPayrollRepository payrollRepository;
 
   setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
     Get.testMode = true;
+    Get.put<TokenStorage>(TokenStorage(), permanent: true);
     paymentRepository = MockPaymentRepository();
     payrollRepository = MockPayrollRepository();
     when(() => paymentRepository.getEmployees(branchId: any(named: 'branchId')))

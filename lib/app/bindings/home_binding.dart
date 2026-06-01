@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/network/attendance_api_client.dart';
@@ -12,9 +11,15 @@ import '../data/repositories/auth_repository.dart';
 class HomeBinding extends Bindings {
   @override
   void dependencies() {
-    final rawStorage = GetStorage();
     if (!Get.isRegistered<TokenStorage>()) {
-      Get.put<TokenStorage>(TokenStorage(storage: rawStorage), permanent: true);
+      Get.put<TokenStorage>(TokenStorage(), permanent: true);
+    }
+
+    if (!Get.isRegistered<ApiClient>()) {
+      Get.put<ApiClient>(
+        ApiClient(Get.find<TokenStorage>()),
+        permanent: true,
+      );
     }
 
     if (!Get.isRegistered<AttendanceApiClient>()) {
@@ -38,6 +43,7 @@ class HomeBinding extends Bindings {
       Get.put<AttendanceRepository>(
         AttendanceRepository(
           remote: Get.find<AttendanceRemoteDataSource>(),
+          tokenStorage: Get.find<TokenStorage>(),
         ),
         permanent: true,
       );

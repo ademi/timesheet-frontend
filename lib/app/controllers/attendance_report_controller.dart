@@ -7,8 +7,8 @@ import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../core/constants/app_constants.dart';
 import '../../core/network/attendance_api_client.dart';
+import '../../core/services/token_storage.dart';
 import '../data/models/attendance_report_model.dart';
 import '../utils/attendance_report_matrix.dart';
 
@@ -60,11 +60,12 @@ class AttendanceReportController extends GetxController {
       final startStr = startDate.value!.toIso8601String().split('T').first;
       final endStr = endDate.value!.toIso8601String().split('T').first;
 
+      final branchId = Get.find<TokenStorage>().branchId;
       final dio = Get.find<AttendanceApiClient>().dio;
       final response = await dio.get(
         '/v1/attendance/reports/weekly',
         queryParameters: {
-          'branch_id': AppConstants.branchId,
+          if (branchId != null && branchId.isNotEmpty) 'branch_id': branchId,
           'start': startStr,
           'end': endStr,
         },

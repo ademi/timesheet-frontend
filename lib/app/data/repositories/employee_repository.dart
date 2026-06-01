@@ -1,3 +1,4 @@
+import '../../../core/services/token_storage.dart';
 import '../datasources/remote/employee_remote_datasource.dart';
 import '../models/attendance/employee_model.dart';
 import '../models/attendance/employee_role_option.dart';
@@ -5,14 +6,19 @@ import '../models/attendance/employee_update_request.dart';
 import '../models/attendance/time_entry_out.dart';
 
 class EmployeeRepository {
-  EmployeeRepository({required EmployeeRemoteDataSource remote}) : _remote = remote;
+  EmployeeRepository({
+    required EmployeeRemoteDataSource remote,
+    required TokenStorage tokenStorage,
+  })  : _remote = remote,
+        _tokenStorage = tokenStorage;
 
   final EmployeeRemoteDataSource _remote;
+  final TokenStorage _tokenStorage;
 
   Future<List<EmployeeModel>> listEmployees() => _remote.listEmployees();
 
   Future<List<EmployeeModel>> listEmployeesWithClockStatus() =>
-      _remote.listEmployeesWithClockStatus();
+      _remote.listEmployeesWithClockStatus(branchId: _tokenStorage.branchId);
 
   Future<EmployeeModel> getEmployee(String employeeId) =>
       _remote.getEmployee(employeeId);

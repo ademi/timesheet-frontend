@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 
-import '../../../../core/constants/app_constants.dart';
 import '../../models/attendance/attendance_error_model.dart';
 import '../../models/attendance/attendance_request_model.dart';
 import '../../models/attendance/attendance_response_model.dart';
@@ -19,10 +18,10 @@ class AttendanceRemoteDataSource {
 
   final Dio _dio;
 
-  Future<List<EmployeeModel>> getEmployees() async {
+  Future<List<EmployeeModel>> getEmployees({String? branchId}) async {
     final response = await _dio.get<List<dynamic>>(
       '/v1/employees/clocked-in-status',
-      queryParameters: {'branch_id': AppConstants.branchId},
+      queryParameters: branchId != null ? {'branch_id': branchId} : null,
     );
     final data = response.data;
     if (data == null) return [];

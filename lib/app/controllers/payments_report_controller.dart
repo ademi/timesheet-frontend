@@ -7,7 +7,7 @@ import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../core/constants/app_constants.dart';
+import '../../core/services/token_storage.dart';
 import '../data/models/attendance/employee_model.dart';
 import '../data/models/payment/payment_report_row.dart';
 import '../data/models/payroll/payroll_date_utils.dart';
@@ -36,15 +36,18 @@ class PaymentsReportController extends GetxController {
   final selectedEmployee = Rxn<EmployeeModel>();
   final selectedPeriod = Rxn<PeriodOut>();
 
-  final branchFilterOptions = const [
-    BranchFilterOption(label: 'All Branches', branchId: null),
-    BranchFilterOption(label: 'Current Branch', branchId: AppConstants.branchId),
-  ];
+  late final List<BranchFilterOption> branchFilterOptions;
   final selectedBranchId = RxnString();
 
   @override
   void onInit() {
     super.onInit();
+    final storedBranchId = Get.find<TokenStorage>().branchId;
+    branchFilterOptions = [
+      const BranchFilterOption(label: 'All Branches', branchId: null),
+      if (storedBranchId != null && storedBranchId.isNotEmpty)
+        BranchFilterOption(label: 'Current Branch', branchId: storedBranchId),
+    ];
     loadEmployees();
     loadPeriods();
   }

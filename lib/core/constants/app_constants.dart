@@ -24,12 +24,6 @@ abstract final class AppConstants {
   /// Auth: set initial PIN when none exists.
   static const String setPinPath = '$apiV1/auth/set_pin';
 
-  /// Fixed tenant identifier sent with every login request.
-  static const String tenantId = 'a0000001-0001-4001-8001-000000000001';
-
-  /// Fixed branch filter for employee list.
-  static const String branchId = 'a0000001-0001-4001-8001-000000000002';
-
   /// Attendance clock-in/out source (device GPS).
   static const String attendanceSource = 'gps';
 }
