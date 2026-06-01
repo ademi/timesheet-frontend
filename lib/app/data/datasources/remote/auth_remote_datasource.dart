@@ -59,7 +59,7 @@ class AuthRemoteDataSource {
   }
 
   Future<VerifyPinResponseModel> verifyPin(VerifyPinRequestModel request) async {
-    final response = await _plainDio.post<Map<String, dynamic>>(
+    final response = await _authenticatedDio.post<Map<String, dynamic>>(
       AppConstants.verifyPinPath,
       data: request.toJson(),
     );
@@ -75,7 +75,7 @@ class AuthRemoteDataSource {
 
   Future<String> setPin(SetPinRequestModel request) async {
     try {
-      final response = await _plainDio.post<Map<String, dynamic>>(
+      final response = await _authenticatedDio.post<Map<String, dynamic>>(
         AppConstants.setPinPath,
         data: request.toJson(),
       );
