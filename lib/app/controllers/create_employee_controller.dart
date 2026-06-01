@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../utils/phone_utils.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/network/attendance_api_client.dart';
 import '../bindings/payroll_module_binding.dart';
@@ -42,12 +43,18 @@ class CreateEmployeeController extends GetxController {
     try {
       final dio = Get.find<AttendanceApiClient>().dio;
 
+      final normalizedPhone = PhoneUtils.tryNormalize(phoneController.text);
+      if (normalizedPhone == null) {
+        _showError('Phone number is required');
+        return;
+      }
+
       final payload = <String, dynamic>{
         'employee_code': employeeCodeController.text.trim(),
         'full_name': fullNameController.text.trim(),
         'branch_id': AppConstants.branchId,
         'tenant_id': AppConstants.tenantId,
-        'phone': phoneController.text.trim(),
+        'phone': normalizedPhone,
         'email': emailController.text.trim(),
         'dob': _todayFormatted,
       };

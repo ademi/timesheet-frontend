@@ -1,16 +1,16 @@
 class SetPinRequestModel {
   const SetPinRequestModel({
-    required this.email,
+    required this.employeeId,
     required this.pin,
     required this.confirmPin,
   });
 
-  final String email;
+  final String employeeId;
   final String pin;
   final String confirmPin;
 
   Map<String, dynamic> toJson() => {
-        'email': email,
+        'employee_id': employeeId,
         'pin': pin,
         'confirm_pin': confirmPin,
       };

@@ -5,6 +5,7 @@ import '../controllers/employee_management_controller.dart';
 import '../data/models/attendance/employee_model.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import '../utils/employee_clock_status.dart';
 
 class EmployeeManagementView extends GetView<EmployeeManagementController> {
   const EmployeeManagementView({super.key});
@@ -20,6 +21,7 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: Obx(() {
+          controller.elapsedTicker.value;
           if (controller.isLoading.value && controller.employees.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -42,6 +44,8 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
                       final employee = controller.employees[index];
                       return _EmployeeCard(
                         employee: employee,
+                        statusLabel: controller.clockStatusLabel(employee),
+                        isClockedIn: employee.clockedIn,
                         onTap: () async {
                           await Get.toNamed(
                             AppRoutes.employeeDetail,
@@ -68,13 +72,24 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
 }
 
 class _EmployeeCard extends StatelessWidget {
-  const _EmployeeCard({required this.employee, required this.onTap});
+  const _EmployeeCard({
+    required this.employee,
+    required this.statusLabel,
+    required this.isClockedIn,
+    required this.onTap,
+  });
 
   final EmployeeModel employee;
+  final String statusLabel;
+  final bool isClockedIn;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final subtitle = employeeContactSubtitle(employee);
+    final statusColor =
+        isClockedIn ? Colors.green.shade700 : Colors.grey.shade700;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Material(
@@ -112,13 +127,29 @@ class _EmployeeCard extends StatelessWidget {
                           color: AppColors.textDark,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${employee.employeeCode} · ${employee.email}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                      ),
+                      if (subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                      if (statusLabel.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          statusLabel,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: statusColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../controllers/employee_detail_controller.dart';
 import '../core/constants/payment_currencies.dart';
 import '../data/models/payroll/payroll_date_utils.dart';
+import '../utils/phone_utils.dart';
 import '../themes/app_colors.dart';
 
 class EmployeeDetailView extends GetView<EmployeeDetailController> {
@@ -104,9 +105,10 @@ class _DetailsSection extends StatelessWidget {
               controller: controller.phoneController,
               readOnly: !editing,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Phone',
-                prefixIcon: Icon(Icons.phone_outlined),
+                helperText: editing ? PhoneUtils.formatHint : null,
+                prefixIcon: const Icon(Icons.phone_outlined),
               ),
             ),
             const SizedBox(height: 12),

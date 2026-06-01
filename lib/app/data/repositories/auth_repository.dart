@@ -20,10 +20,10 @@ class AuthRepository {
   final AuthRemoteDataSource _remote;
   final GetStorage _storage;
 
-  Future<VerifyPinResponseModel> verifyPin(String email, String pin) async {
+  Future<VerifyPinResponseModel> verifyPin(String employeeId, String pin) async {
     try {
       return await _remote.verifyPin(
-        VerifyPinRequestModel(email: email, pin: pin),
+        VerifyPinRequestModel(employeeId: employeeId, pin: pin),
       );
     } on DioException catch (e) {
       final authErr = parseAuthError(e);
@@ -33,14 +33,14 @@ class AuthRepository {
   }
 
   Future<void> setPin({
-    required String email,
+    required String employeeId,
     required String pin,
     required String confirmPin,
   }) async {
     try {
       await _remote.setPin(
         SetPinRequestModel(
-          email: email,
+          employeeId: employeeId,
           pin: pin,
           confirmPin: confirmPin,
         ),
@@ -52,11 +52,11 @@ class AuthRepository {
     }
   }
 
-  Future<void> login(String email, String password) async {
+  Future<void> login(String identifier, String password) async {
     try {
       final tokens = await _remote.login(
         LoginRequestModel(
-          email: email,
+          identifier: identifier,
           password: password,
           tenantId: AppConstants.tenantId,
         ),

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/employee_management_controller.dart';
 import '../../themes/app_colors.dart';
+import '../../utils/employee_clock_status.dart';
 
 class EmployeeManagementTab extends GetView<EmployeeManagementController> {
   const EmployeeManagementTab({super.key});
@@ -14,6 +15,7 @@ class EmployeeManagementTab extends GetView<EmployeeManagementController> {
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: Obx(() {
+          controller.elapsedTicker.value;
           if (controller.isLoading.value && controller.employees.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -34,11 +36,15 @@ class EmployeeManagementTab extends GetView<EmployeeManagementController> {
                     itemCount: controller.employees.length,
                     itemBuilder: (context, index) {
                       final employee = controller.employees[index];
+                      final subtitle = employeeContactSubtitle(employee);
+                      final statusLabel = controller.clockStatusLabel(employee);
                       return _EmployeeCard(
                         fullName: employee.fullName,
                         employeeCode: employee.employeeCode,
-                        email: employee.email,
                         phone: employee.phone,
+                        subtitle: subtitle,
+                        statusLabel: statusLabel,
+                        isClockedIn: employee.clockedIn,
                       );
                     },
                   ),
@@ -61,17 +67,24 @@ class _EmployeeCard extends StatelessWidget {
   const _EmployeeCard({
     required this.fullName,
     required this.employeeCode,
-    required this.email,
     required this.phone,
+    required this.subtitle,
+    required this.statusLabel,
+    required this.isClockedIn,
   });
 
   final String fullName;
   final String employeeCode;
-  final String email;
   final String phone;
+  final String subtitle;
+  final String statusLabel;
+  final bool isClockedIn;
 
   @override
   Widget build(BuildContext context) {
+    final statusColor =
+        isClockedIn ? Colors.green.shade700 : Colors.grey.shade700;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -99,10 +112,28 @@ class _EmployeeCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _InfoRow(icon: Icons.badge_outlined, label: 'Code', value: employeeCode),
-          const SizedBox(height: 8),
-          _InfoRow(icon: Icons.email_outlined, label: 'Email', value: email),
-          const SizedBox(height: 8),
-          _InfoRow(icon: Icons.phone_outlined, label: 'Phone', value: phone),
+          if (phone.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _InfoRow(icon: Icons.phone_outlined, label: 'Phone', value: phone),
+          ] else if (subtitle.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _InfoRow(
+              icon: Icons.phone_outlined,
+              label: 'Phone',
+              value: subtitle,
+            ),
+          ],
+          if (statusLabel.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              statusLabel,
+              style: TextStyle(
+                fontSize: 12,
+                color: statusColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ],
       ),
     );

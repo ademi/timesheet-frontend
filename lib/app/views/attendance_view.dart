@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../controllers/attendance_controller.dart';
 import '../controllers/auth_controller.dart';
+import '../utils/employee_clock_status.dart';
 import '../themes/app_colors.dart';
 
 class AttendanceView extends GetView<AttendanceController> {
@@ -88,7 +89,7 @@ class AttendanceView extends GetView<AttendanceController> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _EmployeeCard(
                   fullName: emp.fullName,
-                  email: emp.email,
+                  subtitle: employeeContactSubtitle(emp),
                   isClockedIn: emp.clockedIn,
                   isClockedOut: emp.clockedOut,
                   durationText: controller.formatClockedInDuration(emp),
@@ -115,7 +116,7 @@ class AttendanceView extends GetView<AttendanceController> {
 class _EmployeeCard extends StatelessWidget {
   const _EmployeeCard({
     required this.fullName,
-    required this.email,
+    required this.subtitle,
     required this.isClockedIn,
     required this.isClockedOut,
     required this.durationText,
@@ -124,7 +125,7 @@ class _EmployeeCard extends StatelessWidget {
   });
 
   final String fullName;
-  final String email;
+  final String subtitle;
   final bool isClockedIn;
   final bool isClockedOut;
   final String durationText;
@@ -150,11 +151,13 @@ class _EmployeeCard extends StatelessWidget {
                 color: AppColors.darkBrown,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              email.isEmpty ? '—' : email,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-            ),
+            if (subtitle.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              ),
+            ],
             if (isClockedIn && durationText.isNotEmpty) ...[
               const SizedBox(height: 6),
               Text(

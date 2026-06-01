@@ -13,6 +13,7 @@ import '../data/models/attendance/employee_model.dart';
 import '../data/repositories/attendance_repository.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
+import '../utils/employee_clock_status.dart';
 import '../views/widgets/attendance_pin_dialog.dart';
 import '../views/widgets/set_pin_dialog.dart';
 
@@ -62,7 +63,8 @@ class AttendanceController extends GetxController {
   }
 
   void _clearDialogErrorOnPinChange() {
-    if (dialogError.value.isNotEmpty) {
+    if (dialogError.value.isNotEmpty &&
+        pinConfirmController.text.isNotEmpty) {
       dialogError.value = '';
     }
   }
@@ -153,7 +155,7 @@ class AttendanceController extends GetxController {
     dialogError.value = '';
     try {
       final verifyResult = await _authRepository.verifyPin(
-        emp.email.trim(),
+        emp.id,
         pin,
       );
       if (verifyResult.pinNotSet) {
@@ -163,7 +165,6 @@ class AttendanceController extends GetxController {
       }
       if (!verifyResult.matched) {
         dialogError.value = 'Incorrect PIN. Please try again.';
-        pinConfirmController.clear();
         return;
       }
     } on AuthErrorModel catch (e) {
@@ -188,10 +189,10 @@ class AttendanceController extends GetxController {
     EmployeeModel emp,
     AttendanceDialogAction action,
   ) async {
-    final email = emp.email.trim();
     final newPin = await Get.dialog<String>(
       SetPinDialog(
-        email: email,
+        employeeName: emp.fullName,
+        employeePhone: emp.phone,
         title: 'Create your PIN',
         subtitle: 'Set a 4-digit PIN for clock-in and clock-out.',
         submitLabel: action == AttendanceDialogAction.clockIn
@@ -199,7 +200,7 @@ class AttendanceController extends GetxController {
             : 'Save & Clock Out',
         onSubmit: (pin, confirmPin) async {
           await _authRepository.setPin(
-            email: email,
+            employeeId: emp.id,
             pin: pin,
             confirmPin: confirmPin,
           );
@@ -298,27 +299,8 @@ class AttendanceController extends GetxController {
   }
 
   String formatClockedInDuration(EmployeeModel employee) {
-    final base = employee.clockedInDurationSeconds;
-    final clockInAt = employee.currentClockInAt;
-    if (base == null && (clockInAt == null || clockInAt.isEmpty)) {
-      return '';
-    }
-
-    var totalSeconds = base ?? 0;
-    if (clockInAt != null && clockInAt.isNotEmpty) {
-      final parsed = DateTime.tryParse(clockInAt);
-      if (parsed != null) {
-        totalSeconds = DateTime.now().toUtc().difference(parsed.toUtc()).inSeconds;
-      }
-    }
-    if (totalSeconds < 0) totalSeconds = 0;
-    final hours = totalSeconds ~/ 3600;
-    final minutes = (totalSeconds % 3600) ~/ 60;
-    final seconds = totalSeconds % 60;
-    final hh = hours.toString().padLeft(2, '0');
-    final mm = minutes.toString().padLeft(2, '0');
-    final ss = seconds.toString().padLeft(2, '0');
-    return '$hh:$mm:$ss';
+    elapsedTicker.value;
+    return formatEmployeeClockDuration(employee);
   }
 
   @override

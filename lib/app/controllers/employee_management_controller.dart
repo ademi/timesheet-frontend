@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 
@@ -6,6 +8,7 @@ import '../data/repositories/employee_repository.dart';
 import '../routes/app_navigation.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import '../utils/employee_clock_status.dart';
 
 class EmployeeManagementController extends GetxController {
   EmployeeManagementController({required EmployeeRepository repository})
@@ -15,17 +18,23 @@ class EmployeeManagementController extends GetxController {
 
   final employees = <EmployeeModel>[].obs;
   final isLoading = false.obs;
+  final elapsedTicker = 0.obs;
+
+  Timer? _elapsedTimer;
 
   @override
   void onInit() {
     super.onInit();
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      elapsedTicker.value++;
+    });
     fetchEmployees();
   }
 
   Future<void> fetchEmployees() async {
     try {
       isLoading.value = true;
-      employees.assignAll(await _repository.listEmployees());
+      employees.assignAll(await _repository.listEmployeesWithClockStatus());
     } on DioException catch (e) {
       _showError(_extractErrorMessage(e));
     } catch (e) {
@@ -33,6 +42,18 @@ class EmployeeManagementController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  String formatClockDuration(EmployeeModel employee) {
+    elapsedTicker.value;
+    return formatEmployeeClockDuration(employee);
+  }
+
+  String clockStatusLabel(EmployeeModel employee) {
+    return employeeClockStatusLabel(
+      employee,
+      formatClockDuration(employee),
+    );
   }
 
   Future<void> goToCreateEmployee() async {
@@ -60,5 +81,11 @@ class EmployeeManagementController extends GetxController {
       backgroundColor: AppColors.error,
       colorText: AppColors.textLight,
     );
+  }
+
+  @override
+  void onClose() {
+    _elapsedTimer?.cancel();
+    super.onClose();
   }
 }

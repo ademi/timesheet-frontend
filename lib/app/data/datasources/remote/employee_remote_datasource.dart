@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../models/attendance/employee_model.dart';
 import '../../models/attendance/employee_role_option.dart';
 import '../../models/attendance/employee_update_request.dart';
@@ -13,6 +14,18 @@ class EmployeeRemoteDataSource {
 
   Future<List<EmployeeModel>> listEmployees() async {
     final response = await _dio.get<List<dynamic>>('/v1/employees');
+    final data = response.data ?? <dynamic>[];
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(EmployeeModel.fromJson)
+        .toList();
+  }
+
+  Future<List<EmployeeModel>> listEmployeesWithClockStatus() async {
+    final response = await _dio.get<List<dynamic>>(
+      '/v1/employees/clocked-in-status',
+      queryParameters: {'branch_id': AppConstants.branchId},
+    );
     final data = response.data ?? <dynamic>[];
     return data
         .whereType<Map<String, dynamic>>()

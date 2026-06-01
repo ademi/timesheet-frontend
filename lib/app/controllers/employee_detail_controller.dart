@@ -15,6 +15,7 @@ import '../data/models/payroll/result_out.dart';
 import '../data/repositories/employee_repository.dart';
 import '../data/repositories/payroll_repository.dart';
 import '../core/constants/payment_currencies.dart';
+import '../utils/phone_utils.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 
@@ -166,12 +167,17 @@ class EmployeeDetailController extends GetxController {
 
     try {
       isSaving.value = true;
+      final normalizedPhone = PhoneUtils.tryNormalize(phoneController.text.trim());
+      if (normalizedPhone == null) {
+        _showError('Enter a valid phone number.');
+        return;
+      }
       final updated = await _employeeRepository.updateEmployee(
         employeeId,
         EmployeeUpdateRequest(
           fullName: fullNameController.text.trim(),
           email: emailController.text.trim(),
-          phone: phoneController.text.trim(),
+          phone: normalizedPhone,
           isActive: isActive.value,
           defaultCurrencyCode: defaultCurrencyCode.value,
           roleId: selectedRoleId.value,

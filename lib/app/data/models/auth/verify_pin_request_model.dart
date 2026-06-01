@@ -1,8 +1,8 @@
 class VerifyPinRequestModel {
-  const VerifyPinRequestModel({required this.email, required this.pin});
+  const VerifyPinRequestModel({required this.employeeId, required this.pin});
 
-  final String email;
+  final String employeeId;
   final String pin;
 
-  Map<String, dynamic> toJson() => {'email': email, 'pin': pin};
+  Map<String, dynamic> toJson() => {'employee_id': employeeId, 'pin': pin};
 }

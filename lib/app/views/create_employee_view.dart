@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/create_employee_controller.dart';
+import '../utils/phone_utils.dart';
 import '../themes/app_colors.dart';
 
 class CreateEmployeeView extends GetView<CreateEmployeeController> {
@@ -109,17 +110,22 @@ class CreateEmployeeView extends GetView<CreateEmployeeController> {
                     ),
                     const SizedBox(height: 18),
                     const _FieldLabel(label: 'Phone'),
+                    const SizedBox(height: 4),
+                    Text(
+                      PhoneUtils.formatHint,
+                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    ),
                     const SizedBox(height: 6),
                     _FormField(
                       controller: controller.phoneController,
-                      hint: 'e.g. +967 712 345 678',
+                      hint: 'e.g. +61434947409 or 0434 947 409',
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) {
                           return 'Phone number is required';
                         }
-                        return null;
+                        return PhoneUtils.validationError(v.trim());
                       },
                     ),
                     const SizedBox(height: 18),

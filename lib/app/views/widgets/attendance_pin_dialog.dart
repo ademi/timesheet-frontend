@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/attendance_controller.dart';
+import '../../utils/employee_clock_status.dart';
 import '../../themes/app_colors.dart';
 import 'pin_input_field.dart';
 
@@ -43,7 +44,7 @@ class AttendancePinDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  emp.fullName.isNotEmpty ? emp.fullName : emp.email,
+                  emp.fullName.isNotEmpty ? emp.fullName : 'Employee',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 15,
@@ -51,12 +52,14 @@ class AttendancePinDialog extends StatelessWidget {
                     color: AppColors.textDark,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  emp.email,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                ),
+                if (employeeContactSubtitle(emp).isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    employeeContactSubtitle(emp),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  ),
+                ],
                 const SizedBox(height: 18),
                 const Text(
                   'Enter your 4-digit PIN',
@@ -84,12 +87,26 @@ class AttendancePinDialog extends StatelessWidget {
                   }
                   return Padding(
                     padding: const EdgeInsets.only(top: 12),
-                    child: Text(
-                      c.dialogError.value,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: AppColors.error,
-                        fontSize: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.error.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Text(
+                        c.dialogError.value,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppColors.error,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   );

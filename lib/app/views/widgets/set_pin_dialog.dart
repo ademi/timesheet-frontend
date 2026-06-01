@@ -9,14 +9,16 @@ import 'pin_input_field.dart';
 class SetPinDialog extends StatefulWidget {
   const SetPinDialog({
     super.key,
-    required this.email,
+    required this.employeeName,
+    this.employeePhone,
     required this.onSubmit,
     this.title = 'Create your PIN',
     this.subtitle = 'Choose a 4-digit PIN to continue.',
     this.submitLabel = 'Save PIN',
   });
 
-  final String email;
+  final String employeeName;
+  final String? employeePhone;
   final Future<bool> Function(String pin, String confirmPin) onSubmit;
   final String title;
   final String subtitle;
@@ -73,6 +75,7 @@ class _SetPinDialogState extends State<SetPinDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final phone = widget.employeePhone?.trim() ?? '';
     return Dialog(
       backgroundColor: AppColors.cardBackground,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -102,14 +105,24 @@ class _SetPinDialogState extends State<SetPinDialog> {
               ),
               const SizedBox(height: 12),
               Text(
-                widget.email,
+                widget.employeeName.isNotEmpty
+                    ? widget.employeeName
+                    : 'Employee',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 15,
                   color: AppColors.primaryDark,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
+              if (phone.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  phone,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                ),
+              ],
               const SizedBox(height: 18),
               const Text(
                 'New PIN',
@@ -143,9 +156,27 @@ class _SetPinDialogState extends State<SetPinDialog> {
                 if (_error.value.isEmpty) return const SizedBox(height: 12);
                 return Padding(
                   padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    _error.value,
-                    style: const TextStyle(color: AppColors.error, fontSize: 12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Text(
+                      _error.value,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: AppColors.error,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 );
               }),

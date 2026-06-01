@@ -11,6 +11,9 @@ class EmployeeRepository {
 
   Future<List<EmployeeModel>> listEmployees() => _remote.listEmployees();
 
+  Future<List<EmployeeModel>> listEmployeesWithClockStatus() =>
+      _remote.listEmployeesWithClockStatus();
+
   Future<EmployeeModel> getEmployee(String employeeId) =>
       _remote.getEmployee(employeeId);
 

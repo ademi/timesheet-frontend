@@ -1,23 +1,23 @@
 class LoginRequestModel {
   const LoginRequestModel({
-    required this.email,
+    required this.identifier,
     required this.password,
     required this.tenantId,
   });
 
-  final String email;
+  final String identifier;
   final String password;
   final String tenantId;
 
   Map<String, dynamic> toJson() => {
-        'email': email,
+        'identifier': identifier,
         'password': password,
         'tenant_id': tenantId,
       };
 
   factory LoginRequestModel.fromJson(Map<String, dynamic> json) {
     return LoginRequestModel(
-      email: json['email'] as String,
+      identifier: json['identifier'] as String,
       password: json['password'] as String,
       tenantId: json['tenant_id'] as String,
     );
