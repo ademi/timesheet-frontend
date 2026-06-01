@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/network/attendance_api_client.dart';
@@ -11,14 +10,13 @@ abstract final class PayrollModuleBinding {
   PayrollModuleBinding._();
 
   static void ensureDependencies() {
-    final rawStorage = GetStorage();
     if (!Get.isRegistered<TokenStorage>()) {
-      Get.put<TokenStorage>(TokenStorage(storage: rawStorage), permanent: true);
+      Get.put<TokenStorage>(TokenStorage(), permanent: true);
     }
 
     if (!Get.isRegistered<ApiClient>()) {
       Get.put<ApiClient>(
-        ApiClient(rawStorage, Get.find<TokenStorage>()),
+        ApiClient(Get.find<TokenStorage>()),
         permanent: true,
       );
     }

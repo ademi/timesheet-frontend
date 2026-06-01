@@ -1,14 +1,18 @@
 import 'package:dio/dio.dart';
-import 'package:get_storage/get_storage.dart';
 
 import '../constants/app_constants.dart';
 import '../services/token_storage.dart';
 import 'auth_interceptor.dart';
 
 /// Auth [ApiClient]: [plainDio] for unauthenticated auth calls (`/v1/auth/login`, `/v1/auth/refresh`);
-/// [dio] for authenticated auth calls (Bearer from [AuthInterceptor], e.g. `/v1/auth/logout`, `/v1/auth/change_password`).
+/// [dio] for authenticated auth calls (Bearer from [AuthInterceptor], e.g. `/v1/auth/logout`).
 class ApiClient {
-  ApiClient._(GetStorage rawStorage, TokenStorage tokenStorage)
+  // Certificate pinning (FE-8): set [_spkiPin] from production cert SPKI hash.
+  // dio_pinning_interceptor is unavailable on pub.dev; add interceptor when wired.
+  // ignore: unused_field
+  static const _spkiPin = 'PASTE_BASE64_SPKI_PIN_HERE';
+
+  ApiClient._(TokenStorage tokenStorage)
       : plainDio = Dio(
           BaseOptions(
             baseUrl: AppConstants.baseUrl,
@@ -42,8 +46,8 @@ class ApiClient {
 
   static ApiClient? _instance;
 
-  factory ApiClient(GetStorage rawStorage, TokenStorage tokenStorage) {
-    return _instance ??= ApiClient._(rawStorage, tokenStorage);
+  factory ApiClient(TokenStorage tokenStorage) {
+    return _instance ??= ApiClient._(tokenStorage);
   }
 
   final Dio plainDio;

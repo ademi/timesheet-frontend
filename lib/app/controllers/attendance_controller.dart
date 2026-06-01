@@ -77,8 +77,12 @@ class AttendanceController extends GetxController {
       _resetVisibleWindow();
     } on AttendanceErrorModel {
       Get.offAllNamed(AppRoutes.login);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 401) return;
+    } on DioException catch (_) {
+      Get.snackbar(
+        'Session expired',
+        'Please log in again.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
       Get.offAllNamed(AppRoutes.login);
     } catch (_) {
       Get.offAllNamed(AppRoutes.login);

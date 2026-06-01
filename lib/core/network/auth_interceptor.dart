@@ -35,11 +35,12 @@ class AuthInterceptor extends Interceptor {
     await _storage.persist(
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
+      branchId: tokens.defaultBranchId,
     );
   }
 
-  void _clearTokens() {
-    _storage.clear();
+  Future<void> _clearTokens() async {
+    await _storage.clear();
   }
 
   void _redirectToLogin() {
@@ -98,13 +99,13 @@ class AuthInterceptor extends Interceptor {
 
     final options = err.requestOptions;
     if (options.extra[kAuth401RetriedExtra] == true) {
-      _clearTokens();
+      await _clearTokens();
       _redirectToLogin();
       return handler.reject(err);
     }
 
     if (_isAuthRefreshPath(options.path)) {
-      _clearTokens();
+      await _clearTokens();
       _redirectToLogin();
       return handler.reject(err);
     }
@@ -116,7 +117,7 @@ class AuthInterceptor extends Interceptor {
     try {
       await _refreshOrWait();
     } catch (_) {
-      _clearTokens();
+      await _clearTokens();
       _redirectToLogin();
       return handler.reject(err);
     }

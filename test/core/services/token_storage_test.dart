@@ -1,32 +1,17 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_storage/get_storage.dart';
-import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:yemen_gate_attendance_app/core/services/token_storage.dart';
-import 'dart:io';
-
-class _FakePathProviderPlatform extends PathProviderPlatform {
-  _FakePathProviderPlatform(this._path);
-
-  final String _path;
-
-  @override
-  Future<String?> getApplicationDocumentsPath() async => _path;
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const boxName = 'token_storage_test_box';
-  final tempDir = Directory.systemTemp.createTempSync('token_storage_test_');
-
-  setUpAll(() async {
-    PathProviderPlatform.instance = _FakePathProviderPlatform(tempDir.path);
-    await GetStorage.init(boxName);
+  setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
   });
 
   test('persists and reads access/refresh tokens', () async {
-    final rawStorage = GetStorage(boxName);
-    final storage = TokenStorage(storage: rawStorage);
+    final storage = TokenStorage();
+    await storage.loadFromStorage();
 
     await storage.persist(accessToken: 'access', refreshToken: 'refresh');
 
@@ -34,14 +19,30 @@ void main() {
     expect(storage.refreshToken, 'refresh');
   });
 
+  test('persists branch id when provided', () async {
+    final storage = TokenStorage();
+    await storage.persist(
+      accessToken: 'access',
+      refreshToken: 'refresh',
+      branchId: 'branch-1',
+    );
+
+    expect(storage.branchId, 'branch-1');
+  });
+
   test('clears persisted tokens', () async {
-    final rawStorage = GetStorage(boxName);
-    final storage = TokenStorage(storage: rawStorage);
+    final storage = TokenStorage();
     await storage.persist(accessToken: 'access', refreshToken: 'refresh');
 
-    storage.clear();
+    await storage.clear();
 
     expect(storage.accessToken, isNull);
     expect(storage.refreshToken, isNull);
+    expect(storage.branchId, isNull);
+  });
+
+  test('needsProactiveRefresh is false without token', () {
+    final storage = TokenStorage();
+    expect(storage.needsProactiveRefresh(), isFalse);
   });
 }
