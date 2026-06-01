@@ -32,4 +32,7 @@ class EmployeeRepository {
     required DateTime to,
   }) =>
       _remote.listTimeEntries(employeeId: employeeId, from: from, to: to);
+
+  Future<String> resetEmployeePin(String employeeId) =>
+      _remote.resetEmployeePin(employeeId);
 }

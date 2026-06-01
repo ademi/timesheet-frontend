@@ -40,6 +40,7 @@ class EmployeeDetailController extends GetxController {
 
   final isLoading = false.obs;
   final isSaving = false.obs;
+  final isResettingPin = false.obs;
   final isEditing = false.obs;
 
   final fullNameController = TextEditingController();
@@ -220,6 +221,55 @@ class EmployeeDetailController extends GetxController {
       AppRoutes.paymentCreate,
       arguments: {'periodId': period.id, 'employeeId': employeeId},
     );
+  }
+
+  Future<void> requestPinReset() async {
+    final emp = employee.value;
+    if (emp == null) return;
+
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Reset employee PIN?'),
+        content: Text(
+          '${emp.fullName} will need to choose a new 4-digit PIN the next '
+          'time they clock in or out.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textLight,
+            ),
+            child: const Text('Reset PIN'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      isResettingPin.value = true;
+      final message = await _employeeRepository.resetEmployeePin(employeeId);
+      Get.snackbar(
+        'PIN reset',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.success,
+        colorText: AppColors.textLight,
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+      );
+    } on DioException catch (e) {
+      _showError(_extractErrorMessage(e));
+    } catch (_) {
+      _showError('Failed to reset employee PIN.');
+    } finally {
+      isResettingPin.value = false;
+    }
   }
 
   void viewBalance() {

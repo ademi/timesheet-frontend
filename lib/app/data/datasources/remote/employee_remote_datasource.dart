@@ -93,4 +93,18 @@ class EmployeeRemoteDataSource {
         .map(TimeEntryOut.fromJson)
         .toList();
   }
+
+  Future<String> resetEmployeePin(String employeeId) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/v1/employees/$employeeId/reset-pin',
+    );
+    final data = response.data;
+    if (data == null) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        message: 'Invalid reset PIN response format.',
+      );
+    }
+    return data['message'] as String? ?? 'PIN reset requested.';
+  }
 }
