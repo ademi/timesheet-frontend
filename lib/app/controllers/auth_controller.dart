@@ -43,12 +43,16 @@ class AuthController extends GetxController {
 
     isLoading.value = true;
     try {
-      await _authRepository.login(
+      final tokens = await _authRepository.loginWithTokens(
         emailController.text.trim(),
         passwordController.text,
       );
       if (Get.isRegistered<PushNotificationService>()) {
         await Get.find<PushNotificationService>().registerCurrentDeviceToken();
+      }
+      if (tokens.mustChangePassword) {
+        Get.offAllNamed(AppRoutes.firstLogin);
+        return;
       }
       final gateway = Get.find<GatewayController>();
       final destination =

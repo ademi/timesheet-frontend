@@ -1,6 +1,7 @@
 abstract class AppRoutes {
   static const gateway = '/gateway';
   static const login = '/login';
+  static const firstLogin = '/first-login';
   static const home = '/home';
   static const adminPanel = '/admin-panel';
   static const adminEmployees = '/admin/employees';

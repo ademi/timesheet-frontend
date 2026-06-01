@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../models/auth/auth_error_model.dart';
 import '../../models/auth/auth_token_model.dart';
-import '../../models/auth/change_password_request_model.dart';
+import '../../models/auth/first_login_request_model.dart';
 import '../../models/auth/login_request_model.dart';
 import '../../models/auth/logout_request_model.dart';
 import '../../models/auth/logout_response_model.dart';
@@ -134,20 +134,25 @@ class AuthRemoteDataSource {
     return LogoutResponseModel.fromJson(data);
   }
 
-  /// Calls POST /v1/auth/change_password (requires Bearer access token).
-  Future<String> changePassword(ChangePasswordRequestModel request) async {
-    final response = await _authenticatedDio.post<Map<String, dynamic>>(
-      '/v1/auth/set_initial_password',
-      data: request.toJson(),
-    );
-    final data = response.data;
-    if (data == null) {
-      throw DioException(
-        requestOptions: response.requestOptions,
-        message: 'Empty change password response',
+  /// Calls POST /v1/auth/complete_first_login (requires Bearer access token).
+  /// Used when the server returns must_change_password=true on login.
+  Future<void> completeFirstLogin(FirstLoginRequestModel request) async {
+    try {
+      final response = await _authenticatedDio.post<Map<String, dynamic>>(
+        '/v1/auth/complete_first_login',
+        data: request.toJson(),
       );
+      if (response.data == null) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          message: 'Empty complete_first_login response',
+        );
+      }
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
     }
-    return data['message'] as String? ?? 'ok';
   }
 }
 

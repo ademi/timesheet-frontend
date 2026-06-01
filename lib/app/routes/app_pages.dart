@@ -12,6 +12,7 @@ import '../bindings/employee_payment_history_binding.dart';
 import '../bindings/employee_picker_binding.dart';
 import '../bindings/employee_rate_form_binding.dart';
 import '../bindings/employee_rates_binding.dart';
+import '../bindings/first_login_binding.dart';
 import '../bindings/gateway_binding.dart';
 import '../bindings/home_binding.dart';
 import '../bindings/payment_main_binding.dart';
@@ -35,6 +36,7 @@ import '../views/employee_picker_view.dart';
 import '../views/employee_rate_form_view.dart';
 import '../views/employee_rates_view.dart';
 import '../views/payroll_result_detail_view.dart';
+import '../views/first_login_view.dart';
 import '../views/gateway_view.dart';
 import '../views/login_view.dart';
 import '../views/payment_main_view.dart';
@@ -62,6 +64,12 @@ class AppPages {
       name: AppRoutes.login,
       page: () => const LoginView(),
       binding: AuthBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.firstLogin,
+      page: () => const FirstLoginView(),
+      binding: FirstLoginBinding(),
       transition: Transition.fadeIn,
     ),
     GetPage(

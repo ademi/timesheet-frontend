@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 
-import '../../../core/constants/app_constants.dart';
 import '../../../core/services/token_storage.dart';
 import '../datasources/remote/auth_remote_datasource.dart';
 import '../models/auth/auth_token_model.dart';
+import '../models/auth/first_login_request_model.dart';
 import '../models/auth/login_request_model.dart';
 import '../models/auth/logout_request_model.dart';
 import '../models/auth/set_pin_request_model.dart';
@@ -52,16 +52,29 @@ class AuthRepository {
     }
   }
 
-  Future<void> login(String identifier, String password) async {
+  Future<AuthTokenModel> loginWithTokens(String identifier, String password) async {
     try {
       final tokens = await _remote.login(
         LoginRequestModel(
           identifier: identifier,
           password: password,
-          tenantId: AppConstants.tenantId,
         ),
       );
       await _persistTokens(tokens);
+      return tokens;
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
+    }
+  }
+
+  Future<void> completeFirstLogin(String newPassword) async {
+    try {
+      await _remote.completeFirstLogin(
+        FirstLoginRequestModel(newPassword: newPassword),
+      );
+      await _storage.clear();
     } on DioException catch (e) {
       final authErr = parseAuthError(e);
       if (authErr != null) throw authErr;
@@ -80,7 +93,7 @@ class AuthRepository {
     } catch (_) {
       // Ignore non-Dio errors; always clear locally.
     } finally {
-      _clearTokens();
+      await _clearTokens();
     }
   }
 
@@ -88,10 +101,11 @@ class AuthRepository {
     await _storage.persist(
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
+      branchId: tokens.defaultBranchId,
     );
   }
 
-  void _clearTokens() {
-    _storage.clear();
+  Future<void> _clearTokens() async {
+    await _storage.clear();
   }
 }
