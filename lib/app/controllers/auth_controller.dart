@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../core/network/must_change_password.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
@@ -50,10 +51,8 @@ class AuthController extends GetxController {
       if (Get.isRegistered<PushNotificationService>()) {
         await Get.find<PushNotificationService>().registerCurrentDeviceToken();
       }
-      if (tokens.mustChangePassword) {
-        Get.offAllNamed(AppRoutes.firstLogin);
-        return;
-      }
+      redirectToFirstLoginIfNeeded(mustChangePassword: tokens.mustChangePassword);
+      if (tokens.mustChangePassword) return;
       final gateway = Get.find<GatewayController>();
       final destination =
           gateway.selectedRole.value == UserRole.admin
@@ -61,6 +60,10 @@ class AuthController extends GetxController {
               : AppRoutes.home;
       Get.offAllNamed(destination);
     } on DioException catch (e) {
+      if (isMustChangePasswordResponse(e)) {
+        redirectToFirstLoginIfNeeded(mustChangePassword: true);
+        return;
+      }
       final parsed = parseAuthError(e);
       _showError(
         parsed?.detail ?? e.message ?? 'Network error. Please try again.',

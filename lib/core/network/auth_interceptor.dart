@@ -6,6 +6,7 @@ import '../../app/data/models/auth/auth_token_model.dart';
 import '../../app/routes/app_routes.dart';
 import '../constants/app_constants.dart';
 import '../services/token_storage.dart';
+import 'must_change_password.dart';
 
 /// Marks a request that already went through one 401 → refresh → retry cycle.
 const String kAuth401RetriedExtra = 'auth_401_retried';
@@ -65,6 +66,9 @@ class AuthInterceptor extends Interceptor {
     final future = () async {
       final tokens = await executeRefreshRequest(_plainDio, refreshToken);
       await _persistTokens(tokens);
+      redirectToFirstLoginIfNeeded(
+        mustChangePassword: tokens.mustChangePassword,
+      );
     }();
     _refreshFuture = future;
     try {
@@ -93,6 +97,12 @@ class AuthInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final response = err.response;
+
+    if (dioErrorRequiresPasswordChange(err)) {
+      redirectToFirstLoginIfNeeded();
+      return handler.reject(err);
+    }
+
     if (response?.statusCode != 401) {
       return handler.next(err);
     }

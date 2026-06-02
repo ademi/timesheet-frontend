@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../core/validation/password_validation.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/models/auth/auth_error_model.dart';
 import '../data/repositories/auth_repository.dart';
@@ -24,15 +25,7 @@ class FirstLoginController extends GetxController {
   void togglePasswordVisibility() => isPasswordVisible.toggle();
   void toggleConfirmPasswordVisibility() => isConfirmPasswordVisible.toggle();
 
-  String? validatePassword(String? value) {
-    if (value == null || value.isEmpty) return 'Password is required';
-    if (value.length < 8) return 'Password must be at least 8 characters';
-    if (!value.contains(RegExp(r'[A-Z]'))) {
-      return 'Must contain an uppercase letter';
-    }
-    if (!value.contains(RegExp(r'[0-9]'))) return 'Must contain a number';
-    return null;
-  }
+  String? validatePassword(String? value) => PasswordValidation.validate(value);
 
   String? validateConfirm(String? value) {
     if (value != newPasswordController.text) return 'Passwords do not match';
