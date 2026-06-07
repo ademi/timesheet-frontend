@@ -47,11 +47,24 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
                         statusLabel: controller.clockStatusLabel(employee),
                         isClockedIn: employee.clockedIn,
                         onTap: () async {
-                          await Get.toNamed(
+                          final result = await Get.toNamed(
                             AppRoutes.employeeDetail,
                             arguments: employee.id,
                           );
                           await controller.fetchEmployees();
+                          if (result is String && result.isNotEmpty) {
+                            Get.snackbar(
+                              'Deleted',
+                              result,
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: AppColors.success,
+                              colorText: AppColors.textLight,
+                              icon: const Icon(
+                                Icons.check_circle,
+                                color: Colors.white,
+                              ),
+                            );
+                          }
                         },
                       );
                     },

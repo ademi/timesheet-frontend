@@ -11,42 +11,82 @@ class EmployeeDetailView extends GetView<EmployeeDetailController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Obx(
-          () => Text(controller.employee.value?.fullName ?? 'Employee'),
-        ),
-        backgroundColor: AppColors.darkBrown,
-        actions: [
-          IconButton(
-            onPressed: controller.loadAll,
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+    return Obx(() {
+      final deleting = controller.isDeleting.value;
+
+      return Stack(
+        children: [
+          Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
+              title: Text(controller.employee.value?.fullName ?? 'Employee'),
+              backgroundColor: AppColors.darkBrown,
+              actions: [
+                IconButton(
+                  onPressed: deleting ? null : controller.loadAll,
+                  icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+                ),
+              ],
+            ),
+            body: _buildBody(deleting),
           ),
+          if (deleting)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black54,
+                child: Center(
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 28,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(color: AppColors.primary),
+                          const SizedBox(height: 20),
+                          Text(
+                            'Deleting employee...',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildBody(bool deleting) {
+    if (controller.isLoading.value && controller.employee.value == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return RefreshIndicator(
+      onRefresh: deleting ? () async {} : controller.loadAll,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _DetailsSection(controller: controller),
+          const SizedBox(height: 16),
+          _PayrollSection(controller: controller),
+          const SizedBox(height: 16),
+          _RatesSection(controller: controller),
+          const SizedBox(height: 16),
+          _AttendanceSection(controller: controller),
+          const SizedBox(height: 24),
         ],
       ),
-      body: Obx(() {
-        if (controller.isLoading.value && controller.employee.value == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        return RefreshIndicator(
-          onRefresh: controller.loadAll,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _DetailsSection(controller: controller),
-              const SizedBox(height: 16),
-              _PayrollSection(controller: controller),
-              const SizedBox(height: 16),
-              _RatesSection(controller: controller),
-              const SizedBox(height: 16),
-              _AttendanceSection(controller: controller),
-              const SizedBox(height: 24),
-            ],
-          ),
-        );
-      }),
     );
   }
 }
@@ -66,10 +106,35 @@ class _DetailsSection extends StatelessWidget {
         icon: Icons.person_outline_rounded,
         trailing: editing
             ? null
-            : TextButton.icon(
-                onPressed: () => controller.startEditing(),
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('Edit'),
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton.icon(
+                    onPressed: controller.isDeleting.value ||
+                            controller.isSaving.value
+                        ? null
+                        : () => controller.startEditing(),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: const Text('Edit'),
+                  ),
+                  TextButton.icon(
+                    onPressed: controller.isDeleting.value ||
+                            controller.isSaving.value
+                        ? null
+                        : controller.deleteEmployee,
+                    icon: controller.isDeleting.value
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.delete_outline, size: 18),
+                    label: Text(
+                      controller.isDeleting.value ? 'Deleting...' : 'Delete',
+                    ),
+                    style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                  ),
+                ],
               ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -170,7 +235,11 @@ class _DetailsSection extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               title: const Text('Active'),
               value: controller.isActive.value,
-              activeThumbColor: AppColors.primary,
+              thumbColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.selected)
+                    ? AppColors.primary
+                    : null,
+              ),
               onChanged: editing ? (v) => controller.isActive.value = v : null,
             ),
             if (!editing) ...[

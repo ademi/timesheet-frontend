@@ -40,6 +40,7 @@ class EmployeeDetailController extends GetxController {
 
   final isLoading = false.obs;
   final isSaving = false.obs;
+  final isDeleting = false.obs;
   final isResettingPin = false.obs;
   final isEditing = false.obs;
 
@@ -220,6 +221,106 @@ class EmployeeDetailController extends GetxController {
     Get.toNamed(
       AppRoutes.paymentCreate,
       arguments: {'periodId': period.id, 'employeeId': employeeId},
+    );
+  }
+
+  Future<void> deleteEmployee() async {
+    final emp = employee.value;
+    if (emp == null || employeeId.isEmpty) return;
+
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Delete employee?'),
+        content: Text(
+          'This will permanently remove ${emp.fullName} (${emp.employeeCode}). '
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.textLight,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      isDeleting.value = true;
+      final response =
+          await _employeeRepository.bulkDeleteEmployees([employeeId]);
+
+      if (response.deletedCount <= 0) {
+        _showError('No matching employees found');
+        return;
+      }
+
+      final message = response.message.isNotEmpty
+          ? response.message
+          : 'Employee deleted successfully.';
+
+      isDeleting.value = false;
+      await _showDeleteSuccessDialog(
+        message: message,
+        notFoundIds: response.notFoundIds,
+      );
+      Get.back(result: message);
+    } on DioException catch (e) {
+      _showError(_extractErrorMessage(e));
+    } catch (_) {
+      _showError('Failed to delete employee.');
+    } finally {
+      isDeleting.value = false;
+    }
+  }
+
+  Future<void> _showDeleteSuccessDialog({
+    required String message,
+    required List<String> notFoundIds,
+  }) {
+    return Get.dialog<void>(
+      AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: AppColors.success),
+            SizedBox(width: 8),
+            Text('Deleted'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            if (notFoundIds.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Some requested employees were not found.',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Get.back(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textLight,
+            ),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
     );
   }
 

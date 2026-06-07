@@ -1,5 +1,6 @@
 import '../../../core/services/token_storage.dart';
 import '../datasources/remote/employee_remote_datasource.dart';
+import '../models/attendance/employee_bulk_delete_response.dart';
 import '../models/attendance/employee_model.dart';
 import '../models/attendance/employee_role_option.dart';
 import '../models/attendance/employee_update_request.dart';
@@ -41,4 +42,7 @@ class EmployeeRepository {
 
   Future<String> resetEmployeePin(String employeeId) =>
       _remote.resetEmployeePin(employeeId);
+
+  Future<EmployeeBulkDeleteResponse> bulkDeleteEmployees(List<String> ids) =>
+      _remote.bulkDeleteEmployees(ids);
 }

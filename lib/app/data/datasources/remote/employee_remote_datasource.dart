@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
+import '../../models/attendance/employee_bulk_delete_request.dart';
+import '../../models/attendance/employee_bulk_delete_response.dart';
 import '../../models/attendance/employee_model.dart';
 import '../../models/attendance/employee_role_option.dart';
 import '../../models/attendance/employee_update_request.dart';
@@ -91,6 +93,25 @@ class EmployeeRemoteDataSource {
         .whereType<Map<String, dynamic>>()
         .map(TimeEntryOut.fromJson)
         .toList();
+  }
+
+  Future<EmployeeBulkDeleteResponse> bulkDeleteEmployees(List<String> ids) async {
+    if (ids.isEmpty) {
+      throw ArgumentError('ids must not be empty');
+    }
+    final dedupedIds = ids.toSet().toList();
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/v1/employees/bulk-delete',
+      data: EmployeeBulkDeleteRequest(ids: dedupedIds).toJson(),
+    );
+    final data = response.data;
+    if (data == null) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        message: 'Invalid bulk delete response format.',
+      );
+    }
+    return EmployeeBulkDeleteResponse.fromJson(data);
   }
 
   Future<String> resetEmployeePin(String employeeId) async {
