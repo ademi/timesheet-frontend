@@ -106,35 +106,13 @@ class _DetailsSection extends StatelessWidget {
         icon: Icons.person_outline_rounded,
         trailing: editing
             ? null
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextButton.icon(
-                    onPressed: controller.isDeleting.value ||
-                            controller.isSaving.value
-                        ? null
-                        : () => controller.startEditing(),
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: const Text('Edit'),
-                  ),
-                  TextButton.icon(
-                    onPressed: controller.isDeleting.value ||
-                            controller.isSaving.value
-                        ? null
-                        : controller.deleteEmployee,
-                    icon: controller.isDeleting.value
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.delete_outline, size: 18),
-                    label: Text(
-                      controller.isDeleting.value ? 'Deleting...' : 'Delete',
-                    ),
-                    style: TextButton.styleFrom(foregroundColor: AppColors.error),
-                  ),
-                ],
+            : TextButton.icon(
+                onPressed: controller.isDeleting.value ||
+                        controller.isSaving.value
+                    ? null
+                    : () => controller.startEditing(),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Edit'),
               ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -235,10 +213,15 @@ class _DetailsSection extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               title: const Text('Active'),
               value: controller.isActive.value,
+              trackColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.selected)
+                    ? Colors.grey.shade400
+                    : Colors.grey.shade300,
+              ),
               thumbColor: WidgetStateProperty.resolveWith(
                 (states) => states.contains(WidgetState.selected)
                     ? AppColors.primary
-                    : null,
+                    : Colors.grey.shade600,
               ),
               onChanged: editing ? (v) => controller.isActive.value = v : null,
             ),
@@ -278,18 +261,42 @@ class _DetailsSection extends StatelessWidget {
             ],
             if (editing) ...[
               const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: controller.isDeleting.value || controller.isSaving.value
+                    ? null
+                    : controller.deleteEmployee,
+                icon: controller.isDeleting.value
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.delete_outline),
+                label: Text(
+                  controller.isDeleting.value ? 'Deleting...' : 'Delete Employee',
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.error),
+                ),
+              ),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: controller.isSaving.value ? null : controller.cancelEditing,
+                      onPressed: controller.isDeleting.value || controller.isSaving.value
+                          ? null
+                          : controller.cancelEditing,
                       child: const Text('Cancel'),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: controller.isSaving.value ? null : controller.saveDetails,
+                      onPressed: controller.isDeleting.value || controller.isSaving.value
+                          ? null
+                          : controller.saveDetails,
                       icon: controller.isSaving.value
                           ? const SizedBox(
                               width: 18,
