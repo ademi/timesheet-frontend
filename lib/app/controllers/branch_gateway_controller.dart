@@ -7,6 +7,7 @@ import '../data/repositories/branch_repository.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import 'auth_controller.dart';
+import 'gateway_controller.dart';
 
 class BranchGatewayController extends GetxController {
   BranchGatewayController({
@@ -49,7 +50,10 @@ class BranchGatewayController extends GetxController {
       branchId: branch.id,
       branchName: branch.name,
     );
-    Get.offAllNamed(AppRoutes.adminPanel);
+    final role = Get.find<GatewayController>().selectedRole.value;
+    final destination =
+        role == UserRole.admin ? AppRoutes.adminPanel : AppRoutes.home;
+    Get.offAllNamed(destination);
   }
 
   Future<void> logout() async {
