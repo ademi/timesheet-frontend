@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../bindings/admin_panel_binding.dart';
+import '../bindings/branch_gateway_binding.dart';
 import '../bindings/attendance_report_binding.dart';
 import '../bindings/employee_detail_binding.dart';
 import '../bindings/employee_management_binding.dart';
@@ -23,6 +24,7 @@ import '../bindings/payroll_period_results_binding.dart';
 import '../bindings/payroll_periods_binding.dart';
 import '../bindings/payroll_summary_report_binding.dart';
 import '../views/admin_panel_view.dart';
+import '../views/branch_gateway_view.dart';
 import '../views/attendance_report_view.dart';
 import '../views/attendance_view.dart';
 import '../views/employee_detail_view.dart';
@@ -76,6 +78,12 @@ class AppPages {
       name: AppRoutes.home,
       page: () => const AttendanceView(),
       binding: HomeBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.adminBranchGateway,
+      page: () => const BranchGatewayView(),
+      binding: BranchGatewayBinding(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

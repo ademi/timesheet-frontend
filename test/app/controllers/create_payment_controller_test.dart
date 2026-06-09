@@ -62,8 +62,7 @@ void main() {
     paymentRepository = MockPaymentRepository();
     payrollRepository = MockPayrollRepository();
 
-    when(() => paymentRepository.getEmployees(branchId: any(named: 'branchId')))
-        .thenAnswer((_) async => [employee]);
+    when(() => paymentRepository.getEmployees()).thenAnswer((_) async => [employee]);
     when(() => payrollRepository.getPeriods()).thenAnswer((_) async => [period]);
     when(() => payrollRepository.getPeriodResults(any())).thenAnswer((_) async => []);
     when(() => paymentRepository.createPayment(any())).thenAnswer(

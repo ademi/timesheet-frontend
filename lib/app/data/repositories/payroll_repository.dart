@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import '../../../core/services/token_storage.dart';
 import '../datasources/remote/payroll_remote_datasource.dart';
 import '../models/attendance/employee_model.dart';
 import '../models/payroll/employee_balance_out.dart';
@@ -11,9 +12,14 @@ import '../models/payroll/rate_out.dart';
 import '../models/payroll/result_out.dart';
 
 class PayrollRepository {
-  PayrollRepository({required PayrollRemoteDataSource remote}) : _remote = remote;
+  PayrollRepository({
+    required PayrollRemoteDataSource remote,
+    required TokenStorage tokenStorage,
+  })  : _remote = remote,
+        _tokenStorage = tokenStorage;
 
   final PayrollRemoteDataSource _remote;
+  final TokenStorage _tokenStorage;
 
   Future<List<RateOut>> getRates(String employeeId) =>
       _remote.getRates(employeeId);
@@ -24,10 +30,16 @@ class PayrollRepository {
   Future<RateOut> updateRate(String rateId, Map<String, dynamic> body) =>
       _remote.updateRate(rateId, body);
 
-  Future<List<PeriodOut>> getPeriods() => _remote.getPeriods();
+  Future<List<PeriodOut>> getPeriods() =>
+      _remote.getPeriods(branchId: _tokenStorage.branchId);
 
-  Future<PeriodOut> createPeriod(PeriodCreateRequest body) =>
-      _remote.createPeriod(body);
+  Future<PeriodOut> createPeriod(PeriodCreateRequest body) => _remote.createPeriod(
+        PeriodCreateRequest(
+          periodStart: body.periodStart,
+          periodEnd: body.periodEnd,
+          branchId: _tokenStorage.branchId,
+        ),
+      );
 
   Future<PeriodOut> calculatePeriod(String periodId) =>
       _remote.calculatePeriod(periodId);
@@ -52,10 +64,11 @@ class PayrollRepository {
         periodId: periodId,
         fromDate: fromDate,
         toDate: toDate,
+        branchId: _tokenStorage.branchId,
       );
 
-  Future<List<EmployeeModel>> getEmployees({String? branchId}) =>
-      _remote.getEmployees(branchId: branchId);
+  Future<List<EmployeeModel>> getEmployees() =>
+      _remote.getEmployees(branchId: _tokenStorage.branchId);
 
   List<PayrollSummaryRow> parseSummaryRows(Map<String, dynamic> response) {
     final rows = response['rows'];

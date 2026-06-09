@@ -20,15 +20,13 @@ void main() {
     Get.testMode = true;
     paymentRepository = MockPaymentRepository();
     payrollRepository = MockPayrollRepository();
-    when(() => paymentRepository.getEmployees(branchId: any(named: 'branchId')))
-        .thenAnswer((_) async => <EmployeeModel>[]);
+    when(() => paymentRepository.getEmployees()).thenAnswer((_) async => <EmployeeModel>[]);
     when(() => payrollRepository.getPeriods()).thenAnswer((_) async => []);
     when(
       () => paymentRepository.getPaymentsReport(
         from: any(named: 'from'),
         to: any(named: 'to'),
         employeeId: any(named: 'employeeId'),
-        branchId: any(named: 'branchId'),
         periodId: any(named: 'periodId'),
       ),
     ).thenAnswer(

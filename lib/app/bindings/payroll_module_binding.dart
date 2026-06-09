@@ -40,7 +40,10 @@ abstract final class PayrollModuleBinding {
 
     if (!Get.isRegistered<PayrollRepository>()) {
       Get.put<PayrollRepository>(
-        PayrollRepository(remote: Get.find<PayrollRemoteDataSource>()),
+        PayrollRepository(
+          remote: Get.find<PayrollRemoteDataSource>(),
+          tokenStorage: Get.find<TokenStorage>(),
+        ),
         permanent: true,
       );
     }

@@ -14,20 +14,24 @@ class TokenStorage {
   static const _keyAccess = 'access_token';
   static const _keyRefresh = 'refresh_token';
   static const _keyBranch = 'branch_id';
+  static const _keyBranchName = 'branch_name';
 
   String? _cachedAccessToken;
   String? _cachedRefreshToken;
   String? _cachedBranchId;
+  String? _cachedBranchName;
 
   String? get accessToken => _cachedAccessToken;
   String? get refreshToken => _cachedRefreshToken;
   String? get branchId => _cachedBranchId;
+  String? get branchName => _cachedBranchName;
 
   /// Call once at startup (before any API calls) to warm the in-memory cache.
   Future<void> loadFromStorage() async {
     _cachedAccessToken = await _storage.read(key: _keyAccess);
     _cachedRefreshToken = await _storage.read(key: _keyRefresh);
     _cachedBranchId = await _storage.read(key: _keyBranch);
+    _cachedBranchName = await _storage.read(key: _keyBranchName);
   }
 
   /// Returns true if the stored access token expires within [thresholdSeconds].
@@ -52,18 +56,42 @@ class TokenStorage {
     required String refreshToken,
     String? branchId,
   }) async {
+    await persistTokens(accessToken: accessToken, refreshToken: refreshToken);
+    if (branchId != null) {
+      await persistBranchId(branchId);
+    }
+  }
+
+  Future<void> persistTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
     _cachedAccessToken = accessToken;
     _cachedRefreshToken = refreshToken;
-    if (branchId != null) _cachedBranchId = branchId;
     await _storage.write(key: _keyAccess, value: accessToken);
     await _storage.write(key: _keyRefresh, value: refreshToken);
-    if (branchId != null) await _storage.write(key: _keyBranch, value: branchId);
+  }
+
+  Future<void> persistBranchId(String branchId) async {
+    _cachedBranchId = branchId;
+    await _storage.write(key: _keyBranch, value: branchId);
+  }
+
+  Future<void> persistBranchSelection({
+    required String branchId,
+    required String branchName,
+  }) async {
+    _cachedBranchId = branchId;
+    _cachedBranchName = branchName;
+    await _storage.write(key: _keyBranch, value: branchId);
+    await _storage.write(key: _keyBranchName, value: branchName);
   }
 
   Future<void> clear() async {
     _cachedAccessToken = null;
     _cachedRefreshToken = null;
     _cachedBranchId = null;
+    _cachedBranchName = null;
     await _storage.deleteAll();
   }
 }

@@ -40,7 +40,10 @@ abstract final class PaymentModuleBinding {
 
     if (!Get.isRegistered<PaymentRepository>()) {
       Get.put<PaymentRepository>(
-        PaymentRepository(remote: Get.find<PaymentRemoteDataSource>()),
+        PaymentRepository(
+          remote: Get.find<PaymentRemoteDataSource>(),
+          tokenStorage: Get.find<TokenStorage>(),
+        ),
         permanent: true,
       );
     }

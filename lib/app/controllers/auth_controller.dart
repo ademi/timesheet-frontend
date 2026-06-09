@@ -56,7 +56,7 @@ class AuthController extends GetxController {
       final gateway = Get.find<GatewayController>();
       final destination =
           gateway.selectedRole.value == UserRole.admin
-              ? AppRoutes.adminPanel
+              ? AppRoutes.adminBranchGateway
               : AppRoutes.home;
       Get.offAllNamed(destination);
     } on DioException catch (e) {
