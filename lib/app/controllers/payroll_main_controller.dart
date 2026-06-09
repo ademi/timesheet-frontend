@@ -8,6 +8,8 @@ import '../routes/route_args.dart';
 class PayrollMainController extends GetxController {
   void openPeriods() => Get.toNamed(AppRoutes.payrollPeriods);
 
+  void openSettings() => Get.toNamed(AppRoutes.payrollSettings);
+
   void openSummaryReport() => Get.toNamed(AppRoutes.payrollSummaryReport);
 
   Future<void> openEmployeeRates(BuildContext context) async {

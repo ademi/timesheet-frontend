@@ -16,6 +16,7 @@ abstract class AppRoutes {
   static const paymentHistory = '/payments/history';
   static const payrollMain = '/payroll';
   static const payrollPeriods = '/payroll/periods';
+  static const payrollSettings = '/payroll/settings';
   static const payrollPeriodDetail = '/payroll/periods/detail';
   static const payrollPeriodResults = '/payroll/periods/results';
   static const payrollEmployeeRates = '/payroll/rates';

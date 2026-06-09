@@ -21,6 +21,7 @@ import '../bindings/payroll_main_binding.dart';
 import '../bindings/payroll_period_detail_binding.dart';
 import '../bindings/payroll_period_results_binding.dart';
 import '../bindings/payroll_periods_binding.dart';
+import '../bindings/payroll_settings_binding.dart';
 import '../bindings/payroll_summary_report_binding.dart';
 import '../views/admin_panel_view.dart';
 import '../views/attendance_report_view.dart';
@@ -45,6 +46,7 @@ import '../views/payroll_main_view.dart';
 import '../views/payroll_period_detail_view.dart';
 import '../views/payroll_period_results_view.dart';
 import '../views/payroll_periods_view.dart';
+import '../views/payroll_settings_view.dart';
 import '../views/payroll_summary_report_view.dart';
 import 'app_routes.dart';
 
@@ -153,6 +155,12 @@ class AppPages {
       name: AppRoutes.payrollPeriods,
       page: () => const PayrollPeriodsView(),
       binding: PayrollPeriodsBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.payrollSettings,
+      page: () => const PayrollSettingsView(),
+      binding: PayrollSettingsBinding(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
