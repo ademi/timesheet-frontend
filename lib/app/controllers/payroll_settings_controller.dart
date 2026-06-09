@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../data/models/payroll/payroll_date_utils.dart';
 import '../data/models/payroll/payroll_settings.dart';
 import '../data/services/payroll_settings_storage.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 
 class PayrollSettingsController extends GetxController {
@@ -70,12 +71,13 @@ class PayrollSettingsController extends GetxController {
       );
       Get.snackbar(
         'Success',
-        'Payroll settings saved.',
+        'Your payroll settings were saved.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppColors.success,
         colorText: AppColors.textLight,
       );
-      Get.back(result: true);
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      Get.offNamed(AppRoutes.payrollPeriods);
     } finally {
       isSaving.value = false;
     }

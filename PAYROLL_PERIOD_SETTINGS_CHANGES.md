@@ -48,8 +48,11 @@ Now it works like this:
 1. If payroll settings do not exist, the user is asked to set them up first.
 2. If settings exist, the app calculates quick period options.
 3. A bottom sheet shows Previous, Current, and Next period options.
-4. The user can still choose Custom date range as a fallback.
-5. The selected period is validated before the API call.
+4. The user can edit payroll settings directly from the FAB bottom sheet.
+5. The user can still choose Custom date range as a fallback.
+6. The selected period is validated before the API call.
+
+After settings are saved, the app shows a success message and navigates back to the Payroll Periods screen.
 
 ## Weekly Payroll
 

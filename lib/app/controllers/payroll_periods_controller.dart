@@ -50,7 +50,7 @@ class PayrollPeriodsController extends GetxController {
     if (settings == null || !context.mounted) return;
 
     if (settings.frequency == PayrollFrequency.custom) {
-      await createCustomPeriod(context, settings: settings);
+      await _openCustomCreateSheet(context, settings);
       return;
     }
 
@@ -119,6 +119,15 @@ class PayrollPeriodsController extends GetxController {
                       onPressed:
                           () => Navigator.of(
                             sheetContext,
+                          ).pop(_CreatePeriodAction.editSettings),
+                      icon: const Icon(Icons.settings),
+                      label: const Text('Edit payroll settings'),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed:
+                          () => Navigator.of(
+                            sheetContext,
                           ).pop(_CreatePeriodAction.custom),
                       icon: const Icon(Icons.date_range),
                       label: const Text('Custom date range'),
@@ -142,6 +151,10 @@ class PayrollPeriodsController extends GetxController {
     );
 
     if (picked == null || !context.mounted) return;
+    if (picked == _CreatePeriodAction.editSettings) {
+      openSettings();
+      return;
+    }
     if (picked == _CreatePeriodAction.custom) {
       await createCustomPeriod(context, settings: settings);
       return;
@@ -172,6 +185,70 @@ class PayrollPeriodsController extends GetxController {
       end: range.end,
       settings: settings ?? _settingsStorage.readSettings(),
     );
+  }
+
+  Future<void> _openCustomCreateSheet(
+    BuildContext context,
+    PayrollSettings settings,
+  ) async {
+    final action = await showModalBottomSheet<_CreatePeriodAction>(
+      context: context,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Create Payroll Period',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _settingsSummary(settings),
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed:
+                      () => Navigator.of(
+                        sheetContext,
+                      ).pop(_CreatePeriodAction.editSettings),
+                  icon: const Icon(Icons.settings),
+                  label: const Text('Edit payroll settings'),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed:
+                      () => Navigator.of(
+                        sheetContext,
+                      ).pop(_CreatePeriodAction.custom),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.textLight,
+                  ),
+                  icon: const Icon(Icons.date_range),
+                  label: const Text('Custom date range'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (action == null || !context.mounted) return;
+    if (action == _CreatePeriodAction.editSettings) {
+      openSettings();
+      return;
+    }
+    if (action == _CreatePeriodAction.custom) {
+      await createCustomPeriod(context, settings: settings);
+    }
   }
 
   Future<void> createPeriodFromDates(
@@ -306,8 +383,7 @@ class PayrollPeriodsController extends GetxController {
     );
     if (setup != true) return null;
 
-    final saved = await Get.toNamed(AppRoutes.payrollSettings);
-    if (saved == true) return _settingsStorage.readSettings();
+    await Get.toNamed(AppRoutes.payrollSettings);
     return null;
   }
 
@@ -417,4 +493,4 @@ class PayrollPeriodsController extends GetxController {
       DateTime(date.year, date.month, date.day);
 }
 
-enum _CreatePeriodAction { custom }
+enum _CreatePeriodAction { custom, editSettings }
