@@ -27,6 +27,7 @@ void main() {
     const args = EmployeeRateFormArgs(employeeId: employeeId);
     expect(args.isEdit, isFalse);
     expect(args.rate, isNull);
+    expect(args.finishCreateFlowOnSave, isFalse);
   });
 
   test('EmployeeRateFormArgs isEdit is true when rate is provided', () {

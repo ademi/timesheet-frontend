@@ -6,10 +6,15 @@ class EmployeeRateFormArgs {
   const EmployeeRateFormArgs({
     required this.employeeId,
     this.rate,
+    this.finishCreateFlowOnSave = false,
   });
 
   final String employeeId;
   final RateOut? rate;
+
+  /// When true, saving a new rate also closes the create-employee screen so the
+  /// user returns to the employees list instead of the empty create form.
+  final bool finishCreateFlowOnSave;
 
   bool get isEdit => rate != null;
 }
