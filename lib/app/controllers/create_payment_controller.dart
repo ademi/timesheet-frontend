@@ -257,10 +257,8 @@ class CreatePaymentController extends GetxController {
         colorText: Colors.white,
         icon: const Icon(Icons.check_circle, color: Colors.white),
       );
-      clearForm();
-      if (Get.key.currentState?.canPop() ?? false) {
-        Get.back();
-      }
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      Get.offNamed(AppRoutes.paymentMain);
     } on DioException catch (e) {
       _showError(_extractErrorMessage(e));
     } catch (_) {
