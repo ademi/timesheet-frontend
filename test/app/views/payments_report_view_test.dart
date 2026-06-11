@@ -25,8 +25,7 @@ void main() {
     Get.put<TokenStorage>(TokenStorage(), permanent: true);
     paymentRepository = MockPaymentRepository();
     payrollRepository = MockPayrollRepository();
-    when(() => paymentRepository.getEmployees(branchId: any(named: 'branchId')))
-        .thenAnswer((_) async => <EmployeeModel>[]);
+    when(() => paymentRepository.getEmployees()).thenAnswer((_) async => <EmployeeModel>[]);
     when(() => payrollRepository.getPeriods()).thenAnswer((_) async => []);
   });
 

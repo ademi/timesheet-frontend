@@ -15,6 +15,9 @@ abstract final class AppConstants {
   /// Shared API version prefix for all versioned endpoints.
   static const String apiV1 = '/v1';
 
+  /// Branches available to the authenticated admin user.
+  static const String branchesPath = '$apiV1/branches';
+
   /// Auth: verify credentials before sensitive actions (e.g. attendance).
   static const String verifyUserPath = '$apiV1/auth/verify_user';
 

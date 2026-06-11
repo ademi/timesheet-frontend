@@ -35,8 +35,7 @@ void main() {
     Get.testMode = true;
     paymentRepository = MockPaymentRepository();
     payrollRepository = MockPayrollRepository();
-    when(() => paymentRepository.getEmployees(branchId: any(named: 'branchId')))
-        .thenAnswer((_) async => const [
+    when(() => paymentRepository.getEmployees()).thenAnswer((_) async => const [
               EmployeeModel(
                 id: 'emp-1',
                 tenantId: 'tenant-1',

@@ -30,6 +30,30 @@ void main() {
     expect(storage.branchId, 'branch-1');
   });
 
+  test('persists branch selection with name', () async {
+    final storage = TokenStorage();
+    await storage.persistBranchSelection(
+      branchId: 'branch-1',
+      branchName: 'Head Office',
+    );
+
+    expect(storage.branchId, 'branch-1');
+    expect(storage.branchName, 'Head Office');
+  });
+
+  test('persistTokens does not clear selected branch', () async {
+    final storage = TokenStorage();
+    await storage.persistBranchSelection(
+      branchId: 'branch-1',
+      branchName: 'Head Office',
+    );
+    await storage.persistTokens(accessToken: 'new-access', refreshToken: 'new-refresh');
+
+    expect(storage.branchId, 'branch-1');
+    expect(storage.branchName, 'Head Office');
+    expect(storage.accessToken, 'new-access');
+  });
+
   test('clears persisted tokens', () async {
     final storage = TokenStorage();
     await storage.persist(accessToken: 'access', refreshToken: 'refresh');

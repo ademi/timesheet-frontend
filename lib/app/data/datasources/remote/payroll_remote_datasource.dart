@@ -61,8 +61,13 @@ class PayrollRemoteDataSource {
     );
   }
 
-  Future<List<PeriodOut>> getPeriods() async {
-    final response = await _dio.get('/v1/payroll/periods');
+  Future<List<PeriodOut>> getPeriods({String? branchId}) async {
+    final response = await _dio.get(
+      '/v1/payroll/periods',
+      queryParameters: {
+        if (branchId != null && branchId.isNotEmpty) 'branch_id': branchId,
+      },
+    );
     final data = response.data;
     if (data is List) {
       return data
@@ -158,11 +163,13 @@ class PayrollRemoteDataSource {
     String? periodId,
     DateTime? fromDate,
     DateTime? toDate,
+    String? branchId,
   }) async {
     final queryParameters = <String, dynamic>{
       if (periodId != null && periodId.isNotEmpty) 'period_id': periodId,
       if (fromDate != null) 'from_date': fmtPayrollDate(fromDate),
       if (toDate != null) 'to_date': fmtPayrollDate(toDate),
+      if (branchId != null && branchId.isNotEmpty) 'branch_id': branchId,
     };
     final response = await _dio.get(
       '/v1/payroll/reports/summary',
