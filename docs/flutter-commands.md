@@ -350,3 +350,10 @@ flutter build web --release --dart-define=API_BASE_URL=https://timesheetbackend.
 - **Web port:** Admin UI is often opened at `http://localhost:3000` when using `--web-port=3000`.
 - **Package name:** `yemen_gate_attendance_app` (import path in tests).
 
+## to debug on device:
+- get the IP
+hostname -I 2>/dev/null | awk '{print $1}'; ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}'
+- start debugging
+flutter run -d R5CRB12PY2D \
+  --dart-define=AUTH_BASE_URL=http://192.168.197.8:9090 \
+  --dart-define=FARMING_SERVICE_BASE_URL=http://192.168.197.8:8100
