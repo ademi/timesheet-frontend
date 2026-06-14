@@ -54,6 +54,13 @@ class AdminPanelView extends GetView<AdminPanelController> {
                   ),
                   const SizedBox(height: 14),
                   AdminHubCard(
+                    icon: Icons.rule_rounded,
+                    title: 'Attendance Corrections',
+                    subtitle: 'Review exceptions and fix missing punches',
+                    onTap: controller.openAttendanceCorrections,
+                  ),
+                  const SizedBox(height: 14),
+                  AdminHubCard(
                     icon: Icons.receipt_long_rounded,
                     title: 'Payroll',
                     subtitle: 'Periods, rates, balances, and payroll summary',

@@ -5,6 +5,9 @@ class TimeEntryOut {
     required this.clockInAt,
     this.clockOutAt,
     required this.status,
+    this.clockInSource,
+    this.clockOutSource,
+    this.anomalyFlag = false,
   });
 
   final String id;
@@ -12,6 +15,9 @@ class TimeEntryOut {
   final DateTime clockInAt;
   final DateTime? clockOutAt;
   final String status;
+  final String? clockInSource;
+  final String? clockOutSource;
+  final bool anomalyFlag;
 
   factory TimeEntryOut.fromJson(Map<String, dynamic> json) {
     return TimeEntryOut(
@@ -22,6 +28,9 @@ class TimeEntryOut {
           ? DateTime.parse(json['clock_out_at'] as String)
           : null,
       status: json['status'] as String? ?? '',
+      clockInSource: json['clock_in_source'] as String?,
+      clockOutSource: json['clock_out_source'] as String?,
+      anomalyFlag: json['anomaly_flag'] as bool? ?? false,
     );
   }
 }

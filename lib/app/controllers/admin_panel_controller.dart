@@ -11,6 +11,9 @@ class AdminPanelController extends GetxController {
 
   void openAttendanceReport() => Get.toNamed(AppRoutes.adminAttendanceReport);
 
+  void openAttendanceCorrections() =>
+      Get.toNamed(AppRoutes.adminAttendanceCorrections);
+
   void openPayroll() {
     PayrollModuleBinding.ensureDependencies();
     Get.toNamed(AppRoutes.payrollMain);

@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 
 import '../bindings/admin_panel_binding.dart';
 import '../bindings/branch_gateway_binding.dart';
+import '../bindings/attendance_adjustment_binding.dart';
+import '../bindings/attendance_corrections_binding.dart';
 import '../bindings/attendance_report_binding.dart';
 import '../bindings/employee_detail_binding.dart';
 import '../bindings/employee_management_binding.dart';
@@ -26,6 +28,8 @@ import '../bindings/payroll_settings_binding.dart';
 import '../bindings/payroll_summary_report_binding.dart';
 import '../views/admin_panel_view.dart';
 import '../views/branch_gateway_view.dart';
+import '../views/attendance_adjustment_view.dart';
+import '../views/attendance_corrections_view.dart';
 import '../views/attendance_report_view.dart';
 import '../views/attendance_view.dart';
 import '../views/employee_detail_view.dart';
@@ -104,6 +108,18 @@ class AppPages {
       name: AppRoutes.adminAttendanceReport,
       page: () => const AttendanceReportView(),
       binding: AttendanceReportBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.adminAttendanceCorrections,
+      page: () => const AttendanceCorrectionsView(),
+      binding: AttendanceCorrectionsBinding(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.adminAttendanceAdjustment,
+      page: () => const AttendanceAdjustmentView(),
+      binding: AttendanceAdjustmentBinding(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
