@@ -225,11 +225,13 @@ class _DetailsSection extends StatelessWidget {
               ),
               onChanged: editing ? (v) => controller.isActive.value = v : null,
             ),
-            if (!editing) ...[
+            if (editing) ...[
               const SizedBox(height: 12),
               Obx(
                 () => OutlinedButton.icon(
-                  onPressed: controller.isResettingPin.value
+                  onPressed: controller.isResettingPin.value ||
+                          controller.isDeleting.value ||
+                          controller.isSaving.value
                       ? null
                       : controller.requestPinReset,
                   icon: controller.isResettingPin.value
@@ -251,16 +253,13 @@ class _DetailsSection extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(top: 8, bottom: 12),
                 child: Text(
                   'Use when the employee forgot their PIN. They will be prompted '
                   'to create a new one at the next clock-in or clock-out.',
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                 ),
               ),
-            ],
-            if (editing) ...[
-              const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: controller.isDeleting.value || controller.isSaving.value
                     ? null
