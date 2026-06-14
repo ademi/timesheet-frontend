@@ -94,7 +94,7 @@ class AttendanceAdjustmentController extends GetxController {
       Get.back(result: true);
       Get.snackbar(
         'Success',
-        'Correction submitted. Awaiting employee confirmation.',
+        'Correction saved successfully.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,

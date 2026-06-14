@@ -1,8 +1,6 @@
 /// Admin correction actions sent to `POST /v1/attendance/adjustments`.
 ///
-/// Employee confirmation actions (`employee_confirm` / `employee_reject`) are
-/// intentionally not modelled here yet; they belong to the employee-facing
-/// flow that is out of scope for this phase.
+/// Admin corrections are final; there is no employee confirm/reject flow.
 enum AdjustmentAction {
   adminAddClockOut('admin_add_clock_out'),
   adminCreateManualEntry('admin_create_manual_entry'),

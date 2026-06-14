@@ -312,8 +312,6 @@ class _ExceptionBadge extends StatelessWidget {
     switch (type) {
       case 'missing_clock_out':
         return ('Missing clock-out', Colors.redAccent);
-      case 'pending_employee_confirmation':
-        return ('Pending confirmation', Colors.blue);
       case 'manual_adjustment':
         return ('Manual adjustment', AppColors.primaryDark);
       case 'long_shift':

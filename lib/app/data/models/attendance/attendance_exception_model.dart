@@ -24,8 +24,7 @@ class AttendanceExceptionModel {
   final String? clockOutSource;
   final bool anomalyFlag;
 
-  /// One of: missing_clock_out, pending_employee_confirmation,
-  /// manual_adjustment, long_shift, needs_review.
+  /// One of: missing_clock_out, manual_adjustment, long_shift, needs_review.
   final String exceptionType;
 
   bool get hasOpenEntry => id.isNotEmpty;
