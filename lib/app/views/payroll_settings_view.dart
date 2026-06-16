@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 
 import '../controllers/payroll_settings_controller.dart';
 import '../data/models/payroll/payroll_settings.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class PayrollSettingsView extends GetView<PayrollSettingsController> {
   const PayrollSettingsView({super.key});
@@ -13,6 +15,7 @@ class PayrollSettingsView extends GetView<PayrollSettingsController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.payrollMain),
         title: const Text('Payroll Settings'),
         backgroundColor: AppColors.darkBrown,
       ),

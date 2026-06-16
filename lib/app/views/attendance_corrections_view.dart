@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 
 import '../controllers/attendance_corrections_controller.dart';
 import '../data/models/attendance/attendance_exception_model.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class AttendanceCorrectionsView
     extends GetView<AttendanceCorrectionsController> {
@@ -14,6 +16,7 @@ class AttendanceCorrectionsView
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.adminPanel),
         title: const Text('Attendance Corrections'),
         backgroundColor: AppColors.darkBrown,
         actions: [

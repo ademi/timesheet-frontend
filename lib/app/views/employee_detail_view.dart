@@ -3,8 +3,10 @@ import 'package:get/get.dart';
 import '../controllers/employee_detail_controller.dart';
 import '../core/constants/payment_currencies.dart';
 import '../data/models/payroll/payroll_date_utils.dart';
+import '../routes/app_routes.dart';
 import '../utils/phone_utils.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class EmployeeDetailView extends GetView<EmployeeDetailController> {
   const EmployeeDetailView({super.key});
@@ -19,6 +21,7 @@ class EmployeeDetailView extends GetView<EmployeeDetailController> {
           Scaffold(
             backgroundColor: AppColors.background,
             appBar: AppBar(
+              leading: const AppBackButton(fallbackRoute: AppRoutes.adminEmployees),
               title: Text(controller.employee.value?.fullName ?? 'Employee'),
               backgroundColor: AppColors.darkBrown,
               actions: [

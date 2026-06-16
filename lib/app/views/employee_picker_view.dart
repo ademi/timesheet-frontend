@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/employee_picker_controller.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class EmployeePickerView extends GetView<EmployeePickerController> {
   const EmployeePickerView({super.key});
@@ -12,6 +14,7 @@ class EmployeePickerView extends GetView<EmployeePickerController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.adminPanel),
         title: Text(controller.title),
         backgroundColor: AppColors.darkBrown,
       ),

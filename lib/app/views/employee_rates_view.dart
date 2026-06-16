@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/employee_rates_controller.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class EmployeeRatesView extends GetView<EmployeeRatesController> {
   const EmployeeRatesView({super.key});
@@ -12,6 +14,7 @@ class EmployeeRatesView extends GetView<EmployeeRatesController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.payrollMain),
         title: const Text('Employee Rates'),
         backgroundColor: AppColors.darkBrown,
       ),

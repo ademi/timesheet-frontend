@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/create_employee_controller.dart';
+import '../routes/app_routes.dart';
 import '../utils/phone_utils.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class CreateEmployeeView extends GetView<CreateEmployeeController> {
   const CreateEmployeeView({super.key});
@@ -13,6 +15,7 @@ class CreateEmployeeView extends GetView<CreateEmployeeController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.adminEmployees),
         title: const Text('Create Employee'),
         backgroundColor: AppColors.darkBrown,
         foregroundColor: AppColors.textLight,

@@ -7,6 +7,7 @@ import '../data/models/payroll/result_out.dart';
 import '../routes/app_routes.dart';
 import '../routes/route_args.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class PayrollPeriodResultsView extends GetView<PayrollPeriodResultsController> {
   const PayrollPeriodResultsView({super.key});
@@ -16,6 +17,7 @@ class PayrollPeriodResultsView extends GetView<PayrollPeriodResultsController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.payrollPeriods),
         title: const Text('Period Results'),
         backgroundColor: AppColors.darkBrown,
       ),

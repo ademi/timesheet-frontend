@@ -6,6 +6,7 @@ import '../data/models/attendance/employee_model.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import '../utils/employee_clock_status.dart';
+import 'widgets/app_back_button.dart';
 
 class EmployeeManagementView extends GetView<EmployeeManagementController> {
   const EmployeeManagementView({super.key});
@@ -15,6 +16,7 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.adminPanel),
         title: const Text('Employees'),
         backgroundColor: AppColors.darkBrown,
       ),

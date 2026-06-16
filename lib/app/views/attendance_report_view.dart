@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/attendance_report_controller.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import '../utils/attendance_report_matrix.dart';
+import 'widgets/app_back_button.dart';
 
 class AttendanceReportView extends GetView<AttendanceReportController> {
   const AttendanceReportView({super.key});
@@ -14,6 +16,7 @@ class AttendanceReportView extends GetView<AttendanceReportController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.adminPanel),
         title: const Text('Attendance Report'),
         backgroundColor: AppColors.darkBrown,
         actions: [

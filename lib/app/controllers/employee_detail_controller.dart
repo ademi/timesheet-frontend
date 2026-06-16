@@ -16,6 +16,7 @@ import '../data/repositories/employee_repository.dart';
 import '../data/repositories/payroll_repository.dart';
 import '../core/constants/payment_currencies.dart';
 import '../utils/phone_utils.dart';
+import '../routes/app_navigation.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 
@@ -57,7 +58,9 @@ class EmployeeDetailController extends GetxController {
     super.onInit();
     final args = Get.arguments;
     if (args is! String || args.isEmpty) {
-      Get.back();
+      // Post-refresh on web: in-memory args are gone and the stack is empty, so
+      // a plain Get.back() would be a no-op. Seed the logical parent instead.
+      backOrToParent(AppRoutes.adminEmployees);
       return;
     }
     bindEmployeeId(args);

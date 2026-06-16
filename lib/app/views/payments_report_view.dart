@@ -5,7 +5,9 @@ import 'package:get/get.dart';
 import '../controllers/payments_report_controller.dart';
 import '../data/models/attendance/employee_model.dart';
 import '../data/models/payroll/period_out.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class PaymentsReportView extends GetView<PaymentsReportController> {
   const PaymentsReportView({super.key});
@@ -15,6 +17,7 @@ class PaymentsReportView extends GetView<PaymentsReportController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.paymentMain),
         title: const Text('Payments Report'),
         backgroundColor: AppColors.darkBrown,
         actions: [

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/payroll_period_detail_controller.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class PayrollPeriodDetailView extends GetView<PayrollPeriodDetailController> {
   const PayrollPeriodDetailView({super.key});
@@ -12,6 +14,7 @@ class PayrollPeriodDetailView extends GetView<PayrollPeriodDetailController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.payrollPeriods),
         title: const Text('Period Detail'),
         backgroundColor: AppColors.darkBrown,
       ),

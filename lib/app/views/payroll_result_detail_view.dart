@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../data/models/payroll/result_out.dart';
+import '../routes/app_routes.dart';
 import '../routes/route_args.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class PayrollResultDetailView extends StatelessWidget {
   const PayrollResultDetailView({super.key});
@@ -31,6 +33,9 @@ class PayrollResultDetailView extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(
+          fallbackRoute: AppRoutes.payrollPeriodResults,
+        ),
         title: Text(result.employeeName ?? 'Payroll Result'),
         backgroundColor: AppColors.darkBrown,
       ),

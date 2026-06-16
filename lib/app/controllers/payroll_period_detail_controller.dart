@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../data/models/payroll/payroll_date_utils.dart';
 import '../data/models/payroll/period_out.dart';
 import '../data/repositories/payroll_repository.dart';
+import '../routes/app_navigation.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 
@@ -25,7 +26,9 @@ class PayrollPeriodDetailController extends GetxController {
     super.onInit();
     final args = Get.arguments;
     if (args is! PeriodOut) {
-      Get.back();
+      // Post-refresh on web: in-memory args are gone and the stack is empty, so
+      // a plain Get.back() would be a no-op. Seed the logical parent instead.
+      backOrToParent(AppRoutes.payrollPeriods);
       return;
     }
     period = args.obs;

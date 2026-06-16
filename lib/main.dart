@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
+import 'app/bindings/initial_binding.dart';
 import 'app/data/datasources/remote/auth_remote_datasource.dart';
 import 'app/routes/app_pages.dart';
 import 'app/themes/app_colors.dart';
@@ -11,6 +14,12 @@ import 'core/services/token_storage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Web-only: use clean path URLs (no `#`) so browser history, refresh, and the
+  // back/forward buttons reconcile with GetX routing predictably. No-op concept
+  // on mobile, hence the kIsWeb guard.
+  if (kIsWeb) {
+    setUrlStrategy(PathUrlStrategy());
+  }
   await GetStorage.init();
   final tokenStorage = TokenStorage();
   await tokenStorage.loadFromStorage();
@@ -142,6 +151,11 @@ class _YemenGateAppState extends State<YemenGateApp> with WidgetsBindingObserver
         ),
         useMaterial3: true,
       ),
+      // Registers session-scoped dependencies (auth graph incl. AuthController,
+      // and GatewayController) at startup so they exist on every entry point —
+      // notably a web refresh on a deep route, where the gateway/login route
+      // bindings never run. Idempotent: skips anything already registered.
+      initialBinding: InitialBinding(),
       initialRoute: AppPages.initial,
       getPages: AppPages.routes,
     );

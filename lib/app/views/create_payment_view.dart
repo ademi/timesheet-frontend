@@ -5,7 +5,9 @@ import '../controllers/create_payment_controller.dart';
 import '../core/constants/payment_currencies.dart';
 import '../data/models/payroll/period_out.dart';
 import '../data/models/payroll/result_out.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class CreatePaymentView extends GetView<CreatePaymentController> {
   const CreatePaymentView({super.key});
@@ -23,6 +25,7 @@ class CreatePaymentView extends GetView<CreatePaymentController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.paymentMain),
         title: const Text('Create Payment'),
         backgroundColor: AppColors.darkBrown,
       ),

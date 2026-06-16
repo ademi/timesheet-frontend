@@ -1,5 +1,23 @@
 import 'package:get/get.dart';
 
+/// Pops the current route when possible, otherwise navigates to [parentRoute].
+///
+/// This is the navigation-stack analogue of [AppBackButton]. On web a browser
+/// refresh rebuilds the GetX stack with only the current route, so a plain
+/// `Get.back()` becomes a no-op (nothing to pop). Deep screens that carry their
+/// state via in-memory `Get.arguments` also lose that state on refresh; rather
+/// than stranding the user on a broken screen with a dead back action, this seeds
+/// the logical parent route so the user lands somewhere valid with a working back
+/// button. On mobile (and whenever a real stack exists) it behaves exactly like
+/// `Get.back()`.
+void backOrToParent(String parentRoute) {
+  if (Get.key.currentState?.canPop() ?? false) {
+    Get.back();
+  } else {
+    Get.offNamed(parentRoute);
+  }
+}
+
 /// Coerces a route pop result to [bool].
 bool readBoolResult(dynamic result) => result == true;
 

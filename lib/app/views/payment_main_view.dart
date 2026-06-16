@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/payment_main_controller.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class PaymentMainView extends GetView<PaymentMainController> {
   const PaymentMainView({super.key});
@@ -12,6 +14,7 @@ class PaymentMainView extends GetView<PaymentMainController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.adminPanel),
         title: const Text('Payments'),
         backgroundColor: AppColors.darkBrown,
       ),

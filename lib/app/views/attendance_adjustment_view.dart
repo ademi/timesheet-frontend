@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controllers/attendance_adjustment_controller.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class AttendanceAdjustmentView
     extends GetView<AttendanceAdjustmentController> {
@@ -13,6 +15,9 @@ class AttendanceAdjustmentView
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(
+          fallbackRoute: AppRoutes.adminAttendanceCorrections,
+        ),
         title: Text(controller.title),
         backgroundColor: AppColors.darkBrown,
       ),

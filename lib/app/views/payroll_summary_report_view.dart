@@ -4,7 +4,9 @@ import 'package:get/get.dart';
 
 import '../controllers/payroll_summary_report_controller.dart';
 import '../data/models/payroll/period_out.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class PayrollSummaryReportView extends GetView<PayrollSummaryReportController> {
   const PayrollSummaryReportView({super.key});
@@ -14,6 +16,7 @@ class PayrollSummaryReportView extends GetView<PayrollSummaryReportController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.payrollMain),
         title: const Text('Payroll Summary'),
         backgroundColor: AppColors.darkBrown,
       ),

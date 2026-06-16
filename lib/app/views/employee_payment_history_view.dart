@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 
 import '../controllers/employee_payment_history_controller.dart';
 import '../data/models/attendance/employee_model.dart';
+import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import 'widgets/app_back_button.dart';
 
 class EmployeePaymentHistoryView extends GetView<EmployeePaymentHistoryController> {
   const EmployeePaymentHistoryView({super.key});
@@ -13,6 +15,7 @@ class EmployeePaymentHistoryView extends GetView<EmployeePaymentHistoryControlle
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.paymentMain),
         title: const Text('Employee Payment History'),
         backgroundColor: AppColors.darkBrown,
       ),
