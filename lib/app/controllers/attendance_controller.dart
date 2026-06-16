@@ -265,16 +265,39 @@ class AttendanceController extends GetxController {
       }
       return true;
     } on AttendanceErrorModel catch (e) {
-      dialogError.value = e.detail;
+      dialogError.value = _friendlyClockError(action, e.detail);
     } on DioException catch (e) {
       final parsed = parseAttendanceError(e);
-      dialogError.value = parsed?.detail ?? e.message ?? 'Request failed';
+      final raw = parsed?.detail ?? e.message ?? 'Request failed';
+      dialogError.value = _friendlyClockError(
+        action,
+        raw,
+        statusCode: e.response?.statusCode,
+      );
     } catch (e) {
       dialogError.value = e.toString();
     } finally {
       dialogSubmitting.value = false;
     }
     return false;
+  }
+
+  /// Replaces the backend "no open time entry to close" error (returned when an
+  /// employee tries to clock out without an open clock-in) with a clear
+  /// instruction to contact the admin, who can add the entry via a correction.
+  String _friendlyClockError(
+    AttendanceDialogAction action,
+    String rawMessage, {
+    int? statusCode,
+  }) {
+    if (action != AttendanceDialogAction.clockOut) return rawMessage;
+    final isMissingEntry = statusCode == 404 ||
+        rawMessage.toLowerCase().contains('no open time entry');
+    if (isMissingEntry) {
+      return 'No active clock-in found. Please contact your admin to correct '
+          'your attendance.';
+    }
+    return rawMessage;
   }
 
   Future<Position> _determinePosition() async {

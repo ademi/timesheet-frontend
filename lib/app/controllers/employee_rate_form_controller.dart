@@ -6,6 +6,7 @@ import '../data/models/payroll/payroll_date_utils.dart';
 import '../data/models/payroll/rate_create_request.dart';
 import '../data/models/payroll/rate_out.dart';
 import '../data/repositories/payroll_repository.dart';
+import '../routes/app_routes.dart';
 import '../routes/route_args.dart';
 import '../themes/app_colors.dart';
 
@@ -17,6 +18,7 @@ class EmployeeRateFormController extends GetxController {
 
   late final String employeeId;
   late final bool isEdit;
+  late final bool finishCreateFlowOnSave;
   RateOut? _editingRate;
 
   final effectiveFrom = Rxn<DateTime>();
@@ -47,6 +49,7 @@ class EmployeeRateFormController extends GetxController {
     }
     employeeId = args.employeeId;
     isEdit = args.isEdit;
+    finishCreateFlowOnSave = args.finishCreateFlowOnSave;
     if (isEdit && args.rate != null) {
       _populateFromRate(args.rate!);
     } else {
@@ -169,13 +172,22 @@ class EmployeeRateFormController extends GetxController {
         };
         await _repository.updateRate(_editingRate!.id, body);
       }
-      Get.back(result: true);
+      _completeSubmitNavigation();
     } on DioException catch (e) {
       _showError(_extractErrorMessage(e));
     } catch (_) {
       _showError('Failed to save rate.');
     } finally {
       isSaving.value = false;
+    }
+  }
+
+  void _completeSubmitNavigation() {
+    Get.back(result: true);
+    if (finishCreateFlowOnSave &&
+        !isEdit &&
+        Get.currentRoute == AppRoutes.createEmployee) {
+      Get.back(result: true);
     }
   }
 

@@ -72,13 +72,18 @@ class CreateEmployeeController extends GetxController {
           PayrollModuleBinding.ensureDependencies();
           final rateSaved = await pushNamedBool(
             AppRoutes.payrollEmployeeRateForm,
-            arguments: EmployeeRateFormArgs(employeeId: newEmployeeId),
+            arguments: EmployeeRateFormArgs(
+              employeeId: newEmployeeId,
+              finishCreateFlowOnSave: true,
+            ),
           );
           if (rateSaved == true) {
             _showSuccess('Pay rate created successfully.');
           }
         }
-        Get.back(result: true);
+        if (Get.currentRoute == AppRoutes.createEmployee) {
+          Get.back(result: true);
+        }
       }
     } on DioException catch (e) {
       _showError(_extractErrorMessage(e));

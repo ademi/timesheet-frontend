@@ -65,10 +65,9 @@ class _YemenGateAppState extends State<YemenGateApp> with WidgetsBindingObserver
     try {
       final client = Get.find<ApiClient>();
       final newTokens = await executeRefreshRequest(client.plainDio, refreshToken);
-      await tokenStorage.persist(
+      await tokenStorage.persistTokens(
         accessToken: newTokens.accessToken,
         refreshToken: newTokens.refreshToken,
-        branchId: newTokens.defaultBranchId,
       );
     } catch (_) {
       // Next API call will use AuthInterceptor refresh-or-logout flow.

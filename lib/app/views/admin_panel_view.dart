@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../core/services/token_storage.dart';
 import '../controllers/admin_panel_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../themes/app_colors.dart';
@@ -12,6 +13,7 @@ class AdminPanelView extends GetView<AdminPanelController> {
   @override
   Widget build(BuildContext context) {
     final authController = Get.find<AuthController>();
+    final branchName = Get.find<TokenStorage>().branchName;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -19,7 +21,11 @@ class AdminPanelView extends GetView<AdminPanelController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _AdminHeader(onLogout: authController.logout),
+            _AdminHeader(
+              branchName: branchName,
+              onChangeBranch: controller.changeBranch,
+              onLogout: authController.logout,
+            ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -48,6 +54,13 @@ class AdminPanelView extends GetView<AdminPanelController> {
                   ),
                   const SizedBox(height: 14),
                   AdminHubCard(
+                    icon: Icons.rule_rounded,
+                    title: 'Attendance Corrections',
+                    subtitle: 'Review exceptions and fix missing punches',
+                    onTap: controller.openAttendanceCorrections,
+                  ),
+                  const SizedBox(height: 14),
+                  AdminHubCard(
                     icon: Icons.receipt_long_rounded,
                     title: 'Payroll',
                     subtitle: 'Periods, rates, balances, and payroll summary',
@@ -72,8 +85,14 @@ class AdminPanelView extends GetView<AdminPanelController> {
 }
 
 class _AdminHeader extends StatelessWidget {
-  const _AdminHeader({required this.onLogout});
+  const _AdminHeader({
+    required this.branchName,
+    required this.onChangeBranch,
+    required this.onLogout,
+  });
 
+  final String? branchName;
+  final VoidCallback onChangeBranch;
   final VoidCallback onLogout;
 
   @override
@@ -100,11 +119,11 @@ class _AdminHeader extends StatelessWidget {
                 color: AppColors.primary),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Yemen Gate',
                   style: TextStyle(
                     color: AppColors.textLight,
@@ -112,10 +131,12 @@ class _AdminHeader extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'Administration',
-                  style: TextStyle(
+                  branchName != null && branchName!.isNotEmpty
+                      ? 'Administration · $branchName'
+                      : 'Administration',
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 12,
                     letterSpacing: 0.6,
@@ -123,6 +144,11 @@ class _AdminHeader extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: onChangeBranch,
+            icon: const Icon(Icons.storefront_rounded, color: AppColors.primary),
+            tooltip: 'Change branch',
           ),
           IconButton(
             onPressed: onLogout,

@@ -3,9 +3,12 @@ abstract class AppRoutes {
   static const login = '/login';
   static const firstLogin = '/first-login';
   static const home = '/home';
+  static const adminBranchGateway = '/admin/branches';
   static const adminPanel = '/admin-panel';
   static const adminEmployees = '/admin/employees';
   static const adminAttendanceReport = '/admin/attendance-report';
+  static const adminAttendanceCorrections = '/admin/attendance-corrections';
+  static const adminAttendanceAdjustment = '/admin/attendance-adjustment';
   static const employeeDetail = '/admin/employees/detail';
   static const createEmployee = '/create-employee';
   static const createEmployeeSuccess = '/create-employee/success';
@@ -16,6 +19,7 @@ abstract class AppRoutes {
   static const paymentHistory = '/payments/history';
   static const payrollMain = '/payroll';
   static const payrollPeriods = '/payroll/periods';
+  static const payrollSettings = '/payroll/settings';
   static const payrollPeriodDetail = '/payroll/periods/detail';
   static const payrollPeriodResults = '/payroll/periods/results';
   static const payrollEmployeeRates = '/payroll/rates';

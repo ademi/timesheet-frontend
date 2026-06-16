@@ -126,25 +126,6 @@ class PaymentsReportView extends GetView<PaymentsReportController> {
             ),
           ),
           const SizedBox(height: 10),
-          Obx(
-            () => DropdownButtonFormField<String>(
-              value: controller.selectedBranchId.value,
-              items: controller.branchFilterOptions
-                  .map(
-                    (option) => DropdownMenuItem<String>(
-                      value: option.branchId,
-                      child: Text(option.label),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) => controller.selectedBranchId.value = value,
-              decoration: const InputDecoration(
-                labelText: 'Branch (Optional)',
-                prefixIcon: Icon(Icons.account_tree_outlined),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(

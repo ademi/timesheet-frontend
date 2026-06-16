@@ -8,7 +8,6 @@ import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
 import '../services/push_notification_service.dart';
 import '../themes/app_colors.dart';
-import 'gateway_controller.dart';
 
 class AuthController extends GetxController {
   AuthController({required AuthRepository authRepository})
@@ -53,12 +52,7 @@ class AuthController extends GetxController {
       }
       redirectToFirstLoginIfNeeded(mustChangePassword: tokens.mustChangePassword);
       if (tokens.mustChangePassword) return;
-      final gateway = Get.find<GatewayController>();
-      final destination =
-          gateway.selectedRole.value == UserRole.admin
-              ? AppRoutes.adminPanel
-              : AppRoutes.home;
-      Get.offAllNamed(destination);
+      Get.offAllNamed(AppRoutes.adminBranchGateway);
     } on DioException catch (e) {
       if (isMustChangePasswordResponse(e)) {
         redirectToFirstLoginIfNeeded(mustChangePassword: true);

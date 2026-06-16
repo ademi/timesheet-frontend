@@ -16,7 +16,8 @@ class EmployeeRepository {
   final EmployeeRemoteDataSource _remote;
   final TokenStorage _tokenStorage;
 
-  Future<List<EmployeeModel>> listEmployees() => _remote.listEmployees();
+  Future<List<EmployeeModel>> listEmployees() =>
+      _remote.listEmployees(branchId: _tokenStorage.branchId);
 
   Future<List<EmployeeModel>> listEmployeesWithClockStatus() =>
       _remote.listEmployeesWithClockStatus(branchId: _tokenStorage.branchId);

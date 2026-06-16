@@ -14,9 +14,16 @@ class PayrollPeriodsView extends GetView<PayrollPeriodsController> {
       appBar: AppBar(
         title: const Text('Payroll Periods'),
         backgroundColor: AppColors.darkBrown,
+        actions: [
+          IconButton(
+            onPressed: controller.openSettings,
+            icon: const Icon(Icons.settings),
+            tooltip: 'Payroll Settings',
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => controller.createPeriod(context),
+        onPressed: () => controller.openCreatePeriodSheet(context),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add),
       ),

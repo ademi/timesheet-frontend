@@ -9,11 +9,14 @@ abstract final class AppConstants {
   /// Cloudflare host: TLS expects the certificate hostname, not an address.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.43.199:8000',
+    defaultValue: 'http://11.0.0.98:8000',
   );
 
   /// Shared API version prefix for all versioned endpoints.
   static const String apiV1 = '/v1';
+
+  /// Branches available to the authenticated admin user.
+  static const String branchesPath = '$apiV1/branches';
 
   /// Auth: verify credentials before sensitive actions (e.g. attendance).
   static const String verifyUserPath = '$apiV1/auth/verify_user';

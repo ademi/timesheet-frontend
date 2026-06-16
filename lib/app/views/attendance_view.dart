@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../core/services/token_storage.dart';
 import '../controllers/attendance_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../utils/employee_clock_status.dart';
@@ -12,16 +13,20 @@ class AttendanceView extends GetView<AttendanceController> {
   @override
   Widget build(BuildContext context) {
     final authController = Get.find<AuthController>();
+    final branchName = Get.find<TokenStorage>().branchName;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.darkBrown,
         elevation: 0,
-        title: const Column(
+        automaticallyImplyLeading: false,
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Yemen Gate',
               style: TextStyle(
                 color: AppColors.textLight,
@@ -30,8 +35,10 @@ class AttendanceView extends GetView<AttendanceController> {
               ),
             ),
             Text(
-              'Attendance',
-              style: TextStyle(
+              branchName != null && branchName.isNotEmpty
+                  ? 'Attendance · $branchName'
+                  : 'Attendance',
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontSize: 11,
                 letterSpacing: 0.7,
@@ -109,6 +116,7 @@ class AttendanceView extends GetView<AttendanceController> {
           );
         }),
       ),
+    ),
     );
   }
 }

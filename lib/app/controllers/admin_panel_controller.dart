@@ -5,9 +5,14 @@ import '../bindings/payroll_module_binding.dart';
 import '../routes/app_routes.dart';
 
 class AdminPanelController extends GetxController {
+  void changeBranch() => Get.offAllNamed(AppRoutes.adminBranchGateway);
+
   void openEmployees() => Get.toNamed(AppRoutes.adminEmployees);
 
   void openAttendanceReport() => Get.toNamed(AppRoutes.adminAttendanceReport);
+
+  void openAttendanceCorrections() =>
+      Get.toNamed(AppRoutes.adminAttendanceCorrections);
 
   void openPayroll() {
     PayrollModuleBinding.ensureDependencies();

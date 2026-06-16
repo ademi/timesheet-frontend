@@ -13,8 +13,13 @@ class EmployeeRemoteDataSource {
 
   final Dio _dio;
 
-  Future<List<EmployeeModel>> listEmployees() async {
-    final response = await _dio.get<List<dynamic>>('/v1/employees');
+  Future<List<EmployeeModel>> listEmployees({String? branchId}) async {
+    final response = await _dio.get<List<dynamic>>(
+      '/v1/employees',
+      queryParameters: branchId != null && branchId.isNotEmpty
+          ? {'branch_id': branchId}
+          : null,
+    );
     final data = response.data ?? <dynamic>[];
     return data
         .whereType<Map<String, dynamic>>()

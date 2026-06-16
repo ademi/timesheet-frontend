@@ -33,10 +33,9 @@ class AuthInterceptor extends Interceptor {
   bool _isAuthLoginPath(String path) => path.contains('/v1/auth/login');
 
   Future<void> _persistTokens(AuthTokenModel tokens) async {
-    await _storage.persist(
+    await _storage.persistTokens(
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      branchId: tokens.defaultBranchId,
     );
   }
 

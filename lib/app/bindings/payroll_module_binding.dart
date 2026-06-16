@@ -5,6 +5,7 @@ import '../../core/network/attendance_api_client.dart';
 import '../../core/services/token_storage.dart';
 import '../data/datasources/remote/payroll_remote_datasource.dart';
 import '../data/repositories/payroll_repository.dart';
+import '../data/services/payroll_settings_storage.dart';
 
 abstract final class PayrollModuleBinding {
   PayrollModuleBinding._();
@@ -15,10 +16,7 @@ abstract final class PayrollModuleBinding {
     }
 
     if (!Get.isRegistered<ApiClient>()) {
-      Get.put<ApiClient>(
-        ApiClient(Get.find<TokenStorage>()),
-        permanent: true,
-      );
+      Get.put<ApiClient>(ApiClient(Get.find<TokenStorage>()), permanent: true);
     }
 
     if (!Get.isRegistered<AttendanceApiClient>()) {
@@ -40,7 +38,17 @@ abstract final class PayrollModuleBinding {
 
     if (!Get.isRegistered<PayrollRepository>()) {
       Get.put<PayrollRepository>(
-        PayrollRepository(remote: Get.find<PayrollRemoteDataSource>()),
+        PayrollRepository(
+          remote: Get.find<PayrollRemoteDataSource>(),
+          tokenStorage: Get.find<TokenStorage>(),
+        ),
+        permanent: true,
+      );
+    }
+
+    if (!Get.isRegistered<PayrollSettingsStorage>()) {
+      Get.put<PayrollSettingsStorage>(
+        PayrollSettingsStorage(),
         permanent: true,
       );
     }

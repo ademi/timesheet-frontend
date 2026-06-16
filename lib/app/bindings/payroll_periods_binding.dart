@@ -8,7 +8,10 @@ class PayrollPeriodsBinding extends Bindings {
   void dependencies() {
     PayrollModuleBinding.ensureDependencies();
     Get.lazyPut<PayrollPeriodsController>(
-      () => PayrollPeriodsController(repository: Get.find()),
+      () => PayrollPeriodsController(
+        repository: Get.find(),
+        settingsStorage: Get.find(),
+      ),
     );
   }
 }

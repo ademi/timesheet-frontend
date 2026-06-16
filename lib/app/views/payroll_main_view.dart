@@ -27,6 +27,13 @@ class PayrollMainView extends GetView<PayrollMainController> {
             ),
             const SizedBox(height: 14),
             _ActionButton(
+              icon: Icons.settings_rounded,
+              title: 'Payroll Settings',
+              subtitle: 'Set schedule, defaults, and overlap validation',
+              onTap: controller.openSettings,
+            ),
+            const SizedBox(height: 14),
+            _ActionButton(
               icon: Icons.payments_rounded,
               title: 'Employee Rates',
               subtitle: 'View and manage pay rates by employee',
@@ -76,7 +83,9 @@ class _ActionButton extends StatelessWidget {
           backgroundColor: AppColors.cardBackground,
           foregroundColor: AppColors.darkBrown,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: Row(
           children: [
