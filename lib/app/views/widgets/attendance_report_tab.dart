@@ -5,16 +5,20 @@ import 'package:get/get.dart';
 import '../../controllers/attendance_report_controller.dart';
 import '../../themes/app_colors.dart';
 import '../../utils/attendance_report_matrix.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 
 class AttendanceReportTab extends GetView<AttendanceReportController> {
   const AttendanceReportTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: Column(
-        children: [
+    return MaxWidthBox(
+      maxWidth: Breakpoints.maxContent,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Column(
+          children: [
           _buildTopControls(context),
           const SizedBox(height: 16),
           Expanded(
@@ -56,6 +60,7 @@ class AttendanceReportTab extends GetView<AttendanceReportController> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -7,6 +7,8 @@ import '../data/models/attendance/employee_model.dart';
 import '../data/models/payroll/period_out.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 import 'widgets/app_back_button.dart';
 
 class PaymentsReportView extends GetView<PaymentsReportController> {
@@ -35,10 +37,12 @@ class PaymentsReportView extends GetView<PaymentsReportController> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
+      body: MaxWidthBox(
+        maxWidth: Breakpoints.maxContent,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            children: [
             _buildFilters(context),
             const SizedBox(height: 12),
             Expanded(
@@ -59,6 +63,7 @@ class PaymentsReportView extends GetView<PaymentsReportController> {
               }),
             ),
           ],
+        ),
         ),
       ),
     );

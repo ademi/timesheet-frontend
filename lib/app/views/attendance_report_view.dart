@@ -6,6 +6,8 @@ import '../controllers/attendance_report_controller.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import '../utils/attendance_report_matrix.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 import 'widgets/app_back_button.dart';
 
 class AttendanceReportView extends GetView<AttendanceReportController> {
@@ -36,10 +38,12 @@ class AttendanceReportView extends GetView<AttendanceReportController> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        child: Column(
-          children: [
+      body: MaxWidthBox(
+        maxWidth: Breakpoints.maxContent,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Column(
+            children: [
             _buildTopControls(context),
             const SizedBox(height: 16),
             Expanded(
@@ -79,6 +83,7 @@ class AttendanceReportView extends GetView<AttendanceReportController> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

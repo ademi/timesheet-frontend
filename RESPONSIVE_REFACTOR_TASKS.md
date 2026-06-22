@@ -3,7 +3,7 @@
 **Project:** `yemen_gate_attendance_app` (timesheet-frontend)
 **Strategy:** `flutter_screenutil` 5.x (phone-only density) + `LayoutBuilder` breakpoints (structure) + content max-width + responsive shell.
 **Companion doc:** `RESPONSIVE_REFACTOR_ASSESSMENT.md`
-**Status:** Phase 3 complete — in progress.
+**Status:** Phase 4 complete — in progress.
 
 ## Locked decisions (do not change without sign-off)
 - **Orientation stays LOCKED to portrait.** Keep the existing `SystemChrome.setPreferredOrientations([portraitUp, portraitDown])` in `main.dart`. Do **not** remove it.
@@ -92,18 +92,18 @@ Convert the vertical card menus to `AdaptiveGrid` (1/2/3 columns by width). Card
 
 ---
 
-# Phase 4 — `DataTable2` screens QA (already web-friendly)
+# Phase 4 — `DataTable2` screens QA (already web-friendly) ✅
 
 Mostly verification + minor wrapping; no rewrites.
 
-- [ ] **4.1** `attendance_report_view` / `attendance_report_tab.dart` — confirm fills width on web, horizontal-scrolls on phone (dynamic `minWidth`).
-- [ ] **4.2** `payroll_period_results_view.dart` — verify `minWidth: 900` scroll on phone, fill on web.
-- [ ] **4.3** `payments_report_view.dart` — verify.
-- [ ] **4.4** `payroll_summary_report_view.dart` — verify.
-- [ ] **4.5** `payroll_period_detail_view.dart` — verify table area.
-- [ ] **4.6** Optionally cap very wide tables inside `MaxWidthBox(maxContent)` so they don't get gigantic on ultrawide.
+- [x] **4.1** `attendance_report_view` / `attendance_report_tab.dart` — confirm fills width on web, horizontal-scrolls on phone (dynamic `minWidth`).
+- [x] **4.2** `payroll_period_results_view.dart` — verify `minWidth: 900` scroll on phone, fill on web.
+- [x] **4.3** `payments_report_view.dart` — verify.
+- [x] **4.4** `payroll_summary_report_view.dart` — verify.
+- [x] **4.5** `payroll_period_detail_view.dart` — verify table area (no `DataTable2`; action-card layout already capped via Phase 2 `MaxWidthBox`).
+- [x] **4.6** Optionally cap very wide tables inside `MaxWidthBox(maxContent)` so they don't get gigantic on ultrawide.
 
-**Exit criteria:** all tables usable on phone (scroll) and web (fill, capped).
+**Exit criteria:** ~~all tables usable on phone (scroll) and web (fill, capped).~~ **Done** — `minWidth` configs verified; all table screens wrapped in `MaxWidthBox(maxContent: 1200)`; `flutter analyze` + `flutter build web` pass.
 
 ---
 

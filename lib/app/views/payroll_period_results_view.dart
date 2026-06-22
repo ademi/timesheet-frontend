@@ -7,6 +7,8 @@ import '../data/models/payroll/result_out.dart';
 import '../routes/app_routes.dart';
 import '../routes/route_args.dart';
 import '../themes/app_colors.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 import 'widgets/app_back_button.dart';
 
 class PayrollPeriodResultsView extends GetView<PayrollPeriodResultsController> {
@@ -28,13 +30,15 @@ class PayrollPeriodResultsView extends GetView<PayrollPeriodResultsController> {
         if (controller.results.isEmpty) {
           return const Center(child: Text('No results for this period.'));
         }
-        return Padding(
-          padding: const EdgeInsets.all(12),
-          child: DataTable2(
-            columnSpacing: 12,
-            horizontalMargin: 12,
-            minWidth: 900,
-            columns: const [
+        return MaxWidthBox(
+          maxWidth: Breakpoints.maxContent,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: DataTable2(
+              columnSpacing: 12,
+              horizontalMargin: 12,
+              minWidth: 900,
+              columns: const [
               DataColumn2(label: Text('Employee'), size: ColumnSize.L),
               DataColumn2(label: Text('Regular'), size: ColumnSize.S),
               DataColumn2(label: Text('OT'), size: ColumnSize.S),
@@ -45,6 +49,7 @@ class PayrollPeriodResultsView extends GetView<PayrollPeriodResultsController> {
             rows: controller.results
                 .map((result) => _buildRow(context, result))
                 .toList(),
+            ),
           ),
         );
       }),
