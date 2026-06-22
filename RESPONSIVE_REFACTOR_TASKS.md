@@ -3,7 +3,7 @@
 **Project:** `yemen_gate_attendance_app` (timesheet-frontend)
 **Strategy:** `flutter_screenutil` 5.x (phone-only density) + `LayoutBuilder` breakpoints (structure) + content max-width + responsive shell.
 **Companion doc:** `RESPONSIVE_REFACTOR_ASSESSMENT.md`
-**Status:** Phase 4 complete — in progress.
+**Status:** Phase 5 complete — in progress.
 
 ## Locked decisions (do not change without sign-off)
 - **Orientation stays LOCKED to portrait.** Keep the existing `SystemChrome.setPreferredOrientations([portraitUp, portraitDown])` in `main.dart`. Do **not** remove it.
@@ -107,19 +107,19 @@ Mostly verification + minor wrapping; no rewrites.
 
 ---
 
-# Phase 5 — Responsive navigation shell (NEW feature, web/wide only)
+# Phase 5 — Responsive navigation shell (NEW feature, web/wide only) ✅
 
 The app has no persistent nav chrome today. Add a wide-screen shell with `NavigationRail`; on phone keep the current hub-and-spoke push navigation untouched.
 
-- [ ] **5.1** Create `lib/app/views/shell/responsive_scaffold.dart`:
+- [x] **5.1** Create `lib/app/views/shell/responsive_scaffold.dart`:
   - Phone (`< tablet` bp): render the page exactly as today (no rail).
   - Tablet/desktop: `Row(NavigationRail, VerticalDivider, Expanded(content))`.
-- [ ] **5.2** Define rail destinations mirroring hub entries (Employees, Attendance Report, Corrections, Payroll, Payments).
-- [ ] **5.3** Integrate with GetX: rail selection navigates/swaps the active section. Keep existing routes + `AuthGuard` + `PathUrlStrategy` working (read same route args).
-- [ ] **5.4** Ensure no duplicate controller instances (reuse `Bindings`); verify back-button/deep-link behavior on web.
-- [ ] **5.5** Decide host: wrap admin sections in the shell on wide screens only; phone path unchanged.
+- [x] **5.2** Define rail destinations mirroring hub entries (Employees, Attendance Report, Corrections, Payroll, Payments).
+- [x] **5.3** Integrate with GetX: rail selection navigates/swaps the active section. Keep existing routes + `AuthGuard` + `PathUrlStrategy` working (read same route args).
+- [x] **5.4** Ensure no duplicate controller instances (reuse `Bindings`); verify back-button/deep-link behavior on web.
+- [x] **5.5** Decide host: wrap admin sections in the shell on wide screens only; phone path unchanged.
 
-**Exit criteria:** web shows a left rail + section; phone behaves exactly as before; deep links still resolve.
+**Exit criteria:** ~~web shows a left rail + section; phone behaves exactly as before; deep links still resolve.~~ **Done** — `AdminShell` wraps all admin/payroll/payment routes via `adminShellPage()` in `app_pages.dart`; rail at ≥1024px; `Get.offAllNamed` / `Get.offNamed` for section switches; bindings unchanged per route.
 
 ---
 
