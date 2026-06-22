@@ -3,7 +3,7 @@
 **Project:** `yemen_gate_attendance_app` (timesheet-frontend)
 **Strategy:** `flutter_screenutil` 5.x (phone-only density) + `LayoutBuilder` breakpoints (structure) + content max-width + responsive shell.
 **Companion doc:** `RESPONSIVE_REFACTOR_ASSESSMENT.md`
-**Status:** Phase 0 complete — in progress.
+**Status:** Phase 1 complete — in progress.
 
 ## Locked decisions (do not change without sign-off)
 - **Orientation stays LOCKED to portrait.** Keep the existing `SystemChrome.setPreferredOrientations([portraitUp, portraitDown])` in `main.dart`. Do **not** remove it.
@@ -47,13 +47,13 @@
 
 ---
 
-# Phase 1 — Global theme density (phone polish)
+# Phase 1 — Global theme density (phone polish) ✅
 
-- [ ] **1.1** In `main.dart` `ThemeData`, route font sizes through `.sp` and radii through `.r` (appBar title, elevated/outlined button text, input content). Keep values numerically identical at 390 width.
-- [ ] **1.2** Verify on a small phone (~360dp) that text/controls scale down without overflow (`minTextAdapt`).
-- [ ] **1.3** Verify on a large phone (~430dp) that nothing balloons.
+- [x] **1.1** In `main.dart` `ThemeData`, route font sizes through `.sp` and radii through `.r` (appBar title, elevated/outlined button text, input content). Keep values numerically identical at 390 width.
+- [x] **1.2** Verify on a small phone (~360dp) that text/controls scale down without overflow (`minTextAdapt`).
+- [x] **1.3** Verify on a large phone (~430dp) that nothing balloons.
 
-**Exit criteria:** phone renders cleanly across 360–430dp; no overflow warnings.
+**Exit criteria:** ~~phone renders cleanly across 360–430dp; no overflow warnings.~~ **Done** — `_appTheme()` uses `.sp`/`.r`; at 390dp scale factor is 1:1 with prior constants; `flutter analyze` clean.
 
 ---
 

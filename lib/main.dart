@@ -94,69 +94,7 @@ class _YemenGateAppState extends State<YemenGateApp> with WidgetsBindingObserver
       builder: (context, child) => GetMaterialApp(
         title: 'Yemen Gate Attendance',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          fontFamily: 'Roboto',
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.primary,
-            primary: AppColors.primary,
-            surface: AppColors.background,
-          ),
-          scaffoldBackgroundColor: AppColors.background,
-          cardTheme: CardThemeData(
-            color: AppColors.cardBackground,
-            elevation: 1.5,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          appBarTheme: const AppBarTheme(
-            centerTitle: false,
-            titleTextStyle: TextStyle(
-              fontFamily: 'Roboto',
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textLight,
-            ),
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              textStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          outlinedButtonTheme: OutlinedButtonThemeData(
-            style: OutlinedButton.styleFrom(
-              textStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.divider, width: 1.2),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
-          ),
-          useMaterial3: true,
-        ),
+        theme: _appTheme(),
         // Registers session-scoped dependencies (auth graph incl. AuthController,
         // and GatewayController) at startup so they exist on every entry point —
         // notably a web refresh on a deep route, where the gateway/login route
@@ -167,4 +105,79 @@ class _YemenGateAppState extends State<YemenGateApp> with WidgetsBindingObserver
       ),
     );
   }
+}
+
+/// Global theme with phone-density sizing via screenutil.
+/// Values match the previous hardcoded constants at the 390dp design width.
+ThemeData _appTheme() {
+  return ThemeData(
+    fontFamily: 'Roboto',
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      primary: AppColors.primary,
+      surface: AppColors.background,
+    ),
+    scaffoldBackgroundColor: AppColors.background,
+    cardTheme: CardThemeData(
+      color: AppColors.cardBackground,
+      elevation: 1.5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+    ),
+    appBarTheme: AppBarTheme(
+      centerTitle: false,
+      titleTextStyle: TextStyle(
+        fontFamily: 'Roboto',
+        fontSize: 17.sp,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textLight,
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        textStyle: TextStyle(
+          fontSize: 14.sp,
+          fontWeight: FontWeight.w600,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        textStyle: TextStyle(
+          fontSize: 14.sp,
+          fontWeight: FontWeight.w600,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12.r),
+        borderSide: const BorderSide(color: AppColors.divider, width: 1.2),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12.r),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
+      ),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: 14.r,
+        vertical: 12.r,
+      ),
+    ),
+    textTheme: TextTheme(
+      bodyLarge: TextStyle(
+        fontFamily: 'Roboto',
+        fontSize: 16.sp,
+        color: AppColors.textDark,
+      ),
+    ),
+    useMaterial3: true,
+  );
 }
