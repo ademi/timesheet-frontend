@@ -30,7 +30,6 @@ class PayrollResultDetailView extends StatelessWidget {
         ),
       );
     }
-    final result = args.result;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -38,28 +37,39 @@ class PayrollResultDetailView extends StatelessWidget {
         leading: const AppBackButton(
           fallbackRoute: AppRoutes.payrollPeriodResults,
         ),
-        title: Text(result.employeeName ?? 'Payroll Result'),
+        title: Text(args.result.employeeName ?? 'Payroll Result'),
         backgroundColor: AppColors.darkBrown,
       ),
       body: MaxWidthBox(
         maxWidth: Breakpoints.maxContent,
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-          _SummaryCard(result: result),
-          const SizedBox(height: 16),
-          _SnapshotSection(
-            title: 'Rate Snapshot',
-            entries: result.rateSnapshot.entries,
-          ),
-          const SizedBox(height: 16),
-          _SnapshotSection(
-            title: 'Calc Snapshot',
-            entries: result.calcSnapshot.entries,
-          ),
-        ],
+        child: PayrollResultDetailContent(result: args.result),
       ),
-      ),
+    );
+  }
+}
+
+class PayrollResultDetailContent extends StatelessWidget {
+  const PayrollResultDetailContent({super.key, required this.result});
+
+  final ResultOut result;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        _SummaryCard(result: result),
+        const SizedBox(height: 16),
+        _SnapshotSection(
+          title: 'Rate Snapshot',
+          entries: result.rateSnapshot.entries,
+        ),
+        const SizedBox(height: 16),
+        _SnapshotSection(
+          title: 'Calc Snapshot',
+          entries: result.calcSnapshot.entries,
+        ),
+      ],
     );
   }
 }

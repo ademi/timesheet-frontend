@@ -13,10 +13,14 @@ import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 
 class PayrollPeriodDetailController extends GetxController {
-  PayrollPeriodDetailController({required PayrollRepository repository})
-      : _repository = repository;
+  PayrollPeriodDetailController({
+    required PayrollRepository repository,
+    PeriodOut? initialPeriod,
+  })  : _repository = repository,
+        _initialPeriod = initialPeriod;
 
   final PayrollRepository _repository;
+  final PeriodOut? _initialPeriod;
 
   late final Rx<PeriodOut> period;
   final isLoading = false.obs;
@@ -24,6 +28,10 @@ class PayrollPeriodDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    if (_initialPeriod != null) {
+      period = _initialPeriod.obs;
+      return;
+    }
     final args = Get.arguments;
     if (args is! PeriodOut) {
       // Post-refresh on web: in-memory args are gone and the stack is empty, so

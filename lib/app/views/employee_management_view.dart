@@ -6,6 +6,8 @@ import '../data/models/attendance/employee_model.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import '../utils/employee_clock_status.dart';
+import 'employee_detail_view.dart';
+import 'shell/two_pane.dart';
 import 'widgets/app_back_button.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../core/responsive/max_width_box.dart';
@@ -22,62 +24,37 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
         title: const Text('Employees'),
         backgroundColor: AppColors.darkBrown,
       ),
-      body: MaxWidthBox(
-        maxWidth: Breakpoints.maxContent,
-        child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        child: Obx(() {
-          controller.elapsedTicker.value;
-          if (controller.isLoading.value && controller.employees.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final twoPane = useTwoPaneLayout(constraints.maxWidth);
+
+          if (!twoPane) {
+            return MaxWidthBox(
+              maxWidth: Breakpoints.maxContent,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Obx(() => _buildList(useTwoPane: false)),
+              ),
+            );
           }
 
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: controller.fetchEmployees,
-            child: controller.employees.isEmpty
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: const [
-                      SizedBox(height: 140),
-                      _EmptyState(),
-                    ],
-                  )
-                : ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    itemCount: controller.employees.length,
-                    itemBuilder: (context, index) {
-                      final employee = controller.employees[index];
-                      return _EmployeeCard(
-                        employee: employee,
-                        statusLabel: controller.clockStatusLabel(employee),
-                        isClockedIn: employee.clockedIn,
-                        onTap: () async {
-                          final result = await Get.toNamed(
-                            AppRoutes.employeeDetail,
-                            arguments: employee.id,
-                          );
-                          await controller.fetchEmployees();
-                          if (result is String && result.isNotEmpty) {
-                            Get.snackbar(
-                              'Deleted',
-                              result,
-                              snackPosition: SnackPosition.BOTTOM,
-                              backgroundColor: AppColors.success,
-                              colorText: AppColors.textLight,
-                              icon: const Icon(
-                                Icons.check_circle,
-                                color: Colors.white,
-                              ),
-                            );
-                          }
-                        },
-                      );
-                    },
-                  ),
-          );
-        }),
-        ),
+          return Obx(() {
+            final selectedId = controller.selectedEmployeeId.value;
+            return TwoPane(
+              masterWidth: 360,
+              master: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 8, 0),
+                child: _buildList(useTwoPane: true),
+              ),
+              detail: selectedId == null
+                  ? const PaneDetailPlaceholder(
+                      message: 'Select an employee to view details',
+                      icon: Icons.person_outline_rounded,
+                    )
+                  : const EmployeeDetailPane(),
+            );
+          });
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: controller.goToCreateEmployee,
@@ -89,6 +66,45 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
       ),
     );
   }
+
+  Widget _buildList({required bool useTwoPane}) {
+    controller.elapsedTicker.value;
+    if (controller.isLoading.value && controller.employees.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: controller.fetchEmployees,
+      child: controller.employees.isEmpty
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                SizedBox(height: 140),
+                _EmptyState(),
+              ],
+            )
+          : ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: controller.employees.length,
+              itemBuilder: (context, index) {
+                final employee = controller.employees[index];
+                final isSelected =
+                    useTwoPane && controller.selectedEmployeeId.value == employee.id;
+                return _EmployeeCard(
+                  employee: employee,
+                  statusLabel: controller.clockStatusLabel(employee),
+                  isClockedIn: employee.clockedIn,
+                  isSelected: isSelected,
+                  onTap: () => controller.openEmployee(
+                    employee,
+                    useTwoPane: useTwoPane,
+                  ),
+                );
+              },
+            ),
+    );
+  }
 }
 
 class _EmployeeCard extends StatelessWidget {
@@ -97,12 +113,14 @@ class _EmployeeCard extends StatelessWidget {
     required this.statusLabel,
     required this.isClockedIn,
     required this.onTap,
+    this.isSelected = false,
   });
 
   final EmployeeModel employee;
   final String statusLabel;
   final bool isClockedIn;
   final VoidCallback onTap;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +131,9 @@ class _EmployeeCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Material(
-        color: AppColors.cardBackground,
+        color: isSelected
+            ? AppColors.primary.withValues(alpha: 0.10)
+            : AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
@@ -173,7 +193,8 @@ class _EmployeeCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded, color: Colors.grey.shade500),
+                if (!isSelected)
+                  Icon(Icons.chevron_right_rounded, color: Colors.grey.shade500),
               ],
             ),
           ),

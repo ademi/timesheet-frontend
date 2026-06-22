@@ -34,6 +34,8 @@ class EmployeeRateFormController extends GetxController {
 
   final isSaving = false.obs;
 
+  VoidCallback? onSavedInPane;
+
   @override
   void onInit() {
     super.onInit();
@@ -183,6 +185,10 @@ class EmployeeRateFormController extends GetxController {
   }
 
   void _completeSubmitNavigation() {
+    if (onSavedInPane != null) {
+      onSavedInPane!();
+      return;
+    }
     Get.back(result: true);
     if (finishCreateFlowOnSave &&
         !isEdit &&

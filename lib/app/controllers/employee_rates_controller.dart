@@ -9,6 +9,7 @@ import '../routes/app_navigation.dart';
 import '../routes/app_routes.dart';
 import '../routes/route_args.dart';
 import '../themes/app_colors.dart';
+import '../views/shell/pane_controller_registry.dart';
 
 class EmployeeRatesController extends GetxController {
   EmployeeRatesController({required PayrollRepository repository})
@@ -19,6 +20,7 @@ class EmployeeRatesController extends GetxController {
   late final String employeeId;
   final rates = <RateOut>[].obs;
   final isLoading = false.obs;
+  final paneFormArgs = Rxn<EmployeeRateFormArgs>();
 
   @override
   void onInit() {
@@ -45,10 +47,19 @@ class EmployeeRatesController extends GetxController {
     }
   }
 
-  Future<void> openCreateForm() async {
+  Future<void> openCreateForm({bool useTwoPane = false}) async {
+    final args = EmployeeRateFormArgs(employeeId: employeeId);
+    if (useTwoPane) {
+      paneFormArgs.value = args;
+      PaneControllerRegistry.ensureRateForm(
+        args: args,
+        onSavedInPane: _onRateSavedInPane,
+      );
+      return;
+    }
     final saved = await pushNamedBool(
       AppRoutes.payrollEmployeeRateForm,
-      arguments: EmployeeRateFormArgs(employeeId: employeeId),
+      arguments: args,
     );
     if (saved) {
       await loadRates();
@@ -56,15 +67,41 @@ class EmployeeRatesController extends GetxController {
     }
   }
 
-  Future<void> openEditForm(RateOut rate) async {
+  Future<void> openEditForm(RateOut rate, {bool useTwoPane = false}) async {
+    final args = EmployeeRateFormArgs(employeeId: employeeId, rate: rate);
+    if (useTwoPane) {
+      paneFormArgs.value = args;
+      PaneControllerRegistry.ensureRateForm(
+        args: args,
+        onSavedInPane: _onRateSavedInPane,
+      );
+      return;
+    }
     final saved = await pushNamedBool(
       AppRoutes.payrollEmployeeRateForm,
-      arguments: EmployeeRateFormArgs(employeeId: employeeId, rate: rate),
+      arguments: args,
     );
     if (saved) {
       await loadRates();
       _showSuccess('Rate updated.');
     }
+  }
+
+  void clearPaneForm() {
+    paneFormArgs.value = null;
+    PaneControllerRegistry.disposeRateForm();
+  }
+
+  void _onRateSavedInPane() {
+    clearPaneForm();
+    loadRates();
+    _showSuccess('Rate saved.');
+  }
+
+  @override
+  void onClose() {
+    PaneControllerRegistry.disposeRateForm();
+    super.onClose();
   }
 
   void _showSuccess(String message) {

@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import '../data/models/payroll/result_out.dart';
 import '../data/repositories/payroll_repository.dart';
+import '../routes/app_routes.dart';
+import '../routes/route_args.dart';
 import '../themes/app_colors.dart';
 
 class PayrollPeriodResultsController extends GetxController {
@@ -13,7 +15,8 @@ class PayrollPeriodResultsController extends GetxController {
 
   final results = <ResultOut>[].obs;
   final isLoading = false.obs;
-  late final String periodId;
+  final selectedResult = Rxn<ResultOut>();
+  late String periodId;
 
   @override
   void onInit() {
@@ -39,6 +42,19 @@ class PayrollPeriodResultsController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  void selectResult(ResultOut result, {required bool useTwoPane}) {
+    if (useTwoPane) {
+      selectedResult.value = result;
+      return;
+    }
+    Get.toNamed(
+      AppRoutes.payrollPeriodResultDetail,
+      arguments: PayrollResultDetailArgs(result: result),
+    );
+  }
+
+  void clearPaneSelection() => selectedResult.value = null;
 
   String _extractErrorMessage(DioException e) {
     final data = e.response?.data;

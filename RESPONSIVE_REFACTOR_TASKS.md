@@ -3,7 +3,7 @@
 **Project:** `yemen_gate_attendance_app` (timesheet-frontend)
 **Strategy:** `flutter_screenutil` 5.x (phone-only density) + `LayoutBuilder` breakpoints (structure) + content max-width + responsive shell.
 **Companion doc:** `RESPONSIVE_REFACTOR_ASSESSMENT.md`
-**Status:** Phase 5 complete — in progress.
+**Status:** Phase 6 complete — in progress.
 
 ## Locked decisions (do not change without sign-off)
 - **Orientation stays LOCKED to portrait.** Keep the existing `SystemChrome.setPreferredOrientations([portraitUp, portraitDown])` in `main.dart`. Do **not** remove it.
@@ -123,18 +123,18 @@ The app has no persistent nav chrome today. Add a wide-screen shell with `Naviga
 
 ---
 
-# Phase 6 — Two-pane master/detail (web/wide only)
+# Phase 6 — Two-pane master/detail (web/wide only) ✅
 
 On wide screens render list + detail side-by-side; on phone keep route-push. Drive selection via a selected-id in the existing controllers.
 
-- [ ] **6.1** Create `lib/app/views/shell/two_pane.dart` — `TwoPane(master, detail, masterWidth)`.
-- [ ] **6.2** `employee_management_view` ↔ `employee_detail_view` — two-pane on wide; push on phone.
-- [ ] **6.3** `payroll_periods_view` ↔ `payroll_period_detail_view` / `payroll_period_results_view`.
-- [ ] **6.4** `payroll_period_results_view` ↔ `payroll_result_detail_view`.
-- [ ] **6.5** `employee_rates_view` ↔ `employee_rate_form_view`.
-- [ ] **6.6** Verify selecting an item updates the right pane (no full route push) on web; phone still pushes.
+- [x] **6.1** Create `lib/app/views/shell/two_pane.dart` — `TwoPane(master, detail, masterWidth)`.
+- [x] **6.2** `employee_management_view` ↔ `employee_detail_view` — two-pane on wide; push on phone.
+- [x] **6.3** `payroll_periods_view` ↔ `payroll_period_detail_view` / `payroll_period_results_view`.
+- [x] **6.4** `payroll_period_results_view` ↔ `payroll_result_detail_view`.
+- [x] **6.5** `employee_rates_view` ↔ `employee_rate_form_view`.
+- [x] **6.6** Verify selecting an item updates the right pane (no full route push) on web; phone still pushes.
 
-**Exit criteria:** the four pairs work as two-pane on web and as push-navigation on phone.
+**Exit criteria:** ~~the four pairs work as two-pane on web and as push-navigation on phone.~~ **Done** — `TwoPane` at ≥1024px; pane controllers via tagged GetX instances; phone path unchanged (`Get.toNamed`); `flutter analyze` + `flutter build web` pass.
 
 ---
 

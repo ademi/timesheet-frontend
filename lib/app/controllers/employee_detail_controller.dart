@@ -24,13 +24,18 @@ class EmployeeDetailController extends GetxController {
   EmployeeDetailController({
     required EmployeeRepository employeeRepository,
     required PayrollRepository payrollRepository,
+    String? initialEmployeeId,
+    this.onDeletedInPane,
   })  : _employeeRepository = employeeRepository,
-        _payrollRepository = payrollRepository;
+        _payrollRepository = payrollRepository,
+        _initialEmployeeId = initialEmployeeId;
 
   final EmployeeRepository _employeeRepository;
   final PayrollRepository _payrollRepository;
+  final String? _initialEmployeeId;
+  final VoidCallback? onDeletedInPane;
 
-  late final String employeeId;
+  late String employeeId;
 
   final employee = Rxn<EmployeeModel>();
   final displayPeriod = Rxn<PeriodOut>();
@@ -56,6 +61,10 @@ class EmployeeDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    if (_initialEmployeeId != null && _initialEmployeeId.isNotEmpty) {
+      bindEmployeeId(_initialEmployeeId);
+      return;
+    }
     final args = Get.arguments;
     if (args is! String || args.isEmpty) {
       // Post-refresh on web: in-memory args are gone and the stack is empty, so
@@ -275,7 +284,11 @@ class EmployeeDetailController extends GetxController {
         message: message,
         notFoundIds: response.notFoundIds,
       );
-      Get.back(result: message);
+      if (onDeletedInPane != null) {
+        onDeletedInPane!();
+      } else {
+        Get.back(result: message);
+      }
     } on DioException catch (e) {
       _showError(_extractErrorMessage(e));
     } catch (_) {

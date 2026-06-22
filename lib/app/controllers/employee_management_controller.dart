@@ -1,14 +1,18 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../controllers/employee_detail_controller.dart';
 import '../data/models/attendance/employee_model.dart';
 import '../data/repositories/employee_repository.dart';
 import '../routes/app_navigation.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import '../utils/employee_clock_status.dart';
+import '../views/shell/pane_controller_registry.dart';
+import '../views/shell/pane_tags.dart';
 
 class EmployeeManagementController extends GetxController {
   EmployeeManagementController({required EmployeeRepository repository})
@@ -19,6 +23,7 @@ class EmployeeManagementController extends GetxController {
   final employees = <EmployeeModel>[].obs;
   final isLoading = false.obs;
   final elapsedTicker = 0.obs;
+  final selectedEmployeeId = RxnString();
 
   Timer? _elapsedTimer;
 
@@ -63,6 +68,54 @@ class EmployeeManagementController extends GetxController {
     }
   }
 
+  Future<void> openEmployee(
+    EmployeeModel employee, {
+    required bool useTwoPane,
+  }) async {
+    if (useTwoPane) {
+      selectedEmployeeId.value = employee.id;
+      PaneControllerRegistry.ensureEmployeeDetail(
+        employeeId: employee.id,
+        onDeletedInPane: _onEmployeeDeletedInPane,
+      );
+      return;
+    }
+
+    final result = await Get.toNamed(
+      AppRoutes.employeeDetail,
+      arguments: employee.id,
+    );
+    await fetchEmployees();
+    if (result is String && result.isNotEmpty) {
+      Get.snackbar(
+        'Deleted',
+        result,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.success,
+        colorText: AppColors.textLight,
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+      );
+    }
+  }
+
+  void clearPaneSelection() {
+    selectedEmployeeId.value = null;
+    PaneControllerRegistry.disposeEmployeeDetail();
+  }
+
+  void _onEmployeeDeletedInPane() {
+    clearPaneSelection();
+    fetchEmployees();
+    Get.snackbar(
+      'Deleted',
+      'Employee deleted successfully.',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppColors.success,
+      colorText: AppColors.textLight,
+      icon: const Icon(Icons.check_circle, color: Colors.white),
+    );
+  }
+
   String _extractErrorMessage(DioException e) {
     final data = e.response?.data;
     if (data is Map<String, dynamic>) {
@@ -85,6 +138,9 @@ class EmployeeManagementController extends GetxController {
 
   @override
   void onClose() {
+    if (Get.isRegistered<EmployeeDetailController>(tag: PaneTags.employeeDetail)) {
+      PaneControllerRegistry.disposeEmployeeDetail();
+    }
     _elapsedTimer?.cancel();
     super.onClose();
   }

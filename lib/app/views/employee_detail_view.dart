@@ -9,14 +9,43 @@ import '../themes/app_colors.dart';
 import 'widgets/app_back_button.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../core/responsive/max_width_box.dart';
+import 'shell/pane_tags.dart';
 
 class EmployeeDetailView extends GetView<EmployeeDetailController> {
-  const EmployeeDetailView({super.key});
+  const EmployeeDetailView({super.key, this.embedded = false, this.controllerTag});
+
+  final bool embedded;
+  final String? controllerTag;
+
+  @override
+  EmployeeDetailController get controller =>
+      Get.find<EmployeeDetailController>(tag: controllerTag);
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final deleting = controller.isDeleting.value;
+
+      if (embedded) {
+        return ColoredBox(
+          color: AppColors.background,
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _EmbeddedHeader(
+                    title: controller.employee.value?.fullName ?? 'Employee',
+                    onRefresh: deleting ? null : controller.loadAll,
+                  ),
+                  Expanded(child: _buildBody(deleting)),
+                ],
+              ),
+              if (deleting) _buildDeletingOverlay(),
+            ],
+          ),
+        );
+      }
 
       return Stack(
         children: [
@@ -35,41 +64,44 @@ class EmployeeDetailView extends GetView<EmployeeDetailController> {
             ),
             body: _buildBody(deleting),
           ),
-          if (deleting)
-            Positioned.fill(
-              child: ColoredBox(
-                color: Colors.black54,
-                child: Center(
-                  child: Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 28,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CircularProgressIndicator(color: AppColors.primary),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Deleting employee...',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          if (deleting) _buildDeletingOverlay(),
         ],
       );
     });
+  }
+
+  Widget _buildDeletingOverlay() {
+    return Positioned.fill(
+      child: ColoredBox(
+        color: Colors.black54,
+        child: Center(
+          child: Card(
+            margin: const EdgeInsets.symmetric(horizontal: 32),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 28,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(color: AppColors.primary),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Deleting employee...',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildBody(bool deleting) {
@@ -79,22 +111,83 @@ class EmployeeDetailView extends GetView<EmployeeDetailController> {
 
     return RefreshIndicator(
       onRefresh: deleting ? () async {} : controller.loadAll,
-      child: MaxWidthBox(
-        maxWidth: Breakpoints.maxContent,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-          _DetailsSection(controller: controller),
-          const SizedBox(height: 16),
-          _PayrollSection(controller: controller),
-          const SizedBox(height: 16),
-          _RatesSection(controller: controller),
-          const SizedBox(height: 16),
-          _AttendanceSection(controller: controller),
-          const SizedBox(height: 24),
-        ],
+      child: embedded
+          ? ListView(
+              padding: const EdgeInsets.all(16),
+              children: _bodySections(),
+            )
+          : MaxWidthBox(
+              maxWidth: Breakpoints.maxContent,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: _bodySections(),
+              ),
+            ),
+    );
+  }
+
+  List<Widget> _bodySections() => [
+        _DetailsSection(controller: controller),
+        const SizedBox(height: 16),
+        _PayrollSection(controller: controller),
+        const SizedBox(height: 16),
+        _RatesSection(controller: controller),
+        const SizedBox(height: 16),
+        _AttendanceSection(controller: controller),
+        const SizedBox(height: 24),
+      ];
+}
+
+class _EmbeddedHeader extends StatelessWidget {
+  const _EmbeddedHeader({required this.title, this.onRefresh});
+
+  final String title;
+  final VoidCallback? onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.darkBrown,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textLight,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (onRefresh != null)
+                IconButton(
+                  onPressed: onRefresh,
+                  icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+                ),
+            ],
+          ),
+        ),
       ),
-      ),
+    );
+  }
+}
+
+/// Pane-scoped employee detail for two-pane layouts.
+class EmployeeDetailPane extends StatelessWidget {
+  const EmployeeDetailPane({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const EmployeeDetailView(
+      embedded: true,
+      controllerTag: PaneTags.employeeDetail,
     );
   }
 }

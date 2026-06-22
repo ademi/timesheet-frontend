@@ -11,6 +11,7 @@ import '../data/repositories/payroll_repository.dart';
 import '../data/services/payroll_settings_storage.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import '../views/shell/pane_controller_registry.dart';
 
 class PayrollPeriodsController extends GetxController {
   PayrollPeriodsController({
@@ -24,6 +25,7 @@ class PayrollPeriodsController extends GetxController {
 
   final periods = <PeriodOut>[].obs;
   final isLoading = false.obs;
+  final selectedPeriod = Rxn<PeriodOut>();
 
   @override
   void onInit() {
@@ -317,8 +319,24 @@ class PayrollPeriodsController extends GetxController {
     }
   }
 
-  void openPeriodDetail(PeriodOut period) {
+  void openPeriodDetail(PeriodOut period, {bool useTwoPane = false}) {
+    if (useTwoPane) {
+      selectedPeriod.value = period;
+      PaneControllerRegistry.ensurePeriodDetail(period);
+      return;
+    }
     Get.toNamed(AppRoutes.payrollPeriodDetail, arguments: period);
+  }
+
+  void clearPaneSelection() {
+    selectedPeriod.value = null;
+    PaneControllerRegistry.disposePeriodDetail();
+  }
+
+  @override
+  void onClose() {
+    PaneControllerRegistry.disposePeriodDetail();
+    super.onClose();
   }
 
   void openSettings() {
