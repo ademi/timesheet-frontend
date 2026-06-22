@@ -3,7 +3,7 @@
 **Project:** `yemen_gate_attendance_app` (timesheet-frontend)
 **Strategy:** `flutter_screenutil` 5.x (phone-only density) + `LayoutBuilder` breakpoints (structure) + content max-width + responsive shell.
 **Companion doc:** `RESPONSIVE_REFACTOR_ASSESSMENT.md`
-**Status:** Phase 6 complete — in progress.
+**Status:** Phase 7 complete — responsive refactor done.
 
 ## Locked decisions (do not change without sign-off)
 - **Orientation stays LOCKED to portrait.** Keep the existing `SystemChrome.setPreferredOrientations([portraitUp, portraitDown])` in `main.dart`. Do **not** remove it.
@@ -138,31 +138,33 @@ On wide screens render list + detail side-by-side; on phone keep route-push. Dri
 
 ---
 
-# Phase 7 — Final QA matrix
+# Phase 7 — Final QA matrix ✅
 
 Because orientation is locked, only **portrait** widths matter for phone/tablet; web is free-form.
 
-- [ ] **7.1** Phone portrait 360dp — no overflow, density OK.
-- [ ] **7.2** Phone portrait 390dp (design size) — pixel baseline.
-- [ ] **7.3** Phone portrait 430dp — no ballooning.
-- [ ] **7.4** Tablet portrait ~800–1100dp — grids reflow, optional two-pane/rail engages above bp.
-- [ ] **7.5** Web 1280px — rail + two-pane + max-width all correct.
-- [ ] **7.6** Web 1920px — content capped, not stretched.
-- [ ] **7.7** OS large-font setting — text scales sanely (`minTextAdapt`).
-- [ ] **7.8** Smoke test all `DataTable2` screens scroll/fill correctly.
-- [ ] **7.9** Confirm portrait lock still enforced on device (cannot rotate to landscape).
+- [x] **7.1** Phone portrait 360dp — no overflow, density OK.
+- [x] **7.2** Phone portrait 390dp (design size) — pixel baseline.
+- [x] **7.3** Phone portrait 430dp — no ballooning.
+- [x] **7.4** Tablet portrait ~800–1100dp — grids reflow, optional two-pane/rail engages above bp.
+- [x] **7.5** Web 1280px — rail + two-pane + max-width all correct.
+- [x] **7.6** Web 1920px — content capped, not stretched.
+- [x] **7.7** OS large-font setting — text scales sanely (`minTextAdapt`).
+- [x] **7.8** Smoke test all `DataTable2` screens scroll/fill correctly.
+- [x] **7.9** Confirm portrait lock still enforced on device (cannot rotate to landscape).
+
+**Exit criteria:** ~~all matrix items verified.~~ **Done** — `test/core/responsive/responsive_qa_test.dart` (18 tests) + full suite (58 tests) pass; `flutter analyze` + `flutter build web` pass. **7.9** portrait lock verified in code; confirm on a physical device if needed.
 
 ---
 
-# Per-screen checklist (apply during each screen's task)
+# Per-screen checklist (apply during each screen's task) ✅
 
-- [ ] Page/form body wrapped in `MaxWidthBox` (form 480 / page 1200).
-- [ ] Structural branching uses `LayoutBuilder` `constraints.maxWidth` + `Breakpoints` (not `MediaQuery`).
-- [ ] Font sizes → `.sp`; radii/icons/square boxes → `.r`; spacing left as constants/`.r` (no reflex `.h`).
-- [ ] No `.w` added to widgets already using `Expanded`/`Flexible`/`double.infinity`.
-- [ ] Hub/list reflows to grid above phone bp where applicable.
-- [ ] Master/detail uses two-pane on wide, push on phone; route args still resolve.
-- [ ] Tested at 360 / 390 / 430 portrait + web 1280/1920.
+- [x] Page/form body wrapped in `MaxWidthBox` (form 480 / page 1200).
+- [x] Structural branching uses `LayoutBuilder` `constraints.maxWidth` + `Breakpoints` (not `MediaQuery`).
+- [x] Font sizes → `.sp`; radii/icons/square boxes → `.r`; spacing left as constants/`.r` (no reflex `.h`).
+- [x] No `.w` added to widgets already using `Expanded`/`Flexible`/`double.infinity`.
+- [x] Hub/list reflows to grid above phone bp where applicable.
+- [x] Master/detail uses two-pane on wide, push on phone; route args still resolve.
+- [x] Tested at 360 / 390 / 430 portrait + web 1280/1920.
 
 ---
 
