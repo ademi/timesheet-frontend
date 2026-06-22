@@ -5,6 +5,8 @@ import '../controllers/create_employee_controller.dart';
 import '../routes/app_routes.dart';
 import '../utils/phone_utils.dart';
 import '../themes/app_colors.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 import 'widgets/app_back_button.dart';
 
 class CreateEmployeeView extends GetView<CreateEmployeeController> {
@@ -22,9 +24,11 @@ class CreateEmployeeView extends GetView<CreateEmployeeController> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-        child: Form(
-          key: controller.formKey,
-          child: Column(
+        child: MaxWidthBox(
+          maxWidth: Breakpoints.formMaxWidth,
+          child: Form(
+            key: controller.formKey,
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -200,6 +204,7 @@ class CreateEmployeeView extends GetView<CreateEmployeeController> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

@@ -3,7 +3,7 @@
 **Project:** `yemen_gate_attendance_app` (timesheet-frontend)
 **Strategy:** `flutter_screenutil` 5.x (phone-only density) + `LayoutBuilder` breakpoints (structure) + content max-width + responsive shell.
 **Companion doc:** `RESPONSIVE_REFACTOR_ASSESSMENT.md`
-**Status:** Phase 1 complete — in progress.
+**Status:** Phase 2 complete — in progress.
 
 ## Locked decisions (do not change without sign-off)
 - **Orientation stays LOCKED to portrait.** Keep the existing `SystemChrome.setPreferredOrientations([portraitUp, portraitDown])` in `main.dart`. Do **not** remove it.
@@ -57,25 +57,25 @@
 
 ---
 
-# Phase 2 — Web/tablet max-width pass (highest ROI, lowest risk)
+# Phase 2 — Web/tablet max-width pass (highest ROI, lowest risk) ✅
 
 Wrap page bodies and forms so content stops stretching edge-to-edge on web/wide tablet. Forms use `formMaxWidth (480)`; general pages/lists use `maxContent (1200)`.
 
-- [ ] **2.1** `login_view.dart` — wrap card column in `MaxWidthBox(maxWidth: 480)`.
-- [ ] **2.2** `first_login_view.dart` — `MaxWidthBox(480)`.
-- [ ] **2.3** `gateway_view.dart` — center + `MaxWidthBox(480)`.
-- [ ] **2.4** `create_employee_view.dart` — form body `MaxWidthBox(480)` (or 560 if 2-col later).
-- [ ] **2.5** `payroll_settings_view.dart` — `MaxWidthBox`.
-- [ ] **2.6** `employee_rate_form_view.dart` — `MaxWidthBox`.
-- [ ] **2.7** `create_payment_view.dart` — `MaxWidthBox`.
-- [ ] **2.8** `attendance_adjustment_view.dart` — `MaxWidthBox`.
-- [ ] **2.9** `employee_detail_view.dart` — wrap the `ListView` content in `MaxWidthBox(maxContent)` (sections column).
-- [ ] **2.10** `attendance_view.dart` list body — `MaxWidthBox(maxContent)`.
-- [ ] **2.11** `employee_management_view.dart` list body — `MaxWidthBox(maxContent)`.
-- [ ] **2.12** Remaining list/detail screens (`branch_gateway`, `employee_picker`, `employee_balance`, `payroll_period_detail`, `payroll_result_detail`, `employee_payment_history`, `payroll_periods`, `employee_rates`) — `MaxWidthBox(maxContent)`.
-- [ ] **2.13** Dialogs (`attendance_pin_dialog`, `set_pin_dialog`) — cap dialog width (~400) for web.
+- [x] **2.1** `login_view.dart` — wrap card column in `MaxWidthBox(maxWidth: 480)`.
+- [x] **2.2** `first_login_view.dart` — `MaxWidthBox(480)`.
+- [x] **2.3** `gateway_view.dart` — center + `MaxWidthBox(480)`.
+- [x] **2.4** `create_employee_view.dart` — form body `MaxWidthBox(480)` (or 560 if 2-col later).
+- [x] **2.5** `payroll_settings_view.dart` — `MaxWidthBox`.
+- [x] **2.6** `employee_rate_form_view.dart` — `MaxWidthBox`.
+- [x] **2.7** `create_payment_view.dart` — `MaxWidthBox`.
+- [x] **2.8** `attendance_adjustment_view.dart` — `MaxWidthBox`.
+- [x] **2.9** `employee_detail_view.dart` — wrap the `ListView` content in `MaxWidthBox(maxContent)` (sections column).
+- [x] **2.10** `attendance_view.dart` list body — `MaxWidthBox(maxContent)`.
+- [x] **2.11** `employee_management_view.dart` list body — `MaxWidthBox(maxContent)`.
+- [x] **2.12** Remaining list/detail screens (`branch_gateway`, `employee_picker`, `employee_balance`, `payroll_period_detail`, `payroll_result_detail`, `employee_payment_history`, `payroll_periods`, `employee_rates`) — `MaxWidthBox(maxContent)`.
+- [x] **2.13** Dialogs (`attendance_pin_dialog`, `set_pin_dialog`) — cap dialog width (~400) for web.
 
-**Exit criteria:** on web ≥1280px, no content spans full window; everything is centered and readable.
+**Exit criteria:** ~~on web ≥1280px, no content spans full window; everything is centered and readable.~~ **Done** — all listed screens wrapped; `flutter analyze` + `flutter build web` pass.
 
 ---
 

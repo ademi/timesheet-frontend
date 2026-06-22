@@ -6,6 +6,8 @@ import '../controllers/attendance_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../utils/employee_clock_status.dart';
 import '../themes/app_colors.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class AttendanceView extends GetView<AttendanceController> {
   const AttendanceView({super.key});
@@ -86,11 +88,13 @@ class AttendanceView extends GetView<AttendanceController> {
           }
 
           final count = controller.visibleCount.value;
-          return ListView.builder(
-            controller: controller.scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            itemCount: count,
-            itemBuilder: (context, index) {
+          return MaxWidthBox(
+            maxWidth: Breakpoints.maxContent,
+            child: ListView.builder(
+              controller: controller.scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              itemCount: count,
+              itemBuilder: (context, index) {
               final emp = controller.allEmployees[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -113,6 +117,7 @@ class AttendanceView extends GetView<AttendanceController> {
                 ),
               );
             },
+          ),
           );
         }),
       ),

@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import '../controllers/first_login_controller.dart';
 import '../themes/app_colors.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class FirstLoginView extends StatelessWidget {
   const FirstLoginView({super.key});
@@ -20,9 +22,11 @@ class FirstLoginView extends StatelessWidget {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Form(
-              key: controller.formKey,
-              child: Column(
+            child: MaxWidthBox(
+              maxWidth: Breakpoints.formMaxWidth,
+              child: Form(
+                key: controller.formKey,
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -111,6 +115,7 @@ class FirstLoginView extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
             ),
           ),
         ),

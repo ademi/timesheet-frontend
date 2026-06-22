@@ -5,6 +5,8 @@ import '../controllers/employee_balance_controller.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import 'widgets/app_back_button.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class EmployeeBalanceView extends GetView<EmployeeBalanceController> {
   const EmployeeBalanceView({super.key});
@@ -28,9 +30,11 @@ class EmployeeBalanceView extends GetView<EmployeeBalanceController> {
         }
         return RefreshIndicator(
           onRefresh: controller.loadBalance,
-          child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
+          child: MaxWidthBox(
+            maxWidth: Breakpoints.maxContent,
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
               _BalanceTile(
                 label: 'Total Owed',
                 value: balance.totalOwed,
@@ -50,6 +54,7 @@ class EmployeeBalanceView extends GetView<EmployeeBalanceController> {
                 highlight: balance.outstanding > 0,
               ),
             ],
+          ),
           ),
         );
       }),

@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/gateway_controller.dart';
 import '../themes/app_colors.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class LoginView extends GetView<AuthController> {
   const LoginView({super.key});
@@ -15,9 +17,11 @@ class LoginView extends GetView<AuthController> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Form(
-              key: controller.formKey,
-              child: Column(
+            child: MaxWidthBox(
+              maxWidth: Breakpoints.formMaxWidth,
+              child: Form(
+                key: controller.formKey,
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const SizedBox(height: 16),
@@ -189,6 +193,7 @@ class LoginView extends GetView<AuthController> {
                   const SizedBox(height: 24),
                 ],
               ),
+            ),
             ),
           ),
         ),

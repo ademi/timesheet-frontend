@@ -6,6 +6,8 @@ import '../routes/app_routes.dart';
 import '../routes/route_args.dart';
 import '../themes/app_colors.dart';
 import 'widgets/app_back_button.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class PayrollResultDetailView extends StatelessWidget {
   const PayrollResultDetailView({super.key});
@@ -39,9 +41,11 @@ class PayrollResultDetailView extends StatelessWidget {
         title: Text(result.employeeName ?? 'Payroll Result'),
         backgroundColor: AppColors.darkBrown,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
+      body: MaxWidthBox(
+        maxWidth: Breakpoints.maxContent,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
           _SummaryCard(result: result),
           const SizedBox(height: 16),
           _SnapshotSection(
@@ -54,6 +58,7 @@ class PayrollResultDetailView extends StatelessWidget {
             entries: result.calcSnapshot.entries,
           ),
         ],
+      ),
       ),
     );
   }

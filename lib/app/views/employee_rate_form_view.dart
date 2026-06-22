@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import '../controllers/employee_rate_form_controller.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 import 'widgets/app_back_button.dart';
 
 class EmployeeRateFormView extends GetView<EmployeeRateFormController> {
@@ -22,9 +24,11 @@ class EmployeeRateFormView extends GetView<EmployeeRateFormController> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+        child: MaxWidthBox(
+          maxWidth: Breakpoints.formMaxWidth,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Obx(
               () => ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -137,6 +141,7 @@ class EmployeeRateFormView extends GetView<EmployeeRateFormController> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

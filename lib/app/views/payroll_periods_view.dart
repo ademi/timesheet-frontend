@@ -5,6 +5,8 @@ import '../controllers/payroll_periods_controller.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import 'widgets/app_back_button.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class PayrollPeriodsView extends GetView<PayrollPeriodsController> {
   const PayrollPeriodsView({super.key});
@@ -37,10 +39,12 @@ class PayrollPeriodsView extends GetView<PayrollPeriodsController> {
         if (controller.periods.isEmpty) {
           return const Center(child: Text('No payroll periods yet.'));
         }
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: controller.periods.length,
-          itemBuilder: (context, index) {
+        return MaxWidthBox(
+          maxWidth: Breakpoints.maxContent,
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: controller.periods.length,
+            itemBuilder: (context, index) {
             final period = controller.periods[index];
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
@@ -60,6 +64,7 @@ class PayrollPeriodsView extends GetView<PayrollPeriodsController> {
               ),
             );
           },
+        ),
         );
       }),
     );

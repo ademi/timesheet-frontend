@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import '../controllers/gateway_controller.dart';
 import '../themes/app_colors.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class GatewayView extends GetView<GatewayController> {
   const GatewayView({super.key});
@@ -15,7 +17,9 @@ class GatewayView extends GetView<GatewayController> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(
+            child: MaxWidthBox(
+              maxWidth: Breakpoints.formMaxWidth,
+              child: Column(
               children: [
                 const SizedBox(height: 24),
 
@@ -92,6 +96,7 @@ class GatewayView extends GetView<GatewayController> {
 
                 const SizedBox(height: 32),
               ],
+            ),
             ),
           ),
         ),

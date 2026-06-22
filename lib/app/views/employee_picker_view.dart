@@ -5,6 +5,8 @@ import '../controllers/employee_picker_controller.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import 'widgets/app_back_button.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class EmployeePickerView extends GetView<EmployeePickerController> {
   const EmployeePickerView({super.key});
@@ -18,7 +20,9 @@ class EmployeePickerView extends GetView<EmployeePickerController> {
         title: Text(controller.title),
         backgroundColor: AppColors.darkBrown,
       ),
-      body: Column(
+      body: MaxWidthBox(
+        maxWidth: Breakpoints.maxContent,
+        child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -55,6 +59,7 @@ class EmployeePickerView extends GetView<EmployeePickerController> {
             }),
           ),
         ],
+      ),
       ),
     );
   }

@@ -5,6 +5,8 @@ import '../controllers/payroll_settings_controller.dart';
 import '../data/models/payroll/payroll_settings.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 import 'widgets/app_back_button.dart';
 
 class PayrollSettingsView extends GetView<PayrollSettingsController> {
@@ -21,9 +23,11 @@ class PayrollSettingsView extends GetView<PayrollSettingsController> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+        child: MaxWidthBox(
+          maxWidth: Breakpoints.formMaxWidth,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             _Section(
               title: 'Schedule',
               child: Column(
@@ -123,6 +127,7 @@ class PayrollSettingsView extends GetView<PayrollSettingsController> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

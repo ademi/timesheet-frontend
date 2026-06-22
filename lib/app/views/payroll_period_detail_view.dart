@@ -5,6 +5,8 @@ import '../controllers/payroll_period_detail_controller.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import 'widgets/app_back_button.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class PayrollPeriodDetailView extends GetView<PayrollPeriodDetailController> {
   const PayrollPeriodDetailView({super.key});
@@ -20,7 +22,9 @@ class PayrollPeriodDetailView extends GetView<PayrollPeriodDetailController> {
       ),
       body: Obx(() {
         final period = controller.period.value;
-        return Padding(
+        return MaxWidthBox(
+          maxWidth: Breakpoints.maxContent,
+          child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -113,6 +117,7 @@ class PayrollPeriodDetailView extends GetView<PayrollPeriodDetailController> {
               ],
             ],
           ),
+        ),
         );
       }),
     );

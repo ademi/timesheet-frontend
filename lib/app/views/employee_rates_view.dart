@@ -5,6 +5,8 @@ import '../controllers/employee_rates_controller.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import 'widgets/app_back_button.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class EmployeeRatesView extends GetView<EmployeeRatesController> {
   const EmployeeRatesView({super.key});
@@ -30,10 +32,12 @@ class EmployeeRatesView extends GetView<EmployeeRatesController> {
         if (controller.rates.isEmpty) {
           return const Center(child: Text('No rates for this employee yet.'));
         }
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: controller.rates.length,
-          itemBuilder: (context, index) {
+        return MaxWidthBox(
+          maxWidth: Breakpoints.maxContent,
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: controller.rates.length,
+            itemBuilder: (context, index) {
             final rate = controller.rates[index];
             final toLabel = rate.effectiveTo != null
                 ? controller.formatDate(rate.effectiveTo!)
@@ -51,6 +55,7 @@ class EmployeeRatesView extends GetView<EmployeeRatesController> {
               ),
             );
           },
+        ),
         );
       }),
     );

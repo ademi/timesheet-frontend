@@ -6,6 +6,8 @@ import '../data/models/attendance/employee_model.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import 'widgets/app_back_button.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class EmployeePaymentHistoryView extends GetView<EmployeePaymentHistoryController> {
   const EmployeePaymentHistoryView({super.key});
@@ -19,7 +21,9 @@ class EmployeePaymentHistoryView extends GetView<EmployeePaymentHistoryControlle
         title: const Text('Employee Payment History'),
         backgroundColor: AppColors.darkBrown,
       ),
-      body: Padding(
+      body: MaxWidthBox(
+        maxWidth: Breakpoints.maxContent,
+        child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
@@ -99,6 +103,7 @@ class EmployeePaymentHistoryView extends GetView<EmployeePaymentHistoryControlle
               }),
             ),
           ],
+        ),
         ),
       ),
     );

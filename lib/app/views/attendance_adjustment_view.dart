@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import '../controllers/attendance_adjustment_controller.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 import 'widgets/app_back_button.dart';
 
 class AttendanceAdjustmentView
@@ -21,9 +23,11 @@ class AttendanceAdjustmentView
         title: Text(controller.title),
         backgroundColor: AppColors.darkBrown,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      body: MaxWidthBox(
+        maxWidth: Breakpoints.formMaxWidth,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
           _employeeHeader(),
           const SizedBox(height: 16),
           if (controller.needsClockIn) ...[
@@ -102,6 +106,7 @@ class AttendanceAdjustmentView
             ),
           ),
         ],
+      ),
       ),
     );
   }

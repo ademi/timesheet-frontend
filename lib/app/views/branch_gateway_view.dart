@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import '../controllers/branch_gateway_controller.dart';
 import '../data/models/branch/branch_model.dart';
 import '../themes/app_colors.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class BranchGatewayView extends GetView<BranchGatewayController> {
   const BranchGatewayView({super.key});
@@ -48,9 +50,11 @@ class BranchGatewayView extends GetView<BranchGatewayController> {
                     ),
                   );
                 }
-                return ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                  children: [
+                return MaxWidthBox(
+                  maxWidth: Breakpoints.maxContent,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    children: [
                     const Text(
                       'Which branch would you like to manage?',
                       style: TextStyle(
@@ -70,6 +74,7 @@ class BranchGatewayView extends GetView<BranchGatewayController> {
                       ),
                     ),
                   ],
+                ),
                 );
               }),
             ),

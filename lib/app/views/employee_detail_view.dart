@@ -7,6 +7,8 @@ import '../routes/app_routes.dart';
 import '../utils/phone_utils.dart';
 import '../themes/app_colors.dart';
 import 'widgets/app_back_button.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class EmployeeDetailView extends GetView<EmployeeDetailController> {
   const EmployeeDetailView({super.key});
@@ -77,9 +79,11 @@ class EmployeeDetailView extends GetView<EmployeeDetailController> {
 
     return RefreshIndicator(
       onRefresh: deleting ? () async {} : controller.loadAll,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      child: MaxWidthBox(
+        maxWidth: Breakpoints.maxContent,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
           _DetailsSection(controller: controller),
           const SizedBox(height: 16),
           _PayrollSection(controller: controller),
@@ -89,6 +93,7 @@ class EmployeeDetailView extends GetView<EmployeeDetailController> {
           _AttendanceSection(controller: controller),
           const SizedBox(height: 24),
         ],
+      ),
       ),
     );
   }

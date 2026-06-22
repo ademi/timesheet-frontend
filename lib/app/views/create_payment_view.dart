@@ -7,6 +7,8 @@ import '../data/models/payroll/period_out.dart';
 import '../data/models/payroll/result_out.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 import 'widgets/app_back_button.dart';
 
 class CreatePaymentView extends GetView<CreatePaymentController> {
@@ -31,9 +33,11 @@ class CreatePaymentView extends GetView<CreatePaymentController> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: controller.formKey,
-          child: Column(
+        child: MaxWidthBox(
+          maxWidth: Breakpoints.formMaxWidth,
+          child: Form(
+            key: controller.formKey,
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _SectionCard(
@@ -255,6 +259,7 @@ class CreatePaymentView extends GetView<CreatePaymentController> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

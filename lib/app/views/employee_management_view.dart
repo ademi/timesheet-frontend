@@ -7,6 +7,8 @@ import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import '../utils/employee_clock_status.dart';
 import 'widgets/app_back_button.dart';
+import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 
 class EmployeeManagementView extends GetView<EmployeeManagementController> {
   const EmployeeManagementView({super.key});
@@ -20,7 +22,9 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
         title: const Text('Employees'),
         backgroundColor: AppColors.darkBrown,
       ),
-      body: Padding(
+      body: MaxWidthBox(
+        maxWidth: Breakpoints.maxContent,
+        child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: Obx(() {
           controller.elapsedTicker.value;
@@ -73,6 +77,7 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
                   ),
           );
         }),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: controller.goToCreateEmployee,
