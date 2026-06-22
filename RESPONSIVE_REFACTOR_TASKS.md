@@ -3,7 +3,7 @@
 **Project:** `yemen_gate_attendance_app` (timesheet-frontend)
 **Strategy:** `flutter_screenutil` 5.x (phone-only density) + `LayoutBuilder` breakpoints (structure) + content max-width + responsive shell.
 **Companion doc:** `RESPONSIVE_REFACTOR_ASSESSMENT.md`
-**Status:** Phase 2 complete — in progress.
+**Status:** Phase 3 complete — in progress.
 
 ## Locked decisions (do not change without sign-off)
 - **Orientation stays LOCKED to portrait.** Keep the existing `SystemChrome.setPreferredOrientations([portraitUp, portraitDown])` in `main.dart`. Do **not** remove it.
@@ -79,16 +79,16 @@ Wrap page bodies and forms so content stops stretching edge-to-edge on web/wide 
 
 ---
 
-# Phase 3 — Hub screens → responsive grids
+# Phase 3 — Hub screens → responsive grids ✅
 
 Convert the vertical card menus to `AdaptiveGrid` (1/2/3 columns by width). Cards already reusable (`AdminHubCard`).
 
-- [ ] **3.1** `admin_panel_view.dart` — replace the `ListView` of `AdminHubCard`s with `AdaptiveGrid`; keep header full-width.
-- [ ] **3.2** `payroll_main_view.dart` — `AdaptiveGrid`.
-- [ ] **3.3** `payment_main_view.dart` — `AdaptiveGrid`.
-- [ ] **3.4** Confirm `AdminHubCard` works in a grid cell (height/`Expanded` constraints); adjust card to be grid-friendly if needed.
+- [x] **3.1** `admin_panel_view.dart` — replace the `ListView` of `AdminHubCard`s with `AdaptiveGrid`; keep header full-width.
+- [x] **3.2** `payroll_main_view.dart` — `AdaptiveGrid`.
+- [x] **3.3** `payment_main_view.dart` — `AdaptiveGrid`.
+- [x] **3.4** Confirm `AdminHubCard` works in a grid cell (height/`Expanded` constraints); adjust card to be grid-friendly if needed.
 
-**Exit criteria:** hubs show 1 col on phone, 2 on tablet portrait, 3 on web — no overflow.
+**Exit criteria:** ~~hubs show 1 col on phone, 2 on tablet portrait, 3 on web — no overflow.~~ **Done** — all three hubs use `AdaptiveGrid`; `AdminHubCard` fills grid cells with ellipsis overflow; `flutter analyze` + `flutter build web` pass.
 
 ---
 

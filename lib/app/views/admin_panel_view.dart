@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/services/token_storage.dart';
+import '../../core/responsive/adaptive_grid.dart';
 import '../controllers/admin_panel_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../themes/app_colors.dart';
@@ -27,52 +28,62 @@ class AdminPanelView extends GetView<AdminPanelController> {
               onLogout: authController.logout,
             ),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'What would you like to manage?',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryDark,
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(20, 8, 20, 0),
+                    child: Text(
+                      'What would you like to manage?',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryDark,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  AdminHubCard(
-                    icon: Icons.groups_rounded,
-                    title: 'Employees',
-                    subtitle: 'View staff, open profiles, and create employees',
-                    onTap: controller.openEmployees,
-                  ),
-                  const SizedBox(height: 14),
-                  AdminHubCard(
-                    icon: Icons.calendar_month_rounded,
-                    title: 'Attendance Report',
-                    subtitle: 'Weekly attendance grid and Excel export',
-                    onTap: controller.openAttendanceReport,
-                  ),
-                  const SizedBox(height: 14),
-                  AdminHubCard(
-                    icon: Icons.rule_rounded,
-                    title: 'Attendance Corrections',
-                    subtitle: 'Review exceptions and fix missing punches',
-                    onTap: controller.openAttendanceCorrections,
-                  ),
-                  const SizedBox(height: 14),
-                  AdminHubCard(
-                    icon: Icons.receipt_long_rounded,
-                    title: 'Payroll',
-                    subtitle: 'Periods, rates, balances, and payroll summary',
-                    onTap: controller.openPayroll,
-                  ),
-                  const SizedBox(height: 14),
-                  AdminHubCard(
-                    icon: Icons.account_balance_wallet_rounded,
-                    title: 'Payments',
-                    subtitle: 'Record payments, reports, and payment history',
-                    onTap: controller.openPayments,
-                    accentColor: AppColors.primaryDark,
+                  Expanded(
+                    child: AdaptiveGrid(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                      spacing: 14,
+                      runSpacing: 14,
+                      children: [
+                        AdminHubCard(
+                          icon: Icons.groups_rounded,
+                          title: 'Employees',
+                          subtitle:
+                              'View staff, open profiles, and create employees',
+                          onTap: controller.openEmployees,
+                        ),
+                        AdminHubCard(
+                          icon: Icons.calendar_month_rounded,
+                          title: 'Attendance Report',
+                          subtitle: 'Weekly attendance grid and Excel export',
+                          onTap: controller.openAttendanceReport,
+                        ),
+                        AdminHubCard(
+                          icon: Icons.rule_rounded,
+                          title: 'Attendance Corrections',
+                          subtitle: 'Review exceptions and fix missing punches',
+                          onTap: controller.openAttendanceCorrections,
+                        ),
+                        AdminHubCard(
+                          icon: Icons.receipt_long_rounded,
+                          title: 'Payroll',
+                          subtitle: 'Periods, rates, balances, and payroll summary',
+                          onTap: controller.openPayroll,
+                        ),
+                        AdminHubCard(
+                          icon: Icons.account_balance_wallet_rounded,
+                          title: 'Payments',
+                          subtitle:
+                              'Record payments, reports, and payment history',
+                          onTap: controller.openPayments,
+                          accentColor: AppColors.primaryDark,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
