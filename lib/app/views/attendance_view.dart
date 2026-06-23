@@ -90,38 +90,69 @@ class AttendanceView extends GetView<AttendanceController> {
           final count = controller.visibleCount.value;
           return MaxWidthBox(
             maxWidth: Breakpoints.maxContent,
-            child: ListView.builder(
-              controller: controller.scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              itemCount: count,
-              itemBuilder: (context, index) {
-              final emp = controller.allEmployees[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _EmployeeCard(
-                  fullName: emp.fullName,
-                  subtitle: employeeContactSubtitle(emp),
-                  isClockedIn: emp.clockedIn,
-                  isClockedOut: emp.clockedOut,
-                  durationText: controller.formatClockedInDuration(emp),
-                  onClockIn:
-                      () => controller.openAttendanceDialog(
-                        emp,
-                        AttendanceDialogAction.clockIn,
-                      ),
-                  onClockOut:
-                      () => controller.openAttendanceDialog(
-                        emp,
-                        AttendanceDialogAction.clockOut,
-                      ),
-                ),
-              );
-            },
-          ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Single column on mobile; 3 cards per row on tablet/desktop/web.
+                final isWide = constraints.maxWidth >= Breakpoints.phone;
+
+                if (!isWide) {
+                  return ListView.builder(
+                    controller: controller.scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    itemCount: count,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _buildEmployeeCard(index),
+                      );
+                    },
+                  );
+                }
+
+                return GridView.builder(
+                  controller: controller.scrollController,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  itemCount: count,
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    mainAxisExtent: 150,
+                  ),
+                  itemBuilder: (context, index) => _buildEmployeeCard(index),
+                );
+              },
+            ),
           );
         }),
       ),
     ),
+    );
+  }
+
+  Widget _buildEmployeeCard(int index) {
+    final emp = controller.allEmployees[index];
+    return _EmployeeCard(
+      fullName: emp.fullName,
+      subtitle: employeeContactSubtitle(emp),
+      isClockedIn: emp.clockedIn,
+      isClockedOut: emp.clockedOut,
+      durationText: controller.formatClockedInDuration(emp),
+      onClockIn: () => controller.openAttendanceDialog(
+        emp,
+        AttendanceDialogAction.clockIn,
+      ),
+      onClockOut: () => controller.openAttendanceDialog(
+        emp,
+        AttendanceDialogAction.clockOut,
+      ),
     );
   }
 }

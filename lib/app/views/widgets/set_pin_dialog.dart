@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 
 import '../../themes/app_colors.dart';
 import '../../data/models/auth/auth_error_model.dart';
-import '../../../core/responsive/max_width_box.dart';
 import 'pin_input_field.dart';
 
 /// Dialog for creating a 4-digit PIN (enter + confirm).
@@ -80,8 +79,8 @@ class _SetPinDialogState extends State<SetPinDialog> {
     return Dialog(
       backgroundColor: AppColors.cardBackground,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: MaxWidthBox(
-        maxWidth: 400,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
         child: Padding(
         padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(

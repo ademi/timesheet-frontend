@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import '../../controllers/attendance_controller.dart';
 import '../../utils/employee_clock_status.dart';
 import '../../themes/app_colors.dart';
-import '../../../core/responsive/max_width_box.dart';
 import 'pin_input_field.dart';
 
 class AttendancePinDialog extends StatelessWidget {
@@ -17,8 +16,8 @@ class AttendancePinDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: AppColors.cardBackground,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: MaxWidthBox(
-        maxWidth: 400,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
         child: Padding(
         padding: const EdgeInsets.all(20),
         child: Obx(() {

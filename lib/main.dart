@@ -91,6 +91,15 @@ class _YemenGateAppState extends State<YemenGateApp> with WidgetsBindingObserver
       minTextAdapt: true,
       splitScreenMode: true,
       ensureScreenSize: true,
+      // `.sp` scales fonts by the window size relative to the 390x844 phone
+      // design. On web the window is far larger than a phone, so the raw scale
+      // grows well above 1 and every `.sp` font (app bar, buttons, inputs,
+      // date picker) balloons. Allow shrinking on tiny phones, but never
+      // enlarge beyond the design size on tablet/web.
+      fontSizeResolver: (fontSize, instance) {
+        final scale = instance.scaleText;
+        return fontSize * (scale > 1 ? 1 : scale);
+      },
       builder: (context, child) => GetMaterialApp(
         title: 'Yemen Gate Attendance',
         debugShowCheckedModeBanner: false,
