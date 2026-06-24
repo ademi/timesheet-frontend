@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.yemen_gate_attendance_app"
+    namespace = "com.deepdownidea.timesheet"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 

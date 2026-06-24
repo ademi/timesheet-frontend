@@ -8,7 +8,7 @@
 PRODUCT_NAME = ShiftMate
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.yemenGateAttendanceApp
+PRODUCT_BUNDLE_IDENTIFIER = com.deepdownidea.timesheet
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 com.deepdownidea. All rights reserved.
