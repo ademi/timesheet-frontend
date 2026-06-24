@@ -135,7 +135,7 @@ class _AdminHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Yemen Gate',
+                  'ShiftMate',
                   style: TextStyle(
                     color: AppColors.textLight,
                     fontSize: 20,

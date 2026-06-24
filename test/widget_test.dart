@@ -21,8 +21,8 @@ void main() {
     await GetStorage.init();
   });
 
-  testWidgets('Yemen Gate app loads gateway screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const YemenGateApp());
+  testWidgets('ShiftMate app loads gateway screen', (WidgetTester tester) async {
+    await tester.pumpWidget(const ShiftMateApp());
     await tester.pumpAndSettle();
 
     expect(find.text('Select Your Portal'), findsOneWidget);

@@ -121,7 +121,7 @@ class _BranchHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Yemen Gate',
+                  'ShiftMate',
                   style: TextStyle(
                     color: AppColors.textLight,
                     fontSize: 20,

@@ -33,14 +33,12 @@ class LoginView extends GetView<AuthController> {
 
                   // ── Title ─────────────────────────────────
                   const Text(
-                    'مطعم باب اليمن',
+                    'ShiftMate',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: AppColors.darkBrown,
-                      fontFamily: 'Cairo',
                     ),
-                    textDirection: TextDirection.rtl,
                   ),
                   const SizedBox(height: 4),
                   const Text(

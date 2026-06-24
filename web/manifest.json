@@ -1,11 +1,11 @@
 {
-    "name": "yemen_gate_attendance_app",
-    "short_name": "yemen_gate_attendance_app",
+    "name": "ShiftMate",
+    "short_name": "ShiftMate",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFDFB",
+    "theme_color": "#7A1F1F",
+    "description": "GPS Attendance & Payroll for Australian Teams",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

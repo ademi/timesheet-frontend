@@ -29,7 +29,7 @@ class AttendanceView extends GetView<AttendanceController> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Yemen Gate',
+              'ShiftMate',
               style: TextStyle(
                 color: AppColors.textLight,
                 fontSize: 17,

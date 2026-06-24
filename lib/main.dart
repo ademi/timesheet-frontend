@@ -35,17 +35,17 @@ Future<void> main() async {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-  runApp(const YemenGateApp());
+  runApp(const ShiftMateApp());
 }
 
-class YemenGateApp extends StatefulWidget {
-  const YemenGateApp({super.key});
+class ShiftMateApp extends StatefulWidget {
+  const ShiftMateApp({super.key});
 
   @override
-  State<YemenGateApp> createState() => _YemenGateAppState();
+  State<ShiftMateApp> createState() => _ShiftMateAppState();
 }
 
-class _YemenGateAppState extends State<YemenGateApp> with WidgetsBindingObserver {
+class _ShiftMateAppState extends State<ShiftMateApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -101,7 +101,7 @@ class _YemenGateAppState extends State<YemenGateApp> with WidgetsBindingObserver
         return fontSize * (scale > 1 ? 1 : scale);
       },
       builder: (context, child) => GetMaterialApp(
-        title: 'Yemen Gate Attendance',
+        title: 'ShiftMate',
         debugShowCheckedModeBanner: false,
         theme: _appTheme(),
         // Registers session-scoped dependencies (auth graph incl. AuthController,
@@ -121,10 +121,15 @@ class _YemenGateAppState extends State<YemenGateApp> with WidgetsBindingObserver
 ThemeData _appTheme() {
   return ThemeData(
     fontFamily: 'Roboto',
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
+    colorScheme: const ColorScheme.light(
       primary: AppColors.primary,
-      surface: AppColors.background,
+      onPrimary: AppColors.textLight,
+      primaryContainer: AppColors.primaryLight,
+      secondary: AppColors.accent,
+      onSecondary: AppColors.textLight,
+      surface: AppColors.surface,
+      onSurface: AppColors.textDark,
+      error: AppColors.error,
     ),
     scaffoldBackgroundColor: AppColors.background,
     cardTheme: CardThemeData(

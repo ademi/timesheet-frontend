@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "yemen_gate_attendance_app" "\0"
+            VALUE "FileDescription", "ShiftMate" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "yemen_gate_attendance_app" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
             VALUE "OriginalFilename", "yemen_gate_attendance_app.exe" "\0"
-            VALUE "ProductName", "yemen_gate_attendance_app" "\0"
+            VALUE "ProductName", "ShiftMate" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
