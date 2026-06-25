@@ -1,0 +1,67 @@
+# Codemagic config for the frontend app (individual application setup).
+#
+# Per-app (Applications → this app → App settings):
+#   - Environment variables → group "cuvana_ios" (API_BASE_URL, IOS_BUNDLE_ID)
+#   - Repository settings → webhook for auto-builds on push to "ios"
+#
+# Account-wide (User settings → personal account):
+#   - Integrations → Developer Portal → API key named "codemagic"
+#   - codemagic.yaml → Code signing identities (Distribution cert + App Store profile)
+#
+# Docs: docs/ios-codemagic.md
+
+workflows:
+  ios-branch:
+    name: iOS (ios branch)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: '^ios$'
+          include: true
+      cancel_previous_builds: true
+
+    integrations:
+      app_store_connect: codemagic  # User settings → Integrations → Developer Portal
+
+    environment:
+      groups:
+        - cuvana_ios                # App settings → Environment variables
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: $IOS_BUNDLE_ID
+      flutter: stable
+      xcode: latest
+
+    scripts:
+      - name: Set up code signing
+        script: xcode-project use-profiles
+
+      - name: Install dependencies
+        script: flutter pub get
+
+      - name: Install CocoaPods
+        script: find . -name "Podfile" -execdir pod install \;
+
+      - name: Build signed IPA
+        script: |
+          flutter build ipa --release \
+            --dart-define=API_BASE_URL="${API_BASE_URL:-https://timesheetbackend.deepdownidea.com}"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      email:
+        recipients:
+          - your-team@example.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
