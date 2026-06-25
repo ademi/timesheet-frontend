@@ -32,7 +32,7 @@ workflows:
         - cuvana_ios                # App settings → Environment variables
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.deepdownidea.timesheet
+        bundle_identifier: ${IOS_BUNDLE_ID:-com.deepdownidea.timesheet}
       flutter: stable
       xcode: latest
 
