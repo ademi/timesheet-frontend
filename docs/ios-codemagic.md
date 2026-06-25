@@ -7,7 +7,30 @@ This guide covers:
 1. **Manual builds** — start a build from the Codemagic UI on any branch.
 2. **CI/CD** — automatic builds when you push to the **`ios`** branch.
 
+It assumes a **single Codemagic application** for this `frontend` repo (personal account or one app in a team). Per-app configuration lives under **App settings**; account-wide signing and API keys live under **User settings** (personal account) because this project builds with [`codemagic.yaml`](../codemagic.yaml).
+
 For GitHub Actions instead of Codemagic, see [ios-github-actions.md](./ios-github-actions.md).
+
+---
+
+## Where to click in Codemagic
+
+| What | Where (individual application) |
+|------|--------------------------------|
+| Environment variables (`cuvana_ios` group) | **Applications** → your app → **App settings** → **Environment variables** |
+| Repository webhook | **Applications** → your app → **App settings** → **Repository settings** |
+| Start a manual build | **Applications** → your app → **Start new build** |
+| App Store Connect API key | **User settings** → **Integrations** → **Developer Portal** |
+| iOS certificates & provisioning profiles (for `codemagic.yaml`) | **User settings** → **codemagic.yaml** → **Code signing identities** |
+
+Direct URL patterns:
+
+- App: `https://codemagic.io/app/<app-id>/settings`
+- User settings: `https://codemagic.io/user-settings`
+
+On a **shared team account**, the same account-wide items appear under **Team settings** instead of **User settings**.
+
+> **Note:** Because `codemagic.yaml` is committed, Codemagic **ignores** the Workflow Editor and **App settings → Distribution** for build steps. Signing is wired through `environment.ios_signing` in the YAML and certificates/profiles stored under **User settings → Code signing identities**.
 
 ---
 
@@ -48,39 +71,67 @@ Signing asset creation steps are the same as in [ios-github-actions.md](./ios-gi
 
 For CI/CD on push to `ios`, Codemagic must receive repository webhooks:
 
-1. Open the application → **Repository settings** (or team **Integrations**).
+1. **Applications** → select this app → **App settings** → **Repository settings**.
 2. Confirm the webhook is installed for your Git provider.
-3. If prompted during setup, grant Codemagic access to the repo.
+3. If prompted, grant Codemagic access to the repo.
 
-Without a webhook, you can still run **manual** builds from the UI, but pushes will not trigger builds automatically.
+Without a webhook, you can still run **manual** builds from the app page, but pushes will not trigger builds automatically.
 
 ### 3. Upload iOS code signing identities
 
-Team settings → **codemagic.yaml settings** → **Code signing identities**:
+Because builds use `codemagic.yaml`, upload signing files under your **personal account** (not per-app Distribution UI):
+
+**User settings** → **codemagic.yaml** → **Code signing identities**:
 
 | Asset | Tab | Notes |
 |-------|-----|-------|
 | Distribution certificate (`.p12`) | iOS certificates | **Apple Distribution**, not Development |
 | Provisioning profile | iOS provisioning profiles | App Store profile for TestFlight; Ad Hoc for direct device installs |
 
-Alternatively, connect an **App Store Connect API key** and use **Fetch certificate** / **Fetch profiles** in the Codemagic UI.
+Alternatively, add an App Store Connect API key (step 4), then use **Generate certificate** / **Fetch profiles** on the same page.
 
-### 4. App Store Connect integration (optional, for TestFlight)
+The workflow selects files that match `distribution_type: app_store` and `$IOS_BUNDLE_ID` from the `cuvana_ios` environment group (see step 5).
+
+### 4. App Store Connect integration (for TestFlight)
 
 1. Create an API key in [App Store Connect → Users and Access → Integrations](https://appstoreconnect.apple.com/access/integrations/api).
-2. Codemagic → Team settings → **Team integrations** → **App Store Connect** → add the key (name it e.g. `timesheet`).
-3. Reference that name in `codemagic.yaml` under `integrations.app_store_connect`.
+2. **User settings** → **Integrations** → **Developer Portal** → **Connect** (or **Manage keys**).
+3. **API key name:** `codemagic` (must match `integrations.app_store_connect` in [`codemagic.yaml`](../codemagic.yaml)).
+4. Enter **Issuer ID**, **Key ID**, upload the `.p8` file → **Save**.
 
-### 5. Environment variable group (recommended)
+### 5. Environment variable group (app settings)
 
-Team settings → **Environment variables** → create a group (e.g. `timesheet_ios`) with:
+Variables for this app live under **App settings**, not team-wide settings. The committed [`codemagic.yaml`](../codemagic.yaml) imports group **`cuvana_ios`**.
+
+#### How to open App settings
+
+1. Sign in at [codemagic.io](https://codemagic.io).
+2. **Applications** → select the **frontend** / Timesheet app.
+3. Click the **gear icon** (**App settings**).
+
+#### How to add the `cuvana_ios` group
+
+1. Open the **Environment variables** tab.
+2. Click **Add variable**.
+3. Enter **Variable name** and **Variable value**.
+4. In **Variable group**, type `cuvana_ios` and create the group (or select it when adding the second variable).
+5. Toggle **Secret** for sensitive values so they are encrypted and hidden in logs.
+6. Click **Add**.
+
+Repeat for each variable:
 
 | Variable | Example | Purpose |
 |----------|---------|---------|
 | `API_BASE_URL` | `https://timesheetbackend.deepdownidea.com` | Passed to `--dart-define=API_BASE_URL=...` |
-| `IOS_BUNDLE_ID` | `com.yourcompany.yemengate` | Must match Apple Developer App ID and provisioning profile |
+| `IOS_BUNDLE_ID` | `com.deepdownidea.timesheet` | Must match Apple Developer App ID and provisioning profile |
 
-Mark secrets (API keys, passwords) as **Secure**. Reference the group in `codemagic.yaml` via `environment.groups`.
+The group is referenced in `codemagic.yaml`:
+
+```yaml
+environment:
+  groups:
+    - cuvana_ios
+```
 
 ---
 
@@ -88,9 +139,9 @@ Mark secrets (API keys, passwords) as **Secure**. Reference the group in `codema
 
 ### Add `codemagic.yaml`
 
-Commit a `codemagic.yaml` file at the **repository root** (`frontend/codemagic.yaml`). Codemagic reads this file instead of the Workflow Editor when it is present.
+Commit [`codemagic.yaml`](../codemagic.yaml) at the **repository root** (`frontend/codemagic.yaml`). Codemagic reads this file instead of the Workflow Editor when it is present.
 
-Example workflow tailored to this project — builds automatically on every push to branch **`ios`**:
+The committed workflow builds automatically on every push to branch **`ios`**:
 
 ```yaml
 workflows:
@@ -108,13 +159,13 @@ workflows:
       cancel_previous_builds: true
 
     integrations:
-      app_store_connect: timesheet   # ← your App Store Connect integration name
+      app_store_connect: codemagic   # User settings → Integrations → Developer Portal
 
     environment:
       groups:
-        - timesheet_ios               # ← group with API_BASE_URL, IOS_BUNDLE_ID
+        - cuvana_ios                  # App settings → Environment variables
       ios_signing:
-        distribution_type: app_store  # use ad_hoc for registered-device IPA
+        distribution_type: app_store
         bundle_identifier: $IOS_BUNDLE_ID
       flutter: stable
       xcode: latest
@@ -122,13 +173,10 @@ workflows:
     scripts:
       - name: Set up code signing
         script: xcode-project use-profiles
-
       - name: Install dependencies
         script: flutter pub get
-
       - name: Install CocoaPods
         script: find . -name "Podfile" -execdir pod install \;
-
       - name: Build signed IPA
         script: |
           flutter build ipa --release \
@@ -136,18 +184,11 @@ workflows:
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
 
     publishing:
-      email:
-        recipients:
-          - your-team@example.com
-        notify:
-          success: true
-          failure: true
       app_store_connect:
         auth: integration
-        submit_to_testflight: false   # set true to upload after each ios-branch push
+        submit_to_testflight: true
 ```
 
 **Branch trigger behaviour**
@@ -187,9 +228,9 @@ Use manual builds for one-off releases, testing signing, or building from `main`
 
 ### Option A — Start from Codemagic UI
 
-1. Open the application in Codemagic.
+1. **Applications** → select this app.
 2. Click **Start new build**.
-3. Choose the **workflow** (e.g. **iOS (ios branch)** or a manual-only workflow — see below).
+3. Choose workflow **iOS (ios branch)** (or **iOS (manual)** if you add that workflow).
 4. Select **branch** and **commit** (any branch, not only `ios`).
 5. Click **Start new build**.
 
@@ -207,7 +248,7 @@ Add a second workflow in `codemagic.yaml` with **no** `triggering` section so it
   # no triggering: block — manual only
     environment:
       groups:
-        - timesheet_ios
+        - cuvana_ios
       ios_signing:
         distribution_type: app_store
         bundle_identifier: $IOS_BUNDLE_ID
@@ -279,8 +320,8 @@ flutter build ipa --release \
 | Push to `ios` does not start a build | Confirm `codemagic.yaml` is on the `ios` branch; webhook is installed; `triggering.branch_patterns` matches the branch name |
 | Build only in Workflow Editor, ignores YAML | `codemagic.yaml` must be at repo root; click **Check for configuration file** after pushing |
 | Code signing failed | Upload **Apple Distribution** `.p12` and matching profile; `IOS_BUNDLE_ID` must match the profile App ID |
-| Wrong API URL in the app | Set `API_BASE_URL` in the Codemagic environment group or override when starting a manual build |
-| TestFlight upload fails | App record must exist in App Store Connect; check App Store Connect integration name matches `integrations.app_store_connect` |
+| Wrong API URL in the app | Set `API_BASE_URL` in **App settings → Environment variables** (`cuvana_ios` group) |
+| TestFlight upload fails | App record must exist in App Store Connect; integration name must be `codemagic` in YAML and **User settings → Integrations** |
 | GPS not working on device | Add `NSLocationWhenInUseUsageDescription` to `ios/Runner/Info.plist` |
 | Push not working on iOS | Add `GoogleService-Info.plist` from Firebase console |
 
