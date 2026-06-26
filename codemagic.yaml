@@ -25,7 +25,7 @@ workflows:
       cancel_previous_builds: true
 
     integrations:
-      app_store_connect: cuvana_ci  # User settings → Integrations → Developer Portal
+      app_store_connect: Timesheet  # User settings → Integrations → Developer Portal
 
     environment:
       groups:
