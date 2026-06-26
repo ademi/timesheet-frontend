@@ -171,16 +171,17 @@ workflows:
       xcode: latest
 
     scripts:
-      - name: Set up code signing
-        script: xcode-project use-profiles
       - name: Install dependencies
         script: flutter pub get
       - name: Install CocoaPods
         script: find . -name "Podfile" -execdir pod install \;
+      - name: Set up code signing
+        script: xcode-project use-profiles
       - name: Build signed IPA
         script: |
           flutter build ipa --release \
-            --dart-define=API_BASE_URL="${API_BASE_URL:-https://timesheetbackend.deepdownidea.com}"
+            --dart-define=API_BASE_URL="${API_BASE_URL:-https://timesheetbackend.deepdownidea.com}" \
+            --export-options-plist=/Users/builder/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
@@ -255,14 +256,15 @@ Add a second workflow in `codemagic.yaml` with **no** `triggering` section so it
       flutter: stable
       xcode: latest
     scripts:
-      - name: Set up code signing
-        script: xcode-project use-profiles
       - name: Install dependencies
         script: flutter pub get
+      - name: Set up code signing
+        script: xcode-project use-profiles
       - name: Build signed IPA
         script: |
           flutter build ipa --release \
-            --dart-define=API_BASE_URL="${API_BASE_URL:-https://timesheetbackend.deepdownidea.com}"
+            --dart-define=API_BASE_URL="${API_BASE_URL:-https://timesheetbackend.deepdownidea.com}" \
+            --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
 ```
@@ -320,6 +322,7 @@ flutter build ipa --release \
 | Push to `ios` does not start a build | Confirm `codemagic.yaml` is on the `ios` branch; webhook is installed; `triggering.branch_patterns` matches the branch name |
 | Build only in Workflow Editor, ignores YAML | `codemagic.yaml` must be at repo root; click **Check for configuration file** after pushing |
 | Code signing failed | Upload **Apple Distribution** `.p12` and matching profile; `IOS_BUNDLE_ID` must match the profile App ID |
+| `use-profiles` OK but `exportArchive requires a provisioning profile` | Run `xcode-project use-profiles` **after** `pod install`; pass `--export-options-plist=/Users/builder/export_options.plist` to `flutter build ipa` |
 | Wrong API URL in the app | Set `API_BASE_URL` in **App settings → Environment variables** (`cuvana_ios` group) |
 | TestFlight upload fails | App record must exist in App Store Connect; integration name must be `codemagic` in YAML and **User settings → Integrations** |
 | GPS not working on device | Add `NSLocationWhenInUseUsageDescription` to `ios/Runner/Info.plist` |

@@ -37,19 +37,21 @@ workflows:
       xcode: latest
 
     scripts:
-      - name: Set up code signing
-        script: xcode-project use-profiles
-
       - name: Install dependencies
         script: flutter pub get
 
       - name: Install CocoaPods
         script: find . -name "Podfile" -execdir pod install \;
 
+      # After pod install / Flutter iOS migrations so signing is not overwritten.
+      - name: Set up code signing
+        script: xcode-project use-profiles
+
       - name: Build signed IPA
         script: |
           flutter build ipa --release \
-            --dart-define=API_BASE_URL="${API_BASE_URL:-https://timesheetbackend.deepdownidea.com}"
+            --dart-define=API_BASE_URL="${API_BASE_URL:-https://timesheetbackend.deepdownidea.com}" \
+            --export-options-plist=/Users/builder/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
