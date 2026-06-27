@@ -1,6 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yemen_gate_attendance_app/app/constants/scheduling_permissions.dart';
 import 'package:yemen_gate_attendance_app/core/services/token_storage.dart';
+
+String _fakeJwt(Map<String, dynamic> payload) {
+  final header = base64Url.encode(
+    utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})),
+  );
+  final body = base64Url.encode(utf8.encode(jsonEncode(payload)));
+  return '$header.$body.signature';
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -68,5 +79,56 @@ void main() {
   test('needsProactiveRefresh is false without token', () {
     final storage = TokenStorage();
     expect(storage.needsProactiveRefresh(), isFalse);
+  });
+
+  test('permissions empty without token', () {
+    final storage = TokenStorage();
+    expect(storage.permissions, isEmpty);
+    expect(storage.canViewSchedule, isFalse);
+    expect(storage.canManageSchedule, isFalse);
+  });
+
+  test('scheduling.read grants view only', () async {
+    final storage = TokenStorage();
+    await storage.persistTokens(
+      accessToken: _fakeJwt({
+        'permissions': [SchedulingPermissions.read],
+        'exp': 9999999999,
+      }),
+      refreshToken: 'refresh',
+    );
+
+    expect(storage.hasPermission(SchedulingPermissions.read), isTrue);
+    expect(storage.hasPermission(SchedulingPermissions.manage), isFalse);
+    expect(storage.canViewSchedule, isTrue);
+    expect(storage.canManageSchedule, isFalse);
+  });
+
+  test('scheduling.manage grants view and manage', () async {
+    final storage = TokenStorage();
+    await storage.persistTokens(
+      accessToken: _fakeJwt({
+        'permissions': [SchedulingPermissions.manage],
+        'exp': 9999999999,
+      }),
+      refreshToken: 'refresh',
+    );
+
+    expect(storage.canViewSchedule, isTrue);
+    expect(storage.canManageSchedule, isTrue);
+  });
+
+  test('wildcard permission grants all', () async {
+    final storage = TokenStorage();
+    await storage.persistTokens(
+      accessToken: _fakeJwt({
+        'permissions': ['*'],
+        'exp': 9999999999,
+      }),
+      refreshToken: 'refresh',
+    );
+
+    expect(storage.hasPermission(SchedulingPermissions.read), isTrue);
+    expect(storage.hasPermission(SchedulingPermissions.manage), isTrue);
   });
 }

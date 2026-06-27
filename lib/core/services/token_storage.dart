@@ -1,6 +1,8 @@
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../app/constants/scheduling_permissions.dart';
+
 /// Single source of truth for persisting and reading auth tokens.
 /// Uses flutter_secure_storage (iOS Keychain / Android Keystore).
 class TokenStorage {
@@ -32,6 +34,43 @@ class TokenStorage {
   /// refresh on a deep route can restore it instead of losing the in-memory value.
   String? get role => _cachedRole;
 
+  /// Permission strings from the current access token JWT (`permissions` claim).
+  List<String> get permissions => _readPermissionsFromToken();
+
+  bool hasPermission(String permission) {
+    final granted = permissions;
+    if (granted.isEmpty) return false;
+    if (granted.contains('*')) return true;
+    return granted.contains(permission);
+  }
+
+  bool get canViewSchedule =>
+      hasPermission(SchedulingPermissions.read) ||
+      hasPermission(SchedulingPermissions.manage);
+
+  bool get canManageSchedule => hasPermission(SchedulingPermissions.manage);
+
+  Map<String, dynamic>? get _jwtPayload {
+    final token = _cachedAccessToken;
+    if (token == null || token.isEmpty) return null;
+    try {
+      return JWT.decode(token).payload;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<String> _readPermissionsFromToken() {
+    final payload = _jwtPayload;
+    if (payload == null) return const [];
+
+    final raw = payload['permissions'];
+    if (raw is List) {
+      return raw.whereType<String>().toList();
+    }
+    return const [];
+  }
+
   /// Call once at startup (before any API calls) to warm the in-memory cache.
   Future<void> loadFromStorage() async {
     _cachedAccessToken = await _storage.read(key: _keyAccess);
@@ -48,13 +87,13 @@ class TokenStorage {
 
   /// Returns true if the stored access token expires within [thresholdSeconds].
   bool needsProactiveRefresh({int thresholdSeconds = 300}) {
-    final token = _cachedAccessToken;
-    if (token == null) return false;
+    final payload = _jwtPayload;
+    if (payload == null) return false;
     try {
-      final jwt = JWT.decode(token);
-      final exp = jwt.payload['exp'];
+      final exp = payload['exp'];
       if (exp is! int) return false;
-      final expiresAt = DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
+      final expiresAt =
+          DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
       return DateTime.now().toUtc().isAfter(
             expiresAt.subtract(Duration(seconds: thresholdSeconds)),
           );
