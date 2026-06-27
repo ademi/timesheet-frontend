@@ -63,9 +63,34 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
+
+# Rostiq launcher/app-icon generation. Regenerate with:
+#   dart run flutter_launcher_icons
+# Source artwork is produced by tool/generate_app_icon.py
+flutter_launcher_icons:
+  image_path: "assets/branding/rostiq_icon_master_1024.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#7A1F1F"
+  adaptive_icon_background: "assets/branding/rostiq_adaptive_bg.png"
+  adaptive_icon_foreground: "assets/branding/rostiq_adaptive_fg.png"
+  web:
+    generate: true
+    image_path: "assets/branding/rostiq_icon_master_1024.png"
+    background_color: "#7A1F1F"
+    theme_color: "#7A1F1F"
+  macos:
+    generate: true
+    image_path: "assets/branding/rostiq_icon_master_1024.png"
+  windows:
+    generate: true
+    image_path: "assets/branding/rostiq_icon_master_1024.png"
+    icon_size: 256
 
 # The following section is specific to Flutter packages.
 flutter:

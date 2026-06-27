@@ -17,7 +17,7 @@ For GitHub Actions instead of Codemagic, see [ios-github-actions.md](./ios-githu
 
 | What | Where (individual application) |
 |------|--------------------------------|
-| Environment variables (`cuvana_ios` group) | **Applications** → your app → **App settings** → **Environment variables** |
+| Environment variables (`timesheet_ios` group) | **Applications** → your app → **App settings** → **Environment variables** |
 | Repository webhook | **Applications** → your app → **App settings** → **Repository settings** |
 | Start a manual build | **Applications** → your app → **Start new build** |
 | App Store Connect API key | **User settings** → **Integrations** → **Developer Portal** |
@@ -90,7 +90,7 @@ Because builds use `codemagic.yaml`, upload signing files under your **personal 
 
 Alternatively, add an App Store Connect API key (step 4), then use **Generate certificate** / **Fetch profiles** on the same page.
 
-The workflow selects files that match `distribution_type: app_store` and `$IOS_BUNDLE_ID` from the `cuvana_ios` environment group (see step 5).
+The workflow selects files that match `distribution_type: app_store` and `$IOS_BUNDLE_ID` from the `timesheet_ios` environment group (see step 5).
 
 ### 4. App Store Connect integration (for TestFlight)
 
@@ -101,7 +101,7 @@ The workflow selects files that match `distribution_type: app_store` and `$IOS_B
 
 ### 5. Environment variable group (app settings)
 
-Variables for this app live under **App settings**, not team-wide settings. The committed [`codemagic.yaml`](../codemagic.yaml) imports group **`cuvana_ios`**.
+Variables for this app live under **App settings**, not team-wide settings. The committed [`codemagic.yaml`](../codemagic.yaml) imports group **`timesheet_ios`**.
 
 #### How to open App settings
 
@@ -109,12 +109,12 @@ Variables for this app live under **App settings**, not team-wide settings. The 
 2. **Applications** → select the **frontend** / Timesheet app.
 3. Click the **gear icon** (**App settings**).
 
-#### How to add the `cuvana_ios` group
+#### How to add the `timesheet_ios` group
 
 1. Open the **Environment variables** tab.
 2. Click **Add variable**.
 3. Enter **Variable name** and **Variable value**.
-4. In **Variable group**, type `cuvana_ios` and create the group (or select it when adding the second variable).
+4. In **Variable group**, type `timesheet_ios` and create the group (or select it when adding the second variable).
 5. Toggle **Secret** for sensitive values so they are encrypted and hidden in logs.
 6. Click **Add**.
 
@@ -130,7 +130,7 @@ The group is referenced in `codemagic.yaml`:
 ```yaml
 environment:
   groups:
-    - cuvana_ios
+    - timesheet_ios
 ```
 
 ---
@@ -163,7 +163,7 @@ workflows:
 
     environment:
       groups:
-        - cuvana_ios                  # App settings → Environment variables
+        - timesheet_ios                  # App settings → Environment variables
       ios_signing:
         distribution_type: app_store
         bundle_identifier: $IOS_BUNDLE_ID
@@ -249,7 +249,7 @@ Add a second workflow in `codemagic.yaml` with **no** `triggering` section so it
   # no triggering: block — manual only
     environment:
       groups:
-        - cuvana_ios
+        - timesheet_ios
       ios_signing:
         distribution_type: app_store
         bundle_identifier: $IOS_BUNDLE_ID
@@ -323,7 +323,7 @@ flutter build ipa --release \
 | Build only in Workflow Editor, ignores YAML | `codemagic.yaml` must be at repo root; click **Check for configuration file** after pushing |
 | Code signing failed | Upload **Apple Distribution** `.p12` and matching profile; `IOS_BUNDLE_ID` must match the profile App ID |
 | `use-profiles` OK but `exportArchive requires a provisioning profile` | Run `xcode-project use-profiles` **after** `pod install`; pass `--export-options-plist=/Users/builder/export_options.plist` to `flutter build ipa` |
-| Wrong API URL in the app | Set `API_BASE_URL` in **App settings → Environment variables** (`cuvana_ios` group) |
+| Wrong API URL in the app | Set `API_BASE_URL` in **App settings → Environment variables** (`timesheet_ios` group) |
 | TestFlight upload fails | App record must exist in App Store Connect; integration name must be `codemagic` in YAML and **User settings → Integrations** |
 | GPS not working on device | Add `NSLocationWhenInUseUsageDescription` to `ios/Runner/Info.plist` |
 | Push not working on iOS | Add `GoogleService-Info.plist` from Firebase console |

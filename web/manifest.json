@@ -3,7 +3,7 @@
     "short_name": "ShiftMate",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#FFFDFB",
+    "background_color": "#7A1F1F",
     "theme_color": "#7A1F1F",
     "description": "GPS Attendance & Payroll for Australian Teams",
     "orientation": "portrait-primary",

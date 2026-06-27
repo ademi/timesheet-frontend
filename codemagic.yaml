@@ -1,7 +1,7 @@
 # Codemagic config for the frontend app (individual application setup).
 #
 # Per-app (Applications → this app → App settings):
-#   - Environment variables → group "cuvana_ios" (API_BASE_URL, IOS_BUNDLE_ID)
+#   - Environment variables → group "timesheet_ios" (API_BASE_URL, IOS_BUNDLE_ID)
 #   - Repository settings → webhook for auto-builds on push to "ios"
 #
 # Account-wide (User settings → personal account):
@@ -29,7 +29,7 @@ workflows:
 
     environment:
       groups:
-        - cuvana_ios                # App settings → Environment variables
+        - timesheet_ios                # App settings → Environment variables
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.deepdownidea.timesheet
