@@ -107,12 +107,12 @@ class _BranchHeader extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.2),
+              color: AppColors.textLight.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(
               Icons.storefront_rounded,
-              color: AppColors.primary,
+              color: AppColors.textLight,
             ),
           ),
           const SizedBox(width: 14),
@@ -132,7 +132,7 @@ class _BranchHeader extends StatelessWidget {
                 Text(
                   'Select Branch',
                   style: TextStyle(
-                    color: AppColors.primary,
+                    color: Color(0xD9FFFFFF),
                     fontSize: 12,
                     letterSpacing: 0.6,
                   ),
@@ -142,7 +142,7 @@ class _BranchHeader extends StatelessWidget {
           ),
           IconButton(
             onPressed: onLogout,
-            icon: const Icon(Icons.logout_rounded, color: AppColors.primary),
+            icon: const Icon(Icons.logout_rounded, color: AppColors.textLight),
             tooltip: 'Logout',
           ),
         ],

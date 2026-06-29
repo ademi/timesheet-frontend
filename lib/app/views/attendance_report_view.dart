@@ -31,8 +31,8 @@ class AttendanceReportView extends GetView<AttendanceReportController> {
               icon: Icon(
                 Icons.file_download_outlined,
                 color: controller.reports.isEmpty
-                    ? AppColors.primary.withValues(alpha: 0.5)
-                    : AppColors.primary,
+                    ? AppColors.textLight.withValues(alpha: 0.5)
+                    : AppColors.textLight,
               ),
             ),
           ),

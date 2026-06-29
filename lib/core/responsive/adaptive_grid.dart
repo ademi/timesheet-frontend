@@ -9,6 +9,7 @@ class AdaptiveGrid extends StatelessWidget {
     required this.children,
     this.spacing = 12,
     this.runSpacing = 12,
+    this.childAspectRatio,
     this.shrinkWrap = false,
     this.physics,
     this.padding,
@@ -17,6 +18,7 @@ class AdaptiveGrid extends StatelessWidget {
   final List<Widget> children;
   final double spacing;
   final double runSpacing;
+  final double? childAspectRatio;
   final bool shrinkWrap;
   final ScrollPhysics? physics;
   final EdgeInsetsGeometry? padding;
@@ -26,6 +28,7 @@ class AdaptiveGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = _columnCount(constraints.maxWidth);
+        final aspectRatio = childAspectRatio ?? (columns == 1 ? 3.5 : 2.8);
         return GridView.count(
           crossAxisCount: columns,
           mainAxisSpacing: runSpacing,
@@ -33,7 +36,7 @@ class AdaptiveGrid extends StatelessWidget {
           shrinkWrap: shrinkWrap,
           physics: physics,
           padding: padding,
-          childAspectRatio: columns == 1 ? 3.5 : 2.8,
+          childAspectRatio: aspectRatio,
           children: children,
         );
       },

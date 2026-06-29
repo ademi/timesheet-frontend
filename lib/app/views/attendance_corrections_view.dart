@@ -23,7 +23,7 @@ class AttendanceCorrectionsView
           IconButton(
             tooltip: 'Refresh',
             onPressed: controller.loadExceptions,
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),

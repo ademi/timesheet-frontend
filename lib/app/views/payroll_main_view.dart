@@ -24,6 +24,7 @@ class PayrollMainView extends GetView<PayrollMainController> {
         padding: const EdgeInsets.all(20),
         spacing: 14,
         runSpacing: 14,
+        childAspectRatio: 2.2,
         children: [
           AdminHubCard(
             icon: Icons.date_range_rounded,

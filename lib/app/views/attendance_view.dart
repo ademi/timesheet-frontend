@@ -40,8 +40,8 @@ class AttendanceView extends GetView<AttendanceController> {
               branchName != null && branchName.isNotEmpty
                   ? 'Attendance · $branchName'
                   : 'Attendance',
-              style: const TextStyle(
-                color: AppColors.primary,
+              style: TextStyle(
+                color: AppColors.textLight.withValues(alpha: 0.85),
                 fontSize: 11,
                 letterSpacing: 0.7,
               ),
@@ -53,13 +53,13 @@ class AttendanceView extends GetView<AttendanceController> {
             onPressed: () => authController.logout(),
             icon: const Icon(
               Icons.logout_rounded,
-              color: AppColors.primary,
+              color: AppColors.textLight,
               size: 20,
             ),
             label: const Text(
               'Logout',
               style: TextStyle(
-                color: AppColors.primary,
+                color: AppColors.textLight,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),

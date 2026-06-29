@@ -141,6 +141,11 @@ ThemeData _appTheme() {
     ),
     appBarTheme: AppBarTheme(
       centerTitle: false,
+      backgroundColor: AppColors.darkBrown,
+      foregroundColor: AppColors.textLight,
+      iconTheme: const IconThemeData(color: AppColors.textLight),
+      actionsIconTheme: const IconThemeData(color: AppColors.textLight),
+      elevation: 0,
       titleTextStyle: TextStyle(
         fontFamily: 'Roboto',
         fontSize: 17.sp,

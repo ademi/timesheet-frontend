@@ -30,8 +30,8 @@ class PaymentsReportView extends GetView<PaymentsReportController> {
               icon: Icon(
                 Icons.file_download_outlined,
                 color: controller.rows.isEmpty
-                    ? AppColors.primary.withValues(alpha: 0.5)
-                    : AppColors.primary,
+                    ? AppColors.textLight.withValues(alpha: 0.5)
+                    : AppColors.textLight,
               ),
             ),
           ),
