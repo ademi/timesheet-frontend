@@ -268,7 +268,7 @@ class _EmployeeCard extends StatelessWidget {
       onPressed: onClockIn,
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textLight,
+        foregroundColor: AppColors.onPrimary,
         padding: const EdgeInsets.symmetric(vertical: 11),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),

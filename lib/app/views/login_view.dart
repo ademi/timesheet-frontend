@@ -156,7 +156,7 @@ class LoginView extends GetView<AuthController> {
                                       : () => controller.login(),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.textLight,
+                                foregroundColor: AppColors.onPrimary,
                                 disabledBackgroundColor: AppColors.primary
                                     .withValues(alpha: 0.6),
                                 shape: RoundedRectangleBorder(

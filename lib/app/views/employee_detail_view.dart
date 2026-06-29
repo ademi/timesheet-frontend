@@ -407,7 +407,7 @@ class _DetailsSection extends StatelessWidget {
                       label: Text(controller.isSaving.value ? 'Saving...' : 'Save'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.textLight,
+                        foregroundColor: AppColors.onPrimary,
                       ),
                     ),
                   ),
@@ -490,7 +490,7 @@ class _PayrollSection extends StatelessWidget {
                   label: const Text('Pay'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textLight,
+                    foregroundColor: AppColors.onPrimary,
                   ),
                 ),
               ),

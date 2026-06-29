@@ -120,7 +120,7 @@ class AttendanceReportView extends GetView<AttendanceReportController> {
               onPressed: controller.fetchReport,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textLight,
+                foregroundColor: AppColors.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

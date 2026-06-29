@@ -139,7 +139,7 @@ class PayrollPeriodsController extends GetxController {
                       onPressed: () => Navigator.of(sheetContext).pop(selected),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.textLight,
+                        foregroundColor: AppColors.onPrimary,
                       ),
                       child: const Text('Create Period'),
                     ),
@@ -231,7 +231,7 @@ class PayrollPeriodsController extends GetxController {
                       ).pop(_CreatePeriodAction.custom),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textLight,
+                    foregroundColor: AppColors.onPrimary,
                   ),
                   icon: const Icon(Icons.date_range),
                   label: const Text('Custom date range'),

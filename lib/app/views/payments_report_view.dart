@@ -141,7 +141,7 @@ class PaymentsReportView extends GetView<PaymentsReportController> {
               onPressed: controller.fetchReport,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.onPrimary,
               ),
               icon: const Icon(Icons.analytics_rounded),
               label: const Text('Generate Report'),
