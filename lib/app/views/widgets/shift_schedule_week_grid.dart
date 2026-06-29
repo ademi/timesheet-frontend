@@ -49,6 +49,12 @@ class ShiftScheduleWeekGrid extends GetView<ShiftScheduleController> {
 
       return LayoutBuilder(
         builder: (context, constraints) {
+          // Sticky employee column only when the grid overflows horizontally.
+          // With fixedLeftColumns on a wide viewport, DataTable2 leaves a gap
+          // between the fixed and scrollable sections (web/desktop only).
+          final stickyEmployeeColumn = constraints.maxWidth < minWidth;
+          final expandDayColumns = !stickyEmployeeColumn;
+
           return ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
@@ -57,8 +63,8 @@ class ShiftScheduleWeekGrid extends GetView<ShiftScheduleController> {
                 child: DataTable2(
                     columnSpacing: 8,
                     horizontalMargin: 12,
-                    minWidth: minWidth,
-                    fixedLeftColumns: 1,
+                    minWidth: expandDayColumns ? constraints.maxWidth : minWidth,
+                    fixedLeftColumns: stickyEmployeeColumn ? 1 : 0,
                     headingRowHeight: 44,
                     dataRowHeight: ShiftScheduleCell.minHeight + 12,
                     headingRowColor: WidgetStateProperty.all(
@@ -73,10 +79,21 @@ class ShiftScheduleWeekGrid extends GetView<ShiftScheduleController> {
                         size: ColumnSize.L,
                         fixedWidth: 140,
                       ),
-                      ...dates.map((date) => _dayColumn(date)),
+                      ...dates.map(
+                        (date) => _dayColumn(
+                          date,
+                          expandToFill: expandDayColumns,
+                        ),
+                      ),
                     ],
                     rows: employees
-                        .map((employee) => _employeeRow(employee, dates))
+                        .map(
+                          (employee) => _employeeRow(
+                            employee,
+                            dates,
+                            expandCells: expandDayColumns,
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
@@ -87,7 +104,7 @@ class ShiftScheduleWeekGrid extends GetView<ShiftScheduleController> {
     });
   }
 
-  DataColumn2 _dayColumn(DateTime date) {
+  DataColumn2 _dayColumn(DateTime date, {required bool expandToFill}) {
     final isToday = controller.isTodayDate(date);
     final label = formatSchedulingShortDate(date);
     return DataColumn2(
@@ -110,24 +127,35 @@ class ShiftScheduleWeekGrid extends GetView<ShiftScheduleController> {
         ),
       ),
       size: ColumnSize.S,
-      fixedWidth: ShiftScheduleCell.minWidth,
+      minWidth: ShiftScheduleCell.minWidth,
+      fixedWidth: expandToFill ? null : ShiftScheduleCell.minWidth,
     );
   }
 
-  DataRow _employeeRow(BoardEmployee employee, List<DateTime> dates) {
+  DataRow _employeeRow(
+    BoardEmployee employee,
+    List<DateTime> dates, {
+    required bool expandCells,
+  }) {
     return DataRow(
       cells: [
         DataCell(_EmployeeNameCell(employee: employee)),
         ...dates.map((date) {
           final day = controller.dayForEmployee(employee, date);
           if (day == null) {
-            return const DataCell(SizedBox.shrink());
+            return DataCell(
+              SizedBox(
+                width: expandCells ? double.infinity : null,
+                height: ShiftScheduleCell.minHeight,
+              ),
+            );
           }
           return DataCell(
             ShiftScheduleCell(
               day: day,
               templateColor: controller.colorForTemplate(day.templateId),
               isTodayColumn: controller.isTodayDate(date),
+              expandWidth: expandCells,
               onTap: () => controller.openCellDetail(employee, day),
             ),
           );

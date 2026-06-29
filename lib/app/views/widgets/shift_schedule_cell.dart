@@ -14,12 +14,14 @@ class ShiftScheduleCell extends StatelessWidget {
     this.templateColor,
     this.onTap,
     this.isTodayColumn = false,
+    this.expandWidth = false,
   });
 
   final BoardDay day;
   final Color? templateColor;
   final VoidCallback? onTap;
   final bool isTodayColumn;
+  final bool expandWidth;
 
   static const double minWidth = 84;
   static const double minHeight = 52;
@@ -34,7 +36,7 @@ class ShiftScheduleCell extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(8),
           child: SizedBox(
-            width: minWidth,
+            width: expandWidth ? double.infinity : minWidth,
             height: minHeight,
             child: Stack(
               children: [
