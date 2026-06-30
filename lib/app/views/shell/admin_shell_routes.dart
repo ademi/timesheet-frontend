@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../bindings/payment_module_binding.dart';
 import '../../bindings/payroll_module_binding.dart';
+import '../../bindings/scheduling_module_binding.dart';
 import '../../routes/app_routes.dart';
 import 'responsive_scaffold.dart';
 
@@ -22,6 +23,10 @@ abstract final class AdminShellRoutes {
     ResponsiveDestination(
       icon: Icons.rule_rounded,
       label: 'Corrections',
+    ),
+    ResponsiveDestination(
+      icon: Icons.calendar_view_week_rounded,
+      label: 'Schedule',
     ),
     ResponsiveDestination(
       icon: Icons.receipt_long_rounded,
@@ -51,6 +56,10 @@ abstract final class AdminShellRoutes {
     AppRoutes.adminAttendanceAdjustment,
   };
 
+  static const _shiftScheduleRoutes = {
+    AppRoutes.adminShiftSchedule,
+  };
+
   static const _payrollRoutes = {
     AppRoutes.payrollMain,
     AppRoutes.payrollPeriods,
@@ -76,6 +85,7 @@ abstract final class AdminShellRoutes {
     return _employeesRoutes.contains(route) ||
         _attendanceReportRoutes.contains(route) ||
         _correctionsRoutes.contains(route) ||
+        _shiftScheduleRoutes.contains(route) ||
         _payrollRoutes.contains(route) ||
         _paymentRoutes.contains(route);
   }
@@ -85,8 +95,9 @@ abstract final class AdminShellRoutes {
     if (_employeesRoutes.contains(route)) return 0;
     if (_attendanceReportRoutes.contains(route)) return 1;
     if (_correctionsRoutes.contains(route)) return 2;
-    if (_payrollRoutes.contains(route)) return 3;
-    if (_paymentRoutes.contains(route)) return 4;
+    if (_shiftScheduleRoutes.contains(route)) return 3;
+    if (_payrollRoutes.contains(route)) return 4;
+    if (_paymentRoutes.contains(route)) return 5;
     return -1;
   }
 
@@ -101,8 +112,10 @@ abstract final class AdminShellRoutes {
       case 2:
         return AppRoutes.adminAttendanceCorrections;
       case 3:
-        return AppRoutes.payrollMain;
+        return AppRoutes.adminShiftSchedule;
       case 4:
+        return AppRoutes.payrollMain;
+      case 5:
         return AppRoutes.paymentMain;
       default:
         return AppRoutes.adminPanel;
@@ -120,8 +133,9 @@ abstract final class AdminShellRoutes {
       return;
     }
 
-    if (index == 3) PayrollModuleBinding.ensureDependencies();
-    if (index == 4) PaymentModuleBinding.ensureDependencies();
+    if (index == 3) SchedulingModuleBinding.ensureDependencies();
+    if (index == 4) PayrollModuleBinding.ensureDependencies();
+    if (index == 5) PaymentModuleBinding.ensureDependencies();
 
     Get.offAllNamed(target);
   }

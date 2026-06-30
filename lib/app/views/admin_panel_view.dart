@@ -70,6 +70,13 @@ class AdminPanelView extends GetView<AdminPanelController> {
                           onTap: controller.openAttendanceCorrections,
                         ),
                         AdminHubCard(
+                          icon: Icons.calendar_view_week_rounded,
+                          title: 'Shift Schedule',
+                          subtitle:
+                              'View who works when, assignments, and leave',
+                          onTap: controller.openShiftSchedule,
+                        ),
+                        AdminHubCard(
                           icon: Icons.receipt_long_rounded,
                           title: 'Payroll',
                           subtitle: 'Periods, rates, balances, and payroll summary',

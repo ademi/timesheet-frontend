@@ -235,12 +235,19 @@ void main() {
       );
     });
 
-    test('maps payroll routes to rail index 3', () {
-      expect(AdminShellRoutes.selectedIndex(AppRoutes.payrollPeriods), 3);
+    test('maps shift schedule routes to rail index 3', () {
+      expect(
+        AdminShellRoutes.selectedIndex(AppRoutes.adminShiftSchedule),
+        3,
+      );
     });
 
-    test('maps payment routes to rail index 4', () {
-      expect(AdminShellRoutes.selectedIndex(AppRoutes.paymentMain), 4);
+    test('maps payroll routes to rail index 4', () {
+      expect(AdminShellRoutes.selectedIndex(AppRoutes.payrollPeriods), 4);
+    });
+
+    test('maps payment routes to rail index 5', () {
+      expect(AdminShellRoutes.selectedIndex(AppRoutes.paymentMain), 5);
     });
   });
 
