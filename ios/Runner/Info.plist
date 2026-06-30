@@ -45,5 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ShiftMate uses your location to verify clock-in and clock-out at your assigned work site.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>ShiftMate uses your location to verify clock-in and clock-out at your assigned work site.</string>
+
 </dict>
 </plist>
