@@ -105,7 +105,7 @@ class CreateEmployeeView extends GetView<CreateEmployeeController> {
                     const SizedBox(height: 6),
                     _FormField(
                       controller: controller.fullNameController,
-                      hint: 'e.g. Ahmed Al-Yemeni',
+                      hint: 'e.g. Ahmed Hassan',
                       icon: Icons.person_outline_rounded,
                       keyboardType: TextInputType.name,
                       validator: (v) {
@@ -140,7 +140,7 @@ class CreateEmployeeView extends GetView<CreateEmployeeController> {
                     const SizedBox(height: 6),
                     _FormField(
                       controller: controller.emailController,
-                      hint: 'e.g. ahmed@yemengate.com',
+                      hint: 'e.g. ahmed@example.com',
                       icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
                       validator: (v) {

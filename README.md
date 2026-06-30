@@ -1,4 +1,4 @@
-# yemen_gate_attendance_app
+# Rostiq
 
 A new Flutter project.
 

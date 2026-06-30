@@ -1,6 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yemen_gate_attendance_app/core/services/token_storage.dart';
+import 'package:rostiq/core/services/token_storage.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

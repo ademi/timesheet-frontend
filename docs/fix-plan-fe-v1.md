@@ -1324,7 +1324,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
   ...
-  runApp(const YemenGateApp());
+  runApp(const RostiqApp());
 }
 ```
 
@@ -1337,7 +1337,7 @@ Future<void> main() async {
   await tokenStorage.loadFromStorage();
   Get.put<TokenStorage>(tokenStorage, permanent: true);
   ...
-  runApp(const YemenGateApp());
+  runApp(const RostiqApp());
 }
 ```
 
@@ -1436,19 +1436,19 @@ bool needsProactiveRefresh({int thresholdSeconds = 300}) {
 
 ### Step 3 — Mix `WidgetsBindingObserver` into the app root
 
-Update `lib/main.dart` and `YemenGateApp`:
+Update `lib/main.dart` and `RostiqApp`:
 
 ```dart
 // Add WidgetsBindingObserver mixin to a stateful wrapper:
 
-class YemenGateApp extends StatefulWidget {
-  const YemenGateApp({super.key});
+class RostiqApp extends StatefulWidget {
+  const RostiqApp({super.key});
 
   @override
-  State<YemenGateApp> createState() => _YemenGateAppState();
+  State<RostiqApp> createState() => _RostiqAppState();
 }
 
-class _YemenGateAppState extends State<YemenGateApp>
+class _RostiqAppState extends State<RostiqApp>
     with WidgetsBindingObserver {
 
   @override

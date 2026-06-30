@@ -58,7 +58,7 @@ class GatewayView extends GetView<GatewayController> {
 
                 // ── Title ────────────────────────────────
                 const Text(
-                  'ShiftMate',
+                  'Rostiq',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

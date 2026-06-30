@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/attendance_report_model.dart';
-import 'package:yemen_gate_attendance_app/app/utils/attendance_report_matrix.dart';
+import 'package:rostiq/app/data/models/attendance_report_model.dart';
+import 'package:rostiq/app/utils/attendance_report_matrix.dart';
 
 void main() {
   group('AttendanceReportMatrix', () {

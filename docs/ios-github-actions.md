@@ -78,7 +78,7 @@ Settings → Secrets and variables → Actions → **Variables**:
 
 | Variable | Example |
 |----------|---------|
-| `IOS_BUNDLE_ID` | `com.yourcompany.yemengate` |
+| `IOS_BUNDLE_ID` | `com.deepdownidea.timesheet` |
 | `IOS_PROVISIONING_PROFILE_NAME` | Exact name shown in Apple Developer for the profile |
 
 ---

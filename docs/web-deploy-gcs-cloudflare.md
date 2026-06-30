@@ -1,6 +1,6 @@
 # Deploying Flutter web to GCS + Cloudflare
 
-End-to-end guide for serving the **release web build** of `yemen_gate_attendance_app` from a **Google Cloud Storage** bucket with **Cloudflare** as DNS, TLS, cache, and WAF in front.
+End-to-end guide for serving the **release web build** of `rostiq` from a **Google Cloud Storage** bucket with **Cloudflare** as DNS, TLS, cache, and WAF in front.
 
 Backend stays at `https://timesheetbackend.deepdownidea.com`. The web client will be served from a separate hostname (example used here: **`app.deepdownidea.com`**). Pick whatever subdomain you prefer; **the GCS bucket name must equal that hostname.**
 

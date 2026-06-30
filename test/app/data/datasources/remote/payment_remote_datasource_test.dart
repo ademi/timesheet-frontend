@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:yemen_gate_attendance_app/app/data/datasources/remote/payment_remote_datasource.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/payment/create_payment_request.dart';
+import 'package:rostiq/app/data/datasources/remote/payment_remote_datasource.dart';
+import 'package:rostiq/app/data/models/payment/create_payment_request.dart';
 
 class MockDio extends Mock implements Dio {}
 

@@ -1,6 +1,6 @@
 # Responsive Refactor Feasibility Assessment
 
-**Project:** `yemen_gate_attendance_app` (timesheet-frontend)
+**Project:** `rostiq` (timesheet-frontend)
 **Target strategy evaluated:** `flutter_screenutil` (5.x) for phone-level font/spacing/radius tuning **+** `LayoutBuilder` breakpoints for layout restructuring across phone / tablet / web.
 **Date:** 2026-06-22
 **Status:** Analysis only — no refactoring performed.

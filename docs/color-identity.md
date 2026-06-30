@@ -1,4 +1,4 @@
-# ShiftMate — Color Identity
+# Rostiq — Color Identity
 
 Reference for applying the landing page brand to the Flutter mobile app.
 
@@ -8,10 +8,10 @@ Reference for applying the landing page brand to the Flutter mobile app.
 
 | Field | Value |
 |-------|-------|
-| **Platform name** | **ShiftMate** |
+| **Platform name** | **Rostiq** |
 | **Tagline** | GPS Attendance & Payroll for Australian Teams |
 | **Description** | Workforce management platform for Australian shift-based businesses — GPS attendance, smart payroll, and payment tracking. |
-| **Package / repo** | `shiftmate-landing` |
+| **Package / repo** | `rostiq` |
 
 ---
 
@@ -142,7 +142,7 @@ Copy into `lib/theme/app_colors.dart` (or similar):
 ```dart
 import 'package:flutter/material.dart';
 
-/// ShiftMate brand colors — sourced from landing page (globals.css + tailwind.config.ts)
+/// Rostiq brand colors — sourced from landing page (globals.css + tailwind.config.ts)
 abstract final class AppColors {
   // Primary
   static const Color primary = Color(0xFF7A1F1F);
@@ -212,4 +212,4 @@ ThemeData(
 
 ---
 
-*Generated from the ShiftMate landing page codebase.*
+*Generated from the Rostiq landing page codebase.*

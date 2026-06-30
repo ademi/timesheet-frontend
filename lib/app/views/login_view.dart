@@ -33,7 +33,7 @@ class LoginView extends GetView<AuthController> {
 
                   // ── Title ─────────────────────────────────
                   const Text(
-                    'ShiftMate',
+                    'Rostiq',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -93,7 +93,7 @@ class LoginView extends GetView<AuthController> {
                             label: isAdmin ? 'Email or phone' : 'Email Address',
                             hint: isAdmin
                                 ? 'admin@example.com or +614… / 04…'
-                                : 'staff@yemengate.com',
+                                : 'staff@example.com',
                             icon: isAdmin
                                 ? Icons.person_outline
                                 : Icons.email_outlined,

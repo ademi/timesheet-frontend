@@ -35,17 +35,17 @@ Future<void> main() async {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-  runApp(const ShiftMateApp());
+  runApp(const RostiqApp());
 }
 
-class ShiftMateApp extends StatefulWidget {
-  const ShiftMateApp({super.key});
+class RostiqApp extends StatefulWidget {
+  const RostiqApp({super.key});
 
   @override
-  State<ShiftMateApp> createState() => _ShiftMateAppState();
+  State<RostiqApp> createState() => _RostiqAppState();
 }
 
-class _ShiftMateAppState extends State<ShiftMateApp> with WidgetsBindingObserver {
+class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -101,7 +101,7 @@ class _ShiftMateAppState extends State<ShiftMateApp> with WidgetsBindingObserver
         return fontSize * (scale > 1 ? 1 : scale);
       },
       builder: (context, child) => GetMaterialApp(
-        title: 'ShiftMate',
+        title: 'Rostiq',
         debugShowCheckedModeBanner: false,
         theme: _appTheme(),
         // Registers session-scoped dependencies (auth graph incl. AuthController,

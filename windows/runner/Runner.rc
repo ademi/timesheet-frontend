@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.deepdownidea" "\0"
-            VALUE "FileDescription", "yemen_gate_attendance_app" "\0"
+            VALUE "FileDescription", "rostiq" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "yemen_gate_attendance_app" "\0"
+            VALUE "InternalName", "rostiq" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.deepdownidea. All rights reserved." "\0"
-            VALUE "OriginalFilename", "yemen_gate_attendance_app.exe" "\0"
-            VALUE "ProductName", "ShiftMate" "\0"
+            VALUE "OriginalFilename", "rostiq.exe" "\0"
+            VALUE "ProductName", "Rostiq" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

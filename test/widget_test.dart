@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_storage/get_storage.dart';
 
-import 'package:yemen_gate_attendance_app/main.dart';
+import 'package:rostiq/main.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -21,8 +21,8 @@ void main() {
     await GetStorage.init();
   });
 
-  testWidgets('ShiftMate app loads gateway screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const ShiftMateApp());
+  testWidgets('Rostiq app loads gateway screen', (WidgetTester tester) async {
+    await tester.pumpWidget(const RostiqApp());
     await tester.pumpAndSettle();
 
     expect(find.text('Select Your Portal'), findsOneWidget);

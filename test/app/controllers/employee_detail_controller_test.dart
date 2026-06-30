@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:yemen_gate_attendance_app/app/controllers/employee_detail_controller.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/attendance/employee_model.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/attendance/employee_update_request.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/payroll/employee_balance_out.dart';
-import 'package:yemen_gate_attendance_app/app/data/repositories/employee_repository.dart';
-import 'package:yemen_gate_attendance_app/app/data/repositories/payroll_repository.dart';
+import 'package:rostiq/app/controllers/employee_detail_controller.dart';
+import 'package:rostiq/app/data/models/attendance/employee_model.dart';
+import 'package:rostiq/app/data/models/attendance/employee_update_request.dart';
+import 'package:rostiq/app/data/models/payroll/employee_balance_out.dart';
+import 'package:rostiq/app/data/repositories/employee_repository.dart';
+import 'package:rostiq/app/data/repositories/payroll_repository.dart';
 
 class MockEmployeeRepository extends Mock implements EmployeeRepository {}
 

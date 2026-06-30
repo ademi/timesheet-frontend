@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:yemen_gate_attendance_app/app/data/datasources/remote/auth_remote_datasource.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/auth/set_pin_request_model.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/auth/verify_pin_request_model.dart';
+import 'package:rostiq/app/data/datasources/remote/auth_remote_datasource.dart';
+import 'package:rostiq/app/data/models/auth/set_pin_request_model.dart';
+import 'package:rostiq/app/data/models/auth/verify_pin_request_model.dart';
 
 class MockDio extends Mock implements Dio {}
 
