@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:yemen_gate_attendance_app/app/controllers/employee_rate_form_controller.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/payroll/rate_create_request.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/payroll/rate_out.dart';
-import 'package:yemen_gate_attendance_app/app/data/repositories/payroll_repository.dart';
-import 'package:yemen_gate_attendance_app/app/routes/route_args.dart';
+import 'package:rostiq/app/controllers/employee_rate_form_controller.dart';
+import 'package:rostiq/app/data/models/payroll/rate_create_request.dart';
+import 'package:rostiq/app/data/models/payroll/rate_out.dart';
+import 'package:rostiq/app/data/repositories/payroll_repository.dart';
+import 'package:rostiq/app/routes/route_args.dart';
 
 class MockPayrollRepository extends Mock implements PayrollRepository {}
 

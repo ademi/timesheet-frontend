@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/payroll/rate_out.dart';
-import 'package:yemen_gate_attendance_app/app/routes/route_args.dart';
+import 'package:rostiq/app/data/models/payroll/rate_out.dart';
+import 'package:rostiq/app/routes/route_args.dart';
 
 void main() {
   const employeeId = 'emp-1';

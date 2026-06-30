@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:yemen_gate_attendance_app/app/controllers/create_payment_controller.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/attendance/employee_model.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/payment/create_payment_request.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/payment/payment_out.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/payroll/period_out.dart';
-import 'package:yemen_gate_attendance_app/app/data/repositories/payment_repository.dart';
-import 'package:yemen_gate_attendance_app/app/data/repositories/payroll_repository.dart';
-import 'package:yemen_gate_attendance_app/app/views/create_payment_view.dart';
+import 'package:rostiq/app/controllers/create_payment_controller.dart';
+import 'package:rostiq/app/data/models/attendance/employee_model.dart';
+import 'package:rostiq/app/data/models/payment/create_payment_request.dart';
+import 'package:rostiq/app/data/models/payment/payment_out.dart';
+import 'package:rostiq/app/data/models/payroll/period_out.dart';
+import 'package:rostiq/app/data/repositories/payment_repository.dart';
+import 'package:rostiq/app/data/repositories/payroll_repository.dart';
+import 'package:rostiq/app/views/create_payment_view.dart';
 
 class MockPaymentRepository extends Mock implements PaymentRepository {}
 

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/attendance/employee_model.dart';
-import 'package:yemen_gate_attendance_app/app/routes/app_navigation.dart';
-import 'package:yemen_gate_attendance_app/app/routes/route_args.dart';
+import 'package:rostiq/app/data/models/attendance/employee_model.dart';
+import 'package:rostiq/app/routes/app_navigation.dart';
+import 'package:rostiq/app/routes/route_args.dart';
 
 void main() {
   group('readBoolResult', () {

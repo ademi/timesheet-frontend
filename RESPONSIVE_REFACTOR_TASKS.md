@@ -1,6 +1,6 @@
 # Responsive Refactor — Implementation Tasks
 
-**Project:** `yemen_gate_attendance_app` (timesheet-frontend)
+**Project:** `rostiq` (timesheet-frontend)
 **Strategy:** `flutter_screenutil` 5.x (phone-only density) + `LayoutBuilder` breakpoints (structure) + content max-width + responsive shell.
 **Companion doc:** `RESPONSIVE_REFACTOR_ASSESSMENT.md`
 **Status:** Phase 7 complete — responsive refactor done.

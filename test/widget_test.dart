@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_storage/get_storage.dart';
 
-import 'package:yemen_gate_attendance_app/main.dart';
+import 'package:rostiq/main.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

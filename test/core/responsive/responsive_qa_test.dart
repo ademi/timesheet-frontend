@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yemen_gate_attendance_app/app/routes/app_routes.dart';
-import 'package:yemen_gate_attendance_app/app/views/shell/admin_shell_routes.dart';
-import 'package:yemen_gate_attendance_app/app/views/shell/responsive_scaffold.dart';
-import 'package:yemen_gate_attendance_app/app/views/shell/two_pane.dart';
-import 'package:yemen_gate_attendance_app/core/responsive/adaptive_grid.dart';
-import 'package:yemen_gate_attendance_app/core/responsive/breakpoints.dart';
-import 'package:yemen_gate_attendance_app/core/responsive/max_width_box.dart';
+import 'package:rostiq/app/routes/app_routes.dart';
+import 'package:rostiq/app/views/shell/admin_shell_routes.dart';
+import 'package:rostiq/app/views/shell/responsive_scaffold.dart';
+import 'package:rostiq/app/views/shell/two_pane.dart';
+import 'package:rostiq/core/responsive/adaptive_grid.dart';
+import 'package:rostiq/core/responsive/breakpoints.dart';
+import 'package:rostiq/core/responsive/max_width_box.dart';
 
 void main() {
   group('Phase 7 — breakpoint matrix', () {

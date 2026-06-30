@@ -1,6 +1,6 @@
 # Responsive Refactor — Manual Testing Guide
 
-**Project:** `yemen_gate_attendance_app` (timesheet-frontend)  
+**Project:** `rostiq` (timesheet-frontend)  
 **Companion docs:** `RESPONSIVE_REFACTOR_TASKS.md`, `RESPONSIVE_REFACTOR_ASSESSMENT.md`
 
 This document describes **how to manually verify** each implementation phase. Automated coverage lives in `test/core/responsive/responsive_qa_test.dart`; use this guide for visual QA on real devices and browsers.

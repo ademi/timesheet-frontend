@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yemen_gate_attendance_app/app/constants/scheduling_permissions.dart';
-import 'package:yemen_gate_attendance_app/core/services/token_storage.dart';
+import 'package:rostiq/app/constants/scheduling_permissions.dart';
+import 'package:rostiq/core/services/token_storage.dart';
 
 String _fakeJwt(Map<String, dynamic> payload) {
   final header = base64Url.encode(

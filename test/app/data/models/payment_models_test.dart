@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/payment/create_payment_request.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/payment/payment_out.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/payment/payment_report_row.dart';
+import 'package:rostiq/app/data/models/payment/create_payment_request.dart';
+import 'package:rostiq/app/data/models/payment/payment_out.dart';
+import 'package:rostiq/app/data/models/payment/payment_report_row.dart';
 
 void main() {
   group('Payment JSON parsing', () {

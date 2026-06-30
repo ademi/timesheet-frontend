@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:yemen_gate_attendance_app/app/routes/app_navigation.dart';
-import 'package:yemen_gate_attendance_app/app/routes/app_routes.dart';
-import 'package:yemen_gate_attendance_app/app/routes/route_args.dart';
+import 'package:rostiq/app/routes/app_navigation.dart';
+import 'package:rostiq/app/routes/app_routes.dart';
+import 'package:rostiq/app/routes/route_args.dart';
 
 /// Regression: [Get.toNamed]<bool> throws on web because GetPageRoute<dynamic>
 /// is not a subtype of Route<bool?>.

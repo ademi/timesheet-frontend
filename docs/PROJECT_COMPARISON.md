@@ -1,6 +1,6 @@
 # Project Comparison: Original vs Forked Version
 
-**Original:** `C:\Users\DELL3561\StudioProjects\yemen_gate_attendance_app`  
+**Original:** `C:\Users\DELL3561\StudioProjects\rostiq`  
 **Fork (current workspace):** `C:\Users\DELL3561\Desktop\new projects\timesheet-new\timesheet-frontend`
 
 ---

@@ -1,6 +1,6 @@
 # Flutter commands — Timesheet frontend
 
-Reference for day-to-day Flutter/Dart work on **yemen_gate_attendance_app**. All commands assume the app directory unless noted otherwise.
+Reference for day-to-day Flutter/Dart work on **rostiq**. All commands assume the app directory unless noted otherwise.
 
 ```bash
 cd /home/ademi/projects/timesheet/frontend
@@ -348,7 +348,7 @@ flutter build web --release --dart-define=API_BASE_URL=https://timesheetbackend.
 
 - **GetX routing:** Prefer helpers in `lib/app/routes/app_navigation.dart` (e.g. `pushNamedBool`) instead of `Get.toNamed<bool>` on web — generic route types can throw on Flutter Web.
 - **Web port:** Admin UI is often opened at `http://localhost:3000` when using `--web-port=3000`.
-- **Package name:** `yemen_gate_attendance_app` (import path in tests).
+- **Package name:** `rostiq` (import path in tests).
 
 ## to debug on device:
 - get the IP
