@@ -24,6 +24,7 @@ class PaymentMainView extends GetView<PaymentMainController> {
         padding: const EdgeInsets.all(20),
         spacing: 14,
         runSpacing: 14,
+        childAspectRatio: 2.2,
         children: [
           AdminHubCard(
             icon: Icons.add_card_rounded,

@@ -75,7 +75,7 @@ class EmployeeCreatedView extends StatelessWidget {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               child: const Text('Set payroll rate'),

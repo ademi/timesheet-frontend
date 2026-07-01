@@ -48,6 +48,7 @@ class AdminPanelView extends GetView<AdminPanelController> {
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                       spacing: 14,
                       runSpacing: 14,
+                      childAspectRatio: 2.2,
                       children: [
                         AdminHubCard(
                           icon: Icons.groups_rounded,
@@ -67,6 +68,13 @@ class AdminPanelView extends GetView<AdminPanelController> {
                           title: 'Attendance Corrections',
                           subtitle: 'Review exceptions and fix missing punches',
                           onTap: controller.openAttendanceCorrections,
+                        ),
+                        AdminHubCard(
+                          icon: Icons.calendar_view_week_rounded,
+                          title: 'Shift Schedule',
+                          subtitle:
+                              'View who works when, assignments, and leave',
+                          onTap: controller.openShiftSchedule,
                         ),
                         AdminHubCard(
                           icon: Icons.receipt_long_rounded,
@@ -123,11 +131,11 @@ class _AdminHeader extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.2),
+              color: AppColors.textLight.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(Icons.admin_panel_settings_rounded,
-                color: AppColors.primary),
+                color: AppColors.textLight),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -147,8 +155,8 @@ class _AdminHeader extends StatelessWidget {
                   branchName != null && branchName!.isNotEmpty
                       ? 'Administration · $branchName'
                       : 'Administration',
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: AppColors.textLight.withValues(alpha: 0.85),
                     fontSize: 12,
                     letterSpacing: 0.6,
                   ),
@@ -158,12 +166,12 @@ class _AdminHeader extends StatelessWidget {
           ),
           IconButton(
             onPressed: onChangeBranch,
-            icon: const Icon(Icons.storefront_rounded, color: AppColors.primary),
+            icon: const Icon(Icons.storefront_rounded, color: AppColors.textLight),
             tooltip: 'Change branch',
           ),
           IconButton(
             onPressed: onLogout,
-            icon: const Icon(Icons.logout_rounded, color: AppColors.primary),
+            icon: const Icon(Icons.logout_rounded, color: AppColors.textLight),
             tooltip: 'Logout',
           ),
         ],

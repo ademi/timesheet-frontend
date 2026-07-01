@@ -164,7 +164,7 @@ class CreateEmployeeView extends GetView<CreateEmployeeController> {
                               : controller.createEmployee,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.textLight,
+                            foregroundColor: AppColors.onPrimary,
                             disabledBackgroundColor:
                                 AppColors.primary.withValues(alpha: 0.55),
                             shape: RoundedRectangleBorder(

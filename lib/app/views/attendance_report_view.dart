@@ -31,8 +31,8 @@ class AttendanceReportView extends GetView<AttendanceReportController> {
               icon: Icon(
                 Icons.file_download_outlined,
                 color: controller.reports.isEmpty
-                    ? AppColors.primary.withValues(alpha: 0.5)
-                    : AppColors.primary,
+                    ? AppColors.textLight.withValues(alpha: 0.5)
+                    : AppColors.textLight,
               ),
             ),
           ),
@@ -120,7 +120,7 @@ class AttendanceReportView extends GetView<AttendanceReportController> {
               onPressed: controller.fetchReport,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textLight,
+                foregroundColor: AppColors.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

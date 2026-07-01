@@ -23,14 +23,14 @@ class AttendanceCorrectionsView
           IconButton(
             tooltip: 'Refresh',
             onPressed: controller.loadExceptions,
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: controller.createManualEntry,
         backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textLight,
+        foregroundColor: AppColors.onPrimary,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Manual Entry'),
       ),
@@ -101,7 +101,7 @@ class AttendanceCorrectionsView
               onPressed: controller.loadExceptions,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textLight,
+                foregroundColor: AppColors.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -235,7 +235,7 @@ class _ExceptionCard extends StatelessWidget {
                   label: const Text('Correct'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textLight,
+                    foregroundColor: AppColors.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),

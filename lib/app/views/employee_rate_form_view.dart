@@ -155,7 +155,7 @@ class EmployeeRateFormView extends GetView<EmployeeRateFormController> {
             onPressed: controller.isSaving.value ? null : controller.submit,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
             child: controller.isSaving.value
