@@ -33,7 +33,7 @@ class LoginView extends GetView<AuthController> {
 
                   // ── Title ─────────────────────────────────
                   const Text(
-                    'ShiftMate',
+                    'Rostiq',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -204,34 +204,16 @@ class LoginView extends GetView<AuthController> {
 class _LogoWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 120,
-      height: 120,
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.2),
-            blurRadius: 18,
-            offset: const Offset(0, 5),
+    return Image.asset(
+      'assets/images/logo.png',
+      height: 56,
+      fit: BoxFit.contain,
+      errorBuilder:
+          (_, __, ___) => const Icon(
+            Icons.schedule_rounded,
+            size: 56,
+            color: AppColors.primary,
           ),
-        ],
-      ),
-      child: ClipOval(
-        child: Image.asset(
-          'assets/images/logo.png',
-          fit: BoxFit.contain,
-          errorBuilder:
-              (_, __, ___) => const Center(
-                child: Icon(
-                  Icons.restaurant,
-                  size: 60,
-                  color: AppColors.primary,
-                ),
-              ),
-        ),
-      ),
     );
   }
 }

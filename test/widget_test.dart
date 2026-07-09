@@ -21,8 +21,8 @@ void main() {
     await GetStorage.init();
   });
 
-  testWidgets('ShiftMate app loads gateway screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const ShiftMateApp());
+  testWidgets('Rostiq app loads gateway screen', (WidgetTester tester) async {
+    await tester.pumpWidget(const RostiqApp());
     await tester.pumpAndSettle();
 
     expect(find.text('Select Your Portal'), findsOneWidget);

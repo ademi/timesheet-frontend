@@ -1,5 +1,5 @@
 name: yemen_gate_attendance_app
-description: "ShiftMate mobile app for GPS attendance and payroll."
+description: "Rostiq mobile app for GPS attendance and payroll."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -76,14 +76,14 @@ flutter_launcher_icons:
   android: true
   ios: true
   remove_alpha_ios: true
-  background_color_ios: "#7A1F1F"
-  adaptive_icon_background: "assets/branding/rostiq_adaptive_bg.png"
-  adaptive_icon_foreground: "assets/branding/rostiq_adaptive_fg.png"
+  background_color_ios: "#EFECE7"
+  adaptive_icon_background: "#EFECE7"
+  adaptive_icon_foreground: "assets/branding/rostiq_icon_master_1024.png"
   web:
     generate: true
     image_path: "assets/branding/rostiq_icon_master_1024.png"
-    background_color: "#7A1F1F"
-    theme_color: "#7A1F1F"
+    background_color: "#EFECE7"
+    theme_color: "#1E1A14"
   macos:
     generate: true
     image_path: "assets/branding/rostiq_icon_master_1024.png"

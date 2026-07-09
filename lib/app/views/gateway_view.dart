@@ -24,41 +24,23 @@ class GatewayView extends GetView<GatewayController> {
                 const SizedBox(height: 24),
 
                 // ── Logo ─────────────────────────────────
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: AppColors.cardBackground,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.2),
-                        blurRadius: 18,
-                        offset: const Offset(0, 5),
+                Image.asset(
+                  'assets/images/logo.png',
+                  height: 56,
+                  fit: BoxFit.contain,
+                  errorBuilder:
+                      (_, __, ___) => const Icon(
+                        Icons.schedule_rounded,
+                        size: 56,
+                        color: AppColors.primary,
                       ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      fit: BoxFit.contain,
-                      errorBuilder:
-                          (_, __, ___) => const Center(
-                            child: Icon(
-                              Icons.restaurant,
-                              size: 60,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                    ),
-                  ),
                 ),
 
                 const SizedBox(height: 28),
 
                 // ── Title ────────────────────────────────
                 const Text(
-                  'ShiftMate',
+                  'Rostiq',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
