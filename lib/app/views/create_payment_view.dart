@@ -252,7 +252,7 @@ class CreatePaymentView extends GetView<CreatePaymentController> {
                     label: Text(controller.isLoading.value ? 'Submitting...' : 'Submit Payment'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.onPrimary,
                     ),
                   ),
                 ),

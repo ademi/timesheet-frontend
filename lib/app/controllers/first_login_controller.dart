@@ -41,7 +41,7 @@ class FirstLoginController extends GetxController {
         'Password set',
         'Please log in again with your new password.',
         backgroundColor: AppColors.primary,
-        colorText: AppColors.textLight,
+        colorText: AppColors.onPrimary,
         snackPosition: SnackPosition.BOTTOM,
       );
       Get.offAllNamed(AppRoutes.login);

@@ -123,10 +123,10 @@ ThemeData _appTheme() {
     fontFamily: 'Roboto',
     colorScheme: const ColorScheme.light(
       primary: AppColors.primary,
-      onPrimary: AppColors.textLight,
-      primaryContainer: AppColors.primaryLight,
+      onPrimary: AppColors.onPrimary,
+      primaryContainer: AppColors.hover,
       secondary: AppColors.accent,
-      onSecondary: AppColors.textLight,
+      onSecondary: AppColors.onPrimary,
       surface: AppColors.surface,
       onSurface: AppColors.textDark,
       error: AppColors.error,
@@ -141,6 +141,11 @@ ThemeData _appTheme() {
     ),
     appBarTheme: AppBarTheme(
       centerTitle: false,
+      backgroundColor: AppColors.darkBrown,
+      foregroundColor: AppColors.textLight,
+      iconTheme: const IconThemeData(color: AppColors.textLight),
+      actionsIconTheme: const IconThemeData(color: AppColors.textLight),
+      elevation: 0,
       titleTextStyle: TextStyle(
         fontFamily: 'Roboto',
         fontSize: 17.sp,
@@ -150,6 +155,8 @@ ThemeData _appTheme() {
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
         textStyle: TextStyle(
           fontSize: 14.sp,
           fontWeight: FontWeight.w600,
@@ -158,6 +165,10 @@ ThemeData _appTheme() {
           borderRadius: BorderRadius.circular(12.r),
         ),
       ),
+    ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: AppColors.primary,
+      foregroundColor: AppColors.onPrimary,
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(

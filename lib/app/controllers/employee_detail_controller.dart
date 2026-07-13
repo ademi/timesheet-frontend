@@ -330,7 +330,7 @@ class EmployeeDetailController extends GetxController {
             onPressed: () => Get.back(),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textLight,
+              foregroundColor: AppColors.onPrimary,
             ),
             child: const Text('OK'),
           ),
@@ -360,7 +360,7 @@ class EmployeeDetailController extends GetxController {
             onPressed: () => Get.back(result: true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textLight,
+              foregroundColor: AppColors.onPrimary,
             ),
             child: const Text('Reset PIN'),
           ),

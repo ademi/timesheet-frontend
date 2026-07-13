@@ -135,7 +135,7 @@ class PayrollSummaryReportView extends GetView<PayrollSummaryReportController> {
               onPressed: controller.loadReport,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textLight,
+                foregroundColor: AppColors.onPrimary,
               ),
               child: const Text('Load Report'),
             ),

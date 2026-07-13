@@ -61,7 +61,7 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
         tooltip: 'Create Employee',
         heroTag: 'employee_management_create_fab',
         backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textLight,
+        foregroundColor: AppColors.onPrimary,
         child: const Icon(Icons.add_rounded),
       ),
     );

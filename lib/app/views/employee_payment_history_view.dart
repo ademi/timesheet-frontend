@@ -55,7 +55,7 @@ class EmployeePaymentHistoryView extends GetView<EmployeePaymentHistoryControlle
                 label: const Text('Load History'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.onPrimary,
                 ),
               ),
             ),

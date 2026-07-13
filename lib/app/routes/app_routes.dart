@@ -9,6 +9,7 @@ abstract class AppRoutes {
   static const adminAttendanceReport = '/admin/attendance-report';
   static const adminAttendanceCorrections = '/admin/attendance-corrections';
   static const adminAttendanceAdjustment = '/admin/attendance-adjustment';
+  static const adminShiftSchedule = '/admin/shift-schedule';
   static const employeeDetail = '/admin/employees/detail';
   static const createEmployee = '/create-employee';
   static const createEmployeeSuccess = '/create-employee/success';

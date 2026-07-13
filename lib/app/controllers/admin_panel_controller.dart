@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../bindings/payment_module_binding.dart';
 import '../bindings/payroll_module_binding.dart';
+import '../bindings/scheduling_module_binding.dart';
 import '../routes/app_routes.dart';
 
 class AdminPanelController extends GetxController {
@@ -13,6 +14,11 @@ class AdminPanelController extends GetxController {
 
   void openAttendanceCorrections() =>
       Get.toNamed(AppRoutes.adminAttendanceCorrections);
+
+  void openShiftSchedule() {
+    SchedulingModuleBinding.ensureDependencies();
+    Get.toNamed(AppRoutes.adminShiftSchedule);
+  }
 
   void openPayroll() {
     PayrollModuleBinding.ensureDependencies();

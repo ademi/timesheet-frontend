@@ -109,7 +109,7 @@ class PayrollSettingsView extends GetView<PayrollSettingsController> {
                 onPressed: controller.isSaving.value ? null : controller.save,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.textLight,
+                  foregroundColor: AppColors.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 child:

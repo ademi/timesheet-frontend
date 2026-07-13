@@ -211,7 +211,7 @@ class _ActionButton extends StatelessWidget {
         label: Text(label),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.textLight,
+          foregroundColor: AppColors.onPrimary,
           padding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),

@@ -58,7 +58,7 @@ class EmployeeDetailView extends GetView<EmployeeDetailController> {
               actions: [
                 IconButton(
                   onPressed: deleting ? null : controller.loadAll,
-                  icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+                  icon: const Icon(Icons.refresh_rounded),
                 ),
               ],
             ),
@@ -169,7 +169,7 @@ class _EmbeddedHeader extends StatelessWidget {
               if (onRefresh != null)
                 IconButton(
                   onPressed: onRefresh,
-                  icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+                  icon: const Icon(Icons.refresh_rounded),
                 ),
             ],
           ),
@@ -407,7 +407,7 @@ class _DetailsSection extends StatelessWidget {
                       label: Text(controller.isSaving.value ? 'Saving...' : 'Save'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.textLight,
+                        foregroundColor: AppColors.onPrimary,
                       ),
                     ),
                   ),
@@ -490,7 +490,7 @@ class _PayrollSection extends StatelessWidget {
                   label: const Text('Pay'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textLight,
+                    foregroundColor: AppColors.onPrimary,
                   ),
                 ),
               ),
