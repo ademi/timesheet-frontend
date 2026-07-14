@@ -1,7 +1,7 @@
 # Codemagic config for the frontend app (individual application setup).
 #
 # Per-app (Applications → this app → App settings):
-#   - Environment variables → group "timesheet_ios" (API_BASE_URL, IOS_BUNDLE_ID)
+#   - Environment variables → group "cuvana_ios" (API_BASE_URL, IOS_BUNDLE_ID)
 #   - Repository settings → webhook for auto-builds on push to "ios"
 #
 # Account-wide (User settings → personal account):
@@ -50,6 +50,8 @@ workflows:
       - name: Build signed IPA
         script: |
           flutter build ipa --release \
+            --build-name=1.0.0 \
+            --build-number=$PROJECT_BUILD_NUMBER \
             --dart-define=API_BASE_URL="${API_BASE_URL:-https://api.rostiq.co}" \
             --export-options-plist=/Users/builder/export_options.plist
 
