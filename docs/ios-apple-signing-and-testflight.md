@@ -353,7 +353,7 @@ A signed release IPA is produced with:
 
 ```bash
 flutter build ipa --release \
-  --dart-define=API_BASE_URL=https://timesheetbackend.deepdownidea.com \
+  --dart-define=API_BASE_URL=https://api.rostiq.co \
   --export-options-plist=ios/ExportOptions.plist
 ```
 

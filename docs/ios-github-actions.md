@@ -87,7 +87,7 @@ Settings → Secrets and variables → Actions → **Variables**:
 
 1. Push the frontend repo to GitHub (workflow lives under `frontend/.github/`).
 2. Actions → **Build iOS** → **Run workflow**
-3. Set **API base URL** (default: `https://timesheetbackend.deepdownidea.com`)
+3. Set **API base URL** (default: `https://api.rostiq.co`)
 4. Choose **distribution_method**:
    - `app-store` → TestFlight / App Store Connect
    - `ad-hoc` → install only on UDIDs in the profile
@@ -125,7 +125,7 @@ Same flags the workflow uses:
 
 ```bash
 flutter build ipa --release \
-  --dart-define=API_BASE_URL=https://timesheetbackend.deepdownidea.com \
+  --dart-define=API_BASE_URL=https://api.rostiq.co \
   --export-options-plist=ios/ExportOptions.plist
 ```
 
