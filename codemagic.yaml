@@ -29,7 +29,7 @@ workflows:
 
     environment:
       groups:
-        - timesheet_ios                # App settings → Environment variables
+        - cuvana_ios                # App settings → Environment variables
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.deepdownidea.timesheet
