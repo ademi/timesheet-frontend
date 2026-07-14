@@ -42,7 +42,7 @@ On a **shared team account**, the same account-wide items appear under **Team se
 | **Signed IPA** | iOS code signing identities set up | Downloadable `.ipa` from the build page |
 | **TestFlight** | Signed build + App Store Connect integration + `submit_to_testflight: true` | Testers install via the TestFlight app |
 
-The default production API URL baked into release builds is `https://timesheetbackend.deepdownidea.com` (same as the GitHub Actions workflow).
+The default production API URL baked into release builds is `https://api.rostiq.co` (same as the GitHub Actions workflow).
 
 ---
 
@@ -122,7 +122,7 @@ Repeat for each variable:
 
 | Variable | Example | Purpose |
 |----------|---------|---------|
-| `API_BASE_URL` | `https://timesheetbackend.deepdownidea.com` | Passed to `--dart-define=API_BASE_URL=...` |
+| `API_BASE_URL` | `https://api.rostiq.co` | Passed to `--dart-define=API_BASE_URL=...` |
 | `IOS_BUNDLE_ID` | `com.deepdownidea.timesheet` | Must match Apple Developer App ID and provisioning profile |
 
 The group is referenced in `codemagic.yaml`:
@@ -180,7 +180,7 @@ workflows:
       - name: Build signed IPA
         script: |
           flutter build ipa --release \
-            --dart-define=API_BASE_URL="${API_BASE_URL:-https://timesheetbackend.deepdownidea.com}" \
+            --dart-define=API_BASE_URL="${API_BASE_URL:-https://api.rostiq.co}" \
             --export-options-plist=/Users/builder/export_options.plist
 
     artifacts:
@@ -263,7 +263,7 @@ Add a second workflow in `codemagic.yaml` with **no** `triggering` section so it
       - name: Build signed IPA
         script: |
           flutter build ipa --release \
-            --dart-define=API_BASE_URL="${API_BASE_URL:-https://timesheetbackend.deepdownidea.com}" \
+            --dart-define=API_BASE_URL="${API_BASE_URL:-https://api.rostiq.co}" \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
@@ -310,7 +310,7 @@ Same flags Codemagic uses:
 
 ```bash
 flutter build ipa --release \
-  --dart-define=API_BASE_URL=https://timesheetbackend.deepdownidea.com
+  --dart-define=API_BASE_URL=https://api.rostiq.co
 ```
 
 ---

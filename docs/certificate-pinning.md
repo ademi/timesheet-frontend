@@ -17,11 +17,11 @@ refresh tokens, GPS coordinates, and payroll data.
 
 ## Step 1 — Extract the Production SPKI Pin
 
-Run this against the production server's certificate. Replace `timesheetbackend.deepdownidea.com`
+Run this against the production server's certificate. Replace `api.rostiq.co`
 with the actual domain if it changes.
 
 ```bash
-openssl s_client -connect timesheetbackend.deepdownidea.com:443 -servername timesheetbackend.deepdownidea.com 2>/dev/null \
+openssl s_client -connect api.rostiq.co:443 -servername api.rostiq.co 2>/dev/null \
   | openssl x509 -pubkey -noout \
   | openssl pkey -pubin -outform DER \
   | openssl dgst -sha256 -binary \
@@ -129,7 +129,7 @@ import 'package:native_http/native_http.dart';
 
 final client = NativeHttpClient(
   certificatePinning: CertificatePinning(
-    host: 'timesheetbackend.deepdownidea.com',
+    host: 'api.rostiq.co',
     pinnedSPKIs: [_spkiPin, _spkiPinBackup],
   ),
 );
@@ -154,7 +154,7 @@ static const _spkiPinBackup = 'BASE64_OF_INTERMEDIATE_CA_SPKI';  // stays stable
 To extract the intermediate CA SPKI:
 
 ```bash
-openssl s_client -connect timesheetbackend.deepdownidea.com:443 -showcerts 2>/dev/null \
+openssl s_client -connect api.rostiq.co:443 -showcerts 2>/dev/null \
   | awk '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/' \
   | csplit - '/-----BEGIN CERTIFICATE-----/' '{*}' --elide-empty-files --prefix=cert
 # cert01 = leaf, cert02 = intermediate, cert03 = root

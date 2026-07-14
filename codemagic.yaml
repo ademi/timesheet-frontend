@@ -50,7 +50,7 @@ workflows:
       - name: Build signed IPA
         script: |
           flutter build ipa --release \
-            --dart-define=API_BASE_URL="${API_BASE_URL:-https://timesheetbackend.deepdownidea.com}" \
+            --dart-define=API_BASE_URL="${API_BASE_URL:-https://api.rostiq.co}" \
             --export-options-plist=/Users/builder/export_options.plist
 
     artifacts:

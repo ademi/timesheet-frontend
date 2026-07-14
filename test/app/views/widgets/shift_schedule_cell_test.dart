@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:yemen_gate_attendance_app/app/controllers/shift_schedule_controller.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/scheduling/board_day.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/scheduling/board_employee.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/scheduling/board_meta.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/scheduling/schedule_board.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/scheduling/scheduling_date_utils.dart';
-import 'package:yemen_gate_attendance_app/app/data/models/scheduling/shift_status.dart';
-import 'package:yemen_gate_attendance_app/app/data/repositories/branch_repository.dart';
-import 'package:yemen_gate_attendance_app/app/data/repositories/scheduling_repository.dart';
-import 'package:yemen_gate_attendance_app/app/themes/app_colors.dart';
-import 'package:yemen_gate_attendance_app/app/views/widgets/shift_schedule_cell.dart';
-import 'package:yemen_gate_attendance_app/core/services/token_storage.dart';
+import 'package:rostiq/app/controllers/shift_schedule_controller.dart';
+import 'package:rostiq/app/data/models/scheduling/board_day.dart';
+import 'package:rostiq/app/data/models/scheduling/board_employee.dart';
+import 'package:rostiq/app/data/models/scheduling/board_meta.dart';
+import 'package:rostiq/app/data/models/scheduling/schedule_board.dart';
+import 'package:rostiq/app/data/models/scheduling/scheduling_date_utils.dart';
+import 'package:rostiq/app/data/models/scheduling/shift_status.dart';
+import 'package:rostiq/app/data/repositories/branch_repository.dart';
+import 'package:rostiq/app/data/repositories/scheduling_repository.dart';
+import 'package:rostiq/app/themes/app_colors.dart';
+import 'package:rostiq/app/views/widgets/shift_schedule_cell.dart';
+import 'package:rostiq/core/services/token_storage.dart';
 
 class _MockSchedulingRepository extends Mock implements SchedulingRepository {}
 

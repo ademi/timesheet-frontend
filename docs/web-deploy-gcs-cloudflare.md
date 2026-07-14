@@ -2,7 +2,7 @@
 
 End-to-end guide for serving the **release web build** of `rostiq` from a **Google Cloud Storage** bucket with **Cloudflare** as DNS, TLS, cache, and WAF in front.
 
-Backend stays at `https://timesheetbackend.deepdownidea.com`. The web client will be served from a separate hostname (example used here: **`app.deepdownidea.com`**). Pick whatever subdomain you prefer; **the GCS bucket name must equal that hostname.**
+Backend stays at `https://api.rostiq.co`. The web client will be served from a separate hostname (example used here: **`app.rostiq.co`**). Pick whatever subdomain you prefer; **the GCS bucket name must equal that hostname.**
 
 ---
 
@@ -13,16 +13,16 @@ Browser
   │  HTTPS (TLS terminated by Cloudflare)
   ▼
 Cloudflare (proxied DNS, cache, WAF)
-  │  HTTPS to c.storage.googleapis.com (Host: app.deepdownidea.com)
+  │  HTTPS to c.storage.googleapis.com (Host: app.rostiq.co)
   ▼
-Google Cloud Storage bucket: app.deepdownidea.com
+Google Cloud Storage bucket: app.rostiq.co
   └─ build/web/* (index.html, main.dart.js, assets/, canvaskit/, …)
 
-Browser → https://timesheetbackend.deepdownidea.com (FastAPI, separate origin)
+Browser → https://api.rostiq.co (FastAPI, separate origin)
 ```
 
 - **GCS** stores the static build, serves it over HTTPS at `https://storage.googleapis.com/<bucket>/...` and (with bucket-name = FQDN) over the virtual-hosted endpoint `c.storage.googleapis.com`.
-- **Cloudflare** terminates TLS for `app.deepdownidea.com`, caches assets, and proxies misses to GCS.
+- **Cloudflare** terminates TLS for `app.rostiq.co`, caches assets, and proxies misses to GCS.
 - **Backend** is a different origin — CORS must allow the web origin (already wired in `app/main.py`; just add the new origin to `CORS_ORIGINS`).
 
 ---
@@ -34,12 +34,12 @@ Browser → https://timesheetbackend.deepdownidea.com (FastAPI, separate origin)
 | Flutter SDK | Same version as the project (`pubspec.yaml`, `^3.7.2`). Verify with `flutter --version`. |
 | `gcloud` CLI | Authenticated (`gcloud auth login`) and a project selected (`gcloud config set project <PROJECT_ID>`). |
 | `gsutil` | Bundled with `gcloud`. Used for upload + metadata. |
-| Cloudflare access | DNS zone for `deepdownidea.com` already managed by Cloudflare. |
+| Cloudflare access | DNS zone for `rostiq.co` already managed by Cloudflare. |
 | Google Search Console | Required to **verify ownership** of the bucket-name domain (one-off). |
 
 Domain ownership verification (one-off):
 
-1. Open [Search Console](https://search.google.com/search-console) → **Add property** → **Domain** → `deepdownidea.com`.
+1. Open [Search Console](https://search.google.com/search-console) → **Add property** → **Domain** → `rostiq.co`.
 2. Add the TXT record Google gives you in Cloudflare DNS (DNS-only, gray cloud is fine for TXT).
 3. Click **Verify**. Once verified, the same Google account can create buckets named under that domain.
 
@@ -55,7 +55,7 @@ flutter pub get
 
 flutter build web \
   --release \
-  --dart-define=API_BASE_URL=https://timesheetbackend.deepdownidea.com \
+  --dart-define=API_BASE_URL=https://api.rostiq.co \
   --base-href=/
 ```
 
@@ -77,7 +77,7 @@ The **bucket name must equal the public FQDN** so the `Host`-based virtual-hoste
 
 ```bash
 export PROJECT_ID="your-gcp-project"
-export BUCKET="app.deepdownidea.com"
+export BUCKET="app.rostiq.co"
 export REGION="us-central1"   # pick one close to your users / Cloudflare edge
 
 gcloud config set project "$PROJECT_ID"
@@ -113,12 +113,12 @@ gcloud storage buckets update "gs://$BUCKET" \
 
 ### 4.3 (Optional) CORS on the bucket
 
-The web client itself is **same-origin** with the bucket (you serve from `app.deepdownidea.com`), so bucket CORS is generally **not** required. Add it only if another origin needs to fetch assets from this bucket:
+The web client itself is **same-origin** with the bucket (you serve from `app.rostiq.co`), so bucket CORS is generally **not** required. Add it only if another origin needs to fetch assets from this bucket:
 
 ```json
 [
   {
-    "origin": ["https://app.deepdownidea.com"],
+    "origin": ["https://app.rostiq.co"],
     "method": ["GET", "HEAD"],
     "responseHeader": ["Content-Type"],
     "maxAgeSeconds": 3600
@@ -173,14 +173,14 @@ gcloud storage objects describe "gs://$BUCKET/index.html" \
 Your build is now reachable at:
 
 ```
-https://storage.googleapis.com/app.deepdownidea.com/index.html
+https://storage.googleapis.com/app.rostiq.co/index.html
 ```
 
 ---
 
 ## 6. Point Cloudflare at the bucket
 
-In the Cloudflare dashboard for `deepdownidea.com`:
+In the Cloudflare dashboard for `rostiq.co`:
 
 ### 6.1 DNS record
 
@@ -190,12 +190,12 @@ In the Cloudflare dashboard for `deepdownidea.com`:
 
 The proxy is essential: it gives you Cloudflare TLS, caching, and hides the GCS origin. Without it (DNS-only) the browser would try a TLS handshake directly with GCS using a cert that doesn’t cover your domain → SSL errors.
 
-> The bucket name **must** equal `app.deepdownidea.com` for the virtual-hosted endpoint to resolve to the right bucket via the `Host` header.
+> The bucket name **must** equal `app.rostiq.co` for the virtual-hosted endpoint to resolve to the right bucket via the `Host` header.
 
 ### 6.2 SSL/TLS settings
 
-- **SSL/TLS → Overview:** mode **Full** (Cloudflare → GCS uses HTTPS, but GCS does not present a cert that matches `app.deepdownidea.com`, so **Full (strict) will fail**). Use **Full**, not **Full (strict)**, for this hostname.
-- **Edge Certificates:** Universal SSL covers `app.deepdownidea.com` automatically (proxied apex/sub).
+- **SSL/TLS → Overview:** mode **Full** (Cloudflare → GCS uses HTTPS, but GCS does not present a cert that matches `app.rostiq.co`, so **Full (strict) will fail**). Use **Full**, not **Full (strict)**, for this hostname.
+- **Edge Certificates:** Universal SSL covers `app.rostiq.co` automatically (proxied apex/sub).
 - **Always Use HTTPS:** on.
 - **Automatic HTTPS Rewrites:** on.
 
@@ -205,17 +205,17 @@ The GCS `Cache-Control` headers we set in §5 are usually enough — Cloudflare 
 
 | Match | Action |
 |-------|--------|
-| Hostname `app.deepdownidea.com` AND URI Path matches `^/(index\.html|flutter_bootstrap\.js|flutter_service_worker\.js|manifest\.json|version\.json|/)$` | **Bypass cache**, or **Edge TTL = 30s** |
-| Hostname `app.deepdownidea.com` AND URI Path matches `^/(assets|canvaskit|icons)/` | **Edge TTL = 1 year**, **Browser TTL = respect origin** |
+| Hostname `app.rostiq.co` AND URI Path matches `^/(index\.html|flutter_bootstrap\.js|flutter_service_worker\.js|manifest\.json|version\.json|/)$` | **Bypass cache**, or **Edge TTL = 30s** |
+| Hostname `app.rostiq.co` AND URI Path matches `^/(assets|canvaskit|icons)/` | **Edge TTL = 1 year**, **Browser TTL = respect origin** |
 
 After every deploy, **purge** entry points only:
 
 ```text
 Caching → Configuration → Custom Purge → URLs:
-  https://app.deepdownidea.com/
-  https://app.deepdownidea.com/index.html
-  https://app.deepdownidea.com/flutter_bootstrap.js
-  https://app.deepdownidea.com/flutter_service_worker.js
+  https://app.rostiq.co/
+  https://app.rostiq.co/index.html
+  https://app.rostiq.co/flutter_bootstrap.js
+  https://app.rostiq.co/flutter_service_worker.js
 ```
 
 Or via API:
@@ -226,10 +226,10 @@ curl -X POST \
   -H "Authorization: Bearer $CF_API_TOKEN" \
   -H "Content-Type: application/json" \
   --data '{"files":[
-    "https://app.deepdownidea.com/",
-    "https://app.deepdownidea.com/index.html",
-    "https://app.deepdownidea.com/flutter_bootstrap.js",
-    "https://app.deepdownidea.com/flutter_service_worker.js"
+    "https://app.rostiq.co/",
+    "https://app.rostiq.co/index.html",
+    "https://app.rostiq.co/flutter_bootstrap.js",
+    "https://app.rostiq.co/flutter_service_worker.js"
   ]}'
 ```
 
@@ -237,14 +237,10 @@ curl -X POST \
 
 ## 7. Allow the web origin on the API
 
-The browser will call `https://timesheetbackend.deepdownidea.com` from origin `https://app.deepdownidea.com`. Add it to `CORS_ORIGINS` in `backend/timesheet-backend/app/core/config.py`:
+The browser will call `https://api.rostiq.co` from origin `https://app.rostiq.co`. Add it to `CORS_ORIGINS` in the server `.env` (see `backend/deploy/env.example`):
 
-```python
-CORS_ORIGINS: list[str] = [
-    "http://localhost:3000",
-    "http://localhost:8000",
-    "https://app.deepdownidea.com",
-]
+```env
+CORS_ORIGINS=["https://app.rostiq.co"]
 ```
 
 Restart the API. The `CORSMiddleware` registered in `app/main.py` handles preflight automatically.
@@ -253,7 +249,7 @@ Restart the API. The `CORSMiddleware` registered in `app/main.py` handles prefli
 
 ## 8. SPA fallback (path URL strategy)
 
-If/when you switch Flutter to **path-based routing** (`setUrlStrategy(PathUrlStrategy())`), users hitting `https://app.deepdownidea.com/payroll/2026-05` directly will hit GCS, miss the object, and fall through to `NotFoundPage=index.html` — **with HTTP status 404**. Flutter loads and routes correctly, but search engines and some monitoring see 404s.
+If/when you switch Flutter to **path-based routing** (`setUrlStrategy(PathUrlStrategy())`), users hitting `https://app.rostiq.co/payroll/2026-05` directly will hit GCS, miss the object, and fall through to `NotFoundPage=index.html` — **with HTTP status 404**. Flutter loads and routes correctly, but search engines and some monitoring see 404s.
 
 To return **200** for SPA fallback paths, use a Cloudflare **Workers** or **Transform Rule**:
 
@@ -278,20 +274,20 @@ export default {
 };
 ```
 
-Bind it to `app.deepdownidea.com/*`. Skip this section while you are on hash routing.
+Bind it to `app.rostiq.co/*`. Skip this section while you are on hash routing.
 
 ---
 
 ## 9. Repeatable deploy script
 
-Drop this in `frontend/scripts/deploy_web_gcs.sh` and `chmod +x` it:
+Drop this in `frontend/scripts/deploy_web_gcs.sh` (included in the repo) and run:
 
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
-BUCKET="${BUCKET:-app.deepdownidea.com}"
-API_BASE_URL="${API_BASE_URL:-https://timesheetbackend.deepdownidea.com}"
+BUCKET="${BUCKET:-app.rostiq.co}"
+API_BASE_URL="${API_BASE_URL:-https://api.rostiq.co}"
 CF_ZONE_ID="${CF_ZONE_ID:-}"
 CF_API_TOKEN="${CF_API_TOKEN:-}"
 
@@ -335,7 +331,7 @@ echo "Deployed to https://$BUCKET/"
 Usage:
 
 ```bash
-BUCKET=app.deepdownidea.com \
+BUCKET=app.rostiq.co \
 CF_ZONE_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
 CF_API_TOKEN=cf_xxx \
 ./scripts/deploy_web_gcs.sh
@@ -349,15 +345,15 @@ The Cloudflare API token needs `Zone → Cache Purge → Purge` on this zone onl
 
 ```bash
 # DNS resolves through Cloudflare
-dig +short app.deepdownidea.com
+dig +short app.rostiq.co
 
 # TLS works and content is the new build
-curl -I https://app.deepdownidea.com/
-curl -I https://app.deepdownidea.com/main.dart.js
+curl -I https://app.rostiq.co/
+curl -I https://app.rostiq.co/main.dart.js
 
 # Backend reachable from the new origin (preflight)
-curl -I -X OPTIONS https://timesheetbackend.deepdownidea.com/v1/auth/login \
-  -H "Origin: https://app.deepdownidea.com" \
+curl -I -X OPTIONS https://api.rostiq.co/v1/auth/login \
+  -H "Origin: https://app.rostiq.co" \
   -H "Access-Control-Request-Method: POST" \
   -H "Access-Control-Request-Headers: content-type"
 ```
@@ -365,7 +361,7 @@ curl -I -X OPTIONS https://timesheetbackend.deepdownidea.com/v1/auth/login \
 You should see:
 
 - `HTTP/2 200` from Cloudflare with `cf-cache-status` headers.
-- `access-control-allow-origin: https://app.deepdownidea.com` on the preflight response.
+- `access-control-allow-origin: https://app.rostiq.co` on the preflight response.
 - The app loads in the browser; **Network → Disable cache** then a hard reload should still work.
 
 ---
@@ -376,9 +372,9 @@ You should see:
 |---------|--------------|-----|
 | `SSL_ERROR_BAD_CERT_DOMAIN` in browser | Cloudflare DNS record set to **DNS-only** instead of **Proxied** | Switch the record to proxied (orange cloud). |
 | `526 Invalid SSL certificate` from Cloudflare | SSL/TLS mode is **Full (strict)** | Set to **Full** for this host (GCS doesn’t present a cert for the custom domain). |
-| HTTP 404 on `/` | Bucket name does not match the FQDN, or `MainPageSuffix` not set | Recreate bucket with name `app.deepdownidea.com`, or run `gcloud storage buckets update --web-main-page-suffix=index.html`. |
+| HTTP 404 on `/` | Bucket name does not match the FQDN, or `MainPageSuffix` not set | Recreate bucket with name `app.rostiq.co`, or run `gcloud storage buckets update --web-main-page-suffix=index.html`. |
 | Users see old build after deploy | Long-cached `index.html` at edge or browser | Confirm `Cache-Control: no-cache, must-revalidate` on `index.html`; purge Cloudflare entry-point URLs after each deploy. |
-| `XMLHttpRequest … blocked by CORS policy` | New web origin not in backend `CORS_ORIGINS` | Add `https://app.deepdownidea.com` and restart the API. |
+| `XMLHttpRequest … blocked by CORS policy` | New web origin not in backend `CORS_ORIGINS` | Add `https://app.rostiq.co` and restart the API. |
 | Service worker keeps serving stale code | Old `flutter_service_worker.js` cached | Ensure short cache on `flutter_service_worker.js`; users may need one extra reload (worker activates on next visit). |
 | 404 status on deep links | Path URL strategy without SPA fallback | See [§ 8](#8-spa-fallback-path-url-strategy). |
 

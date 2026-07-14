@@ -50,7 +50,7 @@ The API origin is set at **compile time** via `--dart-define=API_BASE_URL=...` (
 
 | Environment                          | Typical `API_BASE_URL`                                        | Device                                    |
 | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------- |
-| **Production (default)**             | *(omit define)* → `https://timesheetbackend.deepdownidea.com` | Release builds                            |
+| **Production (default)**             | *(omit define)* → `https://api.rostiq.co` | Release builds                            |
 | **Local backend (web/desktop)**      | `http://localhost:8000`                                       | Chrome, Linux                             |
 | **Local backend (Android emulator)** | `http://10.0.2.2:8000`                                        | `emulator-`* (host machine from emulator) |
 | **Local backend (physical Android)** | `http://<your-LAN-IP>:8000`                                   | USB device on same Wi‑Fi                  |
@@ -221,14 +221,14 @@ Always pass the correct `API_BASE_URL` for the target environment. Production ex
 
 ```bash
 flutter build web --release \
-  --dart-define=API_BASE_URL=https://timesheetbackend.deepdownidea.com
+  --dart-define=API_BASE_URL=https://api.rostiq.co
 ```
 
 ### Web
 
 ```bash
 flutter build web --release \
-  --dart-define=API_BASE_URL=https://timesheetbackend.deepdownidea.com
+  --dart-define=API_BASE_URL=https://api.rostiq.co
 ```
 
 Output: `build/web/`
@@ -244,7 +244,7 @@ flutter build web --release \
 
 ```bash
 flutter build apk --release \
-  --dart-define=API_BASE_URL=https://timesheetbackend.deepdownidea.com
+  --dart-define=API_BASE_URL=https://api.rostiq.co
 ```
 
 Output: `build/app/outputs/flutter-apk/app-release.apk`
@@ -260,21 +260,21 @@ flutter build apk --debug \
 
 ```bash
 flutter build appbundle --release \
-  --dart-define=API_BASE_URL=https://timesheetbackend.deepdownidea.com
+  --dart-define=API_BASE_URL=https://api.rostiq.co
 ```
 
 ### iOS (on macOS with Xcode toolchain)
 
 ```bash
 flutter build ios --release \
-  --dart-define=API_BASE_URL=https://timesheetbackend.deepdownidea.com
+  --dart-define=API_BASE_URL=https://api.rostiq.co
 ```
 
 ### Windows / Linux desktop
 
 ```bash
 flutter build windows --release \
-  --dart-define=API_BASE_URL=https://timesheetbackend.deepdownidea.com
+  --dart-define=API_BASE_URL=https://api.rostiq.co
 
 flutter build linux --release \
   --dart-define=API_BASE_URL=http://localhost:8000
@@ -339,7 +339,7 @@ flutter analyze
 flutter test
 
 # Release web
-flutter build web --release --dart-define=API_BASE_URL=https://timesheetbackend.deepdownidea.com
+flutter build web --release --dart-define=API_BASE_URL=https://api.rostiq.co
 ```
 
 ---
