@@ -12,6 +12,7 @@ This folder contains the technical impact study and migration plan for aligning 
 | [development-backlog.md](./development-backlog.md) | Suggested task breakdown with priority and estimates |
 | [implementation-checklist.md](./implementation-checklist.md) | Phase-by-phase implementation checklist (start coding here) |
 | [frontend-api-wiring-guide.md](./frontend-api-wiring-guide.md) | **V2 API wiring reference** (shapes, perms, errors) — primary helper for Phase 2+ |
+| [domain-v2-flag.md](./domain-v2-flag.md) | `DOMAIN_V2` dart-define + cutover wipe notes |
 | [phase1/](./phase1/) | Phase 1 freeze + **[Phase 2 readiness gate](./phase1/phase2-readiness.md)** |
 
 ## Source inputs
@@ -38,7 +39,8 @@ This folder contains the technical impact study and migration plan for aligning 
 | Spec review | Complete (design doc dated 2026-07-22) |
 | Backend clarification answers | Complete (answer log in clarification-questions.md) |
 | Phase 1 discovery / contract freeze | **Complete** — see [phase1/](./phase1/) |
-| Implementation checklist | Phase 1 done — start **Phase 2** architecture |
+| Phase 2 architecture preparation | **Complete** — dual shells, session, `DOMAIN_V2` ([domain-v2-flag.md](./domain-v2-flag.md)) |
+| Implementation checklist | Phase 2 done — start **Phase 3** core features |
 | UX wireframes for contractor app | **Pending** (product; API supports dual-shell) |
 
 ---

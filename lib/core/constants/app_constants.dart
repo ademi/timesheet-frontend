@@ -3,68 +3,103 @@ abstract final class AppConstants {
   AppConstants._();
 
   /// API origin (no trailing slash). Override at compile time, e.g.
-  /// `--dart-define=API_BASE_URL=http://10.0.2.2:8000` (Android emulator → host).
-  ///
-  /// Do not point [baseUrl] at a raw IP/IPv6 literal for **HTTPS** to the same
-  /// Cloudflare host: TLS expects the certificate hostname, not an address.
+  /// `--dart-define=API_BASE_URL=http://localhost:8000`.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'https://api.rostiq.co',
   );
 
-  /// Shared API version prefix for all versioned endpoints.
   static const String apiV1 = '/v1';
 
-  /// Auth session / actor context (no permissions list).
+  // --- Auth (DOMAIN_V2) ---
+  static const String authLoginPath = '$apiV1/auth/login';
+  static const String authRefreshPath = '$apiV1/auth/refresh';
+  static const String authLogoutPath = '$apiV1/auth/logout';
   static const String authMeContextPath = '$apiV1/auth/me/context';
-
-  /// Switch contractor/member tenant context (returns new tokens).
   static const String authSwitchTenantPath = '$apiV1/auth/switch-tenant';
+  static const String authCompleteFirstLoginPath =
+      '$apiV1/auth/complete_first_login';
+  static const String authUsersMePath = '$apiV1/auth/users/me';
+  static const String mePath = '$apiV1/me';
 
-  /// Document signed-upload bootstrap.
+  // --- Contractors / engagements ---
+  static const String contractorsRegisterPath = '$apiV1/contractors/register';
+  static const String contractorMePath = '$apiV1/contractor-me';
+  static const String contractorMeEngagementsPath =
+      '$apiV1/contractor-me/engagements';
+  static const String contractorMeTimetablePath =
+      '$apiV1/contractor-me/timetable';
+  static const String contractorMeAvailabilityPath =
+      '$apiV1/contractor-me/availability';
+  static const String contractorMeLeavePath = '$apiV1/contractor-me/leave';
+  static const String tenantEngagementsPath =
+      '$apiV1/tenants/current/engagements';
+  static const String engagementsPath = '$apiV1/engagements';
+
+  // --- Tenant members / clients / forms / jobs / visits ---
+  static const String tenantMembersPath = '$apiV1/tenant-members';
+  static const String clientsPath = '$apiV1/clients';
+  static const String formTemplatesPath = '$apiV1/form-templates';
+  static const String jobsPath = '$apiV1/jobs';
+  static const String visitsPath = '$apiV1/visits';
+
+  // --- Documents ---
   static const String documentsUploadUrlPath = '$apiV1/documents/upload-url';
+  static const String documentsPath = '$apiV1/documents';
 
-  /// Branches available to the authenticated admin user.
+  // --- Payments / rates / adjustments ---
+  static const String paymentBatchesPath = '$apiV1/payment-batches';
+  static const String engagementRatesPath = '$apiV1/payroll/engagement-rates';
+  static const String attendanceAdjustmentsPath =
+      '$apiV1/attendance/adjustments';
+
+  // --- Branches / notifications ---
   static const String branchesPath = '$apiV1/branches';
+  static const String notificationDevicesPath =
+      '$apiV1/notifications/devices';
+  static const String notificationEventsPath =
+      '$apiV1/notifications/events';
 
-  /// Auth: verify credentials before sensitive actions (e.g. attendance).
-  static const String verifyUserPath = '$apiV1/auth/verify_user';
-
-  /// Auth: verify 4-digit PIN before clock-in/out.
-  static const String verifyPinPath = '$apiV1/auth/verify_pin';
-
-  /// Auth: set initial PIN when none exists.
-  static const String setPinPath = '$apiV1/auth/set_pin';
-
-  /// Attendance clock-in/out source (device GPS).
+  /// Attendance clock-in/out source (device GPS) — legacy punch flows.
   static const String attendanceSource = 'gps';
 
-  /// Scheduling board — today roster.
+  // --- Deprecated / unmounted (expect 404) — do not use in new code ---
+
+  @Deprecated('Unmounted V2 — use tenant-members')
+  static const String verifyUserPath = '$apiV1/auth/verify_user';
+
+  @Deprecated('Unmounted V2 — PIN kiosk removed')
+  static const String verifyPinPath = '$apiV1/auth/verify_pin';
+
+  @Deprecated('Unmounted V2 — PIN kiosk removed')
+  static const String setPinPath = '$apiV1/auth/set_pin';
+
+  @Deprecated('Unmounted V2 — use jobs/visits board')
   static const String schedulingBoardTodayPath =
       '$apiV1/scheduling/board/today';
 
-  /// Scheduling board — week range grid.
+  @Deprecated('Unmounted V2')
   static const String schedulingBoardPath = '$apiV1/scheduling/board';
 
-  /// Shift templates.
+  @Deprecated('Unmounted V2')
   static const String schedulingTemplatesPath = '$apiV1/scheduling/templates';
 
-  /// Daily assignment overrides.
+  @Deprecated('Unmounted V2')
   static const String schedulingAssignmentsPath =
       '$apiV1/scheduling/assignments';
 
-  /// Bulk daily assignments.
+  @Deprecated('Unmounted V2')
   static const String schedulingAssignmentsBulkPath =
       '$apiV1/scheduling/assignments/bulk';
 
-  /// Employee leave records.
+  @Deprecated('Unmounted V2 — use contractor-me/leave')
   static const String schedulingLeavePath = '$apiV1/scheduling/leave';
 
-  /// Recurring employee schedules.
+  @Deprecated('Unmounted V2')
   static const String schedulingEmployeeSchedulesPath =
       '$apiV1/scheduling/employee-schedules';
 
-  /// Copy week overrides.
+  @Deprecated('Unmounted V2')
   static const String schedulingCopyWeekPath = '$apiV1/scheduling/copy-week';
 }
 
@@ -74,4 +109,12 @@ abstract final class StorageKeys {
 
   static const String accessToken = 'access_token';
   static const String refreshToken = 'refresh_token';
+}
+
+/// Controllers must not call Dio directly — use repositories only (DOMAIN_V2).
+abstract final class RepositoryOnlyRule {
+  RepositoryOnlyRule._();
+
+  static const message =
+      'Ban: do not add new controller-level raw Dio calls; use repositories.';
 }

@@ -2,7 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../core/constants/feature_flags.dart';
 import '../../core/network/must_change_password.dart';
+import '../controllers/session_controller.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
@@ -47,11 +49,20 @@ class AuthController extends GetxController {
         emailController.text.trim(),
         passwordController.text,
       );
+      if (Get.isRegistered<SessionController>()) {
+        await Get.find<SessionController>().applyAuthTokens(tokens);
+      }
       if (Get.isRegistered<PushNotificationService>()) {
         await Get.find<PushNotificationService>().registerCurrentDeviceToken();
       }
       redirectToFirstLoginIfNeeded(mustChangePassword: tokens.mustChangePassword);
       if (tokens.mustChangePassword) return;
+
+      if (FeatureFlags.domainV2 && Get.isRegistered<SessionController>()) {
+        final session = Get.find<SessionController>();
+        Get.offAllNamed(session.resolvePostLoginRoute());
+        return;
+      }
       Get.offAllNamed(AppRoutes.adminBranchGateway);
     } on DioException catch (e) {
       if (isMustChangePasswordResponse(e)) {
@@ -70,10 +81,15 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
+    if (Get.isRegistered<SessionController>()) {
+      await Get.find<SessionController>().clear();
+    }
     await _authRepository.logout();
     emailController.clear();
     passwordController.clear();
-    Get.offAllNamed(AppRoutes.gateway);
+    Get.offAllNamed(
+      FeatureFlags.domainV2 ? AppRoutes.login : AppRoutes.gateway,
+    );
   }
 
   @override

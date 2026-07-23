@@ -15,6 +15,9 @@ class DocumentRemoteDataSource {
   final Dio _authenticatedDio;
   final Dio _plainDio;
 
+  /// Exposed for [DocumentService] download-url calls.
+  Dio get authenticatedDio => _authenticatedDio;
+
   Future<UploadUrlResponse> createUploadUrl(UploadUrlRequest request) async {
     final response = await _authenticatedDio.post<Map<String, dynamic>>(
       '/v1/documents/upload-url',

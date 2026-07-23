@@ -1,5 +1,7 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
+import '../../core/constants/feature_flags.dart';
 import '../../core/services/token_storage.dart';
 import '../routes/app_routes.dart';
 
@@ -11,8 +13,13 @@ class GatewayController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Restore the previously chosen portal so a web refresh on a deep route does
-    // not lose it (e.g. so "change branch" still knows admin vs attendance).
+    // DOMAIN_V2: skip attendance/admin portal — actor comes from JWT after login.
+    if (FeatureFlags.domainV2) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.offAllNamed(AppRoutes.login);
+      });
+      return;
+    }
     if (Get.isRegistered<TokenStorage>()) {
       final stored = Get.find<TokenStorage>().role;
       for (final r in UserRole.values) {

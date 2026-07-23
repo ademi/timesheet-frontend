@@ -50,6 +50,8 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   dart_jsonwebtoken: ^2.8.4
   flutter_screenutil: ^5.9.3
+  image_picker: ^1.1.2
+  file_picker: ^8.1.7
 
 dev_dependencies:
   flutter_test:

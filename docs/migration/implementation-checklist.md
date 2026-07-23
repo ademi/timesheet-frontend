@@ -103,52 +103,53 @@ Check when product confirms; until then use recommended defaults:
 ## Phase 2 — Architecture preparation
 
 **Goal:** Compiling skeleton + session layer; no production domain UI yet.  
-**Prereq:** [phase1/phase2-readiness.md](./phase1/phase2-readiness.md) ✅ · keep [frontend-api-wiring-guide.md](./frontend-api-wiring-guide.md) open while coding.
+**Prereq:** [phase1/phase2-readiness.md](./phase1/phase2-readiness.md) ✅ · keep [frontend-api-wiring-guide.md](./frontend-api-wiring-guide.md) open while coding.  
+**Status:** Complete (2026-07-23) — see [domain-v2-flag.md](./domain-v2-flag.md).
 
 ### 2.1 Folder / module scaffolding
 
-- [ ] Create model folders: `tenant_member/`, `contractor/`, `engagement/`, `client/`, `job/`, `form/`, `document/`, `payment/` (batches), retarget `scheduling/`
-- [ ] Add empty remote datasources: `TenantMember`, `Contractor`, `Engagement`, `Client`, `Job`, `Visit`, `Form`, `Document`, `PaymentBatch`
-- [ ] Add matching repositories
-- [ ] Add module bindings stubs (`*ModuleBinding.ensureDependencies`)
-- [ ] Add `DOMAIN_V2` (or equivalent) `dart-define` / feature flag wiring
+- [x] Create model folders: `tenant_member/`, `contractor/`, `engagement/`, `client/`, `job/`, `form/`, `document/`, `payment/` (batches), retarget `scheduling/`
+- [x] Add empty remote datasources: `TenantMember`, `Contractor`, `Engagement`, `Client`, `Job`, `Visit`, `Form`, `Document`, `PaymentBatch`
+- [x] Add matching repositories
+- [x] Add module bindings stubs (`*ModuleBinding.ensureDependencies`)
+- [x] Add `DOMAIN_V2` (or equivalent) `dart-define` / feature flag wiring
 
 ### 2.2 Session and storage
 
-- [ ] Extend JWT parse in `TokenStorage` (or new `JwtClaims`) for `actor_type`, `contractor_id`, `tenant_member_id`, `permissions`, `mcp`
-- [ ] Add `SessionController` (permanent): actor, engagements list, selected engagement/tenant
-- [ ] Replace portal `user_role` (`GatewayController` attendance/admin) with actor-based routing
-- [ ] Persist last selected `tenant_id` / engagement id for contractors
-- [ ] Implement cutover wipe: clear tokens, `user_role`, `payroll_settings` on version bump / first DOMAIN_V2 launch
-- [ ] Keep access/refresh persist + refresh rotation on switch-tenant
+- [x] Extend JWT parse in `TokenStorage` (or new `JwtClaims`) for `actor_type`, `contractor_id`, `tenant_member_id`, `permissions`, `mcp`
+- [x] Add `SessionController` (permanent): actor, engagements list, selected engagement/tenant
+- [x] Replace portal `user_role` (`GatewayController` attendance/admin) with actor-based routing
+- [x] Persist last selected `tenant_id` / engagement id for contractors
+- [x] Implement cutover wipe: clear tokens, `user_role`, `payroll_settings` on version bump / first DOMAIN_V2 launch
+- [x] Keep access/refresh persist + refresh rotation on switch-tenant
 
 ### 2.3 Permissions and errors
 
-- [ ] Add `AppPermissions` constants from seed catalog (owner/admin/supervisor/contractor keys)
-- [ ] Replace `SchedulingPermissions`-only checks with shared `hasPermission` helpers
-- [ ] Add `ActorGuard` / permission-aware empty states
-- [ ] Map Dio failures → typed failures for known `detail` codes (toast vs dedicated screen: `wrong_actor_type` → screen; `missing_permission` → toast)
+- [x] Add `AppPermissions` constants from seed catalog (owner/admin/supervisor/contractor keys)
+- [x] Replace `SchedulingPermissions`-only checks with shared `hasPermission` helpers
+- [x] Add `ActorGuard` / permission-aware empty states
+- [x] Map Dio failures → typed failures for known `detail` codes (toast vs dedicated screen: `wrong_actor_type` → screen; `missing_permission` → toast)
 
 ### 2.4 Navigation skeleton
 
-- [ ] Draft dual route graphs: `AdminRoutes` + `ContractorRoutes` in `AppRoutes` / `app_pages.dart`
-- [ ] Stub admin shell destinations: Hub, Team (members), Contractors/Engagements, Clients, Jobs/Visits, Payments, Forms (if In), Branches/Settings
-- [ ] Stub contractor shell: Visits, Visit detail, Timetable, Documents, Payments (via visits), Switch tenant / Profile
-- [ ] Update `AuthGuard` post-login redirect matrix (member vs contractor; `mcp` → first-login; `pending_docs` gate)
+- [x] Draft dual route graphs: `AdminRoutes` + `ContractorRoutes` in `AppRoutes` / `app_pages.dart`
+- [x] Stub admin shell destinations: Hub, Team (members), Contractors/Engagements, Clients, Jobs/Visits, Payments, Forms (if In), Branches/Settings
+- [x] Stub contractor shell: Visits, Visit detail, Timetable, Documents, Payments (via visits), Switch tenant / Profile
+- [x] Update `AuthGuard` post-login redirect matrix (member vs contractor; `mcp` → first-login; `pending_docs` gate)
 
 ### 2.5 Shared infrastructure
 
-- [ ] Add file/image picker dependency(ies) for documents + form file fields
-- [ ] Implement shared `DocumentService` (upload-url / PUT / finalize / download-url)
-- [ ] Centralize API path constants in `AppConstants` (new paths; mark old PIN/employee/period paths deprecated)
-- [ ] Ban new controller-level raw Dio calls (repository-only rule)
+- [x] Add file/image picker dependency(ies) for documents + form file fields
+- [x] Implement shared `DocumentService` (upload-url / PUT / finalize / download-url)
+- [x] Centralize API path constants in `AppConstants` (new paths; mark old PIN/employee/period paths deprecated)
+- [x] Ban new controller-level raw Dio calls (repository-only rule)
 
 ### Phase 2 exit criteria
 
-- [ ] App compiles with skeleton modules + dual shells stubs
-- [ ] Session spike merged (login + switch-tenant + claim parse)
-- [ ] DocumentService spike merged
-- [ ] Feature flag / dart-define documented for team
+- [x] App compiles with skeleton modules + dual shells stubs
+- [x] Session spike merged (login + switch-tenant + claim parse)
+- [x] DocumentService spike merged
+- [x] Feature flag / dart-define documented for team
 
 ---
 
@@ -399,7 +400,7 @@ Check when product confirms; until then use recommended defaults:
 | Phase | Name | Exit criteria met? |
 |-------|------|--------------------|
 | 1 | Discovery and confirmation | [x] |
-| 2 | Architecture preparation | [ ] |
+| 2 | Architecture preparation | [x] |
 | 3 | Core implementation | [ ] |
 | 4 | Data and cache migration | [ ] |
 | 5 | Testing and QA | [ ] |
@@ -411,8 +412,8 @@ Check when product confirms; until then use recommended defaults:
 
 1. [x] Finish Phase 1 OpenAPI spot-check + scope matrix  
 2. [x] Run auth + documents + check-in spikes  
-3. [ ] Phase 2 session/`TokenStorage`/`SessionController` + dual shell stubs  
-4. [ ] Phase 2 `DocumentService` + `AppPermissions` + error mapper  
+3. [x] Phase 2 session/`TokenStorage`/`SessionController` + dual shell stubs  
+4. [x] Phase 2 `DocumentService` + `AppPermissions` + error mapper  
 5. [ ] Begin Phase 3.1 auth routing, then 3.2 members, then 3.3 engagements  
 
 ---

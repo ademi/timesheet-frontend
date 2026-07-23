@@ -6,7 +6,9 @@ import '../models/auth/auth_token_model.dart';
 import '../models/auth/first_login_request_model.dart';
 import '../models/auth/login_request_model.dart';
 import '../models/auth/logout_request_model.dart';
+import '../models/auth/me_context_model.dart';
 import '../models/auth/set_pin_request_model.dart';
+import '../models/auth/switch_tenant_request_model.dart';
 import '../models/auth/verify_pin_request_model.dart';
 import '../models/auth/verify_pin_response_model.dart';
 
@@ -67,6 +69,24 @@ class AuthRepository {
       if (authErr != null) throw authErr;
       rethrow;
     }
+  }
+
+  Future<AuthTokenModel> switchTenant(String tenantId) async {
+    try {
+      final tokens = await _remote.switchTenant(
+        SwitchTenantRequestModel(tenantId: tenantId),
+      );
+      await _persistTokens(tokens);
+      return tokens;
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
+    }
+  }
+
+  Future<MeContextModel> getMeContext() {
+    return _remote.getMeContext();
   }
 
   Future<void> completeFirstLogin(String newPassword) async {

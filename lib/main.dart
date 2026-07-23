@@ -9,21 +9,26 @@ import 'package:get_storage/get_storage.dart';
 import 'app/bindings/initial_binding.dart';
 import 'app/data/datasources/remote/auth_remote_datasource.dart';
 import 'app/routes/app_pages.dart';
+import 'app/routes/app_routes.dart';
 import 'app/themes/app_colors.dart';
+import 'core/constants/feature_flags.dart';
 import 'core/network/api_client.dart';
+import 'core/services/domain_v2_cutover.dart';
 import 'core/services/token_storage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Web-only: use clean path URLs (no `#`) so browser history, refresh, and the
-  // back/forward buttons reconcile with GetX routing predictably. No-op concept
-  // on mobile, hence the kIsWeb guard.
+  // back/forward buttons reconcile with GetX routing predictably.
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());
   }
   await GetStorage.init();
   final tokenStorage = TokenStorage();
   await tokenStorage.loadFromStorage();
+
+  final wiped = await DomainV2Cutover.runIfNeeded(tokenStorage);
+
   Get.put<TokenStorage>(tokenStorage, permanent: true);
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -35,11 +40,13 @@ Future<void> main() async {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-  runApp(const RostiqApp());
+  runApp(RostiqApp(showCutoverMessage: wiped));
 }
 
 class RostiqApp extends StatefulWidget {
-  const RostiqApp({super.key});
+  const RostiqApp({super.key, this.showCutoverMessage = false});
+
+  final bool showCutoverMessage;
 
   @override
   State<RostiqApp> createState() => _RostiqAppState();
@@ -50,6 +57,16 @@ class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (widget.showCutoverMessage) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar(
+          'App updated',
+          'Please sign in again.',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 5),
+        );
+      });
+    }
   }
 
   @override
@@ -74,7 +91,8 @@ class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
     if (!Get.isRegistered<ApiClient>()) return;
     try {
       final client = Get.find<ApiClient>();
-      final newTokens = await executeRefreshRequest(client.plainDio, refreshToken);
+      final newTokens =
+          await executeRefreshRequest(client.plainDio, refreshToken);
       await tokenStorage.persistTokens(
         accessToken: newTokens.accessToken,
         refreshToken: newTokens.refreshToken,
@@ -93,9 +111,7 @@ class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
       ensureScreenSize: true,
       // `.sp` scales fonts by the window size relative to the 390x844 phone
       // design. On web the window is far larger than a phone, so the raw scale
-      // grows well above 1 and every `.sp` font (app bar, buttons, inputs,
-      // date picker) balloons. Allow shrinking on tiny phones, but never
-      // enlarge beyond the design size on tablet/web.
+      // grows well above 1 — never enlarge beyond the design size on tablet/web.
       fontSizeResolver: (fontSize, instance) {
         final scale = instance.scaleText;
         return fontSize * (scale > 1 ? 1 : scale);
@@ -104,20 +120,15 @@ class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
         title: 'Rostiq',
         debugShowCheckedModeBanner: false,
         theme: _appTheme(),
-        // Registers session-scoped dependencies (auth graph incl. AuthController,
-        // and GatewayController) at startup so they exist on every entry point —
-        // notably a web refresh on a deep route, where the gateway/login route
-        // bindings never run. Idempotent: skips anything already registered.
         initialBinding: InitialBinding(),
-        initialRoute: AppPages.initial,
+        initialRoute:
+            FeatureFlags.domainV2 ? AppRoutes.login : AppPages.initial,
         getPages: AppPages.routes,
       ),
     );
   }
 }
 
-/// Global theme with phone-density sizing via screenutil.
-/// Values match the previous hardcoded constants at the 390dp design width.
 ThemeData _appTheme() {
   return ThemeData(
     fontFamily: 'Roboto',

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/token_storage.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/session_controller.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/repositories/auth_repository.dart';
 import '../services/push_notification_service.dart';
@@ -35,6 +36,15 @@ class AuthBinding extends Bindings {
         AuthRepository(
           remote: Get.find<AuthRemoteDataSource>(),
           storage: Get.find<TokenStorage>(),
+        ),
+        permanent: true,
+      );
+    }
+    if (!Get.isRegistered<SessionController>()) {
+      Get.put<SessionController>(
+        SessionController(
+          tokenStorage: Get.find<TokenStorage>(),
+          authRepository: Get.find<AuthRepository>(),
         ),
         permanent: true,
       );
