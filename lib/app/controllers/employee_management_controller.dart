@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -22,17 +20,11 @@ class EmployeeManagementController extends GetxController {
 
   final employees = <EmployeeModel>[].obs;
   final isLoading = false.obs;
-  final elapsedTicker = 0.obs;
   final selectedEmployeeId = RxnString();
-
-  Timer? _elapsedTimer;
 
   @override
   void onInit() {
     super.onInit();
-    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      elapsedTicker.value++;
-    });
     fetchEmployees();
   }
 
@@ -49,15 +41,10 @@ class EmployeeManagementController extends GetxController {
     }
   }
 
-  String formatClockDuration(EmployeeModel employee) {
-    elapsedTicker.value;
-    return formatEmployeeClockDuration(employee);
-  }
-
   String clockStatusLabel(EmployeeModel employee) {
     return employeeClockStatusLabel(
       employee,
-      formatClockDuration(employee),
+      formatEmployeeClockDuration(employee),
     );
   }
 
@@ -141,7 +128,6 @@ class EmployeeManagementController extends GetxController {
     if (Get.isRegistered<EmployeeDetailController>(tag: PaneTags.employeeDetail)) {
       PaneControllerRegistry.disposeEmployeeDetail();
     }
-    _elapsedTimer?.cancel();
     super.onClose();
   }
 }

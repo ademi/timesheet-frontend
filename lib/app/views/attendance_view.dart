@@ -4,8 +4,10 @@ import 'package:get/get.dart';
 import '../../core/services/token_storage.dart';
 import '../controllers/attendance_controller.dart';
 import '../controllers/auth_controller.dart';
+import '../data/models/attendance/employee_model.dart';
 import '../utils/employee_clock_status.dart';
 import '../themes/app_colors.dart';
+import '../widgets/clocked_in_duration_text.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../core/responsive/max_width_box.dart';
 
@@ -70,7 +72,6 @@ class AttendanceView extends GetView<AttendanceController> {
       ),
       body: SafeArea(
         child: Obx(() {
-          controller.elapsedTicker.value;
           if (controller.employeesLoading.value) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -144,7 +145,7 @@ class AttendanceView extends GetView<AttendanceController> {
       subtitle: employeeContactSubtitle(emp),
       isClockedIn: emp.clockedIn,
       isClockedOut: emp.clockedOut,
-      durationText: controller.formatClockedInDuration(emp),
+      employee: emp,
       onClockIn: () => controller.openAttendanceDialog(
         emp,
         AttendanceDialogAction.clockIn,
@@ -163,7 +164,7 @@ class _EmployeeCard extends StatelessWidget {
     required this.subtitle,
     required this.isClockedIn,
     required this.isClockedOut,
-    required this.durationText,
+    required this.employee,
     required this.onClockIn,
     required this.onClockOut,
   });
@@ -172,7 +173,7 @@ class _EmployeeCard extends StatelessWidget {
   final String subtitle;
   final bool isClockedIn;
   final bool isClockedOut;
-  final String durationText;
+  final EmployeeModel employee;
   final VoidCallback onClockIn;
   final VoidCallback onClockOut;
 
@@ -202,10 +203,11 @@ class _EmployeeCard extends StatelessWidget {
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
               ),
             ],
-            if (isClockedIn && durationText.isNotEmpty) ...[
+            if (isClockedIn) ...[
               const SizedBox(height: 6),
-              Text(
-                'Clocked in for $durationText',
+              ClockedInDurationText(
+                employee: employee,
+                asStatusLabel: true,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.green.shade700,

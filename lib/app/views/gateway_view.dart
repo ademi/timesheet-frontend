@@ -73,6 +73,13 @@ class GatewayView extends GetView<GatewayController> {
                   subtitle: 'Clock in & clock out',
                   onTap: () => controller.selectRole(UserRole.attendance),
                 ),
+                const SizedBox(height: 16),
+                _RoleCard(
+                  icon: Icons.person_outline_rounded,
+                  title: 'Employee',
+                  subtitle: 'My hours & schedule',
+                  onTap: () => controller.selectRole(UserRole.employee),
+                ),
 
                 const SizedBox(height: 32),
               ],

@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../controllers/gateway_controller.dart';
+import '../controllers/subscription_store.dart';
 import 'auth_binding.dart';
 
 /// Registers session-scoped dependencies that any screen may need, regardless of
@@ -21,6 +22,9 @@ class InitialBinding extends Bindings {
 
     if (!Get.isRegistered<GatewayController>()) {
       Get.put<GatewayController>(GatewayController(), permanent: true);
+    }
+    if (!Get.isRegistered<SubscriptionStore>()) {
+      Get.put<SubscriptionStore>(SubscriptionStore(), permanent: true);
     }
   }
 }

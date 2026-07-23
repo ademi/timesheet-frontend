@@ -11,8 +11,6 @@ import '../../models/auth/refresh_request_model.dart';
 import '../../models/auth/set_pin_request_model.dart';
 import '../../models/auth/verify_pin_request_model.dart';
 import '../../models/auth/verify_pin_response_model.dart';
-import '../../models/auth/verify_user_request_model.dart';
-import '../../models/auth/verify_user_response_model.dart';
 
 /// Shared refresh call used by [AuthInterceptor] and [AuthRemoteDataSource].
 Future<AuthTokenModel> executeRefreshRequest(
@@ -41,21 +39,24 @@ class AuthRemoteDataSource {
   final Dio _plainDio;
   final Dio _authenticatedDio;
 
-  Future<VerifyUserResponseModel> verifyUser(
-    VerifyUserRequestModel request,
-  ) async {
+  Future<String?> requestPasswordReset(String email) async {
     final response = await _plainDio.post<Map<String, dynamic>>(
-      AppConstants.verifyUserPath,
-      data: request.toJson(),
+      AppConstants.forgotPasswordPath,
+      data: {'email': email},
     );
     final data = response.data;
-    if (data == null) {
-      throw DioException(
-        requestOptions: response.requestOptions,
-        message: 'Empty verify user response',
-      );
-    }
-    return VerifyUserResponseModel.fromJson(data);
+    if (data == null) return null;
+    return data['debug_reset_token'] as String?;
+  }
+
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    await _plainDio.post<Map<String, dynamic>>(
+      AppConstants.resetPasswordPath,
+      data: {'token': token, 'new_password': newPassword},
+    );
   }
 
   Future<VerifyPinResponseModel> verifyPin(VerifyPinRequestModel request) async {

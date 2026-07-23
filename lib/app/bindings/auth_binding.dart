@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/network/attendance_api_client.dart';
 import '../../core/services/token_storage.dart';
 import '../controllers/auth_controller.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
@@ -17,6 +18,15 @@ class AuthBinding extends Bindings {
     if (!Get.isRegistered<ApiClient>()) {
       Get.put<ApiClient>(
         ApiClient(Get.find<TokenStorage>()),
+        permanent: true,
+      );
+    }
+    if (!Get.isRegistered<AttendanceApiClient>()) {
+      Get.put<AttendanceApiClient>(
+        AttendanceApiClient(
+          Get.find<TokenStorage>(),
+          Get.find<ApiClient>().plainDio,
+        ),
         permanent: true,
       );
     }

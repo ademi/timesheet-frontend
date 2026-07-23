@@ -6,6 +6,7 @@ import '../data/models/attendance/employee_model.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import '../utils/employee_clock_status.dart';
+import '../widgets/clocked_in_duration_text.dart';
 import 'employee_detail_view.dart';
 import 'shell/two_pane.dart';
 import 'widgets/app_back_button.dart';
@@ -68,7 +69,6 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
   }
 
   Widget _buildList({required bool useTwoPane}) {
-    controller.elapsedTicker.value;
     if (controller.isLoading.value && controller.employees.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -93,7 +93,6 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
                     useTwoPane && controller.selectedEmployeeId.value == employee.id;
                 return _EmployeeCard(
                   employee: employee,
-                  statusLabel: controller.clockStatusLabel(employee),
                   isClockedIn: employee.clockedIn,
                   isSelected: isSelected,
                   onTap: () => controller.openEmployee(
@@ -110,14 +109,12 @@ class EmployeeManagementView extends GetView<EmployeeManagementController> {
 class _EmployeeCard extends StatelessWidget {
   const _EmployeeCard({
     required this.employee,
-    required this.statusLabel,
     required this.isClockedIn,
     required this.onTap,
     this.isSelected = false,
   });
 
   final EmployeeModel employee;
-  final String statusLabel;
   final bool isClockedIn;
   final VoidCallback onTap;
   final bool isSelected;
@@ -179,17 +176,16 @@ class _EmployeeCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                      if (statusLabel.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          statusLabel,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: statusColor,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      const SizedBox(height: 6),
+                      ClockedInDurationText(
+                        employee: employee,
+                        asStatusLabel: true,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: statusColor,
+                          fontWeight: FontWeight.w600,
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),

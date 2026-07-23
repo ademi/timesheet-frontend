@@ -24,6 +24,61 @@ class AuthController extends GetxController {
 
   void togglePasswordVisibility() => isPasswordVisible.toggle();
 
+  Future<void> showForgotPasswordDialog() async {
+    final emailCtrl = TextEditingController(text: emailController.text.trim());
+    final submitted = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Forgot password'),
+        content: TextField(
+          controller: emailCtrl,
+          keyboardType: TextInputType.emailAddress,
+          decoration: const InputDecoration(
+            labelText: 'Account email',
+            hintText: 'you@example.com',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(result: false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Get.back(result: true), child: const Text('Send reset')),
+        ],
+      ),
+    );
+    if (submitted != true) {
+      emailCtrl.dispose();
+      return;
+    }
+    final email = emailCtrl.text.trim();
+    emailCtrl.dispose();
+    if (email.isEmpty || !GetUtils.isEmail(email)) {
+      _showError('Enter a valid email');
+      return;
+    }
+    try {
+      final debugToken = await _authRepository.requestPasswordReset(email);
+      if (debugToken != null && debugToken.isNotEmpty) {
+        // DEV_MODE only — production responses omit the token.
+        await Get.dialog(
+          AlertDialog(
+            title: const Text('Dev reset token'),
+            content: SelectableText(debugToken),
+            actions: [
+              TextButton(onPressed: () => Get.back(), child: const Text('Close')),
+            ],
+          ),
+        );
+      } else {
+        Get.snackbar(
+          'Check your email',
+          'If an account exists for that email, reset instructions were sent.',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+        );
+      }
+    } catch (e) {
+      _showError(e.toString());
+    }
+  }
+
   void _showError(String message) {
     Get.snackbar(
       'Error',

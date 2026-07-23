@@ -18,8 +18,11 @@ abstract final class AppConstants {
   /// Branches available to the authenticated admin user.
   static const String branchesPath = '$apiV1/branches';
 
-  /// Auth: verify credentials before sensitive actions (e.g. attendance).
-  static const String verifyUserPath = '$apiV1/auth/verify_user';
+  /// Auth: request password reset email/token (F-01).
+  static const String forgotPasswordPath = '$apiV1/auth/forgot_password';
+
+  /// Auth: complete password reset with one-time token (F-01).
+  static const String resetPasswordPath = '$apiV1/auth/reset_password';
 
   /// Auth: verify 4-digit PIN before clock-in/out.
   static const String verifyPinPath = '$apiV1/auth/verify_pin';
@@ -29,6 +32,13 @@ abstract final class AppConstants {
 
   /// Attendance clock-in/out source (device GPS).
   static const String attendanceSource = 'gps';
+
+  /// Landing-site billing URL for GoCardless checkout (F-06).
+  /// Override: `--dart-define=BILLING_BASE_URL=https://app.example.com/billing`
+  static const String billingBaseUrl = String.fromEnvironment(
+    'BILLING_BASE_URL',
+    defaultValue: 'http://localhost:3000/billing',
+  );
 
   /// Scheduling board — today roster.
   static const String schedulingBoardTodayPath =
@@ -43,6 +53,10 @@ abstract final class AppConstants {
   /// Daily assignment overrides.
   static const String schedulingAssignmentsPath =
       '$apiV1/scheduling/assignments';
+
+  /// Employee self-service assignments (F-02).
+  static const String schedulingMyAssignmentsPath =
+      '$apiV1/scheduling/my-assignments';
 
   /// Bulk daily assignments.
   static const String schedulingAssignmentsBulkPath =

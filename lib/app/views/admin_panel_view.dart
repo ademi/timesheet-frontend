@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../core/services/token_storage.dart';
 import '../../core/responsive/adaptive_grid.dart';
+import '../constants/app_permissions.dart';
 import '../controllers/admin_panel_controller.dart';
 import '../controllers/auth_controller.dart';
 import '../themes/app_colors.dart';
@@ -14,7 +15,91 @@ class AdminPanelView extends GetView<AdminPanelController> {
   @override
   Widget build(BuildContext context) {
     final authController = Get.find<AuthController>();
-    final branchName = Get.find<TokenStorage>().branchName;
+    final storage = Get.find<TokenStorage>();
+    final branchName = storage.branchName;
+
+    final cards = <Widget>[
+      if (storage.hasPermission(AppPermissions.employeesRead))
+        AdminHubCard(
+          icon: Icons.groups_rounded,
+          title: 'Employees',
+          subtitle: 'View staff, open profiles, and create employees',
+          onTap: controller.openEmployees,
+        ),
+      if (storage.hasPermission(AppPermissions.attendanceView))
+        AdminHubCard(
+          icon: Icons.calendar_month_rounded,
+          title: 'Attendance Report',
+          subtitle: 'Weekly attendance grid and Excel export',
+          onTap: controller.openAttendanceReport,
+        ),
+      if (storage.hasAnyPermission([
+        AppPermissions.attendanceView,
+        AppPermissions.attendanceOverride,
+      ]))
+        AdminHubCard(
+          icon: Icons.rule_rounded,
+          title: 'Attendance Corrections',
+          subtitle: 'Review exceptions and fix missing punches',
+          onTap: controller.openAttendanceCorrections,
+        ),
+      if (storage.hasAnyPermission([
+        AppPermissions.schedulingRead,
+        AppPermissions.schedulingManage,
+      ]))
+        AdminHubCard(
+          icon: Icons.calendar_view_week_rounded,
+          title: 'Shift Schedule',
+          subtitle: 'View who works when, assignments, and leave',
+          onTap: controller.openShiftSchedule,
+        ),
+      if (storage.hasPermission(AppPermissions.payrollView))
+        AdminHubCard(
+          icon: Icons.receipt_long_rounded,
+          title: 'Payroll',
+          subtitle: 'Periods, rates, balances, and payroll summary',
+          onTap: controller.openPayroll,
+        ),
+      if (storage.hasPermission(AppPermissions.paymentsView))
+        AdminHubCard(
+          icon: Icons.account_balance_wallet_rounded,
+          title: 'Payments',
+          subtitle: 'Record payments, reports, and payment history',
+          onTap: controller.openPayments,
+          accentColor: AppColors.primaryDark,
+        ),
+      if (storage.hasPermission(AppPermissions.auditView))
+        AdminHubCard(
+          icon: Icons.security_rounded,
+          title: 'Security audit',
+          subtitle: 'Recent auth and security events',
+          onTap: controller.openAudit,
+        ),
+      if (storage.hasAnyPermission([
+        AppPermissions.notificationsReceive,
+        AppPermissions.notificationsManage,
+      ]))
+        AdminHubCard(
+          icon: Icons.notifications_rounded,
+          title: 'Notifications',
+          subtitle: 'Tenant notification event feed',
+          onTap: controller.openNotifications,
+        ),
+      if (storage.hasPermission(AppPermissions.geofenceRead))
+        AdminHubCard(
+          icon: Icons.fence_rounded,
+          title: 'Geofence',
+          subtitle: 'View configured geofence zones',
+          onTap: controller.openGeofence,
+        ),
+      if (storage.hasPermission(AppPermissions.subscriptionView))
+        AdminHubCard(
+          icon: Icons.credit_card_rounded,
+          title: 'Billing',
+          subtitle: 'Subscription status and landing checkout link',
+          onTap: controller.openBilling,
+        ),
+    ];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -44,54 +129,20 @@ class AdminPanelView extends GetView<AdminPanelController> {
                   ),
                   const SizedBox(height: 16),
                   Expanded(
-                    child: AdaptiveGrid(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                      spacing: 14,
-                      runSpacing: 14,
-                      childAspectRatio: 2.2,
-                      children: [
-                        AdminHubCard(
-                          icon: Icons.groups_rounded,
-                          title: 'Employees',
-                          subtitle:
-                              'View staff, open profiles, and create employees',
-                          onTap: controller.openEmployees,
-                        ),
-                        AdminHubCard(
-                          icon: Icons.calendar_month_rounded,
-                          title: 'Attendance Report',
-                          subtitle: 'Weekly attendance grid and Excel export',
-                          onTap: controller.openAttendanceReport,
-                        ),
-                        AdminHubCard(
-                          icon: Icons.rule_rounded,
-                          title: 'Attendance Corrections',
-                          subtitle: 'Review exceptions and fix missing punches',
-                          onTap: controller.openAttendanceCorrections,
-                        ),
-                        AdminHubCard(
-                          icon: Icons.calendar_view_week_rounded,
-                          title: 'Shift Schedule',
-                          subtitle:
-                              'View who works when, assignments, and leave',
-                          onTap: controller.openShiftSchedule,
-                        ),
-                        AdminHubCard(
-                          icon: Icons.receipt_long_rounded,
-                          title: 'Payroll',
-                          subtitle: 'Periods, rates, balances, and payroll summary',
-                          onTap: controller.openPayroll,
-                        ),
-                        AdminHubCard(
-                          icon: Icons.account_balance_wallet_rounded,
-                          title: 'Payments',
-                          subtitle:
-                              'Record payments, reports, and payment history',
-                          onTap: controller.openPayments,
-                          accentColor: AppColors.primaryDark,
-                        ),
-                      ],
-                    ),
+                    child: cards.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No admin modules are available for your permissions.',
+                              textAlign: TextAlign.center,
+                            ),
+                          )
+                        : AdaptiveGrid(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                            spacing: 14,
+                            runSpacing: 14,
+                            childAspectRatio: 2.2,
+                            children: cards,
+                          ),
                   ),
                 ],
               ),

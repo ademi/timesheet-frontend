@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
+import 'package:get/get.dart';
 
 import '../../../core/services/token_storage.dart';
+import '../../controllers/subscription_store.dart';
 import '../datasources/remote/auth_remote_datasource.dart';
 import '../models/auth/auth_token_model.dart';
 import '../models/auth/first_login_request_model.dart';
@@ -82,6 +84,29 @@ class AuthRepository {
     }
   }
 
+  Future<String?> requestPasswordReset(String email) async {
+    try {
+      return await _remote.requestPasswordReset(email);
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
+    }
+  }
+
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      await _remote.resetPassword(token: token, newPassword: newPassword);
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
+    }
+  }
+
   Future<void> logout() async {
     final refresh = _storage.refreshToken;
     try {
@@ -103,9 +128,15 @@ class AuthRepository {
       refreshToken: tokens.refreshToken,
       branchId: tokens.defaultBranchId,
     );
+    if (Get.isRegistered<SubscriptionStore>()) {
+      Get.find<SubscriptionStore>().updateFromLogin(tokens.subscription);
+    }
   }
 
   Future<void> _clearTokens() async {
     await _storage.clear();
+    if (Get.isRegistered<SubscriptionStore>()) {
+      Get.find<SubscriptionStore>().clear();
+    }
   }
 }

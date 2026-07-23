@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../../core/services/token_storage.dart';
 import '../routes/app_routes.dart';
 
-enum UserRole { attendance, admin }
+enum UserRole { attendance, admin, employee }
 
 class GatewayController extends GetxController {
   final selectedRole = Rxn<UserRole>();

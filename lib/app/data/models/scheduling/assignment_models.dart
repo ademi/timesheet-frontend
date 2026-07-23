@@ -30,6 +30,7 @@ class AssignmentOut {
     required this.employeeId,
     required this.workDate,
     this.templateId,
+    this.templateName,
     required this.isDayOff,
     this.notes,
   });
@@ -38,6 +39,7 @@ class AssignmentOut {
   final String employeeId;
   final DateTime workDate;
   final String? templateId;
+  final String? templateName;
   final bool isDayOff;
   final String? notes;
 
@@ -47,6 +49,7 @@ class AssignmentOut {
       employeeId: json['employee_id'] as String? ?? '',
       workDate: parseSchedulingDate(json['work_date'] as String? ?? ''),
       templateId: json['template_id'] as String?,
+      templateName: json['template_name'] as String?,
       isDayOff: json['is_day_off'] as bool? ?? false,
       notes: json['notes'] as String?,
     );

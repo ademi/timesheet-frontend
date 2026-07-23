@@ -28,4 +28,15 @@ abstract class AppRoutes {
   static const payrollPeriodResultDetail = '/payroll/periods/results/detail';
   static const payrollEmployeeBalance = '/payroll/balance';
   static const payrollSummaryReport = '/payroll/summary';
+
+  /// Employee self-service portal (F-02).
+  static const employeePortal = '/employee';
+  static const employeeMyHours = '/employee/my-hours';
+  static const employeeMySchedule = '/employee/my-schedule';
+
+  /// Thin admin ops screens (F-03 / F-06).
+  static const adminAudit = '/admin/audit';
+  static const adminNotifications = '/admin/notifications';
+  static const adminGeofence = '/admin/geofence';
+  static const adminBilling = '/admin/billing';
 }

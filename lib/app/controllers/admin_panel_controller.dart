@@ -29,4 +29,12 @@ class AdminPanelController extends GetxController {
     PaymentModuleBinding.ensureDependencies();
     Get.toNamed(AppRoutes.paymentMain);
   }
+
+  void openAudit() => Get.toNamed(AppRoutes.adminAudit);
+
+  void openNotifications() => Get.toNamed(AppRoutes.adminNotifications);
+
+  void openGeofence() => Get.toNamed(AppRoutes.adminGeofence);
+
+  void openBilling() => Get.toNamed(AppRoutes.adminBilling);
 }

@@ -40,8 +40,13 @@ class TokenStorage {
   bool hasPermission(String permission) {
     final granted = permissions;
     if (granted.isEmpty) return false;
-    if (granted.contains('*')) return true;
+    if (granted.contains('*') || granted.contains('platform.admin')) return true;
     return granted.contains(permission);
+  }
+
+  bool hasAnyPermission(List<String> required) {
+    if (required.isEmpty) return true;
+    return required.any(hasPermission);
   }
 
   bool get canViewSchedule =>

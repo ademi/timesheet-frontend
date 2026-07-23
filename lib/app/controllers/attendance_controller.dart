@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'dart:async';
 
 import '../data/datasources/remote/attendance_remote_datasource.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
@@ -45,9 +44,6 @@ class AttendanceController extends GetxController {
   final dialogError = ''.obs;
   final isVerifying = false.obs;
   final dialogSubmitting = false.obs;
-  final elapsedTicker = 0.obs;
-
-  Timer? _elapsedTimer;
 
   bool get hasMore => visibleCount.value < allEmployees.length;
 
@@ -56,9 +52,6 @@ class AttendanceController extends GetxController {
     super.onInit();
     scrollController.addListener(_onScroll);
     pinConfirmController.addListener(_clearDialogErrorOnPinChange);
-    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      elapsedTicker.value++;
-    });
     _loadEmployees();
   }
 
@@ -326,13 +319,11 @@ class AttendanceController extends GetxController {
   }
 
   String formatClockedInDuration(EmployeeModel employee) {
-    elapsedTicker.value;
     return formatEmployeeClockDuration(employee);
   }
 
   @override
   void onClose() {
-    _elapsedTimer?.cancel();
     scrollController.removeListener(_onScroll);
     pinConfirmController.removeListener(_clearDialogErrorOnPinChange);
     scrollController.dispose();

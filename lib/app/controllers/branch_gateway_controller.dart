@@ -51,8 +51,14 @@ class BranchGatewayController extends GetxController {
       branchName: branch.name,
     );
     final role = Get.find<GatewayController>().selectedRole.value;
-    final destination =
-        role == UserRole.admin ? AppRoutes.adminPanel : AppRoutes.home;
+    final String destination;
+    if (role == UserRole.admin) {
+      destination = AppRoutes.adminPanel;
+    } else if (role == UserRole.employee) {
+      destination = AppRoutes.employeePortal;
+    } else {
+      destination = AppRoutes.home;
+    }
     Get.offAllNamed(destination);
   }
 

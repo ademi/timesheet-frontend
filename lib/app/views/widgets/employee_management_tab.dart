@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/employee_management_controller.dart';
+import '../../data/models/attendance/employee_model.dart';
 import '../../themes/app_colors.dart';
 import '../../utils/employee_clock_status.dart';
+import '../../widgets/clocked_in_duration_text.dart';
 
 class EmployeeManagementTab extends GetView<EmployeeManagementController> {
   const EmployeeManagementTab({super.key});
@@ -15,7 +17,6 @@ class EmployeeManagementTab extends GetView<EmployeeManagementController> {
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: Obx(() {
-          controller.elapsedTicker.value;
           if (controller.isLoading.value && controller.employees.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -37,13 +38,12 @@ class EmployeeManagementTab extends GetView<EmployeeManagementController> {
                     itemBuilder: (context, index) {
                       final employee = controller.employees[index];
                       final subtitle = employeeContactSubtitle(employee);
-                      final statusLabel = controller.clockStatusLabel(employee);
                       return _EmployeeCard(
+                        employee: employee,
                         fullName: employee.fullName,
                         employeeCode: employee.employeeCode,
                         phone: employee.phone,
                         subtitle: subtitle,
-                        statusLabel: statusLabel,
                         isClockedIn: employee.clockedIn,
                       );
                     },
@@ -65,19 +65,19 @@ class EmployeeManagementTab extends GetView<EmployeeManagementController> {
 
 class _EmployeeCard extends StatelessWidget {
   const _EmployeeCard({
+    required this.employee,
     required this.fullName,
     required this.employeeCode,
     required this.phone,
     required this.subtitle,
-    required this.statusLabel,
     required this.isClockedIn,
   });
 
+  final EmployeeModel employee;
   final String fullName;
   final String employeeCode;
   final String phone;
   final String subtitle;
-  final String statusLabel;
   final bool isClockedIn;
 
   @override
@@ -123,17 +123,16 @@ class _EmployeeCard extends StatelessWidget {
               value: subtitle,
             ),
           ],
-          if (statusLabel.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              statusLabel,
-              style: TextStyle(
-                fontSize: 12,
-                color: statusColor,
-                fontWeight: FontWeight.w600,
-              ),
+          const SizedBox(height: 10),
+          ClockedInDurationText(
+            employee: employee,
+            asStatusLabel: true,
+            style: TextStyle(
+              fontSize: 12,
+              color: statusColor,
+              fontWeight: FontWeight.w600,
             ),
-          ],
+          ),
         ],
       ),
     );

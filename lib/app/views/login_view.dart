@@ -142,7 +142,14 @@ class LoginView extends GetView<AuthController> {
                             },
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: controller.showForgotPasswordDialog,
+                            child: const Text('Forgot password?'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
 
                         // Login Button
                         Obx(

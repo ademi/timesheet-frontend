@@ -66,8 +66,30 @@ class CreateEmployeeController extends GetxController {
         final newEmployeeId = data is Map<String, dynamic>
             ? data['id'] as String?
             : null;
+        final initialPassword = data is Map<String, dynamic>
+            ? data['initial_password'] as String?
+            : null;
         _clearForm();
-        _showSuccess('Employee created successfully.');
+        if (initialPassword != null && initialPassword.isNotEmpty) {
+          await Get.dialog(
+            AlertDialog(
+              title: const Text('Temporary password'),
+              content: SelectableText(
+                'Share this one-time password with the employee. '
+                'They must change it on first login.\n\n$initialPassword',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Get.back(),
+                  child: const Text('Got it'),
+                ),
+              ],
+            ),
+            barrierDismissible: false,
+          );
+        } else {
+          _showSuccess('Employee created successfully.');
+        }
         if (newEmployeeId != null && newEmployeeId.isNotEmpty) {
           PayrollModuleBinding.ensureDependencies();
           final rateSaved = await pushNamedBool(
