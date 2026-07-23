@@ -15,6 +15,15 @@ abstract final class AppConstants {
   /// Shared API version prefix for all versioned endpoints.
   static const String apiV1 = '/v1';
 
+  /// Auth session / actor context (no permissions list).
+  static const String authMeContextPath = '$apiV1/auth/me/context';
+
+  /// Switch contractor/member tenant context (returns new tokens).
+  static const String authSwitchTenantPath = '$apiV1/auth/switch-tenant';
+
+  /// Document signed-upload bootstrap.
+  static const String documentsUploadUrlPath = '$apiV1/documents/upload-url';
+
   /// Branches available to the authenticated admin user.
   static const String branchesPath = '$apiV1/branches';
 

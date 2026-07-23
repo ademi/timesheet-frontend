@@ -7,8 +7,10 @@ import '../../models/auth/first_login_request_model.dart';
 import '../../models/auth/login_request_model.dart';
 import '../../models/auth/logout_request_model.dart';
 import '../../models/auth/logout_response_model.dart';
+import '../../models/auth/me_context_model.dart';
 import '../../models/auth/refresh_request_model.dart';
 import '../../models/auth/set_pin_request_model.dart';
+import '../../models/auth/switch_tenant_request_model.dart';
 import '../../models/auth/verify_pin_request_model.dart';
 import '../../models/auth/verify_pin_response_model.dart';
 import '../../models/auth/verify_user_request_model.dart';
@@ -148,6 +150,50 @@ class AuthRemoteDataSource {
           message: 'Empty complete_first_login response',
         );
       }
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
+    }
+  }
+
+  /// Switches contractor (or member) session to another tenant.
+  /// Returns new access + refresh tokens (old refresh is revoked).
+  Future<AuthTokenModel> switchTenant(SwitchTenantRequestModel request) async {
+    try {
+      final response = await _authenticatedDio.post<Map<String, dynamic>>(
+        '/v1/auth/switch-tenant',
+        data: request.toJson(),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          message: 'Empty switch-tenant response',
+        );
+      }
+      return AuthTokenModel.fromJson(data);
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
+    }
+  }
+
+  /// Actor + engagements for session restore. Permissions remain JWT-only.
+  Future<MeContextModel> getMeContext() async {
+    try {
+      final response = await _authenticatedDio.get<Map<String, dynamic>>(
+        '/v1/auth/me/context',
+      );
+      final data = response.data;
+      if (data == null) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          message: 'Empty me/context response',
+        );
+      }
+      return MeContextModel.fromJson(data);
     } on DioException catch (e) {
       final authErr = parseAuthError(e);
       if (authErr != null) throw authErr;

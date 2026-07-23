@@ -2,6 +2,7 @@ import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../app/constants/scheduling_permissions.dart';
+import '../auth/jwt_claims.dart';
 
 /// Single source of truth for persisting and reading auth tokens.
 /// Uses flutter_secure_storage (iOS Keychain / Android Keystore).
@@ -35,13 +36,17 @@ class TokenStorage {
   String? get role => _cachedRole;
 
   /// Permission strings from the current access token JWT (`permissions` claim).
-  List<String> get permissions => _readPermissionsFromToken();
+  List<String> get permissions => jwtClaims?.permissions ?? const [];
+
+  /// Parsed V2 access claims (`actor_type`, ids, permissions, `mcp`).
+  JwtClaims? get jwtClaims {
+    final payload = _jwtPayload;
+    if (payload == null) return null;
+    return JwtClaims.fromPayload(payload);
+  }
 
   bool hasPermission(String permission) {
-    final granted = permissions;
-    if (granted.isEmpty) return false;
-    if (granted.contains('*')) return true;
-    return granted.contains(permission);
+    return jwtClaims?.hasPermission(permission) ?? false;
   }
 
   bool get canViewSchedule =>
@@ -54,21 +59,15 @@ class TokenStorage {
     final token = _cachedAccessToken;
     if (token == null || token.isEmpty) return null;
     try {
-      return JWT.decode(token).payload;
+      final payload = JWT.decode(token).payload;
+      if (payload is Map<String, dynamic>) return payload;
+      if (payload is Map) {
+        return payload.map((key, value) => MapEntry(key.toString(), value));
+      }
+      return null;
     } catch (_) {
       return null;
     }
-  }
-
-  List<String> _readPermissionsFromToken() {
-    final payload = _jwtPayload;
-    if (payload == null) return const [];
-
-    final raw = payload['permissions'];
-    if (raw is List) {
-      return raw.whereType<String>().toList();
-    }
-    return const [];
   }
 
   /// Call once at startup (before any API calls) to warm the in-memory cache.

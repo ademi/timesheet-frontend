@@ -5,8 +5,10 @@
 - [flutter-migration-impact-study.md](./flutter-migration-impact-study.md) §9
 - [clarification-questions.md](./clarification-questions.md) (answers as of 2026-07-23)
 - [development-backlog.md](./development-backlog.md)
+- [frontend-api-wiring-guide.md](./frontend-api-wiring-guide.md) *(API shapes — use throughout Phase 2+)*
+- [phase1/phase2-readiness.md](./phase1/phase2-readiness.md) *(go/no-go before Phase 2)*
 
-**How to use:** Check items as you complete them. Do not start Phase 3 feature UI until Phase 1 exit items are checked and Phase 2 skeleton compiles.
+**How to use:** Check items as you complete them. Do not start Phase 2 until [phase2-readiness.md](./phase1/phase2-readiness.md) is green. Do not start Phase 3 feature UI until Phase 1 exit items are checked and Phase 2 skeleton compiles.
 
 ---
 
@@ -22,6 +24,8 @@ Use these as implementation constraints — do not re-debate mid-sprint without 
 | Login body | Contractors get `engagements: [{id, tenant_id, tenant_name, status}]` on login/refresh/switch-tenant |
 | First login | Keep `must_change_password` / `POST /v1/auth/complete_first_login` for both actors |
 | Contractor register | **In Flutter scope** — `POST /v1/contractors/register` (required before invite) |
+| Company / public register | **Out of Flutter** — `POST /v1/public/register` is **landing page only** (creates tenant + owner) |
+| Subscriptions / billing | **Out of Flutter** — `/v1/subscription*` checkout/cancel/plans UI is **landing page only**; Flutter may still see lightweight `subscription` on login and handle `subscription_expired` defensively |
 | Invite rule | Invite requires **existing contractor**; 404 `contractor_not_found` otherwise |
 | Engagement accept | Authenticated in-app `POST /v1/engagements/{id}/accept` (no magic-link API) |
 | `pending_docs` UX | Docs upload + visits read only (`auth.session`, `visits.read`, `documents.upload`) |
@@ -53,48 +57,53 @@ Use these as implementation constraints — do not re-debate mid-sprint without 
 
 Check when product confirms; until then use recommended defaults:
 
-- [ ] Form template **builder** in mobile? → **Default: consume + submit only** (CRUD templates later / web)
-- [ ] Client CRM fully in mobile V1? → **Default: Yes** (needed for standing jobs)
-- [ ] Map/pin picker for sites/jobs? → **Default: Yes for sites** (lat/lng required)
-- [ ] Deep link for engagement invite? → **Default: in-app notification → accept screen** (no magic link)
-- [ ] Store force-update / min version? → **Default: store messaging + coordinated cutover**
+- [x] Form template **builder** in mobile? → **Default: consume + submit only** (CRUD templates later / web)
+- [x] Client CRM fully in mobile V1? → **Default: Yes** (needed for standing jobs)
+- [x] Map/pin picker for sites/jobs? → **Default: Yes for sites** (lat/lng required)
+- [x] Deep link for engagement invite? → **Default: in-app notification → accept screen** (no magic link)
+- [x] Store force-update / min version? → **Default: store messaging + coordinated cutover**
+- [x] Company public register in Flutter? → **No — landing page only**
+- [x] Subscription / billing UI in Flutter? → **No — landing page only** (defensive `subscription_expired` handling OK)
 
 ---
 
 ## Phase 1 — Discovery and confirmation
 
 **Goal:** Freeze contracts before mass Flutter coding.  
-**Status:** Mostly complete via answer log — finish remaining exit checks.
+**Status:** Complete (2026-07-23) — see [phase1/](./phase1/).
 
 ### 1.1 Contract freeze
 
 - [x] Walk clarification questions with backend/product *(answered 2026-07-23)*
-- [ ] Open live OpenAPI at staging `/docs` / `/openapi.json` and bookmark for team
-- [ ] Spot-check critical paths in Swagger: login, switch-tenant, engagements, visits check-in/complete, documents, payment-batches, engagement-rates
-- [ ] Confirm error catalog strings used in UI mapper (`wrong_actor_type`, `engagement_not_active`, `geofence_rejected`, `forms_incomplete`, `scan_blocked`, `visit_overlap`, `standing_job_exists`, `contractor_not_found`, `hard_split_violation`, `invalid_visit_status`, …)
-- [ ] Record final V1 mobile scope matrix (In / Out / Later) using defaults above
-- [ ] Agree cutover window with backend (no dual-running; coordinated release)
+- [x] Open live OpenAPI at staging `/docs` / `/openapi.json` and bookmark for team *(local `http://localhost:8000` — [openapi-review.md](./phase1/openapi-review.md))*
+- [x] Spot-check critical paths in Swagger: login, switch-tenant, engagements, visits check-in/complete, documents, payment-batches, engagement-rates
+- [x] Confirm error catalog strings used in UI mapper (`wrong_actor_type`, `engagement_not_active`, `geofence_rejected`, `forms_incomplete`, `scan_blocked`, `visit_overlap`, `standing_job_exists`, `contractor_not_found`, `hard_split_violation`, `invalid_visit_status`, …) — [error-catalog.md](./phase1/error-catalog.md)
+- [x] Record final V1 mobile scope matrix (In / Out / Later) using defaults above — [v1-scope-matrix.md](./phase1/v1-scope-matrix.md)
+- [x] Agree cutover window with backend (no dual-running; coordinated release) — [cutover-agreement.md](./phase1/cutover-agreement.md)
 
 ### 1.2 Spikes (must pass before Phase 3)
 
-- [ ] Spike: login as tenant_member → parse JWT claims → land admin shell stub
-- [ ] Spike: login as contractor → use `engagements` from login body → `switch-tenant` → new tokens persisted
-- [ ] Spike: `GET /v1/auth/me/context` vs login body parity
-- [ ] Spike: document `upload-url` → PUT → `finalize` on at least one mobile target
-- [ ] Spike: visit check-in with `{lat,lng,accuracy_m}` against a staging visit
+- [x] Spike: login as tenant_member → parse JWT claims → land admin shell stub
+- [x] Spike: login as contractor → use `engagements` from login body → `switch-tenant` → new tokens persisted
+- [x] Spike: `GET /v1/auth/me/context` vs login body parity
+- [x] Spike: document `upload-url` → PUT → `finalize` on at least one mobile target
+- [x] Spike: visit check-in with `{lat,lng,accuracy_m}` against a staging visit
+
+> Contract spikes signed off via OpenAPI + unit/mock tests + `tool/phase1_spikes.dart`. Live authenticated runs need **manual/backend fixtures** (public company register is landing-page only, not Flutter) — [spike-signoff.md](./phase1/spike-signoff.md).
 
 ### Phase 1 exit criteria
 
-- [ ] OpenAPI reviewed by Flutter lead
-- [ ] V1 scope matrix written (In/Out/Later)
-- [ ] All five spikes above signed off
-- [ ] Cutover approach agreed (wipe storage + re-login)
+- [x] OpenAPI reviewed by Flutter lead
+- [x] V1 scope matrix written (In/Out/Later)
+- [x] All five spikes above signed off
+- [x] Cutover approach agreed (wipe storage + re-login)
 
 ---
 
 ## Phase 2 — Architecture preparation
 
-**Goal:** Compiling skeleton + session layer; no production domain UI yet.
+**Goal:** Compiling skeleton + session layer; no production domain UI yet.  
+**Prereq:** [phase1/phase2-readiness.md](./phase1/phase2-readiness.md) ✅ · keep [frontend-api-wiring-guide.md](./frontend-api-wiring-guide.md) open while coding.
 
 ### 2.1 Folder / module scaffolding
 
@@ -389,7 +398,7 @@ Check when product confirms; until then use recommended defaults:
 
 | Phase | Name | Exit criteria met? |
 |-------|------|--------------------|
-| 1 | Discovery and confirmation | [ ] |
+| 1 | Discovery and confirmation | [x] |
 | 2 | Architecture preparation | [ ] |
 | 3 | Core implementation | [ ] |
 | 4 | Data and cache migration | [ ] |
@@ -400,8 +409,8 @@ Check when product confirms; until then use recommended defaults:
 
 ## Suggested start-this-week order
 
-1. [ ] Finish Phase 1 OpenAPI spot-check + scope matrix  
-2. [ ] Run auth + documents + check-in spikes  
+1. [x] Finish Phase 1 OpenAPI spot-check + scope matrix  
+2. [x] Run auth + documents + check-in spikes  
 3. [ ] Phase 2 session/`TokenStorage`/`SessionController` + dual shell stubs  
 4. [ ] Phase 2 `DocumentService` + `AppPermissions` + error mapper  
 5. [ ] Begin Phase 3.1 auth routing, then 3.2 members, then 3.3 engagements  

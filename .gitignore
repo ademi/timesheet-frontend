@@ -33,6 +33,10 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Phase 1 local spike secrets (never commit)
+docs/migration/phase1/*.local.json
+
+
 # Symbolication related
 app.*.symbols
 
