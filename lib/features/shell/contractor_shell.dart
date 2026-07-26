@@ -106,8 +106,6 @@ bool isContractorShellRoute(String? route) {
 
 Widget contractorHomeStub() =>
     contractorShellPage(const ShellStubPage(title: 'Contractor home'));
-Widget contractorScheduleStub() =>
-    contractorShellPage(const ShellStubPage(title: 'Schedule'));
 Widget contractorCredentialsStub() =>
     contractorShellPage(const ShellStubPage(title: 'Credentials'));
 Widget contractorProfileStub() =>

@@ -184,8 +184,10 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 
 **Design:** §6.9
 
-- [ ] Timetable / availability / leave
-- [ ] Copy: preferences only — do not create visits
+- [x] Timetable / availability / leave
+- [x] Copy: preferences only — do not create visits
+
+**Manual QA:** [manual-qa-s8.md](./manual-qa-s8.md)
 
 ---
 
@@ -228,7 +230,7 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 | S5 | Clients CRM | [x] |
 | S6 | Jobs + recurrence | [x] |
 | S7 | Visits + GPS | [x] |
-| S8 | Contractor schedule | [ ] |
+| S8 | Contractor schedule | [x] |
 | S9 | Rates + batches | [ ] |
 | S10 | Compliance ops + cleanup | [ ] |
 
