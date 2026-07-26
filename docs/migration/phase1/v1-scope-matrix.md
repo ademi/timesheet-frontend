@@ -1,50 +1,48 @@
-# V1 mobile scope matrix
+# V1 mobile / Flutter scope matrix
 
-**Status:** Locked for Flutter V1 (defaults from clarification answers, 2026-07-23)  
-**Packaging:** One Flutter app, dual shells (`tenant_member` admin + `contractor`)
+**Status:** Updated 2026-07-26 to match [Flutter restructure design](../2026-07-23-frontend-contractor-domain-restructure-design.md)  
+**Packaging:** One Flutter app — **StaffShell** + **ContractorShell**
 
 | Area | In | Out | Later |
 |------|----|-----|-------|
-| Dual-shell routing by `actor_type` | Yes | | |
-| JWT permissions only (no `/me/context` perms) | Yes | | |
-| First login / `mcp` / `complete_first_login` | Yes | | |
-| Contractor register (`POST /contractors/register`) | Yes | | |
-| Company public register (`POST /public/register`) | | Landing page only | |
-| Subscription / billing UI (`/v1/subscription*`) | | Landing page only | |
-| Login `subscription` payload / `subscription_expired` | Defensive handling only | Checkout / plans / cancel UI | |
-| Engagement invite → accept (in-app) | Yes | Magic-link deep link | Deep link polish if product asks |
-| `pending_docs` limited nav (docs + visits read) | Yes | | |
-| Tenant members CRUD (replace employees) | Yes | Employee PIN / kiosk | |
-| Clients / sites / contacts CRM | Yes | Client login shell | |
-| Map/pin picker for sites (lat/lng) | Yes | | Job map polish |
-| Public client-invite acknowledge | | Mobile V1 | Separate web |
-| Form template **consume + submit** | Yes | | |
-| Form template **builder** | | Mobile V1 | Web / later mobile |
-| Jobs + visits + tasks + recurrence generate | Yes | Recurrence regenerate (no API) | |
-| Visit check-in / complete (GPS, online-only) | Yes | Offline queue | |
-| PIN kiosk / clock-in-out / scheduling board (old) | | Removed (404) | |
+| Dual-shell routing by `actor_type` | Yes (`/staff/*`, `/contractor/*`) | | |
+| GetX state / routing | Yes | Riverpod / BLoC / GoRouter | |
+| Web + mobile every V1 screen | Yes | | |
+| GPS check-in / complete | Mobile | Web (message only) | Staff override |
+| JWT permissions + me/context session | Yes | | |
+| First login / mcp | Yes if backend requires | | |
+| Gateway: Sign in + contractor register | Yes | Admin/attendance portal | |
+| Company public register | | Landing only | |
+| Contractor register (+ Terms/Privacy versions) | Yes | | |
+| Onboarding funnel (legal/notices/consents/accept/creds) | Yes | | |
+| Credentials vault + staff review + eligibility UX | Yes | | |
+| Documents upload/finalize + content proxy | Yes | | |
+| Engagements lifecycle + sharing grant | Yes | Magic-link accept | |
+| Clients / sites / contacts | Yes | Records-engine packs | |
+| Client invite acknowledge (public route) | Yes | | |
+| Form templates (staff) + visit submit | Yes | | |
+| Jobs + recurrence generate | Yes | Recurrence regenerate if no API | |
+| Visits board + contractor check-in/complete | Yes | Employee clock | |
 | Contractor timetable / availability / leave | Yes | | |
-| Engagement rates + payment batches | Yes | CSV/Excel export | Own payment-batches list API |
-| Contractor payments via `visits?payment_status=` | Yes | | Dedicated own-batches endpoint |
-| Attendance adjustments (visit-linked) | Yes | | |
-| Weekly attendance report | | Removed | |
-| Employee balance / payroll periods | | Removed | |
-| Notifications devices + engagement/visit events | Yes | Stub email/sms delivery log | Inbox polish |
-| `platform.admin` shell | | Out of app | |
-| Force-update / min-version API | | No backend yet | Store messaging + coordinated cutover |
+| Engagement **rate bands** + payment batches | Yes | CSV export | Own-batches API |
+| Contractor payments via visits filter | Yes | | |
+| Compliance ops (rights, export, access history, incidents) | Yes | Retention/legal-hold UI | |
+| Subscription status + billing deep-link | Yes | In-app GoCardless checkout | |
+| Notifications devices/events | Yes | Stub email/sms log | |
+| Tenant members / branches in Settings | Yes as needed | platform.admin console | |
+| PIN / employees / old scheduling / payroll periods | | Deleted as slices land | |
+| Records-engine / NDIS client packs | | V1 | Backend later |
+| Visual rebrand | | V1 | |
 
 ## Shell destinations (V1)
 
-**Admin (`tenant_member`):** Hub · Team (members) · Contractors/Engagements · Clients · Jobs/Visits · Payments · Forms (consume/attach) · Branches/Settings  
+**Staff:** Home · Workforce · Clients · Jobs · Visits · Payments · Compliance · Settings  
 
-**Contractor:** Visits · Visit detail · Timetable · Documents · Payments (via visits) · Switch tenant / Profile  
+**Contractor:** Home · Visits · Schedule · Credentials · Profile (+ onboarding outside tabs)
 
-## Product defaults applied
+## Product locks applied
 
-- Form builder → **Out** (consume + submit only)
-- Client CRM → **In**
-- Map/pin for sites → **In**
-- Engagement invite deep link → **Out** (in-app notification → accept)
-- Store force-update → **Later** (coordinated cutover messaging)
-- Company public register → **Out** (landing page only; Flutter starts at login)
-- Subscriptions / billing → **Out** (landing page only; no Flutter checkout UI)
+- Landing: company register + GoCardless
+- Flutter: contractor register + all authenticated product UI
+- No NDIS-certifying / “Verified by Rostiq” copy
+- Delete legacy employee UX as each replacement slice ships

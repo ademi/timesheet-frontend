@@ -1,20 +1,51 @@
-/// Compile-time feature flags for the contractor-era (DOMAIN_V2) migration.
-///
-/// Enable with: `--dart-define=DOMAIN_V2=true`
-/// Disable legacy portal split with the same flag (default **true** while
-/// targeting the V2 API at localhost / cutover binaries).
-abstract final class FeatureFlags {
-  FeatureFlags._();
+/// Compile-time environment / feature defines for the contractor platform.
+abstract final class AppEnv {
+  AppEnv._();
+
+  static const String apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://api.rostiq.co',
+  );
+
+  /// Landing GoCardless / billing page (subscription CTA).
+  static const String billingUrl = String.fromEnvironment(
+    'BILLING_URL',
+    defaultValue: 'https://rostiq.co/billing',
+  );
+
+  /// Optional provider company signup on landing.
+  static const String landingUrl = String.fromEnvironment(
+    'LANDING_URL',
+    defaultValue: 'https://rostiq.co/signup',
+  );
+
+  /// Must match DB `platform_terms` current version for public register.
+  static const String termsVersion = String.fromEnvironment(
+    'TERMS_VERSION',
+    defaultValue: '2026-07-01',
+  );
+
+  /// Must match DB `privacy_policy` current version for public register.
+  static const String privacyVersion = String.fromEnvironment(
+    'PRIVACY_VERSION',
+    defaultValue: '2026-07-01',
+  );
 
   static const String _domainV2Raw = String.fromEnvironment(
     'DOMAIN_V2',
     defaultValue: 'true',
   );
 
-  /// When true: actor-based dual shells, SessionController, V2 paths.
-  /// When false: legacy gateway attendance/admin portal role flow.
+  /// Contractor-domain shells (default on). Legacy portal only if explicitly false.
   static bool get domainV2 {
     final v = _domainV2Raw.toLowerCase().trim();
     return v == 'true' || v == '1' || v == 'yes';
   }
+}
+
+/// Backward-compatible alias used by earlier Phase 2 code.
+abstract final class FeatureFlags {
+  FeatureFlags._();
+
+  static bool get domainV2 => AppEnv.domainV2;
 }

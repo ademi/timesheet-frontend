@@ -2,8 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import '../../../core/constants/feature_flags.dart';
+import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
-import '../../controllers/session_controller.dart';
 import '../app_routes.dart';
 
 /// Re-evaluates authentication on every resolution of a protected route.
@@ -23,9 +23,8 @@ class AuthGuard extends GetMiddleware {
       return const RouteSettings(name: AppRoutes.firstLogin);
     }
 
-    // Soft restore: if SessionController exists without actor, hydrate later.
-    if (Get.isRegistered<SessionController>()) {
-      final session = Get.find<SessionController>();
+    if (Get.isRegistered<SessionService>()) {
+      final session = Get.find<SessionService>();
       session.actorType.value ??= claims?.actorType;
     }
 

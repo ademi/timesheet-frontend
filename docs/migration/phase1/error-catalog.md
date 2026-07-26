@@ -1,37 +1,48 @@
 # API error catalog — Flutter UI mapper
 
-**Source:** [frontend-api-wiring-guide.md](../frontend-api-wiring-guide.md) §18 + clarification answer log  
-**Convention:** Non-public APIs use `{ "detail": "..." }` (string or structured). Public APIs use `{ "message": "..." }`.
+**Sources:** [Flutter restructure design](../2026-07-23-frontend-contractor-domain-restructure-design.md) §5, §11 · wiring guide §18  
+**Convention:** Non-public `{ "detail": ... }` · Public `{ "message": ... }`
 
-Use these exact `detail` / code strings in the client mapper. Prefer **dedicated screen** for actor/session hard failures; **toast / inline** for recoverable validation.
+| Code / situation | HTTP | UX | Copy / notes |
+|------------------|------|----|--------------|
+| `wrong_actor_type` | 403 | Dedicated screen | Wrong shell — sign in with correct account type |
+| `must_change_password` | 403 | First-login screen | |
+| `missing_permission` | 403 | Toast + hide control | Deep-link → snackbar + shell home |
+| Billing / `require_active_subscription` | 402 / 403 | **billingGate** modal | “Subscription inactive” + open `BILLING_URL` |
+| `subscription_expired` | 403 | Same as billingGate | Renew on website |
+| `geofence_rejected` | 400 | Inline | Move closer |
+| `forms_incomplete` / `required_forms_incomplete` | 400 | Inline | Complete required forms |
+| `docs_incomplete` | 400 | Inline | Upload required docs |
+| `scan_blocked` | 400 | Inline + retry | Re-upload / supersede |
+| Scan `pending` | — | Spinner / disable ready | Do not treat as approval-ready |
+| `proxy_required` | 403 | Silent redirect | Use `GET /documents/{id}/content` — never pretend signed URL was used |
+| `eligibility_incomplete` | 409 | Dialog with **itemised** reasons | No “NDIS certified” / “Verified by Rostiq” / “Compliant worker” |
+| `counsel_pending` | 4xx | Hard stop | “This legal document is not available yet.” |
+| MFA required (credential review) | 403 | Prompt MFA / re-auth | Do not skip |
+| `engagement_not_active` | 409 | Banner | Contact admin |
+| `invalid_visit_status` | 409 | Toast + refresh | Already checked in, etc. |
+| `visit_overlap` | 409 | Inline | Generate conflict |
+| `standing_job_exists` | 409 | Inline | |
+| `contractor_not_found` | 404 | Inline (invite) | |
+| `hard_split_violation` | 409 | Dialog | |
+| `engagement_already_exists` | 409 | Toast | |
+| `payment_already_paid` / `visit_already_in_batch` | 409 | Toast | |
+| `visit_not_found` | 404 | Empty | |
+| Invalid credentials | 401 | Inline | |
+| Session / refresh invalid | 401 | Re-login | |
+| Rate limit | 429 | Snackbar | “Too many attempts — try again shortly” |
+| Offline | — | Retry banner | |
 
-| Code / detail | HTTP | UX | Suggested copy |
-|---------------|------|----|----------------|
-| `wrong_actor_type` | 403 | Dedicated screen | “This account can’t use this area. Sign in with the correct account type.” |
-| `must_change_password` | 403 | Force password screen | Route to first-login / change password |
-| `missing_permission` (RBAC style) | 403 | Toast | “You don’t have permission for this action.” |
-| `subscription_expired` | 403 | Toast / blocking banner (no billing UI in Flutter) | “Subscription expired — renew on the website.” Checkout stays on landing page. |
-| `geofence_rejected` | 400 | Inline on visit | “You’re outside the allowed area. Move closer and try again.” |
-| `forms_incomplete` / `required_forms_incomplete` | 400 | Inline | “Complete required forms before finishing the visit.” |
-| `docs_incomplete` | 400 | Inline (engagement) | “Upload required documents before approval.” |
-| `scan_blocked` | 400 | Inline + retry | “File failed security scan. Re-upload a clean file.” |
-| `engagement_not_active` | 409 | Inline / banner | “Engagement isn’t active. Contact your admin.” |
-| `invalid_visit_status` | 409 | Toast + refresh | “Visit status changed. Refresh and try again.” (e.g. already checked in) |
-| `visit_overlap` | 409 | Inline (generate) | “Overlapping visit — adjust window or use partial generate.” |
-| `standing_job_exists` | 409 | Inline (job create) | “An open standing job already exists for this client.” |
-| `contractor_not_found` | 404 | Inline (invite) | “No contractor registered with that email/phone.” |
-| `hard_split_violation` | 409 | Dedicated / dialog | “This user can’t be invited as a contractor.” |
-| `engagement_already_exists` | 409 | Toast | “Engagement already exists for this contractor.” |
-| `payment_already_paid` | 409 | Toast | “Visit is already paid.” |
-| `visit_already_in_batch` | 409 | Toast | “Visit is already in a payment batch.” |
-| `visit_not_found` | 404 | Empty / back | “Visit not found.” |
-| Invalid credentials (login) | 401 | Inline | “Invalid email, phone, or password.” |
-| Refresh / session invalid | 401 | Clear session → login | “Session expired. Please sign in again.” |
+## Eligibility reason codes (show itemised)
 
-## Suspended-engagement gap (known)
+Examples: `missing`, `expired`, `awaiting_scan`, `awaiting_review`, `rejected`, `consent_withdrawn`, `grant_revoked` — parse from API payload; do not invent.
 
-Service may allow visit **complete** while suspended JWT omits `visits.complete` → expect **403**. Show: “Session limited — refresh or contact admin.” Track backend fix (clarification Eng-3).
+## Allowed eligibility language
 
-## Mapper implementation note (Phase 2)
+- “Eligible to approve based on current requirements”
+- “Requirements incomplete”
+- “Reviewer accepted / rejected this credential for this provider”
 
-Centralize in a typed failure mapper (Dio → `ApiFailure`). Do not scatter raw `detail` string compares across controllers.
+## Mapper note
+
+Centralize Dio → `AppFailure` (`unauthorized`, `forbidden`, `billingGate`, `eligibilityIncomplete`, `proxyRequired`, …). Controllers must not raw-compare `detail` strings.

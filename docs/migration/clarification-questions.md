@@ -163,8 +163,13 @@ Mark answers in-place as they are confirmed. Items labeled **Blocker** should be
 | UI-5 | Map/pin picker V1 | Sites/jobs store lat/lng geog. API accepts coordinates; map UI is **product** (recommended for sites). | 2026-07-23 | Product |
 | UI-6 | Offline check-in | Online required. Idempotency-Key supported on check-in/complete. No offline queue protocol. | 2026-07-23 | Backend |
 | UI-7 | Timezone display | Tenant timezone used for recurrence/notifications display helpers. Store/API use timestamptz UTC. Display: prefer tenant tz for admin; device tz OK for contractor UX — product. | 2026-07-23 | Backend + product |
-| UI-8 | Company public register in Flutter | **No.** `POST /v1/public/register` is **landing page only**. Flutter assumes tenant/owner already exists; app entry is login (+ contractor register). | 2026-07-23 | Product |
-| UI-9 | Subscriptions in Flutter | **No billing UI.** `/v1/subscription*` checkout/plans/cancel stay on **landing page**. Flutter may read login `subscription` and show defensive copy on `subscription_expired` (point user to website). | 2026-07-23 | Product |
+| UI-8 | Company public register in Flutter | **No.** `POST /v1/public/register` is **landing page only**. Flutter assumes tenant/owner already exists; app entry is gateway (sign in + contractor register). | 2026-07-23 | Product |
+| UI-9 | Subscriptions in Flutter | **No in-app checkout.** Landing owns GoCardless. Flutter: `GET /subscription` status + **billingGate** deep-link to `BILLING_URL` (updated 2026-07-26 Flutter design). | 2026-07-26 | Flutter design |
+| UI-10 | Client invite acknowledge in Flutter | **In V1.** Public route `/invites/client/:token` (supersedes earlier “separate web only”). | 2026-07-26 | Flutter design |
+| UI-11 | Folder / shell IA | **`lib/features/*`**, StaffShell `/staff/*`, ContractorShell `/contractor/*`; delete legacy as slices land. | 2026-07-26 | Flutter design |
+| UI-12 | Compliance / credentials in Flutter V1 | **In.** Legal events, notices, consents, credentials vault, reviews, eligibility, rights/export/incidents. | 2026-07-26 | Flutter design |
+| UI-13 | Rate model | Engagement **rate bands** (base/evening/night/weekend/PH), not only single hourly rate. | 2026-07-26 | Flutter design |
+| UI-14 | Delivery order | Skeleton-first slices **S0–S10** (replace Phase 3–6 coding order). | 2026-07-26 | Flutter design |
 | Edge-1 | Check-in while suspended | Check-in requires engagement `active` → **409** `engagement_not_active` (or 403 missing `visits.check_in` after refresh). UI: show suspended state, block check-in, allow viewing visit / attempt complete if already checked_in (see Eng-3 gap). | 2026-07-23 | Backend |
 | Edge-2 | Required form file blocked | Complete gated on forms; blocked scan fails complete. Retry: re-upload clean file + resubmit form, then complete. | 2026-07-23 | Spec/API |
 | Edge-3 | Informational geofence outside | Allowed; stores location verdict `outside`. No dedicated admin “flag” field on visit list — inspect time_entry_locations if needed. | 2026-07-23 | Backend |

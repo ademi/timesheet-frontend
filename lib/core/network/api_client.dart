@@ -4,8 +4,14 @@ import '../constants/app_constants.dart';
 import '../services/token_storage.dart';
 import 'auth_interceptor.dart';
 
-/// Auth [ApiClient]: [plainDio] for unauthenticated auth calls (`/v1/auth/login`, `/v1/auth/refresh`);
-/// [dio] for authenticated auth calls (Bearer from [AuthInterceptor], e.g. `/v1/auth/logout`).
+/// Single Dio client for the contractor domain (design §3.2).
+///
+/// **Plan:** all new datasources use [ApiClient.dio] / [plainDio]. Do not add
+/// new [AttendanceApiClient] call sites; delete [AttendanceApiClient] when the
+/// legacy attendance / employee slices are removed.
+///
+/// [plainDio] — unauthenticated auth (`/v1/auth/login`, `/v1/auth/refresh`);
+/// [dio] — authenticated calls (Bearer via [AuthInterceptor]).
 class ApiClient {
   // Certificate pinning (FE-8): set [_spkiPin] from production cert SPKI hash.
   // dio_pinning_interceptor is unavailable on pub.dev; add interceptor when wired.

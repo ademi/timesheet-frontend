@@ -51,7 +51,20 @@ abstract final class AppPermissions {
   /// Landing-page billing only — do not build Flutter subscription UI.
   static const subscriptionView = 'subscription.view';
   static const subscriptionManage = 'subscription.manage';
+  static const billingView = 'billing.view';
 
-  /// Out of Flutter app.
+  static const credentialsRead = 'credentials.read';
+  static const credentialsManage = 'credentials.manage';
+  static const credentialsReview = 'credentials.review';
+  static const credentialsSourceRead = 'credentials.source.read';
+
+  static const complianceLegalRead = 'compliance.legal.read';
+  static const complianceLegalAccept = 'compliance.legal.accept';
+  static const complianceConsentManage = 'compliance.consent.manage';
+  static const complianceRightsManage = 'compliance.rights.manage';
+  static const complianceIncidentsManage = 'compliance.incidents.manage';
+  static const complianceAuditView = 'compliance.audit.view';
+
+  /// Superuser — UI gates treat as all permissions (mirror backend).
   static const platformAdmin = 'platform.admin';
 }

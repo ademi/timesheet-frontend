@@ -9,11 +9,10 @@ import 'package:get_storage/get_storage.dart';
 import 'app/bindings/initial_binding.dart';
 import 'app/data/datasources/remote/auth_remote_datasource.dart';
 import 'app/routes/app_pages.dart';
-import 'app/routes/app_routes.dart';
 import 'app/themes/app_colors.dart';
-import 'core/constants/feature_flags.dart';
 import 'core/network/api_client.dart';
 import 'core/services/domain_v2_cutover.dart';
+import 'core/services/session_service.dart';
 import 'core/services/token_storage.dart';
 
 Future<void> main() async {
@@ -97,6 +96,9 @@ class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
         accessToken: newTokens.accessToken,
         refreshToken: newTokens.refreshToken,
       );
+      if (Get.isRegistered<SessionService>()) {
+        await Get.find<SessionService>().hydrateFromMeContext();
+      }
     } catch (_) {
       // Next API call will use AuthInterceptor refresh-or-logout flow.
     }
@@ -121,8 +123,7 @@ class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
         debugShowCheckedModeBanner: false,
         theme: _appTheme(),
         initialBinding: InitialBinding(),
-        initialRoute:
-            FeatureFlags.domainV2 ? AppRoutes.login : AppPages.initial,
+        initialRoute: AppPages.initial,
         getPages: AppPages.routes,
       ),
     );

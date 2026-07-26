@@ -35,6 +35,7 @@ class JwtClaims {
   bool hasPermission(String permission) {
     if (permissions.isEmpty) return false;
     if (permissions.contains('*')) return true;
+    if (permissions.contains('platform.admin')) return true;
     return permissions.contains(permission);
   }
 

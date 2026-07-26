@@ -1,93 +1,105 @@
-# Post-login redirect matrix (Phase 2 AuthGuard)
+# Post-login redirect matrix (Staff / Contractor)
 
-**Sources:** [frontend-api-wiring-guide.md](../frontend-api-wiring-guide.md) §2 + §17 · [v1-scope-matrix.md](./v1-scope-matrix.md) · clarification Eng-2 / Auth-3
+**Sources:** [Flutter restructure design](../2026-07-23-frontend-contractor-domain-restructure-design.md) §4.2–4.5 · [design-delta-2026-07-26.md](../design-delta-2026-07-26.md)
 
-Replace portal `user_role` (Attendance vs Admin gateway) with **actor-based** routing.
+Replace portal `user_role` and any `/v2/*` stubs with **StaffShell** / **ContractorShell**.
 
 ---
 
 ## Decision tree
 
 ```text
-login / refresh / restore session
+persist tokens
+GET /v1/auth/me/context
         │
-        ├─ must_change_password OR JWT mcp=true
-        │     → FirstLogin / change-password screen
-        │     → after success: re-login → restart tree
+        ├─ must_change_password / mcp
+        │     → /first-login → re-login → restart
         │
         ├─ actor_type == tenant_member
-        │     → Admin shell (Hub)
-        │     → destinations gated by JWT permissions
+        │     → /staff/home
+        │     → nav gated by JWT permissions
         │
         └─ actor_type == contractor
               │
-              ├─ engagements empty → error / contact support
-              │     (login usually already fails: no engagement)
+              ├─ pending engagement accept
+              │   OR legal/consent incomplete
+              │   OR required credentials incomplete
+              │     → /contractor/onboarding (funnel, outside tabs)
               │
-              ├─ engagements.length == 1
-              │     → ensure token tenant matches (switch-tenant if needed)
-              │     → contractor status gate (below)
-              │
-              └─ engagements.length > 1
-                    → Tenant / engagement picker
-                    → POST /auth/switch-tenant { tenant_id }
-                    → persist new access+refresh
-                    → contractor status gate
+              └─ else → /contractor/home
 ```
 
----
+“Incomplete” uses:
 
-## Contractor status gate (after tenant context)
+1. Engagements needing accept (e.g. `invited`) from `GET /v1/contractor-me/engagements`
+2. Missing current Terms/Privacy when backend rejects; funnel presents compliance APIs first
+3. Required categories without satisfying credentials
 
-| Engagement `status` | Allowed Flutter destinations | Blocked |
-|---------------------|------------------------------|---------|
-| `invited` | Accept engagement screen (+ limited profile) | Visits ops, timetable manage, payments |
-| `pending_docs` | Documents upload + visits **read** + profile | Check-in/complete, schedule manage, payments |
-| `approved` | Same limited set as pending_docs until activate | Check-in/complete (no `visits.check_in` in JWT) |
-| `active` | Full contractor shell | — |
-| `suspended` | Visits read + profile; attempt complete only if already checked_in (may 403) | Check-in; docs upload; payments |
-| `ended` | Cannot hold token for that tenant — pick another or re-login | — |
-
-Permission narrowing matches wiring guide §2.2 — prefer JWT `permissions` over re-deriving from status, but status drives onboarding screens (accept / docs).
+Do **not** invent a dual actor — backend forbids same user as both.
 
 ---
 
-## Admin shell stub destinations
+## Guards
 
-| Destination | Gate (permission) |
-|-------------|-------------------|
-| Hub | `auth.session` |
-| Team (members) | `tenant_members.read` |
-| Contractors / Engagements | `contractors.read` |
-| Clients | `clients.read` |
-| Jobs / Visits | `jobs.read` or `visits.read` |
-| Payments | `payments.view` |
-| Forms (catalog attach / templates list) | `clients.read` (templates) / `jobs.manage` (attach) |
-| Branches / Settings | `branches.manage` or `tenants.read` |
+| Middleware | Behavior |
+|------------|----------|
+| AuthGuard | No token → `/gateway` |
+| ActorGuard | `/staff/*` ⇒ `tenant_member`; `/contractor/*` ⇒ `contractor` |
+| PermissionGuard | Route `anyOf` / `allOf` permissions; fail → shell home + snackbar |
 
-No subscription / billing destination.
+Cold start with tokens: load `me/context` before resolving deep links.
 
 ---
 
-## Contractor shell stub destinations
+## StaffShell (`/staff/...`)
 
-| Destination | Gate |
-|-------------|------|
-| Visits | `visits.read` |
-| Visit detail | `visits.read` |
-| Timetable | `auth.session` |
-| Documents | `documents.upload` (and list via auth.session) |
-| Payments (via visits `payment_status`) | `payments.view_own` or `visits.read` |
-| Switch tenant / Profile | `auth.session` |
+| Nav | Route | Permission |
+|-----|-------|------------|
+| Home | `/staff/home` | `auth.session` |
+| Workforce | `/staff/workforce` | `contractors.read` |
+| Clients | `/staff/clients` | `clients.read` |
+| Jobs | `/staff/jobs` | `jobs.read` |
+| Visits | `/staff/visits` | `visits.read` |
+| Payments | `/staff/payments` | `payments.view` |
+| Compliance | `/staff/compliance` | any of credentials.review / compliance.rights.manage / compliance.incidents.manage / compliance.audit.view |
+| Settings | `/staff/settings` | `auth.session` |
+
+No in-app subscription checkout — billing deep-link only.
 
 ---
 
-## Persistence keys (Phase 2.2)
+## ContractorShell (`/contractor/...`)
+
+| Nav | Route |
+|-----|-------|
+| Home | `/contractor/home` |
+| Visits | `/contractor/visits` |
+| Schedule | `/contractor/schedule` |
+| Credentials | `/contractor/credentials` |
+| Profile | `/contractor/profile` |
+
+Onboarding: `/contractor/onboarding/*` outside tab chrome until work-ready.
+
+Tenant switch: Profile → engagements → `POST /v1/auth/switch-tenant` → new tokens → reload me/context.
+
+---
+
+## Public routes
+
+| Path | Purpose |
+|------|---------|
+| `/gateway` | Sign in · Register as contractor · optional LANDING_URL |
+| `/login` | Login |
+| `/first-login` | Password set if required |
+| `/contractor/register` | Public contractor register |
+| `/invites/client/:token` | Client invite acknowledge |
+
+---
+
+## Persistence
 
 | Key | Purpose |
 |-----|---------|
-| access + refresh tokens | Existing secure storage |
-| last `tenant_id` / engagement id | Contractor restore |
-| Clear on DOMAIN_V2 cutover | tokens, `user_role`, branch, `payroll_settings` |
-
-Do **not** persist old portal `user_role` as primary auth split after DOMAIN_V2.
+| access + refresh | Secure storage |
+| last tenant / engagement | Contractor restore |
+| Cutover wipe | Clear tokens + old `user_role` + `payroll_settings` on upgrade |

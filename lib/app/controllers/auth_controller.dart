@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import '../../core/constants/feature_flags.dart';
 import '../../core/network/must_change_password.dart';
-import '../controllers/session_controller.dart';
+import '../../core/services/session_service.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
@@ -13,7 +13,7 @@ import '../themes/app_colors.dart';
 
 class AuthController extends GetxController {
   AuthController({required AuthRepository authRepository})
-    : _authRepository = authRepository;
+      : _authRepository = authRepository;
 
   final AuthRepository _authRepository;
 
@@ -49,17 +49,21 @@ class AuthController extends GetxController {
         emailController.text.trim(),
         passwordController.text,
       );
-      if (Get.isRegistered<SessionController>()) {
-        await Get.find<SessionController>().applyAuthTokens(tokens);
+      if (Get.isRegistered<SessionService>()) {
+        final session = Get.find<SessionService>();
+        await session.applyAuthTokens(tokens);
+        await session.hydrateFromMeContext();
       }
       if (Get.isRegistered<PushNotificationService>()) {
         await Get.find<PushNotificationService>().registerCurrentDeviceToken();
       }
-      redirectToFirstLoginIfNeeded(mustChangePassword: tokens.mustChangePassword);
+      redirectToFirstLoginIfNeeded(
+        mustChangePassword: tokens.mustChangePassword,
+      );
       if (tokens.mustChangePassword) return;
 
-      if (FeatureFlags.domainV2 && Get.isRegistered<SessionController>()) {
-        final session = Get.find<SessionController>();
+      if (FeatureFlags.domainV2 && Get.isRegistered<SessionService>()) {
+        final session = Get.find<SessionService>();
         Get.offAllNamed(session.resolvePostLoginRoute());
         return;
       }
@@ -81,15 +85,13 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
-    if (Get.isRegistered<SessionController>()) {
-      await Get.find<SessionController>().clear();
+    if (Get.isRegistered<SessionService>()) {
+      await Get.find<SessionService>().clear();
     }
     await _authRepository.logout();
     emailController.clear();
     passwordController.clear();
-    Get.offAllNamed(
-      FeatureFlags.domainV2 ? AppRoutes.login : AppRoutes.gateway,
-    );
+    Get.offAllNamed(AppRoutes.gateway);
   }
 
   @override

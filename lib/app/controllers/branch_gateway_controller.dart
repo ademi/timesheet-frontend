@@ -7,7 +7,6 @@ import '../data/repositories/branch_repository.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import 'auth_controller.dart';
-import 'gateway_controller.dart';
 
 class BranchGatewayController extends GetxController {
   BranchGatewayController({
@@ -50,9 +49,9 @@ class BranchGatewayController extends GetxController {
       branchId: branch.id,
       branchName: branch.name,
     );
-    final role = Get.find<GatewayController>().selectedRole.value;
+    final role = _tokenStorage.role;
     final destination =
-        role == UserRole.admin ? AppRoutes.adminPanel : AppRoutes.home;
+        role == 'attendance' ? AppRoutes.home : AppRoutes.adminPanel;
     Get.offAllNamed(destination);
   }
 

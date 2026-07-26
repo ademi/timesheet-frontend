@@ -1,41 +1,56 @@
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import '../../core/constants/feature_flags.dart';
+import '../../core/services/session_service.dart';
 import '../../core/services/token_storage.dart';
+import '../../shared/utils/external_url.dart';
 import '../routes/app_routes.dart';
 
-enum UserRole { attendance, admin }
-
 class GatewayController extends GetxController {
-  final selectedRole = Rxn<UserRole>();
-
   @override
   void onInit() {
     super.onInit();
-    // DOMAIN_V2: skip attendance/admin portal — actor comes from JWT after login.
-    if (FeatureFlags.domainV2) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.offAllNamed(AppRoutes.login);
-      });
-      return;
-    }
-    if (Get.isRegistered<TokenStorage>()) {
-      final stored = Get.find<TokenStorage>().role;
-      for (final r in UserRole.values) {
-        if (r.name == stored) {
-          selectedRole.value = r;
-          break;
-        }
+    _resumeIfAuthenticated();
+  }
+
+  Future<void> _resumeIfAuthenticated() async {
+    if (!Get.isRegistered<TokenStorage>()) return;
+    final token = Get.find<TokenStorage>().accessToken;
+    if (token == null || token.isEmpty) return;
+
+    if (Get.isRegistered<SessionService>()) {
+      final session = Get.find<SessionService>();
+      await session.hydrateFromMeContext();
+      final route = session.resolvePostLoginRoute();
+      if (route != AppRoutes.login && route != AppRoutes.gateway) {
+        Get.offAllNamed(route);
       }
     }
   }
 
-  Future<void> selectRole(UserRole role) async {
-    selectedRole.value = role;
-    if (Get.isRegistered<TokenStorage>()) {
-      await Get.find<TokenStorage>().persistRole(role.name);
+  void goToSignIn() => Get.toNamed(AppRoutes.login);
+
+  void goToContractorRegister() => Get.toNamed(AppRoutes.contractorRegister);
+
+  Future<void> openProviderSignup() async {
+    final ok = await openExternalUrl(AppEnv.landingUrl);
+    if (!ok) {
+      Get.snackbar(
+        'Couldn’t open link',
+        AppEnv.landingUrl,
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
-    Get.toNamed(AppRoutes.login);
+  }
+
+  Future<void> openBilling() async {
+    final ok = await openExternalUrl(AppEnv.billingUrl);
+    if (!ok) {
+      Get.snackbar(
+        'Couldn’t open billing',
+        AppEnv.billingUrl,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 }

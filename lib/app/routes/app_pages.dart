@@ -57,150 +57,14 @@ import '../bindings/shift_schedule_binding.dart';
 import '../views/shift_schedule_view.dart';
 import '../views/payroll_summary_report_view.dart';
 import '../views/shell/admin_shell.dart';
-import '../views/shell/v2_shells.dart';
-import '../views/v2/domain_stub_view.dart';
-import '../views/v2/wrong_actor_view.dart';
+import '../../features/shell/shell_routes.dart';
 import 'app_routes.dart';
-import 'middlewares/actor_guard.dart';
 import 'middlewares/auth_guard.dart';
 
 class AppPages {
   AppPages._();
 
   static const initial = AppRoutes.gateway;
-
-  static List<GetPage> get _v2Routes => [
-        GetPage(
-          name: AppRoutes.wrongActor,
-          page: () => const WrongActorView(),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.adminHub,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () => adminV2ShellPage(const DomainStubView(title: 'Admin Hub')),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.adminTeam,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () =>
-              adminV2ShellPage(const DomainStubView(title: 'Team')),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.adminEngagements,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () => adminV2ShellPage(
-            const DomainStubView(title: 'Contractors / Engagements'),
-          ),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.adminClients,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () =>
-              adminV2ShellPage(const DomainStubView(title: 'Clients')),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.adminJobs,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () => adminV2ShellPage(
-            const DomainStubView(title: 'Jobs / Visits'),
-          ),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.adminPayments,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () =>
-              adminV2ShellPage(const DomainStubView(title: 'Payments')),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.adminForms,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () =>
-              adminV2ShellPage(const DomainStubView(title: 'Forms')),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.adminSettings,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () => adminV2ShellPage(
-            const DomainStubView(title: 'Branches / Settings'),
-          ),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.contractorVisits,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () => contractorShellPage(
-            const DomainStubView(title: 'Visits'),
-          ),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.contractorVisitDetail,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () => contractorShellPage(
-            const DomainStubView(title: 'Visit detail'),
-          ),
-          transition: Transition.rightToLeft,
-        ),
-        GetPage(
-          name: AppRoutes.contractorTimetable,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () => contractorShellPage(
-            const DomainStubView(title: 'Timetable'),
-          ),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.contractorDocuments,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () => contractorShellPage(
-            const DomainStubView(title: 'Documents'),
-          ),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.contractorPayments,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () => contractorShellPage(
-            const DomainStubView(
-              title: 'Payments',
-              subtitle: 'Filter own visits by payment_status (Phase 3).',
-            ),
-          ),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.contractorSwitchTenant,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () => contractorShellPage(
-            const DomainStubView(title: 'Switch tenant'),
-          ),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.contractorProfile,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () => contractorShellPage(
-            const DomainStubView(title: 'Profile'),
-          ),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.contractorEngagementAccept,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: () => contractorShellPage(
-            const DomainStubView(title: 'Accept engagement'),
-          ),
-          transition: Transition.fadeIn,
-        ),
-      ];
 
   static final routes = [
     GetPage(
@@ -235,8 +99,8 @@ class AppPages {
       binding: BranchGatewayBinding(),
       transition: Transition.rightToLeft,
     ),
-    ..._v2Routes,
-    // Legacy admin routes continue below (Phase 3 removes obsolete ones).
+    ...ShellPages.routes,
+    // Legacy admin routes continue below (deleted as slices land).
     GetPage(
       name: AppRoutes.adminPanel,
       middlewares: [AuthGuard()],

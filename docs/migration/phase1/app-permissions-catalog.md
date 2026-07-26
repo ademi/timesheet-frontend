@@ -1,81 +1,63 @@
-# AppPermissions catalog (Phase 2 input)
+# AppPermissions catalog (Flutter V1)
 
-**Sources:** [frontend-api-wiring-guide.md](../frontend-api-wiring-guide.md) §2.2 · clarification Roles-1 / Roles-5 · endpoint `Perm` columns in wiring guide  
-**Use:** Copy into `lib/app/constants/app_permissions.dart` (or equivalent) in Phase 2.3.  
-**Runtime source of truth:** JWT `permissions[]` only — never invent grants client-side.
-
----
-
-## Permission keys (Flutter-relevant)
-
-| Key | Typical use |
-|-----|-------------|
-| `auth.session` | Authenticated session; accept engagement; timetable read; me/context |
-| `tenants.read` | Read own tenant |
-| `tenants.manage` | Patch own tenant |
-| `tenant_members.read` | Team list/detail |
-| `tenant_members.manage` | Create/edit members |
-| `contractors.read` | Engagements list (tenant) |
-| `contractors.invite` | Invite engagement |
-| `contractors.approve` | Approve / approve-and-activate |
-| `contractors.manage` | Activate / suspend / resume / end |
-| `contractors.docs.read` | Read contractor profile docs (owner/admin; **not** supervisor) |
-| `clients.read` | Clients + form templates read |
-| `clients.manage` | Clients/sites/contacts/forms write |
-| `jobs.read` | Jobs + recurrence read |
-| `jobs.manage` | Jobs/recurrence/generate/form-catalog |
-| `visits.read` | Visits list/detail |
-| `visits.manage` | Reschedule/cancel/tasks (tenant); board |
-| `visits.check_in` | Check-in + task toggle (assignee) |
-| `visits.complete` | Complete visit |
-| `documents.upload` | upload-url / finalize |
-| `payments.view` | Rates list + payment batches (admin) |
-| `payments.manage` | Create/post/void batches; create/patch rates |
-| `payments.view_own` | Contractor own payments (via visits filter until own-batches API) |
-| `attendance.adjust` | Adjustments (owner/admin — **not** supervisor) |
-| `notifications.receive` | FCM/inbox events |
-| `notifications.manage` | Notification settings (if exposed) |
-| `contractor.schedule.manage` | Availability PUT + leave write |
-| `branches.read` | Branch read (often via session + alternate perms — see wiring §14) |
-| `branches.manage` | Branch create/update |
-| `audit.view` | Audit (supervisor+) — optional V1 surface |
-| `rbac.manage` | Role assignment (owner-only; **not** admin template) |
-| `subscription.view` | Landing/billing — **no Flutter UI** |
-| `subscription.manage` | Landing/billing — **no Flutter UI** |
-| `platform.admin` | Out of Flutter app |
+**Sources:** [Flutter restructure design](../2026-07-23-frontend-contractor-domain-restructure-design.md) §8 · prior Roles-1 · wiring guide  
+**Use:** `AppPermissions` + `SessionService.hasPermission` / `PermissionGuard`  
+**Runtime source of truth:** JWT `permissions[]` (also treat `*` or `platform.admin` as allow-all in UI gates)
 
 ---
 
-## Role templates (who gets what)
+## Keys (Flutter-relevant)
 
-| Role | Includes (summary) | Explicit exclusions |
-|------|--------------------|---------------------|
-| **owner** | All keys except `platform.admin` | `platform.admin` |
-| **admin** | Broad tenant manage incl. payments.manage, contractors.approve, subscription.* on JWT if seeded | `rbac.manage`, `platform.admin` |
-| **supervisor** | `auth.session`, `tenants.read`, `tenant_members.read`, `contractors.read`+`invite`, `clients.*`, `jobs.*`, `visits.read`+`manage`, `payments.view`, `notifications.receive`, `audit.view` | `contractors.approve` / `manage` / `docs.read`, `payments.manage`, `attendance.adjust` |
-| **contractor** (active) | `auth.session`, `visits.read`/`check_in`/`complete`, `documents.upload`, `payments.view_own`, `notifications.receive`, `contractor.schedule.manage` | Tenant admin keys |
-| **platform_admin** | `platform.admin`, `auth.session`, `subscription.view`/`manage` | Not a Flutter app user |
+### Core / tenants
+`auth.session` · `tenants.read` · `tenants.manage` · `tenant_members.read` · `tenant_members.manage` · `branches.read` · `branches.manage` · `rbac.manage` · `audit.view` · `platform.admin`
+
+### Contractors / credentials
+`contractors.read` · `contractors.invite` · `contractors.approve` · `contractors.manage` · `contractors.docs.read`  
+`credentials.read` · `credentials.manage` · `credentials.review` · `credentials.source.read`
+
+### Clients / jobs / visits
+`clients.read` · `clients.manage` · `jobs.read` · `jobs.manage` · `visits.read` · `visits.manage` · `visits.check_in` · `visits.complete`
+
+### Documents / payments / schedule
+`documents.upload` · `payments.view` · `payments.manage` · `payments.view_own` · `contractor.schedule.manage` · `attendance.adjust`
+
+### Compliance
+`compliance.legal.read` · `compliance.legal.accept` · `compliance.consent.manage` · `compliance.rights.manage` · `compliance.incidents.manage` · `compliance.audit.view`
+
+### Billing / notifications (UI limited)
+`billing.view` (subscription status chip) · `subscription.view` / `subscription.manage` (landing checkout — not Flutter UI)  
+`notifications.receive` · `notifications.manage`
 
 ---
 
-## Contractor engagement status → JWT narrowing
+## Role templates (summary)
 
-| Status | JWT permissions |
-|--------|-----------------|
-| `active` | Full contractor role |
-| `invited` / `pending_docs` / `approved` | `auth.session`, `visits.read`, `documents.upload` |
-| `suspended` | `auth.session`, `visits.read` only (complete may 403 — known gap) |
-| `ended` | Cannot login to that tenant |
+| Role | Notes |
+|------|-------|
+| owner | Broad tenant keys except `platform.admin` |
+| admin | Broad manage; typically no `rbac.manage` |
+| supervisor | Jobs/visits/clients; contractors read+invite; payments.view; **no** approve/docs/payments.manage/attendance.adjust unless seed says otherwise — verify live seed |
+| contractor (active) | visits read/check_in/complete, documents.upload, credentials.*, payments.view_own, contractor.schedule.manage, compliance self-service, notifications.receive |
+| platform_admin | Out of Flutter product shells |
+
+### Contractor JWT narrowing by engagement status
+
+| Status | Typical JWT |
+|--------|-------------|
+| active | Full contractor role |
+| invited / pending_docs / approved | Narrowed (session, visits.read, documents/credentials upload paths as seed defines) |
+| suspended | Very limited (session + visits.read) — complete may 403 |
+| ended | Cannot login that tenant |
 
 ---
 
-## UI gating hints (Phase 2)
+## UI gating hints
 
-| Check | Helper pattern |
-|-------|----------------|
-| Show admin destination | `actor_type == tenant_member` && `hasPermission(...)` |
-| Show contractor destination | `actor_type == contractor` |
-| `pending_docs` limited nav | Only docs + visits read (+ profile) |
-| `wrong_actor_type` | Dedicated screen (not toast) |
-| Missing permission | Toast / hide control |
-| `subscription_expired` | Banner → “renew on website” (no checkout UI) |
+| Check | Pattern |
+|-------|---------|
+| Staff destination | `actor_type == tenant_member` && permission |
+| Contractor destination | `actor_type == contractor` |
+| Onboarding funnel | Incomplete legal/accept/credentials → force `/contractor/onboarding` |
+| Source evidence | `credentials.source.read` + grant; proxy if required |
+| Billing gate | `AppFailure.billingGate` → open `BILLING_URL` |
+| Missing permission | Hide control; deep-link → snackbar + home |

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
-import '../controllers/gateway_controller.dart';
 import '../themes/app_colors.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../core/responsive/max_width_box.dart';
@@ -84,35 +83,19 @@ class LoginView extends GetView<AuthController> {
                         ),
                         const SizedBox(height: 20),
 
-                        Obx(() {
-                          final isAdmin =
-                              Get.find<GatewayController>().selectedRole.value ==
-                              UserRole.admin;
-                          return _InputField(
-                            controller: controller.emailController,
-                            label: isAdmin ? 'Email or phone' : 'Email Address',
-                            hint: isAdmin
-                                ? 'admin@example.com or +614… / 04…'
-                                : 'staff@example.com',
-                            icon: isAdmin
-                                ? Icons.person_outline
-                                : Icons.email_outlined,
-                            keyboardType: isAdmin
-                                ? TextInputType.text
-                                : TextInputType.emailAddress,
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) {
-                                return isAdmin
-                                    ? 'Email or phone is required'
-                                    : 'Email is required';
-                              }
-                              if (!isAdmin && !GetUtils.isEmail(v.trim())) {
-                                return 'Enter a valid email';
-                              }
-                              return null;
-                            },
-                          );
-                        }),
+                        _InputField(
+                          controller: controller.emailController,
+                          label: 'Email or phone',
+                          hint: 'you@example.com or +614…',
+                          icon: Icons.person_outline,
+                          keyboardType: TextInputType.text,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Email or phone is required';
+                            }
+                            return null;
+                          },
+                        ),
                         const SizedBox(height: 14),
 
                         Obx(

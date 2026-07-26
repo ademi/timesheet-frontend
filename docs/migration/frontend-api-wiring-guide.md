@@ -4,16 +4,19 @@
 **Scope:** New contractor / client / job platform only (from commit `db8a2d5` onward)  
 **Live docs:** Swagger UI at `{BASE_URL}/docs` · OpenAPI at `{BASE_URL}/openapi.json`  
 **Local default (Flutter):** `http://localhost:8000`  
-**Companion design:** [`docs/2026-07-22-contractor-client-job-design (1).md`](../2026-07-22-contractor-client-job-design%20(1).md)  
-**Flutter Phase 1 freeze / Phase 2 gate:** [phase1/phase2-readiness.md](./phase1/phase2-readiness.md) · [phase1/api-path-inventory.md](./phase1/api-path-inventory.md) · [phase1/app-permissions-catalog.md](./phase1/app-permissions-catalog.md)
+**Flutter build bible:** [2026-07-23-frontend-contractor-domain-restructure-design.md](./2026-07-23-frontend-contractor-domain-restructure-design.md)  
+**Delta / plan:** [design-delta-2026-07-26.md](./design-delta-2026-07-26.md) · [implementation-checklist.md](./implementation-checklist.md)  
+**Path / perm helpers:** [phase1/api-path-inventory.md](./phase1/api-path-inventory.md) · [phase1/app-permissions-catalog.md](./phase1/app-permissions-catalog.md)
 
-### Flutter vs landing page (product lock — 2026-07-23)
+> Prefer **live routers** + Flutter restructure design §6–§7 if this guide drifts (especially compliance, credentials, rate bands, document `/content` proxy).
+
+### Flutter vs landing page (updated 2026-07-26)
 
 | Surface | Owns |
 |---------|------|
-| **Landing page** | `POST /v1/public/register` (company + owner), `/v1/subscription*` billing UI, public client-invite acknowledge |
-| **Flutter app** | Login + dual shells; `POST /v1/contractors/register`; workforce APIs below. **No** company register UI, **no** subscription checkout UI |
-| **Flutter defensive only** | Login `subscription` object; `403 subscription_expired` → “renew on the website” |
+| **Landing page** | `POST /v1/public/register` (company + owner), GoCardless **checkout/cancel** |
+| **Flutter app** | Gateway (sign in + contractor register); Staff + Contractor shells; client-invite acknowledge; workforce/compliance/credentials/jobs/visits/payments; `GET /subscription` status |
+| **Flutter billing** | On billingGate → open `BILLING_URL` (no in-app checkout) |
 
 ---
 

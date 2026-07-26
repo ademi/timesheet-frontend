@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../controllers/gateway_controller.dart';
-import '../themes/app_colors.dart';
+import '../../core/constants/feature_flags.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../core/responsive/max_width_box.dart';
+import '../controllers/gateway_controller.dart';
+import '../themes/app_colors.dart';
 
 class GatewayView extends GetView<GatewayController> {
   const GatewayView({super.key});
@@ -20,63 +21,78 @@ class GatewayView extends GetView<GatewayController> {
             child: MaxWidthBox(
               maxWidth: Breakpoints.formMaxWidth,
               child: Column(
-              children: [
-                const SizedBox(height: 24),
-
-                // ── Logo ─────────────────────────────────
-                Image.asset(
-                  'assets/images/logo.png',
-                  height: 56,
-                  fit: BoxFit.contain,
-                  errorBuilder:
-                      (_, __, ___) => const Icon(
-                        Icons.schedule_rounded,
-                        size: 56,
-                        color: AppColors.primary,
-                      ),
-                ),
-
-                const SizedBox(height: 28),
-
-                // ── Title ────────────────────────────────
-                const Text(
-                  'Rostiq',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.darkBrown,
+                children: [
+                  const SizedBox(height: 24),
+                  Image.asset(
+                    'assets/images/logo.png',
+                    height: 56,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.schedule_rounded,
+                      size: 56,
+                      color: AppColors.primary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Select Your Portal',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.primaryDark,
-                    letterSpacing: 1.0,
+                  const SizedBox(height: 28),
+                  const Text(
+                    'Rostiq',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textDark,
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // ── Role Cards ───────────────────────────
-                _RoleCard(
-                  icon: Icons.admin_panel_settings_rounded,
-                  title: 'Admin Panel',
-                  subtitle: 'Manage employees & reports',
-                  onTap: () => controller.selectRole(UserRole.admin),
-                ),
-                const SizedBox(height: 16),
-                _RoleCard(
-                  icon: Icons.fingerprint_rounded,
-                  title: 'Attendance',
-                  subtitle: 'Clock in & clock out',
-                  onTap: () => controller.selectRole(UserRole.attendance),
-                ),
-
-                const SizedBox(height: 32),
-              ],
-            ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Contractor platform',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.primaryDark,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  _ActionCard(
+                    icon: Icons.login_rounded,
+                    title: 'Sign in',
+                    subtitle: 'Staff or contractor account',
+                    onTap: controller.goToSignIn,
+                  ),
+                  const SizedBox(height: 16),
+                  _ActionCard(
+                    icon: Icons.person_add_alt_1_rounded,
+                    title: 'Register as contractor',
+                    subtitle: 'Create your contractor profile',
+                    onTap: controller.goToContractorRegister,
+                  ),
+                  const SizedBox(height: 16),
+                  _ActionCard(
+                    icon: Icons.business_rounded,
+                    title: 'Provider signup',
+                    subtitle: 'Company account on the website',
+                    onTap: controller.openProviderSignup,
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    'Billing & company signup live on the landing site.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    AppEnv.landingUrl,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey.shade500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ),
@@ -85,9 +101,8 @@ class GatewayView extends GetView<GatewayController> {
   }
 }
 
-// ── Role Selection Card ────────────────────────────────────────
-class _RoleCard extends StatelessWidget {
-  const _RoleCard({
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -138,7 +153,7 @@ class _RoleCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.darkBrown,
+                        color: AppColors.textDark,
                       ),
                     ),
                     const SizedBox(height: 4),

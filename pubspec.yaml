@@ -52,6 +52,7 @@ dependencies:
   flutter_screenutil: ^5.9.3
   image_picker: ^1.1.2
   file_picker: ^8.1.7
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

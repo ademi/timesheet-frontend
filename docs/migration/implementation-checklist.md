@@ -1,421 +1,232 @@
 # Flutter Migration — Implementation Checklist
 
-**Purpose:** Turn the migration plan phases into a day-to-day implementation checklist.  
-**Sources:**
-- [flutter-migration-impact-study.md](./flutter-migration-impact-study.md) §9
-- [clarification-questions.md](./clarification-questions.md) (answers as of 2026-07-23)
-- [development-backlog.md](./development-backlog.md)
-- [frontend-api-wiring-guide.md](./frontend-api-wiring-guide.md) *(API shapes — use throughout Phase 2+)*
-- [phase1/phase2-readiness.md](./phase1/phase2-readiness.md) *(go/no-go before Phase 2)*
+**Purpose:** Day-to-day implementation checklist for the contractor-domain Flutter app.  
+**Authoritative design:** [2026-07-23-frontend-contractor-domain-restructure-design.md](./2026-07-23-frontend-contractor-domain-restructure-design.md)  
+**Delta vs prior Phase 1–2 docs:** [design-delta-2026-07-26.md](./design-delta-2026-07-26.md)  
+**API helpers:** [frontend-api-wiring-guide.md](./frontend-api-wiring-guide.md) · live `{BASE}/docs` · [phase1/api-path-inventory.md](./phase1/api-path-inventory.md)
 
-**How to use:** Check items as you complete them. Do not start Phase 2 until [phase2-readiness.md](./phase1/phase2-readiness.md) is green. Do not start Phase 3 feature UI until Phase 1 exit items are checked and Phase 2 skeleton compiles.
+**How to use:** Deliver **S0 → S10** in order. Each slice must leave the app runnable. Delete listed legacy at end of the slice that replaces it. Do not invent endpoints.
 
 ---
 
-## Decisions locked (from clarification answers)
-
-Use these as implementation constraints — do not re-debate mid-sprint without product/backend change.
+## Decisions locked (Flutter design §1 + product)
 
 | Topic | Decision |
 |-------|----------|
-| App packaging | **One Flutter app, dual shells** (`tenant_member` admin + `contractor`) |
-| JWT claims | Always: `sub`, `tenant_id`, `permissions[]`, `actor_type`, `iat`, `exp`, `typ=access`. + `contractor_id` or `tenant_member_id`. Optional `mcp=true` |
-| Permissions source | **JWT only** (`/auth/me/context` has actor + engagements, not permissions) |
-| Login body | Contractors get `engagements: [{id, tenant_id, tenant_name, status}]` on login/refresh/switch-tenant |
-| First login | Keep `must_change_password` / `POST /v1/auth/complete_first_login` for both actors |
-| Contractor register | **In Flutter scope** — `POST /v1/contractors/register` (required before invite) |
-| Company / public register | **Out of Flutter** — `POST /v1/public/register` is **landing page only** (creates tenant + owner) |
-| Subscriptions / billing | **Out of Flutter** — `/v1/subscription*` checkout/cancel/plans UI is **landing page only**; Flutter may still see lightweight `subscription` on login and handle `subscription_expired` defensively |
-| Invite rule | Invite requires **existing contractor**; 404 `contractor_not_found` otherwise |
-| Engagement accept | Authenticated in-app `POST /v1/engagements/{id}/accept` (no magic-link API) |
-| `pending_docs` UX | Docs upload + visits read only (`auth.session`, `visits.read`, `documents.upload`) |
-| Clients | Admin CRM only (no client login shell). Public invite acknowledge = **separate web** (out of mobile V1) |
-| Job location | Always `branch_id XOR client_site_id` |
-| GPS body | `{ lat, lng, accuracy_m? }` — no client timestamp |
-| Documents | `upload-url` → PUT signed URL → `finalize` |
-| Obsolete APIs | Employee / PIN / clock-in-out / scheduling / payroll periods → **404** |
-| Weekly report | **Removed** — delete Flutter weekly report UI |
-| Adjustments | Keep/rebuild against `POST /v1/attendance/adjustments` (visit-linked actions) |
-| Rates | `GET/POST /v1/payroll/engagement-rates/{engagement_id}`, `PATCH .../{rate_id}` |
-| Payments | Batches mix contractors OK; void posted allowed; no CSV export V1; contractor “own payments” via `GET /v1/visits?payment_status=` |
-| Employee balance / periods | **Retired** — remove UI |
-| Check-in | Online only; Idempotency-Key supported |
-| Cutover | Fresh DB; wipe tokens; force re-login. No backend force-update API yet |
-| platform.admin | Out of Flutter app |
+| Product | Contractor-only greenfield shell — do not preserve employee clock/CRUD/old shift/old payroll-period UX |
+| Packaging | One app, two shells: **StaffShell** (`tenant_member`) + **ContractorShell** (`contractor`) |
+| State | Keep **GetX** |
+| Platforms | Web + mobile every V1 screen; GPS check-in mobile-only (web message) |
+| Landing vs Flutter | Flutter: contractor register + authenticated product. Landing: company register + GoCardless. Flutter deep-links billing |
+| Legacy | **Delete** as each slice lands — no `lib/legacy/` |
+| Delivery | Skeleton-first, then vertical slices S0–S10 |
+| Out of V1 | Records-engine, company register UI, in-app checkout, retention UI, platform.admin console, rebrand |
 
-### Known backend gaps (implement defensively)
+### Known gaps (implement defensively)
 
-| Gap | Implication for Flutter |
-|-----|-------------------------|
-| Suspended JWT strips `visits.complete` while service may allow checkout | Show suspended state; if complete returns 403, show clear copy (“Session limited — refresh or contact admin”). Track backend fix. |
-| No dedicated contractor payment-batches list | Use contractor-scoped visits filtered by `payment_status` |
-| No visit `status` / client / branch query filters yet | Client-side filter or request API later; list with `from`/`to`/`job_id`/`payment_status`/`limit` |
-| No recurrence regenerate endpoint | Only expose **generate**, not regenerate |
-| Staging seed = roles/perms only | Team must create staging fixtures manually |
-
-### Product still open (pick defaults for V1 mobile)
-
-Check when product confirms; until then use recommended defaults:
-
-- [x] Form template **builder** in mobile? → **Default: consume + submit only** (CRUD templates later / web)
-- [x] Client CRM fully in mobile V1? → **Default: Yes** (needed for standing jobs)
-- [x] Map/pin picker for sites/jobs? → **Default: Yes for sites** (lat/lng required)
-- [x] Deep link for engagement invite? → **Default: in-app notification → accept screen** (no magic link)
-- [x] Store force-update / min version? → **Default: store messaging + coordinated cutover**
-- [x] Company public register in Flutter? → **No — landing page only**
-- [x] Subscription / billing UI in Flutter? → **No — landing page only** (defensive `subscription_expired` handling OK)
+| Gap | Flutter handling |
+|-----|------------------|
+| No public legal-doc read for register | `TERMS_VERSION` / `PRIVACY_VERSION` + bundled markdown; re-fetch after login |
+| Suspended JWT vs complete | Clear suspended UX; handle 403 on complete |
+| No contractor own payment-batches list | `GET /visits?payment_status=` |
+| Seed = roles only | Manual fixtures for dogfood |
 
 ---
 
-## Phase 1 — Discovery and confirmation
+## Discovery archive (complete — do not re-open)
 
-**Goal:** Freeze contracts before mass Flutter coding.  
-**Status:** Complete (2026-07-23) — see [phase1/](./phase1/).
+Phase 1 contract freeze (2026-07-23) remains valid as discovery evidence:
 
-### 1.1 Contract freeze
+- [x] Clarification answers · OpenAPI spot-check · scope/errors/cutover · contract spikes  
+- See [phase1/](./phase1/) and [design-delta-2026-07-26.md](./design-delta-2026-07-26.md) for updates after the Flutter restructure design.
 
-- [x] Walk clarification questions with backend/product *(answered 2026-07-23)*
-- [x] Open live OpenAPI at staging `/docs` / `/openapi.json` and bookmark for team *(local `http://localhost:8000` — [openapi-review.md](./phase1/openapi-review.md))*
-- [x] Spot-check critical paths in Swagger: login, switch-tenant, engagements, visits check-in/complete, documents, payment-batches, engagement-rates
-- [x] Confirm error catalog strings used in UI mapper (`wrong_actor_type`, `engagement_not_active`, `geofence_rejected`, `forms_incomplete`, `scan_blocked`, `visit_overlap`, `standing_job_exists`, `contractor_not_found`, `hard_split_violation`, `invalid_visit_status`, …) — [error-catalog.md](./phase1/error-catalog.md)
-- [x] Record final V1 mobile scope matrix (In / Out / Later) using defaults above — [v1-scope-matrix.md](./phase1/v1-scope-matrix.md)
-- [x] Agree cutover window with backend (no dual-running; coordinated release) — [cutover-agreement.md](./phase1/cutover-agreement.md)
-
-### 1.2 Spikes (must pass before Phase 3)
-
-- [x] Spike: login as tenant_member → parse JWT claims → land admin shell stub
-- [x] Spike: login as contractor → use `engagements` from login body → `switch-tenant` → new tokens persisted
-- [x] Spike: `GET /v1/auth/me/context` vs login body parity
-- [x] Spike: document `upload-url` → PUT → `finalize` on at least one mobile target
-- [x] Spike: visit check-in with `{lat,lng,accuracy_m}` against a staging visit
-
-> Contract spikes signed off via OpenAPI + unit/mock tests + `tool/phase1_spikes.dart`. Live authenticated runs need **manual/backend fixtures** (public company register is landing-page only, not Flutter) — [spike-signoff.md](./phase1/spike-signoff.md).
-
-### Phase 1 exit criteria
-
-- [x] OpenAPI reviewed by Flutter lead
-- [x] V1 scope matrix written (In/Out/Later)
-- [x] All five spikes above signed off
-- [x] Cutover approach agreed (wipe storage + re-login)
+Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** — realign to `lib/features/` in S0.
 
 ---
 
-## Phase 2 — Architecture preparation
+## S0 — Skeleton (folder layout, session, shells, guards)
 
-**Goal:** Compiling skeleton + session layer; no production domain UI yet.  
-**Prereq:** [phase1/phase2-readiness.md](./phase1/phase2-readiness.md) ✅ · keep [frontend-api-wiring-guide.md](./frontend-api-wiring-guide.md) open while coding.  
-**Status:** Complete (2026-07-23) — see [domain-v2-flag.md](./domain-v2-flag.md).
+**Goal:** Runnable dual-shell app; login → Staff or Contractor home; web refresh keeps session.  
+**Design:** §3, §4, §9 S0
 
-### 2.1 Folder / module scaffolding
+- [x] Create `lib/features/`, `lib/shared/`; move toward layout in design §3.1
+- [x] Single `ApiClient` path plan (stop adding `AttendanceApiClient` usage)
+- [x] `api_paths.dart` (or equivalent) from design §7 — no legacy employee/scheduling paths
+- [x] `SessionService`: after login/refresh/switch-tenant/resume → `GET /v1/auth/me/context`; expose `isStaff` / `isContractor` / `hasPermission` (incl. `*` / `platform.admin`)
+- [x] `AppFailure` + error mapper: 401, 403 codes, **billingGate** (402 / subscription), `eligibility_incomplete`, `proxy_required`, 429
+- [x] Dart-defines: `API_BASE_URL`, `BILLING_URL`, `LANDING_URL`, `TERMS_VERSION`, `PRIVACY_VERSION`
+- [x] Gateway: Sign in · Register as contractor · optional Provider signup → `LANDING_URL` — **delete** admin/attendance role cards
+- [x] Empty **StaffShell** (`/staff/...`) + **ContractorShell** (`/contractor/...`) with nav from §4.3–4.4
+- [x] Guards: `AuthGuard`, `ActorGuard`, `PermissionGuard` (anyOf/allOf)
+- [x] Post-login algorithm from design §4.2 (staff home / contractor onboarding or home)
+- [x] Deprecate/remove `/v2/admin/*` and `/v2/contractor/*` stub routes once `/staff` + `/contractor` exist
+- [x] Unit: SessionService routing + permission helper
 
-- [x] Create model folders: `tenant_member/`, `contractor/`, `engagement/`, `client/`, `job/`, `form/`, `document/`, `payment/` (batches), retarget `scheduling/`
-- [x] Add empty remote datasources: `TenantMember`, `Contractor`, `Engagement`, `Client`, `Job`, `Visit`, `Form`, `Document`, `PaymentBatch`
-- [x] Add matching repositories
-- [x] Add module bindings stubs (`*ModuleBinding.ensureDependencies`)
-- [x] Add `DOMAIN_V2` (or equivalent) `dart-define` / feature flag wiring
+**S0 exit:** Staff login → Staff home; contractor login → Contractor home (or onboarding stub); logout → gateway; web refresh OK; `flutter analyze` clean on touched code.
 
-### 2.2 Session and storage
-
-- [x] Extend JWT parse in `TokenStorage` (or new `JwtClaims`) for `actor_type`, `contractor_id`, `tenant_member_id`, `permissions`, `mcp`
-- [x] Add `SessionController` (permanent): actor, engagements list, selected engagement/tenant
-- [x] Replace portal `user_role` (`GatewayController` attendance/admin) with actor-based routing
-- [x] Persist last selected `tenant_id` / engagement id for contractors
-- [x] Implement cutover wipe: clear tokens, `user_role`, `payroll_settings` on version bump / first DOMAIN_V2 launch
-- [x] Keep access/refresh persist + refresh rotation on switch-tenant
-
-### 2.3 Permissions and errors
-
-- [x] Add `AppPermissions` constants from seed catalog (owner/admin/supervisor/contractor keys)
-- [x] Replace `SchedulingPermissions`-only checks with shared `hasPermission` helpers
-- [x] Add `ActorGuard` / permission-aware empty states
-- [x] Map Dio failures → typed failures for known `detail` codes (toast vs dedicated screen: `wrong_actor_type` → screen; `missing_permission` → toast)
-
-### 2.4 Navigation skeleton
-
-- [x] Draft dual route graphs: `AdminRoutes` + `ContractorRoutes` in `AppRoutes` / `app_pages.dart`
-- [x] Stub admin shell destinations: Hub, Team (members), Contractors/Engagements, Clients, Jobs/Visits, Payments, Forms (if In), Branches/Settings
-- [x] Stub contractor shell: Visits, Visit detail, Timetable, Documents, Payments (via visits), Switch tenant / Profile
-- [x] Update `AuthGuard` post-login redirect matrix (member vs contractor; `mcp` → first-login; `pending_docs` gate)
-
-### 2.5 Shared infrastructure
-
-- [x] Add file/image picker dependency(ies) for documents + form file fields
-- [x] Implement shared `DocumentService` (upload-url / PUT / finalize / download-url)
-- [x] Centralize API path constants in `AppConstants` (new paths; mark old PIN/employee/period paths deprecated)
-- [x] Ban new controller-level raw Dio calls (repository-only rule)
-
-### Phase 2 exit criteria
-
-- [x] App compiles with skeleton modules + dual shells stubs
-- [x] Session spike merged (login + switch-tenant + claim parse)
-- [x] DocumentService spike merged
-- [x] Feature flag / dart-define documented for team
+**Delete when done:** Gateway `UserRole.admin` / `attendance` model. ✅ removed from gateway (legacy branch gateway still reads stored `role` string until that slice is deleted).
 
 ---
 
-## Phase 3 — Core implementation
+## S1 — Contractor register
 
-**Goal:** Build domain features in dependency order. Check each subsection before moving on.
+**Design:** §6.2, §15
 
-### 3.1 Auth / session / actor routing (P0)
+- [ ] `/contractor/register` form: full_name, email, password, phone?, dob?
+- [ ] Separate Terms + Privacy accept (bundled MD + version defines; `doc_key`s `platform_terms` / `privacy_policy`)
+- [ ] `POST /v1/contractors/register` with `terms_version`, `privacy_version` → navigate to **login** (no tokens)
+- [ ] Wire gateway “Register as contractor”
 
-- [ ] Update `AuthRemoteDataSource` + models: login/refresh/switch-tenant engagement payloads
-- [ ] Implement `POST /v1/auth/switch-tenant` UI + repository
-- [ ] Implement `GET /v1/auth/me/context` (and/or `GET /v1/me`) for session restore
-- [ ] Keep first-login flow for both actors when `mcp` / `must_change_password`
-- [ ] Remove gateway “Attendance vs Admin” portal role as primary auth split
-- [ ] Post-login routing:
-  - [ ] `tenant_member` → admin shell
-  - [ ] `contractor` multi-engagement → tenant/engagement picker
-  - [ ] `contractor` single engagement → contractor shell
-  - [ ] `pending_docs` / `invited` → onboarding (docs / accept) before visit ops
-- [ ] Handle refresh when suspended (limited perms) and ended (refresh fails → clear session)
-- [ ] Unit tests: JWT claim parse, switch-tenant token persist
-
-### 3.2 Tenant members (P0) — replace staff employees
-
-- [ ] Models + datasource + repository for `/tenant-members` CRUD
-- [ ] Admin Team list / detail / create / edit / deactivate screens
-- [ ] Role assignment UI aligned with owner/admin/supervisor (no platform.admin)
-- [ ] Remove staff usage of `EmployeeModel` for admin team
-- [ ] Wire admin shell “Team” destination
-
-### 3.3 Contractors + engagements + profile docs (P0)
-
-- [ ] Contractor register screen (`POST /v1/contractors/register`)
-- [ ] Contractor profile (`GET/PATCH /v1/contractor-me`)
-- [ ] Admin: invite engagement (`POST /v1/tenants/current/engagements`) with required doc categories; handle `contractor_not_found`
-- [ ] Admin: engagements list/detail (`GET /v1/tenants/current/engagements`)
-- [ ] Contractor: engagements list (`GET /v1/contractor-me/engagements`)
-- [ ] Lifecycle actions UI: accept, approve, activate, approve-and-activate, suspend, resume, end
-- [ ] Status machine UX + disabled actions by status
-- [ ] Required docs upload via `DocumentService` (owner contractor profile)
-- [ ] Consent display; hide profile docs from tenant when ended/revoked
-- [ ] `pending_docs` limited navigation (docs + visits read only)
-- [ ] Engagement invite notification → accept screen (in-app)
-- [ ] Tests: status action availability matrix
-
-### 3.4 Clients + sites + contacts + invites (P1 — default In)
-
-- [ ] Clients CRUD
-- [ ] Sites CRUD with lat/lng (+ map/pin if product Yes)
-- [ ] Contacts CRUD (email or phone required)
-- [ ] Client documents upload (tenant member)
-- [ ] Create client invite; show raw token / invite URL once
-- [ ] Do **not** build public acknowledge inside contractor mobile (separate web)
-- [ ] Wire admin shell Clients destination
-
-### 3.5 Forms — consume + submit (P1)
-
-- [ ] List/get form templates API models
-- [ ] Job form catalog attach UI (tenant templates / client-scoped rules)
-- [ ] Dynamic form renderer: `text`, `textarea`, `boolean`, `number`, `date`, `file`
-- [ ] Visit form submission upsert + required-field validation
-- [ ] File fields → document_id; handle `scan_blocked` / retry re-upload
-- [ ] (Later / Out) Form template builder UI — skip unless product marks In
-
-### 3.6 Jobs + visits + tasks + recurrence (P0)
-
-- [ ] Jobs create/list/detail: `standing` | `ad_hoc`, status open/closed/cancelled
-- [ ] Enforce location XOR (`branch_id` vs `client_site_id`) in form validation
-- [ ] Standing job uniqueness UX (`standing_job_exists` 409)
-- [ ] Manual visit create (`POST /jobs/{id}/visits`)
-- [ ] Visits list (`GET /visits` with `from`/`to`/`job_id`/`payment_status`/`limit`) + client-side filters as needed
-- [ ] Visit detail: status, assignee, window, location, payment_status
-- [ ] Tasks list + toggle (`PATCH .../tasks/{tid}`) for assignee / `visits.manage`
-- [ ] Recurrence rules create on standing jobs
-- [ ] Generate visits UI (`partial=false` default; optional `partial=true` with skipped list)
-- [ ] Visit cancel (tenant `visits.manage` only) — contractors cannot cancel
-- [ ] Do **not** build regenerate UI (endpoint missing)
-- [ ] Wire admin Jobs/Visits destinations
-
-### 3.7 Visit check-in / complete — retire kiosk (P0)
-
-- [ ] Contractor visit check-in: GPS → `POST /visits/{id}/check-in` with Idempotency-Key
-- [ ] Geofence UX: `geofence_rejected` (enforce) vs informational outside allowed
-- [ ] Complete flow: required forms gate → GPS → `POST /visits/{id}/complete`
-- [ ] Handle `forms_incomplete`, `scan_blocked`, `engagement_not_active`, `invalid_visit_status`
-- [ ] Concurrent check-in race → “Already checked in” / refresh
-- [ ] Suspended: block check-in; handle complete 403 gap gracefully
-- [ ] Remove PIN kiosk `/home`, PIN dialogs, `verify_pin` / `set_pin` / reset-pin
-- [ ] Remove free-floating clock-in/out datasource methods
-- [ ] Stop using `GET /employees/clocked-in-status` everywhere
-
-### 3.8 Contractor timetable / availability / leave (P1)
-
-- [ ] `GET /v1/contractor-me/timetable`
-- [ ] Availability get/put
-- [ ] Leave CRUD
-- [ ] Optional UI warn for cross-tenant overlapping visits (backend allows)
-- [ ] Admin busy/leave signals on visits board (read leave)
-
-### 3.9 Engagement rates + payment batches (P1)
-
-- [ ] Engagement rates list/create/edit (`/v1/payroll/engagement-rates/...`)
-- [ ] Unpaid completed visits picker → create batch `{visit_ids, period_label?, currency_code}`
-- [ ] Batch detail with lines (hours, rate, amount, contractor_id)
-- [ ] Post batch / void batch (including void after post)
-- [ ] Admin payments hub replaces payroll periods hub
-- [ ] Contractor “my payments”: filter own visits by `payment_status`
-- [ ] Remove employee balance, payroll periods, settings, results, summary report UIs
-- [ ] Remove period-linked create payment flow
-
-### 3.10 Admin schedule / visits board redesign (P1)
-
-- [ ] Replace employee shift assignment board with visits-centric board
-- [ ] Remove employee-schedules / assignment / copy-week client usage (404)
-- [ ] Show contractor leave as busy where applicable
-- [ ] Permission gates: `jobs.*` / `visits.*` / supervisor limits (no payments.manage, no contractors.docs.read)
-
-### 3.11 Corrections (P1) — reports out
-
-- [ ] Rebuild corrections against `POST /v1/attendance/adjustments` + history GET
-- [ ] Support actions: `admin_add_clock_out`, `admin_close_clock_out`, `admin_create_manual_entry`, `admin_edit_entry` (visit-linked)
-- [ ] Gate with `attendance.adjust` (owner/admin — not supervisor)
-- [ ] **Delete** weekly attendance report feature (API removed)
-- [ ] Remove `AttendanceReportController` direct Dio weekly call
-
-### 3.12 Remove obsolete code (P0 cleanup)
-
-- [ ] Delete/disable routes: kiosk home, employee CRUD as workforce, payroll period tree, PIN flows
-- [ ] Delete obsolete models/controllers/bindings/tests for PIN, periods, employee clock
-- [ ] Clean `AdminShellRoutes` labels (no “Employees” / old Payroll period IA)
-- [ ] Remove dead path constants from `AppConstants`
-
-### 3.13 Notifications polish (P2)
-
-- [ ] Keep `POST /v1/notifications/devices` (+ DELETE)
-- [ ] Handle FCM / inbox payloads: `engagement.*`, `visit.assigned|checked_in|completed`
-- [ ] Ignore unknown event types safely
-- [ ] Optional inbox screen via `GET /v1/notifications/events`
-- [ ] Do **not** build stub email/sms delivery log UI
-
-### Phase 3 exit criteria
-
-- [ ] Tenant member can manage team, clients, jobs, visits, batches
-- [ ] Contractor can register, accept engagement, upload docs, check in/complete visits
-- [ ] PIN kiosk and payroll periods gone from navigation
-- [ ] Dual shells usable on staging
+**S1 exit:** Public register → login works against local API.
 
 ---
 
-## Phase 4 — Data and cache migration
+## S2 — Compliance legal + onboarding funnel shell
 
-- [ ] Implement one-shot migration on upgrade: wipe secure storage tokens + branch + old `user_role`
-- [ ] Delete `payroll_settings` from GetStorage
-- [ ] Show blocking “App updated — please sign in again” when wipe runs
-- [ ] Verify no offline SQLite/workforce cache needs migration (none today)
-- [ ] Document: store rollback only works if backend still serves old API (it will not) → coordinated cutover only
-- [ ] (Product) Decide store min-version / force-update messaging (backend has none)
+**Design:** §5.1–5.2, §6.3
 
-### Phase 4 exit criteria
+- [ ] Legal docs fetch (`GET /v1/compliance/legal-documents/current?doc_key=`)
+- [ ] Legal events: presented → accepted (separate); notices acknowledged; consents
+- [ ] `flutter_markdown` read-only; counsel_pending hard-stop
+- [ ] Onboarding routes `/contractor/onboarding/*` outside tab chrome
+- [ ] Steps: legal → notices → consents → (accept stub) → (credentials stub)
+- [ ] Idempotency-Key on legal-event retries
 
-- [ ] Fresh install and upgrade-from-old-binary both force clean login against new API
-
----
-
-## Phase 5 — Testing and QA
-
-### 5.1 Automated tests
-
-- [ ] Unit: JWT/session parsing, permission helpers, engagement status guards
-- [ ] Unit: repositories for visits check-in/complete error mapping
-- [ ] Unit: payment batch selection rules (completed + unpaid)
-- [ ] Widget: login gates, engagement actions, visit detail, dynamic form, batch create
-- [ ] Remove obsolete PIN / period / employee-payment tests
-- [ ] Update auth datasource tests (no PIN; add switch-tenant)
-
-### 5.2 Manual QA — Auth / session
-
-- [ ] Tenant member login → admin shell + correct permission-gated destinations
-- [ ] Contractor one engagement → auto tenant context
-- [ ] Contractor multi engagement → switch-tenant; old refresh unusable
-- [ ] `mcp` / first-login works for both actors
-- [ ] Suspended engagement refresh → limited UI
-- [ ] Ended engagement → cannot refresh that tenant; pick another or re-login
-- [ ] Upgrade wipe forces re-login
-
-### 5.3 Manual QA — Engagements
-
-- [ ] Register contractor → admin invite → accept → upload docs → approve → activate
-- [ ] Invite unknown email → `contractor_not_found`
-- [ ] Approve blocked when required docs missing/blocked
-- [ ] Suspend blocks check-in
-- [ ] End: tenant loses profile doc access; assignee keeps historical visit docs
-
-### 5.4 Manual QA — Visits / attendance
-
-- [ ] Check-in inside radius OK
-- [ ] Enforce outside → `geofence_rejected`
-- [ ] Informational outside allowed
-- [ ] Complete blocked without required forms
-- [ ] Blocked scan file → retry upload → complete
-- [ ] Task toggle by assignee and by `visits.manage` member
-- [ ] Cancel by tenant only
-- [ ] Double check-in race message
-
-### 5.5 Manual QA — Payments
-
-- [ ] Multi-contractor unpaid visits in one batch
-- [ ] Post → visits `paid`
-- [ ] Void posted → visits `unpaid`
-- [ ] Contractor sees own paid visits via visits filter
-- [ ] No balance / period UI reachable
-
-### 5.6 Manual QA — Regression
-
-- [ ] Token proactive refresh still works
-- [ ] Push device registration works
-- [ ] Responsive admin shell wide/narrow
-- [ ] Hard-split / wrong_actor_type dedicated handling
-- [ ] Online-only check-in fails clearly offline
-
-### Phase 5 exit criteria
-
-- [ ] P0 automated tests green
-- [ ] Manual QA checklist completed on staging with ad-hoc fixtures
-- [ ] Known gaps (suspended complete, missing visit filters) documented for release notes
+**S2 exit:** Contractor after login can complete legal/notice steps; cannot skip accept.
 
 ---
 
-## Phase 6 — Rollout
+## S3 — Credentials + documents
 
-- [ ] Create staging fixtures manually (tenant, member, contractor, engagement active, client, standing job, visits, rates)
-- [ ] Dogfood: one admin device + one contractor device for ≥1 full visit lifecycle + one payment batch
-- [ ] Confirm monitoring signals: auth failure rate, check-in errors, batch post failures
-- [ ] Coordinated production cutover with backend (old app will break — communicate update)
-- [ ] Store release (iOS/Android/Web as applicable)
-- [ ] Post-release watch window + hotfix plan
-- [ ] Rollback plan = previous binary **only if** backend can temporarily re-enable old API (assume **no**) → prefer forward fix
+**Design:** §5.3–5.4, §5.6, §6.4
 
-### Phase 6 exit criteria
+- [ ] Credential types allowlist + sensitive / government-ID UX
+- [ ] Contractor credentials CRUD + supersede
+- [ ] Upload: upload-url → PUT → finalize `{ credential_id }` → poll scan
+- [ ] Download: signed URL vs **`/content` proxy** on `proxy_required`
+- [ ] Staff metadata list + review (`accepted|rejected|re_review_required`); MFA prompt if required
+- [ ] Eligibility incomplete itemised UI (no forbidden NDIS-certifying copy)
 
-- [ ] Production users on new binary
-- [ ] No critical auth/check-in/payment regressions in watch window
+**S3 exit:** Upload + scan states + proxy download helper tested.
+
+---
+
+## S4 — Engagements / workforce
+
+**Design:** §5.5, §6.5
+
+- [ ] Staff workforce list/detail; invite with `required_categories`
+- [ ] Lifecycle: approve / activate / approve-and-activate / suspend / resume / end
+- [ ] Contractor accept with `allow_source_evidence` grant UI
+- [ ] Wire onboarding engagement-accept step
+- [ ] Eligibility errors on approve
+
+**Delete when done:** Employee management screens/controllers/repos (as replaced).
+
+**S4 exit:** Invite → register → onboarding → accept → staff review → approve → activate smoke path possible.
+
+---
+
+## S5 — Clients CRM
+
+**Design:** §6.6, §4.1 invites
+
+- [ ] Clients / sites / contacts CRUD
+- [ ] Create invite token UI
+- [ ] Public `/invites/client/:token` acknowledge screen
+- [ ] Map/pin or lat/lng for sites (lat/lng required)
+
+**Not in V1:** NDIS client packs / records-engine.
+
+---
+
+## S6 — Jobs + forms + recurrence
+
+**Design:** §6.7
+
+- [ ] Jobs list/create/edit; form-catalog attach
+- [ ] Form templates list/CRUD (staff) as needed for jobs/visits
+- [ ] Recurrence rules + generate (`Idempotency-Key`; `partial` optional)
+- [ ] Location XOR `branch_id` / `client_site_id`
+
+**Delete when done:** Shift schedule employee board feature.
+
+---
+
+## S7 — Visits + check-in/complete
+
+**Design:** §6.8
+
+- [ ] Staff visits board (`from`/`to`/`job_id`/…)
+- [ ] Contractor visits list/detail; tasks; form submissions
+- [ ] Check-in / complete GPS body `{ lat, lng, accuracy_m? }` + Idempotency-Key
+- [ ] Web: disable check-in/complete with mobile-app message
+- [ ] Geofence / forms_incomplete / scan_blocked / engagement_not_active handling
+
+**Delete when done:** Employee attendance clock + obsolete attendance report/corrections product screens (prefer visit-linked adjustments if `attendance.adjust` kept).
+
+---
+
+## S8 — Contractor schedule
+
+**Design:** §6.9
+
+- [ ] Timetable / availability / leave
+- [ ] Copy: preferences only — do not create visits
+
+---
+
+## S9 — Rate bands + payment batches
+
+**Design:** §6.10
+
+- [ ] Engagement rate bands editor (base/evening/night/weekend/PH)
+- [ ] Payment batches create/post/void; show `band_breakdown`
+- [ ] Contractor payments via visits `payment_status` filter
+- [ ] Settings: timezone / `public_holiday_jurisdiction` when available
+
+**Delete when done:** Old payroll periods / employee rates / period-tied payments.
+
+---
+
+## S10 — Compliance ops + notifications + subscription + cleanup
+
+**Design:** §6.11–6.14, §9 S10
+
+- [ ] Rights requests, privacy export, access history, incidents
+- [ ] Notifications devices/events retarget for both actors
+- [ ] Subscription status + `BILLING_URL` deep-link on billingGate
+- [ ] Staff settings: members, branches as needed, billing chip
+- [ ] Delete remaining employee leftovers, `AttendanceApiClient`, PIN paths
+- [ ] `flutter analyze` clean; smoke §10.2
 
 ---
 
 ## Progress tracker
 
-| Phase | Name | Exit criteria met? |
-|-------|------|--------------------|
-| 1 | Discovery and confirmation | [x] |
-| 2 | Architecture preparation | [x] |
-| 3 | Core implementation | [ ] |
-| 4 | Data and cache migration | [ ] |
-| 5 | Testing and QA | [ ] |
-| 6 | Rollout | [ ] |
+| Slice | Name | Exit met? |
+|-------|------|-----------|
+| Discovery | Phase 1 archive | [x] |
+| S0 | Skeleton / session / shells | [ ] *(partial prototype in `lib/app` — realign)* |
+| S1 | Contractor register | [ ] |
+| S2 | Legal + onboarding | [ ] |
+| S3 | Credentials + documents | [ ] |
+| S4 | Engagements / workforce | [ ] |
+| S5 | Clients CRM | [ ] |
+| S6 | Jobs + recurrence | [ ] |
+| S7 | Visits + GPS | [ ] |
+| S8 | Contractor schedule | [ ] |
+| S9 | Rates + batches | [ ] |
+| S10 | Compliance ops + cleanup | [ ] |
 
 ---
 
-## Suggested start-this-week order
+## Suggested next actions
 
-1. [x] Finish Phase 1 OpenAPI spot-check + scope matrix  
-2. [x] Run auth + documents + check-in spikes  
-3. [x] Phase 2 session/`TokenStorage`/`SessionController` + dual shell stubs  
-4. [x] Phase 2 `DocumentService` + `AppPermissions` + error mapper  
-5. [ ] Begin Phase 3.1 auth routing, then 3.2 members, then 3.3 engagements  
+1. [ ] Start **S0**: `features/` layout + `SessionService` + `/staff` & `/contractor` shells + gateway rewrite  
+2. [ ] Port reusable Phase 2 pieces (`JwtClaims`, switch-tenant, DocumentService spike, AppPermissions) into new structure  
+3. [ ] Then S1 contractor register  
 
 ---
 
-*Update this file as tasks complete. When product resolves the open defaults (form builder, map picker, deep links, force-update), tick those items under “Product still open” and adjust Phase 3 scope.*
+*Update checkboxes as slices complete. Prefer the Flutter restructure design over older Phase 3+ wording in archived docs.*

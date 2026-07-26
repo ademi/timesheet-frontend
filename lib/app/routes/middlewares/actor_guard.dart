@@ -1,13 +1,14 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/constants/feature_flags.dart';
+import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
-import '../../controllers/session_controller.dart';
-import '../../views/shell/v2_shells.dart';
+import '../../../features/shell/contractor_shell.dart';
+import '../../../features/shell/staff_shell.dart';
 import '../app_routes.dart';
 
-/// Ensures the signed-in actor matches the shell for DOMAIN_V2 routes.
+/// Ensures the signed-in actor matches the shell.
 class ActorGuard extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
@@ -21,21 +22,22 @@ class ActorGuard extends GetMiddleware {
 
     final claims = Get.find<TokenStorage>().jwtClaims;
     final actor = claims?.actorType ??
-        (Get.isRegistered<SessionController>()
-            ? Get.find<SessionController>().actorType.value
+        (Get.isRegistered<SessionService>()
+            ? Get.find<SessionService>().actorType.value
             : null);
 
     if (claims?.mustChangePassword == true) {
       return const RouteSettings(name: AppRoutes.firstLogin);
     }
 
-    if (isAdminV2Route(route)) {
+    if (isStaffRoute(route)) {
       if (actor != null && actor != 'tenant_member') {
         return const RouteSettings(name: AppRoutes.wrongActor);
       }
     }
 
-    if (isContractorV2Route(route)) {
+    if (isContractorShellRoute(route) ||
+        route == AppRoutes.contractorOnboarding) {
       if (actor != null && actor != 'contractor') {
         return const RouteSettings(name: AppRoutes.wrongActor);
       }
