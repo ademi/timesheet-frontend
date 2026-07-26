@@ -13,6 +13,7 @@ import '../contractor_schedule/contractor_schedule_routes.dart';
 import '../credentials/credentials_routes.dart';
 import '../engagements/engagements_routes.dart';
 import '../jobs/jobs_routes.dart';
+import '../payroll/payroll_routes.dart';
 import '../visits/visits_routes.dart';
 import 'contractor_shell.dart';
 import 'staff_shell.dart';
@@ -37,17 +38,7 @@ abstract final class ShellPages {
           page: staffHomeStub,
           transition: Transition.fadeIn,
         ),
-        // staffWorkforce + staffClients + staffJobs + staffVisits via feature modules
-        GetPage(
-          name: AppRoutes.staffPayments,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(anyOf: [AppPermissions.paymentsView]),
-          ],
-          page: staffPaymentsStub,
-          transition: Transition.fadeIn,
-        ),
+        // staffWorkforce/clients/jobs/visits/payments/settings via feature modules
         GetPage(
           name: AppRoutes.staffCompliance,
           middlewares: [
@@ -63,16 +54,6 @@ abstract final class ShellPages {
             ),
           ],
           page: staffComplianceStub,
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.staffSettings,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(anyOf: [AppPermissions.authSession]),
-          ],
-          page: staffSettingsStub,
           transition: Transition.fadeIn,
         ),
         GetPage(
@@ -92,6 +73,7 @@ abstract final class ShellPages {
         ...JobsPages.routes,
         ...VisitsPages.routes,
         ...ContractorSchedulePages.routes,
+        ...PayrollPages.routes,
         ...CredentialsPages.routes,
         ...ContractorOnboardingPages.routes,
         ContractorRegisterPages.page,

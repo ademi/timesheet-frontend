@@ -195,12 +195,15 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 
 **Design:** §6.10
 
-- [ ] Engagement rate bands editor (base/evening/night/weekend/PH)
-- [ ] Payment batches create/post/void; show `band_breakdown`
-- [ ] Contractor payments via visits `payment_status` filter
-- [ ] Settings: timezone / `public_holiday_jurisdiction` when available
+- [x] Engagement rate bands editor (base/evening/night/weekend/PH)
+- [x] Payment batches create/post/void; show `band_breakdown`
+- [x] Contractor payments via visits `payment_status` filter
+- [x] Settings: timezone / `public_holiday_jurisdiction` when available
 
-**Delete when done:** Old payroll periods / employee rates / period-tied payments.
+**Delete when done:** Old payroll periods / employee rates / period-tied payments. ✅ routes removed from `app_pages` (legacy views unreferenced); StaffShell `/staff/payments` + `/staff/settings` replace them.
+
+**Manual QA:** [manual-qa-s9.md](./manual-qa-s9.md)  
+**API note:** [BH-010](./backend-handoff-contractor-register-nested-txn.md) — rate create body sends bands + `hourly_rate` (compat); confirm live OpenAPI.
 
 ---
 
@@ -231,7 +234,7 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 | S6 | Jobs + recurrence | [x] |
 | S7 | Visits + GPS | [x] |
 | S8 | Contractor schedule | [x] |
-| S9 | Rates + batches | [ ] |
+| S9 | Rates + batches | [x] |
 | S10 | Compliance ops + cleanup | [ ] |
 
 ---

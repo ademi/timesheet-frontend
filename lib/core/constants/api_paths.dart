@@ -111,8 +111,13 @@ abstract final class ApiPaths {
   static String engagementRate(String rateId) =>
       '$_v1/payroll/engagement-rates/$rateId';
   static const paymentBatches = '$_v1/payment-batches';
-  static String paymentBatchPost(String id) => '$paymentBatches/$id/post';
-  static String paymentBatchVoid(String id) => '$paymentBatches/$id/void';
+  static String paymentBatch(String id) => '$paymentBatches/$id';
+  static String paymentBatchPost(String id) => '${paymentBatch(id)}/post';
+  static String paymentBatchVoid(String id) => '${paymentBatch(id)}/void';
+
+  // Tenants (settings: timezone / public_holiday_jurisdiction)
+  static const tenants = '$_v1/tenants';
+  static String tenant(String id) => '$tenants/$id';
 
   // Subscription / notifications / branches / members
   static const subscription = '$_v1/subscription';

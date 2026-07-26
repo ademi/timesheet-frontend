@@ -64,18 +64,17 @@ class AdminPanelView extends GetView<AdminPanelController> {
                           onTap: controller.openVisits,
                         ),
                         AdminHubCard(
-                          icon: Icons.receipt_long_rounded,
-                          title: 'Payroll',
-                          subtitle: 'Periods, rates, balances, and payroll summary',
-                          onTap: controller.openPayroll,
-                        ),
-                        AdminHubCard(
                           icon: Icons.account_balance_wallet_rounded,
                           title: 'Payments',
-                          subtitle:
-                              'Record payments, reports, and payment history',
+                          subtitle: 'Rate bands, payment batches, and post/void',
                           onTap: controller.openPayments,
                           accentColor: AppColors.primaryDark,
+                        ),
+                        AdminHubCard(
+                          icon: Icons.settings_outlined,
+                          title: 'Settings',
+                          subtitle: 'Timezone and public holiday jurisdiction',
+                          onTap: controller.openSettings,
                         ),
                       ],
                     ),

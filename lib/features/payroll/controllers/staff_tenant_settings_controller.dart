@@ -1,0 +1,99 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../../app/constants/app_permissions.dart';
+import '../../../app/themes/app_colors.dart';
+import '../../../core/errors/app_failure.dart';
+import '../../../core/services/session_service.dart';
+import '../data/models/payroll_models.dart';
+import '../data/repositories/payroll_repository.dart';
+
+class StaffTenantSettingsController extends GetxController {
+  StaffTenantSettingsController({
+    required PayrollRepository payroll,
+    required SessionService session,
+  })  : _payroll = payroll,
+        _session = session;
+
+  final PayrollRepository _payroll;
+  final SessionService _session;
+
+  final isLoading = false.obs;
+  final isSaving = false.obs;
+  final errorMessage = RxnString();
+  final tenant = Rxn<TenantSettingsOut>();
+
+  final timezoneCtrl = TextEditingController();
+  final jurisdictionCtrl = TextEditingController();
+
+  bool get canManage =>
+      _session.hasPermission(AppPermissions.tenantsManage);
+
+  @override
+  void onInit() {
+    super.onInit();
+    load();
+  }
+
+  @override
+  void onClose() {
+    timezoneCtrl.dispose();
+    jurisdictionCtrl.dispose();
+    super.onClose();
+  }
+
+  Future<void> load() async {
+    final id = _session.tenantId.value;
+    if (id == null || id.isEmpty) {
+      errorMessage.value = 'No tenant in session.';
+      return;
+    }
+    isLoading.value = true;
+    errorMessage.value = null;
+    try {
+      final t = await _payroll.getTenant(id);
+      tenant.value = t;
+      timezoneCtrl.text = t.timezone ?? '';
+      jurisdictionCtrl.text = t.publicHolidayJurisdiction ?? '';
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> save() async {
+    if (!canManage) {
+      errorMessage.value = 'Missing tenants.manage permission.';
+      return;
+    }
+    final id = _session.tenantId.value;
+    if (id == null) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _payroll.patchTenant(
+        id,
+        timezone: timezoneCtrl.text.trim().isEmpty
+            ? null
+            : timezoneCtrl.text.trim(),
+        publicHolidayJurisdiction: jurisdictionCtrl.text.trim().isEmpty
+            ? null
+            : jurisdictionCtrl.text.trim(),
+      );
+      tenant.value = updated;
+      Get.snackbar(
+        'Saved',
+        'Tenant timezone / holiday jurisdiction updated.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: AppColors.primary,
+        colorText: AppColors.onPrimary,
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+}

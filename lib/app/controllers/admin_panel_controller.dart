@@ -1,26 +1,17 @@
 import 'package:get/get.dart';
 
-import '../bindings/payment_module_binding.dart';
-import '../bindings/payroll_module_binding.dart';
 import '../routes/app_routes.dart';
 
 class AdminPanelController extends GetxController {
   void changeBranch() => Get.offAllNamed(AppRoutes.adminBranchGateway);
 
   void openEmployees() {
-    // S4: workforce engagements replace legacy employee CRUD.
     Get.toNamed(AppRoutes.staffWorkforce);
   }
 
   void openVisits() => Get.toNamed(AppRoutes.staffVisits);
 
-  void openPayroll() {
-    PayrollModuleBinding.ensureDependencies();
-    Get.toNamed(AppRoutes.payrollMain);
-  }
+  void openPayments() => Get.toNamed(AppRoutes.staffPayments);
 
-  void openPayments() {
-    PaymentModuleBinding.ensureDependencies();
-    Get.toNamed(AppRoutes.paymentMain);
-  }
+  void openSettings() => Get.toNamed(AppRoutes.staffSettings);
 }

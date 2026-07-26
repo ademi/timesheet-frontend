@@ -23,6 +23,7 @@
 | BH-007 | 2026-07-26 | Open — product/API decision | No `GET` list of client invites for staff Invites tab |
 | BH-008 | 2026-07-26 | Open — needs API change | No `GET /v1/jobs/{id}` — job detail cannot reload after refresh |
 | BH-009 | 2026-07-26 | Open — needs API change | No `GET /v1/jobs/{id}/form-catalog` — attach-only UX |
+| BH-010 | 2026-07-26 | Open — confirm OpenAPI | Engagement rate create: bands vs simple `hourly_rate` |
 
 ---
 
@@ -482,6 +483,29 @@ Add `GET /v1/jobs/{job_id}/form-catalog` returning attached template refs (id, n
 
 ### Requested from API
 Add list endpoint (or nest catalog on JobOut).
+
+---
+
+## BH-010 — Engagement rate create body (bands vs hourly)
+
+**Date:** 2026-07-26  
+**Status:** Open — confirm OpenAPI  
+**Related Flutter slice:** S9  
+**Endpoint / area:** `POST /v1/payroll/engagement-rates/{engagement_id}`
+
+### Problem
+Flutter design locks **rate bands** (`base`, `evening`, `night`, `saturday`, `sunday`, `public_holiday` + evening/night windows). The older wiring guide still documents a single `hourly_rate`. Flutter S9 sends **both**: `hourly_rate` (= base) and `bands` + window fields.
+
+### Proposed or applied change
+Confirm live OpenAPI schema. Prefer bands as source of truth; keep `hourly_rate` only if required for back-compat. Document `band_breakdown` on payment batch lines.
+
+### Verification
+1. POST rate with bands → 201; GET returns bands.  
+2. POST with only `hourly_rate` (if still supported) → 201.  
+3. Payment batch line includes `band_breakdown` when multi-band hours apply.
+
+### Requested from API
+Publish final EngagementRate create/response schema; update wiring guide §13.
 
 ---
 

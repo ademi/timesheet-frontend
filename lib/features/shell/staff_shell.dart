@@ -142,8 +142,6 @@ Widget staffWorkforceStub() =>
     staffShellPage(const ShellStubPage(title: 'Workforce'));
 Widget staffClientsStub() =>
     staffShellPage(const ShellStubPage(title: 'Clients'));
-Widget staffPaymentsStub() =>
-    staffShellPage(const ShellStubPage(title: 'Payments'));
 Widget staffComplianceStub() => staffShellPage(
       Scaffold(
         appBar: AppBar(
@@ -179,5 +177,4 @@ Widget staffComplianceStub() => staffShellPage(
           ),
         ),
       ),
-    );Widget staffSettingsStub() =>
-    staffShellPage(const ShellStubPage(title: 'Settings'));
+    );

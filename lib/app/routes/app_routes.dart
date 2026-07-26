@@ -74,6 +74,7 @@ abstract class AppRoutes {
   static const contractorCredentialCreate = '/contractor/credentials/create';
   static const contractorCredentialDetail = '/contractor/credentials/detail';
   static const contractorProfile = '/contractor/profile';
+  static const contractorPayments = '/contractor/payments';
 
   /// Public client invite acknowledge (design §4.1 / §6.6).
   static const publicClientInvite = '/invites/client/:token';
