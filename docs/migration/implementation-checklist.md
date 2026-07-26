@@ -87,14 +87,16 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 
 **Design:** §5.1–5.2, §6.3
 
-- [ ] Legal docs fetch (`GET /v1/compliance/legal-documents/current?doc_key=`)
-- [ ] Legal events: presented → accepted (separate); notices acknowledged; consents
-- [ ] `flutter_markdown` read-only; counsel_pending hard-stop
-- [ ] Onboarding routes `/contractor/onboarding/*` outside tab chrome
-- [ ] Steps: legal → notices → consents → (accept stub) → (credentials stub)
-- [ ] Idempotency-Key on legal-event retries
+- [x] Legal docs fetch (`GET /v1/compliance/legal-documents/current?doc_key=`)
+- [x] Legal events: presented → accepted (separate); notices acknowledged; consents
+- [x] `flutter_markdown` read-only; counsel_pending hard-stop
+- [x] Onboarding routes `/contractor/onboarding/*` outside tab chrome
+- [x] Steps: legal → notices → consents → (accept stub) → (credentials stub)
+- [x] Idempotency-Key on legal-event retries
 
 **S2 exit:** Contractor after login can complete legal/notice steps; cannot skip accept.
+
+**Blocked for full dogfood until API:** [BH-002](./backend-handoff-contractor-register-nested-txn.md) (login without engagement) · [BH-003](./backend-handoff-contractor-register-nested-txn.md) (compliance perms on invited/pending). Manual steps: [manual-qa-s2.md](./manual-qa-s2.md).
 
 ---
 

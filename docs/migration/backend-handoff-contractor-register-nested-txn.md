@@ -15,6 +15,8 @@
 | ID | Date | Status | Topic |
 |----|------|--------|-------|
 | BH-001 | 2026-07-26 | Proposed / applied in local tree — needs API restart + review | Contractor register nested transaction → opaque HTTP 500 |
+| BH-002 | 2026-07-26 | Open — needs API change | Contractor login blocked when no engagement exists |
+| BH-003 | 2026-07-26 | Open — needs API change | Pre-active engagement JWT lacks `compliance.legal.*` / consent perms (blocks S2 onboarding) |
 
 ---
 
@@ -156,6 +158,105 @@ Please confirm:
 - [domain-v2-flag.md](./domain-v2-flag.md) — dart-defines for legal versions
 - [manual-qa-s0-s1.md](./manual-qa-s0-s1.md) — manual test steps
 - Design §6.2 — contractor register contract (no tokens on success)
+
+---
+
+## BH-002 — Contractor login blocked when no engagement exists
+
+**Date:** 2026-07-26  
+**Status:** Open — needs API change  
+**Related Flutter slice:** S1 / S2  
+**Endpoint / area:** `POST /v1/auth/login` · `_resolve_login_actor` in `app/modules/auth/service.py`
+
+### Problem
+
+After `POST /v1/contractors/register`, the contractor has a user + contractor profile but **no** `workforce.contractor_engagements` row until a provider invites them.
+
+Current login resolution for contractors:
+
+1. Requires a pickable tenant from engagements (`pick_tenant_id_for_user`).
+2. If none → **403** `"User has no engagement in any tenant"`.
+
+**Flutter impact:** S1 exit “register → login” and S2 onboarding cannot be dogfooded for a brand-new contractor without a manual staff invite first.
+
+### Expected
+
+Allow contractor login **without** an engagement (tenant_id may be null / omitted) with at least:
+
+- `actor_type=contractor`
+- `contractor_id` on JWT
+- Baseline permissions sufficient for onboarding: `auth.session`, `compliance.legal.read`, `compliance.legal.accept`, `compliance.consent.manage` (see BH-003)
+
+Or document an official “invite-before-login” product rule and provide a seed/fixture path for QA.
+
+### Proposed change (API)
+
+In `_resolve_login_actor` / `_issue_auth_session`: when `workforce.contractors` exists but engagements are empty, still issue a contractor session (no tenant or platform-scoped permissions from the system `contractor` role).
+
+### Verification
+
+1. Register contractor (unique email).
+2. Login with same credentials **before** any invite → **200** tokens, `actor_type=contractor`.
+3. `GET /v1/auth/me/context` returns contractor with empty/null engagements.
+
+### Requested from API
+
+Confirm intended product behaviour and implement or provide fixtures.
+
+---
+
+## BH-003 — Pre-active engagement JWT lacks compliance permissions
+
+**Date:** 2026-07-26  
+**Status:** Open — needs API change  
+**Related Flutter slice:** S2  
+**Endpoint / area:** `app/modules/rbac/resolver.py` · `resolve_permissions_for_tenant`
+
+### Problem
+
+For contractors with engagement status `invited` / `pending_docs` / `approved`, permissions are limited to:
+
+```text
+auth.session, visits.read, documents.upload
+```
+
+(`_CONTRACTOR_LIMITED_PERMISSIONS`)
+
+Full system `contractor` role permissions (including `compliance.legal.read`, `compliance.legal.accept`, `compliance.consent.manage`) are only granted when status is **`active`**.
+
+**Flutter impact:** S2 onboarding calls:
+
+- `GET /v1/compliance/legal-documents/current`
+- `GET /v1/compliance/collection-notices`
+- `POST /v1/compliance/legal-events` (`presented` / `accepted` / `acknowledged` / `consented`)
+
+These require compliance permissions → **403 `missing_permission`** during the exact statuses when onboarding must run.
+
+### Expected
+
+Engagements in `invited`, `pending_docs`, and `approved` should include at least:
+
+- `compliance.legal.read`
+- `compliance.legal.accept`
+- `compliance.consent.manage`
+- (soon for S3) `credentials.read`, `credentials.manage`
+
+Keep tighter limits for `suspended` if needed.
+
+### Proposed change (API)
+
+Expand `_CONTRACTOR_LIMITED_PERMISSIONS` (or branch by status) in `resolver.py` to include the compliance (+ future credential) keys above for pre-active statuses.
+
+### Verification
+
+1. Invite contractor → login while `invited`.
+2. Decode JWT `permissions` includes `compliance.legal.read` and `compliance.legal.accept`.
+3. `GET /v1/compliance/legal-documents/current?doc_key=platform_terms` → **200** (or structured counsel error, not 403 missing_permission).
+4. `POST /v1/compliance/legal-events` presented/accepted → **201**.
+
+### Requested from API
+
+Approve permission matrix for onboarding statuses and ship the resolver change.
 
 ---
 

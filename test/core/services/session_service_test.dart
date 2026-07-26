@@ -9,6 +9,7 @@ import 'package:rostiq/app/routes/app_routes.dart';
 import 'package:rostiq/core/auth/jwt_claims.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/core/services/token_storage.dart';
+import 'package:rostiq/features/contractor_onboarding/controllers/onboarding_controller.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 
@@ -39,12 +40,17 @@ void main() {
   late SessionService session;
 
   setUp(() {
+    OnboardingController.funnelDoneOverride = false;
     authRepository = _MockAuthRepository();
     tokenStorage = _FakeTokenStorage();
     session = SessionService(
       tokenStorage: tokenStorage,
       authRepository: authRepository,
     );
+  });
+
+  tearDown(() {
+    OnboardingController.funnelDoneOverride = null;
   });
 
   group('SessionService.resolvePostLoginRoute', () {
@@ -63,6 +69,7 @@ void main() {
     });
 
     test('contractor ready → /contractor/home', () {
+      OnboardingController.funnelDoneOverride = true;
       tokenStorage.claims = const JwtClaims(
         sub: 'u2',
         tenantId: 't1',
@@ -91,7 +98,7 @@ void main() {
       expect(session.resolvePostLoginRoute(), AppRoutes.contractorHome);
     });
 
-    test('contractor invited → onboarding', () {
+    test('contractor invited → onboarding legal', () {
       tokenStorage.claims = const JwtClaims(
         sub: 'u2',
         tenantId: 't1',
@@ -117,7 +124,10 @@ void main() {
         ),
       );
       expect(session.needsOnboarding.value, isTrue);
-      expect(session.resolvePostLoginRoute(), AppRoutes.contractorOnboarding);
+      expect(
+        session.resolvePostLoginRoute(),
+        AppRoutes.contractorOnboardingLegal,
+      );
     });
 
     test('must change password → first login', () {

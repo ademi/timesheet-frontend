@@ -116,6 +116,8 @@ class AppFailure implements Exception {
       'proxy_required',
       'eligibility_incomplete',
       'counsel_pending',
+      'counsel_pending_policy',
+      'legal_document_unavailable',
       'engagement_not_active',
       'invalid_visit_status',
       'visit_overlap',
@@ -145,6 +147,7 @@ class AppFailure implements Exception {
       case 'hard_split_violation':
       case 'must_change_password':
       case 'counsel_pending':
+      case 'counsel_pending_policy':
         return AppFailurePresentation.screen;
       case 'subscription_expired':
       case 'require_active_subscription':
@@ -198,6 +201,8 @@ class AppFailure implements Exception {
       case 'eligibility_incomplete':
         return 'Requirements incomplete — review the listed items.';
       case 'counsel_pending':
+      case 'counsel_pending_policy':
+      case 'legal_document_unavailable':
         return 'This legal document is not available yet.';
       case 'engagement_not_active':
         return 'Engagement isn’t active. Contact your admin.';

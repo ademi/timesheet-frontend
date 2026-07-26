@@ -5,6 +5,7 @@ import '../../app/data/models/auth/engagement_summary_model.dart';
 import '../../app/data/models/auth/me_context_model.dart';
 import '../../app/data/repositories/auth_repository.dart';
 import '../../app/routes/app_routes.dart';
+import '../../features/contractor_onboarding/controllers/onboarding_controller.dart';
 import '../auth/jwt_claims.dart';
 import '../constants/feature_flags.dart';
 import 'token_storage.dart';
@@ -162,12 +163,14 @@ class SessionService extends GetxController {
       needsOnboarding.value = false;
       return;
     }
-    // S0 stub: invite / pending_docs / approved → onboarding funnel.
-    // S1+ will also check legal accept + credential completeness.
+    // Engagement statuses that require the funnel, or funnel not finished yet.
     final statuses = engagements.map((e) => e.status).toSet();
-    needsOnboarding.value = statuses.contains('invited') ||
+    final engagementNeeds = statuses.contains('invited') ||
         statuses.contains('pending_docs') ||
+        statuses.contains('approved') ||
         statuses.isEmpty;
+    final funnelIncomplete = !OnboardingController.isFunnelDone();
+    needsOnboarding.value = engagementNeeds || funnelIncomplete;
   }
 
   Future<AuthTokenModel> switchTenant(String nextTenantId) async {
@@ -202,7 +205,7 @@ class SessionService extends GetxController {
         return AppRoutes.contractorProfile;
       }
       if (needsOnboarding.value) {
-        return AppRoutes.contractorOnboarding;
+        return AppRoutes.contractorOnboardingLegal;
       }
       return AppRoutes.contractorHome;
     }

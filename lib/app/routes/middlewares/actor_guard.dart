@@ -37,7 +37,7 @@ class ActorGuard extends GetMiddleware {
     }
 
     if (isContractorShellRoute(route) ||
-        route == AppRoutes.contractorOnboarding) {
+        (route != null && route.startsWith(AppRoutes.contractorOnboarding))) {
       if (actor != null && actor != 'contractor') {
         return const RouteSettings(name: AppRoutes.wrongActor);
       }

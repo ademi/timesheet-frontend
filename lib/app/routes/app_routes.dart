@@ -45,6 +45,13 @@ abstract class AppRoutes {
   // ContractorShell + public / onboarding
   static const contractorRegister = '/contractor/register';
   static const contractorOnboarding = '/contractor/onboarding';
+  static const contractorOnboardingLegal = '/contractor/onboarding/legal';
+  static const contractorOnboardingNotices = '/contractor/onboarding/notices';
+  static const contractorOnboardingConsents = '/contractor/onboarding/consents';
+  static const contractorOnboardingEngagement =
+      '/contractor/onboarding/engagement';
+  static const contractorOnboardingCredentials =
+      '/contractor/onboarding/credentials';
   static const contractorHome = '/contractor/home';
   static const contractorVisits = '/contractor/visits';
   static const contractorVisitDetail = '/contractor/visits/detail';
