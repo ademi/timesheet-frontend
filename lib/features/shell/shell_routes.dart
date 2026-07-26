@@ -11,6 +11,7 @@ import '../contractor_onboarding/contractor_onboarding_routes.dart';
 import '../contractor_register/contractor_register_routes.dart';
 import '../credentials/credentials_routes.dart';
 import '../engagements/engagements_routes.dart';
+import '../jobs/jobs_routes.dart';
 import 'contractor_shell.dart';
 import 'staff_shell.dart';
 
@@ -34,17 +35,7 @@ abstract final class ShellPages {
           page: staffHomeStub,
           transition: Transition.fadeIn,
         ),
-        // staffWorkforce + staffClients provided by feature route modules
-        GetPage(
-          name: AppRoutes.staffJobs,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(anyOf: [AppPermissions.jobsRead]),
-          ],
-          page: staffJobsStub,
-          transition: Transition.fadeIn,
-        ),
+        // staffWorkforce + staffClients + staffJobs provided by feature modules
         GetPage(
           name: AppRoutes.staffVisits,
           middlewares: [
@@ -124,6 +115,7 @@ abstract final class ShellPages {
         ),
         ...EngagementsPages.routes,
         ...ClientsPages.routes,
+        ...JobsPages.routes,
         ...CredentialsPages.routes,
         ...ContractorOnboardingPages.routes,
         ContractorRegisterPages.page,

@@ -21,6 +21,8 @@
 | BH-005 | 2026-07-26 | Open — needs API change | Client invite deep-link path mismatch (`/invite/{token}` vs `/invites/client/{token}`) |
 | BH-006 | 2026-07-26 | Open — needs API change | Client site `latitude`/`longitude` optional server-side; Flutter requires them |
 | BH-007 | 2026-07-26 | Open — product/API decision | No `GET` list of client invites for staff Invites tab |
+| BH-008 | 2026-07-26 | Open — needs API change | No `GET /v1/jobs/{id}` — job detail cannot reload after refresh |
+| BH-009 | 2026-07-26 | Open — needs API change | No `GET /v1/jobs/{id}/form-catalog` — attach-only UX |
 
 ---
 
@@ -436,6 +438,50 @@ Response items e.g.:
 ### Requested from API
 
 Confirm whether V1 needs invite history; if yes, add list endpoint. If no, Flutter keeps “last created only” UX.
+
+---
+
+## BH-008 — No GET job by id
+
+**Date:** 2026-07-26  
+**Status:** Open — needs API change  
+**Related Flutter slice:** S6  
+**Endpoint / area:** `GET /v1/jobs/{job_id}`
+
+### Problem
+Staff job detail is loaded from list selection / navigation args only. There is no `GET /v1/jobs/{id}`, so web refresh on `/staff/jobs/detail` cannot rehydrate the job (Flutter shows an empty “not loaded” state).
+
+### Proposed or applied change
+Add `GET /v1/jobs/{job_id}` returning the same `JobOut` shape as list items. Perm: `jobs.read`.
+
+### Verification
+1. Create a job → `GET /v1/jobs/{id}` returns 200 with matching fields.  
+2. Flutter can open detail by id after refresh.
+
+### Requested from API
+Confirm and implement GET-by-id (or document intentional omission).
+
+---
+
+## BH-009 — No GET job form-catalog
+
+**Date:** 2026-07-26  
+**Status:** Open — needs API change  
+**Related Flutter slice:** S6  
+**Endpoint / area:** `GET /v1/jobs/{job_id}/form-catalog` (only `POST` exists today)
+
+### Problem
+Flutter can `POST` attach a form template to a job, but cannot list attached catalog entries. Staff UI tracks “attached this session” only and cannot show true catalog state after reload.
+
+### Proposed or applied change
+Add `GET /v1/jobs/{job_id}/form-catalog` returning attached template refs (id, name, required?, etc.). Perm: `jobs.read`.
+
+### Verification
+1. Attach two templates → GET returns both.  
+2. Flutter detail screen shows catalog without session-only memory.
+
+### Requested from API
+Add list endpoint (or nest catalog on JobOut).
 
 ---
 

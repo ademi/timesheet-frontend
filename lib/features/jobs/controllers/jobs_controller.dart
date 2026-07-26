@@ -1,0 +1,474 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_routes.dart';
+import '../../../app/themes/app_colors.dart';
+import '../../../core/errors/app_failure.dart';
+import '../../../core/services/session_service.dart';
+import '../../clients/data/models/client_models.dart';
+import '../../clients/data/repositories/clients_repository.dart';
+import '../../engagements/data/models/engagement_models.dart';
+import '../../engagements/data/repositories/engagements_repository.dart';
+import '../data/models/job_models.dart';
+import '../data/repositories/jobs_repository.dart';
+
+class JobsController extends GetxController {
+  JobsController({
+    required JobsRepository repository,
+    required ClientsRepository clientsRepository,
+    required EngagementsRepository engagementsRepository,
+    required SessionService session,
+  })  : _repository = repository,
+        _clients = clientsRepository,
+        _engagements = engagementsRepository,
+        _session = session;
+
+  final JobsRepository _repository;
+  final ClientsRepository _clients;
+  final EngagementsRepository _engagements;
+  final SessionService _session;
+
+  final jobs = <JobOut>[].obs;
+  final formTemplates = <FormTemplateOut>[].obs;
+  final clients = <ClientOut>[].obs;
+  final branches = <BranchOut>[].obs;
+  final sites = <ClientSiteOut>[].obs;
+  final engagements = <EngagementOut>[].obs;
+  final rules = <RecurrenceRuleOut>[].obs;
+
+  /// Session-only: API has no GET form-catalog (BH-008).
+  final attachedCatalogIds = <String>{}.obs;
+
+  final isLoading = false.obs;
+  final isSaving = false.obs;
+  final errorMessage = RxnString();
+  final lastGenerate = Rxn<GenerateVisitsResponse>();
+
+  final selected = Rxn<JobOut>();
+  final tabIndex = 0.obs;
+
+  // Create job form
+  final titleCtrl = TextEditingController();
+  final kind = 'standing'.obs;
+  final locationMode = 'site'.obs; // site | branch
+  final selectedClientId = RxnString();
+  final selectedSiteId = RxnString();
+  final selectedBranchId = RxnString();
+  final geofenceMode = 'informational'.obs;
+  final geofenceRadiusCtrl = TextEditingController(text: '100');
+
+  // Form template
+  final templateNameCtrl = TextEditingController();
+
+  // Recurrence
+  final rruleCtrl = TextEditingController(text: 'FREQ=WEEKLY;BYDAY=MO,WE,FR');
+  final durationCtrl = TextEditingController(text: '60');
+  final taskTitlesCtrl = TextEditingController(text: 'Check-in briefing');
+  final selectedContractorId = RxnString();
+  final generatePartial = false.obs;
+  final selectedFormTemplateIds = <String>{}.obs;
+
+  // Manual visit
+  final manualTaskCtrl = TextEditingController();
+
+  final _generateIdempotencyKeys = <String, String>{};
+
+  bool get canManage => _session.hasPermission(AppPermissions.jobsManage);
+  bool get canRead => _session.hasPermission(AppPermissions.jobsRead);
+  bool get canManageVisits =>
+      _session.hasPermission(AppPermissions.visitsManage);
+  bool get canManageForms =>
+      _session.hasPermission(AppPermissions.clientsManage);
+
+  List<EngagementOut> get assignableEngagements => engagements
+      .where((e) => e.isActive || e.isApproved || e.isPendingDocs)
+      .toList(growable: false);
+
+  @override
+  void onInit() {
+    super.onInit();
+    loadAll();
+  }
+
+  @override
+  void onClose() {
+    titleCtrl.dispose();
+    geofenceRadiusCtrl.dispose();
+    templateNameCtrl.dispose();
+    rruleCtrl.dispose();
+    durationCtrl.dispose();
+    taskTitlesCtrl.dispose();
+    manualTaskCtrl.dispose();
+    super.onClose();
+  }
+
+  Future<void> loadAll() async {
+    if (!canRead) {
+      errorMessage.value = 'Missing jobs.read permission.';
+      return;
+    }
+    isLoading.value = true;
+    errorMessage.value = null;
+    try {
+      final jobList = await _repository.listJobs();
+      jobs.assignAll(jobList);
+      formTemplates.assignAll(
+        await _repository.listFormTemplates(tenantLevel: true),
+      );
+      clients.assignAll(await _clients.listClients());
+      try {
+        branches.assignAll(await _repository.listBranches());
+      } catch (_) {
+        branches.clear();
+      }
+      try {
+        engagements.assignAll(await _engagements.listTenantEngagements());
+      } catch (_) {
+        engagements.clear();
+      }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void hydrateSelectedFromArgs() {
+    final arg = Get.arguments;
+    if (arg is JobOut) {
+      selected.value = arg;
+    }
+  }
+
+  void openFormTemplates() {
+    templateNameCtrl.clear();
+    errorMessage.value = null;
+    Get.toNamed(AppRoutes.staffFormTemplates);
+  }
+
+  Future<void> onClientChanged(String? clientId) async {
+    selectedClientId.value = clientId;
+    selectedSiteId.value = null;
+    sites.clear();
+    if (clientId == null) return;
+    try {
+      sites.assignAll(await _clients.listSites(clientId));
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    }
+  }
+
+  void openCreate() {
+    titleCtrl.clear();
+    kind.value = 'standing';
+    locationMode.value = 'site';
+    selectedClientId.value = null;
+    selectedSiteId.value = null;
+    selectedBranchId.value = null;
+    sites.clear();
+    geofenceMode.value = 'informational';
+    geofenceRadiusCtrl.text = '100';
+    errorMessage.value = null;
+    Get.toNamed(AppRoutes.staffJobForm);
+  }
+
+  Future<void> saveJob() async {
+    final title = titleCtrl.text.trim();
+    if (title.isEmpty) {
+      errorMessage.value = 'Title is required.';
+      return;
+    }
+    final useSite = locationMode.value == 'site';
+    if (useSite && selectedSiteId.value == null) {
+      errorMessage.value = 'Select a client site (XOR with branch).';
+      return;
+    }
+    if (!useSite && selectedBranchId.value == null) {
+      errorMessage.value = 'Select a branch (XOR with client site).';
+      return;
+    }
+    if (kind.value == 'standing' && selectedClientId.value == null) {
+      errorMessage.value = 'Standing jobs require a client.';
+      return;
+    }
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final created = await _repository.createJob(
+        JobCreateRequest(
+          kind: kind.value,
+          title: title,
+          clientId: selectedClientId.value,
+          clientSiteId: useSite ? selectedSiteId.value : null,
+          branchId: useSite ? null : selectedBranchId.value,
+          geofenceMode: geofenceMode.value,
+          geofenceRadiusM: int.tryParse(geofenceRadiusCtrl.text.trim()),
+        ),
+      );
+      Get.back();
+      await loadAll();
+      await openDetail(created);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> openDetail(JobOut job) async {
+    selected.value = job;
+    attachedCatalogIds.clear();
+    lastGenerate.value = null;
+    tabIndex.value = 0;
+    Get.toNamed(AppRoutes.staffJobDetail, arguments: job);
+    await refreshRules();
+  }
+
+  Future<void> refreshRules() async {
+    final job = selected.value;
+    if (job == null) return;
+    try {
+      rules.assignAll(await _repository.listRecurrenceRules(job.id));
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    }
+  }
+
+  Future<void> setStatus(String status) async {
+    final job = selected.value;
+    if (job == null) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _repository.updateJobStatus(job.id, status);
+      selected.value = updated;
+      final idx = jobs.indexWhere((j) => j.id == updated.id);
+      if (idx >= 0) jobs[idx] = updated;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> attachFormTemplate(String templateId) async {
+    final job = selected.value;
+    if (job == null) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      await _repository.addFormCatalog(job.id, templateId);
+      attachedCatalogIds.add(templateId);
+      Get.snackbar(
+        'Attached',
+        'Form template added to job catalog.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> createFormTemplate() async {
+    final name = templateNameCtrl.text.trim();
+    if (name.isEmpty) {
+      errorMessage.value = 'Template name is required.';
+      return;
+    }
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      await _repository.createFormTemplate(
+        FormTemplateCreateRequest(
+          name: name,
+          schemaJson: simpleTextFormSchema(),
+          clientId: selected.value?.clientId,
+        ),
+      );
+      templateNameCtrl.clear();
+      formTemplates.assignAll(
+        await _repository.listFormTemplates(tenantLevel: true),
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> deleteFormTemplate(String id) async {
+    isSaving.value = true;
+    try {
+      await _repository.deleteFormTemplate(id);
+      formTemplates.assignAll(
+        await _repository.listFormTemplates(tenantLevel: true),
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> createRecurrenceRule() async {
+    final job = selected.value;
+    if (job == null) return;
+    if (!job.isStanding) {
+      errorMessage.value = 'Recurrence requires a standing job.';
+      return;
+    }
+    final contractorId = selectedContractorId.value;
+    if (contractorId == null) {
+      errorMessage.value = 'Select a contractor.';
+      return;
+    }
+    final rrule = rruleCtrl.text.trim();
+    final duration = int.tryParse(durationCtrl.text.trim()) ?? 0;
+    if (rrule.isEmpty || duration < 1) {
+      errorMessage.value = 'RRULE and duration (minutes) are required.';
+      return;
+    }
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final tasks = taskTitlesCtrl.text
+          .split('\n')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      await _repository.createRecurrenceRule(
+        job.id,
+        RecurrenceRuleCreateRequest(
+          contractorId: contractorId,
+          rrule: rrule.startsWith('FREQ=') || rrule.startsWith('RRULE:')
+              ? rrule
+              : 'FREQ=WEEKLY;BYDAY=MO',
+          dtstart: DateTime.now().toUtc(),
+          durationMinutes: duration,
+          taskTitles: tasks,
+          formTemplateIds: selectedFormTemplateIds.toList(),
+        ),
+      );
+      await refreshRules();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> toggleRuleActive(RecurrenceRuleOut rule) async {
+    final job = selected.value;
+    if (job == null) return;
+    isSaving.value = true;
+    try {
+      await _repository.patchRecurrenceRule(
+        jobId: job.id,
+        ruleId: rule.id,
+        isActive: !rule.isActive,
+      );
+      await refreshRules();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> generateForRule(RecurrenceRuleOut rule) async {
+    final job = selected.value;
+    if (job == null) return;
+    final now = DateTime.now().toUtc();
+    final from = now;
+    final to = now.add(const Duration(days: 14));
+    final idemKey = _generateIdempotencyKeys.putIfAbsent(
+      '${rule.id}|${from.toIso8601String()}|${to.toIso8601String()}|${generatePartial.value}',
+      () => 'fe-gen-${rule.id}-${now.microsecondsSinceEpoch}',
+    );
+    isSaving.value = true;
+    errorMessage.value = null;
+    lastGenerate.value = null;
+    try {
+      final result = await _repository.generateVisits(
+        jobId: job.id,
+        ruleId: rule.id,
+        body: GenerateVisitsRequest(
+          from: from,
+          to: to,
+          partial: generatePartial.value,
+        ),
+        idempotencyKey: idemKey,
+      );
+      lastGenerate.value = result;
+      Get.snackbar(
+        'Generate complete',
+        'Created ${result.createdVisitIds.length} visit(s); '
+            'skipped ${result.skipped.length}.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: AppColors.primary,
+        colorText: AppColors.onPrimary,
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> createManualVisit() async {
+    final job = selected.value;
+    if (job == null) return;
+    final contractorId = selectedContractorId.value;
+    if (contractorId == null) {
+      errorMessage.value = 'Select a contractor.';
+      return;
+    }
+    final start = DateTime.now().toUtc().add(const Duration(hours: 1));
+    final end = start.add(const Duration(hours: 1));
+    final tasks = manualTaskCtrl.text
+        .split('\n')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      await _repository.createManualVisit(
+        job.id,
+        ManualVisitCreateRequest(
+          contractorId: contractorId,
+          scheduledStart: start,
+          scheduledEnd: end,
+          taskTitles: tasks,
+        ),
+      );
+      Get.snackbar(
+        'Visit created',
+        'Manual visit scheduled (opens in Visits in S7).',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  void toggleFormTemplateForRule(String id) {
+    if (selectedFormTemplateIds.contains(id)) {
+      selectedFormTemplateIds.remove(id);
+    } else {
+      selectedFormTemplateIds.add(id);
+    }
+  }
+}

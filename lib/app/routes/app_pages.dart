@@ -46,8 +46,6 @@ import '../views/payroll_period_detail_view.dart';
 import '../views/payroll_period_results_view.dart';
 import '../views/payroll_periods_view.dart';
 import '../views/payroll_settings_view.dart';
-import '../bindings/shift_schedule_binding.dart';
-import '../views/shift_schedule_view.dart';
 import '../views/payroll_summary_report_view.dart';
 import '../views/shell/admin_shell.dart';
 import '../../features/shell/shell_routes.dart';
@@ -115,13 +113,7 @@ class AppPages {
       binding: AttendanceCorrectionsBinding(),
       transition: Transition.rightToLeft,
     ),
-    GetPage(
-      name: AppRoutes.adminShiftSchedule,
-      middlewares: [AuthGuard()],
-      page: () => adminShellPage(const ShiftScheduleView()),
-      binding: ShiftScheduleBinding(),
-      transition: Transition.rightToLeft,
-    ),
+    // Shift schedule employee board removed in S6 (replaced by Jobs + recurrence).
     GetPage(
       name: AppRoutes.adminAttendanceAdjustment,
       middlewares: [AuthGuard()],

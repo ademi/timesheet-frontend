@@ -152,12 +152,15 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 
 **Design:** §6.7
 
-- [ ] Jobs list/create/edit; form-catalog attach
-- [ ] Form templates list/CRUD (staff) as needed for jobs/visits
-- [ ] Recurrence rules + generate (`Idempotency-Key`; `partial` optional)
-- [ ] Location XOR `branch_id` / `client_site_id`
+- [x] Jobs list/create/edit; form-catalog attach
+- [x] Form templates list/CRUD (staff) as needed for jobs/visits
+- [x] Recurrence rules + generate (`Idempotency-Key`; `partial` optional)
+- [x] Location XOR `branch_id` / `client_site_id`
 
-**Delete when done:** Shift schedule employee board feature.
+**Delete when done:** Shift schedule employee board feature. ✅ removed (`/admin/shift-schedule` + widgets/controller/binding)
+
+**Manual QA:** [manual-qa-s6.md](./manual-qa-s6.md)  
+**API gaps:** [BH-008](./backend-handoff-contractor-register-nested-txn.md) (no GET job by id) · [BH-009](./backend-handoff-contractor-register-nested-txn.md) (no GET form-catalog)
 
 ---
 
@@ -220,8 +223,8 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 | S2 | Legal + onboarding | [ ] |
 | S3 | Credentials + documents | [ ] |
 | S4 | Engagements / workforce | [ ] |
-| S5 | Clients CRM | [ ] |
-| S6 | Jobs + recurrence | [ ] |
+| S5 | Clients CRM | [x] |
+| S6 | Jobs + recurrence | [x] |
 | S7 | Visits + GPS | [ ] |
 | S8 | Contractor schedule | [ ] |
 | S9 | Rates + batches | [ ] |
