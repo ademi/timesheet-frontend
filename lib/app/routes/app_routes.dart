@@ -38,6 +38,10 @@ abstract class AppRoutes {
   static const staffWorkforceInvite = '/staff/workforce/invite';
   static const staffWorkforceDetail = '/staff/workforce/detail';
   static const staffClients = '/staff/clients';
+  static const staffClientForm = '/staff/clients/form';
+  static const staffClientDetail = '/staff/clients/detail';
+  static const staffClientSiteForm = '/staff/clients/site-form';
+  static const staffClientContactForm = '/staff/clients/contact-form';
   static const staffJobs = '/staff/jobs';
   static const staffVisits = '/staff/visits';
   static const staffPayments = '/staff/payments';
@@ -63,6 +67,12 @@ abstract class AppRoutes {
   static const contractorCredentialCreate = '/contractor/credentials/create';
   static const contractorCredentialDetail = '/contractor/credentials/detail';
   static const contractorProfile = '/contractor/profile';
+
+  /// Public client invite acknowledge (design §4.1 / §6.6).
+  static const publicClientInvite = '/invites/client/:token';
+
+  /// Alias for backend email links (`public_app_base_url/invite/{token}`).
+  static const publicClientInviteLegacy = '/invite/:token';
 
   // Deprecated aliases (removed /v2 stubs) — keep names for any leftover refs.
   @Deprecated('Use staffHome')

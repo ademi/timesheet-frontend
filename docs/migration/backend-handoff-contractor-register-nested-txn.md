@@ -18,6 +18,9 @@
 | BH-002 | 2026-07-26 | Open — needs API change | Contractor login blocked when no engagement exists |
 | BH-003 | 2026-07-26 | Open — needs API change | Pre-active engagement JWT lacks `compliance.legal.*` / consent perms (blocks S2 onboarding) |
 | BH-004 | 2026-07-26 | Open — needs API change | Pre-active engagement JWT lacks `credentials.read` / `credentials.manage` (blocks S3) |
+| BH-005 | 2026-07-26 | Open — needs API change | Client invite deep-link path mismatch (`/invite/{token}` vs `/invites/client/{token}`) |
+| BH-006 | 2026-07-26 | Open — needs API change | Client site `latitude`/`longitude` optional server-side; Flutter requires them |
+| BH-007 | 2026-07-26 | Open — product/API decision | No `GET` list of client invites for staff Invites tab |
 
 ---
 
@@ -306,6 +309,133 @@ Expand `_CONTRACTOR_LIMITED_PERMISSIONS` to include at least:
 ### Requested from API
 
 Ship resolver change with BH-003 (same permission matrix for pre-active statuses).
+
+---
+
+## BH-005 — Client invite deep-link path mismatch
+
+**Date:** 2026-07-26  
+**Status:** Open — needs API change  
+**Related Flutter slice:** S5  
+**Endpoint / area:** `app/modules/clients/service.py` · `create_client_invite` · notification `invite_url`
+
+### Problem
+
+Flutter design (§4.1 / §6.6) and app routes use:
+
+```text
+/invites/client/{token}
+```
+
+Wired to:
+
+- `GET /v1/public/client-invites/{token}`
+- `POST /v1/public/client-invites/{token}/acknowledge`
+
+Backend `create_client_invite` builds the emailed URL as:
+
+```text
+{public_app_base_url}/invite/{raw_token}
+```
+
+**Flutter impact:** Email / notification links open a path that does not match the design route. Flutter temporarily registers **both** `/invites/client/:token` and `/invite/:token` to the same acknowledge screen, but email deep-links and docs will diverge until the API is aligned.
+
+### Expected
+
+Use a single canonical path everywhere (prefer design):
+
+```text
+{public_app_base_url}/invites/client/{token}
+```
+
+Update `invite_url` construction in `create_client_invite` (and any notification templates / landing redirects).
+
+If landing hosts the page instead of Flutter, document the host + path contract explicitly.
+
+### Verification
+
+1. Staff `POST /v1/clients/{id}/invites` → 201 `{ token, expires_at }`.
+2. Notification / logged `invite_url` ends with `/invites/client/<token>`.
+3. Opening that URL in the Flutter web app loads the public acknowledge screen and `GET /v1/public/client-invites/<token>` succeeds.
+
+### Requested from API
+
+Align `invite_url` path with Flutter design (or confirm landing owns `/invite/` and Flutter should not).
+
+---
+
+## BH-006 — Client site lat/lng should be required
+
+**Date:** 2026-07-26  
+**Status:** Open — needs API change  
+**Related Flutter slice:** S5  
+**Endpoint / area:** `ClientSiteCreate` / `ClientSiteUpdate` · `create_client_site`
+
+### Problem
+
+Flutter S5 checklist / design: **lat/lng required** for sites (geofence check-in later).
+
+Backend `ClientSiteCreate` treats `latitude` / `longitude` as **optional**. Sites can be created with `location_geog = NULL`.
+
+**Flutter impact:** UI enforces lat/lng client-side, but other clients / scripts can still create coordinate-less sites that will break visit geofence in S7.
+
+### Expected
+
+- Reject create (and preferably patch that clears both coords) without valid `latitude` + `longitude` — e.g. `422` validation or `400` with a clear `detail` code such as `site_coordinates_required`.
+- Keep `geofence_radius_m` defaults as today (`100`, range 10–5000).
+
+### Verification
+
+1. `POST /v1/clients/{id}/sites` without lat/lng → **4xx**.
+2. With valid lat/lng → **201** and GET returns both fields.
+
+### Requested from API
+
+Make coordinates required on site create (and document update rules).
+
+---
+
+## BH-007 — No staff list of client invites
+
+**Date:** 2026-07-26  
+**Status:** Open — product/API decision  
+**Related Flutter slice:** S5  
+**Endpoint / area:** `POST /v1/clients/{id}/invites` only
+
+### Problem
+
+Staff Invites tab can **create** a token (`POST .../invites` → `{ token, expires_at }`) but there is **no** `GET /v1/clients/{id}/invites` (or similar) to list outstanding / consumed invites.
+
+**Flutter impact:** UI shows only the last invite created in the current session. Staff cannot audit expiry / consumption after leaving the screen. Raw token is only returned once (hash stored) — listing would need metadata only (created_at, expires_at, consumed_at), not the raw token again.
+
+### Expected (if product wants it)
+
+```http
+GET /v1/clients/{client_id}/invites
+```
+
+Response items e.g.:
+
+```json
+{
+  "id": "...",
+  "expires_at": "...",
+  "consumed_at": null,
+  "created_at": "...",
+  "created_by_user_id": "..."
+}
+```
+
+**Do not** return raw tokens on list (only on create).
+
+### Verification
+
+1. Create two invites → GET list returns two metadata rows.
+2. After acknowledge → `consumed_at` set.
+
+### Requested from API
+
+Confirm whether V1 needs invite history; if yes, add list endpoint. If no, Flutter keeps “last created only” UX.
 
 ---
 

@@ -6,6 +6,7 @@ import '../../app/routes/middlewares/auth_guard.dart';
 import '../../app/routes/middlewares/permission_guard.dart';
 import '../../app/constants/app_permissions.dart';
 import '../../app/views/v2/wrong_actor_view.dart';
+import '../clients/clients_routes.dart';
 import '../contractor_onboarding/contractor_onboarding_routes.dart';
 import '../contractor_register/contractor_register_routes.dart';
 import '../credentials/credentials_routes.dart';
@@ -33,17 +34,7 @@ abstract final class ShellPages {
           page: staffHomeStub,
           transition: Transition.fadeIn,
         ),
-        // staffWorkforce provided by EngagementsPages
-        GetPage(
-          name: AppRoutes.staffClients,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(anyOf: [AppPermissions.clientsRead]),
-          ],
-          page: staffClientsStub,
-          transition: Transition.fadeIn,
-        ),
+        // staffWorkforce + staffClients provided by feature route modules
         GetPage(
           name: AppRoutes.staffJobs,
           middlewares: [
@@ -132,6 +123,7 @@ abstract final class ShellPages {
           transition: Transition.fadeIn,
         ),
         ...EngagementsPages.routes,
+        ...ClientsPages.routes,
         ...CredentialsPages.routes,
         ...ContractorOnboardingPages.routes,
         ContractorRegisterPages.page,

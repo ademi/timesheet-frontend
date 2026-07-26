@@ -66,34 +66,34 @@ Optional demo tenant id (only if login UI/API ever asks for it):
 
 ### S0-1 Gateway (no role cards)
 
-- [ ] Cold start opens **Gateway** (or resumes session — see S0-6).
-- [ ] Gateway shows **three** actions only:
+- [x] Cold start opens **Gateway** (or resumes session — see S0-6).
+- [x] Gateway shows **three** actions only:
   - Sign in
   - Register as contractor
   - Provider signup
-- [ ] **No** “Admin Panel” / “Attendance” role cards.
-- [ ] **Sign in** → `/login`.
-- [ ] **Register as contractor** → `/contractor/register`.
-- [ ] **Provider signup** opens external `LANDING_URL` (browser / new tab). If it fails, snackbar should show the URL.
+- [x] **No** “Admin Panel” / “Attendance” role cards.
+- [x] **Sign in** → `/login`.
+- [x] **Register as contractor** → `/contractor/register`.
+- [x] **Provider signup** opens external `LANDING_URL` (browser / new tab). If it fails, snackbar should show the URL.
 
 
 
 ### S0-2 Staff login → StaffShell
 
-- [ ] On Login, enter:
+- [x] On Login, enter:
   - Email/phone: `admin@demotenant.example`
   - Password: `ChangeMe123!`
-- [ ] Submit → lands on `/staff/home` (Staff home stub).
-- [ ] Staff nav visible (rail on wide web): Home, and other items only if JWT permissions allow (Workforce, Clients, Jobs, Visits, Payments, Compliance, Settings).
-- [ ] Switching a visible staff nav item changes route under `/staff/...` and keeps the shell chrome.
+- [x] Submit → lands on `/staff/home` (Staff home stub).
+- [x] Staff nav visible (rail on wide web): Home, and other items only if JWT permissions allow (Workforce, Clients, Jobs, Visits, Payments, Compliance, Settings).
+- [x] Switching a visible staff nav item changes route under `/staff/...` and keeps the shell chrome.
 
 **If login fails:** confirm seed `002` was applied; confirm API is the contractor_workflow process; check Network tab for `POST /v1/auth/login` and `GET /v1/auth/me/context`.
 
 ### S0-3 Logout → Gateway
 
-- [ ] From Staff home (or any shell stub), tap the **logout** icon in the app bar (top-right).
-- [ ] After logout, app shows **Gateway** (not legacy admin/attendance portal).
-- [ ] Tokens cleared — opening a `/staff/...` URL redirects to Gateway.
+- [x] From Staff home (or any shell stub), tap the **logout** icon in the app bar (top-right).
+- [x] After logout, app shows **Gateway** (not legacy admin/attendance portal).
+- [x] Tokens cleared — opening a `/staff/...` URL redirects to Gateway.
 
 
 
@@ -101,26 +101,26 @@ Optional demo tenant id (only if login UI/API ever asks for it):
 
 Complete **S1** first so you have a contractor account, then:
 
-- [ ] Login with the contractor email/password you registered.
-- [ ] Lands on `/contractor/home` *or* `/contractor/onboarding` (onboarding if no/invited/pending engagements — expected for a brand-new contractor).
-- [ ] Contractor shell (bottom nav on narrow / rail on wide): Home, Visits, Schedule, Credentials, Profile.
-- [ ] Onboarding route (if shown) has **no** tab chrome.
+- [x] Login with the contractor email/password you registered.
+- [x] Lands on `/contractor/home` *or* `/contractor/onboarding` (onboarding if no/invited/pending engagements — expected for a brand-new contractor).
+- [x] Contractor shell (bottom nav on narrow / rail on wide): Home, Visits, Schedule, Credentials, Profile.
+- [x] Onboarding route (if shown) has **no** tab chrome.
 
 
 
 ### S0-5 Wrong actor (optional)
 
-- [ ] While logged in as staff, manually navigate to `/contractor/home` → **Wrong actor** (or redirect away from contractor shell).
-- [ ] While logged in as contractor, manually navigate to `/staff/home` → **Wrong actor**.
+- [x] While logged in as staff, manually navigate to `/contractor/home` → **Wrong actor** (or redirect away from contractor shell).
+- [x] While logged in as contractor, manually navigate to `/staff/home` → **Wrong actor**.
 
 
 
 ### S0-6 Web refresh keeps session
 
-- [ ] Log in as staff → `/staff/home`.
-- [ ] Refresh the browser (F5).
-- [ ] Still authenticated; stay on staff shell (or restore via gateway resume into staff home).
-- [ ] Repeat with contractor after S1.
+- [x] Log in as staff → `/staff/home`.
+- [x] Refresh the browser (F5).
+- [x] Still authenticated; stay on staff shell (or restore via gateway resume into staff home).
+- [x] Repeat with contractor after S1.
 
 
 

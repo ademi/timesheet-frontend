@@ -136,12 +136,15 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 
 **Design:** §6.6, §4.1 invites
 
-- [ ] Clients / sites / contacts CRUD
-- [ ] Create invite token UI
-- [ ] Public `/invites/client/:token` acknowledge screen
-- [ ] Map/pin or lat/lng for sites (lat/lng required)
+- [x] Clients / sites / contacts CRUD
+- [x] Create invite token UI
+- [x] Public `/invites/client/:token` acknowledge screen (+ `/invite/:token` alias for BH-005)
+- [x] Map/pin or lat/lng for sites (lat/lng required in Flutter UI)
 
-**Not in V1:** NDIS client packs / records-engine.
+**Not in V1:** NDIS client packs / records-engine · interactive map pin (coords entry only).
+
+**S5 exit:** Client + site + contact + invite create + public acknowledge smoke path. Manual QA: [manual-qa-s5.md](./manual-qa-s5.md).  
+**Backend follow-ups:** [BH-005](./backend-handoff-contractor-register-nested-txn.md) (invite URL path) · [BH-006](./backend-handoff-contractor-register-nested-txn.md) (require site coords) · [BH-007](./backend-handoff-contractor-register-nested-txn.md) (optional invite list).
 
 ---
 
