@@ -5,7 +5,6 @@ import '../../app/routes/app_routes.dart';
 import '../../app/themes/app_colors.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
 import '../../core/responsive/breakpoints.dart';
-import 'contractor_profile_view.dart';
 import 'shell_stub_page.dart';
 
 /// ContractorShell nav (design §4.4).
@@ -109,8 +108,6 @@ Widget contractorHomeStub() =>
     contractorShellPage(const ShellStubPage(title: 'Contractor home'));
 Widget contractorCredentialsStub() =>
     contractorShellPage(const ShellStubPage(title: 'Credentials'));
-Widget contractorProfileStub() =>
-    contractorShellPage(const ContractorProfileView());
 Widget contractorOnboardingStub() => const ShellStubPage(
       title: 'Onboarding',
       subtitle:

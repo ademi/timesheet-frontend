@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../app/constants/app_permissions.dart';
-import '../../app/controllers/auth_controller.dart';
 import '../../app/routes/app_routes.dart';
-import '../../app/themes/app_colors.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
 import '../../core/services/session_service.dart';
 import 'shell_stub_page.dart';
@@ -142,39 +140,3 @@ Widget staffWorkforceStub() =>
     staffShellPage(const ShellStubPage(title: 'Workforce'));
 Widget staffClientsStub() =>
     staffShellPage(const ShellStubPage(title: 'Clients'));
-Widget staffComplianceStub() => staffShellPage(
-      Scaffold(
-        appBar: AppBar(
-          title: const Text('Compliance'),
-          actions: [
-            if (Get.isRegistered<AuthController>())
-              IconButton(
-                tooltip: 'Log out',
-                onPressed: () => Get.find<AuthController>().logout(),
-                icon: const Icon(Icons.logout),
-              ),
-          ],
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Compliance tools. Full rights / incidents UI lands later.',
-                style: TextStyle(color: AppColors.textMuted),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => Get.toNamed(AppRoutes.staffCredentialReview),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                ),
-                child: const Text('Open credential review'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );

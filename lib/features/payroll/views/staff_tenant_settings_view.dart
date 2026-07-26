@@ -28,6 +28,7 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
         if (controller.isLoading.value && controller.tenant.value == null) {
           return const Center(child: CircularProgressIndicator());
         }
+        final sub = controller.subscription.value;
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -46,13 +47,37 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
               controller.tenant.value?.name ?? 'Tenant',
               style: Get.textTheme.titleMedium,
             ),
-            const SizedBox(height: 4),
+            if (sub != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Subscription: ${sub.status}'
+                        '${sub.planName != null ? ' · ${sub.planName}' : ''}',
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: controller.openBilling,
+                      child: const Text('Billing'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
             const Text(
-              'Timezone and public holiday jurisdiction are used for rate bands '
-              'and recurrence display. Fields appear when the API exposes them.',
+              'Timezone and public holiday jurisdiction (when API exposes them).',
               style: TextStyle(fontSize: 13),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             TextField(
               controller: controller.timezoneCtrl,
               enabled: controller.canManage,
@@ -70,7 +95,7 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             if (controller.canManage)
               ElevatedButton(
                 onPressed: controller.isSaving.value ? null : controller.save,
@@ -80,12 +105,21 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                   minimumSize: const Size.fromHeight(48),
                 ),
                 child: const Text('Save'),
-              )
-            else
-              const Text(
-                'Read-only — needs tenants.manage to edit.',
-                style: TextStyle(fontSize: 12),
               ),
+            if (controller.canViewMembers) ...[
+              const Divider(height: 32),
+              Text('Members', style: Get.textTheme.titleMedium),
+              const SizedBox(height: 8),
+              if (controller.members.isEmpty) const Text('No members loaded.'),
+              for (final m in controller.members)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(m.fullName ?? m.email),
+                  subtitle: Text(
+                    '${m.email}${m.role != null ? ' · ${m.role}' : ''}',
+                  ),
+                ),
+            ],
           ],
         );
       }),

@@ -5,6 +5,7 @@ import '../../core/services/session_service.dart';
 import '../../core/services/token_storage.dart';
 import '../../shared/utils/external_url.dart';
 import '../routes/app_routes.dart';
+import '../services/push_notification_service.dart';
 
 class GatewayController extends GetxController {
   @override
@@ -21,6 +22,9 @@ class GatewayController extends GetxController {
     if (Get.isRegistered<SessionService>()) {
       final session = Get.find<SessionService>();
       await session.hydrateFromMeContext();
+      if (Get.isRegistered<PushNotificationService>()) {
+        await Get.find<PushNotificationService>().registerCurrentDeviceToken();
+      }
       final route = session.resolvePostLoginRoute();
       if (route != AppRoutes.login && route != AppRoutes.gateway) {
         Get.offAllNamed(route);

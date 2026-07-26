@@ -1,7 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rostiq/app/data/models/attendance/employee_model.dart';
 import 'package:rostiq/app/routes/app_navigation.dart';
-import 'package:rostiq/app/routes/route_args.dart';
+
+class _SampleResult {
+  const _SampleResult(this.id);
+  final String id;
+}
 
 void main() {
   group('readBoolResult', () {
@@ -15,26 +18,12 @@ void main() {
 
   group('readTypedResult', () {
     test('returns value when type matches', () {
-      const employee = EmployeeModel(
-        id: 'e1',
-        tenantId: 't1',
-        branchId: 'b1',
-        userId: 'u1',
-        employeeCode: 'E1',
-        fullName: 'Test',
-        phone: '1',
-        email: 't@t.com',
-        dob: '2000-01-01',
-        isActive: true,
-        clockedIn: false,
-        clockedOut: false,
-      );
-      const pickerResult = EmployeePickerResult(employee);
-      expect(readTypedResult<EmployeePickerResult>(pickerResult), pickerResult);
+      const sample = _SampleResult('e1');
+      expect(readTypedResult<_SampleResult>(sample), sample);
     });
 
     test('returns null when type does not match', () {
-      expect(readTypedResult<EmployeePickerResult>('wrong'), isNull);
+      expect(readTypedResult<_SampleResult>('wrong'), isNull);
     });
   });
 }

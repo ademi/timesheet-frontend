@@ -3,9 +3,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../core/constants/api_paths.dart';
+
+/// Registers FCM/APNs device tokens for both staff and contractor sessions.
 class PushNotificationService {
   PushNotificationService({required Dio authenticatedDio})
-    : _authenticatedDio = authenticatedDio;
+      : _authenticatedDio = authenticatedDio;
 
   final Dio _authenticatedDio;
   bool _initialized = false;
@@ -17,7 +20,7 @@ class PushNotificationService {
       await FirebaseMessaging.instance.requestPermission();
       _initialized = true;
     } catch (_) {
-      // Keep app functional even when Firebase is not configured in local env.
+      // Keep app functional when Firebase is not configured locally.
     }
   }
 
@@ -26,20 +29,31 @@ class PushNotificationService {
       await initialize();
       final messaging = FirebaseMessaging.instance;
       final token = await messaging.getToken();
-      if (token == null || token.isEmpty) return;
-      final platform =
-          kIsWeb
-              ? 'web'
-              : defaultTargetPlatform == TargetPlatform.iOS
+      if (token == null || token.length < 16) return;
+      final platform = kIsWeb
+          ? 'web'
+          : defaultTargetPlatform == TargetPlatform.iOS
               ? 'ios'
               : 'android';
       await _authenticatedDio.post<Map<String, dynamic>>(
-        '/v1/notifications/devices',
+        ApiPaths.notificationDevices,
         data: {'token': token, 'platform': platform},
       );
     } catch (_) {
-      // Non-fatal path.
+      // Non-fatal.
+    }
+  }
+
+  Future<void> unregisterCurrentDeviceToken() async {
+    try {
+      await initialize();
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null || token.isEmpty) return;
+      await _authenticatedDio.delete<void>(
+        ApiPaths.notificationDevice(token),
+      );
+    } catch (_) {
+      // Non-fatal.
     }
   }
 }
-

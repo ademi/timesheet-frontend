@@ -6,12 +6,12 @@ import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:dio/dio.dart';
 import 'package:rostiq/app/data/datasources/remote/auth_remote_datasource.dart';
 import 'package:rostiq/app/data/datasources/remote/document_remote_datasource.dart';
-import 'package:rostiq/app/data/datasources/remote/visit_remote_datasource.dart';
 import 'package:rostiq/app/data/models/auth/login_request_model.dart';
 import 'package:rostiq/app/data/models/auth/switch_tenant_request_model.dart';
 import 'package:rostiq/app/data/models/document/document_models.dart';
-import 'package:rostiq/app/data/models/visit/visit_gps_body.dart';
 import 'package:rostiq/core/auth/jwt_claims.dart';
+import 'package:rostiq/features/visits/data/datasources/visits_remote_datasource.dart';
+import 'package:rostiq/features/visits/data/models/visit_models.dart';
 
 /// Phase 1 live spikes against a running API (default http://localhost:8000).
 ///
@@ -270,12 +270,12 @@ Future<void> _spikeCheckIn(Dio plain, Map<String, String> flags) async {
     LoginRequestModel(identifier: email, password: password),
   );
   final clients = await _authClients(plain, tokens.accessToken);
-  final visits = VisitRemoteDataSource(authenticatedDio: clients.$2);
+  final visits = VisitsRemoteDataSource(authenticatedDio: clients.$2);
 
   final accuracy = double.tryParse(flags['accuracy'] ?? '');
   final result = await visits.checkIn(
-    visitId: visitId,
-    gps: VisitGpsBody(lat: lat, lng: lng, accuracyM: accuracy),
+    id: visitId,
+    body: VisitGpsBody(lat: lat, lng: lng, accuracyM: accuracy),
     idempotencyKey: 'spike-checkin-$visitId',
   );
 

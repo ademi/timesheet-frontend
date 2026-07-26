@@ -7,6 +7,9 @@ import '../../app/routes/middlewares/permission_guard.dart';
 import '../../app/constants/app_permissions.dart';
 import '../../app/views/v2/wrong_actor_view.dart';
 import '../clients/clients_routes.dart';
+import '../compliance_ops/bindings/compliance_ops_binding.dart';
+import '../compliance_ops/compliance_ops_routes.dart';
+import '../compliance_ops/views/home_alerts_view.dart';
 import '../contractor_onboarding/contractor_onboarding_routes.dart';
 import '../contractor_register/contractor_register_routes.dart';
 import '../contractor_schedule/contractor_schedule_routes.dart';
@@ -18,7 +21,7 @@ import '../visits/visits_routes.dart';
 import 'contractor_shell.dart';
 import 'staff_shell.dart';
 
-/// Dual-shell GetPages for Staff + Contractor (S0 stubs).
+/// Dual-shell GetPages for Staff + Contractor.
 abstract final class ShellPages {
   ShellPages._();
 
@@ -35,37 +38,15 @@ abstract final class ShellPages {
             ActorGuard(),
             PermissionGuard(anyOf: [AppPermissions.authSession]),
           ],
-          page: staffHomeStub,
-          transition: Transition.fadeIn,
-        ),
-        // staffWorkforce/clients/jobs/visits/payments/settings via feature modules
-        GetPage(
-          name: AppRoutes.staffCompliance,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(
-              anyOf: [
-                AppPermissions.credentialsReview,
-                AppPermissions.complianceRightsManage,
-                AppPermissions.complianceIncidentsManage,
-                AppPermissions.complianceAuditView,
-              ],
-            ),
-          ],
-          page: staffComplianceStub,
+          binding: HomeAlertsBinding(),
+          page: () => staffShellPage(const HomeAlertsView()),
           transition: Transition.fadeIn,
         ),
         GetPage(
           name: AppRoutes.contractorHome,
           middlewares: [AuthGuard(), ActorGuard()],
-          page: contractorHomeStub,
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.contractorProfile,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: contractorProfileStub,
+          binding: HomeAlertsBinding(),
+          page: () => contractorShellPage(const HomeAlertsView()),
           transition: Transition.fadeIn,
         ),
         ...EngagementsPages.routes,
@@ -74,6 +55,7 @@ abstract final class ShellPages {
         ...VisitsPages.routes,
         ...ContractorSchedulePages.routes,
         ...PayrollPages.routes,
+        ...ComplianceOpsPages.routes,
         ...CredentialsPages.routes,
         ...ContractorOnboardingPages.routes,
         ContractorRegisterPages.page,

@@ -6,9 +6,7 @@ import 'auth_interceptor.dart';
 
 /// Single Dio client for the contractor domain (design §3.2).
 ///
-/// **Plan:** all new datasources use [ApiClient.dio] / [plainDio]. Do not add
-/// new [AttendanceApiClient] call sites; delete [AttendanceApiClient] when the
-/// legacy attendance / employee slices are removed.
+/// All datasources use [ApiClient.dio] / [plainDio].
 ///
 /// [plainDio] — unauthenticated auth (`/v1/auth/login`, `/v1/auth/refresh`);
 /// [dio] — authenticated calls (Bearer via [AuthInterceptor]).

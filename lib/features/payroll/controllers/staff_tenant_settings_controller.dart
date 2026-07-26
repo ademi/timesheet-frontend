@@ -5,29 +5,44 @@ import '../../../app/constants/app_permissions.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../compliance_ops/data/models/compliance_ops_models.dart';
+import '../../compliance_ops/data/repositories/compliance_ops_repository.dart';
+import '../../subscription/billing_gate.dart';
 import '../data/models/payroll_models.dart';
 import '../data/repositories/payroll_repository.dart';
 
 class StaffTenantSettingsController extends GetxController {
   StaffTenantSettingsController({
     required PayrollRepository payroll,
+    required ComplianceOpsRepository complianceOps,
     required SessionService session,
   })  : _payroll = payroll,
+        _complianceOps = complianceOps,
         _session = session;
 
   final PayrollRepository _payroll;
+  final ComplianceOpsRepository _complianceOps;
   final SessionService _session;
 
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
   final tenant = Rxn<TenantSettingsOut>();
+  final subscription = Rxn<SubscriptionStatusOut>();
+  final members = <TenantMemberOut>[].obs;
 
   final timezoneCtrl = TextEditingController();
   final jurisdictionCtrl = TextEditingController();
 
   bool get canManage =>
       _session.hasPermission(AppPermissions.tenantsManage);
+  bool get canViewMembers =>
+      _session.hasPermission(AppPermissions.tenantMembersRead) ||
+      _session.hasPermission(AppPermissions.tenantMembersManage);
+  bool get canViewBilling =>
+      _session.hasPermission(AppPermissions.subscriptionView) ||
+      _session.hasPermission(AppPermissions.billingView) ||
+      canManage;
 
   @override
   void onInit() {
@@ -57,9 +72,18 @@ class StaffTenantSettingsController extends GetxController {
       jurisdictionCtrl.text = t.publicHolidayJurisdiction ?? '';
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
-    } finally {
-      isLoading.value = false;
     }
+    if (canViewBilling) {
+      try {
+        subscription.value = await _complianceOps.getSubscription();
+      } on AppFailure catch (_) {}
+    }
+    if (canViewMembers) {
+      try {
+        members.assignAll(await _complianceOps.listTenantMembers());
+      } on AppFailure catch (_) {}
+    }
+    isLoading.value = false;
   }
 
   Future<void> save() async {
@@ -91,9 +115,12 @@ class StaffTenantSettingsController extends GetxController {
         colorText: AppColors.onPrimary,
       );
     } on AppFailure catch (e) {
+      await BillingGate.showIfNeeded(e);
       errorMessage.value = e.message;
     } finally {
       isSaving.value = false;
     }
   }
+
+  Future<void> openBilling() => BillingGate.openBillingUrl();
 }

@@ -85,6 +85,9 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
+    if (Get.isRegistered<PushNotificationService>()) {
+      await Get.find<PushNotificationService>().unregisterCurrentDeviceToken();
+    }
     if (Get.isRegistered<SessionService>()) {
       await Get.find<SessionService>().clear();
     }

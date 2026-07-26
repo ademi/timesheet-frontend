@@ -9,10 +9,7 @@ import '../../models/auth/logout_request_model.dart';
 import '../../models/auth/logout_response_model.dart';
 import '../../models/auth/me_context_model.dart';
 import '../../models/auth/refresh_request_model.dart';
-import '../../models/auth/set_pin_request_model.dart';
 import '../../models/auth/switch_tenant_request_model.dart';
-import '../../models/auth/verify_pin_request_model.dart';
-import '../../models/auth/verify_pin_response_model.dart';
 import '../../models/auth/verify_user_request_model.dart';
 import '../../models/auth/verify_user_response_model.dart';
 
@@ -37,8 +34,8 @@ Future<AuthTokenModel> executeRefreshRequest(
 
 class AuthRemoteDataSource {
   AuthRemoteDataSource({required Dio plainDio, required Dio authenticatedDio})
-    : _plainDio = plainDio,
-      _authenticatedDio = authenticatedDio;
+      : _plainDio = plainDio,
+        _authenticatedDio = authenticatedDio;
 
   final Dio _plainDio;
   final Dio _authenticatedDio;
@@ -58,42 +55,6 @@ class AuthRemoteDataSource {
       );
     }
     return VerifyUserResponseModel.fromJson(data);
-  }
-
-  Future<VerifyPinResponseModel> verifyPin(VerifyPinRequestModel request) async {
-    final response = await _authenticatedDio.post<Map<String, dynamic>>(
-      AppConstants.verifyPinPath,
-      data: request.toJson(),
-    );
-    final data = response.data;
-    if (data == null) {
-      throw DioException(
-        requestOptions: response.requestOptions,
-        message: 'Empty verify PIN response',
-      );
-    }
-    return VerifyPinResponseModel.fromJson(data);
-  }
-
-  Future<String> setPin(SetPinRequestModel request) async {
-    try {
-      final response = await _authenticatedDio.post<Map<String, dynamic>>(
-        AppConstants.setPinPath,
-        data: request.toJson(),
-      );
-      final data = response.data;
-      if (data == null) {
-        throw DioException(
-          requestOptions: response.requestOptions,
-          message: 'Empty set PIN response',
-        );
-      }
-      return data['message'] as String? ?? 'ok';
-    } on DioException catch (e) {
-      final authErr = parseAuthError(e);
-      if (authErr != null) throw authErr;
-      rethrow;
-    }
   }
 
   Future<AuthTokenModel> login(LoginRequestModel request) async {
@@ -136,8 +97,6 @@ class AuthRemoteDataSource {
     return LogoutResponseModel.fromJson(data);
   }
 
-  /// Calls POST /v1/auth/complete_first_login (requires Bearer access token).
-  /// Used when the server returns must_change_password=true on login.
   Future<void> completeFirstLogin(FirstLoginRequestModel request) async {
     try {
       final response = await _authenticatedDio.post<Map<String, dynamic>>(
@@ -157,8 +116,6 @@ class AuthRemoteDataSource {
     }
   }
 
-  /// Switches contractor (or member) session to another tenant.
-  /// Returns new access + refresh tokens (old refresh is revoked).
   Future<AuthTokenModel> switchTenant(SwitchTenantRequestModel request) async {
     try {
       final response = await _authenticatedDio.post<Map<String, dynamic>>(
@@ -180,7 +137,6 @@ class AuthRemoteDataSource {
     }
   }
 
-  /// Actor + engagements for session restore. Permissions remain JWT-only.
   Future<MeContextModel> getMeContext() async {
     try {
       final response = await _authenticatedDio.get<Map<String, dynamic>>(
@@ -202,7 +158,6 @@ class AuthRemoteDataSource {
   }
 }
 
-/// Parses [DioException.response] into [AuthErrorModel] when possible.
 AuthErrorModel? parseAuthError(DioException e) {
   final data = e.response?.data;
   if (data is Map<String, dynamic>) {

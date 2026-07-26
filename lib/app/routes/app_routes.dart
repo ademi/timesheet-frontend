@@ -102,7 +102,7 @@ abstract class AppRoutes {
   @Deprecated('Use contractorCredentials')
   static const contractorDocuments = contractorCredentials;
   @Deprecated('Use contractorHome')
-  static const contractorPayments = contractorHome;
+  static const contractorPaymentsAlias = contractorHome;
   @Deprecated('Use contractorProfile')
   static const contractorSwitchTenant = contractorProfile;
   @Deprecated('Use contractorSchedule')

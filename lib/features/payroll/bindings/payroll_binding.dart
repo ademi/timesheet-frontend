@@ -5,6 +5,8 @@ import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../engagements/bindings/engagements_binding.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
+import '../../compliance_ops/bindings/compliance_ops_binding.dart';
+import '../../compliance_ops/data/repositories/compliance_ops_repository.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../controllers/contractor_payments_controller.dart';
@@ -86,11 +88,13 @@ class StaffTenantSettingsBinding extends Bindings {
   @override
   void dependencies() {
     PayrollBinding.ensureShared();
+    ComplianceOpsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<StaffTenantSettingsController>()) {
       Get.put(
         StaffTenantSettingsController(
           payroll: Get.find<PayrollRepository>(),
+          complianceOps: Get.find<ComplianceOpsRepository>(),
           session: Get.find<SessionService>(),
         ),
       );

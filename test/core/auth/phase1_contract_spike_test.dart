@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rostiq/app/data/models/auth/auth_token_model.dart';
 import 'package:rostiq/app/data/models/auth/me_context_model.dart';
 import 'package:rostiq/app/data/models/document/document_models.dart';
-import 'package:rostiq/app/data/models/visit/visit_gps_body.dart';
 import 'package:rostiq/core/auth/jwt_claims.dart';
+import 'package:rostiq/features/visits/data/models/visit_models.dart';
 
 void main() {
   group('JwtClaims', () {

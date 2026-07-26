@@ -48,11 +48,9 @@ abstract final class AppConstants {
   static const String documentsUploadUrlPath = '$apiV1/documents/upload-url';
   static const String documentsPath = '$apiV1/documents';
 
-  // --- Payments / rates / adjustments ---
+  // --- Payments / rates ---
   static const String paymentBatchesPath = '$apiV1/payment-batches';
   static const String engagementRatesPath = '$apiV1/payroll/engagement-rates';
-  static const String attendanceAdjustmentsPath =
-      '$apiV1/attendance/adjustments';
 
   // --- Branches / notifications ---
   static const String branchesPath = '$apiV1/branches';
@@ -61,47 +59,10 @@ abstract final class AppConstants {
   static const String notificationEventsPath =
       '$apiV1/notifications/events';
 
-  /// Attendance clock-in/out source (device GPS) — legacy punch flows.
-  static const String attendanceSource = 'gps';
-
   // --- Deprecated / unmounted (expect 404) — do not use in new code ---
 
   @Deprecated('Unmounted V2 — use tenant-members')
   static const String verifyUserPath = '$apiV1/auth/verify_user';
-
-  @Deprecated('Unmounted V2 — PIN kiosk removed')
-  static const String verifyPinPath = '$apiV1/auth/verify_pin';
-
-  @Deprecated('Unmounted V2 — PIN kiosk removed')
-  static const String setPinPath = '$apiV1/auth/set_pin';
-
-  @Deprecated('Unmounted V2 — use jobs/visits board')
-  static const String schedulingBoardTodayPath =
-      '$apiV1/scheduling/board/today';
-
-  @Deprecated('Unmounted V2')
-  static const String schedulingBoardPath = '$apiV1/scheduling/board';
-
-  @Deprecated('Unmounted V2')
-  static const String schedulingTemplatesPath = '$apiV1/scheduling/templates';
-
-  @Deprecated('Unmounted V2')
-  static const String schedulingAssignmentsPath =
-      '$apiV1/scheduling/assignments';
-
-  @Deprecated('Unmounted V2')
-  static const String schedulingAssignmentsBulkPath =
-      '$apiV1/scheduling/assignments/bulk';
-
-  @Deprecated('Unmounted V2 — use contractor-me/leave')
-  static const String schedulingLeavePath = '$apiV1/scheduling/leave';
-
-  @Deprecated('Unmounted V2')
-  static const String schedulingEmployeeSchedulesPath =
-      '$apiV1/scheduling/employee-schedules';
-
-  @Deprecated('Unmounted V2')
-  static const String schedulingCopyWeekPath = '$apiV1/scheduling/copy-week';
 }
 
 /// Keys used with [GetStorage] for auth tokens.

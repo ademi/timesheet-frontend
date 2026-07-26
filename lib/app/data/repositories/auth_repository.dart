@@ -7,52 +7,17 @@ import '../models/auth/first_login_request_model.dart';
 import '../models/auth/login_request_model.dart';
 import '../models/auth/logout_request_model.dart';
 import '../models/auth/me_context_model.dart';
-import '../models/auth/set_pin_request_model.dart';
 import '../models/auth/switch_tenant_request_model.dart';
-import '../models/auth/verify_pin_request_model.dart';
-import '../models/auth/verify_pin_response_model.dart';
 
 class AuthRepository {
   AuthRepository({
     required AuthRemoteDataSource remote,
     required TokenStorage storage,
-  }) : _remote = remote,
-       _storage = storage;
+  })  : _remote = remote,
+        _storage = storage;
 
   final AuthRemoteDataSource _remote;
   final TokenStorage _storage;
-
-  Future<VerifyPinResponseModel> verifyPin(String employeeId, String pin) async {
-    try {
-      return await _remote.verifyPin(
-        VerifyPinRequestModel(employeeId: employeeId, pin: pin),
-      );
-    } on DioException catch (e) {
-      final authErr = parseAuthError(e);
-      if (authErr != null) throw authErr;
-      rethrow;
-    }
-  }
-
-  Future<void> setPin({
-    required String employeeId,
-    required String pin,
-    required String confirmPin,
-  }) async {
-    try {
-      await _remote.setPin(
-        SetPinRequestModel(
-          employeeId: employeeId,
-          pin: pin,
-          confirmPin: confirmPin,
-        ),
-      );
-    } on DioException catch (e) {
-      final authErr = parseAuthError(e);
-      if (authErr != null) throw authErr;
-      rethrow;
-    }
-  }
 
   Future<AuthTokenModel> loginWithTokens(String identifier, String password) async {
     try {

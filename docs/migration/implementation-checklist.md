@@ -211,12 +211,14 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 
 **Design:** §6.11–6.14, §9 S10
 
-- [ ] Rights requests, privacy export, access history, incidents
-- [ ] Notifications devices/events retarget for both actors
-- [ ] Subscription status + `BILLING_URL` deep-link on billingGate
-- [ ] Staff settings: members, branches as needed, billing chip
-- [ ] Delete remaining employee leftovers, `AttendanceApiClient`, PIN paths
-- [ ] `flutter analyze` clean; smoke §10.2
+- [x] Rights requests, privacy export, access history, incidents
+- [x] Notifications devices/events retarget for both actors
+- [x] Subscription status + `BILLING_URL` deep-link on billingGate
+- [x] Staff settings: members, branches as needed, billing chip
+- [x] Delete remaining employee leftovers, `AttendanceApiClient`, PIN paths
+- [x] `flutter analyze` clean; smoke §10.2
+
+**Manual QA:** [manual-qa-s10.md](./manual-qa-s10.md)
 
 ---
 
@@ -235,15 +237,15 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 | S7 | Visits + GPS | [x] |
 | S8 | Contractor schedule | [x] |
 | S9 | Rates + batches | [x] |
-| S10 | Compliance ops + cleanup | [ ] |
+| S10 | Compliance ops + cleanup | [x] |
 
 ---
 
 ## Suggested next actions
 
-1. [ ] Start **S0**: `features/` layout + `SessionService` + `/staff` & `/contractor` shells + gateway rewrite  
-2. [ ] Port reusable Phase 2 pieces (`JwtClaims`, switch-tenant, DocumentService spike, AppPermissions) into new structure  
-3. [ ] Then S1 contractor register  
+1. [ ] Manual QA pass for S10 ([manual-qa-s10.md](./manual-qa-s10.md)) against local API  
+2. [ ] Realign / close S0–S4 checklist items if already landed in `lib/features`  
+3. [ ] Triage open BH items in [backend-handoff](./backend-handoff-contractor-register-nested-txn.md)  
 
 ---
 
