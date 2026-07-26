@@ -128,6 +128,10 @@ class AppFailure implements Exception {
       'payment_already_paid',
       'visit_already_in_batch',
       'visit_not_found',
+      'mfa_required',
+      'notice_not_presented',
+      'consent_required',
+      'invalid_category',
     ];
     for (final k in known) {
       if (d == k || d.contains(k)) return k;
@@ -167,6 +171,8 @@ class AppFailure implements Exception {
         return AppFailurePresentation.inline;
       case 'rate_limited':
         return AppFailurePresentation.toast;
+      case 'mfa_required':
+        return AppFailurePresentation.screen;
       default:
         if (status == 401) return AppFailurePresentation.reLogin;
         if (status == 402) return AppFailurePresentation.billingGate;
@@ -200,6 +206,14 @@ class AppFailure implements Exception {
         return 'This file must be opened through a secure download.';
       case 'eligibility_incomplete':
         return 'Requirements incomplete — review the listed items.';
+      case 'mfa_required':
+        return 'Multi-factor authentication required. Complete MFA, then retry.';
+      case 'notice_not_presented':
+        return 'Collection notice must be presented before creating this credential.';
+      case 'consent_required':
+        return 'Consent is required for this sensitive credential type.';
+      case 'invalid_category':
+        return 'That credential type is not allowed.';
       case 'counsel_pending':
       case 'counsel_pending_policy':
       case 'legal_document_unavailable':

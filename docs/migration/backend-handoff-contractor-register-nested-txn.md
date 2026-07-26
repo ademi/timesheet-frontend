@@ -17,6 +17,7 @@
 | BH-001 | 2026-07-26 | Proposed / applied in local tree — needs API restart + review | Contractor register nested transaction → opaque HTTP 500 |
 | BH-002 | 2026-07-26 | Open — needs API change | Contractor login blocked when no engagement exists |
 | BH-003 | 2026-07-26 | Open — needs API change | Pre-active engagement JWT lacks `compliance.legal.*` / consent perms (blocks S2 onboarding) |
+| BH-004 | 2026-07-26 | Open — needs API change | Pre-active engagement JWT lacks `credentials.read` / `credentials.manage` (blocks S3) |
 
 ---
 
@@ -239,7 +240,8 @@ Engagements in `invited`, `pending_docs`, and `approved` should include at least
 - `compliance.legal.read`
 - `compliance.legal.accept`
 - `compliance.consent.manage`
-- (soon for S3) `credentials.read`, `credentials.manage`
+
+Credential keys for S3 are tracked separately as **BH-004**.
 
 Keep tighter limits for `suspended` if needed.
 
@@ -257,6 +259,53 @@ Expand `_CONTRACTOR_LIMITED_PERMISSIONS` (or branch by status) in `resolver.py` 
 ### Requested from API
 
 Approve permission matrix for onboarding statuses and ship the resolver change.
+
+---
+
+## BH-004 — Pre-active engagement JWT lacks credential permissions
+
+**Date:** 2026-07-26  
+**Status:** Open — needs API change  
+**Related Flutter slice:** S3  
+**Endpoint / area:** `app/modules/rbac/resolver.py` · `_CONTRACTOR_LIMITED_PERMISSIONS`
+
+### Problem
+
+Same limited set as BH-003 for `invited` / `pending_docs` / `approved`:
+
+```text
+auth.session, visits.read, documents.upload
+```
+
+S3 contractor flows require:
+
+| Action | Permission |
+|--------|------------|
+| `GET /v1/contractor-me/credentials` | `credentials.read` |
+| `POST/PATCH .../credentials` · supersede | `credentials.manage` |
+| `POST /v1/documents/upload-url` · finalize | `documents.upload` (already present) |
+
+**Flutter impact:** Onboarding credentials step and `/contractor/credentials` show permission errors until the engagement is **`active`** — too late for the pending-docs funnel.
+
+### Expected
+
+Expand `_CONTRACTOR_LIMITED_PERMISSIONS` to include at least:
+
+- `credentials.read`
+- `credentials.manage`
+
+(alongside BH-003 compliance keys).
+
+### Verification
+
+1. Contractor with `pending_docs` engagement logs in.
+2. JWT includes `credentials.read` and `credentials.manage`.
+3. `GET /v1/contractor-me/credentials` → **200**.
+4. After a valid `presented` notice event + consent (if sensitive): `POST /v1/contractor-me/credentials` → **201**.
+
+### Requested from API
+
+Ship resolver change with BH-003 (same permission matrix for pre-active statuses).
 
 ---
 

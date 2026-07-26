@@ -130,13 +130,3 @@ class LegalEventResult {
     );
   }
 }
-
-/// Sensitive credential types that need an explicit consent step (design §6.4).
-const sensitiveCredentialTypes = <String>[
-  'police_check',
-  'ndis_worker_screening',
-  'first_aid',
-  'cpr',
-  'infection_control',
-  'other_health_qualification',
-];

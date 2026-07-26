@@ -5,6 +5,8 @@ import 'package:get_storage/get_storage.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../credentials/controllers/credentials_controller.dart';
+import '../../credentials/data/models/credential_models.dart';
 import '../data/datasources/compliance_remote_datasource.dart';
 import '../data/models/compliance_models.dart';
 import '../data/repositories/compliance_repository.dart';
@@ -136,7 +138,7 @@ class OnboardingController extends GetxController {
   Future<void> _recordPresentedNotice(CollectionNotice notice) async {
     if (presentedNoticeKeys.contains(notice.noticeKey)) return;
     try {
-      await _repository.createLegalEvent(
+      final event = await _repository.createLegalEvent(
         LegalEventCreate(
           eventType: 'presented',
           noticeKey: notice.noticeKey,
@@ -148,6 +150,11 @@ class OnboardingController extends GetxController {
             _idemKey('presented-notice-${notice.noticeKey}-${notice.version}'),
       );
       presentedNoticeKeys.add(notice.noticeKey);
+      final type = notice.credentialType;
+      if (type != null &&
+          Get.isRegistered<CredentialsController>()) {
+        Get.find<CredentialsController>().presentedEventIds[type] = event.id;
+      }
     } on AppFailure {
       // Non-fatal presentation log.
     }

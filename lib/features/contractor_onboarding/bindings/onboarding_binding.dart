@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/services/token_storage.dart';
+import '../../credentials/bindings/credentials_binding.dart';
 import '../controllers/onboarding_controller.dart';
 import '../data/datasources/compliance_remote_datasource.dart';
 import '../data/repositories/compliance_repository.dart';
@@ -39,5 +40,7 @@ class OnboardingBinding extends Bindings {
         ),
       );
     }
+    // Credentials step (S3) shares compliance + document pipeline deps.
+    CredentialsBinding().dependencies();
   }
 }

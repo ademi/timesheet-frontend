@@ -41,6 +41,7 @@ abstract class AppRoutes {
   static const staffPayments = '/staff/payments';
   static const staffCompliance = '/staff/compliance';
   static const staffSettings = '/staff/settings';
+  static const staffCredentialReview = '/staff/credentials-review';
 
   // ContractorShell + public / onboarding
   static const contractorRegister = '/contractor/register';
@@ -57,6 +58,8 @@ abstract class AppRoutes {
   static const contractorVisitDetail = '/contractor/visits/detail';
   static const contractorSchedule = '/contractor/schedule';
   static const contractorCredentials = '/contractor/credentials';
+  static const contractorCredentialCreate = '/contractor/credentials/create';
+  static const contractorCredentialDetail = '/contractor/credentials/detail';
   static const contractorProfile = '/contractor/profile';
 
   // Deprecated aliases (removed /v2 stubs) — keep names for any leftover refs.

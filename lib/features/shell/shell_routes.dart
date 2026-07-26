@@ -8,6 +8,7 @@ import '../../app/constants/app_permissions.dart';
 import '../../app/views/v2/wrong_actor_view.dart';
 import '../contractor_onboarding/contractor_onboarding_routes.dart';
 import '../contractor_register/contractor_register_routes.dart';
+import '../credentials/credentials_routes.dart';
 import 'contractor_shell.dart';
 import 'staff_shell.dart';
 
@@ -133,17 +134,12 @@ abstract final class ShellPages {
           transition: Transition.fadeIn,
         ),
         GetPage(
-          name: AppRoutes.contractorCredentials,
-          middlewares: [AuthGuard(), ActorGuard()],
-          page: contractorCredentialsStub,
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
           name: AppRoutes.contractorProfile,
           middlewares: [AuthGuard(), ActorGuard()],
           page: contractorProfileStub,
           transition: Transition.fadeIn,
         ),
+        ...CredentialsPages.routes,
         ...ContractorOnboardingPages.routes,
         ContractorRegisterPages.page,
       ];

@@ -104,14 +104,15 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 
 **Design:** §5.3–5.4, §5.6, §6.4
 
-- [ ] Credential types allowlist + sensitive / government-ID UX
-- [ ] Contractor credentials CRUD + supersede
-- [ ] Upload: upload-url → PUT → finalize `{ credential_id }` → poll scan
-- [ ] Download: signed URL vs **`/content` proxy** on `proxy_required`
-- [ ] Staff metadata list + review (`accepted|rejected|re_review_required`); MFA prompt if required
-- [ ] Eligibility incomplete itemised UI (no forbidden NDIS-certifying copy)
+- [x] Credential types allowlist + sensitive / government-ID UX
+- [x] Contractor credentials CRUD + supersede
+- [x] Upload: upload-url → PUT → finalize `{ credential_id }` → poll scan
+- [x] Download: signed URL vs **`/content` proxy** on `proxy_required`
+- [x] Staff metadata list + review (`accepted|rejected|re_review_required`); MFA prompt if required
+- [x] Eligibility incomplete itemised UI (no forbidden NDIS-certifying copy)
 
-**S3 exit:** Upload + scan states + proxy download helper tested.
+**S3 exit:** Upload + scan states + proxy download helper implemented. Manual QA: [manual-qa-s3.md](./manual-qa-s3.md).  
+**Blocked for full dogfood until API:** [BH-004](./backend-handoff-contractor-register-nested-txn.md) (credentials perms on invited/pending) · also BH-002 / BH-003 for reaching the funnel.
 
 ---
 

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/controllers/auth_controller.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/markdown_viewer.dart';
+import '../../credentials/controllers/credentials_controller.dart';
+import '../../credentials/data/models/credential_models.dart';
 import '../controllers/onboarding_controller.dart';
 import '../data/models/compliance_models.dart';
 
@@ -52,11 +55,7 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
                         body:
                             'Engagement accept + sharing grant lands in S4. Continue when ready.',
                       ),
-                    OnboardingStep.credentials => const _StubStep(
-                        title: 'Required credentials',
-                        body:
-                            'Credential upload checklist lands in S3. Finish onboarding to open Home.',
-                      ),
+                    OnboardingStep.credentials => const _CredentialsStep(),
                   },
                 ],
               );
@@ -270,7 +269,7 @@ class _ConsentsStep extends GetView<OnboardingController> {
         return const Text(
           'No sensitive collection notices in the catalog for this '
           'jurisdiction. You can continue; consents will be required before '
-          'uploading those credential types in S3.',
+          'creating those credential types.',
           style: TextStyle(color: AppColors.textMuted),
         );
       }
@@ -331,6 +330,112 @@ class _StubStep extends StatelessWidget {
         Text(body, style: const TextStyle(color: AppColors.textMuted)),
       ],
     );
+  }
+}
+
+class _CredentialsStep extends StatelessWidget {
+  const _CredentialsStep();
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Get.isRegistered<CredentialsController>()) {
+      return const _StubStep(
+        title: 'Required credentials',
+        body: 'Credentials module is not available in this session.',
+      );
+    }
+    final c = Get.find<CredentialsController>();
+    return Obx(() {
+      final err = c.errorMessage.value;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Required credentials',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Create credentials from the allowlist and attach evidence. '
+            'Wait for scan=clean before staff can accept.',
+            style: TextStyle(color: AppColors.textMuted),
+          ),
+          if (err != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.errorBackground,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(err, style: const TextStyle(color: AppColors.error)),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ElevatedButton.icon(
+                onPressed: c.isSaving.value
+                    ? null
+                    : () => Get.toNamed(AppRoutes.contractorCredentialCreate),
+                icon: const Icon(Icons.add),
+                label: const Text('Add credential'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.onPrimary,
+                ),
+              ),
+              OutlinedButton(
+                onPressed: c.isLoading.value ? null : c.load,
+                child: const Text('Refresh'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (c.isLoading.value && c.items.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (c.items.isEmpty)
+            const Text('No credentials yet.')
+          else
+            for (final item in c.items)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(credentialTypeLabel(item.credentialType)),
+                subtitle: Text(
+                  '${item.status} · evidence: ${item.evidencePresence}',
+                ),
+                trailing: IconButton(
+                  tooltip: 'Attach evidence',
+                  onPressed:
+                      c.isSaving.value ? null : () => c.attachEvidence(item),
+                  icon: const Icon(Icons.upload_file),
+                ),
+              ),
+          if (c.lastScanStatus.value != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Last scan: ${c.lastScanStatus.value}',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: c.lastScanStatus.value == 'blocked'
+                    ? AppColors.error
+                    : AppColors.textDark,
+              ),
+            ),
+          ],
+        ],
+      );
+    });
   }
 }
 
