@@ -20,15 +20,16 @@ abstract final class AppEnv {
   );
 
   /// Must match DB `platform_terms` current version for public register.
+  /// Local seed default: `v0.1-placeholder` (timesheet-db seed 011).
   static const String termsVersion = String.fromEnvironment(
     'TERMS_VERSION',
-    defaultValue: '2026-07-01',
+    defaultValue: 'v0.1-placeholder',
   );
 
   /// Must match DB `privacy_policy` current version for public register.
   static const String privacyVersion = String.fromEnvironment(
     'PRIVACY_VERSION',
-    defaultValue: '2026-07-01',
+    defaultValue: 'v0.1-placeholder',
   );
 
   static const String _domainV2Raw = String.fromEnvironment(

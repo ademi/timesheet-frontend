@@ -118,4 +118,5 @@ Widget contractorOnboardingStub() => const ShellStubPage(
       title: 'Onboarding',
       subtitle:
           'Legal, notices, consents, and engagement accept will land in S1–S2.',
+      showLogout: true,
     );

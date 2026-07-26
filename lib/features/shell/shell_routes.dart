@@ -6,8 +6,8 @@ import '../../app/routes/middlewares/auth_guard.dart';
 import '../../app/routes/middlewares/permission_guard.dart';
 import '../../app/constants/app_permissions.dart';
 import '../../app/views/v2/wrong_actor_view.dart';
+import '../contractor_register/contractor_register_routes.dart';
 import 'contractor_shell.dart';
-import 'shell_stub_page.dart';
 import 'staff_shell.dart';
 
 /// Dual-shell GetPages for Staff + Contractor (S0 stubs).
@@ -149,13 +149,6 @@ abstract final class ShellPages {
           page: contractorOnboardingStub,
           transition: Transition.fadeIn,
         ),
-        GetPage(
-          name: AppRoutes.contractorRegister,
-          page: () => const ShellStubPage(
-            title: 'Register as contractor',
-            subtitle: 'Public register form lands in S1.',
-          ),
-          transition: Transition.fadeIn,
-        ),
+        ContractorRegisterPages.page,
       ];
 }

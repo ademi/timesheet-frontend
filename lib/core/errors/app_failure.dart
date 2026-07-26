@@ -60,8 +60,21 @@ class AppFailure implements Exception {
 
   static AuthErrorModel? _tryAuthError(DioException e) {
     final data = e.response?.data;
-    if (data is Map<String, dynamic>) {
-      return AuthErrorModel.fromJson(data);
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      final detail = map['detail'];
+      // FastAPI validation list → first message
+      if (detail is List && detail.isNotEmpty) {
+        final first = detail.first;
+        if (first is Map) {
+          return AuthErrorModel(
+            detail: first['msg']?.toString() ?? 'Validation failed',
+            code: 'validation_error',
+          );
+        }
+        return AuthErrorModel(detail: first.toString(), code: 'validation_error');
+      }
+      return AuthErrorModel.fromJson(map);
     }
     return null;
   }

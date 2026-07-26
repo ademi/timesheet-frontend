@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import '../../app/controllers/auth_controller.dart';
 import '../../app/themes/app_colors.dart';
 
 /// Placeholder content for S0 shell destinations.
@@ -8,15 +10,27 @@ class ShellStubPage extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle = 'Stub — feature UI lands in a later slice.',
+    this.showLogout = true,
   });
 
   final String title;
   final String subtitle;
+  final bool showLogout;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          if (showLogout && Get.isRegistered<AuthController>())
+            IconButton(
+              tooltip: 'Log out',
+              onPressed: () => Get.find<AuthController>().logout(),
+              icon: const Icon(Icons.logout),
+            ),
+        ],
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),

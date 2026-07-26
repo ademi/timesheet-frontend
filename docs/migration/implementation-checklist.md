@@ -72,12 +72,14 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 
 **Design:** §6.2, §15
 
-- [ ] `/contractor/register` form: full_name, email, password, phone?, dob?
-- [ ] Separate Terms + Privacy accept (bundled MD + version defines; `doc_key`s `platform_terms` / `privacy_policy`)
-- [ ] `POST /v1/contractors/register` with `terms_version`, `privacy_version` → navigate to **login** (no tokens)
-- [ ] Wire gateway “Register as contractor”
+- [x] `/contractor/register` form: full_name, email, password, phone?, dob?
+- [x] Separate Terms + Privacy accept (bundled MD + version defines; `doc_key`s `platform_terms` / `privacy_policy`)
+- [x] `POST /v1/contractors/register` with `terms_version`, `privacy_version` → navigate to **login** (no tokens)
+- [x] Wire gateway “Register as contractor”
 
 **S1 exit:** Public register → login works against local API.
+
+**Note (local dogfood):** Flutter S1 UI/API client is wired. If `POST /v1/contractors/register` still returns 500, restart the backend after the nested-transaction fix in `contractors/service.py`, and ensure `platform_terms` / `privacy_policy` versions exist (seed `v0.1-placeholder` or matching `--dart-define=TERMS_VERSION` / `PRIVACY_VERSION`).
 
 ---
 
