@@ -35,6 +35,8 @@ abstract class AppRoutes {
   // StaffShell
   static const staffHome = '/staff/home';
   static const staffWorkforce = '/staff/workforce';
+  static const staffWorkforceInvite = '/staff/workforce/invite';
+  static const staffWorkforceDetail = '/staff/workforce/detail';
   static const staffClients = '/staff/clients';
   static const staffJobs = '/staff/jobs';
   static const staffVisits = '/staff/visits';

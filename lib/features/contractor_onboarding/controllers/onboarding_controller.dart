@@ -7,6 +7,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../credentials/controllers/credentials_controller.dart';
 import '../../credentials/data/models/credential_models.dart';
+import '../../engagements/controllers/contractor_engagements_controller.dart';
 import '../data/datasources/compliance_remote_datasource.dart';
 import '../data/models/compliance_models.dart';
 import '../data/repositories/compliance_repository.dart';
@@ -60,6 +61,13 @@ class OnboardingController extends GetxController {
     // No sensitive notices in catalog → nothing to consent in S2.
     if (needed.isEmpty) return true;
     return needed.every(consentedTypes.contains);
+  }
+
+  bool get canAdvanceEngagement {
+    if (!Get.isRegistered<ContractorEngagementsController>()) return true;
+    final c = Get.find<ContractorEngagementsController>();
+    // May continue if nothing invited remains (or no engagements at all).
+    return c.invited.isEmpty;
   }
 
   @override
@@ -263,8 +271,18 @@ class OnboardingController extends GetxController {
           return;
         }
         goToStep(OnboardingStep.engagement);
+        if (Get.isRegistered<ContractorEngagementsController>()) {
+          await Get.find<ContractorEngagementsController>().load();
+        }
       case OnboardingStep.engagement:
+        if (!canAdvanceEngagement) {
+          _toast('Accept each invited engagement before continuing.');
+          return;
+        }
         goToStep(OnboardingStep.credentials);
+        if (Get.isRegistered<CredentialsController>()) {
+          await Get.find<CredentialsController>().load();
+        }
       case OnboardingStep.credentials:
         await completeFunnel();
     }

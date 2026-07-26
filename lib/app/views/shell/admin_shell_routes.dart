@@ -40,10 +40,6 @@ abstract final class AdminShellRoutes {
 
   static const _employeesRoutes = {
     AppRoutes.adminPanel,
-    AppRoutes.adminEmployees,
-    AppRoutes.employeeDetail,
-    AppRoutes.createEmployee,
-    AppRoutes.createEmployeeSuccess,
     AppRoutes.employeePicker,
   };
 
@@ -106,7 +102,7 @@ abstract final class AdminShellRoutes {
   static String routeForIndex(int index) {
     switch (index) {
       case 0:
-        return AppRoutes.adminEmployees;
+        return AppRoutes.adminPanel;
       case 1:
         return AppRoutes.adminAttendanceReport;
       case 2:

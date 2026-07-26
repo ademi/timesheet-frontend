@@ -9,6 +9,7 @@ import '../../app/views/v2/wrong_actor_view.dart';
 import '../contractor_onboarding/contractor_onboarding_routes.dart';
 import '../contractor_register/contractor_register_routes.dart';
 import '../credentials/credentials_routes.dart';
+import '../engagements/engagements_routes.dart';
 import 'contractor_shell.dart';
 import 'staff_shell.dart';
 
@@ -32,16 +33,7 @@ abstract final class ShellPages {
           page: staffHomeStub,
           transition: Transition.fadeIn,
         ),
-        GetPage(
-          name: AppRoutes.staffWorkforce,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(anyOf: [AppPermissions.contractorsRead]),
-          ],
-          page: staffWorkforceStub,
-          transition: Transition.fadeIn,
-        ),
+        // staffWorkforce provided by EngagementsPages
         GetPage(
           name: AppRoutes.staffClients,
           middlewares: [
@@ -139,6 +131,7 @@ abstract final class ShellPages {
           page: contractorProfileStub,
           transition: Transition.fadeIn,
         ),
+        ...EngagementsPages.routes,
         ...CredentialsPages.routes,
         ...ContractorOnboardingPages.routes,
         ContractorRegisterPages.page,

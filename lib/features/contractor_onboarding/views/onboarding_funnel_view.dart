@@ -7,6 +7,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/markdown_viewer.dart';
 import '../../credentials/controllers/credentials_controller.dart';
 import '../../credentials/data/models/credential_models.dart';
+import '../../engagements/views/engagement_accept_panel.dart';
 import '../controllers/onboarding_controller.dart';
 import '../data/models/compliance_models.dart';
 
@@ -50,11 +51,7 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
                     OnboardingStep.legal => const _LegalStep(),
                     OnboardingStep.notices => const _NoticesStep(),
                     OnboardingStep.consents => const _ConsentsStep(),
-                    OnboardingStep.engagement => const _StubStep(
-                        title: 'Accept engagement',
-                        body:
-                            'Engagement accept + sharing grant lands in S4. Continue when ready.',
-                      ),
+                    OnboardingStep.engagement => const EngagementAcceptPanel(),
                     OnboardingStep.credentials => const _CredentialsStep(),
                   },
                 ],

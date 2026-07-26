@@ -72,6 +72,7 @@ class ComplianceRemoteDataSource {
       version: body.version,
       noticeKey: body.noticeKey,
       noticeVersion: body.noticeVersion,
+      engagementId: body.engagementId,
       credentialType: body.credentialType,
       dataClass: body.dataClass,
       presentationSource: body.presentationSource,

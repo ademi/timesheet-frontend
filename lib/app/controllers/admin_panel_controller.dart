@@ -8,7 +8,10 @@ import '../routes/app_routes.dart';
 class AdminPanelController extends GetxController {
   void changeBranch() => Get.offAllNamed(AppRoutes.adminBranchGateway);
 
-  void openEmployees() => Get.toNamed(AppRoutes.adminEmployees);
+  void openEmployees() {
+    // S4: workforce engagements replace legacy employee CRUD.
+    Get.toNamed(AppRoutes.staffWorkforce);
+  }
 
   void openAttendanceReport() => Get.toNamed(AppRoutes.adminAttendanceReport);
 

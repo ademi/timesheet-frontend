@@ -6,7 +6,6 @@ import '../data/models/payroll/payroll_date_utils.dart';
 import '../data/models/payroll/rate_create_request.dart';
 import '../data/models/payroll/rate_out.dart';
 import '../data/repositories/payroll_repository.dart';
-import '../routes/app_routes.dart';
 import '../routes/route_args.dart';
 import '../themes/app_colors.dart';
 
@@ -190,9 +189,7 @@ class EmployeeRateFormController extends GetxController {
       return;
     }
     Get.back(result: true);
-    if (finishCreateFlowOnSave &&
-        !isEdit &&
-        Get.currentRoute == AppRoutes.createEmployee) {
+    if (finishCreateFlowOnSave && !isEdit) {
       Get.back(result: true);
     }
   }

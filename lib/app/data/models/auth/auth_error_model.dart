@@ -12,10 +12,13 @@ class AuthErrorModel implements Exception {
 
   factory AuthErrorModel.fromJson(Map<String, dynamic> json) {
     final raw = json['detail'];
-    if (raw is Map<String, dynamic>) {
+    if (raw is Map) {
+      final m = Map<String, dynamic>.from(raw);
       return AuthErrorModel(
-        detail: raw['message'] as String? ?? 'Something went wrong',
-        code: raw['code'] as String?,
+        detail: m['message'] as String? ??
+            m['code'] as String? ??
+            'Something went wrong',
+        code: m['code'] as String?,
       );
     }
     final message = raw is String

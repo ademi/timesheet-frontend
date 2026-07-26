@@ -82,6 +82,7 @@ class LegalEventCreate {
     this.version,
     this.noticeKey,
     this.noticeVersion,
+    this.engagementId,
     this.credentialType,
     this.dataClass,
     this.presentationSource,
@@ -93,6 +94,7 @@ class LegalEventCreate {
   final String? version;
   final String? noticeKey;
   final String? noticeVersion;
+  final String? engagementId;
   final String? credentialType;
   final String? dataClass;
   final String? presentationSource;
@@ -104,6 +106,7 @@ class LegalEventCreate {
         if (version != null) 'version': version,
         if (noticeKey != null) 'notice_key': noticeKey,
         if (noticeVersion != null) 'notice_version': noticeVersion,
+        if (engagementId != null) 'engagement_id': engagementId,
         if (credentialType != null) 'credential_type': credentialType,
         if (dataClass != null) 'data_class': dataClass,
         if (presentationSource != null) 'presentation_source': presentationSource,

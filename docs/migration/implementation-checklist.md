@@ -120,15 +120,15 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 
 **Design:** §5.5, §6.5
 
-- [ ] Staff workforce list/detail; invite with `required_categories`
-- [ ] Lifecycle: approve / activate / approve-and-activate / suspend / resume / end
-- [ ] Contractor accept with `allow_source_evidence` grant UI
-- [ ] Wire onboarding engagement-accept step
-- [ ] Eligibility errors on approve
+- [x] Staff workforce list/detail; invite with `required_categories`
+- [x] Lifecycle: approve / activate / approve-and-activate / suspend / resume / end
+- [x] Contractor accept with `allow_source_evidence` grant UI
+- [x] Wire onboarding engagement-accept step
+- [x] Eligibility errors on approve
 
-**Delete when done:** Employee management screens/controllers/repos (as replaced).
+**Delete when done:** Employee management screens/controllers/repos (as replaced) — list/create/detail CRUD removed; picker retained temporarily for legacy payroll/payment flows.
 
-**S4 exit:** Invite → register → onboarding → accept → staff review → approve → activate smoke path possible.
+**S4 exit:** Invite → register → onboarding → accept → staff review → approve → activate smoke path possible (API blockers BH-002–BH-004 may still block dogfood). Manual QA: [manual-qa-s4.md](./manual-qa-s4.md).
 
 ---
 

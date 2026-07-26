@@ -132,6 +132,9 @@ class AppFailure implements Exception {
       'notice_not_presented',
       'consent_required',
       'invalid_category',
+      'sharing_authorisation_required',
+      'invalid_transition',
+      'hard_split_violation',
     ];
     for (final k in known) {
       if (d == k || d.contains(k)) return k;
@@ -214,6 +217,10 @@ class AppFailure implements Exception {
         return 'Consent is required for this sensitive credential type.';
       case 'invalid_category':
         return 'That credential type is not allowed.';
+      case 'sharing_authorisation_required':
+        return 'Record sharing authorisation before accepting this engagement.';
+      case 'invalid_transition':
+        return 'This engagement can’t move to that status from here.';
       case 'counsel_pending':
       case 'counsel_pending_policy':
       case 'legal_document_unavailable':

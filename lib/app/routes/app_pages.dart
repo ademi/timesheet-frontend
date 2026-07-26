@@ -5,11 +5,8 @@ import '../bindings/branch_gateway_binding.dart';
 import '../bindings/attendance_adjustment_binding.dart';
 import '../bindings/attendance_corrections_binding.dart';
 import '../bindings/attendance_report_binding.dart';
-import '../bindings/employee_detail_binding.dart';
-import '../bindings/employee_management_binding.dart';
 import '../bindings/auth_binding.dart';
 import '../bindings/create_payment_binding.dart';
-import '../bindings/create_employee_binding.dart';
 import '../bindings/employee_balance_binding.dart';
 import '../bindings/employee_payment_history_binding.dart';
 import '../bindings/employee_picker_binding.dart';
@@ -32,13 +29,9 @@ import '../views/attendance_adjustment_view.dart';
 import '../views/attendance_corrections_view.dart';
 import '../views/attendance_report_view.dart';
 import '../views/attendance_view.dart';
-import '../views/employee_detail_view.dart';
-import '../views/employee_management_view.dart';
 import '../views/create_payment_view.dart';
-import '../views/create_employee_view.dart';
 import '../views/employee_balance_view.dart';
 import '../views/employee_payment_history_view.dart';
-import '../views/employee_created_view.dart';
 import '../views/employee_picker_view.dart';
 import '../views/employee_rate_form_view.dart';
 import '../views/employee_rates_view.dart';
@@ -109,13 +102,6 @@ class AppPages {
       transition: Transition.rightToLeft,
     ),
     GetPage(
-      name: AppRoutes.adminEmployees,
-      middlewares: [AuthGuard()],
-      page: () => adminShellPage(const EmployeeManagementView()),
-      binding: EmployeeManagementBinding(),
-      transition: Transition.rightToLeft,
-    ),
-    GetPage(
       name: AppRoutes.adminAttendanceReport,
       middlewares: [AuthGuard()],
       page: () => adminShellPage(const AttendanceReportView()),
@@ -143,26 +129,8 @@ class AppPages {
       binding: AttendanceAdjustmentBinding(),
       transition: Transition.rightToLeft,
     ),
-    GetPage(
-      name: AppRoutes.employeeDetail,
-      middlewares: [AuthGuard()],
-      page: () => adminShellPage(const EmployeeDetailView()),
-      binding: EmployeeDetailBinding(),
-      transition: Transition.rightToLeft,
-    ),
-    GetPage(
-      name: AppRoutes.createEmployee,
-      middlewares: [AuthGuard()],
-      page: () => adminShellPage(const CreateEmployeeView()),
-      binding: CreateEmployeeBinding(),
-      transition: Transition.rightToLeft,
-    ),
-    GetPage(
-      name: AppRoutes.createEmployeeSuccess,
-      middlewares: [AuthGuard()],
-      page: () => adminShellPage(const EmployeeCreatedView()),
-      transition: Transition.rightToLeft,
-    ),
+    // Employee management CRUD removed in S4 (replaced by Workforce).
+    // Employee picker kept temporarily for legacy payment/payroll flows.
     GetPage(
       name: AppRoutes.employeePicker,
       middlewares: [AuthGuard()],
