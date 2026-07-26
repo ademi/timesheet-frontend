@@ -1,10 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../bindings/admin_panel_binding.dart';
 import '../bindings/branch_gateway_binding.dart';
-import '../bindings/attendance_adjustment_binding.dart';
-import '../bindings/attendance_corrections_binding.dart';
-import '../bindings/attendance_report_binding.dart';
 import '../bindings/auth_binding.dart';
 import '../bindings/create_payment_binding.dart';
 import '../bindings/employee_balance_binding.dart';
@@ -14,7 +12,6 @@ import '../bindings/employee_rate_form_binding.dart';
 import '../bindings/employee_rates_binding.dart';
 import '../bindings/first_login_binding.dart';
 import '../bindings/gateway_binding.dart';
-import '../bindings/home_binding.dart';
 import '../bindings/payment_main_binding.dart';
 import '../bindings/payments_report_binding.dart';
 import '../bindings/payroll_main_binding.dart';
@@ -25,10 +22,6 @@ import '../bindings/payroll_settings_binding.dart';
 import '../bindings/payroll_summary_report_binding.dart';
 import '../views/admin_panel_view.dart';
 import '../views/branch_gateway_view.dart';
-import '../views/attendance_adjustment_view.dart';
-import '../views/attendance_corrections_view.dart';
-import '../views/attendance_report_view.dart';
-import '../views/attendance_view.dart';
 import '../views/create_payment_view.dart';
 import '../views/employee_balance_view.dart';
 import '../views/employee_payment_history_view.dart';
@@ -76,12 +69,12 @@ class AppPages {
       binding: FirstLoginBinding(),
       transition: Transition.fadeIn,
     ),
+    // Employee attendance clock removed in S7 — redirect legacy /home to staff visits.
     GetPage(
       name: AppRoutes.home,
       middlewares: [AuthGuard()],
-      page: () => const AttendanceView(),
-      binding: HomeBinding(),
-      transition: Transition.rightToLeft,
+      page: () => const _LegacyHomeRedirect(),
+      transition: Transition.fadeIn,
     ),
     GetPage(
       name: AppRoutes.adminBranchGateway,
@@ -99,28 +92,7 @@ class AppPages {
       binding: AdminPanelBinding(),
       transition: Transition.rightToLeft,
     ),
-    GetPage(
-      name: AppRoutes.adminAttendanceReport,
-      middlewares: [AuthGuard()],
-      page: () => adminShellPage(const AttendanceReportView()),
-      binding: AttendanceReportBinding(),
-      transition: Transition.rightToLeft,
-    ),
-    GetPage(
-      name: AppRoutes.adminAttendanceCorrections,
-      middlewares: [AuthGuard()],
-      page: () => adminShellPage(const AttendanceCorrectionsView()),
-      binding: AttendanceCorrectionsBinding(),
-      transition: Transition.rightToLeft,
-    ),
-    // Shift schedule employee board removed in S6 (replaced by Jobs + recurrence).
-    GetPage(
-      name: AppRoutes.adminAttendanceAdjustment,
-      middlewares: [AuthGuard()],
-      page: () => adminShellPage(const AttendanceAdjustmentView()),
-      binding: AttendanceAdjustmentBinding(),
-      transition: Transition.rightToLeft,
-    ),
+    // Attendance report / corrections / adjustment removed in S7 (replaced by Visits).
     // Employee management CRUD removed in S4 (replaced by Workforce).
     // Employee picker kept temporarily for legacy payment/payroll flows.
     GetPage(
@@ -228,4 +200,29 @@ class AppPages {
       transition: Transition.rightToLeft,
     ),
   ];
+}
+
+/// Temporary bridge for legacy `/home` (employee clock) → Staff visits.
+class _LegacyHomeRedirect extends StatefulWidget {
+  const _LegacyHomeRedirect();
+
+  @override
+  State<_LegacyHomeRedirect> createState() => _LegacyHomeRedirectState();
+}
+
+class _LegacyHomeRedirectState extends State<_LegacyHomeRedirect> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.offAllNamed(AppRoutes.staffVisits);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
 }

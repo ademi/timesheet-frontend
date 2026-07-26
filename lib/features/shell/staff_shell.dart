@@ -142,8 +142,6 @@ Widget staffWorkforceStub() =>
     staffShellPage(const ShellStubPage(title: 'Workforce'));
 Widget staffClientsStub() =>
     staffShellPage(const ShellStubPage(title: 'Clients'));
-Widget staffVisitsStub() =>
-    staffShellPage(const ShellStubPage(title: 'Visits'));
 Widget staffPaymentsStub() =>
     staffShellPage(const ShellStubPage(title: 'Payments'));
 Widget staffComplianceStub() => staffShellPage(

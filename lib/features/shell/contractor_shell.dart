@@ -37,8 +37,10 @@ abstract final class ContractorShellNav {
   ];
 
   static int selectedIndex(String route) {
-    if (route.startsWith(AppRoutes.contractorVisitDetail) ||
-        route.startsWith(AppRoutes.contractorOnboarding)) {
+    if (route.startsWith(AppRoutes.contractorVisitDetail)) {
+      return 1;
+    }
+    if (route.startsWith(AppRoutes.contractorOnboarding)) {
       return 0;
     }
     final i = _routes.indexWhere((r) => route.startsWith(r));
@@ -104,10 +106,6 @@ bool isContractorShellRoute(String? route) {
 
 Widget contractorHomeStub() =>
     contractorShellPage(const ShellStubPage(title: 'Contractor home'));
-Widget contractorVisitsStub() =>
-    contractorShellPage(const ShellStubPage(title: 'Visits'));
-Widget contractorVisitDetailStub() =>
-    contractorShellPage(const ShellStubPage(title: 'Visit detail'));
 Widget contractorScheduleStub() =>
     contractorShellPage(const ShellStubPage(title: 'Schedule'));
 Widget contractorCredentialsStub() =>

@@ -168,13 +168,15 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 
 **Design:** §6.8
 
-- [ ] Staff visits board (`from`/`to`/`job_id`/…)
-- [ ] Contractor visits list/detail; tasks; form submissions
-- [ ] Check-in / complete GPS body `{ lat, lng, accuracy_m? }` + Idempotency-Key
-- [ ] Web: disable check-in/complete with mobile-app message
-- [ ] Geofence / forms_incomplete / scan_blocked / engagement_not_active handling
+- [x] Staff visits board (`from`/`to`/`job_id`/…)
+- [x] Contractor visits list/detail; tasks; form submissions
+- [x] Check-in / complete GPS body `{ lat, lng, accuracy_m? }` + Idempotency-Key
+- [x] Web: disable check-in/complete with mobile-app message
+- [x] Geofence / forms_incomplete / scan_blocked / engagement_not_active handling
 
-**Delete when done:** Employee attendance clock + obsolete attendance report/corrections product screens (prefer visit-linked adjustments if `attendance.adjust` kept).
+**Delete when done:** Employee attendance clock + obsolete attendance report/corrections product screens. ✅ removed (`/home` clock redirects to staff visits; report/corrections/adjustment routes + hub cards deleted)
+
+**Manual QA:** [manual-qa-s7.md](./manual-qa-s7.md)
 
 ---
 
@@ -225,7 +227,7 @@ Prior “Phase 2” scaffolding under `lib/app/` is a **partial S0 prototype** �
 | S4 | Engagements / workforce | [ ] |
 | S5 | Clients CRM | [x] |
 | S6 | Jobs + recurrence | [x] |
-| S7 | Visits + GPS | [ ] |
+| S7 | Visits + GPS | [x] |
 | S8 | Contractor schedule | [ ] |
 | S9 | Rates + batches | [ ] |
 | S10 | Compliance ops + cleanup | [ ] |

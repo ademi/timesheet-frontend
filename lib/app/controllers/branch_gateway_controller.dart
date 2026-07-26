@@ -51,7 +51,7 @@ class BranchGatewayController extends GetxController {
     );
     final role = _tokenStorage.role;
     final destination =
-        role == 'attendance' ? AppRoutes.home : AppRoutes.adminPanel;
+        role == 'attendance' ? AppRoutes.staffVisits : AppRoutes.adminPanel;
     Get.offAllNamed(destination);
   }
 

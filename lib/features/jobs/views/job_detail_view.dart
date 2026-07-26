@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../controllers/jobs_controller.dart';
 import '../data/models/job_models.dart';
@@ -211,6 +212,14 @@ class _JobDetailViewState extends State<JobDetailView> {
                     ? null
                     : controller.createManualVisit,
                 child: const Text('Create manual visit'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Get.toNamed(
+                  AppRoutes.staffVisits,
+                  arguments: {'job_id': job.id},
+                ),
+                child: const Text('Open visits for this job'),
               ),
             ],
           ],

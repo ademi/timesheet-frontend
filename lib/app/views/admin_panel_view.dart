@@ -58,16 +58,10 @@ class AdminPanelView extends GetView<AdminPanelController> {
                           onTap: controller.openEmployees,
                         ),
                         AdminHubCard(
-                          icon: Icons.calendar_month_rounded,
-                          title: 'Attendance Report',
-                          subtitle: 'Weekly attendance grid and Excel export',
-                          onTap: controller.openAttendanceReport,
-                        ),
-                        AdminHubCard(
-                          icon: Icons.rule_rounded,
-                          title: 'Attendance Corrections',
-                          subtitle: 'Review exceptions and fix missing punches',
-                          onTap: controller.openAttendanceCorrections,
+                          icon: Icons.event_available_rounded,
+                          title: 'Visits',
+                          subtitle: 'Visit board, reschedule, and cancel',
+                          onTap: controller.openVisits,
                         ),
                         AdminHubCard(
                           icon: Icons.receipt_long_rounded,
