@@ -41,6 +41,7 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
           return const Center(child: Text('Visit not loaded.'));
         }
         final gpsBlocked = controller.isWeb;
+        final reqs = controller.effectiveFormRequirements;
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -83,26 +84,28 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                     : (_) => controller.toggleTask(t),
               ),
             const Divider(height: 32),
-            Text('Required forms', style: Get.textTheme.titleMedium),
-            if (v.formRequirements.isEmpty)
-              const Text(
-                'No form requirements on this visit payload.',
-                style: TextStyle(fontSize: 12),
+            Text('Progress form', style: Get.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller.formNotesCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Notes',
+                hintText: 'Progress / shift notes',
+                border: OutlineInputBorder(),
               ),
-            if (v.formRequirements.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              TextField(
-                controller: controller.formNotesCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (payload)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              for (final req in v.formRequirements)
+            ),
+            const SizedBox(height: 8),
+            if (reqs.isNotEmpty) ...[
+              for (final req in reqs)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(req.name ?? req.formTemplateId),
-                  subtitle: Text(req.isRequired ? 'Required' : 'Optional'),
+                  subtitle: Text(
+                    controller.submittedTemplateIds.contains(req.formTemplateId)
+                        ? 'Submitted ✓'
+                        : (req.isRequired ? 'Required' : 'Optional'),
+                  ),
                   trailing: TextButton(
                     onPressed: controller.isSaving.value || !v.isCheckedIn
                         ? null
@@ -110,11 +113,36 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                     child: const Text('Submit'),
                   ),
                 ),
+            ] else ...[
+              Text(
+                controller.catalogLoadFailed.value
+                    ? 'Required forms are not returned on this visit yet (API gap). '
+                        'Copy the template ID from Staff → Jobs → Form templates '
+                        '(UUID under the template name), paste it, then Submit.'
+                    : 'No form requirements listed for this visit.',
+                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller.manualTemplateIdCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Form template ID',
+                  hintText: 'Paste UUID from staff Form templates',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: controller.isSaving.value || !v.isCheckedIn
+                    ? null
+                    : controller.submitManualForm,
+                child: const Text('Submit progress form'),
+              ),
             ],
-            if (v.formSubmissions.isNotEmpty) ...[
+            if (controller.submittedTemplateIds.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                'Submitted: ${v.formSubmissions.map((s) => s.formTemplateId).join(', ')}',
+                'Submitted this session: ${controller.submittedTemplateIds.join(', ')}',
                 style: const TextStyle(fontSize: 12),
               ),
             ],

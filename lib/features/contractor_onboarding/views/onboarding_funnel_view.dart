@@ -8,11 +8,19 @@ import '../../../shared/widgets/markdown_viewer.dart';
 import '../../credentials/controllers/credentials_controller.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../engagements/views/engagement_accept_panel.dart';
+import '../bindings/onboarding_binding.dart';
 import '../controllers/onboarding_controller.dart';
 import '../data/models/compliance_models.dart';
 
 class OnboardingFunnelView extends GetView<OnboardingController> {
   const OnboardingFunnelView({super.key});
+
+  /// Ensure binding ran (covers hot reload / route-replace races).
+  @override
+  OnboardingController get controller {
+    OnboardingBinding.ensure();
+    return Get.find<OnboardingController>();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,6 +172,12 @@ class _LegalStep extends GetView<OnboardingController> {
   const _LegalStep();
 
   @override
+  OnboardingController get controller {
+    OnboardingBinding.ensure();
+    return Get.find<OnboardingController>();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Obx(() {
       if (controller.legalDocs.isEmpty) {
@@ -209,6 +223,12 @@ class _NoticesStep extends GetView<OnboardingController> {
   const _NoticesStep();
 
   @override
+  OnboardingController get controller {
+    OnboardingBinding.ensure();
+    return Get.find<OnboardingController>();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Obx(() {
       if (controller.notices.isEmpty && !controller.isLoading.value) {
@@ -246,6 +266,12 @@ class _NoticesStep extends GetView<OnboardingController> {
 
 class _ConsentsStep extends GetView<OnboardingController> {
   const _ConsentsStep();
+
+  @override
+  OnboardingController get controller {
+    OnboardingBinding.ensure();
+    return Get.find<OnboardingController>();
+  }
 
   @override
   Widget build(BuildContext context) {

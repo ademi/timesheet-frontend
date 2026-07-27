@@ -7,7 +7,7 @@ abstract final class AppConstants {
   /// Prefer [AppEnv.apiBaseUrl] for new code (also exposes billing/terms defines).
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://api.rostiq.co',
+    defaultValue: 'http://192.168.43.199:8000',
   );
 
   static const String apiV1 = '/v1';
@@ -54,10 +54,8 @@ abstract final class AppConstants {
 
   // --- Branches / notifications ---
   static const String branchesPath = '$apiV1/branches';
-  static const String notificationDevicesPath =
-      '$apiV1/notifications/devices';
-  static const String notificationEventsPath =
-      '$apiV1/notifications/events';
+  static const String notificationDevicesPath = '$apiV1/notifications/devices';
+  static const String notificationEventsPath = '$apiV1/notifications/events';
 
   // --- Deprecated / unmounted (expect 404) — do not use in new code ---
 

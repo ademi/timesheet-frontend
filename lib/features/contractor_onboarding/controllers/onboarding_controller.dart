@@ -8,6 +8,7 @@ import '../../../core/errors/app_failure.dart';
 import '../../credentials/controllers/credentials_controller.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../engagements/controllers/contractor_engagements_controller.dart';
+import '../bindings/onboarding_binding.dart';
 import '../data/datasources/compliance_remote_datasource.dart';
 import '../data/models/compliance_models.dart';
 import '../data/repositories/compliance_repository.dart';
@@ -300,6 +301,8 @@ class OnboardingController extends GetxController {
       await _box.write(_funnelDoneKey, true);
     } catch (_) {}
     Get.offAllNamed(AppRoutes.contractorHome);
+    // After leaving the funnel so a dispose rebuild cannot re-ensure().
+    OnboardingBinding.reset();
   }
 
   void _syncRoute() {
@@ -311,6 +314,7 @@ class OnboardingController extends GetxController {
       OnboardingStep.credentials => AppRoutes.contractorOnboardingCredentials,
     };
     if (Get.currentRoute != route) {
+      // Replace step URL only — controller stays via permanent registration.
       Get.offNamed(route);
     }
   }

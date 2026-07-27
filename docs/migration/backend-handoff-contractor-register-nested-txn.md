@@ -24,6 +24,7 @@
 | BH-008 | 2026-07-26 | Done — applied in local tree | No `GET /v1/jobs/{id}` — job detail cannot reload after refresh |
 | BH-009 | 2026-07-26 | Done — applied in local tree | No `GET /v1/jobs/{id}/form-catalog` — attach-only UX |
 | BH-010 | 2026-07-26 | Done — applied in local tree | Engagement rate create: bands vs simple `hourly_rate` |
+| BH-011 | 2026-07-27 | Open — needs API change | Visit GET omits `form_requirements`; contractors 403 on job form-catalog → cannot discover forms to submit before complete |
 
 ---
 
@@ -704,6 +705,52 @@ When `bands.*` keys are present they win over flat `*_rate` / `hourly_rate` for 
 
 ### Requested from API
 Publish final EngagementRate create/response schema; update wiring guide §13. → **Published in this section**; OpenAPI reflects the Pydantic models.
+
+---
+
+## BH-011 — Visit form requirements not visible to contractors
+
+**Date:** 2026-07-27  
+**Status:** Open — needs API change  
+**Related Flutter slice:** S7 / MVP delivery  
+**Endpoint / area:** `GET /v1/visits/{id}`, `GET /v1/jobs/{job_id}/form-catalog`
+
+### Problem
+
+Contractor completes a visit after check-in and gets:
+
+```json
+{"detail":"required_forms_incomplete"}
+```
+
+But `GET /v1/visits/{id}` (and list) **does not include** `form_requirements` or `form_submissions` (confirmed against live OpenAPI `VisitOut` and live payloads). Wiring guide §9 still documents nested form requirements on visits.
+
+Contractors also cannot discover required templates another way:
+
+- `GET /v1/jobs/{job_id}/form-catalog` → **403** (needs `jobs.read`; contractor JWT has `visits.*` only)
+- `GET /v1/form-templates` → **403**
+- Recurrence rule GET → **403**
+
+They **can** `POST /v1/visits/{id}/form-submissions` if they already know the `form_template_id`.
+
+Flutter UI therefore shows “No form requirements” while Complete is blocked — MVP progress-report path is stuck without a pasted UUID workaround.
+
+### Expected behaviour (pick one or both)
+
+1. **Preferred:** `VisitOut` includes:
+   - `form_requirements`: `[{ form_template_id, name?, is_required }]` (from visit_form_requirements / recurrence snapshot)
+   - `form_submissions`: summary list or at least submitted `form_template_id`s  
+2. **Or:** allow contractors with `visits.read` to `GET /v1/jobs/{job_id}/form-catalog` for jobs of their own visits (and/or return requirements on visit complete 400 detail).
+
+### Flutter interim
+
+Visit detail shows a paste-template-ID + notes submit path when requirements are missing, and clearer copy on `required_forms_incomplete`.
+
+### Verification
+
+1. Generate visit with required form on recurrence.  
+2. Contractor GET visit → sees required form name/id without staff UUID paste.  
+3. Submit form → complete succeeds.
 
 ---
 

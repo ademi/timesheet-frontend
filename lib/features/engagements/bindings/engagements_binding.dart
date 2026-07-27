@@ -71,7 +71,11 @@ class EngagementsBinding extends Bindings {
 
 class ContractorEngagementsBinding extends Bindings {
   @override
-  void dependencies() {
+  void dependencies() => ensure();
+
+  /// [permanent] keeps the controller across onboarding step `Get.offNamed`
+  /// replacements (same pattern as [OnboardingController]).
+  static void ensure({bool permanent = false}) {
     EngagementsBinding.ensureShared();
     if (!Get.isRegistered<ContractorEngagementsController>()) {
       if (!Get.isRegistered<SessionService>()) return;
@@ -81,6 +85,7 @@ class ContractorEngagementsBinding extends Bindings {
           complianceRepository: Get.find<ComplianceRepository>(),
           session: Get.find<SessionService>(),
         ),
+        permanent: permanent,
       );
     }
   }

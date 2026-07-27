@@ -19,9 +19,8 @@ abstract final class ContractorOnboardingPages {
           page: () {
             // Entry → first incomplete step.
             Future.microtask(() {
-              if (Get.isRegistered<OnboardingController>()) {
-                Get.find<OnboardingController>().goToStep(OnboardingStep.legal);
-              }
+              OnboardingBinding.ensure();
+              Get.find<OnboardingController>().goToStep(OnboardingStep.legal);
             });
             return const OnboardingFunnelView();
           },
@@ -40,11 +39,10 @@ abstract final class ContractorOnboardingPages {
           binding: OnboardingBinding(),
           page: () {
             Future.microtask(() {
-              if (Get.isRegistered<OnboardingController>()) {
-                final c = Get.find<OnboardingController>();
-                c.stepIndex.value = OnboardingStep.notices.index;
-                if (c.notices.isEmpty) c.loadNotices();
-              }
+              OnboardingBinding.ensure();
+              final c = Get.find<OnboardingController>();
+              c.stepIndex.value = OnboardingStep.notices.index;
+              if (c.notices.isEmpty) c.loadNotices();
             });
             return const OnboardingFunnelView();
           },
@@ -56,10 +54,9 @@ abstract final class ContractorOnboardingPages {
           binding: OnboardingBinding(),
           page: () {
             Future.microtask(() {
-              if (Get.isRegistered<OnboardingController>()) {
-                Get.find<OnboardingController>().stepIndex.value =
-                    OnboardingStep.consents.index;
-              }
+              OnboardingBinding.ensure();
+              Get.find<OnboardingController>().stepIndex.value =
+                  OnboardingStep.consents.index;
             });
             return const OnboardingFunnelView();
           },
@@ -71,10 +68,9 @@ abstract final class ContractorOnboardingPages {
           binding: OnboardingBinding(),
           page: () {
             Future.microtask(() {
-              if (Get.isRegistered<OnboardingController>()) {
-                Get.find<OnboardingController>().stepIndex.value =
-                    OnboardingStep.engagement.index;
-              }
+              OnboardingBinding.ensure();
+              Get.find<OnboardingController>().stepIndex.value =
+                  OnboardingStep.engagement.index;
             });
             return const OnboardingFunnelView();
           },
@@ -86,10 +82,9 @@ abstract final class ContractorOnboardingPages {
           binding: OnboardingBinding(),
           page: () {
             Future.microtask(() {
-              if (Get.isRegistered<OnboardingController>()) {
-                Get.find<OnboardingController>().stepIndex.value =
-                    OnboardingStep.credentials.index;
-              }
+              OnboardingBinding.ensure();
+              Get.find<OnboardingController>().stepIndex.value =
+                  OnboardingStep.credentials.index;
             });
             return const OnboardingFunnelView();
           },

@@ -3,12 +3,20 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../credentials/data/models/credential_models.dart';
+import '../bindings/engagements_binding.dart';
 import '../controllers/contractor_engagements_controller.dart';
 import '../data/models/engagement_models.dart';
 
 /// Embedded in onboarding or shown standalone.
 class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
   const EngagementAcceptPanel({super.key});
+
+  @override
+  ContractorEngagementsController get controller {
+    // Permanent when registered via onboarding; still ensure for standalone use.
+    ContractorEngagementsBinding.ensure(permanent: true);
+    return Get.find<ContractorEngagementsController>();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +114,12 @@ class _GrantForm extends GetView<ContractorEngagementsController> {
   const _GrantForm({required this.engagement});
 
   final EngagementOut engagement;
+
+  @override
+  ContractorEngagementsController get controller {
+    ContractorEngagementsBinding.ensure(permanent: true);
+    return Get.find<ContractorEngagementsController>();
+  }
 
   @override
   Widget build(BuildContext context) {

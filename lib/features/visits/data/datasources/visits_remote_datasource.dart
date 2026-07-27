@@ -138,6 +138,19 @@ class VisitsRemoteDataSource {
     }
   }
 
+  /// Active form templates attached to the job (staff `jobs.read`).
+  /// Contractors currently get 403 — callers must handle [AppFailure].
+  Future<List<JobFormCatalogItem>> listJobFormCatalog(String jobId) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.jobFormCatalog(jobId),
+      );
+      return _mapList(response.data, JobFormCatalogItem.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   List<T> _mapList<T>(
     List<dynamic>? raw,
     T Function(Map<String, dynamic>) fromJson,

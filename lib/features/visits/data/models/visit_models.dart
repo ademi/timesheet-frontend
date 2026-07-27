@@ -1,4 +1,29 @@
 /// Visits DTOs (design §6.8 / wiring guide §9).
+
+/// Attached job form-catalog row (`GET /v1/jobs/{id}/form-catalog`).
+class JobFormCatalogItem {
+  const JobFormCatalogItem({
+    required this.formTemplateId,
+    required this.name,
+    required this.isActive,
+    this.clientId,
+  });
+
+  final String formTemplateId;
+  final String name;
+  final bool isActive;
+  final String? clientId;
+
+  factory JobFormCatalogItem.fromJson(Map<String, dynamic> json) {
+    return JobFormCatalogItem(
+      formTemplateId: json['form_template_id'].toString(),
+      name: json['name'] as String? ?? 'Form',
+      isActive: json['is_active'] as bool? ?? true,
+      clientId: json['client_id']?.toString(),
+    );
+  }
+}
+
 class VisitTaskOut {
   const VisitTaskOut({
     required this.id,
@@ -195,6 +220,7 @@ class VisitOut {
     String? status,
     DateTime? completedAt,
     List<VisitTaskOut>? tasks,
+    List<VisitFormRequirement>? formRequirements,
     List<VisitFormSubmissionOut>? formSubmissions,
     DateTime? scheduledStart,
     DateTime? scheduledEnd,
@@ -219,7 +245,7 @@ class VisitOut {
       tenantName: tenantName,
       contractorName: contractorName,
       tasks: tasks ?? this.tasks,
-      formRequirements: formRequirements,
+      formRequirements: formRequirements ?? this.formRequirements,
       formSubmissions: formSubmissions ?? this.formSubmissions,
       createdAt: createdAt,
       updatedAt: updatedAt,

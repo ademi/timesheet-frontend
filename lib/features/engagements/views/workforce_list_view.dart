@@ -25,16 +25,15 @@ class WorkforceListView extends GetView<WorkforceController> {
             ),
         ],
       ),
-      floatingActionButton: Obx(() {
-        if (!controller.canInvite) return const SizedBox.shrink();
-        return FloatingActionButton.extended(
-          onPressed: () => Get.toNamed(AppRoutes.staffWorkforceInvite),
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimary,
-          icon: const Icon(Icons.person_add_alt_1),
-          label: const Text('Invite'),
-        );
-      }),
+      floatingActionButton: !controller.canInvite
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => Get.toNamed(AppRoutes.staffWorkforceInvite),
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              icon: const Icon(Icons.person_add_alt_1),
+              label: const Text('Invite'),
+            ),
       body: Obx(() {
         final err = controller.errorMessage.value;
         return Column(

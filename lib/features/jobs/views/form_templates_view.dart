@@ -28,13 +28,25 @@ class FormTemplatesView extends GetView<JobsController> {
               ),
               const SizedBox(height: 12),
             ],
+            if (!controller.canManageForms)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 16),
+                child: Text(
+                  'You can view templates but need clients.manage to create or delete.',
+                  style: TextStyle(color: AppColors.textMuted),
+                ),
+              ),
             if (controller.canManageForms) ...[
               TextField(
                 controller: controller.templateNameCtrl,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => controller.createFormTemplate(),
                 decoration: const InputDecoration(
                   labelText: 'New template name *',
+                  hintText: 'e.g. Progress notes',
                   border: OutlineInputBorder(),
-                  helperText: 'Creates a simple Notes (textarea) schema',
+                  helperText:
+                      'Creates a tenant-wide Notes (textarea) form schema',
                 ),
               ),
               const SizedBox(height: 8),
@@ -47,7 +59,13 @@ class FormTemplatesView extends GetView<JobsController> {
                   foregroundColor: AppColors.onPrimary,
                   minimumSize: const Size.fromHeight(44),
                 ),
-                child: const Text('Create template'),
+                child: controller.isSaving.value
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Create template'),
               ),
               const Divider(height: 32),
             ],
@@ -59,7 +77,9 @@ class FormTemplatesView extends GetView<JobsController> {
                 child: ListTile(
                   title: Text(t.name),
                   subtitle: Text(
-                    '${t.isActive ? 'active' : 'inactive'} · ${t.id}',
+                    '${t.isActive ? 'active' : 'inactive'}'
+                    '${t.clientId == null ? ' · tenant-wide' : ' · client'}'
+                    ' · ${t.id}',
                   ),
                   trailing: controller.canManageForms
                       ? IconButton(

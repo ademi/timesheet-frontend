@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../core/constants/feature_flags.dart';
 import '../../core/network/must_change_password.dart';
 import '../../core/services/session_service.dart';
+import '../../features/contractor_onboarding/bindings/onboarding_binding.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
@@ -95,6 +96,8 @@ class AuthController extends GetxController {
     emailController.clear();
     passwordController.clear();
     Get.offAllNamed(AppRoutes.gateway);
+    // After leaving any funnel route so dispose cannot re-ensure().
+    OnboardingBinding.reset();
   }
 
   @override

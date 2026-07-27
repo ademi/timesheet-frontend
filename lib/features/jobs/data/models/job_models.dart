@@ -305,7 +305,7 @@ class FormTemplateOut {
       id: json['id'].toString(),
       tenantId: json['tenant_id'].toString(),
       clientId: json['client_id']?.toString(),
-      name: json['name'] as String,
+      name: json['name'] as String? ?? json['name']?.toString() ?? '',
       schemaJson: schema is Map
           ? Map<String, dynamic>.from(schema)
           : const <String, dynamic>{},

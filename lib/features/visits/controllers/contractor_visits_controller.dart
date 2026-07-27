@@ -30,6 +30,14 @@ class ContractorVisitsController extends GetxController {
   final errorMessage = RxnString();
 
   final formNotesCtrl = TextEditingController();
+  final manualTemplateIdCtrl = TextEditingController();
+
+  /// Template ids submitted this session (visit GET does not return submissions).
+  final submittedTemplateIds = <String>{}.obs;
+
+  /// Requirements loaded from job form-catalog when visit payload omits them.
+  final catalogRequirements = <VisitFormRequirement>[].obs;
+  final catalogLoadFailed = false.obs;
 
   bool get isWeb => _location.isWeb;
 
@@ -42,6 +50,14 @@ class ContractorVisitsController extends GetxController {
       canCheckIn ||
       canComplete;
 
+  List<VisitFormRequirement> get effectiveFormRequirements {
+    final visit = selected.value;
+    if (visit != null && visit.formRequirements.isNotEmpty) {
+      return visit.formRequirements;
+    }
+    return catalogRequirements.toList(growable: false);
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -51,6 +67,7 @@ class ContractorVisitsController extends GetxController {
   @override
   void onClose() {
     formNotesCtrl.dispose();
+    manualTemplateIdCtrl.dispose();
     super.onClose();
   }
 
@@ -93,35 +110,42 @@ class ContractorVisitsController extends GetxController {
         (Get.arguments is VisitOut ? (Get.arguments as VisitOut).id : null);
     if (id == null) return;
     try {
-      selected.value = await _repository.getVisit(id);
+      final visit = await _repository.getVisit(id);
+      selected.value = visit;
       final idx = visits.indexWhere((v) => v.id == id);
-      if (idx >= 0 && selected.value != null) {
-        visits[idx] = selected.value!;
+      if (idx >= 0) {
+        visits[idx] = visit;
       }
+      await _loadFormRequirements(visit);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     }
   }
 
-  Future<void> toggleTask(VisitTaskOut task) async {
-    final visit = selected.value;
-    if (visit == null) return;
-    isSaving.value = true;
-    errorMessage.value = null;
+  Future<void> _loadFormRequirements(VisitOut visit) async {
+    catalogLoadFailed.value = false;
+    if (visit.formRequirements.isNotEmpty) {
+      catalogRequirements.clear();
+      return;
+    }
     try {
-      final updated = await _repository.patchTask(
-        visitId: visit.id,
-        taskId: task.id,
-        isDone: !task.isDone,
+      final catalog = await _repository.listJobFormCatalog(visit.jobId);
+      catalogRequirements.assignAll(
+        catalog
+            .where((c) => c.isActive)
+            .map(
+              (c) => VisitFormRequirement(
+                formTemplateId: c.formTemplateId,
+                name: c.name,
+                isRequired: true,
+              ),
+            )
+            .toList(growable: false),
       );
-      final tasks = visit.tasks
-          .map((t) => t.id == updated.id ? updated : t)
-          .toList(growable: false);
-      selected.value = visit.copyWith(tasks: tasks);
-    } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-    } finally {
-      isSaving.value = false;
+    } on AppFailure {
+      // Contractors currently lack jobs.read → 403 on form-catalog (BH-011).
+      catalogRequirements.clear();
+      catalogLoadFailed.value = true;
     }
   }
 
@@ -142,13 +166,52 @@ class ContractorVisitsController extends GetxController {
         ),
       );
       formNotesCtrl.clear();
-      await refreshSelected();
+      submittedTemplateIds.add(req.formTemplateId);
       Get.snackbar(
         'Form submitted',
         req.name ?? req.formTemplateId,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
+        backgroundColor: AppColors.primary,
+        colorText: AppColors.onPrimary,
       );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> submitManualForm() async {
+    final id = manualTemplateIdCtrl.text.trim();
+    if (id.isEmpty) {
+      errorMessage.value =
+          'Paste the form template ID from Staff → Jobs → Form templates.';
+      return;
+    }
+    await submitForm(
+      VisitFormRequirement(formTemplateId: id, name: 'Progress form'),
+    );
+    if (errorMessage.value == null) {
+      manualTemplateIdCtrl.clear();
+    }
+  }
+
+  Future<void> toggleTask(VisitTaskOut task) async {
+    final visit = selected.value;
+    if (visit == null) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _repository.patchTask(
+        visitId: visit.id,
+        taskId: task.id,
+        isDone: !task.isDone,
+      );
+      final tasks = visit.tasks
+          .map((t) => t.id == updated.id ? updated : t)
+          .toList(growable: false);
+      selected.value = visit.copyWith(tasks: tasks);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -225,7 +288,16 @@ class ContractorVisitsController extends GetxController {
     } on VisitLocationException catch (e) {
       errorMessage.value = e.message;
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      if (e.code == 'forms_incomplete' ||
+          e.code == 'required_forms_incomplete') {
+        errorMessage.value = effectiveFormRequirements.isEmpty
+            ? 'Submit the required progress form first. '
+                'Copy the template ID from Staff → Jobs → Form templates '
+                '(shown under each template), paste it below, add notes, Submit, then Complete.'
+            : e.message;
+      } else {
+        errorMessage.value = e.message;
+      }
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {

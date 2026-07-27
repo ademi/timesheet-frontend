@@ -62,4 +62,7 @@ class VisitsRepository {
     required VisitFormSubmitRequest body,
   }) =>
       _remote.submitForm(visitId: visitId, body: body);
+
+  Future<List<JobFormCatalogItem>> listJobFormCatalog(String jobId) =>
+      _remote.listJobFormCatalog(jobId);
 }

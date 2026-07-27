@@ -14,7 +14,10 @@ import '../data/repositories/credentials_repository.dart';
 
 class CredentialsBinding extends Bindings {
   @override
-  void dependencies() {
+  void dependencies() => ensure();
+
+  /// [permanent] keeps the controller across onboarding step route replaces.
+  static void ensure({bool permanent = false}) {
     _ensureShared();
     if (!Get.isRegistered<CredentialsController>()) {
       if (!Get.isRegistered<SessionService>()) {
@@ -28,6 +31,7 @@ class CredentialsBinding extends Bindings {
           complianceRepository: Get.find<ComplianceRepository>(),
           session: Get.find<SessionService>(),
         ),
+        permanent: permanent,
       );
     }
   }

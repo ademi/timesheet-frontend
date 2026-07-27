@@ -281,24 +281,70 @@ class JobsController extends GetxController {
     final name = templateNameCtrl.text.trim();
     if (name.isEmpty) {
       errorMessage.value = 'Template name is required.';
+      Get.snackbar(
+        'Form template',
+        'Enter a template name first.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+      );
       return;
     }
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      await _repository.createFormTemplate(
+      // Form Templates screen always creates tenant-wide templates
+      // (`client_id` null). Do not inherit client_id from a previously
+      // opened job — that hides the new row under tenant_level=true list.
+      final created = await _repository.createFormTemplate(
         FormTemplateCreateRequest(
           name: name,
-          schemaJson: simpleTextFormSchema(),
-          clientId: selected.value?.clientId,
+          schemaJson: simpleTextFormSchema(label: name),
         ),
       );
       templateNameCtrl.clear();
-      formTemplates.assignAll(
-        await _repository.listFormTemplates(tenantLevel: true),
+      try {
+        formTemplates.assignAll(
+          await _repository.listFormTemplates(tenantLevel: true),
+        );
+      } on AppFailure {
+        // List refresh failed — still show the created row locally.
+        if (!formTemplates.any((t) => t.id == created.id)) {
+          formTemplates.insert(0, created);
+        }
+      }
+      if (!formTemplates.any((t) => t.id == created.id)) {
+        formTemplates.insert(0, created);
+      }
+      Get.snackbar(
+        'Created',
+        'Form template “$name” is ready.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: AppColors.primary,
+        colorText: AppColors.onPrimary,
       );
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+      Get.snackbar(
+        'Could not create template',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      errorMessage.value = e.toString();
+      Get.snackbar(
+        'Could not create template',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+      );
     } finally {
       isSaving.value = false;
     }

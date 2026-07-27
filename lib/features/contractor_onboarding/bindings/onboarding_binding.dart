@@ -3,14 +3,23 @@ import 'package:get/get.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/token_storage.dart';
 import '../../credentials/bindings/credentials_binding.dart';
+import '../../credentials/controllers/credentials_controller.dart';
 import '../../engagements/bindings/engagements_binding.dart';
+import '../../engagements/controllers/contractor_engagements_controller.dart';
 import '../controllers/onboarding_controller.dart';
 import '../data/datasources/compliance_remote_datasource.dart';
 import '../data/repositories/compliance_repository.dart';
 
 class OnboardingBinding extends Bindings {
   @override
-  void dependencies() {
+  void dependencies() => ensure();
+
+  /// Idempotent registration for the onboarding funnel.
+  ///
+  /// Funnel controllers are permanent so GetX smart-management does not delete
+  /// them when `_syncRoute` replaces `/contractor/onboarding/*` steps with
+  /// `Get.offNamed` (each step is its own GetPage).
+  static void ensure() {
     if (!Get.isRegistered<TokenStorage>()) {
       Get.put<TokenStorage>(TokenStorage(), permanent: true);
     }
@@ -25,6 +34,7 @@ class OnboardingBinding extends Bindings {
         () => ComplianceRemoteDataSource(
           authenticatedDio: Get.find<ApiClient>().dio,
         ),
+        fenix: true,
       );
     }
     if (!Get.isRegistered<ComplianceRepository>()) {
@@ -32,6 +42,7 @@ class OnboardingBinding extends Bindings {
         () => ComplianceRepository(
           remote: Get.find<ComplianceRemoteDataSource>(),
         ),
+        fenix: true,
       );
     }
     if (!Get.isRegistered<OnboardingController>()) {
@@ -39,10 +50,24 @@ class OnboardingBinding extends Bindings {
         OnboardingController(
           repository: Get.find<ComplianceRepository>(),
         ),
+        permanent: true,
       );
     }
-    // Engagement accept (S4) + credentials (S3).
-    ContractorEngagementsBinding().dependencies();
-    CredentialsBinding().dependencies();
+    // Engagement accept (S4) + credentials (S3) — permanent for step replaces.
+    ContractorEngagementsBinding.ensure(permanent: true);
+    CredentialsBinding.ensure(permanent: true);
+  }
+
+  /// Drop permanent funnel controllers (finish / logout).
+  static void reset() {
+    if (Get.isRegistered<OnboardingController>()) {
+      Get.delete<OnboardingController>(force: true);
+    }
+    if (Get.isRegistered<ContractorEngagementsController>()) {
+      Get.delete<ContractorEngagementsController>(force: true);
+    }
+    if (Get.isRegistered<CredentialsController>()) {
+      Get.delete<CredentialsController>(force: true);
+    }
   }
 }
