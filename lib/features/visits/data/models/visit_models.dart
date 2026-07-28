@@ -95,11 +95,15 @@ class VisitFormSubmissionOut {
     required this.id,
     required this.formTemplateId,
     this.payloadJson = const {},
+    this.createdAt,
+    this.updatedAt,
   });
 
   final String id;
   final String formTemplateId;
   final Map<String, dynamic> payloadJson;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   factory VisitFormSubmissionOut.fromJson(Map<String, dynamic> json) {
     final payload = json['payload_json'];
@@ -109,6 +113,12 @@ class VisitFormSubmissionOut {
       payloadJson: payload is Map
           ? Map<String, dynamic>.from(payload)
           : const {},
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'].toString())
+          : null,
     );
   }
 }

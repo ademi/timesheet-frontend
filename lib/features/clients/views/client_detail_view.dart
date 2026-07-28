@@ -245,16 +245,23 @@ class _InvitesTab extends StatelessWidget {
   const _InvitesTab({required this.controller});
   final ClientsController controller;
 
+  String _fmt(DateTime dt) {
+    final l = dt.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final invite = controller.lastInvite.value;
+      final history = controller.invites;
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
-            'Create a one-time client invite token. There is no staff list of '
-            'past invites yet (see BH-007).',
+            'Create a one-time client invite. The raw token is shown only once '
+            'at create time; history below shows metadata only.',
             style: TextStyle(color: AppColors.textMuted),
           ),
           const SizedBox(height: 12),
@@ -272,24 +279,40 @@ class _InvitesTab extends StatelessWidget {
           if (invite != null) ...[
             const SizedBox(height: 16),
             Text(
-              'Expires: ${invite.expiresAt.toLocal()}',
+              'New invite — expires ${_fmt(invite.expiresAt)}',
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             SelectableText(controller.invitePath(invite.token)),
-            const SizedBox(height: 4),
-            Text(
-              'Also accepted: ${controller.legacyInvitePath(invite.token)} '
-              '(backend email path — BH-005)',
-              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () => controller.copyInviteLink(invite.token),
               icon: const Icon(Icons.copy),
-              label: const Text('Copy Flutter path'),
+              label: const Text('Copy invite path'),
             ),
           ],
+          const Divider(height: 32),
+          Text('Invite history', style: Get.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (history.isEmpty)
+            const Text(
+              'No invites yet.',
+              style: TextStyle(color: AppColors.textMuted),
+            )
+          else
+            for (final row in history)
+              Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: Text(row.statusLabel),
+                  subtitle: Text(
+                    'Created ${_fmt(row.createdAt)}\n'
+                    'Expires ${_fmt(row.expiresAt)}'
+                    '${row.consumedAt != null ? '\nConsumed ${_fmt(row.consumedAt!)}' : ''}',
+                  ),
+                  isThreeLine: row.consumedAt != null,
+                ),
+              ),
         ],
       );
     });

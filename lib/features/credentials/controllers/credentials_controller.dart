@@ -74,7 +74,7 @@ class CredentialsController extends GetxController {
   Future<void> load() async {
     if (!canRead) {
       errorMessage.value =
-          'Missing credentials.read — pre-active engagements may lack this permission (see BH-004).';
+          'Missing credentials.read permission.';
       return;
     }
     isLoading.value = true;

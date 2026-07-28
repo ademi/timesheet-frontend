@@ -32,12 +32,8 @@ class ContractorVisitsController extends GetxController {
   final formNotesCtrl = TextEditingController();
   final manualTemplateIdCtrl = TextEditingController();
 
-  /// Template ids submitted this session (visit GET does not return submissions).
+  /// Template ids submitted this session (until visit refresh returns summaries).
   final submittedTemplateIds = <String>{}.obs;
-
-  /// Requirements loaded from job form-catalog when visit payload omits them.
-  final catalogRequirements = <VisitFormRequirement>[].obs;
-  final catalogLoadFailed = false.obs;
 
   bool get isWeb => _location.isWeb;
 
@@ -50,12 +46,15 @@ class ContractorVisitsController extends GetxController {
       canCheckIn ||
       canComplete;
 
-  List<VisitFormRequirement> get effectiveFormRequirements {
+  List<VisitFormRequirement> get effectiveFormRequirements =>
+      selected.value?.formRequirements ?? const [];
+
+  bool isFormSubmitted(String formTemplateId) {
+    if (submittedTemplateIds.contains(formTemplateId)) return true;
     final visit = selected.value;
-    if (visit != null && visit.formRequirements.isNotEmpty) {
-      return visit.formRequirements;
-    }
-    return catalogRequirements.toList(growable: false);
+    if (visit == null) return false;
+    return visit.formSubmissions
+        .any((s) => s.formTemplateId == formTemplateId);
   }
 
   @override
@@ -96,6 +95,7 @@ class ContractorVisitsController extends GetxController {
 
   Future<void> openDetail(VisitOut visit) async {
     selected.value = visit;
+    submittedTemplateIds.clear();
     Get.toNamed(AppRoutes.contractorVisitDetail, arguments: visit);
     await refreshSelected();
   }
@@ -116,36 +116,8 @@ class ContractorVisitsController extends GetxController {
       if (idx >= 0) {
         visits[idx] = visit;
       }
-      await _loadFormRequirements(visit);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
-    }
-  }
-
-  Future<void> _loadFormRequirements(VisitOut visit) async {
-    catalogLoadFailed.value = false;
-    if (visit.formRequirements.isNotEmpty) {
-      catalogRequirements.clear();
-      return;
-    }
-    try {
-      final catalog = await _repository.listJobFormCatalog(visit.jobId);
-      catalogRequirements.assignAll(
-        catalog
-            .where((c) => c.isActive)
-            .map(
-              (c) => VisitFormRequirement(
-                formTemplateId: c.formTemplateId,
-                name: c.name,
-                isRequired: true,
-              ),
-            )
-            .toList(growable: false),
-      );
-    } on AppFailure {
-      // Contractors currently lack jobs.read → 403 on form-catalog (BH-011).
-      catalogRequirements.clear();
-      catalogLoadFailed.value = true;
     }
   }
 
@@ -167,6 +139,7 @@ class ContractorVisitsController extends GetxController {
       );
       formNotesCtrl.clear();
       submittedTemplateIds.add(req.formTemplateId);
+      await refreshSelected();
       Get.snackbar(
         'Form submitted',
         req.name ?? req.formTemplateId,
@@ -291,9 +264,9 @@ class ContractorVisitsController extends GetxController {
       if (e.code == 'forms_incomplete' ||
           e.code == 'required_forms_incomplete') {
         errorMessage.value = effectiveFormRequirements.isEmpty
-            ? 'Submit the required progress form first. '
-                'Copy the template ID from Staff → Jobs → Form templates '
-                '(shown under each template), paste it below, add notes, Submit, then Complete.'
+            ? 'Required forms are incomplete. Submit the progress form '
+                'listed above (or ask staff to attach form requirements '
+                'to the visit), then Complete again.'
             : e.message;
       } else {
         errorMessage.value = e.message;

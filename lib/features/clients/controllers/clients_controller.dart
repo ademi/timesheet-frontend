@@ -38,6 +38,7 @@ class ClientsController extends GetxController {
   final sites = <ClientSiteOut>[].obs;
   final contacts = <ClientContactOut>[].obs;
   final lastInvite = Rxn<ClientInviteCreateResponse>();
+  final invites = <ClientInviteOut>[].obs;
   final tabIndex = 0.obs;
 
   // Site form
@@ -218,6 +219,7 @@ class ClientsController extends GetxController {
   Future<void> openDetail(ClientOut client) async {
     selected.value = client;
     lastInvite.value = null;
+    invites.clear();
     tabIndex.value = 0;
     Get.toNamed(AppRoutes.staffClientDetail, arguments: client);
     await openDetailById(client.id);
@@ -248,6 +250,12 @@ class ClientsController extends GetxController {
       contacts.assignAll(results[1] as List<ClientContactOut>);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+    }
+    try {
+      invites.assignAll(await _repository.listInvites(id));
+    } on AppFailure catch (e) {
+      invites.clear();
+      errorMessage.value ??= e.message;
     }
   }
 
@@ -397,6 +405,7 @@ class ClientsController extends GetxController {
     try {
       final invite = await _repository.createInvite(clientId);
       lastInvite.value = invite;
+      invites.assignAll(await _repository.listInvites(clientId));
       Get.snackbar(
         'Invite created',
         'Copy the link below. Expires ${invite.expiresAt.toLocal()}.',
@@ -413,9 +422,6 @@ class ClientsController extends GetxController {
   }
 
   String invitePath(String token) => '/invites/client/$token';
-
-  /// Path the API email builder currently uses (`/invite/{token}`) — BH-005.
-  String legacyInvitePath(String token) => '/invite/$token';
 
   Future<void> copyInviteLink(String token) async {
     final path = invitePath(token);

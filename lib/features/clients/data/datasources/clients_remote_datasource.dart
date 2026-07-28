@@ -177,6 +177,17 @@ class ClientsRemoteDataSource {
     }
   }
 
+  Future<List<ClientInviteOut>> listInvites(String clientId) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.clientInvites(clientId),
+      );
+      return _mapList(response.data, ClientInviteOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<ClientInvitePublicOut> getPublicInvite(String token) async {
     try {
       final response = await _plain.get<Map<String, dynamic>>(

@@ -18,8 +18,7 @@ class _JobDetailViewState extends State<JobDetailView> {
   void initState() {
     super.initState();
     final c = Get.find<JobsController>();
-    c.hydrateSelectedFromArgs();
-    c.refreshRules();
+    c.ensureDetailLoaded();
   }
 
   @override
@@ -33,8 +32,13 @@ class _JobDetailViewState extends State<JobDetailView> {
       body: Obx(() {
         final job = controller.selected.value;
         if (job == null) {
-          return const Center(
-            child: Text('Job not loaded (no GET /jobs/{id} — BH-008).'),
+          if (controller.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return Center(
+            child: Text(
+              controller.errorMessage.value ?? 'Job not loaded.',
+            ),
           );
         }
         final err = controller.errorMessage.value;
@@ -75,10 +79,32 @@ class _JobDetailViewState extends State<JobDetailView> {
             Text('Form catalog', style: Get.textTheme.titleMedium),
             const SizedBox(height: 4),
             const Text(
-              'API has no GET catalog (BH-009). Attach only; session shows attached IDs.',
+              'Templates attached to this job. Attach from the list below.',
               style: TextStyle(fontSize: 12),
             ),
-            const SizedBox(height: 8),
+            if (controller.formCatalog.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              for (final c in controller.formCatalog)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  leading: Icon(
+                    c.isActive ? Icons.check_circle : Icons.pause_circle,
+                    color: c.isActive ? AppColors.primary : AppColors.textMuted,
+                    size: 20,
+                  ),
+                  title: Text(c.name),
+                  subtitle: Text(c.formTemplateId),
+                ),
+            ] else
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'No templates attached yet.',
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
+              ),
+            const SizedBox(height: 12),
             if (controller.formTemplates.isEmpty)
               const Text('No form templates — create some first.'),
             for (final t in controller.formTemplates)
@@ -86,21 +112,26 @@ class _JobDetailViewState extends State<JobDetailView> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(t.name),
                 subtitle: Text(
-                  controller.attachedCatalogIds.contains(t.id)
-                      ? 'Attached this session'
+                  controller.isTemplateAttached(t.id)
+                      ? 'Attached'
                       : t.id,
                   style: TextStyle(
-                    color: controller.attachedCatalogIds.contains(t.id)
+                    color: controller.isTemplateAttached(t.id)
                         ? AppColors.primary
                         : null,
                   ),
                 ),
                 trailing: controller.canManage
                     ? TextButton(
-                        onPressed: controller.isSaving.value
+                        onPressed: controller.isSaving.value ||
+                                controller.isTemplateAttached(t.id)
                             ? null
                             : () => controller.attachFormTemplate(t.id),
-                        child: const Text('Attach'),
+                        child: Text(
+                          controller.isTemplateAttached(t.id)
+                              ? 'Attached'
+                              : 'Attach',
+                        ),
                       )
                     : null,
               ),

@@ -21,6 +21,17 @@ class JobsRemoteDataSource {
     }
   }
 
+  Future<JobOut> getJob(String jobId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.job(jobId),
+      );
+      return _require(response.data, JobOut.fromJson, 'get job');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<JobOut> createJob(JobCreateRequest body) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -40,6 +51,17 @@ class JobsRemoteDataSource {
         data: {'status': status},
       );
       return _require(response.data, JobOut.fromJson, 'update job');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<JobFormCatalogOut>> listFormCatalog(String jobId) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.jobFormCatalog(jobId),
+      );
+      return _mapList(response.data, JobFormCatalogOut.fromJson);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

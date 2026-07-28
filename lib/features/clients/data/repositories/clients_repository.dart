@@ -48,6 +48,8 @@ class ClientsRepository {
 
   Future<ClientInviteCreateResponse> createInvite(String clientId) =>
       _remote.createInvite(clientId);
+  Future<List<ClientInviteOut>> listInvites(String clientId) =>
+      _remote.listInvites(clientId);
 
   Future<ClientInvitePublicOut> getPublicInvite(String token) =>
       _remote.getPublicInvite(token);

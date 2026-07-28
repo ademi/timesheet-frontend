@@ -24,7 +24,7 @@
 | BH-008 | 2026-07-26 | Done — applied in local tree | No `GET /v1/jobs/{id}` — job detail cannot reload after refresh |
 | BH-009 | 2026-07-26 | Done — applied in local tree | No `GET /v1/jobs/{id}/form-catalog` — attach-only UX |
 | BH-010 | 2026-07-26 | Done — applied in local tree | Engagement rate create: bands vs simple `hourly_rate` |
-| BH-011 | 2026-07-27 | Open — needs API change | Visit GET omits `form_requirements`; contractors 403 on job form-catalog → cannot discover forms to submit before complete |
+| BH-011 | 2026-07-27 | Done — applied in local tree | Visit form requirements not visible to contractors |
 
 ---
 
@@ -711,46 +711,55 @@ Publish final EngagementRate create/response schema; update wiring guide §13. �
 ## BH-011 — Visit form requirements not visible to contractors
 
 **Date:** 2026-07-27  
-**Status:** Open — needs API change  
+**Status:** Done — applied in local tree  
 **Related Flutter slice:** S7 / MVP delivery  
-**Endpoint / area:** `GET /v1/visits/{id}`, `GET /v1/jobs/{job_id}/form-catalog`
+**Endpoint / area:** `GET /v1/visits/{id}`, `GET /v1/visits` · `VisitOut`
 
 ### Problem
 
-Contractor completes a visit after check-in and gets:
+Contractor completes a visit after check-in and gets `required_forms_incomplete`, but `GET /v1/visits/{id}` (and list) did **not** include form requirements or submission summaries. Contractors could not discover required templates without staff UUID paste; job form-catalog and form-templates remain staff-only (`jobs.read`).
+
+### Change made (preferred option)
+
+Extended `VisitOut` with:
+
+**`form_requirements`** — from `work.visit_form_requirements` joined to template name:
 
 ```json
-{"detail":"required_forms_incomplete"}
+{
+  "form_template_id": "...",
+  "name": "Progress report",
+  "is_required": true
+}
 ```
 
-But `GET /v1/visits/{id}` (and list) **does not include** `form_requirements` or `form_submissions` (confirmed against live OpenAPI `VisitOut` and live payloads). Wiring guide §9 still documents nested form requirements on visits.
+**`form_submissions`** — summary from `work.form_submissions` (no payload body):
 
-Contractors also cannot discover required templates another way:
+```json
+{
+  "id": "...",
+  "form_template_id": "...",
+  "created_at": "...",
+  "updated_at": "..."
+}
+```
 
-- `GET /v1/jobs/{job_id}/form-catalog` → **403** (needs `jobs.read`; contractor JWT has `visits.*` only)
-- `GET /v1/form-templates` → **403**
-- Recurrence rule GET → **403**
+Populated on `GET /v1/visits/{id}`, `GET /v1/visits`, and other visit returns that use the shared visit mapper (`create_manual_visit`, `reschedule_visit`).
 
-They **can** `POST /v1/visits/{id}/form-submissions` if they already know the `form_template_id`.
+**Files:**
 
-Flutter UI therefore shows “No form requirements” while Complete is blocked — MVP progress-report path is stuck without a pasted UUID workaround.
+- `app/modules/jobs/schemas.py` — `VisitFormRequirementOut`, `VisitFormSubmissionSummaryOut`; fields on `VisitOut`
+- `app/modules/jobs/service.py` — batch loaders + `_visit_out_from_row`
+- `tests/jobs/test_visit_form_requirements.py`
 
-### Expected behaviour (pick one or both)
-
-1. **Preferred:** `VisitOut` includes:
-   - `form_requirements`: `[{ form_template_id, name?, is_required }]` (from visit_form_requirements / recurrence snapshot)
-   - `form_submissions`: summary list or at least submitted `form_template_id`s  
-2. **Or:** allow contractors with `visits.read` to `GET /v1/jobs/{job_id}/form-catalog` for jobs of their own visits (and/or return requirements on visit complete 400 detail).
-
-### Flutter interim
-
-Visit detail shows a paste-template-ID + notes submit path when requirements are missing, and clearer copy on `required_forms_incomplete`.
+**Not changed:** staff-only `GET /v1/jobs/{id}/form-catalog` (contractors get requirements via visit payload).
 
 ### Verification
 
 1. Generate visit with required form on recurrence.  
-2. Contractor GET visit → sees required form name/id without staff UUID paste.  
-3. Submit form → complete succeeds.
+2. Contractor GET visit → sees required form name/id.  
+3. Submit form → `form_submissions` populated; complete succeeds.  
+4. Pytest `tests/jobs/test_visit_form_requirements.py` (passed).
 
 ---
 

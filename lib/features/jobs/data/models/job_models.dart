@@ -55,6 +55,30 @@ class JobOut {
   }
 }
 
+/// Attached form template on a job (`GET /v1/jobs/{id}/form-catalog`).
+class JobFormCatalogOut {
+  const JobFormCatalogOut({
+    required this.formTemplateId,
+    required this.name,
+    required this.isActive,
+    this.clientId,
+  });
+
+  final String formTemplateId;
+  final String name;
+  final bool isActive;
+  final String? clientId;
+
+  factory JobFormCatalogOut.fromJson(Map<String, dynamic> json) {
+    return JobFormCatalogOut(
+      formTemplateId: json['form_template_id'].toString(),
+      name: json['name'] as String? ?? 'Form',
+      isActive: json['is_active'] as bool? ?? true,
+      clientId: json['client_id']?.toString(),
+    );
+  }
+}
+
 class JobCreateRequest {
   const JobCreateRequest({
     required this.kind,

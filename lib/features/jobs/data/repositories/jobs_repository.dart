@@ -7,9 +7,12 @@ class JobsRepository {
   final JobsRemoteDataSource _remote;
 
   Future<List<JobOut>> listJobs() => _remote.listJobs();
+  Future<JobOut> getJob(String jobId) => _remote.getJob(jobId);
   Future<JobOut> createJob(JobCreateRequest body) => _remote.createJob(body);
   Future<JobOut> updateJobStatus(String jobId, String status) =>
       _remote.updateJobStatus(jobId, status);
+  Future<List<JobFormCatalogOut>> listFormCatalog(String jobId) =>
+      _remote.listFormCatalog(jobId);
   Future<void> addFormCatalog(String jobId, String formTemplateId) =>
       _remote.addFormCatalog(jobId, formTemplateId);
 

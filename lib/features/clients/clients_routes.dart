@@ -80,7 +80,7 @@ abstract final class ClientsPages {
           page: () => const PublicClientInviteView(),
           transition: Transition.fadeIn,
         ),
-        // Backend email path alias (BH-005) — same screen
+        // Legacy alias for older emailed links — same screen
         GetPage(
           name: AppRoutes.publicClientInviteLegacy,
           binding: PublicClientInviteBinding(),

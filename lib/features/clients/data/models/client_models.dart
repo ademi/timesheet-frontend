@@ -266,6 +266,45 @@ class ClientInviteCreateResponse {
   }
 }
 
+/// Staff list row (`GET /v1/clients/{id}/invites`) — no raw token.
+class ClientInviteOut {
+  const ClientInviteOut({
+    required this.id,
+    required this.expiresAt,
+    required this.createdAt,
+    this.consumedAt,
+    this.createdByUserId,
+  });
+
+  final String id;
+  final DateTime expiresAt;
+  final DateTime? consumedAt;
+  final DateTime createdAt;
+  final String? createdByUserId;
+
+  bool get isConsumed => consumedAt != null;
+  bool get isExpired =>
+      !isConsumed && expiresAt.toUtc().isBefore(DateTime.now().toUtc());
+
+  String get statusLabel {
+    if (isConsumed) return 'Consumed';
+    if (isExpired) return 'Expired';
+    return 'Outstanding';
+  }
+
+  factory ClientInviteOut.fromJson(Map<String, dynamic> json) {
+    return ClientInviteOut(
+      id: json['id'].toString(),
+      expiresAt: DateTime.parse(json['expires_at'] as String),
+      consumedAt: json['consumed_at'] != null
+          ? DateTime.tryParse(json['consumed_at'].toString())
+          : null,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      createdByUserId: json['created_by_user_id']?.toString(),
+    );
+  }
+}
+
 class ClientInvitePublicOut {
   const ClientInvitePublicOut({
     required this.tenantName,

@@ -37,8 +37,8 @@ class JobsController extends GetxController {
   final engagements = <EngagementOut>[].obs;
   final rules = <RecurrenceRuleOut>[].obs;
 
-  /// Session-only: API has no GET form-catalog (BH-008).
-  final attachedCatalogIds = <String>{}.obs;
+  /// Attached templates from `GET /v1/jobs/{id}/form-catalog`.
+  final formCatalog = <JobFormCatalogOut>[].obs;
 
   final isLoading = false.obs;
   final isSaving = false.obs;
@@ -143,6 +143,49 @@ class JobsController extends GetxController {
     }
   }
 
+  /// Resolves job from args / parameters and reloads catalog + rules.
+  Future<void> ensureDetailLoaded() async {
+    hydrateSelectedFromArgs();
+    final id = selected.value?.id ??
+        Get.parameters['id'] ??
+        (Get.arguments is String ? Get.arguments as String : null);
+    if (id == null || id.isEmpty) return;
+    await loadJobDetail(id);
+  }
+
+  Future<void> loadJobDetail(String jobId) async {
+    isLoading.value = true;
+    errorMessage.value = null;
+    try {
+      final job = await _repository.getJob(jobId);
+      selected.value = job;
+      final idx = jobs.indexWhere((j) => j.id == job.id);
+      if (idx >= 0) {
+        jobs[idx] = job;
+      }
+      await Future.wait([refreshRules(), refreshFormCatalog()]);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> refreshFormCatalog() async {
+    final job = selected.value;
+    if (job == null) return;
+    try {
+      formCatalog.assignAll(await _repository.listFormCatalog(job.id));
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    }
+  }
+
+  bool isTemplateAttached(String templateId) =>
+      formCatalog.any((c) => c.formTemplateId == templateId);
+
   void openFormTemplates() {
     templateNameCtrl.clear();
     errorMessage.value = null;
@@ -222,11 +265,15 @@ class JobsController extends GetxController {
 
   Future<void> openDetail(JobOut job) async {
     selected.value = job;
-    attachedCatalogIds.clear();
+    formCatalog.clear();
     lastGenerate.value = null;
     tabIndex.value = 0;
-    Get.toNamed(AppRoutes.staffJobDetail, arguments: job);
-    await refreshRules();
+    Get.toNamed(
+      AppRoutes.staffJobDetail,
+      arguments: job,
+      parameters: {'id': job.id},
+    );
+    await loadJobDetail(job.id);
   }
 
   Future<void> refreshRules() async {
@@ -263,7 +310,7 @@ class JobsController extends GetxController {
     errorMessage.value = null;
     try {
       await _repository.addFormCatalog(job.id, templateId);
-      attachedCatalogIds.add(templateId);
+      await refreshFormCatalog();
       Get.snackbar(
         'Attached',
         'Form template added to job catalog.',

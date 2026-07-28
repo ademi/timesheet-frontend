@@ -102,7 +102,7 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                   contentPadding: EdgeInsets.zero,
                   title: Text(req.name ?? req.formTemplateId),
                   subtitle: Text(
-                    controller.submittedTemplateIds.contains(req.formTemplateId)
+                    controller.isFormSubmitted(req.formTemplateId)
                         ? 'Submitted ✓'
                         : (req.isRequired ? 'Required' : 'Optional'),
                   ),
@@ -114,13 +114,11 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                   ),
                 ),
             ] else ...[
-              Text(
-                controller.catalogLoadFailed.value
-                    ? 'Required forms are not returned on this visit yet (API gap). '
-                        'Copy the template ID from Staff → Jobs → Form templates '
-                        '(UUID under the template name), paste it, then Submit.'
-                    : 'No form requirements listed for this visit.',
-                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+              const Text(
+                'No form requirements on this visit. If staff attached a '
+                'progress template to the job/rule, regenerate or recreate '
+                'the visit — or paste a template ID below as a fallback.',
+                style: TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -139,10 +137,10 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                 child: const Text('Submit progress form'),
               ),
             ],
-            if (controller.submittedTemplateIds.isNotEmpty) ...[
+            if (v.formSubmissions.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                'Submitted this session: ${controller.submittedTemplateIds.join(', ')}',
+                'Submissions on file: ${v.formSubmissions.length}',
                 style: const TextStyle(fontSize: 12),
               ),
             ],
