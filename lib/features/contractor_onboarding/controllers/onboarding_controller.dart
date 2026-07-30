@@ -47,6 +47,8 @@ class OnboardingController extends GetxController with PendingActionMixin {
 
   /// Idempotency keys reused on retry for the same logical action.
   final _idempotencyKeys = <String, String>{};
+  String? _restoredContractorId;
+  var _platformProgressComplete = false;
 
   OnboardingStep get currentStep =>
       OnboardingStep.values[stepIndex.value.clamp(
@@ -91,7 +93,18 @@ class OnboardingController extends GetxController with PendingActionMixin {
   @override
   void onInit() {
     super.onInit();
+    restoreProgress();
     loadLegal();
+  }
+
+  /// Restores persisted contractor-scoped progress before choosing a funnel step.
+  void restoreProgress() {
+    final contractorId = _contractorId;
+    if (_restoredContractorId == contractorId) return;
+
+    _restoredContractorId = contractorId;
+    _platformProgressComplete =
+        _progressStore.load(contractorId).platformComplete;
   }
 
   Future<void> loadLegal() async {
@@ -380,6 +393,12 @@ class OnboardingController extends GetxController with PendingActionMixin {
   }
 
   OnboardingStep? resolveFirstIncompleteStep() {
+    restoreProgress();
+    if (_platformProgressComplete) {
+      return _sessionService?.needsEngagementWork.value == true
+          ? OnboardingStep.engagement
+          : null;
+    }
     if (!canAdvanceLegal) return OnboardingStep.legal;
     if (!canAdvanceNotices) return OnboardingStep.notices;
     if (!canAdvanceConsents) return OnboardingStep.consents;
