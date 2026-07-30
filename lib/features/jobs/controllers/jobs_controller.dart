@@ -519,6 +519,9 @@ class JobsController extends GetxController {
           scheduledStart: start,
           scheduledEnd: end,
           taskTitles: tasks,
+          formTemplateIds: formCatalog
+              .map((catalogEntry) => catalogEntry.formTemplateId)
+              .toList(growable: false),
         ),
       );
       Get.snackbar(
