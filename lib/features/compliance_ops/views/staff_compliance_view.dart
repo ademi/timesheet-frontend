@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../subscription/billing_gate.dart';
+import '../../credentials/data/models/credential_models.dart';
 import '../controllers/staff_compliance_controller.dart';
 
 class StaffComplianceView extends GetView<StaffComplianceController> {
@@ -68,7 +69,12 @@ class StaffComplianceView extends GetView<StaffComplianceController> {
               child: controller.isLoading.value
                   ? const Center(child: CircularProgressIndicator())
                   : RefreshIndicator(
-                      onRefresh: controller.load,
+                      onRefresh: tab == 1
+                          ? () async {
+                              await controller.load();
+                              await controller.refreshAccessHistory();
+                            }
+                          : controller.load,
                       child: tab == 0
                           ? _RightsTab(controller: controller)
                           : tab == 1
@@ -121,23 +127,78 @@ class _AccessTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final selectedId = controller.selectedCredentialId.value;
+      final err = controller.accessHistoryError.value;
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (controller.accessHistory.isEmpty)
-            const Text('No access history entries.'),
-          for (final e in controller.accessHistory)
-            Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                title: Text(e.action ?? 'event'),
-                subtitle: Text(
-                  '${e.createdAt.toLocal()}'
-                  '${e.actorLabel != null ? ' · ${e.actorLabel}' : ''}'
-                  '${e.detail != null ? '\n${e.detail}' : ''}',
+          TextField(
+            controller: controller.contractorIdCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Contractor id',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: controller.isLoadingCredentials.value
+                ? null
+                : controller.loadContractorCredentials,
+            child: controller.isLoadingCredentials.value
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Load credentials'),
+          ),
+          if (controller.credentialOptions.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              key: ValueKey<String?>(selectedId),
+              initialValue: selectedId,
+              decoration: const InputDecoration(
+                labelText: 'Credential',
+                border: OutlineInputBorder(),
+              ),
+              hint: const Text('Select credential'),
+              items: controller.credentialOptions
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c.id,
+                      child: Text(
+                        '${credentialTypeLabel(c.credentialType)} · ${c.status}',
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: controller.selectCredential,
+            ),
+          ],
+          if (err != null) ...[
+            const SizedBox(height: 12),
+            _ErrorBox(err),
+          ],
+          const SizedBox(height: 12),
+          if (controller.isLoadingAccessHistory.value)
+            const Center(child: CircularProgressIndicator())
+          else if (selectedId == null)
+            const Text('Select a credential to view access history.')
+          else if (controller.accessHistory.isEmpty)
+            const Text('No access history entries.')
+          else
+            for (final e in controller.accessHistory)
+              Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: Text(e.action ?? 'event'),
+                  subtitle: Text(
+                    '${e.createdAt.toLocal()}'
+                    '${e.actorLabel != null ? ' · ${e.actorLabel}' : ''}'
+                    '${e.detail != null ? '\n${e.detail}' : ''}',
+                  ),
                 ),
               ),
-            ),
         ],
       );
     });

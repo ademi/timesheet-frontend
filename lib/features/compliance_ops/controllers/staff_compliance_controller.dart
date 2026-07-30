@@ -5,6 +5,8 @@ import '../../../app/constants/app_permissions.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../credentials/data/models/credential_models.dart';
+import '../../credentials/data/repositories/credentials_repository.dart';
 import '../../subscription/billing_gate.dart';
 import '../data/models/compliance_ops_models.dart';
 import '../data/repositories/compliance_ops_repository.dart';
@@ -12,11 +14,14 @@ import '../data/repositories/compliance_ops_repository.dart';
 class StaffComplianceController extends GetxController {
   StaffComplianceController({
     required ComplianceOpsRepository repository,
+    required CredentialsRepository credentialsRepository,
     required SessionService session,
   })  : _repository = repository,
+        _credentialsRepository = credentialsRepository,
         _session = session;
 
   final ComplianceOpsRepository _repository;
+  final CredentialsRepository _credentialsRepository;
   final SessionService _session;
 
   final tabIndex = 0.obs;
@@ -26,10 +31,16 @@ class StaffComplianceController extends GetxController {
 
   final rights = <RightsRequestOut>[].obs;
   final accessHistory = <AccessHistoryEntry>[].obs;
+  final accessHistoryError = RxnString();
+  final isLoadingAccessHistory = false.obs;
+  final credentialOptions = <CredentialOut>[].obs;
+  final isLoadingCredentials = false.obs;
+  final selectedCredentialId = RxnString();
   final incidents = <IncidentOut>[].obs;
   final selectedIncident = Rxn<IncidentOut>();
   final events = <NotificationEventOut>[].obs;
 
+  final contractorIdCtrl = TextEditingController();
   final incidentTitleCtrl = TextEditingController();
   final incidentDescCtrl = TextEditingController();
 
@@ -41,6 +52,8 @@ class StaffComplianceController extends GetxController {
       _session.hasPermission(AppPermissions.complianceIncidentsManage);
   bool get canReviewCreds =>
       _session.hasPermission(AppPermissions.credentialsReview);
+  bool get canReadCredentials =>
+      _session.hasPermission(AppPermissions.credentialsRead);
 
   @override
   void onInit() {
@@ -50,6 +63,7 @@ class StaffComplianceController extends GetxController {
 
   @override
   void onClose() {
+    contractorIdCtrl.dispose();
     incidentTitleCtrl.dispose();
     incidentDescCtrl.dispose();
     super.onClose();
@@ -66,13 +80,6 @@ class StaffComplianceController extends GetxController {
         errorMessage.value = e.message;
       }
     }
-    if (canAudit) {
-      try {
-        accessHistory.assignAll(await _repository.listAccessHistory());
-      } on AppFailure catch (e) {
-        errorMessage.value ??= e.message;
-      }
-    }
     if (canIncidents) {
       try {
         incidents.assignAll(await _repository.listIncidents());
@@ -86,6 +93,64 @@ class StaffComplianceController extends GetxController {
       // optional for staff without notifications.receive
     }
     isLoading.value = false;
+  }
+
+  Future<void> loadContractorCredentials() async {
+    if (!canReadCredentials) {
+      accessHistoryError.value = 'Missing credentials.read permission.';
+      return;
+    }
+    final contractorId = contractorIdCtrl.text.trim();
+    if (contractorId.isEmpty) {
+      accessHistoryError.value = 'Enter a contractor id.';
+      return;
+    }
+    isLoadingCredentials.value = true;
+    accessHistoryError.value = null;
+    selectedCredentialId.value = null;
+    accessHistory.clear();
+    credentialOptions.clear();
+    try {
+      credentialOptions.assignAll(
+        await _credentialsRepository.listForTenantContractor(contractorId),
+      );
+      if (credentialOptions.isEmpty) {
+        accessHistoryError.value = 'No credentials found for this contractor.';
+      }
+    } on AppFailure catch (e) {
+      accessHistoryError.value = e.message;
+    } finally {
+      isLoadingCredentials.value = false;
+    }
+  }
+
+  Future<void> selectCredential(String? credentialId) async {
+    selectedCredentialId.value = credentialId;
+    accessHistory.clear();
+    accessHistoryError.value = null;
+    if (credentialId == null || credentialId.isEmpty) return;
+    await loadAccessHistoryForCredential(credentialId);
+  }
+
+  Future<void> loadAccessHistoryForCredential(String credentialId) async {
+    isLoadingAccessHistory.value = true;
+    accessHistoryError.value = null;
+    try {
+      accessHistory.assignAll(
+        await _repository.listAccessHistory(credentialId: credentialId),
+      );
+    } on AppFailure catch (e) {
+      accessHistoryError.value = e.message;
+    } finally {
+      isLoadingAccessHistory.value = false;
+    }
+  }
+
+  Future<void> refreshAccessHistory() async {
+    final id = selectedCredentialId.value;
+    if (id != null && id.isNotEmpty) {
+      await loadAccessHistoryForCredential(id);
+    }
   }
 
   Future<void> openIncident(IncidentOut incident) async {

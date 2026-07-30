@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
+import '../../credentials/bindings/credentials_binding.dart';
+import '../../credentials/data/repositories/credentials_repository.dart';
 import '../controllers/contractor_profile_controller.dart';
 import '../controllers/staff_compliance_controller.dart';
 import '../data/datasources/compliance_ops_remote_datasource.dart';
@@ -48,11 +50,13 @@ class StaffComplianceBinding extends Bindings {
   @override
   void dependencies() {
     ComplianceOpsBinding.ensureShared();
+    CredentialsBinding.ensureDependencies();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<StaffComplianceController>()) {
       Get.put(
         StaffComplianceController(
           repository: Get.find<ComplianceOpsRepository>(),
+          credentialsRepository: Get.find<CredentialsRepository>(),
           session: Get.find<SessionService>(),
         ),
       );
