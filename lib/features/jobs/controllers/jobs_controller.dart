@@ -180,10 +180,18 @@ class JobsController extends GetxController {
   bool isTemplateAttached(String templateId) =>
       formCatalog.any((c) => c.formTemplateId == templateId);
 
-  void openFormTemplates() {
+  Future<void> openFormTemplatesAndRefresh() async {
     templateNameCtrl.clear();
     errorMessage.value = null;
-    Get.toNamed(AppRoutes.staffFormTemplates);
+    await Get.toNamed(AppRoutes.staffFormTemplates);
+    try {
+      formTemplates.assignAll(
+        await _repository.listFormTemplates(tenantLevel: true),
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    }
+    await refreshFormCatalog();
   }
 
   Future<void> onClientChanged(String? clientId) async {

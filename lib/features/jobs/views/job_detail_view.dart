@@ -80,7 +80,9 @@ class _JobDetailViewState extends State<JobDetailView> {
             Text('Form catalog', style: Get.textTheme.titleMedium),
             const SizedBox(height: 4),
             const Text(
-              'Templates attached to this job. Attach from the list below.',
+              'Templates used on visits for this job. Attach templates here, '
+              'then select them when adding recurrence rules or creating '
+              'manual visits.',
               style: TextStyle(fontSize: 12),
             ),
             if (controller.formCatalog.isNotEmpty) ...[
@@ -95,7 +97,10 @@ class _JobDetailViewState extends State<JobDetailView> {
                     size: 20,
                   ),
                   title: Text(c.name),
-                  subtitle: Text(c.formTemplateId),
+                  subtitle: Text(
+                    '${c.isActive ? 'active' : 'inactive'} · '
+                    '${c.clientId == null ? 'tenant-wide' : 'client'}',
+                  ),
                 ),
             ] else
               const Padding(
@@ -107,13 +112,15 @@ class _JobDetailViewState extends State<JobDetailView> {
               ),
             const SizedBox(height: 12),
             if (controller.formTemplates.isEmpty)
-              const Text('No form templates — create some first.'),
+              const Text('No templates yet.'),
             for (final t in controller.formTemplates)
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(t.name),
                 subtitle: Text(
-                  controller.isTemplateAttached(t.id) ? 'Attached' : t.id,
+                  '${t.isActive ? 'active' : 'inactive'} · '
+                  '${t.clientId == null ? 'tenant-wide' : 'client'}'
+                  '${controller.isTemplateAttached(t.id) ? ' · attached' : ''}',
                   style: TextStyle(
                     color:
                         controller.isTemplateAttached(t.id)
@@ -136,6 +143,21 @@ class _JobDetailViewState extends State<JobDetailView> {
                           ),
                         )
                         : null,
+              ),
+            if (controller.canManage || controller.canManageForms)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton(
+                  onPressed:
+                      controller.isSaving.value
+                          ? null
+                          : controller.openFormTemplatesAndRefresh,
+                  child: Text(
+                    controller.formTemplates.isEmpty
+                        ? 'Create form template'
+                        : 'Manage form templates',
+                  ),
+                ),
               ),
             const Divider(height: 32),
             Text('Recurrence', style: Get.textTheme.titleMedium),
