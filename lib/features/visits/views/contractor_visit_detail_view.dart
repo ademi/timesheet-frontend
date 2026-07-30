@@ -45,12 +45,11 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            if (err != null) ...[
-              _ErrorBox(err),
-              const SizedBox(height: 12),
-            ],
-            Text(v.jobTitle ?? v.tenantName ?? 'Visit',
-                style: Get.textTheme.titleMedium),
+            if (err != null) ...[_ErrorBox(err), const SizedBox(height: 12)],
+            Text(
+              v.jobTitle ?? v.tenantName ?? 'Visit',
+              style: Get.textTheme.titleMedium,
+            ),
             const SizedBox(height: 4),
             Text('Status: ${v.status}'),
             Text('${_fmt(v.scheduledStart)} → ${_fmt(v.scheduledEnd)}'),
@@ -78,10 +77,11 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                 contentPadding: EdgeInsets.zero,
                 value: t.isDone,
                 title: Text(t.title),
-                onChanged: controller.isSaving.value ||
-                        (!v.isCheckedIn && !v.isScheduled)
-                    ? null
-                    : (_) => controller.toggleTask(t),
+                onChanged:
+                    controller.isSaving.value ||
+                            (!v.isCheckedIn && !v.isScheduled)
+                        ? null
+                        : (_) => controller.toggleTask(t),
               ),
             const Divider(height: 32),
             Text('Progress form', style: Get.textTheme.titleMedium),
@@ -100,41 +100,24 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
               for (final req in reqs)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(req.name ?? req.formTemplateId),
+                  title: Text(req.name ?? 'Progress form'),
                   subtitle: Text(
                     controller.isFormSubmitted(req.formTemplateId)
                         ? 'Submitted ✓'
                         : (req.isRequired ? 'Required' : 'Optional'),
                   ),
                   trailing: TextButton(
-                    onPressed: controller.isSaving.value || !v.isCheckedIn
-                        ? null
-                        : () => controller.submitForm(req),
+                    onPressed:
+                        controller.isSaving.value || !v.isCheckedIn
+                            ? null
+                            : () => controller.submitForm(req),
                     child: const Text('Submit'),
                   ),
                 ),
             ] else ...[
               const Text(
-                'No form requirements on this visit. If staff attached a '
-                'progress template to the job/rule, regenerate or recreate '
-                'the visit — or paste a template ID below as a fallback.',
+                'Contact your coordinator — form not configured.',
                 style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: controller.manualTemplateIdCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Form template ID',
-                  hintText: 'Paste UUID from staff Form templates',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: controller.isSaving.value || !v.isCheckedIn
-                    ? null
-                    : controller.submitManualForm,
-                child: const Text('Submit progress form'),
               ),
             ],
             if (v.formSubmissions.isNotEmpty) ...[
@@ -147,9 +130,10 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
             const SizedBox(height: 24),
             if (v.isScheduled && controller.canCheckIn)
               ElevatedButton(
-                onPressed: (gpsBlocked || controller.isSaving.value)
-                    ? null
-                    : controller.checkIn,
+                onPressed:
+                    (gpsBlocked || controller.isSaving.value)
+                        ? null
+                        : controller.checkIn,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.onPrimary,
@@ -160,9 +144,10 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
             if (v.isCheckedIn && controller.canComplete) ...[
               const SizedBox(height: 8),
               ElevatedButton(
-                onPressed: (gpsBlocked || controller.isSaving.value)
-                    ? null
-                    : controller.complete,
+                onPressed:
+                    (gpsBlocked || controller.isSaving.value)
+                        ? null
+                        : controller.complete,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.onPrimary,

@@ -26,22 +26,11 @@ class StaffCredentialReviewView
               style: TextStyle(color: AppColors.textMuted),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: controller.contractorIdCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Contractor ID',
-                border: OutlineInputBorder(),
+            if (!controller.hasReviewContext)
+              const Text(
+                'Open a person from Workforce to review their credentials.',
+                style: TextStyle(color: AppColors.textMuted),
               ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller.engagementIdCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Engagement ID (for review actions)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
             TextField(
               controller: controller.reasonCtrl,
               decoration: const InputDecoration(
@@ -54,7 +43,9 @@ class StaffCredentialReviewView
               alignment: Alignment.centerLeft,
               child: ElevatedButton(
                 onPressed:
-                    controller.isLoading.value ? null : controller.load,
+                    controller.isLoading.value || !controller.hasReviewContext
+                        ? null
+                        : controller.load,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.onPrimary,
@@ -70,7 +61,10 @@ class StaffCredentialReviewView
                   color: AppColors.errorBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(err, style: const TextStyle(color: AppColors.error)),
+                child: Text(
+                  err,
+                  style: const TextStyle(color: AppColors.error),
+                ),
               ),
             ],
             if (controller.mfaRequired.value) ...[
@@ -139,27 +133,30 @@ class _StaffCredentialCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 OutlinedButton(
-                  onPressed: controller.isSaving.value
-                      ? null
-                      : () => controller.submitReview(
+                  onPressed:
+                      controller.isSaving.value
+                          ? null
+                          : () => controller.submitReview(
                             credential: c,
                             decision: 'accepted',
                           ),
                   child: const Text('Accept'),
                 ),
                 OutlinedButton(
-                  onPressed: controller.isSaving.value
-                      ? null
-                      : () => controller.submitReview(
+                  onPressed:
+                      controller.isSaving.value
+                          ? null
+                          : () => controller.submitReview(
                             credential: c,
                             decision: 'rejected',
                           ),
                   child: const Text('Reject'),
                 ),
                 OutlinedButton(
-                  onPressed: controller.isSaving.value
-                      ? null
-                      : () => controller.submitReview(
+                  onPressed:
+                      controller.isSaving.value
+                          ? null
+                          : () => controller.submitReview(
                             credential: c,
                             decision: 're_review_required',
                           ),

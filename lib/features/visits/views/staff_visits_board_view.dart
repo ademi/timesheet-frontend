@@ -22,7 +22,7 @@ class StaffVisitsBoardView extends GetView<StaffVisitsController> {
 
   @override
   Widget build(BuildContext context) {
-    // Re-apply job_id when navigating here while controller already exists.
+    // A job detail can set the internal filter through route arguments.
     controller.applyRouteArgs();
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -66,40 +66,51 @@ class StaffVisitsBoardView extends GetView<StaffVisitsController> {
                       ),
                     ],
                   ),
-                  TextField(
-                    controller: controller.jobIdCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'Filter job_id (optional)',
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.search),
-                        onPressed: controller.applyFilters,
+                  DropdownButtonFormField<String>(
+                    value:
+                        controller.jobIdFilter.value.isEmpty
+                            ? null
+                            : controller.jobIdFilter.value,
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('All jobs'),
                       ),
+                      for (final job in controller.jobs)
+                        DropdownMenuItem(value: job.id, child: Text(job.title)),
+                    ],
+                    onChanged: controller.setJobFilter,
+                    decoration: const InputDecoration(
+                      labelText: 'Job',
+                      border: OutlineInputBorder(),
                     ),
-                    onSubmitted: (_) => controller.applyFilters(),
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: controller.statusFilter.value.isEmpty
-                        ? null
-                        : controller.statusFilter.value,
+                    value:
+                        controller.statusFilter.value.isEmpty
+                            ? null
+                            : controller.statusFilter.value,
                     items: const [
-                      DropdownMenuItem(value: null, child: Text('All statuses')),
+                      DropdownMenuItem(
+                        value: null,
+                        child: Text('All statuses'),
+                      ),
                       DropdownMenuItem(
                         value: 'scheduled',
-                        child: Text('scheduled'),
+                        child: Text('Scheduled'),
                       ),
                       DropdownMenuItem(
                         value: 'checked_in',
-                        child: Text('checked_in'),
+                        child: Text('Checked in'),
                       ),
                       DropdownMenuItem(
                         value: 'completed',
-                        child: Text('completed'),
+                        child: Text('Completed'),
                       ),
                       DropdownMenuItem(
                         value: 'cancelled',
-                        child: Text('cancelled'),
+                        child: Text('Cancelled'),
                       ),
                     ],
                     onChanged: controller.setStatusFilter,
@@ -112,43 +123,42 @@ class StaffVisitsBoardView extends GetView<StaffVisitsController> {
               ),
             ),
             if (err != null)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: _ErrorBox(err),
-              ),
+              Padding(padding: const EdgeInsets.all(16), child: _ErrorBox(err)),
             Expanded(
-              child: controller.isLoading.value && controller.visits.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : RefreshIndicator(
-                      onRefresh: controller.load,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: controller.visits.isEmpty
-                            ? 1
-                            : controller.visits.length,
-                        itemBuilder: (context, i) {
-                          if (controller.visits.isEmpty) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 32),
-                              child: Text('No visits in this range.'),
-                            );
-                          }
-                          final v = controller.visits[i];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              title: Text(v.jobTitle ?? 'Job ${v.jobId}'),
-                              subtitle: Text(
-                                '${_fmt(v.scheduledStart)} · ${v.status}'
-                                '${v.contractorName != null ? ' · ${v.contractorName}' : ''}',
+              child:
+                  controller.isLoading.value && controller.visits.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : RefreshIndicator(
+                        onRefresh: controller.load,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount:
+                              controller.visits.isEmpty
+                                  ? 1
+                                  : controller.visits.length,
+                          itemBuilder: (context, i) {
+                            if (controller.visits.isEmpty) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 32),
+                                child: Text('No visits in this range.'),
+                              );
+                            }
+                            final v = controller.visits[i];
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                title: Text(v.jobTitle ?? 'Visit'),
+                                subtitle: Text(
+                                  '${_fmt(v.scheduledStart)} · ${v.status}'
+                                  '${v.contractorName != null ? ' · ${v.contractorName}' : ''}',
+                                ),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () => controller.openDetail(v),
                               ),
-                              trailing: const Icon(Icons.chevron_right),
-                              onTap: () => controller.openDetail(v),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
             ),
           ],
         );

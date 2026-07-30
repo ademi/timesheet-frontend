@@ -1,24 +1,29 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../jobs/data/models/job_models.dart';
+import '../../jobs/data/repositories/jobs_repository.dart';
 import '../data/models/visit_models.dart';
 import '../data/repositories/visits_repository.dart';
 
 class StaffVisitsController extends GetxController {
   StaffVisitsController({
     required VisitsRepository repository,
+    required JobsRepository jobsRepository,
     required SessionService session,
-  })  : _repository = repository,
-        _session = session;
+  }) : _repository = repository,
+       _jobsRepository = jobsRepository,
+       _session = session;
 
   final VisitsRepository _repository;
+  final JobsRepository _jobsRepository;
   final SessionService _session;
 
   final visits = <VisitOut>[].obs;
+  final jobs = <JobOut>[].obs;
   final selected = Rxn<VisitOut>();
   final isLoading = false.obs;
   final isSaving = false.obs;
@@ -28,8 +33,6 @@ class StaffVisitsController extends GetxController {
   final rangeStart = DateTime.now().obs;
   final jobIdFilter = ''.obs;
   final statusFilter = ''.obs;
-
-  final jobIdCtrl = TextEditingController();
 
   bool get canManage => _session.hasPermission(AppPermissions.visitsManage);
   bool get canRead =>
@@ -48,6 +51,7 @@ class StaffVisitsController extends GetxController {
   void onInit() {
     super.onInit();
     applyRouteArgs();
+    loadJobs();
     load();
   }
 
@@ -57,18 +61,9 @@ class StaffVisitsController extends GetxController {
       final id = args['job_id'].toString();
       if (id != jobIdFilter.value) {
         jobIdFilter.value = id;
-        jobIdCtrl.text = id;
         load();
-      } else {
-        jobIdCtrl.text = id;
       }
     }
-  }
-
-  @override
-  void onClose() {
-    jobIdCtrl.dispose();
-    super.onClose();
   }
 
   Future<void> load() async {
@@ -82,8 +77,12 @@ class StaffVisitsController extends GetxController {
       final list = await _repository.listVisits(
         from: _fromUtc,
         to: _toUtc,
-        jobId: jobIdFilter.value.trim().isEmpty ? null : jobIdFilter.value.trim(),
-        status: statusFilter.value.trim().isEmpty ? null : statusFilter.value.trim(),
+        jobId:
+            jobIdFilter.value.trim().isEmpty ? null : jobIdFilter.value.trim(),
+        status:
+            statusFilter.value.trim().isEmpty
+                ? null
+                : statusFilter.value.trim(),
       );
       list.sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
       visits.assignAll(list);
@@ -96,8 +95,16 @@ class StaffVisitsController extends GetxController {
     }
   }
 
-  void applyFilters() {
-    jobIdFilter.value = jobIdCtrl.text.trim();
+  Future<void> loadJobs() async {
+    try {
+      jobs.assignAll(await _jobsRepository.listJobs());
+    } catch (_) {
+      // The visit board remains usable without an optional filter list.
+    }
+  }
+
+  void setJobFilter(String? jobId) {
+    jobIdFilter.value = jobId ?? '';
     load();
   }
 
@@ -118,7 +125,8 @@ class StaffVisitsController extends GetxController {
   }
 
   Future<void> refreshSelected() async {
-    final id = selected.value?.id ??
+    final id =
+        selected.value?.id ??
         (Get.arguments is VisitOut ? (Get.arguments as VisitOut).id : null);
     if (id == null) return;
     try {

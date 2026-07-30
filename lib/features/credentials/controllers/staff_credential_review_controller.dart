@@ -16,15 +16,15 @@ class StaffCredentialReviewController extends GetxController {
   StaffCredentialReviewController({
     required CredentialsRepository repository,
     required SessionService session,
-  })  : _repository = repository,
-        _session = session;
+  }) : _repository = repository,
+       _session = session;
 
   final CredentialsRepository _repository;
   final SessionService _session;
 
-  final contractorIdCtrl = TextEditingController();
-  final engagementIdCtrl = TextEditingController();
   final reasonCtrl = TextEditingController();
+  String? _contractorId;
+  String? _engagementId;
 
   final items = <CredentialOut>[].obs;
   final isLoading = false.obs;
@@ -37,6 +37,7 @@ class StaffCredentialReviewController extends GetxController {
       _session.hasPermission(AppPermissions.credentialsReview);
 
   bool get canRead => _session.hasPermission(AppPermissions.credentialsRead);
+  bool get hasReviewContext => _contractorId != null && _engagementId != null;
 
   @override
   void onInit() {
@@ -49,17 +50,15 @@ class StaffCredentialReviewController extends GetxController {
       contractorId ??= args['contractorId']?.toString();
       engagementId ??= args['engagementId']?.toString();
     }
-    if (contractorId != null) contractorIdCtrl.text = contractorId;
-    if (engagementId != null) engagementIdCtrl.text = engagementId;
-    if (contractorIdCtrl.text.isNotEmpty) {
+    _contractorId = contractorId;
+    _engagementId = engagementId;
+    if (_contractorId != null) {
       load();
     }
   }
 
   @override
   void onClose() {
-    contractorIdCtrl.dispose();
-    engagementIdCtrl.dispose();
     reasonCtrl.dispose();
     super.onClose();
   }
@@ -69,17 +68,16 @@ class StaffCredentialReviewController extends GetxController {
       errorMessage.value = 'Missing credentials.read permission.';
       return;
     }
-    final contractorId = contractorIdCtrl.text.trim();
-    if (contractorId.isEmpty) {
-      errorMessage.value = 'Enter a contractor id.';
+    final contractorId = _contractorId;
+    if (contractorId == null) {
+      errorMessage.value = 'Open credential review from Workforce.';
       return;
     }
     isLoading.value = true;
     errorMessage.value = null;
     eligibilityReasons.clear();
     try {
-      final list =
-          await _repository.listForTenantContractor(contractorId);
+      final list = await _repository.listForTenantContractor(contractorId);
       items.assignAll(list);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -101,9 +99,9 @@ class StaffCredentialReviewController extends GetxController {
       errorMessage.value = 'Missing credentials.review permission.';
       return;
     }
-    final engagementId = engagementIdCtrl.text.trim();
-    if (engagementId.isEmpty) {
-      errorMessage.value = 'Enter an engagement id for reviews.';
+    final engagementId = _engagementId;
+    if (engagementId == null) {
+      errorMessage.value = 'Open credential review from Workforce.';
       return;
     }
     isSaving.value = true;
