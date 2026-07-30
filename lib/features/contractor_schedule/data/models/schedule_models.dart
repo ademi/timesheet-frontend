@@ -55,10 +55,10 @@ class AvailabilityRuleOut {
   }
 
   Map<String, dynamic> toRuleJson() => {
-        'day_of_week': dayOfWeek,
-        'start_time': _ensureSeconds(startTime),
-        'end_time': _ensureSeconds(endTime),
-      };
+    'day_of_week': dayOfWeek,
+    'start_time': _ensureSeconds(startTime),
+    'end_time': _ensureSeconds(endTime),
+  };
 
   static String _normalizeTime(String raw) {
     final parts = raw.split(':');
@@ -73,6 +73,22 @@ class AvailabilityRuleOut {
     if (parts.length == 2) return '$hhmm:00';
     return hhmm;
   }
+}
+
+class AvailabilityWindowDraft {
+  const AvailabilityWindowDraft({
+    this.startTime = '09:00',
+    this.endTime = '17:00',
+  });
+
+  final String startTime;
+  final String endTime;
+
+  AvailabilityWindowDraft copyWith({String? startTime, String? endTime}) =>
+      AvailabilityWindowDraft(
+        startTime: startTime ?? this.startTime,
+        endTime: endTime ?? this.endTime,
+      );
 }
 
 class LeaveOut {
@@ -121,11 +137,11 @@ class LeaveCreateRequest {
   final String? notes;
 
   Map<String, dynamic> toJson() => {
-        'start_date': startDate,
-        'end_date': endDate,
-        'leave_type': leaveType,
-        if (notes != null && notes!.trim().isNotEmpty) 'notes': notes!.trim(),
-      };
+    'start_date': startDate,
+    'end_date': endDate,
+    'leave_type': leaveType,
+    if (notes != null && notes!.trim().isNotEmpty) 'notes': notes!.trim(),
+  };
 }
 
 class TimetableOut {
@@ -172,9 +188,4 @@ const dayOfWeekLabels = <String>[
   'Sunday',
 ];
 
-const leaveTypeOptions = <String>[
-  'annual',
-  'sick',
-  'unpaid',
-  'other',
-];
+const leaveTypeOptions = <String>['annual', 'sick', 'unpaid', 'other'];

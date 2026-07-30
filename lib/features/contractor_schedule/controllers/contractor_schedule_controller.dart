@@ -13,8 +13,8 @@ class ContractorScheduleController extends GetxController {
   ContractorScheduleController({
     required ContractorScheduleRepository repository,
     required SessionService session,
-  })  : _repository = repository,
-        _session = session;
+  }) : _repository = repository,
+       _session = session;
 
   final ContractorScheduleRepository _repository;
   final SessionService _session;
@@ -29,10 +29,8 @@ class ContractorScheduleController extends GetxController {
   final availability = <AvailabilityRuleOut>[].obs;
   final leaveItems = <LeaveOut>[].obs;
 
-  /// Editable draft for availability PUT (day toggles + times).
-  final draftEnabled = <bool>[false, false, false, false, false, false, false].obs;
-  final draftStart = <String>['09:00', '09:00', '09:00', '09:00', '09:00', '09:00', '09:00'].obs;
-  final draftEnd = <String>['17:00', '17:00', '17:00', '17:00', '17:00', '17:00', '17:00'].obs;
+  /// Editable availability windows, grouped by weekday.
+  final draftWindows = List.generate(7, (_) => <AvailabilityWindowDraft>[]).obs;
 
   final leaveStartCtrl = TextEditingController();
   final leaveEndCtrl = TextEditingController();
@@ -129,36 +127,45 @@ class ContractorScheduleController extends GetxController {
 
   void _syncDraftFromRules(List<AvailabilityRuleOut> rules) {
     for (var i = 0; i < 7; i++) {
-      draftEnabled[i] = false;
-      draftStart[i] = '09:00';
-      draftEnd[i] = '17:00';
+      draftWindows[i] = [];
     }
     for (final r in rules) {
       final d = r.dayOfWeek.clamp(0, 6);
-      draftEnabled[d] = true;
-      draftStart[d] =
-          r.startTime.length >= 5 ? r.startTime.substring(0, 5) : r.startTime;
-      draftEnd[d] =
-          r.endTime.length >= 5 ? r.endTime.substring(0, 5) : r.endTime;
+      draftWindows[d].add(
+        AvailabilityWindowDraft(
+          startTime:
+              r.startTime.length >= 5
+                  ? r.startTime.substring(0, 5)
+                  : r.startTime,
+          endTime:
+              r.endTime.length >= 5 ? r.endTime.substring(0, 5) : r.endTime,
+        ),
+      );
     }
-    draftEnabled.refresh();
-    draftStart.refresh();
-    draftEnd.refresh();
+    draftWindows.refresh();
   }
 
   void toggleDay(int day, bool enabled) {
-    draftEnabled[day] = enabled;
-    draftEnabled.refresh();
+    draftWindows[day] = enabled ? [const AvailabilityWindowDraft()] : [];
+    draftWindows.refresh();
   }
 
-  void setDraftStart(int day, String value) {
-    draftStart[day] = value;
-    draftStart.refresh();
+  void addWindow(int day) {
+    draftWindows[day].add(const AvailabilityWindowDraft());
+    draftWindows.refresh();
   }
 
-  void setDraftEnd(int day, String value) {
-    draftEnd[day] = value;
-    draftEnd.refresh();
+  void removeWindow(int day, int index) {
+    draftWindows[day].removeAt(index);
+    draftWindows.refresh();
+  }
+
+  void setDraftWindow(int day, int index, {String? start, String? end}) {
+    draftWindows[day][index] = draftWindows[day][index].copyWith(
+      startTime: start,
+      endTime: end,
+    );
+    draftWindows.refresh();
   }
 
   Future<void> saveAvailability() async {
@@ -168,14 +175,25 @@ class ContractorScheduleController extends GetxController {
     }
     final rules = <AvailabilityRuleOut>[];
     for (var i = 0; i < 7; i++) {
-      if (!draftEnabled[i]) continue;
-      rules.add(
-        AvailabilityRuleOut(
-          dayOfWeek: i,
-          startTime: draftStart[i],
-          endTime: draftEnd[i],
-        ),
-      );
+      for (final window in draftWindows[i]) {
+        rules.add(
+          AvailabilityRuleOut(
+            dayOfWeek: i,
+            startTime: window.startTime,
+            endTime: window.endTime,
+          ),
+        );
+      }
+    }
+    for (var i = 0; i < 7; i++) {
+      final windows = [...draftWindows[i]]
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
+      for (var j = 1; j < windows.length; j++) {
+        if (windows[j].startTime.compareTo(windows[j - 1].endTime) < 0) {
+          errorMessage.value = '${dayOfWeekLabels[i]} windows cannot overlap.';
+          return;
+        }
+      }
     }
     isSaving.value = true;
     errorMessage.value = null;

@@ -75,18 +75,20 @@ class ContractorScheduleView extends GetView<ContractorScheduleController> {
               ),
             ),
             Expanded(
-              child: controller.isLoading.value &&
-                      controller.timetableVisits.isEmpty &&
-                      tab == 0
-                  ? const Center(child: CircularProgressIndicator())
-                  : RefreshIndicator(
-                      onRefresh: controller.loadAll,
-                      child: tab == 0
-                          ? _TimetableTab(controller: controller)
-                          : tab == 1
-                              ? _AvailabilityTab(controller: controller)
-                              : _LeaveTab(controller: controller),
-                    ),
+              child:
+                  controller.isLoading.value &&
+                          controller.timetableVisits.isEmpty &&
+                          tab == 0
+                      ? const Center(child: CircularProgressIndicator())
+                      : RefreshIndicator(
+                        onRefresh: controller.loadAll,
+                        child:
+                            tab == 0
+                                ? _TimetableTab(controller: controller)
+                                : tab == 1
+                                ? _AvailabilityTab(controller: controller)
+                                : _LeaveTab(controller: controller),
+                      ),
             ),
           ],
         );
@@ -202,38 +204,64 @@ class _AvailabilityTab extends StatelessWidget {
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(dayOfWeekLabels[i]),
-                      value: controller.draftEnabled[i],
-                      onChanged: controller.canManage
-                          ? (v) => controller.toggleDay(i, v)
-                          : null,
+                      value: controller.draftWindows[i].isNotEmpty,
+                      onChanged:
+                          controller.canManage
+                              ? (v) => controller.toggleDay(i, v)
+                              : null,
                     ),
-                    if (controller.draftEnabled[i])
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              initialValue: controller.draftStart[i],
-                              decoration: const InputDecoration(
-                                labelText: 'Start (HH:MM)',
-                                border: OutlineInputBorder(),
+                    for (var j = 0; j < controller.draftWindows[i].length; j++)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                initialValue:
+                                    controller.draftWindows[i][j].startTime,
+                                decoration: const InputDecoration(
+                                  labelText: 'Start (HH:MM)',
+                                  border: OutlineInputBorder(),
+                                ),
+                                onChanged:
+                                    (v) => controller.setDraftWindow(
+                                      i,
+                                      j,
+                                      start: v,
+                                    ),
+                                enabled: controller.canManage,
                               ),
-                              onChanged: (v) => controller.setDraftStart(i, v),
-                              enabled: controller.canManage,
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextFormField(
-                              initialValue: controller.draftEnd[i],
-                              decoration: const InputDecoration(
-                                labelText: 'End (HH:MM)',
-                                border: OutlineInputBorder(),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextFormField(
+                                initialValue:
+                                    controller.draftWindows[i][j].endTime,
+                                decoration: const InputDecoration(
+                                  labelText: 'End (HH:MM)',
+                                  border: OutlineInputBorder(),
+                                ),
+                                onChanged:
+                                    (v) =>
+                                        controller.setDraftWindow(i, j, end: v),
+                                enabled: controller.canManage,
                               ),
-                              onChanged: (v) => controller.setDraftEnd(i, v),
-                              enabled: controller.canManage,
                             ),
-                          ),
-                        ],
+                            if (controller.canManage)
+                              IconButton(
+                                tooltip: 'Remove window',
+                                onPressed: () => controller.removeWindow(i, j),
+                                icon: const Icon(Icons.remove_circle_outline),
+                              ),
+                          ],
+                        ),
+                      ),
+                    if (controller.draftWindows[i].isNotEmpty &&
+                        controller.canManage)
+                      TextButton.icon(
+                        onPressed: () => controller.addWindow(i),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add window'),
                       ),
                   ],
                 ),
@@ -242,7 +270,9 @@ class _AvailabilityTab extends StatelessWidget {
           if (controller.canManage)
             ElevatedButton(
               onPressed:
-                  controller.isSaving.value ? null : controller.saveAvailability,
+                  controller.isSaving.value
+                      ? null
+                      : controller.saveAvailability,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
@@ -328,23 +358,26 @@ class _LeaveTab extends StatelessWidget {
             ),
             const Divider(height: 32),
           ],
-          if (controller.leaveItems.isEmpty)
-            const Text('No leave recorded.'),
+          if (controller.leaveItems.isEmpty) const Text('No leave recorded.'),
           for (final leave in controller.leaveItems)
             Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                title: Text('${leave.leaveType}: ${leave.startDate} → ${leave.endDate}'),
+                title: Text(
+                  '${leave.leaveType}: ${leave.startDate} → ${leave.endDate}',
+                ),
                 subtitle: leave.notes != null ? Text(leave.notes!) : null,
-                trailing: controller.canManage
-                    ? IconButton(
-                        tooltip: 'Delete',
-                        onPressed: controller.isSaving.value
-                            ? null
-                            : () => controller.deleteLeave(leave.id),
-                        icon: const Icon(Icons.delete_outline),
-                      )
-                    : null,
+                trailing:
+                    controller.canManage
+                        ? IconButton(
+                          tooltip: 'Delete',
+                          onPressed:
+                              controller.isSaving.value
+                                  ? null
+                                  : () => controller.deleteLeave(leave.id),
+                          icon: const Icon(Icons.delete_outline),
+                        )
+                        : null,
               ),
             ),
         ],
