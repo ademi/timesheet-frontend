@@ -23,6 +23,7 @@ class ContractorScheduleController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+  final leaveValidationMessage = RxnString();
 
   final rangeStart = DateTime.now().obs;
   final timetableVisits = <TimetableVisitOut>[].obs;
@@ -217,6 +218,7 @@ class ContractorScheduleController extends GetxController {
   }
 
   Future<void> createLeave() async {
+    leaveValidationMessage.value = null;
     if (!canManage) {
       errorMessage.value = 'Missing contractor.schedule.manage permission.';
       return;
@@ -225,6 +227,14 @@ class ContractorScheduleController extends GetxController {
     final end = leaveEndCtrl.text.trim();
     if (start.isEmpty || end.isEmpty) {
       errorMessage.value = 'Start and end dates are required (YYYY-MM-DD).';
+      return;
+    }
+    final endDate = DateTime.tryParse(end);
+    final today = DateTime.now();
+    final localToday = DateTime(today.year, today.month, today.day);
+    if (endDate != null && endDate.isBefore(localToday)) {
+      leaveValidationMessage.value =
+          'Leave cannot end before today. Choose dates that are still current or in the future.';
       return;
     }
     isSaving.value = true;

@@ -322,6 +322,14 @@ class _LeaveTab extends StatelessWidget {
                 border: OutlineInputBorder(),
               ),
             ),
+            if (controller.leaveValidationMessage.value != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  controller.leaveValidationMessage.value!,
+                  style: const TextStyle(color: AppColors.error, fontSize: 12),
+                ),
+              ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: controller.leaveType.value,
