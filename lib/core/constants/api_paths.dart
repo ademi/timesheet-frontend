@@ -20,6 +20,8 @@ abstract final class ApiPaths {
 
   // Contractors
   static const contractorsRegister = '$_v1/contractors/register';
+  static String publicContractorInvite(String token) =>
+      '$_v1/public/contractor-invites/$token';
   static const contractorMe = '$_v1/contractor-me';
   static const contractorMeEngagements = '$_v1/contractor-me/engagements';
   static const contractorMeCredentials = '$_v1/contractor-me/credentials';
@@ -64,8 +66,7 @@ abstract final class ApiPaths {
   static const documentsUploadUrl = '$_v1/documents/upload-url';
   static const documents = '$_v1/documents';
   static String documentFinalize(String id) => '$documents/$id/finalize';
-  static String documentDownloadUrl(String id) =>
-      '$documents/$id/download-url';
+  static String documentDownloadUrl(String id) => '$documents/$id/download-url';
   static String documentContent(String id) => '$documents/$id/content';
 
   // Clients

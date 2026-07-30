@@ -11,10 +11,7 @@ const engagementStatuses = <String>[
 ];
 
 class RequiredDocCategory {
-  const RequiredDocCategory({
-    required this.category,
-    required this.isRequired,
-  });
+  const RequiredDocCategory({required this.category, required this.isRequired});
 
   final String category;
   final bool isRequired;
@@ -83,18 +80,83 @@ class EngagementOut {
       consentRevokedAt: parseDt(json['consent_revoked_at']),
       invitedByUserId: json['invited_by_user_id']?.toString(),
       approvedByUserId: json['approved_by_user_id']?.toString(),
-      requiredDocCategories: cats is List
-          ? cats
-              .whereType<Map>()
-              .map(
-                (e) => RequiredDocCategory.fromJson(
-                  Map<String, dynamic>.from(e),
-                ),
-              )
-              .toList(growable: false)
-          : const [],
+      requiredDocCategories:
+          cats is List
+              ? cats
+                  .whereType<Map>()
+                  .map(
+                    (e) => RequiredDocCategory.fromJson(
+                      Map<String, dynamic>.from(e),
+                    ),
+                  )
+                  .toList(growable: false)
+              : const [],
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+    );
+  }
+}
+
+class ContractorRegistrationInviteOut {
+  const ContractorRegistrationInviteOut({
+    required this.id,
+    required this.email,
+    required this.requiredCategories,
+    required this.expiresAt,
+    required this.createdAt,
+    this.phone,
+  });
+
+  final String id;
+  final String email;
+  final String? phone;
+  final List<String> requiredCategories;
+  final DateTime expiresAt;
+  final DateTime createdAt;
+
+  factory ContractorRegistrationInviteOut.fromJson(Map<String, dynamic> json) {
+    return ContractorRegistrationInviteOut(
+      id: json['id'].toString(),
+      email: json['email'] as String,
+      phone: json['phone'] as String?,
+      requiredCategories: (json['required_categories'] as List<dynamic>? ?? [])
+          .map((category) => category.toString())
+          .toList(growable: false),
+      expiresAt: DateTime.parse(json['expires_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String),
+    );
+  }
+}
+
+class EngagementInviteResponse {
+  const EngagementInviteResponse({
+    required this.kind,
+    this.engagement,
+    this.registrationInvite,
+  });
+
+  final String kind;
+  final EngagementOut? engagement;
+  final ContractorRegistrationInviteOut? registrationInvite;
+
+  bool get isEngagement => kind == 'engagement';
+  bool get isRegistrationInvite => kind == 'registration_invite';
+
+  factory EngagementInviteResponse.fromJson(Map<String, dynamic> json) {
+    final engagement = json['engagement'];
+    final registrationInvite = json['registration_invite'];
+    return EngagementInviteResponse(
+      kind: json['kind'] as String,
+      engagement:
+          engagement is Map
+              ? EngagementOut.fromJson(Map<String, dynamic>.from(engagement))
+              : null,
+      registrationInvite:
+          registrationInvite is Map
+              ? ContractorRegistrationInviteOut.fromJson(
+                Map<String, dynamic>.from(registrationInvite),
+              )
+              : null,
     );
   }
 }
@@ -111,10 +173,10 @@ class EngagementInviteRequest {
   final List<String> requiredCategories;
 
   Map<String, dynamic> toJson() => {
-        if (email != null && email!.trim().isNotEmpty) 'email': email!.trim(),
-        if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
-        'required_categories': requiredCategories,
-      };
+    if (email != null && email!.trim().isNotEmpty) 'email': email!.trim(),
+    if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
+    'required_categories': requiredCategories,
+  };
 }
 
 class EngagementAcceptRequest {
@@ -123,8 +185,8 @@ class EngagementAcceptRequest {
   final bool allowSourceEvidence;
 
   Map<String, dynamic> toJson() => {
-        'allow_source_evidence': allowSourceEvidence,
-      };
+    'allow_source_evidence': allowSourceEvidence,
+  };
 }
 
 /// Categories available for invite multi-select (credential allowlist).

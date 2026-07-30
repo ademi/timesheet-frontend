@@ -3,13 +3,7 @@ import 'package:dio/dio.dart';
 import '../../app/data/models/auth/auth_error_model.dart';
 
 /// How the UI should surface an [AppFailure].
-enum AppFailurePresentation {
-  screen,
-  toast,
-  inline,
-  reLogin,
-  billingGate,
-}
+enum AppFailurePresentation { screen, toast, inline, reLogin, billingGate }
 
 /// Typed API failure (Flutter restructure design §3.2 / §11).
 class AppFailure implements Exception {
@@ -72,7 +66,10 @@ class AppFailure implements Exception {
             code: 'validation_error',
           );
         }
-        return AuthErrorModel(detail: first.toString(), code: 'validation_error');
+        return AuthErrorModel(
+          detail: first.toString(),
+          code: 'validation_error',
+        );
       }
       return AuthErrorModel.fromJson(map);
     }
@@ -86,14 +83,16 @@ class AppFailure implements Exception {
     if (detail is Map) {
       final reasons = detail['reasons'] ?? detail['requirements'];
       if (reasons is List) {
-        return reasons.map((e) {
-          if (e is Map) {
-            final req = e['requirement'] ?? e['category'] ?? e['code'];
-            final reason = e['reason'] ?? e['detail'] ?? e['code'];
-            return '${req ?? 'requirement'}: ${reason ?? e}';
-          }
-          return e.toString();
-        }).toList(growable: false);
+        return reasons
+            .map((e) {
+              if (e is Map) {
+                final req = e['requirement'] ?? e['category'] ?? e['code'];
+                final reason = e['reason'] ?? e['detail'] ?? e['code'];
+                return '${req ?? 'requirement'}: ${reason ?? e}';
+              }
+              return e.toString();
+            })
+            .toList(growable: false);
       }
     }
     return const [];
@@ -124,6 +123,9 @@ class AppFailure implements Exception {
       'standing_job_exists',
       'contractor_not_found',
       'hard_split_violation',
+      'email_required_for_registration_invite',
+      'invite_token_invalid',
+      'invite_email_mismatch',
       'engagement_already_exists',
       'payment_already_paid',
       'visit_already_in_batch',
@@ -237,6 +239,12 @@ class AppFailure implements Exception {
         return 'No contractor registered with that email/phone.';
       case 'hard_split_violation':
         return 'This user can’t be invited as a contractor.';
+      case 'email_required_for_registration_invite':
+        return 'An email address is required to send a registration invite.';
+      case 'invite_token_invalid':
+        return 'This registration invite is invalid or has expired.';
+      case 'invite_email_mismatch':
+        return 'Register using the email address that received this invite.';
       case 'payment_already_paid':
         return 'Visit is already paid.';
       case 'visit_already_in_batch':

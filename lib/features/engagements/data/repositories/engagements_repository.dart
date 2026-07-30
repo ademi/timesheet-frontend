@@ -3,14 +3,14 @@ import '../models/engagement_models.dart';
 
 class EngagementsRepository {
   EngagementsRepository({required EngagementsRemoteDataSource remote})
-      : _remote = remote;
+    : _remote = remote;
 
   final EngagementsRemoteDataSource _remote;
 
   Future<List<EngagementOut>> listTenantEngagements() =>
       _remote.listTenantEngagements();
 
-  Future<EngagementOut> invite(EngagementInviteRequest body) =>
+  Future<EngagementInviteResponse> invite(EngagementInviteRequest body) =>
       _remote.invite(body);
 
   Future<List<EngagementOut>> listMyEngagements() =>
@@ -19,8 +19,7 @@ class EngagementsRepository {
   Future<EngagementOut> accept({
     required String engagementId,
     required EngagementAcceptRequest body,
-  }) =>
-      _remote.accept(engagementId: engagementId, body: body);
+  }) => _remote.accept(engagementId: engagementId, body: body);
 
   Future<EngagementOut> approve(String id) => _remote.approve(id);
   Future<EngagementOut> activate(String id) => _remote.activate(id);

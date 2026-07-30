@@ -13,8 +13,8 @@ class WorkforceController extends GetxController {
   WorkforceController({
     required EngagementsRepository repository,
     required SessionService session,
-  })  : _repository = repository,
-        _session = session;
+  }) : _repository = repository,
+       _session = session;
 
   final EngagementsRepository _repository;
   final SessionService _session;
@@ -39,8 +39,7 @@ class WorkforceController extends GetxController {
       _session.hasPermission(AppPermissions.contractorsApprove);
   bool get canManage =>
       _session.hasPermission(AppPermissions.contractorsManage);
-  bool get canRead =>
-      _session.hasPermission(AppPermissions.contractorsRead);
+  bool get canRead => _session.hasPermission(AppPermissions.contractorsRead);
 
   List<EngagementOut> get filtered {
     final f = statusFilter.value;
@@ -113,7 +112,7 @@ class WorkforceController extends GetxController {
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      await _repository.invite(
+      final result = await _repository.invite(
         EngagementInviteRequest(
           email: email.isEmpty ? null : email,
           phone: phone.isEmpty ? null : phone,
@@ -125,8 +124,12 @@ class WorkforceController extends GetxController {
       selectedCategories.clear();
       Get.back();
       Get.snackbar(
-        'Invite sent',
-        'Engagement created for this provider.',
+        result.isRegistrationInvite
+            ? 'Registration email sent'
+            : 'Engagement created',
+        result.isRegistrationInvite
+            ? 'The contractor can register using the link in their email.'
+            : 'Engagement created for this provider.',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         backgroundColor: AppColors.primary,
@@ -142,10 +145,7 @@ class WorkforceController extends GetxController {
     }
   }
 
-  Future<void> runAction(
-    String action,
-    EngagementOut engagement,
-  ) async {
+  Future<void> runAction(String action, EngagementOut engagement) async {
     isSaving.value = true;
     errorMessage.value = null;
     eligibilityReasons.clear();
@@ -153,8 +153,7 @@ class WorkforceController extends GetxController {
       final updated = await switch (action) {
         'approve' => _repository.approve(engagement.id),
         'activate' => _repository.activate(engagement.id),
-        'approve_and_activate' =>
-          _repository.approveAndActivate(engagement.id),
+        'approve_and_activate' => _repository.approveAndActivate(engagement.id),
         'suspend' => _repository.suspend(engagement.id),
         'resume' => _repository.resume(engagement.id),
         'end' => _repository.end(engagement.id),

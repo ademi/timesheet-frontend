@@ -30,12 +30,17 @@ class ContractorRegisterController extends GetxController {
   final dobController = TextEditingController();
 
   final isLoading = false.obs;
+  final isInviteLoading = false.obs;
   final isPasswordVisible = false.obs;
   final acceptedTerms = false.obs;
   final acceptedPrivacy = false.obs;
   final termsMarkdown = ''.obs;
   final privacyMarkdown = ''.obs;
   final legalLoadError = RxnString();
+  final invite = Rxn<ContractorInvitePublicOut>();
+  final inviteLoadError = RxnString();
+
+  String? _inviteToken;
 
   String get termsVersion => AppEnv.termsVersion;
   String get privacyVersion => AppEnv.privacyVersion;
@@ -44,13 +49,37 @@ class ContractorRegisterController extends GetxController {
   void onInit() {
     super.onInit();
     _loadBundledLegal();
+    _loadInviteFromRoute();
+  }
+
+  Future<void> _loadInviteFromRoute() async {
+    final token = Get.parameters['invite']?.trim();
+    if (token == null || token.isEmpty) return;
+
+    _inviteToken = token;
+    isInviteLoading.value = true;
+    inviteLoadError.value = null;
+    try {
+      final publicInvite = await _repository.getPublicInvite(token);
+      invite.value = publicInvite;
+      emailController.text = publicInvite.email;
+    } on AppFailure catch (e) {
+      inviteLoadError.value = e.message;
+    } catch (e) {
+      inviteLoadError.value = e.toString();
+    } finally {
+      isInviteLoading.value = false;
+    }
   }
 
   Future<void> _loadBundledLegal() async {
     try {
-      final terms = await rootBundle.loadString('assets/legal/platform_terms.md');
-      final privacy =
-          await rootBundle.loadString('assets/legal/privacy_policy.md');
+      final terms = await rootBundle.loadString(
+        'assets/legal/platform_terms.md',
+      );
+      final privacy = await rootBundle.loadString(
+        'assets/legal/privacy_policy.md',
+      );
       termsMarkdown.value = terms;
       privacyMarkdown.value = privacy;
       legalLoadError.value = null;
@@ -79,7 +108,9 @@ class ContractorRegisterController extends GetxController {
   Future<void> submit() async {
     if (!(formKey.currentState?.validate() ?? false)) return;
     if (!acceptedTerms.value || !acceptedPrivacy.value) {
-      _showError('Accept Platform Terms and Privacy Policy separately to continue.');
+      _showError(
+        'Accept Platform Terms and Privacy Policy separately to continue.',
+      );
       return;
     }
     if (legalLoadError.value != null) {
@@ -98,6 +129,7 @@ class ContractorRegisterController extends GetxController {
           password: passwordController.text,
           phone: phone.isEmpty ? null : phone,
           dob: dob.isEmpty ? null : dob,
+          inviteToken: _inviteToken,
           termsVersion: termsVersion,
           privacyVersion: privacyVersion,
         ),

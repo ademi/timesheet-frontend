@@ -6,26 +6,28 @@ import '../models/engagement_models.dart';
 
 class EngagementsRemoteDataSource {
   EngagementsRemoteDataSource({required Dio authenticatedDio})
-      : _dio = authenticatedDio;
+    : _dio = authenticatedDio;
 
   final Dio _dio;
 
   Future<List<EngagementOut>> listTenantEngagements() async {
     try {
-      final response = await _dio.get<List<dynamic>>(ApiPaths.tenantEngagements);
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.tenantEngagements,
+      );
       return _mapList(response.data);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }
   }
 
-  Future<EngagementOut> invite(EngagementInviteRequest body) async {
+  Future<EngagementInviteResponse> invite(EngagementInviteRequest body) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         ApiPaths.tenantEngagements,
         data: body.toJson(),
       );
-      return _requireOut(response.data, 'invite');
+      return _requireInviteResponse(response.data);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }
@@ -33,8 +35,9 @@ class EngagementsRemoteDataSource {
 
   Future<List<EngagementOut>> listMyEngagements() async {
     try {
-      final response =
-          await _dio.get<List<dynamic>>(ApiPaths.contractorMeEngagements);
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.contractorMeEngagements,
+      );
       return _mapList(response.data);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
@@ -62,11 +65,10 @@ class EngagementsRemoteDataSource {
   Future<EngagementOut> activate(String engagementId) =>
       _lifecycle(ApiPaths.engagementActivate(engagementId), 'activate');
 
-  Future<EngagementOut> approveAndActivate(String engagementId) =>
-      _lifecycle(
-        ApiPaths.engagementApproveAndActivate(engagementId),
-        'approve-and-activate',
-      );
+  Future<EngagementOut> approveAndActivate(String engagementId) => _lifecycle(
+    ApiPaths.engagementApproveAndActivate(engagementId),
+    'approve-and-activate',
+  );
 
   Future<EngagementOut> suspend(String engagementId) =>
       _lifecycle(ApiPaths.engagementSuspend(engagementId), 'suspend');
@@ -103,5 +105,16 @@ class EngagementsRemoteDataSource {
       );
     }
     return EngagementOut.fromJson(data);
+  }
+
+  EngagementInviteResponse _requireInviteResponse(Map<String, dynamic>? data) {
+    if (data == null) {
+      throw AppFailure(
+        code: 'unknown',
+        message: 'Empty invite response',
+        presentation: AppFailurePresentation.toast,
+      );
+    }
+    return EngagementInviteResponse.fromJson(data);
   }
 }

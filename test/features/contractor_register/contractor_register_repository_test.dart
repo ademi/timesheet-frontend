@@ -67,6 +67,19 @@ void main() {
     expect(json.containsKey('access_token'), isFalse);
   });
 
+  test('request json includes invite token when supplied', () {
+    const request = ContractorRegisterRequest(
+      fullName: 'Ada',
+      email: 'ada@example.com',
+      password: 'Password1',
+      termsVersion: 'v0.1-placeholder',
+      privacyVersion: 'v0.1-placeholder',
+      inviteToken: 'registration-invite-token',
+    );
+
+    expect(request.toJson()['invite_token'], 'registration-invite-token');
+  });
+
   test('repository surfaces AppFailure', () async {
     when(() => remote.register(any())).thenThrow(
       const AppFailure(

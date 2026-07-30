@@ -43,16 +43,49 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                     Text(
                       'After registering you will sign in. Company accounts '
                       'are created on the website.',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
+                    Obx(() {
+                      if (controller.isInviteLoading.value) {
+                        return const Padding(
+                          padding: EdgeInsets.only(top: 12),
+                          child: LinearProgressIndicator(),
+                        );
+                      }
+                      final error = controller.inviteLoadError.value;
+                      if (error != null) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text(
+                            error,
+                            style: const TextStyle(color: AppColors.error),
+                          ),
+                        );
+                      }
+                      final invite = controller.invite.value;
+                      if (invite == null) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Text(
+                          'You were invited by ${invite.tenantName}. '
+                          'Register with ${invite.email}.',
+                          style: const TextStyle(color: AppColors.textMuted),
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 20),
                     _field(
                       controller: controller.fullNameController,
                       label: 'Full name',
                       icon: Icons.badge_outlined,
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Full name is required'
-                          : null,
+                      validator:
+                          (v) =>
+                              (v == null || v.trim().isEmpty)
+                                  ? 'Full name is required'
+                                  : null,
                     ),
                     const SizedBox(height: 12),
                     _field(
@@ -155,9 +188,10 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                       () => SizedBox(
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: controller.isLoading.value
-                              ? null
-                              : controller.submit,
+                          onPressed:
+                              controller.isLoading.value
+                                  ? null
+                                  : controller.submit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: AppColors.onPrimary,
@@ -165,22 +199,23 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child: controller.isLoading.value
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
+                          child:
+                              controller.isLoading.value
+                                  ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                  : const Text(
+                                    'Create account',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
                                   ),
-                                )
-                              : const Text(
-                                  'Create account',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
                         ),
                       ),
                     ),
@@ -291,9 +326,10 @@ class _LegalBlock extends StatelessWidget {
           SizedBox(
             height: 180,
             child: Obx(
-              () => markdown.value.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : MarkdownViewer(markdown: markdown.value),
+              () =>
+                  markdown.value.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : MarkdownViewer(markdown: markdown.value),
             ),
           ),
           const Divider(height: 1),
