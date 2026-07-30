@@ -5,7 +5,8 @@ import '../../app/data/models/auth/engagement_summary_model.dart';
 import '../../app/data/models/auth/me_context_model.dart';
 import '../../app/data/repositories/auth_repository.dart';
 import '../../app/routes/app_routes.dart';
-import '../../features/contractor_onboarding/controllers/onboarding_controller.dart';
+import '../../features/contractor_onboarding/data/onboarding_progress_store.dart';
+import '../../features/contractor_onboarding/onboarding_routing.dart';
 import '../auth/jwt_claims.dart';
 import '../constants/feature_flags.dart';
 import 'token_storage.dart';
@@ -18,11 +19,15 @@ class SessionService extends GetxController {
   SessionService({
     required TokenStorage tokenStorage,
     required AuthRepository authRepository,
-  })  : _tokenStorage = tokenStorage,
-        _authRepository = authRepository;
+    OnboardingProgressStore? onboardingProgressStore,
+  }) : _tokenStorage = tokenStorage,
+       _authRepository = authRepository,
+       _onboardingProgressStore =
+           onboardingProgressStore ?? OnboardingProgressStore();
 
   final TokenStorage _tokenStorage;
   final AuthRepository _authRepository;
+  final OnboardingProgressStore _onboardingProgressStore;
 
   final actorType = RxnString();
   final tenantId = RxnString();
@@ -34,6 +39,8 @@ class SessionService extends GetxController {
   final mustChangePassword = false.obs;
   final isHydrating = false.obs;
   final needsOnboarding = false.obs;
+  final needsPlatformCompliance = false.obs;
+  final needsEngagementWork = false.obs;
 
   JwtClaims? get claims => _tokenStorage.jwtClaims;
 
@@ -161,17 +168,24 @@ class SessionService extends GetxController {
   void _recomputeOnboarding() {
     if (!isContractor) {
       needsOnboarding.value = false;
+      needsPlatformCompliance.value = false;
+      needsEngagementWork.value = false;
       return;
     }
-    // Engagement statuses that require the funnel, or funnel not finished yet.
     final statuses = engagements.map((e) => e.status).toSet();
-    final engagementNeeds = statuses.contains('invited') ||
-        statuses.contains('pending_docs') ||
-        statuses.contains('approved') ||
-        statuses.isEmpty;
-    final funnelIncomplete = !OnboardingController.isFunnelDone();
-    needsOnboarding.value = engagementNeeds || funnelIncomplete;
+    needsPlatformCompliance.value =
+        !_onboardingProgressStore.isPlatformComplete(contractorId.value);
+    needsEngagementWork.value = statuses.any(
+      (status) =>
+          status == 'invited' ||
+          status == 'pending_docs' ||
+          status == 'approved',
+    );
+    needsOnboarding.value =
+        needsPlatformCompliance.value || needsEngagementWork.value;
   }
+
+  void refreshOnboardingFlags() => _recomputeOnboarding();
 
   Future<AuthTokenModel> switchTenant(String nextTenantId) async {
     final tokens = await _authRepository.switchTenant(nextTenantId);
@@ -190,6 +204,8 @@ class SessionService extends GetxController {
     selectedEngagementId.value = null;
     mustChangePassword.value = false;
     needsOnboarding.value = false;
+    needsPlatformCompliance.value = false;
+    needsEngagementWork.value = false;
   }
 
   /// Design §4.2 post-login / restore landing route.
@@ -205,7 +221,10 @@ class SessionService extends GetxController {
         return AppRoutes.contractorProfile;
       }
       if (needsOnboarding.value) {
-        return AppRoutes.contractorOnboardingLegal;
+        return OnboardingRouting.entryRoute(
+          needsPlatformCompliance: needsPlatformCompliance.value,
+          needsEngagementWork: needsEngagementWork.value,
+        );
       }
       return AppRoutes.contractorHome;
     }

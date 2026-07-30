@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/services/session_service.dart';
 import '../../credentials/controllers/credentials_controller.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../engagements/controllers/contractor_engagements_controller.dart';
@@ -12,18 +12,22 @@ import '../bindings/onboarding_binding.dart';
 import '../data/datasources/compliance_remote_datasource.dart';
 import '../data/models/compliance_models.dart';
 import '../data/repositories/compliance_repository.dart';
+import '../data/onboarding_progress_store.dart';
+import '../onboarding_routing.dart';
 
 enum OnboardingStep { legal, notices, consents, engagement, credentials }
 
 /// Ordered contractor onboarding funnel (design §6.3). Outside tab chrome.
 class OnboardingController extends GetxController {
-  OnboardingController({required ComplianceRepository repository})
-      : _repository = repository;
+  OnboardingController({
+    required ComplianceRepository repository,
+    OnboardingProgressStore? progressStore,
+  }) : _repository = repository,
+       _progressStore = progressStore ?? OnboardingProgressStore();
 
   final ComplianceRepository _repository;
-  final _box = GetStorage();
+  final OnboardingProgressStore _progressStore;
 
-  static const _funnelDoneKey = 'onboarding_funnel_v1_done';
   static const requiredDocKeys = ['platform_terms', 'privacy_policy'];
 
   final stepIndex = 0.obs;
@@ -44,7 +48,10 @@ class OnboardingController extends GetxController {
   final _idempotencyKeys = <String, String>{};
 
   OnboardingStep get currentStep =>
-      OnboardingStep.values[stepIndex.value.clamp(0, OnboardingStep.values.length - 1)];
+      OnboardingStep.values[stepIndex.value.clamp(
+        0,
+        OnboardingStep.values.length - 1,
+      )];
 
   bool get canAdvanceLegal =>
       requiredDocKeys.every((k) => acceptedDocKeys.contains(k));
@@ -54,11 +61,12 @@ class OnboardingController extends GetxController {
       notices.every((n) => acknowledgedNoticeKeys.contains(n.noticeKey));
 
   bool get canAdvanceConsents {
-    final needed = notices
-        .map((n) => n.credentialType)
-        .whereType<String>()
-        .where(sensitiveCredentialTypes.contains)
-        .toSet();
+    final needed =
+        notices
+            .map((n) => n.credentialType)
+            .whereType<String>()
+            .where(sensitiveCredentialTypes.contains)
+            .toSet();
     // No sensitive notices in catalog → nothing to consent in S2.
     if (needed.isEmpty) return true;
     return needed.every(consentedTypes.contains);
@@ -70,6 +78,14 @@ class OnboardingController extends GetxController {
     // May continue if nothing invited remains (or no engagements at all).
     return c.invited.isEmpty;
   }
+
+  String? get _contractorId {
+    if (!Get.isRegistered<SessionService>()) return null;
+    return Get.find<SessionService>().contractorId.value;
+  }
+
+  SessionService? get _sessionService =>
+      Get.isRegistered<SessionService>() ? Get.find<SessionService>() : null;
 
   @override
   void onInit() {
@@ -85,13 +101,19 @@ class OnboardingController extends GetxController {
       for (final key in requiredDocKeys) {
         final doc = await _repository.getCurrentLegalDocument(key);
         legalDocs.add(doc);
+        final acceptedVersion =
+            _progressStore.load(_contractorId).acceptedDocVersions[doc.docKey];
+        if (acceptedVersion == doc.version) {
+          acceptedDocKeys.add(doc.docKey);
+        }
         await _recordPresentedDoc(doc);
       }
     } on AppFailure catch (e) {
-      errorMessage.value = e.code == 'counsel_pending_policy' ||
-              e.code == 'legal_document_unavailable'
-          ? 'This legal document is not available yet.'
-          : e.message;
+      errorMessage.value =
+          e.code == 'counsel_pending_policy' ||
+                  e.code == 'legal_document_unavailable'
+              ? 'This legal document is not available yet.'
+              : e.message;
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
@@ -106,12 +128,21 @@ class OnboardingController extends GetxController {
       final list = await _repository.listCollectionNotices(jurisdiction: 'AU');
       notices.assignAll(list);
       for (final n in list) {
+        final snapshot = _progressStore.load(_contractorId);
+        if (snapshot.acknowledgedNoticeVersions[n.noticeKey] == n.version) {
+          acknowledgedNoticeKeys.add(n.noticeKey);
+        }
+        if (n.credentialType != null &&
+            snapshot.consentedTypes.contains(n.credentialType)) {
+          consentedTypes.add(n.credentialType!);
+        }
         await _recordPresentedNotice(n);
       }
     } on AppFailure catch (e) {
-      errorMessage.value = e.code == 'counsel_pending_policy'
-          ? 'This legal document is not available yet.'
-          : e.message;
+      errorMessage.value =
+          e.code == 'counsel_pending_policy'
+              ? 'This legal document is not available yet.'
+              : e.message;
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
@@ -155,13 +186,13 @@ class OnboardingController extends GetxController {
           credentialType: notice.credentialType,
           presentationSource: 'contractor_onboarding',
         ),
-        idempotencyKey:
-            _idemKey('presented-notice-${notice.noticeKey}-${notice.version}'),
+        idempotencyKey: _idemKey(
+          'presented-notice-${notice.noticeKey}-${notice.version}',
+        ),
       );
       presentedNoticeKeys.add(notice.noticeKey);
       final type = notice.credentialType;
-      if (type != null &&
-          Get.isRegistered<CredentialsController>()) {
+      if (type != null && Get.isRegistered<CredentialsController>()) {
         Get.find<CredentialsController>().presentedEventIds[type] = event.id;
       }
     } on AppFailure {
@@ -186,10 +217,16 @@ class OnboardingController extends GetxController {
         idempotencyKey: _idemKey('accepted-doc-${doc.docKey}-${doc.version}'),
       );
       acceptedDocKeys.add(doc.docKey);
+      await _progressStore.markAcceptedDocument(
+        _contractorId,
+        docKey: doc.docKey,
+        version: doc.version,
+      );
     } on AppFailure catch (e) {
-      errorMessage.value = e.code == 'counsel_pending_policy'
-          ? 'This legal document is not available yet.'
-          : e.message;
+      errorMessage.value =
+          e.code == 'counsel_pending_policy'
+              ? 'This legal document is not available yet.'
+              : e.message;
     } finally {
       isLoading.value = false;
     }
@@ -207,20 +244,30 @@ class OnboardingController extends GetxController {
           credentialType: notice.credentialType,
           presentationSource: 'contractor_onboarding',
         ),
-        idempotencyKey:
-            _idemKey('ack-notice-${notice.noticeKey}-${notice.version}'),
+        idempotencyKey: _idemKey(
+          'ack-notice-${notice.noticeKey}-${notice.version}',
+        ),
       );
       acknowledgedNoticeKeys.add(notice.noticeKey);
+      await _progressStore.markNoticeAcknowledged(
+        _contractorId,
+        noticeKey: notice.noticeKey,
+        version: notice.version,
+      );
     } on AppFailure catch (e) {
-      errorMessage.value = e.code == 'counsel_pending_policy'
-          ? 'This legal document is not available yet.'
-          : e.message;
+      errorMessage.value =
+          e.code == 'counsel_pending_policy'
+              ? 'This legal document is not available yet.'
+              : e.message;
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<void> consentToType(String credentialType, {CollectionNotice? notice}) async {
+  Future<void> consentToType(
+    String credentialType, {
+    CollectionNotice? notice,
+  }) async {
     isLoading.value = true;
     errorMessage.value = null;
     try {
@@ -236,6 +283,7 @@ class OnboardingController extends GetxController {
         idempotencyKey: _idemKey('consent-$credentialType'),
       );
       consentedTypes.add(credentialType);
+      await _progressStore.markConsentRecorded(_contractorId, credentialType);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -271,9 +319,9 @@ class OnboardingController extends GetxController {
           _toast('Record consent for each sensitive credential type.');
           return;
         }
-        goToStep(OnboardingStep.engagement);
-        if (Get.isRegistered<ContractorEngagementsController>()) {
-          await Get.find<ContractorEngagementsController>().load();
+        goToStep(OnboardingStep.credentials);
+        if (Get.isRegistered<CredentialsController>()) {
+          await Get.find<CredentialsController>().load();
         }
       case OnboardingStep.engagement:
         if (!canAdvanceEngagement) {
@@ -296,23 +344,23 @@ class OnboardingController extends GetxController {
   }
 
   Future<void> completeFunnel() async {
-    funnelDoneOverride = true;
-    try {
-      await _box.write(_funnelDoneKey, true);
-    } catch (_) {}
+    await _progressStore.markCredentialsStepDone(_contractorId);
+    final session = _sessionService;
+    session?.refreshOnboardingFlags();
+    if (session?.needsEngagementWork.value == true) {
+      goToStep(OnboardingStep.engagement);
+      if (Get.isRegistered<ContractorEngagementsController>()) {
+        await Get.find<ContractorEngagementsController>().load();
+      }
+      return;
+    }
     Get.offAllNamed(AppRoutes.contractorHome);
     // After leaving the funnel so a dispose rebuild cannot re-ensure().
     OnboardingBinding.reset();
   }
 
   void _syncRoute() {
-    final route = switch (currentStep) {
-      OnboardingStep.legal => AppRoutes.contractorOnboardingLegal,
-      OnboardingStep.notices => AppRoutes.contractorOnboardingNotices,
-      OnboardingStep.consents => AppRoutes.contractorOnboardingConsents,
-      OnboardingStep.engagement => AppRoutes.contractorOnboardingEngagement,
-      OnboardingStep.credentials => AppRoutes.contractorOnboardingCredentials,
-    };
+    final route = OnboardingRouting.routeForStep(currentStep);
     if (Get.currentRoute != route) {
       // Replace step URL only — controller stays via permanent registration.
       Get.offNamed(route);
@@ -330,29 +378,25 @@ class OnboardingController extends GetxController {
     );
   }
 
-  /// Test hook — when non-null, bypasses GetStorage.
-  static bool? funnelDoneOverride;
-
-  static bool isFunnelDone() {
-    if (funnelDoneOverride != null) return funnelDoneOverride!;
-    try {
-      return GetStorage().read(_funnelDoneKey) == true;
-    } catch (_) {
-      return false;
+  OnboardingStep? resolveFirstIncompleteStep() {
+    if (!canAdvanceLegal) return OnboardingStep.legal;
+    if (!canAdvanceNotices) return OnboardingStep.notices;
+    if (!canAdvanceConsents) return OnboardingStep.consents;
+    if (!_progressStore.isPlatformComplete(_contractorId)) {
+      return OnboardingStep.credentials;
     }
+    if (_sessionService?.needsEngagementWork.value == true) {
+      return OnboardingStep.engagement;
+    }
+    return null;
   }
 
-  static Future<void> markFunnelDoneForTests() async {
-    funnelDoneOverride = true;
-    try {
-      await GetStorage().write(_funnelDoneKey, true);
-    } catch (_) {}
-  }
-
-  static Future<void> clearFunnelDone() async {
-    funnelDoneOverride = false;
-    try {
-      await GetStorage().remove(_funnelDoneKey);
-    } catch (_) {}
+  void navigateToFirstIncompleteStep() {
+    final step = resolveFirstIncompleteStep();
+    final route =
+        step == null
+            ? AppRoutes.contractorHome
+            : OnboardingRouting.routeForStep(step);
+    if (Get.currentRoute != route) Get.offNamed(route);
   }
 }

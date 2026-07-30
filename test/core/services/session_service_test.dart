@@ -1,4 +1,8 @@
+import 'dart:io';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:rostiq/app/data/models/auth/auth_token_model.dart';
@@ -9,13 +13,11 @@ import 'package:rostiq/app/routes/app_routes.dart';
 import 'package:rostiq/core/auth/jwt_claims.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/core/services/token_storage.dart';
-import 'package:rostiq/features/contractor_onboarding/controllers/onboarding_controller.dart';
+import 'package:rostiq/features/contractor_onboarding/data/onboarding_progress_store.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 
 class _FakeTokenStorage extends Fake implements TokenStorage {
-  _FakeTokenStorage({this.claims});
-
   JwtClaims? claims;
 
   @override
@@ -38,19 +40,37 @@ void main() {
   late _MockAuthRepository authRepository;
   late _FakeTokenStorage tokenStorage;
   late SessionService session;
+  late OnboardingProgressStore progressStore;
+  late Directory storageDirectory;
 
-  setUp(() {
-    OnboardingController.funnelDoneOverride = false;
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    storageDirectory = await Directory.systemTemp.createTemp('rostiq_session_');
+    const channel = MethodChannel('plugins.flutter.io/path_provider');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall call) async {
+          if (call.method == 'getApplicationDocumentsDirectory') {
+            return storageDirectory.path;
+          }
+          return null;
+        });
+    await GetStorage.init();
+  });
+
+  tearDownAll(() async {
+    await storageDirectory.delete(recursive: true);
+  });
+
+  setUp(() async {
     authRepository = _MockAuthRepository();
     tokenStorage = _FakeTokenStorage();
+    progressStore = OnboardingProgressStore();
+    await progressStore.save('c1', const OnboardingProgressSnapshot.empty());
     session = SessionService(
       tokenStorage: tokenStorage,
       authRepository: authRepository,
+      onboardingProgressStore: progressStore,
     );
-  });
-
-  tearDown(() {
-    OnboardingController.funnelDoneOverride = null;
   });
 
   group('SessionService.resolvePostLoginRoute', () {
@@ -68,8 +88,8 @@ void main() {
       expect(session.isStaff, isTrue);
     });
 
-    test('contractor ready → /contractor/home', () {
-      OnboardingController.funnelDoneOverride = true;
+    test('platform complete contractor → /contractor/home', () async {
+      await progressStore.markPlatformComplete('c1');
       tokenStorage.claims = const JwtClaims(
         sub: 'u2',
         tenantId: 't1',
@@ -98,7 +118,7 @@ void main() {
       expect(session.resolvePostLoginRoute(), AppRoutes.contractorHome);
     });
 
-    test('contractor invited → onboarding legal', () {
+    test('contractor invited with incomplete platform → onboarding legal', () {
       tokenStorage.claims = const JwtClaims(
         sub: 'u2',
         tenantId: 't1',
@@ -129,6 +149,63 @@ void main() {
         AppRoutes.contractorOnboardingLegal,
       );
     });
+
+    test('platform complete contractor with no engagements → home', () async {
+      await progressStore.markPlatformComplete('c1');
+      tokenStorage.claims = const JwtClaims(
+        sub: 'u2',
+        tenantId: null,
+        permissions: ['auth.session'],
+        actorType: 'contractor',
+        iat: 1,
+        exp: 2,
+        contractorId: 'c1',
+      );
+      session.applyMeContext(
+        const MeContextModel(actorType: 'contractor', contractorId: 'c1'),
+      );
+      expect(session.needsPlatformCompliance.value, isFalse);
+      expect(session.needsEngagementWork.value, isFalse);
+      expect(session.needsOnboarding.value, isFalse);
+      expect(session.resolvePostLoginRoute(), AppRoutes.contractorHome);
+    });
+
+    test(
+      'platform complete invited contractor → onboarding engagement',
+      () async {
+        await progressStore.markPlatformComplete('c1');
+        tokenStorage.claims = const JwtClaims(
+          sub: 'u2',
+          tenantId: 't1',
+          permissions: ['auth.session'],
+          actorType: 'contractor',
+          iat: 1,
+          exp: 2,
+          contractorId: 'c1',
+        );
+        session.applyMeContext(
+          const MeContextModel(
+            actorType: 'contractor',
+            tenantId: 't1',
+            contractorId: 'c1',
+            engagements: [
+              EngagementSummaryModel(
+                id: 'e1',
+                tenantId: 't1',
+                tenantName: 'Acme',
+                status: 'invited',
+              ),
+            ],
+          ),
+        );
+        expect(session.needsPlatformCompliance.value, isFalse);
+        expect(session.needsEngagementWork.value, isTrue);
+        expect(
+          session.resolvePostLoginRoute(),
+          AppRoutes.contractorOnboardingEngagement,
+        );
+      },
+    );
 
     test('must change password → first login', () {
       tokenStorage.claims = const JwtClaims(
