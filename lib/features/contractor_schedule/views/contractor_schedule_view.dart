@@ -158,10 +158,10 @@ class _TimetableTab extends StatelessWidget {
             Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                title: Text(v.tenantName ?? 'Visit'),
+                title: Text(v.jobTitle ?? v.tenantName ?? 'Visit'),
                 subtitle: Text(
                   '${_fmt(v.scheduledStart)} → ${_fmt(v.scheduledEnd)}\n'
-                  '${v.status} · job ${v.jobId}',
+                  '${v.status}',
                 ),
                 isThreeLine: true,
                 trailing: const Icon(Icons.chevron_right),

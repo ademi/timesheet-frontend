@@ -11,8 +11,11 @@ class JobOut {
     required this.createdAt,
     required this.updatedAt,
     this.clientId,
+    this.clientName,
     this.branchId,
+    this.branchName,
     this.clientSiteId,
+    this.clientSiteName,
     this.latitude,
     this.longitude,
   });
@@ -20,11 +23,14 @@ class JobOut {
   final String id;
   final String tenantId;
   final String? clientId;
+  final String? clientName;
   final String kind; // standing | ad_hoc
   final String status; // open | closed | cancelled
   final String title;
   final String? branchId;
+  final String? branchName;
   final String? clientSiteId;
+  final String? clientSiteName;
   final double? latitude;
   final double? longitude;
   final int geofenceRadiusM;
@@ -40,11 +46,14 @@ class JobOut {
       id: json['id'].toString(),
       tenantId: json['tenant_id'].toString(),
       clientId: json['client_id']?.toString(),
+      clientName: json['client_name'] as String?,
       kind: json['kind'] as String,
       status: json['status'] as String,
       title: json['title'] as String,
       branchId: json['branch_id']?.toString(),
+      branchName: json['branch_name'] as String?,
       clientSiteId: json['client_site_id']?.toString(),
+      clientSiteName: json['client_site_name'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       geofenceRadiusM: json['geofence_radius_m'] as int? ?? 100,
@@ -122,6 +131,7 @@ class RecurrenceRuleOut {
     required this.createdAt,
     required this.updatedAt,
     this.until,
+    this.contractorName,
     this.taskTemplateJson = const [],
     this.formRequirementsJson = const [],
     this.latitude,
@@ -133,6 +143,7 @@ class RecurrenceRuleOut {
   final String tenantId;
   final String jobId;
   final String contractorId;
+  final String? contractorName;
   final String rrule;
   final DateTime dtstart;
   final DateTime? until;
@@ -160,6 +171,7 @@ class RecurrenceRuleOut {
       tenantId: json['tenant_id'].toString(),
       jobId: json['job_id'].toString(),
       contractorId: json['contractor_id'].toString(),
+      contractorName: json['contractor_name'] as String?,
       rrule: json['rrule'] as String,
       dtstart: DateTime.parse(json['dtstart'] as String),
       until:

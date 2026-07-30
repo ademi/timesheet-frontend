@@ -41,12 +41,8 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            if (err != null) ...[
-              _ErrorBox(err),
-              const SizedBox(height: 12),
-            ],
-            Text(v.jobTitle ?? 'Job ${v.jobId}',
-                style: Get.textTheme.titleMedium),
+            if (err != null) ...[_ErrorBox(err), const SizedBox(height: 12)],
+            Text(v.jobTitle ?? 'Visit', style: Get.textTheme.titleMedium),
             const SizedBox(height: 4),
             Text('Status: ${v.status} · payment: ${v.paymentStatus}'),
             Text('Start: ${_fmt(v.scheduledStart)}'),
@@ -55,7 +51,8 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
               'Geofence: ${v.geofenceMode} / ${v.geofenceRadiusM}m'
               '${v.latitude != null ? ' @ ${v.latitude}, ${v.longitude}' : ''}',
             ),
-            Text('Contractor: ${v.contractorName ?? v.contractorId}'),
+            if (v.contractorName?.isNotEmpty == true)
+              Text('Contractor: ${v.contractorName}'),
             const Divider(height: 32),
             Text('Tasks', style: Get.textTheme.titleMedium),
             if (v.tasks.isEmpty) const Text('No tasks.'),
@@ -71,16 +68,18 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
             if (controller.canManage && !v.isCancelled && !v.isCompleted) ...[
               const Divider(height: 32),
               ElevatedButton(
-                onPressed: controller.isSaving.value
-                    ? null
-                    : () => _reschedule(controller),
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : () => _reschedule(controller),
                 child: const Text('Reschedule (+1 hour)'),
               ),
               const SizedBox(height: 8),
               OutlinedButton(
-                onPressed: controller.isSaving.value
-                    ? null
-                    : controller.cancelSelected,
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : controller.cancelSelected,
                 child: const Text('Cancel visit'),
               ),
             ],

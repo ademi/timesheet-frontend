@@ -8,11 +8,13 @@ class TimetableVisitOut {
     required this.scheduledEnd,
     required this.status,
     this.tenantName,
+    this.jobTitle,
   });
 
   final String id;
   final String tenantId;
   final String? tenantName;
+  final String? jobTitle;
   final String jobId;
   final DateTime scheduledStart;
   final DateTime scheduledEnd;
@@ -23,6 +25,7 @@ class TimetableVisitOut {
       id: json['id'].toString(),
       tenantId: json['tenant_id'].toString(),
       tenantName: json['tenant_name'] as String?,
+      jobTitle: json['job_title'] as String?,
       jobId: json['job_id'].toString(),
       scheduledStart: DateTime.parse(json['scheduled_start'] as String),
       scheduledEnd: DateTime.parse(json['scheduled_end'] as String),

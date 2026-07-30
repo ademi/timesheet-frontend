@@ -24,7 +24,10 @@ class FormTemplatesView extends GetView<JobsController> {
                   color: AppColors.errorBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(err, style: const TextStyle(color: AppColors.error)),
+                child: Text(
+                  err,
+                  style: const TextStyle(color: AppColors.error),
+                ),
               ),
               const SizedBox(height: 12),
             ],
@@ -51,21 +54,23 @@ class FormTemplatesView extends GetView<JobsController> {
               ),
               const SizedBox(height: 8),
               ElevatedButton(
-                onPressed: controller.isSaving.value
-                    ? null
-                    : controller.createFormTemplate,
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : controller.createFormTemplate,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.onPrimary,
                   minimumSize: const Size.fromHeight(44),
                 ),
-                child: controller.isSaving.value
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Create template'),
+                child:
+                    controller.isSaving.value
+                        ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Text('Create template'),
               ),
               const Divider(height: 32),
             ],
@@ -78,18 +83,19 @@ class FormTemplatesView extends GetView<JobsController> {
                   title: Text(t.name),
                   subtitle: Text(
                     '${t.isActive ? 'active' : 'inactive'}'
-                    '${t.clientId == null ? ' · tenant-wide' : ' · client'}'
-                    ' · ${t.id}',
+                    '${t.clientId == null ? ' · tenant-wide' : ' · client'}',
                   ),
-                  trailing: controller.canManageForms
-                      ? IconButton(
-                          tooltip: 'Delete',
-                          onPressed: controller.isSaving.value
-                              ? null
-                              : () => controller.deleteFormTemplate(t.id),
-                          icon: const Icon(Icons.delete_outline),
-                        )
-                      : null,
+                  trailing:
+                      controller.canManageForms
+                          ? IconButton(
+                            tooltip: 'Delete',
+                            onPressed:
+                                controller.isSaving.value
+                                    ? null
+                                    : () => controller.deleteFormTemplate(t.id),
+                            icon: const Icon(Icons.delete_outline),
+                          )
+                          : null,
                 ),
               ),
           ],

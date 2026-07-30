@@ -54,7 +54,10 @@ class WorkforceDetailView extends GetView<WorkforceController> {
                   color: AppColors.errorBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(err, style: const TextStyle(color: AppColors.error)),
+                child: Text(
+                  err,
+                  style: const TextStyle(color: AppColors.error),
+                ),
               ),
               const SizedBox(height: 12),
             ],
@@ -65,8 +68,6 @@ class WorkforceDetailView extends GetView<WorkforceController> {
               const SizedBox(height: 12),
             ],
             _row('Status', current.status),
-            _row('Contractor ID', current.contractorId),
-            _row('Engagement ID', current.id),
             _row(
               'Required categories',
               current.requiredDocCategories.isEmpty
@@ -88,42 +89,40 @@ class WorkforceDetailView extends GetView<WorkforceController> {
                 if (controller.canApprove && current.isPendingDocs) ...[
                   _actionButton(
                     label: 'Approve',
-                    onPressed: () =>
-                        controller.runAction('approve', current),
+                    onPressed: () => controller.runAction('approve', current),
                   ),
                   _actionButton(
                     label: 'Approve & activate',
-                    onPressed: () => controller.runAction(
-                      'approve_and_activate',
-                      current,
-                    ),
+                    onPressed:
+                        () => controller.runAction(
+                          'approve_and_activate',
+                          current,
+                        ),
                   ),
                 ],
                 if (controller.canManage && current.isApproved)
                   _actionButton(
                     label: 'Activate',
-                    onPressed: () =>
-                        controller.runAction('activate', current),
+                    onPressed: () => controller.runAction('activate', current),
                   ),
                 if (controller.canManage && current.isActive)
                   _actionButton(
                     label: 'Suspend',
-                    onPressed: () =>
-                        controller.runAction('suspend', current),
+                    onPressed: () => controller.runAction('suspend', current),
                   ),
                 if (controller.canManage && current.isSuspended)
                   _actionButton(
                     label: 'Resume',
-                    onPressed: () =>
-                        controller.runAction('resume', current),
+                    onPressed: () => controller.runAction('resume', current),
                   ),
                 if (controller.canManage &&
                     !current.isEnded &&
                     !current.isInvited)
                   OutlinedButton(
-                    onPressed: controller.isSaving.value
-                        ? null
-                        : () => controller.runAction('end', current),
+                    onPressed:
+                        controller.isSaving.value
+                            ? null
+                            : () => controller.runAction('end', current),
                     child: const Text('End engagement'),
                   ),
               ],
@@ -172,7 +171,10 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         children: [
           SizedBox(
             width: 140,
-            child: Text(label, style: const TextStyle(color: AppColors.textMuted)),
+            child: Text(
+              label,
+              style: const TextStyle(color: AppColors.textMuted),
+            ),
           ),
           Expanded(child: Text(value)),
         ],

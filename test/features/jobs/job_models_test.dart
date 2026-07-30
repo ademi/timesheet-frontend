@@ -15,4 +15,38 @@ void main() {
       {'form_template_id': 'form-2', 'is_required': true},
     ]);
   });
+
+  test('parses human display names for job and recurrence records', () {
+    final job = JobOut.fromJson({
+      'id': 'job-1',
+      'tenant_id': 'tenant-1',
+      'kind': 'standing',
+      'status': 'open',
+      'title': 'Morning support',
+      'client_site_id': 'site-1',
+      'client_site_name': 'North Clinic',
+      'client_name': 'Acme Care',
+      'geofence_radius_m': 100,
+      'geofence_mode': 'informational',
+      'created_at': '2026-07-30T09:00:00Z',
+      'updated_at': '2026-07-30T09:00:00Z',
+    });
+    final rule = RecurrenceRuleOut.fromJson({
+      'id': 'rule-1',
+      'tenant_id': 'tenant-1',
+      'job_id': 'job-1',
+      'contractor_id': 'contractor-1',
+      'contractor_name': 'Sam Worker',
+      'rrule': 'FREQ=WEEKLY',
+      'dtstart': '2026-07-30T09:00:00Z',
+      'time_windows_json': [],
+      'is_active': true,
+      'created_at': '2026-07-30T09:00:00Z',
+      'updated_at': '2026-07-30T09:00:00Z',
+    });
+
+    expect(job.clientSiteName, 'North Clinic');
+    expect(job.clientName, 'Acme Care');
+    expect(rule.contractorName, 'Sam Worker');
+  });
 }

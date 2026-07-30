@@ -51,7 +51,7 @@ class _JobDetailViewState extends State<JobDetailView> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Location: ${job.clientSiteId != null ? 'site ${job.clientSiteId}' : 'branch ${job.branchId}'}',
+              'Location: ${job.clientSiteName ?? job.branchName ?? 'Location not set'}',
             ),
             Text('Geofence: ${job.geofenceMode} / ${job.geofenceRadiusM}m'),
             if (controller.canManage && job.isOpen) ...[
@@ -209,7 +209,7 @@ class _JobDetailViewState extends State<JobDetailView> {
                         ),
                         Text(
                           '${rule.isActive ? 'active' : 'inactive'} · '
-                          'contractor ${rule.contractorId}',
+                          '${rule.contractorName ?? 'Assigned contractor'}',
                         ),
                         const SizedBox(height: 8),
                         Wrap(
@@ -256,7 +256,7 @@ class _JobDetailViewState extends State<JobDetailView> {
                   for (final e in controller.assignableEngagements)
                     DropdownMenuItem(
                       value: e.contractorId,
-                      child: Text(e.contractorName ?? e.contractorId),
+                      child: Text(e.contractorName ?? 'Contractor'),
                     ),
                 ],
                 onChanged: (v) => controller.selectedContractorId.value = v,
