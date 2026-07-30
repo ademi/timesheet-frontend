@@ -306,12 +306,14 @@ class ManualVisitCreateRequest {
     required this.scheduledStart,
     required this.scheduledEnd,
     this.taskTitles = const [],
+    this.formTemplateIds = const [],
   });
 
   final String contractorId;
   final DateTime scheduledStart;
   final DateTime scheduledEnd;
   final List<String> taskTitles;
+  final List<String> formTemplateIds;
 
   Map<String, dynamic> toJson() => {
     'contractor_id': contractorId,
@@ -320,6 +322,10 @@ class ManualVisitCreateRequest {
     'tasks': [
       for (var i = 0; i < taskTitles.length; i++)
         {'title': taskTitles[i], 'sort_order': i},
+    ],
+    'form_requirements': [
+      for (final id in formTemplateIds)
+        {'form_template_id': id, 'is_required': true},
     ],
   };
 }
