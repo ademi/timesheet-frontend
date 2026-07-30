@@ -5,6 +5,7 @@ import '../../app/routes/app_routes.dart';
 import '../../app/themes/app_colors.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
 import '../../core/responsive/breakpoints.dart';
+import '../../shared/widgets/closed_beta_banner.dart';
 import 'shell_stub_page.dart';
 
 /// ContractorShell nav (design §4.4).
@@ -62,6 +63,7 @@ class ContractorShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final body = _shellBody(child);
     return LayoutBuilder(
       builder: (context, constraints) {
         final index =
@@ -73,12 +75,12 @@ class ContractorShell extends StatelessWidget {
             destinations: ContractorShellNav.destinations,
             selectedIndex: index,
             onDestinationSelected: ContractorShellNav.navigateTo,
-            child: child,
+            child: body,
           );
         }
 
         return Scaffold(
-          body: child,
+          body: body,
           bottomNavigationBar: NavigationBar(
             selectedIndex: index,
             onDestinationSelected: ContractorShellNav.navigateTo,
@@ -94,6 +96,14 @@ class ContractorShell extends StatelessWidget {
     );
   }
 }
+
+Widget _shellBody(Widget child) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const ClosedBetaBanner(),
+        Expanded(child: child),
+      ],
+    );
 
 Widget contractorShellPage(Widget child) => ContractorShell(child: child);
 

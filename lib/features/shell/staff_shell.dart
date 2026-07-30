@@ -5,6 +5,7 @@ import '../../app/constants/app_permissions.dart';
 import '../../app/routes/app_routes.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
 import '../../core/services/session_service.dart';
+import '../../shared/widgets/closed_beta_banner.dart';
 import 'shell_stub_page.dart';
 
 /// StaffShell nav (design §4.3).
@@ -115,16 +116,25 @@ class StaffShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final body = _shellBody(child);
     final destinations = StaffShellNav.destinations();
-    if (destinations.isEmpty) return child;
+    if (destinations.isEmpty) return body;
     return ResponsiveScaffold(
       destinations: destinations,
       selectedIndex: StaffShellNav.selectedIndex(Get.currentRoute),
       onDestinationSelected: StaffShellNav.navigateTo,
-      child: child,
+      child: body,
     );
   }
 }
+
+Widget _shellBody(Widget child) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const ClosedBetaBanner(),
+        Expanded(child: child),
+      ],
+    );
 
 Widget staffShellPage(Widget child) => StaffShell(child: child);
 
