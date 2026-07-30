@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/mixins/pending_action_mixin.dart';
 import '../../../core/services/session_service.dart';
 import '../../credentials/controllers/credentials_controller.dart';
 import '../../credentials/data/models/credential_models.dart';
@@ -18,7 +19,7 @@ import '../onboarding_routing.dart';
 enum OnboardingStep { legal, notices, consents, engagement, credentials }
 
 /// Ordered contractor onboarding funnel (design §6.3). Outside tab chrome.
-class OnboardingController extends GetxController {
+class OnboardingController extends GetxController with PendingActionMixin {
   OnboardingController({
     required ComplianceRepository repository,
     OnboardingProgressStore? progressStore,
@@ -204,91 +205,91 @@ class OnboardingController extends GetxController {
     if (doc.counselPending) {
       // Still attempt accept in non-prod; API fail-closed in production.
     }
-    isLoading.value = true;
-    errorMessage.value = null;
-    try {
-      await _repository.createLegalEvent(
-        LegalEventCreate(
-          eventType: 'accepted',
+    await runPendingAction('accept-doc-${doc.docKey}-${doc.version}', () async {
+      errorMessage.value = null;
+      try {
+        await _repository.createLegalEvent(
+          LegalEventCreate(
+            eventType: 'accepted',
+            docKey: doc.docKey,
+            version: doc.version,
+            presentationSource: 'contractor_onboarding',
+          ),
+          idempotencyKey: _idemKey('accepted-doc-${doc.docKey}-${doc.version}'),
+        );
+        acceptedDocKeys.add(doc.docKey);
+        await _progressStore.markAcceptedDocument(
+          _contractorId,
           docKey: doc.docKey,
           version: doc.version,
-          presentationSource: 'contractor_onboarding',
-        ),
-        idempotencyKey: _idemKey('accepted-doc-${doc.docKey}-${doc.version}'),
-      );
-      acceptedDocKeys.add(doc.docKey);
-      await _progressStore.markAcceptedDocument(
-        _contractorId,
-        docKey: doc.docKey,
-        version: doc.version,
-      );
-    } on AppFailure catch (e) {
-      errorMessage.value =
-          e.code == 'counsel_pending_policy'
-              ? 'This legal document is not available yet.'
-              : e.message;
-    } finally {
-      isLoading.value = false;
-    }
+        );
+      } on AppFailure catch (e) {
+        errorMessage.value =
+            e.code == 'counsel_pending_policy'
+                ? 'This legal document is not available yet.'
+                : e.message;
+      }
+    });
   }
 
   Future<void> acknowledgeNotice(CollectionNotice notice) async {
-    isLoading.value = true;
-    errorMessage.value = null;
-    try {
-      await _repository.createLegalEvent(
-        LegalEventCreate(
-          eventType: 'acknowledged',
-          noticeKey: notice.noticeKey,
-          noticeVersion: notice.version,
-          credentialType: notice.credentialType,
-          presentationSource: 'contractor_onboarding',
-        ),
-        idempotencyKey: _idemKey(
-          'ack-notice-${notice.noticeKey}-${notice.version}',
-        ),
-      );
-      acknowledgedNoticeKeys.add(notice.noticeKey);
-      await _progressStore.markNoticeAcknowledged(
-        _contractorId,
-        noticeKey: notice.noticeKey,
-        version: notice.version,
-      );
-    } on AppFailure catch (e) {
-      errorMessage.value =
-          e.code == 'counsel_pending_policy'
-              ? 'This legal document is not available yet.'
-              : e.message;
-    } finally {
-      isLoading.value = false;
-    }
+    await runPendingAction(
+      'ack-notice-${notice.noticeKey}-${notice.version}',
+      () async {
+        errorMessage.value = null;
+        try {
+          await _repository.createLegalEvent(
+            LegalEventCreate(
+              eventType: 'acknowledged',
+              noticeKey: notice.noticeKey,
+              noticeVersion: notice.version,
+              credentialType: notice.credentialType,
+              presentationSource: 'contractor_onboarding',
+            ),
+            idempotencyKey: _idemKey(
+              'ack-notice-${notice.noticeKey}-${notice.version}',
+            ),
+          );
+          acknowledgedNoticeKeys.add(notice.noticeKey);
+          await _progressStore.markNoticeAcknowledged(
+            _contractorId,
+            noticeKey: notice.noticeKey,
+            version: notice.version,
+          );
+        } on AppFailure catch (e) {
+          errorMessage.value =
+              e.code == 'counsel_pending_policy'
+                  ? 'This legal document is not available yet.'
+                  : e.message;
+        }
+      },
+    );
   }
 
   Future<void> consentToType(
     String credentialType, {
     CollectionNotice? notice,
   }) async {
-    isLoading.value = true;
-    errorMessage.value = null;
-    try {
-      await _repository.createLegalEvent(
-        LegalEventCreate(
-          eventType: 'consented',
-          noticeKey: notice?.noticeKey,
-          noticeVersion: notice?.version,
-          credentialType: credentialType,
-          dataClass: 'sensitive_credential',
-          presentationSource: 'contractor_onboarding',
-        ),
-        idempotencyKey: _idemKey('consent-$credentialType'),
-      );
-      consentedTypes.add(credentialType);
-      await _progressStore.markConsentRecorded(_contractorId, credentialType);
-    } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-    } finally {
-      isLoading.value = false;
-    }
+    await runPendingAction('consent-$credentialType', () async {
+      errorMessage.value = null;
+      try {
+        await _repository.createLegalEvent(
+          LegalEventCreate(
+            eventType: 'consented',
+            noticeKey: notice?.noticeKey,
+            noticeVersion: notice?.version,
+            credentialType: credentialType,
+            dataClass: 'sensitive_credential',
+            presentationSource: 'contractor_onboarding',
+          ),
+          idempotencyKey: _idemKey('consent-$credentialType'),
+        );
+        consentedTypes.add(credentialType);
+        await _progressStore.markConsentRecorded(_contractorId, credentialType);
+      } on AppFailure catch (e) {
+        errorMessage.value = e.message;
+      }
+    });
   }
 
   void goToStep(OnboardingStep step) {

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/controllers/auth_controller.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/markdown_viewer.dart';
 import '../../credentials/controllers/credentials_controller.dart';
 import '../../credentials/data/models/credential_models.dart';
@@ -78,9 +79,11 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
                         child: const Text('Back'),
                       ),
                     const Spacer(),
-                    ElevatedButton(
-                      onPressed:
-                          controller.isLoading.value ? null : controller.next,
+                    AsyncElevatedButton(
+                      onPressed: controller.next,
+                      isLoading:
+                          controller.isLoading.value ||
+                          controller.hasPendingAction,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.onPrimary,
@@ -202,13 +205,17 @@ class _LegalStep extends GetView<OnboardingController> {
           const SizedBox(height: 12),
           for (final doc in controller.legalDocs) ...[
             _DocCard(
-              title: doc.docKey == 'platform_terms'
-                  ? 'Platform Terms'
-                  : 'Privacy Policy',
+              title:
+                  doc.docKey == 'platform_terms'
+                      ? 'Platform Terms'
+                      : 'Privacy Policy',
               meta: 'doc_key: ${doc.docKey} · version: ${doc.version}',
               markdown: doc.contentMd,
               counselPending: doc.counselPending,
               accepted: controller.acceptedDocKeys.contains(doc.docKey),
+              isLoading: controller.isPending(
+                'accept-doc-${doc.docKey}-${doc.version}',
+              ),
               onAccept: () => controller.acceptLegalDoc(doc),
             ),
             const SizedBox(height: 12),
@@ -253,6 +260,9 @@ class _NoticesStep extends GetView<OnboardingController> {
               markdown: n.contentMd,
               counselPending: n.counselPending,
               accepted: controller.acknowledgedNoticeKeys.contains(n.noticeKey),
+              isLoading: controller.isPending(
+                'ack-notice-${n.noticeKey}-${n.version}',
+              ),
               acceptLabel: 'I acknowledge this notice',
               onAccept: () => controller.acknowledgeNotice(n),
             ),
@@ -276,13 +286,14 @@ class _ConsentsStep extends GetView<OnboardingController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final needed = controller.notices
-          .map((n) => n.credentialType)
-          .whereType<String>()
-          .where(sensitiveCredentialTypes.contains)
-          .toSet()
-          .toList()
-        ..sort();
+      final needed =
+          controller.notices
+              .map((n) => n.credentialType)
+              .whereType<String>()
+              .where(sensitiveCredentialTypes.contains)
+              .toSet()
+              .toList()
+            ..sort();
       final noticeByType = <String, CollectionNotice>{};
       for (final n in controller.notices) {
         final t = n.credentialType;
@@ -306,22 +317,30 @@ class _ConsentsStep extends GetView<OnboardingController> {
           ),
           const SizedBox(height: 12),
           for (final type in needed) ...[
-            Card(
-              child: CheckboxListTile(
-                value: controller.consentedTypes.contains(type),
-                onChanged: controller.consentedTypes.contains(type)
-                    ? null
-                    : (_) => controller.consentToType(
-                          type,
-                          notice: noticeByType[type],
-                        ),
-                title: Text(type),
-                subtitle: Text(
-                  noticeByType[type] != null
-                      ? 'Linked notice: ${noticeByType[type]!.noticeKey}'
-                      : 'Consent without linked notice key',
-                ),
-              ),
+            Builder(
+              builder: (context) {
+                final isLoading = controller.isPending('consent-$type');
+                return Card(
+                  child: CheckboxListTile(
+                    value: controller.consentedTypes.contains(type),
+                    onChanged:
+                        controller.consentedTypes.contains(type) || isLoading
+                            ? null
+                            : (_) => controller.consentToType(
+                              type,
+                              notice: noticeByType[type],
+                            ),
+                    secondary:
+                        isLoading ? const ButtonLoadingIndicator() : null,
+                    title: Text(type),
+                    subtitle: Text(
+                      noticeByType[type] != null
+                          ? 'Linked notice: ${noticeByType[type]!.noticeKey}'
+                          : 'Consent without linked notice key',
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ],
@@ -405,9 +424,11 @@ class _CredentialsStep extends StatelessWidget {
             runSpacing: 8,
             children: [
               ElevatedButton.icon(
-                onPressed: c.isSaving.value
-                    ? null
-                    : () => Get.toNamed(AppRoutes.contractorCredentialCreate),
+                onPressed:
+                    c.isSaving.value
+                        ? null
+                        : () =>
+                            Get.toNamed(AppRoutes.contractorCredentialCreate),
                 icon: const Icon(Icons.add),
                 label: const Text('Add credential'),
                 style: ElevatedButton.styleFrom(
@@ -450,9 +471,10 @@ class _CredentialsStep extends StatelessWidget {
               'Last scan: ${c.lastScanStatus.value}',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: c.lastScanStatus.value == 'blocked'
-                    ? AppColors.error
-                    : AppColors.textDark,
+                color:
+                    c.lastScanStatus.value == 'blocked'
+                        ? AppColors.error
+                        : AppColors.textDark,
               ),
             ),
           ],
@@ -469,6 +491,7 @@ class _DocCard extends StatelessWidget {
     required this.markdown,
     required this.counselPending,
     required this.accepted,
+    required this.isLoading,
     required this.onAccept,
     this.acceptLabel = 'I accept this document',
   });
@@ -478,6 +501,7 @@ class _DocCard extends StatelessWidget {
   final String markdown;
   final bool counselPending;
   final bool accepted;
+  final bool isLoading;
   final VoidCallback onAccept;
   final String acceptLabel;
 
@@ -529,8 +553,9 @@ class _DocCard extends StatelessWidget {
           else
             ListTile(
               title: Text(acceptLabel),
-              trailing: FilledButton(
+              trailing: AsyncFilledButton(
                 onPressed: onAccept,
+                isLoading: isLoading,
                 child: const Text('Accept'),
               ),
             ),
