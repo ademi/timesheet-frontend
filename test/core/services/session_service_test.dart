@@ -150,6 +150,46 @@ void main() {
       );
     });
 
+    test(
+      'multi-engagement contractor with incomplete platform → onboarding legal',
+      () {
+        tokenStorage.claims = const JwtClaims(
+          sub: 'u2',
+          tenantId: null,
+          permissions: ['auth.session'],
+          actorType: 'contractor',
+          iat: 1,
+          exp: 2,
+          contractorId: 'c1',
+        );
+        session.applyMeContext(
+          const MeContextModel(
+            actorType: 'contractor',
+            contractorId: 'c1',
+            engagements: [
+              EngagementSummaryModel(
+                id: 'e1',
+                tenantId: 't1',
+                tenantName: 'Acme',
+                status: 'invited',
+              ),
+              EngagementSummaryModel(
+                id: 'e2',
+                tenantId: 't2',
+                tenantName: 'Globex',
+                status: 'invited',
+              ),
+            ],
+          ),
+        );
+        expect(session.needsPlatformCompliance.value, isTrue);
+        expect(
+          session.resolvePostLoginRoute(),
+          AppRoutes.contractorOnboardingLegal,
+        );
+      },
+    );
+
     test('platform complete contractor with no engagements → home', () async {
       await progressStore.markPlatformComplete('c1');
       tokenStorage.claims = const JwtClaims(

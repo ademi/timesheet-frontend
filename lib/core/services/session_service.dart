@@ -217,14 +217,14 @@ class SessionService extends GetxController {
       return AppRoutes.staffHome;
     }
     if (isContractor) {
-      if (engagements.length > 1 && claims?.tenantId == null) {
-        return AppRoutes.contractorProfile;
-      }
       if (needsOnboarding.value) {
         return OnboardingRouting.entryRoute(
           needsPlatformCompliance: needsPlatformCompliance.value,
           needsEngagementWork: needsEngagementWork.value,
         );
+      }
+      if (engagements.length > 1 && claims?.tenantId == null) {
+        return AppRoutes.contractorProfile;
       }
       return AppRoutes.contractorHome;
     }
