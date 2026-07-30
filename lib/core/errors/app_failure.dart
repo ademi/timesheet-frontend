@@ -136,6 +136,7 @@ class AppFailure implements Exception {
       'consent_required',
       'invalid_category',
       'sharing_authorisation_required',
+      'sharing_authorisation_forbidden',
       'invalid_transition',
       'hard_split_violation',
     ];
@@ -221,7 +222,8 @@ class AppFailure implements Exception {
       case 'invalid_category':
         return 'That credential type is not allowed.';
       case 'sharing_authorisation_required':
-        return 'Record sharing authorisation before accepting this engagement.';
+      case 'sharing_authorisation_forbidden':
+        return 'Could not record sharing authorisation. Try again or contact support.';
       case 'invalid_transition':
         return 'This engagement can’t move to that status from here.';
       case 'counsel_pending':

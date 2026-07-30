@@ -41,8 +41,8 @@ class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Accept each invite to share credential metadata with that '
-            'provider. You can optionally allow source-evidence access.',
+            'Accepting authorises sharing credential metadata with the '
+            'provider. You upload documents in the next step.',
             style: TextStyle(color: AppColors.textMuted),
           ),
           if (err != null) ...[
@@ -123,9 +123,10 @@ class _GrantForm extends GetView<ContractorEngagementsController> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = engagement.tenantName?.isNotEmpty == true
-        ? engagement.tenantName!
-        : 'this provider';
+    final provider =
+        engagement.tenantName?.isNotEmpty == true
+            ? engagement.tenantName!
+            : 'this provider';
 
     return Obx(() {
       final err = controller.errorMessage.value;
@@ -144,7 +145,8 @@ class _GrantForm extends GetView<ContractorEngagementsController> {
           Text(
             'You are authorising $provider to receive credential '
             'metadata needed for this engagement '
-            '(${engagement.requiredDocCategories.map((c) => c.category).join(", ").ifEmpty("required categories")}).',
+            '(${engagement.requiredDocCategories.map((c) => c.category).join(", ").ifEmpty("required categories")}). '
+            'You upload documents in the next step.',
             style: const TextStyle(color: AppColors.textMuted),
           ),
           if (err != null) ...[
@@ -173,8 +175,8 @@ class _GrantForm extends GetView<ContractorEngagementsController> {
           CheckboxListTile(
             contentPadding: EdgeInsets.zero,
             value: controller.understoodWithdrawEffects.value,
-            onChanged: (v) =>
-                controller.understoodWithdrawEffects.value = v ?? false,
+            onChanged:
+                (v) => controller.understoodWithdrawEffects.value = v ?? false,
             title: const Text(
               'I understand that withdrawing consent or ending this '
               'engagement blocks future platform-mediated access. The '
@@ -185,27 +187,28 @@ class _GrantForm extends GetView<ContractorEngagementsController> {
           Row(
             children: [
               OutlinedButton(
-                onPressed: controller.isSaving.value
-                    ? null
-                    : controller.cancelAccept,
+                onPressed:
+                    controller.isSaving.value ? null : controller.cancelAccept,
                 child: const Text('Back'),
               ),
               const SizedBox(width: 12),
               ElevatedButton(
-                onPressed: controller.isSaving.value
-                    ? null
-                    : () => controller.confirmAccept(),
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : () => controller.confirmAccept(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.onPrimary,
                 ),
-                child: controller.isSaving.value
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Confirm accept'),
+                child:
+                    controller.isSaving.value
+                        ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Text('Confirm accept'),
               ),
             ],
           ),

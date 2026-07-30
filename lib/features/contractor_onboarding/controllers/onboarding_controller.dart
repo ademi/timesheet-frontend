@@ -306,6 +306,7 @@ class OnboardingController extends GetxController with PendingActionMixin {
   }
 
   void goToStep(OnboardingStep step) {
+    errorMessage.value = null;
     stepIndex.value = step.index;
     if (step == OnboardingStep.notices && notices.isEmpty) {
       loadNotices();
@@ -314,6 +315,7 @@ class OnboardingController extends GetxController with PendingActionMixin {
   }
 
   Future<void> next() async {
+    errorMessage.value = null;
     switch (currentStep) {
       case OnboardingStep.legal:
         if (!canAdvanceLegal) {

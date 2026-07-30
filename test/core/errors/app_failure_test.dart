@@ -82,6 +82,26 @@ void main() {
       }
     });
 
+    test('maps sharing authorisation failures to retry guidance', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(path: '/engagements/1/accept'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/engagements/1/accept'),
+            statusCode: 409,
+            data: {'detail': 'sharing_authorisation_required'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      expect(failure.code, 'sharing_authorisation_required');
+      expect(
+        failure.message,
+        'Could not record sharing authorisation. Try again or contact support.',
+      );
+    });
+
     test('parses eligibility reasons', () {
       final failure = AppFailure.fromDio(
         DioException(

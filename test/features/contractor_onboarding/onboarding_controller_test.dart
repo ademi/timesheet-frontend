@@ -49,6 +49,7 @@ void main() {
 
   setUp(() {
     Get.reset();
+    Get.testMode = true;
     progressStore = OnboardingProgressStore();
     sessionService = SessionService(
       tokenStorage: _FakeTokenStorage(),
@@ -77,4 +78,17 @@ void main() {
       );
     },
   );
+
+  test('clears a previous error when navigating to another step', () {
+    final controller = OnboardingController(
+      repository: _MockComplianceRepository(),
+      progressStore: progressStore,
+    );
+    controller.errorMessage.value = 'This legal document is not available yet.';
+
+    controller.goToStep(OnboardingStep.engagement);
+
+    expect(controller.errorMessage.value, isNull);
+    expect(controller.currentStep, OnboardingStep.engagement);
+  });
 }

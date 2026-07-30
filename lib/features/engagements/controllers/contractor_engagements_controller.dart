@@ -15,9 +15,9 @@ class ContractorEngagementsController extends GetxController {
     required EngagementsRepository repository,
     required ComplianceRepository complianceRepository,
     required SessionService session,
-  })  : _repository = repository,
-        _compliance = complianceRepository,
-        _session = session;
+  }) : _repository = repository,
+       _compliance = complianceRepository,
+       _session = session;
 
   final EngagementsRepository _repository;
   final ComplianceRepository _compliance;
@@ -125,7 +125,7 @@ class ContractorEngagementsController extends GetxController {
       );
       return true;
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      errorMessage.value = _acceptErrorMessage(e);
       return false;
     } catch (e) {
       errorMessage.value = e.toString();
@@ -133,5 +133,13 @@ class ContractorEngagementsController extends GetxController {
     } finally {
       isSaving.value = false;
     }
+  }
+
+  String _acceptErrorMessage(AppFailure failure) {
+    if (failure.code.startsWith('sharing_authorisation') ||
+        failure.code == 'legal_document_unavailable') {
+      return 'Could not record sharing authorisation. Try again or contact support.';
+    }
+    return failure.message;
   }
 }
