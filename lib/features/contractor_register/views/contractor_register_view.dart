@@ -88,20 +88,23 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                                   : null,
                     ),
                     const SizedBox(height: 12),
-                    _field(
-                      controller: controller.emailController,
-                      label: 'Email',
-                      icon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'Email is required';
-                        }
-                        if (!GetUtils.isEmail(v.trim())) {
-                          return 'Enter a valid email';
-                        }
-                        return null;
-                      },
+                    Obx(
+                      () => _field(
+                        controller: controller.emailController,
+                        label: 'Email',
+                        icon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                        readOnly: controller.invite.value != null,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Email is required';
+                          }
+                          if (!GetUtils.isEmail(v.trim())) {
+                            return 'Enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Obx(
@@ -189,7 +192,8 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                         height: 48,
                         child: ElevatedButton(
                           onPressed:
-                              controller.isLoading.value
+                              controller.isLoading.value ||
+                                      controller.isInviteLoading.value
                                   ? null
                                   : controller.submit,
                           style: ElevatedButton.styleFrom(

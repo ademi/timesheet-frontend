@@ -106,6 +106,7 @@ class ContractorRegisterController extends GetxController {
   }
 
   Future<void> submit() async {
+    if (isInviteLoading.value) return;
     if (!(formKey.currentState?.validate() ?? false)) return;
     if (!acceptedTerms.value || !acceptedPrivacy.value) {
       _showError(
