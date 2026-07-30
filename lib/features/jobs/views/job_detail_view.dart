@@ -5,6 +5,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../controllers/jobs_controller.dart';
 import '../data/models/job_models.dart';
+import '../utils/recurrence_label.dart';
 
 class JobDetailView extends StatefulWidget {
   const JobDetailView({super.key});
@@ -36,20 +37,18 @@ class _JobDetailViewState extends State<JobDetailView> {
             return const Center(child: CircularProgressIndicator());
           }
           return Center(
-            child: Text(
-              controller.errorMessage.value ?? 'Job not loaded.',
-            ),
+            child: Text(controller.errorMessage.value ?? 'Job not loaded.'),
           );
         }
         final err = controller.errorMessage.value;
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            if (err != null) ...[
-              _ErrorBox(err),
-              const SizedBox(height: 12),
-            ],
-            Text('${job.kind} · ${job.status}', style: Get.textTheme.titleMedium),
+            if (err != null) ...[_ErrorBox(err), const SizedBox(height: 12)],
+            Text(
+              '${job.kind} · ${job.status}',
+              style: Get.textTheme.titleMedium,
+            ),
             const SizedBox(height: 4),
             Text(
               'Location: ${job.clientSiteId != null ? 'site ${job.clientSiteId}' : 'branch ${job.branchId}'}',
@@ -61,15 +60,17 @@ class _JobDetailViewState extends State<JobDetailView> {
                 spacing: 8,
                 children: [
                   OutlinedButton(
-                    onPressed: controller.isSaving.value
-                        ? null
-                        : () => controller.setStatus('closed'),
+                    onPressed:
+                        controller.isSaving.value
+                            ? null
+                            : () => controller.setStatus('closed'),
                     child: const Text('Close'),
                   ),
                   OutlinedButton(
-                    onPressed: controller.isSaving.value
-                        ? null
-                        : () => controller.setStatus('cancelled'),
+                    onPressed:
+                        controller.isSaving.value
+                            ? null
+                            : () => controller.setStatus('cancelled'),
                     child: const Text('Cancel'),
                   ),
                 ],
@@ -112,28 +113,29 @@ class _JobDetailViewState extends State<JobDetailView> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(t.name),
                 subtitle: Text(
-                  controller.isTemplateAttached(t.id)
-                      ? 'Attached'
-                      : t.id,
+                  controller.isTemplateAttached(t.id) ? 'Attached' : t.id,
                   style: TextStyle(
-                    color: controller.isTemplateAttached(t.id)
-                        ? AppColors.primary
-                        : null,
+                    color:
+                        controller.isTemplateAttached(t.id)
+                            ? AppColors.primary
+                            : null,
                   ),
                 ),
-                trailing: controller.canManage
-                    ? TextButton(
-                        onPressed: controller.isSaving.value ||
-                                controller.isTemplateAttached(t.id)
-                            ? null
-                            : () => controller.attachFormTemplate(t.id),
-                        child: Text(
-                          controller.isTemplateAttached(t.id)
-                              ? 'Attached'
-                              : 'Attach',
-                        ),
-                      )
-                    : null,
+                trailing:
+                    controller.canManage
+                        ? TextButton(
+                          onPressed:
+                              controller.isSaving.value ||
+                                      controller.isTemplateAttached(t.id)
+                                  ? null
+                                  : () => controller.attachFormTemplate(t.id),
+                          child: Text(
+                            controller.isTemplateAttached(t.id)
+                                ? 'Attached'
+                                : 'Attach',
+                          ),
+                        )
+                        : null,
               ),
             const Divider(height: 32),
             Text('Recurrence', style: Get.textTheme.titleMedium),
@@ -144,7 +146,19 @@ class _JobDetailViewState extends State<JobDetailView> {
               )
             else ...[
               const SizedBox(height: 8),
-              if (controller.canManage) _RecurrenceCreateForm(controller),
+              if (controller.canManage)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        controller.isSaving.value
+                            ? null
+                            : () =>
+                                Get.toNamed(AppRoutes.staffRecurrenceRuleForm),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add recurrence rule'),
+                  ),
+                ),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -168,11 +182,10 @@ class _JobDetailViewState extends State<JobDetailView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          rule.rrule,
+                          recurrenceLabel(rule),
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         Text(
-                          '${rule.durationMinutes} min · '
                           '${rule.isActive ? 'active' : 'inactive'} · '
                           'contractor ${rule.contractorId}',
                         ),
@@ -182,18 +195,22 @@ class _JobDetailViewState extends State<JobDetailView> {
                           children: [
                             if (controller.canManage)
                               OutlinedButton(
-                                onPressed: controller.isSaving.value
-                                    ? null
-                                    : () => controller.toggleRuleActive(rule),
+                                onPressed:
+                                    controller.isSaving.value
+                                        ? null
+                                        : () =>
+                                            controller.toggleRuleActive(rule),
                                 child: Text(
                                   rule.isActive ? 'Deactivate' : 'Activate',
                                 ),
                               ),
                             if (controller.canManage)
                               ElevatedButton(
-                                onPressed: controller.isSaving.value
-                                    ? null
-                                    : () => controller.generateForRule(rule),
+                                onPressed:
+                                    controller.isSaving.value
+                                        ? null
+                                        : () =>
+                                            controller.generateForRule(rule),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
                                   foregroundColor: AppColors.onPrimary,
@@ -217,9 +234,7 @@ class _JobDetailViewState extends State<JobDetailView> {
                   for (final e in controller.assignableEngagements)
                     DropdownMenuItem(
                       value: e.contractorId,
-                      child: Text(
-                        e.contractorName ?? e.contractorId,
-                      ),
+                      child: Text(e.contractorName ?? e.contractorId),
                     ),
                 ],
                 onChanged: (v) => controller.selectedContractorId.value = v,
@@ -239,103 +254,25 @@ class _JobDetailViewState extends State<JobDetailView> {
               ),
               const SizedBox(height: 8),
               ElevatedButton(
-                onPressed: controller.isSaving.value
-                    ? null
-                    : controller.createManualVisit,
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : controller.createManualVisit,
                 child: const Text('Create manual visit'),
               ),
               const SizedBox(height: 8),
               TextButton(
-                onPressed: () => Get.toNamed(
-                  AppRoutes.staffVisits,
-                  arguments: {'job_id': job.id},
-                ),
+                onPressed:
+                    () => Get.toNamed(
+                      AppRoutes.staffVisits,
+                      arguments: {'job_id': job.id},
+                    ),
                 child: const Text('Open visits for this job'),
               ),
             ],
           ],
         );
       }),
-    );
-  }
-}
-
-class _RecurrenceCreateForm extends StatelessWidget {
-  const _RecurrenceCreateForm(this.controller);
-  final JobsController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        DropdownButtonFormField<String>(
-          value: controller.selectedContractorId.value,
-          items: [
-            for (final e in controller.assignableEngagements)
-              DropdownMenuItem(
-                value: e.contractorId,
-                child: Text(e.contractorName ?? e.contractorId),
-              ),
-          ],
-          onChanged: (v) => controller.selectedContractorId.value = v,
-          decoration: const InputDecoration(
-            labelText: 'Contractor *',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller.rruleCtrl,
-          decoration: const InputDecoration(
-            labelText: 'RRULE *',
-            border: OutlineInputBorder(),
-            helperText: 'e.g. FREQ=WEEKLY;BYDAY=MO,WE,FR',
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller.durationCtrl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Duration (minutes) *',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller.taskTitlesCtrl,
-          maxLines: 2,
-          decoration: const InputDecoration(
-            labelText: 'Task titles (one per line)',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text('Form templates on rule', style: TextStyle(fontSize: 12)),
-        Wrap(
-          spacing: 8,
-          children: [
-            for (final t in controller.formTemplates)
-              FilterChip(
-                label: Text(t.name),
-                selected: controller.selectedFormTemplateIds.contains(t.id),
-                onSelected: (_) => controller.toggleFormTemplateForRule(t.id),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ElevatedButton(
-          onPressed: controller.isSaving.value
-              ? null
-              : controller.createRecurrenceRule,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.onPrimary,
-          ),
-          child: const Text('Add recurrence rule'),
-        ),
-      ],
     );
   }
 }

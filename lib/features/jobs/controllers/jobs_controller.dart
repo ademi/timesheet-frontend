@@ -19,10 +19,10 @@ class JobsController extends GetxController {
     required ClientsRepository clientsRepository,
     required EngagementsRepository engagementsRepository,
     required SessionService session,
-  })  : _repository = repository,
-        _clients = clientsRepository,
-        _engagements = engagementsRepository,
-        _session = session;
+  }) : _repository = repository,
+       _clients = clientsRepository,
+       _engagements = engagementsRepository,
+       _session = session;
 
   final JobsRepository _repository;
   final ClientsRepository _clients;
@@ -61,13 +61,9 @@ class JobsController extends GetxController {
   // Form template
   final templateNameCtrl = TextEditingController();
 
-  // Recurrence
-  final rruleCtrl = TextEditingController(text: 'FREQ=WEEKLY;BYDAY=MO,WE,FR');
-  final durationCtrl = TextEditingController(text: '60');
-  final taskTitlesCtrl = TextEditingController(text: 'Check-in briefing');
+  // Recurrence / manual visit
   final selectedContractorId = RxnString();
   final generatePartial = false.obs;
-  final selectedFormTemplateIds = <String>{}.obs;
 
   // Manual visit
   final manualTaskCtrl = TextEditingController();
@@ -96,9 +92,6 @@ class JobsController extends GetxController {
     titleCtrl.dispose();
     geofenceRadiusCtrl.dispose();
     templateNameCtrl.dispose();
-    rruleCtrl.dispose();
-    durationCtrl.dispose();
-    taskTitlesCtrl.dispose();
     manualTaskCtrl.dispose();
     super.onClose();
   }
@@ -146,7 +139,8 @@ class JobsController extends GetxController {
   /// Resolves job from args / parameters and reloads catalog + rules.
   Future<void> ensureDetailLoaded() async {
     hydrateSelectedFromArgs();
-    final id = selected.value?.id ??
+    final id =
+        selected.value?.id ??
         Get.parameters['id'] ??
         (Get.arguments is String ? Get.arguments as String : null);
     if (id == null || id.isEmpty) return;
@@ -411,48 +405,22 @@ class JobsController extends GetxController {
     }
   }
 
-  Future<void> createRecurrenceRule() async {
+  Future<bool> createRecurrenceRule(RecurrenceRuleCreateRequest request) async {
     final job = selected.value;
-    if (job == null) return;
+    if (job == null) return false;
     if (!job.isStanding) {
       errorMessage.value = 'Recurrence requires a standing job.';
-      return;
-    }
-    final contractorId = selectedContractorId.value;
-    if (contractorId == null) {
-      errorMessage.value = 'Select a contractor.';
-      return;
-    }
-    final rrule = rruleCtrl.text.trim();
-    final duration = int.tryParse(durationCtrl.text.trim()) ?? 0;
-    if (rrule.isEmpty || duration < 1) {
-      errorMessage.value = 'RRULE and duration (minutes) are required.';
-      return;
+      return false;
     }
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      final tasks = taskTitlesCtrl.text
-          .split('\n')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-      await _repository.createRecurrenceRule(
-        job.id,
-        RecurrenceRuleCreateRequest(
-          contractorId: contractorId,
-          rrule: rrule.startsWith('FREQ=') || rrule.startsWith('RRULE:')
-              ? rrule
-              : 'FREQ=WEEKLY;BYDAY=MO',
-          dtstart: DateTime.now().toUtc(),
-          durationMinutes: duration,
-          taskTitles: tasks,
-          formTemplateIds: selectedFormTemplateIds.toList(),
-        ),
-      );
+      await _repository.createRecurrenceRule(job.id, request);
       await refreshRules();
+      return true;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+      return false;
     } finally {
       isSaving.value = false;
     }
@@ -527,11 +495,12 @@ class JobsController extends GetxController {
     }
     final start = DateTime.now().toUtc().add(const Duration(hours: 1));
     final end = start.add(const Duration(hours: 1));
-    final tasks = manualTaskCtrl.text
-        .split('\n')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
+    final tasks =
+        manualTaskCtrl.text
+            .split('\n')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
     isSaving.value = true;
     errorMessage.value = null;
     try {
@@ -554,14 +523,6 @@ class JobsController extends GetxController {
       errorMessage.value = e.message;
     } finally {
       isSaving.value = false;
-    }
-  }
-
-  void toggleFormTemplateForRule(String id) {
-    if (selectedFormTemplateIds.contains(id)) {
-      selectedFormTemplateIds.remove(id);
-    } else {
-      selectedFormTemplateIds.add(id);
     }
   }
 }

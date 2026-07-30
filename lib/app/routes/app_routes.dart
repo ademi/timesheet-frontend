@@ -10,6 +10,7 @@ abstract class AppRoutes {
   static const adminAttendanceCorrections = '/admin/attendance-corrections';
   @Deprecated('Removed in S7; use staffVisits')
   static const adminAttendanceAdjustment = '/admin/attendance-adjustment';
+
   /// Removed in S6 — use Staff Jobs (`staffJobs`) instead.
   @Deprecated('Removed in S6; use staffJobs')
   static const adminShiftSchedule = '/admin/shift-schedule';
@@ -48,6 +49,7 @@ abstract class AppRoutes {
   static const staffJobs = '/staff/jobs';
   static const staffJobForm = '/staff/jobs/form';
   static const staffJobDetail = '/staff/jobs/detail';
+  static const staffRecurrenceRuleForm = '/staff/jobs/recurrence-rule-form';
   static const staffFormTemplates = '/staff/jobs/form-templates';
   static const staffVisits = '/staff/visits';
   static const staffVisitDetail = '/staff/visits/detail';
