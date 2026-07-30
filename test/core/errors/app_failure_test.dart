@@ -82,6 +82,33 @@ void main() {
       }
     });
 
+    test('maps schedule leave and availability failures to user messages', () {
+      const expectedMessages = {
+        'leave_in_past':
+            'Leave cannot end before today. Choose dates that are still current or in the future.',
+        'availability_windows_overlap':
+            'Availability windows on the same day cannot overlap.',
+      };
+
+      for (final entry in expectedMessages.entries) {
+        final failure = AppFailure.fromDio(
+          DioException(
+            requestOptions: RequestOptions(path: '/contractor-me/availability'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/contractor-me/availability'),
+              statusCode: 400,
+              data: {'detail': entry.key},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        expect(failure.code, entry.key);
+        expect(failure.message, entry.value);
+        expect(failure.presentation, AppFailurePresentation.inline);
+      }
+    });
+
     test('maps sharing authorisation failures to retry guidance', () {
       final failure = AppFailure.fromDio(
         DioException(

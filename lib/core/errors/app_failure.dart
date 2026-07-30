@@ -139,6 +139,8 @@ class AppFailure implements Exception {
       'sharing_authorisation_forbidden',
       'invalid_transition',
       'hard_split_violation',
+      'leave_in_past',
+      'availability_windows_overlap',
     ];
     for (final k in known) {
       if (d == k || d.contains(k)) return k;
@@ -173,6 +175,8 @@ class AppFailure implements Exception {
       case 'standing_job_exists':
       case 'contractor_not_found':
       case 'visit_overlap':
+      case 'leave_in_past':
+      case 'availability_windows_overlap':
         return AppFailurePresentation.inline;
       case 'proxy_required':
         return AppFailurePresentation.inline;
@@ -236,6 +240,10 @@ class AppFailure implements Exception {
         return 'Visit status changed. Refresh and try again.';
       case 'visit_overlap':
         return 'Overlapping visit — adjust the window or use partial generate.';
+      case 'leave_in_past':
+        return 'Leave cannot end before today. Choose dates that are still current or in the future.';
+      case 'availability_windows_overlap':
+        return 'Availability windows on the same day cannot overlap.';
       case 'standing_job_exists':
         return 'An open standing job already exists for this client.';
       case 'contractor_not_found':
