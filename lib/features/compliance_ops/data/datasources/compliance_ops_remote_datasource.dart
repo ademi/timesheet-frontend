@@ -57,11 +57,17 @@ class ComplianceOpsRemoteDataSource {
     }
   }
 
-  Future<List<AccessHistoryEntry>> listAccessHistory({int limit = 100}) async {
+  Future<List<AccessHistoryEntry>> listAccessHistory({
+    required String credentialId,
+    int limit = 100,
+  }) async {
     try {
       final response = await _dio.get<dynamic>(
         ApiPaths.accessHistory,
-        queryParameters: {'limit': limit},
+        queryParameters: {
+          'credential_id': credentialId,
+          'limit': limit,
+        },
       );
       return _parseList(response.data, AccessHistoryEntry.fromJson);
     } on DioException catch (e) {

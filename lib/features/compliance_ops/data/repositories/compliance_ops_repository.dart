@@ -18,8 +18,11 @@ class ComplianceOpsRepository {
 
   Future<PrivacyExportResult> privacyExport() => _remote.privacyExport();
 
-  Future<List<AccessHistoryEntry>> listAccessHistory() =>
-      _remote.listAccessHistory();
+  Future<List<AccessHistoryEntry>> listAccessHistory({
+    required String credentialId,
+    int limit = 100,
+  }) =>
+      _remote.listAccessHistory(credentialId: credentialId, limit: limit);
 
   Future<List<IncidentOut>> listIncidents() => _remote.listIncidents();
 
