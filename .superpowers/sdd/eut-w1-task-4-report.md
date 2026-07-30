@@ -27,3 +27,8 @@ Full web/mobile smoke testing was not run in this environment. Validate J1 manua
 
 - `flutter test test/features/engagements/engagement_models_test.dart test/features/contractor_register/contractor_register_repository_test.dart test/core/errors/app_failure_test.dart` — 11 passed.
 - `dart analyze` on `contractor_register_view.dart` and `contractor_register_controller.dart` — no issues.
+
+## Final-review fix
+
+- Maps staff-invite `email_already_registered` failures to “This email is already registered. Ask the contractor to log in.”
+- Verification: `flutter test test/core/errors/app_failure_test.dart` — 5 passed; `dart analyze lib/core/errors/app_failure.dart test/core/errors/app_failure_test.dart` — no issues.

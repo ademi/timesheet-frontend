@@ -56,6 +56,8 @@ void main() {
       const expectedMessages = {
         'email_required_for_registration_invite':
             'An email address is required to send a registration invite.',
+        'email_already_registered':
+            'This email is already registered. Ask the contractor to log in.',
         'invite_token_invalid':
             'This registration invite is invalid or has expired.',
         'invite_email_mismatch':
