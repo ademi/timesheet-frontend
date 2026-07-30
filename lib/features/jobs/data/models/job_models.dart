@@ -99,14 +99,14 @@ class JobCreateRequest {
   final int? geofenceRadiusM;
 
   Map<String, dynamic> toJson() => {
-        'kind': kind,
-        'title': title,
-        if (clientId != null) 'client_id': clientId,
-        if (branchId != null) 'branch_id': branchId,
-        if (clientSiteId != null) 'client_site_id': clientSiteId,
-        if (geofenceMode != null) 'geofence_mode': geofenceMode,
-        if (geofenceRadiusM != null) 'geofence_radius_m': geofenceRadiusM,
-      };
+    'kind': kind,
+    'title': title,
+    if (clientId != null) 'client_id': clientId,
+    if (branchId != null) 'branch_id': branchId,
+    if (clientSiteId != null) 'client_site_id': clientSiteId,
+    if (geofenceMode != null) 'geofence_mode': geofenceMode,
+    if (geofenceRadiusM != null) 'geofence_radius_m': geofenceRadiusM,
+  };
 }
 
 class RecurrenceRuleOut {
@@ -117,7 +117,7 @@ class RecurrenceRuleOut {
     required this.contractorId,
     required this.rrule,
     required this.dtstart,
-    required this.durationMinutes,
+    required this.timeWindows,
     required this.isActive,
     required this.createdAt,
     required this.updatedAt,
@@ -136,7 +136,7 @@ class RecurrenceRuleOut {
   final String rrule;
   final DateTime dtstart;
   final DateTime? until;
-  final int durationMinutes;
+  final List<TimeWindow> timeWindows;
   final List<Map<String, dynamic>> taskTemplateJson;
   final List<Map<String, dynamic>> formRequirementsJson;
   final double? latitude;
@@ -162,10 +162,14 @@ class RecurrenceRuleOut {
       contractorId: json['contractor_id'].toString(),
       rrule: json['rrule'] as String,
       dtstart: DateTime.parse(json['dtstart'] as String),
-      until: json['until'] != null
-          ? DateTime.tryParse(json['until'].toString())
-          : null,
-      durationMinutes: json['duration_minutes'] as int,
+      until:
+          json['until'] != null
+              ? DateTime.tryParse(json['until'].toString())
+              : null,
+      timeWindows: (json['time_windows_json'] as List? ?? const [])
+          .whereType<Map>()
+          .map((item) => TimeWindow.fromJson(Map<String, dynamic>.from(item)))
+          .toList(growable: false),
       taskTemplateJson: mapList(json['task_template_json']),
       formRequirementsJson: mapList(json['form_requirements_json']),
       latitude: (json['latitude'] as num?)?.toDouble(),
@@ -183,7 +187,7 @@ class RecurrenceRuleCreateRequest {
     required this.contractorId,
     required this.rrule,
     required this.dtstart,
-    required this.durationMinutes,
+    required this.timeWindows,
     this.until,
     this.taskTitles = const [],
     this.formTemplateIds = const [],
@@ -193,25 +197,42 @@ class RecurrenceRuleCreateRequest {
   final String rrule;
   final DateTime dtstart;
   final DateTime? until;
-  final int durationMinutes;
+  final List<TimeWindow> timeWindows;
   final List<String> taskTitles;
   final List<String> formTemplateIds;
 
   Map<String, dynamic> toJson() => {
-        'contractor_id': contractorId,
-        'rrule': rrule,
-        'dtstart': dtstart.toUtc().toIso8601String(),
-        if (until != null) 'until': until!.toUtc().toIso8601String(),
-        'duration_minutes': durationMinutes,
-        'task_template': [
-          for (var i = 0; i < taskTitles.length; i++)
-            {'title': taskTitles[i], 'sort_order': i},
-        ],
-        'form_requirements': [
-          for (final id in formTemplateIds)
-            {'form_template_id': id, 'is_required': true},
-        ],
-      };
+    'contractor_id': contractorId,
+    'rrule': rrule,
+    'dtstart': dtstart.toUtc().toIso8601String(),
+    if (until != null) 'until': until!.toUtc().toIso8601String(),
+    'time_windows': [for (final window in timeWindows) window.toJson()],
+    'task_template': [
+      for (var i = 0; i < taskTitles.length; i++)
+        {'title': taskTitles[i], 'sort_order': i},
+    ],
+    'form_requirements': [
+      for (final id in formTemplateIds)
+        {'form_template_id': id, 'is_required': true},
+    ],
+  };
+}
+
+class TimeWindow {
+  const TimeWindow({required this.startTime, required this.endTime});
+
+  final String startTime;
+  final String endTime;
+
+  factory TimeWindow.fromJson(Map<String, dynamic> json) => TimeWindow(
+    startTime: json['start_time'] as String,
+    endTime: json['end_time'] as String,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'start_time': startTime,
+    'end_time': endTime,
+  };
 }
 
 class GenerateVisitsRequest {
@@ -226,10 +247,10 @@ class GenerateVisitsRequest {
   final bool partial;
 
   Map<String, dynamic> toJson() => {
-        'from': from.toUtc().toIso8601String(),
-        'to': to.toUtc().toIso8601String(),
-        'partial': partial,
-      };
+    'from': from.toUtc().toIso8601String(),
+    'to': to.toUtc().toIso8601String(),
+    'partial': partial,
+  };
 }
 
 class GenerateVisitsResponse {
@@ -247,16 +268,17 @@ class GenerateVisitsResponse {
       createdVisitIds: (json['created_visit_ids'] as List? ?? const [])
           .map((e) => e.toString())
           .toList(growable: false),
-      skipped: skippedRaw is List
-          ? skippedRaw
-              .whereType<Map>()
-              .map(
-                (e) => GenerateVisitsConflict.fromJson(
-                  Map<String, dynamic>.from(e),
-                ),
-              )
-              .toList(growable: false)
-          : const [],
+      skipped:
+          skippedRaw is List
+              ? skippedRaw
+                  .whereType<Map>()
+                  .map(
+                    (e) => GenerateVisitsConflict.fromJson(
+                      Map<String, dynamic>.from(e),
+                    ),
+                  )
+                  .toList(growable: false)
+              : const [],
     );
   }
 }
@@ -292,14 +314,14 @@ class ManualVisitCreateRequest {
   final List<String> taskTitles;
 
   Map<String, dynamic> toJson() => {
-        'contractor_id': contractorId,
-        'scheduled_start': scheduledStart.toUtc().toIso8601String(),
-        'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
-        'tasks': [
-          for (var i = 0; i < taskTitles.length; i++)
-            {'title': taskTitles[i], 'sort_order': i},
-        ],
-      };
+    'contractor_id': contractorId,
+    'scheduled_start': scheduledStart.toUtc().toIso8601String(),
+    'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
+    'tasks': [
+      for (var i = 0; i < taskTitles.length; i++)
+        {'title': taskTitles[i], 'sort_order': i},
+    ],
+  };
 }
 
 class FormTemplateOut {
@@ -330,9 +352,10 @@ class FormTemplateOut {
       tenantId: json['tenant_id'].toString(),
       clientId: json['client_id']?.toString(),
       name: json['name'] as String? ?? json['name']?.toString() ?? '',
-      schemaJson: schema is Map
-          ? Map<String, dynamic>.from(schema)
-          : const <String, dynamic>{},
+      schemaJson:
+          schema is Map
+              ? Map<String, dynamic>.from(schema)
+              : const <String, dynamic>{},
       isActive: json['is_active'] as bool? ?? true,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -354,18 +377,15 @@ class FormTemplateCreateRequest {
   final bool isActive;
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'schema_json': schemaJson,
-        if (clientId != null) 'client_id': clientId,
-        'is_active': isActive,
-      };
+    'name': name,
+    'schema_json': schemaJson,
+    if (clientId != null) 'client_id': clientId,
+    'is_active': isActive,
+  };
 }
 
 class BranchOut {
-  const BranchOut({
-    required this.id,
-    required this.name,
-  });
+  const BranchOut({required this.id, required this.name});
 
   final String id;
   final String name;
@@ -373,7 +393,8 @@ class BranchOut {
   factory BranchOut.fromJson(Map<String, dynamic> json) {
     return BranchOut(
       id: json['id'].toString(),
-      name: (json['name'] as String?) ??
+      name:
+          (json['name'] as String?) ??
           (json['branch_name'] as String?) ??
           json['id'].toString(),
     );
@@ -384,14 +405,8 @@ class BranchOut {
 Map<String, dynamic> simpleTextFormSchema({
   String fieldId = 'notes',
   String label = 'Notes',
-}) =>
-    {
-      'fields': [
-        {
-          'id': fieldId,
-          'type': 'textarea',
-          'label': label,
-          'required': false,
-        },
-      ],
-    };
+}) => {
+  'fields': [
+    {'id': fieldId, 'type': 'textarea', 'label': label, 'required': false},
+  ],
+};
