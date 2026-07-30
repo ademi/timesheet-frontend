@@ -25,8 +25,10 @@ class RecurrenceRuleFormController extends GetxController {
   String get rrule =>
       compileRecurrenceRrule(frequency: frequency.value, weekdays: weekdays);
 
-  List<DateTime> get preview {
-    final result = <DateTime>[];
+  List<RecurrencePreviewWindow> get preview {
+    // The session currently exposes no tenant timezone. Keep this preview in
+    // device-local wall time; the backend expands saved rules in tenant time.
+    final result = <RecurrencePreviewWindow>[];
     var date = DateTime(
       startDate.value.year,
       startDate.value.month,
@@ -43,14 +45,10 @@ class RecurrenceRuleFormController extends GetxController {
           date.day == startDate.value.day;
       if (!date.isBefore(startDate.value) && matches && fortnight && monthly) {
         for (final window in windows) {
-          final parts = window.startTime.split(':');
           result.add(
-            DateTime(
-              date.year,
-              date.month,
-              date.day,
-              int.parse(parts[0]),
-              int.parse(parts[1]),
+            RecurrencePreviewWindow(
+              date: DateTime(date.year, date.month, date.day),
+              window: window,
             ),
           );
           if (result.length == 5) break;
@@ -140,4 +138,11 @@ class RecurrenceRuleFormController extends GetxController {
     taskTitlesCtrl.dispose();
     super.onClose();
   }
+}
+
+class RecurrencePreviewWindow {
+  const RecurrencePreviewWindow({required this.date, required this.window});
+
+  final DateTime date;
+  final TimeWindow window;
 }

@@ -125,10 +125,13 @@ class RecurrenceRuleFormView extends StatelessWidget {
             ],
             const Divider(height: 32),
             Text('Preview', style: Get.textTheme.titleMedium),
-            for (final occurrence in c.preview)
+            const Text(
+              'Times use your device timezone while tenant timezone is unavailable.',
+            ),
+            for (final preview in c.preview)
               Text(
-                '${MaterialLocalizations.of(context).formatMediumDate(occurrence)}'
-                ' · ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(occurrence))}',
+                '${MaterialLocalizations.of(context).formatMediumDate(preview.date)}, '
+                '${preview.window.startTime}–${preview.window.endTime}',
               ),
             const SizedBox(height: 16),
             ElevatedButton(
