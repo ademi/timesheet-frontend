@@ -34,6 +34,10 @@ abstract final class ApiPaths {
   static const contractorMeAvailability = '$_v1/contractor-me/availability';
   static const contractorMeLeave = '$_v1/contractor-me/leave';
   static String contractorMeLeaveItem(String id) => '$contractorMeLeave/$id';
+  static const contractorMeSharingAccessRequests =
+      '$_v1/contractor-me/sharing-access-requests';
+  static String contractorMeSharingAccessRequestApprove(String id) =>
+      '$contractorMeSharingAccessRequests/$id/approve';
 
   // Engagements
   static const tenantEngagements = '$_v1/tenants/current/engagements';

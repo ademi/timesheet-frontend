@@ -180,6 +180,39 @@ class ComplianceOpsRemoteDataSource {
     }
   }
 
+  Future<List<SharingAccessRequestOut>> listSharingAccessRequests({
+    String? status,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiPaths.contractorMeSharingAccessRequests,
+        queryParameters: {
+          if (status != null) 'status': status,
+        },
+      );
+      return _parseList(response.data, SharingAccessRequestOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<SharingAccessRequestOut> approveSharingAccessRequest(
+    String requestId,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.contractorMeSharingAccessRequestApprove(requestId),
+      );
+      return _require(
+        response.data,
+        SharingAccessRequestOut.fromJson,
+        'approve sharing access request',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   List<T> _parseList<T>(
     dynamic data,
     T Function(Map<String, dynamic>) fromJson,

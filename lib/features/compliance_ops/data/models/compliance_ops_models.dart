@@ -267,3 +267,66 @@ class TenantMemberOut {
     );
   }
 }
+
+class SharingAccessRequestOut {
+  const SharingAccessRequestOut({
+    required this.id,
+    required this.tenantId,
+    required this.engagementId,
+    required this.contractorId,
+    required this.requestedByUserId,
+    required this.status,
+    required this.credentialTypes,
+    required this.allowSourceEvidence,
+    required this.createdAt,
+    this.resolvedAt,
+  });
+
+  final String id;
+  final String tenantId;
+  final String engagementId;
+  final String contractorId;
+  final String requestedByUserId;
+  final String status;
+  final List<String> credentialTypes;
+  final bool allowSourceEvidence;
+  final DateTime createdAt;
+  final DateTime? resolvedAt;
+
+  factory SharingAccessRequestOut.fromJson(Map<String, dynamic> json) {
+    final types = json['credential_types'];
+    return SharingAccessRequestOut(
+      id: json['id'].toString(),
+      tenantId: json['tenant_id'].toString(),
+      engagementId: json['engagement_id'].toString(),
+      contractorId: json['contractor_id'].toString(),
+      requestedByUserId: json['requested_by_user_id'].toString(),
+      status: json['status'] as String? ?? 'pending',
+      credentialTypes:
+          types is List
+              ? types.map((e) => e.toString()).toList(growable: false)
+              : const [],
+      allowSourceEvidence: json['allow_source_evidence'] as bool? ?? true,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      resolvedAt:
+          json['resolved_at'] != null
+              ? DateTime.tryParse(json['resolved_at'].toString())
+              : null,
+    );
+  }
+
+  SharingAccessRequestOut copyWith({String? status, DateTime? resolvedAt}) {
+    return SharingAccessRequestOut(
+      id: id,
+      tenantId: tenantId,
+      engagementId: engagementId,
+      contractorId: contractorId,
+      requestedByUserId: requestedByUserId,
+      status: status ?? this.status,
+      credentialTypes: credentialTypes,
+      allowSourceEvidence: allowSourceEvidence,
+      createdAt: createdAt,
+      resolvedAt: resolvedAt ?? this.resolvedAt,
+    );
+  }
+}

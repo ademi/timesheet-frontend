@@ -48,4 +48,14 @@ class ComplianceOpsRepository {
     String? notes,
   }) =>
       _remote.withdrawConsent(credentialType: credentialType, notes: notes);
+
+  Future<List<SharingAccessRequestOut>> listSharingAccessRequests({
+    String? status,
+  }) =>
+      _remote.listSharingAccessRequests(status: status);
+
+  Future<SharingAccessRequestOut> approveSharingAccessRequest(
+    String requestId,
+  ) =>
+      _remote.approveSharingAccessRequest(requestId);
 }

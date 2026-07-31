@@ -35,6 +35,9 @@ void main() {
     when(
       () => repository.listNotificationEvents(limit: 20),
     ).thenAnswer((_) async => []);
+    when(
+      () => repository.listSharingAccessRequests(status: 'pending'),
+    ).thenAnswer((_) async => []);
   });
 
   tearDown(Get.reset);
