@@ -28,4 +28,12 @@ class EngagementsRepository {
   Future<EngagementOut> suspend(String id) => _remote.suspend(id);
   Future<EngagementOut> resume(String id) => _remote.resume(id);
   Future<EngagementOut> end(String id) => _remote.end(id);
+
+  Future<void> createSharingAccessRequest({
+    required String engagementId,
+    bool allowSourceEvidence = true,
+  }) => _remote.createSharingAccessRequest(
+    engagementId: engagementId,
+    allowSourceEvidence: allowSourceEvidence,
+  );
 }

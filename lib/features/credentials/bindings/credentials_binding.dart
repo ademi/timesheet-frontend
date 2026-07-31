@@ -7,6 +7,8 @@ import '../../contractor_onboarding/data/datasources/compliance_remote_datasourc
 import '../../contractor_onboarding/data/repositories/compliance_repository.dart';
 import '../../documents/data/datasources/documents_remote_datasource.dart';
 import '../../documents/data/document_pipeline.dart';
+import '../../engagements/data/datasources/engagements_remote_datasource.dart';
+import '../../engagements/data/repositories/engagements_repository.dart';
 import '../controllers/credentials_controller.dart';
 import '../controllers/staff_credential_review_controller.dart';
 import '../data/datasources/credentials_remote_datasource.dart';
@@ -99,9 +101,26 @@ class StaffCredentialReviewBinding extends Bindings {
   @override
   void dependencies() {
     CredentialsBinding.ensureDependencies();
+    if (!Get.isRegistered<EngagementsRemoteDataSource>()) {
+      Get.lazyPut<EngagementsRemoteDataSource>(
+        () => EngagementsRemoteDataSource(
+          authenticatedDio: Get.find<ApiClient>().dio,
+        ),
+        fenix: true,
+      );
+    }
+    if (!Get.isRegistered<EngagementsRepository>()) {
+      Get.lazyPut<EngagementsRepository>(
+        () => EngagementsRepository(
+          remote: Get.find<EngagementsRemoteDataSource>(),
+        ),
+        fenix: true,
+      );
+    }
     Get.lazyPut<StaffCredentialReviewController>(
       () => StaffCredentialReviewController(
         repository: Get.find<CredentialsRepository>(),
+        engagementsRepository: Get.find<EngagementsRepository>(),
         session: Get.find<SessionService>(),
         documentPipeline: Get.find<DocumentPipeline>(),
       ),

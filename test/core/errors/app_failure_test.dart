@@ -173,6 +173,27 @@ void main() {
       );
     });
 
+    test('maps sharing_grant_required from 403 detail string', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(
+            path: '/tenants/current/contractors/c1/credentials',
+          ),
+          response: Response(
+            requestOptions: RequestOptions(
+              path: '/tenants/current/contractors/c1/credentials',
+            ),
+            statusCode: 403,
+            data: {'detail': 'sharing_grant_required'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      expect(failure.code, 'sharing_grant_required');
+      expect(failure.isSharingGrantRequired, isTrue);
+    });
+
     test('parses eligibility reasons', () {
       final failure = AppFailure.fromDio(
         DioException(

@@ -33,6 +33,8 @@ class AppFailure implements Exception {
 
   bool get isEligibilityIncomplete => code == 'eligibility_incomplete';
 
+  bool get isSharingGrantRequired => code == 'sharing_grant_required';
+
   @override
   String toString() => message;
 
@@ -138,6 +140,7 @@ class AppFailure implements Exception {
       'invalid_category',
       'sharing_authorisation_required',
       'sharing_authorisation_forbidden',
+      'sharing_grant_required',
       'invalid_transition',
       'hard_split_violation',
       'leave_in_past',
@@ -184,6 +187,8 @@ class AppFailure implements Exception {
       case 'evidence_required':
         return AppFailurePresentation.inline;
       case 'proxy_required':
+        return AppFailurePresentation.inline;
+      case 'sharing_grant_required':
         return AppFailurePresentation.inline;
       case 'rate_limited':
         return AppFailurePresentation.toast;
@@ -235,6 +240,8 @@ class AppFailure implements Exception {
       case 'sharing_authorisation_required':
       case 'sharing_authorisation_forbidden':
         return 'Could not record sharing authorisation. Try again or contact support.';
+      case 'sharing_grant_required':
+        return 'This contractor has not shared credentials with your organisation yet.';
       case 'invalid_transition':
         return 'This engagement can’t move to that status from here.';
       case 'counsel_pending':

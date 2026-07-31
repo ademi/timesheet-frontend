@@ -79,6 +79,21 @@ class EngagementsRemoteDataSource {
   Future<EngagementOut> end(String engagementId) =>
       _lifecycle(ApiPaths.engagementEnd(engagementId), 'end');
 
+  /// Staff: request contractor credential share for an engagement.
+  Future<void> createSharingAccessRequest({
+    required String engagementId,
+    bool allowSourceEvidence = true,
+  }) async {
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        ApiPaths.engagementSharingAccessRequests(engagementId),
+        data: {'allow_source_evidence': allowSourceEvidence},
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<EngagementOut> _lifecycle(String path, String action) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(path);

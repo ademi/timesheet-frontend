@@ -93,6 +93,8 @@ class StaffCredentialReviewView
             const SizedBox(height: 16),
             if (controller.isLoading.value)
               const Center(child: CircularProgressIndicator())
+            else if (controller.needsShareRequest.value)
+              _ShareRequestEmptyState(controller: controller)
             else if (controller.items.isEmpty)
               const Text('No credentials loaded.')
             else
@@ -100,6 +102,45 @@ class StaffCredentialReviewView
           ],
         );
       }),
+    );
+  }
+}
+
+class _ShareRequestEmptyState extends StatelessWidget {
+  const _ShareRequestEmptyState({required this.controller});
+
+  final StaffCredentialReviewController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'This contractor has not shared credentials with your organisation yet.',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
+        const SizedBox(height: 12),
+        ElevatedButton(
+          onPressed:
+              controller.isRequestingShare.value ||
+                      !controller.hasReviewContext
+                  ? null
+                  : () => controller.requestAccess(),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.onPrimary,
+          ),
+          child:
+              controller.isRequestingShare.value
+                  ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Text('Request access'),
+        ),
+      ],
     );
   }
 }

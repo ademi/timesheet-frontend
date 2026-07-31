@@ -8,6 +8,7 @@ import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../documents/data/evidence_document_opener.dart';
 import '../../documents/data/document_pipeline.dart';
+import '../../engagements/data/repositories/engagements_repository.dart';
 import '../data/evidence_documents.dart';
 import '../data/models/credential_models.dart';
 import '../data/repositories/credentials_repository.dart';
@@ -19,20 +20,41 @@ import '../data/repositories/credentials_repository.dart';
 class StaffCredentialReviewController extends GetxController {
   StaffCredentialReviewController({
     required CredentialsRepository repository,
+    required EngagementsRepository engagementsRepository,
     required SessionService session,
     required DocumentPipeline documentPipeline,
     EvidenceDocumentOpener? evidenceDocumentOpener,
+    String? contractorId,
+    String? engagementId,
+    void Function(String title, String message)? showSnack,
   }) : _repository = repository,
+       _engagementsRepository = engagementsRepository,
        _session = session,
        _pipeline = documentPipeline,
        _evidenceDocumentOpener =
            evidenceDocumentOpener ??
-           EvidenceDocumentOpener(documentPipeline: documentPipeline);
+           EvidenceDocumentOpener(documentPipeline: documentPipeline),
+       _contractorId = contractorId,
+       _engagementId = engagementId,
+       _showSnack = showSnack ?? _defaultSnack;
 
   final CredentialsRepository _repository;
+  final EngagementsRepository _engagementsRepository;
   final SessionService _session;
   final DocumentPipeline _pipeline;
   final EvidenceDocumentOpener _evidenceDocumentOpener;
+  final void Function(String title, String message) _showSnack;
+
+  static void _defaultSnack(String title, String message) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(16),
+      backgroundColor: AppColors.primary,
+      colorText: AppColors.onPrimary,
+    );
+  }
 
   final reasonCtrl = TextEditingController();
   String? _contractorId;
@@ -41,6 +63,8 @@ class StaffCredentialReviewController extends GetxController {
   final items = <CredentialOut>[].obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
+  final isRequestingShare = false.obs;
+  final needsShareRequest = false.obs;
   final errorMessage = RxnString();
   final eligibilityReasons = <String>[].obs;
   final mfaRequired = false.obs;
@@ -61,14 +85,12 @@ class StaffCredentialReviewController extends GetxController {
     super.onInit();
     final params = Get.parameters;
     final args = Get.arguments;
-    String? contractorId = params['contractorId'];
-    String? engagementId = params['engagementId'];
+    _contractorId ??= params['contractorId'];
+    _engagementId ??= params['engagementId'];
     if (args is Map) {
-      contractorId ??= args['contractorId']?.toString();
-      engagementId ??= args['engagementId']?.toString();
+      _contractorId ??= args['contractorId']?.toString();
+      _engagementId ??= args['engagementId']?.toString();
     }
-    _contractorId = contractorId;
-    _engagementId = engagementId;
     if (_contractorId != null) {
       load();
     }
@@ -92,6 +114,7 @@ class StaffCredentialReviewController extends GetxController {
     }
     isLoading.value = true;
     errorMessage.value = null;
+    needsShareRequest.value = false;
     eligibilityReasons.clear();
     try {
       final list = await _repository.listForTenantContractor(contractorId);
@@ -106,14 +129,49 @@ class StaffCredentialReviewController extends GetxController {
           ),
       };
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-      if (e.isEligibilityIncomplete) {
-        eligibilityReasons.assignAll(e.eligibilityReasons);
+      items.clear();
+      evidenceByCredentialId.clear();
+      if (e.isSharingGrantRequired) {
+        needsShareRequest.value = true;
+        errorMessage.value = null;
+      } else {
+        errorMessage.value = e.message;
+        if (e.isEligibilityIncomplete) {
+          eligibilityReasons.assignAll(e.eligibilityReasons);
+        }
       }
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<bool> requestAccess() async {
+    final engagementId = _engagementId;
+    if (engagementId == null) {
+      errorMessage.value = 'Open credential review from Workforce.';
+      return false;
+    }
+    isRequestingShare.value = true;
+    errorMessage.value = null;
+    try {
+      await _engagementsRepository.createSharingAccessRequest(
+        engagementId: engagementId,
+      );
+      _showSnack(
+        'Request sent',
+        'Request sent. Waiting for contractor approval.',
+      );
+      return true;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      return false;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isRequestingShare.value = false;
     }
   }
 
@@ -159,14 +217,7 @@ class StaffCredentialReviewController extends GetxController {
               reasonCtrl.text.trim().isEmpty ? null : reasonCtrl.text.trim(),
         ),
       );
-      Get.snackbar(
-        'Review recorded',
-        'Decision: $decision',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
-      );
+      _showSnack('Review recorded', 'Decision: $decision');
       await load();
     } on AppFailure catch (e) {
       if (e.code == 'mfa_required') {

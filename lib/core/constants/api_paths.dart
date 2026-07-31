@@ -50,6 +50,8 @@ abstract final class ApiPaths {
   static String engagementEnd(String id) => '${engagement(id)}/end';
   static String engagementCredentialReviews(String id) =>
       '${engagement(id)}/credential-reviews';
+  static String engagementSharingAccessRequests(String engagementId) =>
+      '$tenantEngagements/$engagementId/sharing-access-requests';
 
   // Compliance
   static const legalDocumentsCurrent =
