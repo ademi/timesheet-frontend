@@ -6,6 +6,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/markdown_viewer.dart';
+import '../../credentials/bindings/credentials_binding.dart';
 import '../../credentials/controllers/credentials_controller.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../engagements/views/engagement_accept_panel.dart';
@@ -380,6 +381,7 @@ class _CredentialsStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    CredentialsBinding.ensure(permanent: true);
     if (!Get.isRegistered<CredentialsController>()) {
       return const _StubStep(
         title: 'Required credentials',

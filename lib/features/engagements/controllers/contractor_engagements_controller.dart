@@ -109,7 +109,9 @@ class ContractorEngagementsController extends GetxController {
       if (idx >= 0) {
         items[idx] = updated;
       } else {
-        await load();
+        // The accept response is the authoritative updated entity. Retain it
+        // instead of issuing another tenant-scoped engagements list request.
+        items.add(updated);
       }
 
       await _session.switchTenant(updated.tenantId);

@@ -2,9 +2,7 @@ import 'package:get/get.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/services/token_storage.dart';
-import '../../credentials/bindings/credentials_binding.dart';
 import '../../credentials/controllers/credentials_controller.dart';
-import '../../engagements/bindings/engagements_binding.dart';
 import '../../engagements/controllers/contractor_engagements_controller.dart';
 import '../controllers/onboarding_controller.dart';
 import '../data/datasources/compliance_remote_datasource.dart';
@@ -24,10 +22,7 @@ class OnboardingBinding extends Bindings {
       Get.put<TokenStorage>(TokenStorage(), permanent: true);
     }
     if (!Get.isRegistered<ApiClient>()) {
-      Get.put<ApiClient>(
-        ApiClient(Get.find<TokenStorage>()),
-        permanent: true,
-      );
+      Get.put<ApiClient>(ApiClient(Get.find<TokenStorage>()), permanent: true);
     }
     if (!Get.isRegistered<ComplianceRemoteDataSource>()) {
       Get.lazyPut<ComplianceRemoteDataSource>(
@@ -47,15 +42,10 @@ class OnboardingBinding extends Bindings {
     }
     if (!Get.isRegistered<OnboardingController>()) {
       Get.put<OnboardingController>(
-        OnboardingController(
-          repository: Get.find<ComplianceRepository>(),
-        ),
+        OnboardingController(repository: Get.find<ComplianceRepository>()),
         permanent: true,
       );
     }
-    // Engagement accept (S4) + credentials (S3) — permanent for step replaces.
-    ContractorEngagementsBinding.ensure(permanent: true);
-    CredentialsBinding.ensure(permanent: true);
   }
 
   /// Drop permanent funnel controllers (finish / logout).

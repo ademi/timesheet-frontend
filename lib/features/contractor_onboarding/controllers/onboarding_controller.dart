@@ -49,6 +49,10 @@ class OnboardingController extends GetxController with PendingActionMixin {
   final _idempotencyKeys = <String, String>{};
   String? _restoredContractorId;
   var _platformProgressComplete = false;
+  Future<void>? _legalLoad;
+  Future<void>? _noticesLoad;
+  String? _legalLoadedForContractor;
+  String? _noticesLoadedForContractor;
 
   OnboardingStep get currentStep =>
       OnboardingStep.values[stepIndex.value.clamp(
@@ -107,7 +111,21 @@ class OnboardingController extends GetxController with PendingActionMixin {
         _progressStore.load(contractorId).platformComplete;
   }
 
-  Future<void> loadLegal() async {
+  Future<void> loadLegal({bool refresh = false}) async {
+    if (!refresh && _legalLoadedForContractor == _contractorId) return;
+    final inFlight = _legalLoad;
+    if (inFlight != null) return inFlight;
+
+    final request = _loadLegal();
+    _legalLoad = request;
+    try {
+      await request;
+    } finally {
+      if (identical(_legalLoad, request)) _legalLoad = null;
+    }
+  }
+
+  Future<void> _loadLegal() async {
     isLoading.value = true;
     errorMessage.value = null;
     legalDocs.clear();
@@ -122,6 +140,7 @@ class OnboardingController extends GetxController with PendingActionMixin {
         }
         await _recordPresentedDoc(doc);
       }
+      _legalLoadedForContractor = _contractorId;
     } on AppFailure catch (e) {
       errorMessage.value =
           e.code == 'counsel_pending_policy' ||
@@ -135,7 +154,21 @@ class OnboardingController extends GetxController with PendingActionMixin {
     }
   }
 
-  Future<void> loadNotices() async {
+  Future<void> loadNotices({bool refresh = false}) async {
+    if (!refresh && _noticesLoadedForContractor == _contractorId) return;
+    final inFlight = _noticesLoad;
+    if (inFlight != null) return inFlight;
+
+    final request = _loadNotices();
+    _noticesLoad = request;
+    try {
+      await request;
+    } finally {
+      if (identical(_noticesLoad, request)) _noticesLoad = null;
+    }
+  }
+
+  Future<void> _loadNotices() async {
     isLoading.value = true;
     errorMessage.value = null;
     try {
@@ -152,6 +185,7 @@ class OnboardingController extends GetxController with PendingActionMixin {
         }
         await _recordPresentedNotice(n);
       }
+      _noticesLoadedForContractor = _contractorId;
     } on AppFailure catch (e) {
       errorMessage.value =
           e.code == 'counsel_pending_policy'

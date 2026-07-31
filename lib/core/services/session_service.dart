@@ -41,6 +41,7 @@ class SessionService extends GetxController {
   final needsOnboarding = false.obs;
   final needsPlatformCompliance = false.obs;
   final needsEngagementWork = false.obs;
+  Future<void>? _hydratingMeContext;
 
   JwtClaims? get claims => _tokenStorage.jwtClaims;
 
@@ -136,6 +137,21 @@ class SessionService extends GetxController {
   Future<void> hydrateFromMeContext() async {
     if (!FeatureFlags.domainV2) return;
     if (_tokenStorage.accessToken == null) return;
+    final inFlight = _hydratingMeContext;
+    if (inFlight != null) return inFlight;
+
+    final request = _hydrateMeContext();
+    _hydratingMeContext = request;
+    try {
+      await request;
+    } finally {
+      if (identical(_hydratingMeContext, request)) {
+        _hydratingMeContext = null;
+      }
+    }
+  }
+
+  Future<void> _hydrateMeContext() async {
     isHydrating.value = true;
     try {
       final ctx = await _authRepository.getMeContext();

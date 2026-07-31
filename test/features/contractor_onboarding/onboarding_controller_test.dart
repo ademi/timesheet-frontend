@@ -174,4 +174,22 @@ void main() {
     expect(controller.errorMessage.value, isNull);
     expect(controller.currentStep, OnboardingStep.engagement);
   });
+
+  test('reuses loaded notices until explicitly refreshed', () async {
+    final repository = _MockComplianceRepository();
+    final controller = OnboardingController(
+      repository: repository,
+      progressStore: progressStore,
+    );
+    when(
+      () => repository.listCollectionNotices(jurisdiction: 'AU'),
+    ).thenAnswer((_) async => const []);
+
+    await controller.loadNotices();
+    await controller.loadNotices();
+
+    verify(
+      () => repository.listCollectionNotices(jurisdiction: 'AU'),
+    ).called(1);
+  });
 }

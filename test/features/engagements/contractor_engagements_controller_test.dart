@@ -95,6 +95,7 @@ void main() {
     );
     controller.beginAccept(engagement);
     controller.understoodWithdrawEffects.value = true;
+    controller.items.add(engagement);
     when(
       () => compliance.createLegalEvent(
         any(),
@@ -127,5 +128,66 @@ void main() {
     expect(accepted, isTrue);
     verify(() => session.switchTenant('tenant-1')).called(1);
     expect(events, ['switch:tenant-1', 'navigate:${AppRoutes.contractorHome}']);
+  });
+
+  test('keeps the returned engagement without reloading the list', () async {
+    final repository = _MockEngagementsRepository();
+    final compliance = _MockComplianceRepository();
+    final session = _MockSessionService();
+    final invited = EngagementOut(
+      id: 'engagement-1',
+      tenantId: 'tenant-1',
+      contractorId: 'contractor-1',
+      status: 'invited',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+    final acceptedEngagement = EngagementOut(
+      id: invited.id,
+      tenantId: invited.tenantId,
+      contractorId: invited.contractorId,
+      status: 'pending_docs',
+      createdAt: invited.createdAt,
+      updatedAt: DateTime(2026, 1, 2),
+    );
+    final controller = ContractorEngagementsController(
+      repository: repository,
+      complianceRepository: compliance,
+      session: session,
+      onNavigateHome: (_) {},
+    );
+    controller.beginAccept(invited);
+    controller.understoodWithdrawEffects.value = true;
+    when(
+      () => compliance.createLegalEvent(
+        any(),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    ).thenAnswer(
+      (_) async => LegalEventResult(
+        id: 'legal-event-1',
+        eventType: 'consented',
+        createdAt: DateTime(2026),
+      ),
+    );
+    when(
+      () => repository.accept(
+        engagementId: any(named: 'engagementId'),
+        body: any(named: 'body'),
+      ),
+    ).thenAnswer((_) async => acceptedEngagement);
+    when(() => session.switchTenant('tenant-1')).thenAnswer(
+      (_) async => const AuthTokenModel(
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        tokenType: 'bearer',
+      ),
+    );
+
+    final accepted = await controller.confirmAccept();
+
+    expect(accepted, isTrue);
+    expect(controller.items, [acceptedEngagement]);
+    verifyNever(() => repository.listMyEngagements());
   });
 }

@@ -347,6 +347,31 @@ void main() {
       expect(session.tenantMemberId.value, 'tm1');
       verify(() => authRepository.getMeContext()).called(1);
     });
+
+    test('shares an in-flight me/context request', () async {
+      tokenStorage.claims = const JwtClaims(
+        sub: 'u1',
+        tenantId: 't1',
+        permissions: ['auth.session'],
+        actorType: 'tenant_member',
+        iat: 1,
+        exp: 2,
+      );
+      when(() => authRepository.getMeContext()).thenAnswer(
+        (_) async => const MeContextModel(
+          actorType: 'tenant_member',
+          tenantId: 't1',
+          tenantMemberId: 'tm1',
+        ),
+      );
+
+      await Future.wait([
+        session.hydrateFromMeContext(),
+        session.hydrateFromMeContext(),
+      ]);
+
+      verify(() => authRepository.getMeContext()).called(1);
+    });
   });
 
   test('applyAuthTokens stores engagement selection', () async {
