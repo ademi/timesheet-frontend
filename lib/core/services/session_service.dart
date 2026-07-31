@@ -42,6 +42,7 @@ class SessionService extends GetxController {
   final needsPlatformCompliance = false.obs;
   final needsEngagementWork = false.obs;
   Future<void>? _hydratingMeContext;
+  int _meContextGeneration = 0;
 
   JwtClaims? get claims => _tokenStorage.jwtClaims;
 
@@ -100,6 +101,10 @@ class SessionService extends GetxController {
 
   /// Apply login / refresh / switch-tenant body into session + storage.
   Future<void> applyAuthTokens(AuthTokenModel tokens) async {
+    // A response started under the previous tenant must neither be shared with
+    // nor overwrite the context refresh that follows this token change.
+    _meContextGeneration++;
+    _hydratingMeContext = null;
     actorType.value = tokens.actorType ?? claims?.actorType;
     engagements.assignAll(tokens.engagements);
     mustChangePassword.value =
@@ -140,7 +145,7 @@ class SessionService extends GetxController {
     final inFlight = _hydratingMeContext;
     if (inFlight != null) return inFlight;
 
-    final request = _hydrateMeContext();
+    final request = _hydrateMeContext(_meContextGeneration);
     _hydratingMeContext = request;
     try {
       await request;
@@ -151,12 +156,15 @@ class SessionService extends GetxController {
     }
   }
 
-  Future<void> _hydrateMeContext() async {
+  Future<void> _hydrateMeContext(int generation) async {
     isHydrating.value = true;
     try {
       final ctx = await _authRepository.getMeContext();
-      applyMeContext(ctx);
+      if (generation == _meContextGeneration) {
+        applyMeContext(ctx);
+      }
     } catch (_) {
+      if (generation != _meContextGeneration) return;
       actorType.value ??= claims?.actorType;
       selectedTenantId.value ??= claims?.tenantId;
       tenantId.value ??= claims?.tenantId;
@@ -164,7 +172,9 @@ class SessionService extends GetxController {
       tenantMemberId.value ??= claims?.tenantMemberId;
       _recomputeOnboarding();
     } finally {
-      isHydrating.value = false;
+      if (generation == _meContextGeneration) {
+        isHydrating.value = false;
+      }
     }
   }
 
@@ -207,6 +217,10 @@ class SessionService extends GetxController {
 
   Future<AuthTokenModel> switchTenant(String nextTenantId) async {
     final tokens = await _authRepository.switchTenant(nextTenantId);
+    // Invalidate any in-flight me/context from the previous tenant so hydrate
+    // after switch cannot reuse a stale single-flight future.
+    _meContextGeneration += 1;
+    _hydratingMeContext = null;
     await applyAuthTokens(tokens);
     await hydrateFromMeContext();
     return tokens;
