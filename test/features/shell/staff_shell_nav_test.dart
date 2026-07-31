@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -93,5 +94,29 @@ void main() {
     expect(labels, contains('Home'));
     expect(labels, contains('Settings'));
     expect(labels, isNot(contains('Workforce')));
+  });
+
+  testWidgets('phone width shows NavigationBar with Workforce when perms present', (
+    tester,
+  ) async {
+    tokenStorage.claims = const JwtClaims(
+      sub: 'u1',
+      tenantId: 't1',
+      permissions: ['auth.session', 'contractors.read', 'jobs.read'],
+      actorType: 'tenant_member',
+      iat: 1,
+      exp: 2,
+    );
+
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      GetMaterialApp(home: StaffShell(child: const SizedBox())),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.text('Workforce'), findsOneWidget);
   });
 }

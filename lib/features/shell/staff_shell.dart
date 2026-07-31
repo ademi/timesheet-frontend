@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 
 import '../../app/constants/app_permissions.dart';
 import '../../app/routes/app_routes.dart';
+import '../../app/themes/app_colors.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
+import '../../core/responsive/breakpoints.dart';
 import '../../core/services/session_service.dart';
 import '../../shared/widgets/closed_beta_banner.dart';
 
@@ -125,14 +127,58 @@ class StaffShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final body = _shellBody(child);
-    final destinations = StaffShellNav.destinations();
-    if (destinations.isEmpty) return body;
-    return ResponsiveScaffold(
-      destinations: destinations,
-      selectedIndex: StaffShellNav.selectedIndex(Get.currentRoute),
-      onDestinationSelected: StaffShellNav.navigateTo,
-      child: body,
-    );
+    return Obx(() {
+      if (Get.isRegistered<SessionService>()) {
+        final session = Get.find<SessionService>();
+        session.isHydrating.value;
+        session.tenantId.value;
+      }
+
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final destinations = StaffShellNav.destinations();
+          final index = StaffShellNav.selectedIndex(Get.currentRoute);
+          final wide = constraints.maxWidth >= Breakpoints.tablet;
+
+          if (destinations.isEmpty) {
+            return Column(
+              children: [
+                const MaterialBanner(
+                  content: Text(
+                    'Permissions still loading — refresh or sign in again.',
+                  ),
+                  actions: [SizedBox.shrink()],
+                ),
+                Expanded(child: body),
+              ],
+            );
+          }
+
+          if (wide) {
+            return ResponsiveScaffold(
+              destinations: destinations,
+              selectedIndex: index,
+              onDestinationSelected: StaffShellNav.navigateTo,
+              child: body,
+            );
+          }
+
+          return Scaffold(
+            body: body,
+            bottomNavigationBar: NavigationBar(
+              selectedIndex: index.clamp(0, destinations.length - 1),
+              onDestinationSelected: StaffShellNav.navigateTo,
+              backgroundColor: AppColors.cardBackground,
+              indicatorColor: AppColors.primary.withValues(alpha: 0.18),
+              destinations: [
+                for (final d in destinations)
+                  NavigationDestination(icon: Icon(d.icon), label: d.label),
+              ],
+            ),
+          );
+        },
+      );
+    });
   }
 }
 
