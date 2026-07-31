@@ -4,10 +4,10 @@ import 'controllers/onboarding_controller.dart';
 abstract final class OnboardingRouting {
   static String entryRoute({
     required bool needsPlatformCompliance,
-    required bool needsEngagementWork,
+    required bool needsInviteAccept,
   }) {
     if (needsPlatformCompliance) return AppRoutes.contractorOnboardingLegal;
-    if (needsEngagementWork) return AppRoutes.contractorOnboardingEngagement;
+    if (needsInviteAccept) return AppRoutes.contractorOnboardingEngagement;
     return AppRoutes.contractorOnboarding;
   }
 

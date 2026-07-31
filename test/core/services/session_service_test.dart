@@ -239,11 +239,47 @@ void main() {
           ),
         );
         expect(session.needsPlatformCompliance.value, isFalse);
+        expect(session.needsInviteAccept, isTrue);
         expect(session.needsEngagementWork.value, isTrue);
         expect(
           session.resolvePostLoginRoute(),
           AppRoutes.contractorOnboardingEngagement,
         );
+      },
+    );
+
+    test(
+      'pending_docs does not set needsOnboarding when platform complete',
+      () async {
+        await progressStore.markPlatformComplete('c1');
+        tokenStorage.claims = const JwtClaims(
+          sub: 'u2',
+          tenantId: 't1',
+          permissions: ['auth.session'],
+          actorType: 'contractor',
+          iat: 1,
+          exp: 2,
+          contractorId: 'c1',
+        );
+        session.applyMeContext(
+          const MeContextModel(
+            actorType: 'contractor',
+            tenantId: 't1',
+            contractorId: 'c1',
+            engagements: [
+              EngagementSummaryModel(
+                id: 'e1',
+                tenantId: 't1',
+                tenantName: 'Acme',
+                status: 'pending_docs',
+              ),
+            ],
+          ),
+        );
+        expect(session.needsPlatformCompliance.value, isFalse);
+        expect(session.needsInviteAccept, isFalse);
+        expect(session.needsOnboarding.value, isFalse);
+        expect(session.needsDocsAttention, isTrue);
       },
     );
 

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:rostiq/app/data/models/auth/engagement_summary_model.dart';
 import 'package:rostiq/app/data/repositories/auth_repository.dart';
 import 'package:rostiq/core/auth/jwt_claims.dart';
 import 'package:rostiq/core/services/session_service.dart';
@@ -56,17 +57,30 @@ void main() {
       authRepository: _MockAuthRepository(),
       onboardingProgressStore: progressStore,
     );
+    sessionService.actorType.value = 'contractor';
     sessionService.contractorId.value = 'contractor-a';
-    sessionService.needsEngagementWork.value = true;
     Get.put<SessionService>(sessionService);
   });
 
   tearDown(Get.reset);
 
+  void setEngagementStatus(String status) {
+    sessionService.engagements.assignAll([
+      EngagementSummaryModel(
+        id: 'e1',
+        tenantId: 't1',
+        tenantName: 'Acme',
+        status: status,
+      ),
+    ]);
+    sessionService.refreshOnboardingFlags();
+  }
+
   test(
-    'resolves engagement when restored platform progress is complete',
+    'resolves engagement when platform complete and invite still open',
     () async {
       await progressStore.markPlatformComplete('contractor-a');
+      setEngagementStatus('invited');
       final controller = OnboardingController(
         repository: _MockComplianceRepository(),
         progressStore: progressStore,
@@ -76,6 +90,56 @@ void main() {
         controller.resolveFirstIncompleteStep(),
         OnboardingStep.engagement,
       );
+    },
+  );
+
+  test(
+    'does not resolve funnel step when platform complete and status is pending_docs',
+    () async {
+      await progressStore.markPlatformComplete('contractor-a');
+      setEngagementStatus('pending_docs');
+      final controller = OnboardingController(
+        repository: _MockComplianceRepository(),
+        progressStore: progressStore,
+      );
+
+      expect(controller.resolveFirstIncompleteStep(), isNull);
+    },
+  );
+
+  test(
+    'completeFunnel exits to home when accepted (pending_docs), not engagement',
+    () async {
+      await progressStore.markPlatformComplete('contractor-a');
+      setEngagementStatus('pending_docs');
+      final controller = OnboardingController(
+        repository: _MockComplianceRepository(),
+        progressStore: progressStore,
+      );
+      controller.stepIndex.value = OnboardingStep.credentials.index;
+
+      await controller.completeFunnel();
+
+      // Must not bounce back to accept; GetX test mode may leave currentRoute empty.
+      expect(controller.currentStep, isNot(OnboardingStep.engagement));
+      expect(progressStore.isPlatformComplete('contractor-a'), isTrue);
+    },
+  );
+
+  test(
+    'completeFunnel returns to engagement when an invite is still open',
+    () async {
+      await progressStore.markPlatformComplete('contractor-a');
+      setEngagementStatus('invited');
+      final controller = OnboardingController(
+        repository: _MockComplianceRepository(),
+        progressStore: progressStore,
+      );
+      controller.stepIndex.value = OnboardingStep.credentials.index;
+
+      await controller.completeFunnel();
+
+      expect(controller.currentStep, OnboardingStep.engagement);
     },
   );
 

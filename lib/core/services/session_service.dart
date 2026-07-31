@@ -68,6 +68,13 @@ class SessionService extends GetxController {
     return s == 'pending_docs' || s == 'invited' || s == 'approved';
   }
 
+  /// True when at least one engagement still needs contractor accept.
+  bool get needsInviteAccept => engagements.any((e) => e.status == 'invited');
+
+  /// True when at least one engagement needs contractor documents.
+  bool get needsDocsAttention =>
+      engagements.any((e) => e.status == 'pending_docs');
+
   bool hasPermission(String permission) {
     final c = claims;
     if (c == null) return false;
@@ -175,12 +182,7 @@ class SessionService extends GetxController {
     final statuses = engagements.map((e) => e.status).toSet();
     needsPlatformCompliance.value =
         !_onboardingProgressStore.isPlatformComplete(contractorId.value);
-    needsEngagementWork.value = statuses.any(
-      (status) =>
-          status == 'invited' ||
-          status == 'pending_docs' ||
-          status == 'approved',
-    );
+    needsEngagementWork.value = statuses.contains('invited');
     needsOnboarding.value =
         needsPlatformCompliance.value || needsEngagementWork.value;
   }
@@ -220,7 +222,7 @@ class SessionService extends GetxController {
       if (needsOnboarding.value) {
         return OnboardingRouting.entryRoute(
           needsPlatformCompliance: needsPlatformCompliance.value,
-          needsEngagementWork: needsEngagementWork.value,
+          needsInviteAccept: needsInviteAccept,
         );
       }
       if (engagements.length > 1 && claims?.tenantId == null) {

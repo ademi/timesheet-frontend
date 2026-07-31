@@ -9,19 +9,29 @@ void main() {
       expect(
         OnboardingRouting.entryRoute(
           needsPlatformCompliance: true,
-          needsEngagementWork: true,
+          needsInviteAccept: true,
         ),
         AppRoutes.contractorOnboardingLegal,
       );
     });
 
-    test('routes platform-complete engagement work to engagement', () {
+    test('routes invited accept work to engagement', () {
       expect(
         OnboardingRouting.entryRoute(
           needsPlatformCompliance: false,
-          needsEngagementWork: true,
+          needsInviteAccept: true,
         ),
         AppRoutes.contractorOnboardingEngagement,
+      );
+    });
+
+    test('does not force pending_docs work to credentials', () {
+      expect(
+        OnboardingRouting.entryRoute(
+          needsPlatformCompliance: false,
+          needsInviteAccept: false,
+        ),
+        AppRoutes.contractorOnboarding,
       );
     });
 
@@ -29,7 +39,7 @@ void main() {
       expect(
         OnboardingRouting.entryRoute(
           needsPlatformCompliance: false,
-          needsEngagementWork: false,
+          needsInviteAccept: false,
         ),
         AppRoutes.contractorOnboarding,
       );
