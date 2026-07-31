@@ -41,11 +41,19 @@ class LoginView extends GetView<AuthController> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Staff Attendance Portal',
+                    'Sign in',
                     style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.primaryDark,
-                      letterSpacing: 1.0,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkBrown,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Staff or contractor account',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
                     ),
                   ),
 
