@@ -15,12 +15,14 @@ class DocumentPipeline {
     required UploadUrlRequest request,
     required List<int> bytes,
     String? credentialId,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     final upload = await _remote.createUploadUrl(request);
     await _remote.putToSignedUrl(
       uploadUrl: upload.uploadUrl,
       contentType: request.contentType,
       bytes: bytes,
+      onSendProgress: onSendProgress,
     );
     return _remote.finalize(
       documentId: upload.documentId,

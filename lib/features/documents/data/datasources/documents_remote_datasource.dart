@@ -41,6 +41,7 @@ class DocumentsRemoteDataSource {
     required String uploadUrl,
     required String contentType,
     required List<int> bytes,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     try {
       final response = await _plainDio.put<void>(
@@ -51,6 +52,7 @@ class DocumentsRemoteDataSource {
           followRedirects: true,
           validateStatus: (status) => status != null && status < 400,
         ),
+        onSendProgress: onSendProgress,
       );
       if (response.statusCode == null || response.statusCode! >= 400) {
         throw DioException(

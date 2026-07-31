@@ -86,6 +86,14 @@ class CredentialDetailView extends GetView<CredentialsController> {
                   minimumSize: const Size.fromHeight(48),
                 ),
               ),
+              if (controller.uploadProgress.value != null) ...[
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: controller.uploadProgress.value,
+                  backgroundColor: AppColors.divider,
+                  color: AppColors.primary,
+                ),
+              ],
               const SizedBox(height: 8),
               OutlinedButton(
                 onPressed: controller.isSaving.value

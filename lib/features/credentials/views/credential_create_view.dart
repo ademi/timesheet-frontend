@@ -105,6 +105,14 @@ class CredentialCreateView extends GetView<CredentialsController> {
                     : 'Upload evidence file',
               ),
             ),
+            if (controller.uploadProgress.value != null) ...[
+              const SizedBox(height: 8),
+              LinearProgressIndicator(
+                value: controller.uploadProgress.value,
+                backgroundColor: AppColors.divider,
+                color: AppColors.primary,
+              ),
+            ],
             if (sensitive) ...[
               const SizedBox(height: 16),
               CheckboxListTile(
@@ -157,7 +165,8 @@ class CredentialCreateView extends GetView<CredentialsController> {
                 minimumSize: const Size.fromHeight(48),
               ),
               child:
-                  controller.isSaving.value
+                  controller.isSaving.value &&
+                          controller.uploadProgress.value == null
                       ? const SizedBox(
                         height: 20,
                         width: 20,

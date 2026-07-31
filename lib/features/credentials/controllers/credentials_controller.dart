@@ -37,6 +37,7 @@ class CredentialsController extends GetxController {
   final errorMessage = RxnString();
   final lastScanStatus = RxnString();
   final lastOpenedViaProxy = false.obs;
+  final uploadProgress = RxnDouble();
   final selectedEvidence = <DocumentOut>[].obs;
 
   // Create form
@@ -241,6 +242,9 @@ class CredentialsController extends GetxController {
           category: selectedType.value,
         ),
         bytes: bytes,
+        onSendProgress: (sent, total) {
+          if (total > 0) uploadProgress.value = sent / total;
+        },
       );
       final polled = await _pipeline.pollScanStatus(
         documentId: doc.id,
@@ -265,6 +269,7 @@ class CredentialsController extends GetxController {
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
+      uploadProgress.value = null;
       isSaving.value = false;
     }
   }
@@ -309,6 +314,9 @@ class CredentialsController extends GetxController {
         ),
         bytes: bytes,
         credentialId: credential.id,
+        onSendProgress: (sent, total) {
+          if (total > 0) uploadProgress.value = sent / total;
+        },
       );
       lastScanStatus.value = doc.scanStatus;
       final polled = await _pipeline.pollScanStatus(
@@ -327,6 +335,7 @@ class CredentialsController extends GetxController {
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
+      uploadProgress.value = null;
       isSaving.value = false;
     }
   }
