@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../controllers/recurrence_rule_form_controller.dart';
 import '../utils/recurrence_rrule_builder.dart';
+import '../utils/task_title_presets.dart';
 
 class RecurrenceRuleFormView extends StatelessWidget {
   const RecurrenceRuleFormView({super.key});
@@ -97,11 +98,55 @@ class RecurrenceRuleFormView extends StatelessWidget {
               label: const Text('Add window'),
             ),
             const SizedBox(height: 12),
+            Text('Task titles', style: Get.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: null,
+              items: [
+                for (final preset in taskTitlePresets)
+                  DropdownMenuItem(value: preset, child: Text(preset)),
+                const DropdownMenuItem(
+                  value: taskTitlePresetOther,
+                  child: Text(taskTitlePresetOther),
+                ),
+              ],
+              onChanged: c.onPresetSelected,
+              decoration: const InputDecoration(
+                labelText: 'Add preset title',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            if (c.showOtherTitleField.value) ...[
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: c.otherTitleCtrl,
+                      maxLength: 80,
+                      decoration: const InputDecoration(
+                        labelText: 'Custom title',
+                        border: OutlineInputBorder(),
+                      ),
+                      onSubmitted: (_) => c.appendOtherTitle(),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: c.appendOtherTitle,
+                    icon: const Icon(Icons.add),
+                    tooltip: 'Add title',
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 8),
             TextField(
               controller: c.taskTitlesCtrl,
               maxLines: 3,
               decoration: const InputDecoration(
                 labelText: 'Task titles (one per line)',
+                helperText: 'Presets append above; edit or add free text here.',
                 border: OutlineInputBorder(),
               ),
             ),

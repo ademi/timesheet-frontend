@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../data/models/job_models.dart';
 import '../utils/recurrence_rrule_builder.dart';
+import '../utils/task_title_presets.dart';
 import '../utils/time_window_utils.dart';
 import 'jobs_controller.dart';
 
@@ -16,6 +17,8 @@ class RecurrenceRuleFormController extends GetxController {
   final windows =
       <TimeWindow>[const TimeWindow(startTime: '09:00', endTime: '12:00')].obs;
   final taskTitlesCtrl = TextEditingController();
+  final otherTitleCtrl = TextEditingController();
+  final showOtherTitleField = false.obs;
   final selectedFormTemplateIds = <String>{}.obs;
   final error = RxnString();
 
@@ -108,6 +111,27 @@ class RecurrenceRuleFormController extends GetxController {
         : selectedFormTemplateIds.add(id);
   }
 
+  List<String> get taskTitles => parseTaskTitles(taskTitlesCtrl.text);
+
+  void onPresetSelected(String? preset) {
+    if (preset == null) return;
+    if (preset == taskTitlePresetOther) {
+      showOtherTitleField.value = true;
+      return;
+    }
+    appendTaskTitle(preset);
+  }
+
+  void appendTaskTitle(String title) {
+    taskTitlesCtrl.text = appendTaskTitleLine(taskTitlesCtrl.text, title);
+  }
+
+  void appendOtherTitle() {
+    appendTaskTitle(otherTitleCtrl.text);
+    otherTitleCtrl.clear();
+    showOtherTitleField.value = false;
+  }
+
   Future<bool> save() async {
     if (selectedContractorId.value == null) {
       error.value = 'Select a contractor.';
@@ -142,12 +166,7 @@ class RecurrenceRuleFormController extends GetxController {
         dtstart: startDate.value,
         until: endDate.value?.add(const Duration(days: 1, microseconds: -1)),
         timeWindows: sorted,
-        taskTitles:
-            taskTitlesCtrl.text
-                .split('\n')
-                .map((title) => title.trim())
-                .where((title) => title.isNotEmpty)
-                .toList(),
+        taskTitles: taskTitles,
         formTemplateIds: selectedFormTemplateIds.toList(),
       ),
     );
@@ -156,6 +175,7 @@ class RecurrenceRuleFormController extends GetxController {
   @override
   void onClose() {
     taskTitlesCtrl.dispose();
+    otherTitleCtrl.dispose();
     super.onClose();
   }
 }
