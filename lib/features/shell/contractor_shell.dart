@@ -6,7 +6,6 @@ import '../../app/themes/app_colors.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../shared/widgets/closed_beta_banner.dart';
-import 'shell_stub_page.dart';
 
 /// ContractorShell nav (design §4.4).
 abstract final class ContractorShellNav {
@@ -22,10 +21,7 @@ abstract final class ContractorShellNav {
       icon: Icons.calendar_month_outlined,
       label: 'Schedule',
     ),
-    ResponsiveDestination(
-      icon: Icons.badge_outlined,
-      label: 'Credentials',
-    ),
+    ResponsiveDestination(icon: Icons.badge_outlined, label: 'Credentials'),
     ResponsiveDestination(icon: Icons.person_outline, label: 'Profile'),
   ];
 
@@ -66,8 +62,9 @@ class ContractorShell extends StatelessWidget {
     final body = _shellBody(child);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final index =
-            ContractorShellNav.selectedIndex(Get.currentRoute).clamp(0, 4);
+        final index = ContractorShellNav.selectedIndex(
+          Get.currentRoute,
+        ).clamp(0, 4);
         final wide = constraints.maxWidth >= Breakpoints.tablet;
 
         if (wide) {
@@ -98,12 +95,9 @@ class ContractorShell extends StatelessWidget {
 }
 
 Widget _shellBody(Widget child) => Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const ClosedBetaBanner(),
-        Expanded(child: child),
-      ],
-    );
+  crossAxisAlignment: CrossAxisAlignment.stretch,
+  children: [const ClosedBetaBanner(), Expanded(child: child)],
+);
 
 Widget contractorShellPage(Widget child) => ContractorShell(child: child);
 
@@ -113,14 +107,3 @@ bool isContractorShellRoute(String? route) {
   if (route == AppRoutes.contractorRegister) return false;
   return route.startsWith('/contractor');
 }
-
-Widget contractorHomeStub() =>
-    contractorShellPage(const ShellStubPage(title: 'Contractor home'));
-Widget contractorCredentialsStub() =>
-    contractorShellPage(const ShellStubPage(title: 'Credentials'));
-Widget contractorOnboardingStub() => const ShellStubPage(
-      title: 'Onboarding',
-      subtitle:
-          'Legal, notices, consents, and engagement accept will land in S1–S2.',
-      showLogout: true,
-    );

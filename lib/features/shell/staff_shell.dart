@@ -6,7 +6,6 @@ import '../../app/routes/app_routes.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
 import '../../core/services/session_service.dart';
 import '../../shared/widgets/closed_beta_banner.dart';
-import 'shell_stub_page.dart';
 
 /// StaffShell nav (design §4.3).
 abstract final class StaffShellNav {
@@ -90,9 +89,10 @@ abstract final class StaffShellNav {
     Get.offNamed(route);
   }
 
-  static List<ResponsiveDestination> destinations() => _visible()
-      .map((d) => ResponsiveDestination(icon: d.icon, label: d.label))
-      .toList();
+  static List<ResponsiveDestination> destinations() =>
+      _visible()
+          .map((d) => ResponsiveDestination(icon: d.icon, label: d.label))
+          .toList();
 }
 
 class _StaffDest {
@@ -129,12 +129,9 @@ class StaffShell extends StatelessWidget {
 }
 
 Widget _shellBody(Widget child) => Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const ClosedBetaBanner(),
-        Expanded(child: child),
-      ],
-    );
+  crossAxisAlignment: CrossAxisAlignment.stretch,
+  children: [const ClosedBetaBanner(), Expanded(child: child)],
+);
 
 Widget staffShellPage(Widget child) => StaffShell(child: child);
 
@@ -142,11 +139,3 @@ bool isStaffRoute(String? route) {
   if (route == null) return false;
   return route.startsWith('/staff');
 }
-
-/// Convenience stub wrappers for GetPages.
-Widget staffHomeStub() =>
-    staffShellPage(const ShellStubPage(title: 'Staff home'));
-Widget staffWorkforceStub() =>
-    staffShellPage(const ShellStubPage(title: 'Workforce'));
-Widget staffClientsStub() =>
-    staffShellPage(const ShellStubPage(title: 'Clients'));
