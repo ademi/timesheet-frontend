@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/data/models/document/document_models.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../documents/data/evidence_document_opener.dart';
+import '../../documents/data/document_pipeline.dart';
+import '../data/evidence_documents.dart';
 import '../data/models/credential_models.dart';
 import '../data/repositories/credentials_repository.dart';
 
@@ -16,11 +20,19 @@ class StaffCredentialReviewController extends GetxController {
   StaffCredentialReviewController({
     required CredentialsRepository repository,
     required SessionService session,
+    required DocumentPipeline documentPipeline,
+    EvidenceDocumentOpener? evidenceDocumentOpener,
   }) : _repository = repository,
-       _session = session;
+       _session = session,
+       _pipeline = documentPipeline,
+       _evidenceDocumentOpener =
+           evidenceDocumentOpener ??
+           EvidenceDocumentOpener(documentPipeline: documentPipeline);
 
   final CredentialsRepository _repository;
   final SessionService _session;
+  final DocumentPipeline _pipeline;
+  final EvidenceDocumentOpener _evidenceDocumentOpener;
 
   final reasonCtrl = TextEditingController();
   String? _contractorId;
@@ -32,12 +44,17 @@ class StaffCredentialReviewController extends GetxController {
   final errorMessage = RxnString();
   final eligibilityReasons = <String>[].obs;
   final mfaRequired = false.obs;
+  final evidenceByCredentialType = <String, List<DocumentOut>>{}.obs;
 
   bool get canReview =>
       _session.hasPermission(AppPermissions.credentialsReview);
 
   bool get canRead => _session.hasPermission(AppPermissions.credentialsRead);
   bool get hasReviewContext => _contractorId != null && _engagementId != null;
+
+  List<DocumentOut> evidenceFor(CredentialOut credential) {
+    return evidenceByCredentialType[credential.credentialType] ?? const [];
+  }
 
   @override
   void onInit() {
@@ -79,6 +96,14 @@ class StaffCredentialReviewController extends GetxController {
     try {
       final list = await _repository.listForTenantContractor(contractorId);
       items.assignAll(list);
+      final documents = await _pipeline.listEvidenceForContractor(contractorId);
+      evidenceByCredentialType.value = {
+        for (final credential in list)
+          credential.credentialType: documentsForCredentialType(
+            documents: documents,
+            credentialType: credential.credentialType,
+          ),
+      };
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
       if (e.isEligibilityIncomplete) {
@@ -88,6 +113,21 @@ class StaffCredentialReviewController extends GetxController {
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> openEvidenceDocument(
+    DocumentOut document, {
+    bool download = false,
+  }) async {
+    errorMessage.value = null;
+    try {
+      await _evidenceDocumentOpener.open(document, download: download);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (_) {
+      errorMessage.value =
+          'Could not download this file. Check your connection and retry.';
     }
   }
 

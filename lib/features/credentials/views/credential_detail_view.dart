@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
+import '../widgets/evidence_document_actions.dart';
 import '../widgets/credential_status_chip.dart';
 
 class CredentialDetailView extends GetView<CredentialsController> {
@@ -38,12 +39,28 @@ class CredentialDetailView extends GetView<CredentialsController> {
                   color: AppColors.errorBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(err, style: const TextStyle(color: AppColors.error)),
+                child: Text(
+                  err,
+                  style: const TextStyle(color: AppColors.error),
+                ),
               ),
               const SizedBox(height: 12),
             ],
             _statusRow(credential.status),
             _row('Evidence', credential.evidencePresence),
+            if (controller.evidenceFor(credential).isNotEmpty) ...[
+              const SizedBox(height: 8),
+              EvidenceDocumentActions(
+                documents: controller.evidenceFor(credential),
+                isBusy: controller.isSaving.value,
+                onView: (document) => controller.openEvidenceDocument(document),
+                onDownload:
+                    (document) => controller.openEvidenceDocument(
+                      document,
+                      download: true,
+                    ),
+              ),
+            ],
             _row('Provenance', credential.provenanceState),
             if (credential.issuer != null) _row('Issuer', credential.issuer!),
             if (credential.jurisdiction != null)
@@ -51,7 +68,10 @@ class CredentialDetailView extends GetView<CredentialsController> {
             if (credential.identifierMasked != null)
               _row('Identifier', credential.identifierMasked!),
             if (credential.expiresOn != null)
-              _row('Expires', credential.expiresOn!.toIso8601String().split('T').first),
+              _row(
+                'Expires',
+                credential.expiresOn!.toIso8601String().split('T').first,
+              ),
             if (isSensitiveCredentialType(credential.credentialType))
               const Padding(
                 padding: EdgeInsets.only(top: 12),
@@ -71,9 +91,10 @@ class CredentialDetailView extends GetView<CredentialsController> {
             const SizedBox(height: 24),
             if (controller.canManage) ...[
               ElevatedButton.icon(
-                onPressed: controller.isSaving.value
-                    ? null
-                    : () => controller.attachEvidence(credential),
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : () => controller.attachEvidence(credential),
                 icon: const Icon(Icons.upload_file),
                 label: Text(
                   controller.isSaving.value
@@ -96,9 +117,10 @@ class CredentialDetailView extends GetView<CredentialsController> {
               ],
               const SizedBox(height: 8),
               OutlinedButton(
-                onPressed: controller.isSaving.value
-                    ? null
-                    : () => controller.supersede(credential),
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : () => controller.supersede(credential),
                 child: const Text('Supersede with new record'),
               ),
             ],
@@ -107,9 +129,10 @@ class CredentialDetailView extends GetView<CredentialsController> {
               Text(
                 'Scan status: ${controller.lastScanStatus.value}',
                 style: TextStyle(
-                  color: controller.lastScanStatus.value == 'blocked'
-                      ? AppColors.error
-                      : AppColors.textDark,
+                  color:
+                      controller.lastScanStatus.value == 'blocked'
+                          ? AppColors.error
+                          : AppColors.textDark,
                   fontWeight: FontWeight.w600,
                 ),
               ),

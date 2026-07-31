@@ -105,6 +105,7 @@ class AppFailure implements Exception {
       'wrong_actor_type',
       'must_change_password',
       'missing_permission',
+      'forbidden',
       'subscription_expired',
       'require_active_subscription',
       'geofence_rejected',
@@ -147,6 +148,7 @@ class AppFailure implements Exception {
     for (final k in known) {
       if (d == k || d.contains(k)) return k;
     }
+    if (status == 403) return 'forbidden';
     if (status == 402) return 'billing_gate';
     if (status == 429) return 'rate_limited';
     if (d.toLowerCase().contains('permission')) return 'missing_permission';
@@ -203,6 +205,8 @@ class AppFailure implements Exception {
         return 'You must set a new password before continuing.';
       case 'missing_permission':
         return 'You don’t have permission for this action.';
+      case 'forbidden':
+        return 'You don’t have access to this file.';
       case 'subscription_expired':
       case 'require_active_subscription':
       case 'billing_gate':

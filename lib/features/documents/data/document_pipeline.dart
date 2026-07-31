@@ -83,6 +83,10 @@ class DocumentPipeline {
       return DocumentOpenResult.proxyBytes(bytes);
     }
   }
+
+  Future<List<DocumentOut>> listEvidenceForContractor(String contractorId) {
+    return _remote.listForOwner(ownerType: 'contractor', ownerId: contractorId);
+  }
 }
 
 enum DocumentOpenMode { signedUrl, proxyBytes }

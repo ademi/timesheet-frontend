@@ -36,6 +36,27 @@ void main() {
       expect(failure.isProxyRequired, isTrue);
     });
 
+    test('maps a forbidden document response to file-access guidance', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(
+            path: '/documents/document-id/content',
+          ),
+          response: Response(
+            requestOptions: RequestOptions(
+              path: '/documents/document-id/content',
+            ),
+            statusCode: 403,
+            data: {'detail': 'forbidden'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      expect(failure.code, 'forbidden');
+      expect(failure.message, 'You don’t have access to this file.');
+    });
+
     test('maps evidence_required to credential evidence guidance', () {
       final failure = AppFailure.fromDio(
         DioException(

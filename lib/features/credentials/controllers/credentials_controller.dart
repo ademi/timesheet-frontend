@@ -10,7 +10,9 @@ import '../../../core/services/session_service.dart';
 import '../../contractor_onboarding/data/models/compliance_models.dart'
     as compliance;
 import '../../contractor_onboarding/data/repositories/compliance_repository.dart';
+import '../../documents/data/evidence_document_opener.dart';
 import '../../documents/data/document_pipeline.dart';
+import '../data/evidence_documents.dart';
 import '../data/models/credential_models.dart';
 import '../data/repositories/credentials_repository.dart';
 
@@ -21,15 +23,20 @@ class CredentialsController extends GetxController {
     required DocumentPipeline documentPipeline,
     required ComplianceRepository complianceRepository,
     required SessionService session,
+    EvidenceDocumentOpener? evidenceDocumentOpener,
   }) : _repository = repository,
        _pipeline = documentPipeline,
        _compliance = complianceRepository,
-       _session = session;
+       _session = session,
+       _evidenceDocumentOpener =
+           evidenceDocumentOpener ??
+           EvidenceDocumentOpener(documentPipeline: documentPipeline);
 
   final CredentialsRepository _repository;
   final DocumentPipeline _pipeline;
   final ComplianceRepository _compliance;
   final SessionService _session;
+  final EvidenceDocumentOpener _evidenceDocumentOpener;
 
   final items = <CredentialOut>[].obs;
   final isLoading = false.obs;
@@ -39,6 +46,7 @@ class CredentialsController extends GetxController {
   final lastOpenedViaProxy = false.obs;
   final uploadProgress = RxnDouble();
   final selectedEvidence = <DocumentOut>[].obs;
+  final evidenceByCredentialType = <String, List<DocumentOut>>{}.obs;
 
   // Create form
   final selectedType = 'wwcc'.obs;
@@ -61,6 +69,10 @@ class CredentialsController extends GetxController {
       _session.contractorId.value ?? _session.claims?.contractorId;
 
   bool get hasSelectedEvidence => selectedEvidence.isNotEmpty;
+
+  List<DocumentOut> evidenceFor(CredentialOut credential) {
+    return evidenceByCredentialType[credential.credentialType] ?? const [];
+  }
 
   @override
   void onInit() {
@@ -85,6 +97,17 @@ class CredentialsController extends GetxController {
     try {
       final list = await _repository.listMine();
       items.assignAll(list);
+      final id = contractorId;
+      if (id != null && id.isNotEmpty) {
+        final documents = await _pipeline.listEvidenceForContractor(id);
+        evidenceByCredentialType.value = {
+          for (final credential in list)
+            credential.credentialType: documentsForCredentialType(
+              documents: documents,
+              credentialType: credential.credentialType,
+            ),
+        };
+      }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (e) {
@@ -363,26 +386,19 @@ class CredentialsController extends GetxController {
     }
   }
 
-  Future<void> openEvidenceDocument(String documentId) async {
+  Future<void> openEvidenceDocument(
+    DocumentOut document, {
+    bool download = false,
+  }) async {
     errorMessage.value = null;
     lastOpenedViaProxy.value = false;
     try {
-      final result = await _pipeline.openDocument(documentId);
-      lastOpenedViaProxy.value = result.usedProxy;
-      if (result.usedProxy) {
-        Get.snackbar(
-          'Secure download',
-          'Opened via authenticated proxy (${result.bytes?.length ?? 0} bytes). '
-              'Restricted evidence cannot use a signed URL.',
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          backgroundColor: AppColors.primary,
-          colorText: AppColors.onPrimary,
-          duration: const Duration(seconds: 5),
-        );
-      }
+      await _evidenceDocumentOpener.open(document, download: download);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+    } catch (_) {
+      errorMessage.value =
+          'Could not download this file. Check your connection and retry.';
     }
   }
 

@@ -5,6 +5,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../controllers/staff_credential_review_controller.dart';
 import '../data/models/credential_models.dart';
+import '../widgets/evidence_document_actions.dart';
 import '../widgets/credential_status_chip.dart';
 
 class StaffCredentialReviewView
@@ -135,6 +136,19 @@ class _StaffCredentialCard extends StatelessWidget {
               'Provenance: ${c.provenanceState}',
               style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
             ),
+            if (controller.evidenceFor(c).isNotEmpty) ...[
+              const SizedBox(height: 8),
+              EvidenceDocumentActions(
+                documents: controller.evidenceFor(c),
+                isBusy: controller.isSaving.value,
+                onView: (document) => controller.openEvidenceDocument(document),
+                onDownload:
+                    (document) => controller.openEvidenceDocument(
+                      document,
+                      download: true,
+                    ),
+              ),
+            ],
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,

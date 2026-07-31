@@ -7,6 +7,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/services/session_service.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
+import '../widgets/evidence_document_actions.dart';
 import '../widgets/credential_status_chip.dart';
 import '../../engagements/bindings/engagements_binding.dart';
 import '../../engagements/controllers/contractor_engagements_controller.dart';
@@ -165,55 +166,74 @@ class _CredentialTile extends StatelessWidget {
     final c = Get.find<CredentialsController>();
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(credentialTypeLabel(credential.credentialType)),
+      child: Column(
+        children: [
+          ListTile(
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(credentialTypeLabel(credential.credentialType)),
+                ),
+                CredentialStatusChip(status: credential.status),
+              ],
             ),
-            CredentialStatusChip(status: credential.status),
-          ],
-        ),
-        subtitle: Text(
-          'Evidence: ${credential.evidencePresence} · '
-          'Provenance: ${credential.provenanceState}'
-          '${credential.identifierMasked != null ? '\nID: ${credential.identifierMasked}' : ''}',
-        ),
-        isThreeLine: true,
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) async {
-            switch (value) {
-              case 'detail':
-                Get.toNamed(
+            subtitle: Text(
+              'Evidence: ${credential.evidencePresence} · '
+              'Provenance: ${credential.provenanceState}'
+              '${credential.identifierMasked != null ? '\nID: ${credential.identifierMasked}' : ''}',
+            ),
+            isThreeLine: true,
+            trailing: PopupMenuButton<String>(
+              onSelected: (value) async {
+                switch (value) {
+                  case 'detail':
+                    Get.toNamed(
+                      AppRoutes.contractorCredentialDetail,
+                      arguments: credential,
+                    );
+                  case 'upload':
+                    await c.attachEvidence(credential);
+                  case 'supersede':
+                    await c.supersede(credential);
+                }
+              },
+              itemBuilder:
+                  (_) => [
+                    const PopupMenuItem(
+                      value: 'detail',
+                      child: Text('Details'),
+                    ),
+                    if (c.canManage)
+                      const PopupMenuItem(
+                        value: 'upload',
+                        child: Text('Attach evidence'),
+                      ),
+                    if (c.canManage)
+                      const PopupMenuItem(
+                        value: 'supersede',
+                        child: Text('Supersede'),
+                      ),
+                  ],
+            ),
+            onTap:
+                () => Get.toNamed(
                   AppRoutes.contractorCredentialDetail,
                   arguments: credential,
-                );
-              case 'upload':
-                await c.attachEvidence(credential);
-              case 'supersede':
-                await c.supersede(credential);
-            }
-          },
-          itemBuilder:
-              (_) => [
-                const PopupMenuItem(value: 'detail', child: Text('Details')),
-                if (c.canManage)
-                  const PopupMenuItem(
-                    value: 'upload',
-                    child: Text('Attach evidence'),
-                  ),
-                if (c.canManage)
-                  const PopupMenuItem(
-                    value: 'supersede',
-                    child: Text('Supersede'),
-                  ),
-              ],
-        ),
-        onTap:
-            () => Get.toNamed(
-              AppRoutes.contractorCredentialDetail,
-              arguments: credential,
+                ),
+          ),
+          if (c.evidenceFor(credential).isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: EvidenceDocumentActions(
+                documents: c.evidenceFor(credential),
+                isBusy: c.isSaving.value,
+                onView: (document) => c.openEvidenceDocument(document),
+                onDownload:
+                    (document) =>
+                        c.openEvidenceDocument(document, download: true),
+              ),
             ),
+        ],
       ),
     );
   }
