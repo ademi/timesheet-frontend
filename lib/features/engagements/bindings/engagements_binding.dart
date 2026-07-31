@@ -5,6 +5,8 @@ import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../contractor_onboarding/data/datasources/compliance_remote_datasource.dart';
 import '../../contractor_onboarding/data/repositories/compliance_repository.dart';
+import '../../credentials/bindings/credentials_binding.dart';
+import '../../credentials/data/repositories/credentials_repository.dart';
 import '../controllers/contractor_engagements_controller.dart';
 import '../controllers/workforce_controller.dart';
 import '../data/datasources/engagements_remote_datasource.dart';
@@ -14,10 +16,12 @@ class EngagementsBinding extends Bindings {
   @override
   void dependencies() {
     ensureShared();
+    CredentialsBinding.ensureDependencies();
     if (!Get.isRegistered<WorkforceController>()) {
       Get.put(
         WorkforceController(
           repository: Get.find<EngagementsRepository>(),
+          credentialsRepository: Get.find<CredentialsRepository>(),
           session: Get.find<SessionService>(),
         ),
       );

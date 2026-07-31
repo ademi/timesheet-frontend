@@ -7,6 +7,8 @@ import '../../../app/themes/app_colors.dart';
 import '../controllers/workforce_controller.dart';
 import '../data/models/engagement_models.dart';
 
+String _statusChipLabel(String status) => status.replaceAll('_', ' ');
+
 class WorkforceListView extends GetView<WorkforceController> {
   const WorkforceListView({super.key});
 
@@ -56,11 +58,39 @@ class WorkforceListView extends GetView<WorkforceController> {
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
-                        label: Text(s),
+                        label: Text(_statusChipLabel(s)),
                         selected: controller.statusFilter.value == s,
                         onSelected: (_) => controller.statusFilter.value = s,
                       ),
                     ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Missing required docs'),
+                          if (controller.isLoadingCredentials.value) ...[
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      selected: controller.missingDocsFilter.value,
+                      onSelected:
+                          controller.isLoadingCredentials.value
+                              ? null
+                              : (selected) =>
+                                  controller.setMissingDocsFilter(selected),
+                    ),
+                  ),
                 ],
               ),
             ),

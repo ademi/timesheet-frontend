@@ -6,21 +6,30 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../credentials/data/models/credential_models.dart';
+import '../../credentials/data/repositories/credentials_repository.dart';
 import '../data/models/engagement_models.dart';
 import '../data/repositories/engagements_repository.dart';
+import '../utils/missing_categories.dart';
 
 class WorkforceController extends GetxController {
   WorkforceController({
     required EngagementsRepository repository,
+    required CredentialsRepository credentialsRepository,
     required SessionService session,
   }) : _repository = repository,
+       _credentialsRepository = credentialsRepository,
        _session = session;
 
   final EngagementsRepository _repository;
+  final CredentialsRepository _credentialsRepository;
   final SessionService _session;
 
   final items = <EngagementOut>[].obs;
   final statusFilter = RxnString();
+  final missingDocsFilter = false.obs;
+  final credentialsByContractor = <String, List<CredentialOut>>{}.obs;
+  final isLoadingCredentials = false.obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
@@ -42,9 +51,28 @@ class WorkforceController extends GetxController {
   bool get canRead => _session.hasPermission(AppPermissions.contractorsRead);
 
   List<EngagementOut> get filtered {
+    var list = items.toList();
     final f = statusFilter.value;
-    if (f == null || f.isEmpty) return items.toList();
-    return items.where((e) => e.status == f).toList();
+    if (f != null && f.isNotEmpty) {
+      list = list.where((e) => e.status == f).toList();
+    }
+    if (missingDocsFilter.value) {
+      list = list.where(hasMissingRequiredDocs).toList();
+    }
+    return list;
+  }
+
+  bool hasMissingRequiredDocs(EngagementOut engagement) =>
+      missingCategories(
+        engagement,
+        credentialsByContractor[engagement.contractorId] ?? const [],
+      ).isNotEmpty;
+
+  Future<void> setMissingDocsFilter(bool value) async {
+    missingDocsFilter.value = value;
+    if (value) {
+      await _ensureCredentialsLoaded();
+    }
   }
 
   @override
@@ -70,6 +98,10 @@ class WorkforceController extends GetxController {
     try {
       final list = await _repository.listTenantEngagements();
       items.assignAll(list);
+      if (missingDocsFilter.value) {
+        credentialsByContractor.clear();
+        await _ensureCredentialsLoaded();
+      }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (e) {
@@ -183,6 +215,33 @@ class WorkforceController extends GetxController {
       errorMessage.value = e.toString();
     } finally {
       isSaving.value = false;
+    }
+  }
+
+  Future<void> _ensureCredentialsLoaded() async {
+    final contractorIds = items.map((e) => e.contractorId).toSet();
+    final pending =
+        contractorIds
+            .where((id) => !credentialsByContractor.containsKey(id))
+            .toList();
+    if (pending.isEmpty) return;
+
+    isLoadingCredentials.value = true;
+    try {
+      final results = await Future.wait(
+        pending.map(
+          (id) => _credentialsRepository.listForTenantContractor(id),
+        ),
+      );
+      for (var i = 0; i < pending.length; i++) {
+        credentialsByContractor[pending[i]] = results[i];
+      }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoadingCredentials.value = false;
     }
   }
 
