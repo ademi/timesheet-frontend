@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../app/themes/app_colors.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../contractor_onboarding/bindings/onboarding_binding.dart';
 import '../../contractor_onboarding/data/models/compliance_models.dart';
 import '../../contractor_onboarding/data/repositories/compliance_repository.dart';
 import '../data/models/engagement_models.dart';
@@ -15,13 +15,16 @@ class ContractorEngagementsController extends GetxController {
     required EngagementsRepository repository,
     required ComplianceRepository complianceRepository,
     required SessionService session,
+    void Function(String route)? onNavigateHome,
   }) : _repository = repository,
        _compliance = complianceRepository,
-       _session = session;
+       _session = session,
+       _onNavigateHome = onNavigateHome ?? _navigateHome;
 
   final EngagementsRepository _repository;
   final ComplianceRepository _compliance;
   final SessionService _session;
+  final void Function(String route) _onNavigateHome;
 
   final items = <EngagementOut>[].obs;
   final isLoading = false.obs;
@@ -109,20 +112,11 @@ class ContractorEngagementsController extends GetxController {
         await load();
       }
 
-      // Refresh session engagement statuses when possible.
-      try {
-        await _session.hydrateFromMeContext();
-      } catch (_) {}
+      await _session.switchTenant(updated.tenantId);
 
       accepting.value = null;
-      Get.snackbar(
-        'Engagement accepted',
-        'Status is now ${updated.status}. Continue with required credentials.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
-      );
+      _onNavigateHome(AppRoutes.contractorHome);
+      OnboardingBinding.reset();
       return true;
     } on AppFailure catch (e) {
       errorMessage.value = _acceptErrorMessage(e);
@@ -142,4 +136,6 @@ class ContractorEngagementsController extends GetxController {
     }
     return failure.message;
   }
+
+  static void _navigateHome(String route) => Get.offAllNamed(route);
 }
