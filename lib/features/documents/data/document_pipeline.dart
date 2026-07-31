@@ -54,7 +54,6 @@ class DocumentPipeline {
       }
       await Future<void>.delayed(interval);
     }
-    if (last != null) return last;
     throw const AppFailure(
       code: 'unknown',
       message: 'Document scan still pending. Refresh later.',

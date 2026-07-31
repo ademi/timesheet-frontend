@@ -165,6 +165,7 @@ class CredentialsController extends GetxController {
     }
     if (!hasSelectedEvidence) {
       errorMessage.value = 'Evidence is required to save.';
+      _toast(errorMessage.value!);
       return null;
     }
 
@@ -192,6 +193,7 @@ class CredentialsController extends GetxController {
       return created;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+      if (e.code == 'evidence_required') _toast(e.message);
       return null;
     } catch (e) {
       errorMessage.value = e.toString();
@@ -249,6 +251,12 @@ class CredentialsController extends GetxController {
       if (polled.isScanBlocked) {
         errorMessage.value =
             'File failed security scan. Re-upload a clean file.';
+        return;
+      }
+      if (!polled.isScanClean) {
+        errorMessage.value =
+            'Security scan still pending. Wait for scan to finish, then retry.';
+        _toast(errorMessage.value!);
         return;
       }
       selectedEvidence.add(polled);
