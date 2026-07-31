@@ -11,6 +11,7 @@ import '../../engagements/data/models/engagement_models.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../subscription/billing_gate.dart';
 import '../data/models/compliance_ops_models.dart';
+import '../data/models/notification_display.dart';
 import '../data/repositories/compliance_ops_repository.dart';
 
 class StaffComplianceController extends GetxController {
@@ -95,7 +96,8 @@ class StaffComplianceController extends GetxController {
       }
     }
     try {
-      events.assignAll(await _repository.listNotificationEvents());
+      final raw = await _repository.listNotificationEvents();
+      events.assignAll(dedupeNotificationEvents(raw));
     } on AppFailure catch (_) {
       // optional for staff without notifications.receive
     }

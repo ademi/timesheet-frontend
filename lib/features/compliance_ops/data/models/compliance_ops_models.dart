@@ -1,3 +1,5 @@
+import 'notification_display.dart';
+
 /// Compliance ops DTOs (design §6.11).
 const rightsRequestTypes = <String>[
   'access',
@@ -213,13 +215,7 @@ class NotificationEventOut {
     );
   }
 
-  String get summary {
-    final title = payload['job_title'] ??
-        payload['client_name'] ??
-        payload['credential_type'];
-    if (title != null) return '$eventType · $title';
-    return eventType;
-  }
+  String get summary => notificationTitle(eventType, payload);
 }
 
 class SubscriptionStatusOut {

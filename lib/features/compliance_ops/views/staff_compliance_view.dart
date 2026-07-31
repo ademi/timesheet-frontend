@@ -7,6 +7,7 @@ import '../../subscription/billing_gate.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../engagements/data/models/engagement_models.dart';
 import '../controllers/staff_compliance_controller.dart';
+import '../data/models/notification_display.dart';
 
 class StaffComplianceView extends GetView<StaffComplianceController> {
   const StaffComplianceView({super.key});
@@ -368,8 +369,8 @@ class _AlertsTab extends StatelessWidget {
             Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                title: Text(e.summary),
-                subtitle: Text(e.createdAt.toLocal().toString()),
+                title: Text(notificationTitle(e.eventType, e.payload)),
+                subtitle: Text(formatNotificationTime(e.createdAt)),
               ),
             ),
           TextButton(

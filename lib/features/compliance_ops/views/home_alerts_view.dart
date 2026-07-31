@@ -9,6 +9,7 @@ import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../subscription/billing_gate.dart';
 import '../data/models/compliance_ops_models.dart';
+import '../data/models/notification_display.dart';
 import '../data/repositories/compliance_ops_repository.dart';
 
 /// Staff / contractor home feed of recent notification events.
@@ -45,7 +46,8 @@ class HomeAlertsController extends GetxController {
     isLoading.value = true;
     errorMessage.value = null;
     try {
-      events.assignAll(await _repository.listNotificationEvents(limit: 20));
+      final raw = await _repository.listNotificationEvents(limit: 20);
+      events.assignAll(dedupeNotificationEvents(raw));
     } on AppFailure catch (e) {
       await BillingGate.showIfNeeded(e);
       errorMessage.value = e.message;
@@ -166,8 +168,8 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.notifications_outlined),
-                    title: Text(e.summary),
-                    subtitle: Text(e.createdAt.toLocal().toString()),
+                    title: Text(notificationTitle(e.eventType, e.payload)),
+                    subtitle: Text(formatNotificationTime(e.createdAt)),
                   ),
             ],
           ),
