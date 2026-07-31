@@ -171,8 +171,6 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                     }),
                     _LegalBlock(
                       title: 'Platform Terms',
-                      docKey: LegalDocKeys.platformTerms,
-                      version: controller.termsVersion,
                       markdown: controller.termsMarkdown,
                       accepted: controller.acceptedTerms,
                       acceptLabel: 'I accept the Platform Terms',
@@ -180,8 +178,6 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                     const SizedBox(height: 16),
                     _LegalBlock(
                       title: 'Privacy Policy',
-                      docKey: LegalDocKeys.privacyPolicy,
-                      version: controller.privacyVersion,
                       markdown: controller.privacyMarkdown,
                       accepted: controller.acceptedPrivacy,
                       acceptLabel: 'I accept the Privacy Policy',
@@ -281,16 +277,12 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
 class _LegalBlock extends StatelessWidget {
   const _LegalBlock({
     required this.title,
-    required this.docKey,
-    required this.version,
     required this.markdown,
     required this.accepted,
     required this.acceptLabel,
   });
 
   final String title;
-  final String docKey;
-  final String version;
   final RxString markdown;
   final RxBool accepted;
   final String acceptLabel;
@@ -318,11 +310,6 @@ class _LegalBlock extends StatelessWidget {
                     fontSize: 16,
                     color: AppColors.textDark,
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'doc_key: $docKey · version: $version',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                 ),
               ],
             ),

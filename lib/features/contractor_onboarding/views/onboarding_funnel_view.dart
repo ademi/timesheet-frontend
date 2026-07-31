@@ -247,7 +247,6 @@ class _LegalStepState extends State<_LegalStep> {
                     doc.docKey == 'platform_terms'
                         ? 'Platform Terms'
                         : 'Privacy Policy',
-                meta: 'doc_key: ${doc.docKey} · version: ${doc.version}',
                 markdown: doc.contentMd,
                 counselPending: doc.counselPending,
                 accepted: controller.acceptedDocKeys.contains(doc.docKey),
@@ -328,8 +327,6 @@ class _NoticesStepState extends State<_NoticesStep> {
               key: _keyFor(n.noticeKey),
               child: _DocCard(
                 title: n.noticeKey,
-                meta:
-                    'credential: ${n.credentialType ?? "—"} · version: ${n.version}',
                 markdown: n.contentMd,
                 counselPending: n.counselPending,
                 accepted: controller.acknowledgedNoticeKeys.contains(
@@ -573,7 +570,6 @@ class _CredentialsStep extends StatelessWidget {
 class _DocCard extends StatelessWidget {
   const _DocCard({
     required this.title,
-    required this.meta,
     required this.markdown,
     required this.counselPending,
     required this.accepted,
@@ -583,7 +579,6 @@ class _DocCard extends StatelessWidget {
   });
 
   final String title;
-  final String meta;
   final String markdown;
   final bool counselPending;
   final bool accepted;
@@ -613,10 +608,6 @@ class _DocCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
                   ),
-                ),
-                Text(
-                  meta,
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                 ),
                 if (counselPending)
                   const Padding(
