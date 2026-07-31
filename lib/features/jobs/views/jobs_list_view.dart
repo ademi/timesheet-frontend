@@ -17,7 +17,7 @@ class JobsListView extends GetView<JobsController> {
         actions: [
           IconButton(
             tooltip: 'Form templates',
-            onPressed: controller.openFormTemplates,
+            onPressed: controller.openFormTemplatesAndRefresh,
             icon: const Icon(Icons.description_outlined),
           ),
           if (Get.isRegistered<AuthController>())
