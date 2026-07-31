@@ -68,12 +68,7 @@ class OnboardingController extends GetxController with PendingActionMixin {
       notices.every((n) => acknowledgedNoticeKeys.contains(n.noticeKey));
 
   bool get canAdvanceConsents {
-    final needed =
-        notices
-            .map((n) => n.credentialType)
-            .whereType<String>()
-            .where(sensitiveCredentialTypes.contains)
-            .toSet();
+    final needed = _neededConsentTypes;
     // No sensitive notices in catalog → nothing to consent in S2.
     if (needed.isEmpty) return true;
     return needed.every(consentedTypes.contains);
@@ -84,6 +79,59 @@ class OnboardingController extends GetxController with PendingActionMixin {
     final c = Get.find<ContractorEngagementsController>();
     // May continue if nothing invited remains (or no engagements at all).
     return c.invited.isEmpty;
+  }
+
+  int get legalAcceptedCount =>
+      requiredDocKeys.where(acceptedDocKeys.contains).length;
+
+  int get legalTotalCount => requiredDocKeys.length;
+
+  int get noticesAcknowledgedCount =>
+      notices.where((n) => acknowledgedNoticeKeys.contains(n.noticeKey)).length;
+
+  int get noticesTotalCount => notices.length;
+
+  Set<String> get _neededConsentTypes =>
+      notices
+          .map((n) => n.credentialType)
+          .whereType<String>()
+          .where(sensitiveCredentialTypes.contains)
+          .toSet();
+
+  int get consentsRecordedCount =>
+      _neededConsentTypes.where(consentedTypes.contains).length;
+
+  int get consentsTotalCount => _neededConsentTypes.length;
+
+  bool get canAdvanceCurrentStep {
+    switch (currentStep) {
+      case OnboardingStep.legal:
+        return canAdvanceLegal;
+      case OnboardingStep.notices:
+        return canAdvanceNotices;
+      case OnboardingStep.consents:
+        return canAdvanceConsents;
+      case OnboardingStep.engagement:
+        return canAdvanceEngagement;
+      case OnboardingStep.credentials:
+        return true;
+    }
+  }
+
+  /// First notice in list order that is not yet acknowledged, if any.
+  CollectionNotice? get nextIncompleteNotice {
+    for (final n in notices) {
+      if (!acknowledgedNoticeKeys.contains(n.noticeKey)) return n;
+    }
+    return null;
+  }
+
+  /// First required legal doc that is not yet accepted, if any.
+  String? get nextIncompleteLegalDocKey {
+    for (final k in requiredDocKeys) {
+      if (!acceptedDocKeys.contains(k)) return k;
+    }
+    return null;
   }
 
   String? get _contractorId {

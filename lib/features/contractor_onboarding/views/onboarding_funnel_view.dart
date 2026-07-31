@@ -81,7 +81,10 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
                       ),
                     const Spacer(),
                     AsyncElevatedButton(
-                      onPressed: controller.next,
+                      onPressed:
+                          controller.canAdvanceCurrentStep
+                              ? controller.next
+                              : null,
                       isLoading:
                           controller.isLoading.value ||
                           controller.hasPendingAction,
@@ -172,13 +175,36 @@ class _ErrorBanner extends StatelessWidget {
   }
 }
 
-class _LegalStep extends GetView<OnboardingController> {
+class _LegalStep extends StatefulWidget {
   const _LegalStep();
 
   @override
+  State<_LegalStep> createState() => _LegalStepState();
+}
+
+class _LegalStepState extends State<_LegalStep> {
+  final _cardKeys = <String, GlobalKey>{};
+
   OnboardingController get controller {
     OnboardingBinding.ensure();
     return Get.find<OnboardingController>();
+  }
+
+  GlobalKey _keyFor(String docKey) =>
+      _cardKeys.putIfAbsent(docKey, GlobalKey.new);
+
+  Future<void> _acceptAndScroll(LegalDocumentCurrent doc) async {
+    await controller.acceptLegalDoc(doc);
+    final nextKey = controller.nextIncompleteLegalDocKey;
+    if (nextKey == null || !mounted) return;
+    final ctx = _cardKeys[nextKey]?.currentContext;
+    if (ctx != null) {
+      await Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 300),
+        alignment: 0.1,
+      );
+    }
   }
 
   @override
@@ -199,25 +225,37 @@ class _LegalStep extends GetView<OnboardingController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            'Accepted ${controller.legalAcceptedCount} of '
+            '${controller.legalTotalCount}',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+            ),
+          ),
+          const SizedBox(height: 8),
           const Text(
             'Review and accept each document separately.',
             style: TextStyle(color: AppColors.textMuted),
           ),
           const SizedBox(height: 12),
           for (final doc in controller.legalDocs) ...[
-            _DocCard(
-              title:
-                  doc.docKey == 'platform_terms'
-                      ? 'Platform Terms'
-                      : 'Privacy Policy',
-              meta: 'doc_key: ${doc.docKey} · version: ${doc.version}',
-              markdown: doc.contentMd,
-              counselPending: doc.counselPending,
-              accepted: controller.acceptedDocKeys.contains(doc.docKey),
-              isLoading: controller.isPending(
-                'accept-doc-${doc.docKey}-${doc.version}',
+            KeyedSubtree(
+              key: _keyFor(doc.docKey),
+              child: _DocCard(
+                title:
+                    doc.docKey == 'platform_terms'
+                        ? 'Platform Terms'
+                        : 'Privacy Policy',
+                meta: 'doc_key: ${doc.docKey} · version: ${doc.version}',
+                markdown: doc.contentMd,
+                counselPending: doc.counselPending,
+                accepted: controller.acceptedDocKeys.contains(doc.docKey),
+                isLoading: controller.isPending(
+                  'accept-doc-${doc.docKey}-${doc.version}',
+                ),
+                onAccept: () => _acceptAndScroll(doc),
               ),
-              onAccept: () => controller.acceptLegalDoc(doc),
             ),
             const SizedBox(height: 12),
           ],
@@ -227,13 +265,36 @@ class _LegalStep extends GetView<OnboardingController> {
   }
 }
 
-class _NoticesStep extends GetView<OnboardingController> {
+class _NoticesStep extends StatefulWidget {
   const _NoticesStep();
 
   @override
+  State<_NoticesStep> createState() => _NoticesStepState();
+}
+
+class _NoticesStepState extends State<_NoticesStep> {
+  final _cardKeys = <String, GlobalKey>{};
+
   OnboardingController get controller {
     OnboardingBinding.ensure();
     return Get.find<OnboardingController>();
+  }
+
+  GlobalKey _keyFor(String noticeKey) =>
+      _cardKeys.putIfAbsent(noticeKey, GlobalKey.new);
+
+  Future<void> _acknowledgeAndScroll(CollectionNotice notice) async {
+    await controller.acknowledgeNotice(notice);
+    final next = controller.nextIncompleteNotice;
+    if (next == null || !mounted) return;
+    final ctx = _cardKeys[next.noticeKey]?.currentContext;
+    if (ctx != null) {
+      await Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 300),
+        alignment: 0.1,
+      );
+    }
   }
 
   @override
@@ -248,24 +309,38 @@ class _NoticesStep extends GetView<OnboardingController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            'Acknowledged ${controller.noticesAcknowledgedCount} of '
+            '${controller.noticesTotalCount}',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+            ),
+          ),
+          const SizedBox(height: 8),
           const Text(
             'Acknowledge each collection notice separately.',
             style: TextStyle(color: AppColors.textMuted),
           ),
           const SizedBox(height: 12),
           for (final n in controller.notices) ...[
-            _DocCard(
-              title: n.noticeKey,
-              meta:
-                  'credential: ${n.credentialType ?? "—"} · version: ${n.version}',
-              markdown: n.contentMd,
-              counselPending: n.counselPending,
-              accepted: controller.acknowledgedNoticeKeys.contains(n.noticeKey),
-              isLoading: controller.isPending(
-                'ack-notice-${n.noticeKey}-${n.version}',
+            KeyedSubtree(
+              key: _keyFor(n.noticeKey),
+              child: _DocCard(
+                title: n.noticeKey,
+                meta:
+                    'credential: ${n.credentialType ?? "—"} · version: ${n.version}',
+                markdown: n.contentMd,
+                counselPending: n.counselPending,
+                accepted: controller.acknowledgedNoticeKeys.contains(
+                  n.noticeKey,
+                ),
+                isLoading: controller.isPending(
+                  'ack-notice-${n.noticeKey}-${n.version}',
+                ),
+                acceptLabel: 'I acknowledge this notice',
+                onAccept: () => _acknowledgeAndScroll(n),
               ),
-              acceptLabel: 'I acknowledge this notice',
-              onAccept: () => controller.acknowledgeNotice(n),
             ),
             const SizedBox(height: 12),
           ],
@@ -311,6 +386,15 @@ class _ConsentsStep extends GetView<OnboardingController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            'Recorded ${controller.consentsRecordedCount} of '
+            '${controller.consentsTotalCount}',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+            ),
+          ),
+          const SizedBox(height: 8),
           const Text(
             'Sensitive credential types require an explicit consent '
             '(separate from Terms / Privacy).',

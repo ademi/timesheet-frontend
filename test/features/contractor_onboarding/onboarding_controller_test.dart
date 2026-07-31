@@ -11,6 +11,7 @@ import 'package:rostiq/core/auth/jwt_claims.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/core/services/token_storage.dart';
 import 'package:rostiq/features/contractor_onboarding/controllers/onboarding_controller.dart';
+import 'package:rostiq/features/contractor_onboarding/data/models/compliance_models.dart';
 import 'package:rostiq/features/contractor_onboarding/data/onboarding_progress_store.dart';
 import 'package:rostiq/features/contractor_onboarding/data/repositories/compliance_repository.dart';
 
@@ -218,4 +219,46 @@ void main() {
       () => repository.listCollectionNotices(jurisdiction: 'AU'),
     ).called(1);
   });
+
+  CollectionNotice notice(String key) => CollectionNotice(
+        noticeKey: key,
+        version: '1',
+        contentMd: 'Body',
+        contentHash: 'hash',
+        purpose: 'eligibility',
+        legalOrPolicyBasis: 'policy',
+        consequencesOfRefusal: 'cannot proceed',
+        retentionSummary: 'kept',
+        counselPending: false,
+        effectiveAt: DateTime.utc(2026, 1, 1),
+        jurisdiction: 'AU',
+      );
+
+  test(
+    'when 2 of 4 notices acknowledged, counts and canAdvanceNotices reflect N-of-M',
+    () {
+      final controller = OnboardingController(
+        repository: _MockComplianceRepository(),
+        progressStore: progressStore,
+      );
+      controller.notices.assignAll([
+        notice('n1'),
+        notice('n2'),
+        notice('n3'),
+        notice('n4'),
+      ]);
+      controller.acknowledgedNoticeKeys.addAll({'n1', 'n2'});
+      controller.stepIndex.value = OnboardingStep.notices.index;
+
+      expect(controller.noticesAcknowledgedCount, 2);
+      expect(controller.noticesTotalCount, 4);
+      expect(controller.canAdvanceNotices, isFalse);
+      expect(controller.canAdvanceCurrentStep, isFalse);
+
+      controller.acknowledgedNoticeKeys.addAll({'n3', 'n4'});
+      expect(controller.noticesAcknowledgedCount, 4);
+      expect(controller.canAdvanceNotices, isTrue);
+      expect(controller.canAdvanceCurrentStep, isTrue);
+    },
+  );
 }

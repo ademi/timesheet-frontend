@@ -49,7 +49,7 @@ class AsyncElevatedButton extends StatelessWidget {
     this.style,
   });
 
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isLoading;
   final Widget child;
   final ButtonStyle? style;
