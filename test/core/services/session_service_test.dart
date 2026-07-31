@@ -280,6 +280,7 @@ void main() {
         expect(session.needsInviteAccept, isFalse);
         expect(session.needsOnboarding.value, isFalse);
         expect(session.needsDocsAttention, isTrue);
+        expect(session.resolvePostLoginRoute(), AppRoutes.contractorHome);
       },
     );
 

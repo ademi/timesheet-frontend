@@ -127,6 +127,25 @@ void main() {
   );
 
   test(
+    'engagement next exits the funnel after all invites are accepted',
+    () async {
+      await progressStore.markPlatformComplete('contractor-a');
+      setEngagementStatus('pending_docs');
+      final controller = OnboardingController(
+        repository: _MockComplianceRepository(),
+        progressStore: progressStore,
+      );
+      controller.stepIndex.value = OnboardingStep.engagement.index;
+
+      await controller.next();
+
+      // In test mode navigation does not change currentRoute; it must not
+      // advance back into credentials after the invite is already accepted.
+      expect(controller.currentStep, isNot(OnboardingStep.credentials));
+    },
+  );
+
+  test(
     'completeFunnel returns to engagement when an invite is still open',
     () async {
       await progressStore.markPlatformComplete('contractor-a');

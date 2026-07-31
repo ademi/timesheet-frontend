@@ -344,10 +344,7 @@ class OnboardingController extends GetxController with PendingActionMixin {
           _toast('Accept each invited engagement before continuing.');
           return;
         }
-        goToStep(OnboardingStep.credentials);
-        if (Get.isRegistered<CredentialsController>()) {
-          await Get.find<CredentialsController>().load();
-        }
+        await completeFunnel();
       case OnboardingStep.credentials:
         await completeFunnel();
     }
