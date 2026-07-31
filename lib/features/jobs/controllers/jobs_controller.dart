@@ -42,6 +42,7 @@ class JobsController extends GetxController {
 
   final isLoading = false.obs;
   final isSaving = false.obs;
+  final isGenerating = false.obs;
   final errorMessage = RxnString();
   final lastGenerate = Rxn<GenerateVisitsResponse>();
 
@@ -462,7 +463,7 @@ class JobsController extends GetxController {
       '${rule.id}|${from.toIso8601String()}|${to.toIso8601String()}|${generatePartial.value}',
       () => 'fe-gen-${rule.id}-${now.microsecondsSinceEpoch}',
     );
-    isSaving.value = true;
+    isGenerating.value = true;
     errorMessage.value = null;
     lastGenerate.value = null;
     try {
@@ -489,7 +490,7 @@ class JobsController extends GetxController {
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
-      isSaving.value = false;
+      isGenerating.value = false;
     }
   }
 

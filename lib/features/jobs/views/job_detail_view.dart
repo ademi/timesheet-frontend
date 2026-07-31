@@ -187,7 +187,10 @@ class _JobDetailViewState extends State<JobDetailView> {
                   const Text('Generate with partial'),
                   Switch(
                     value: controller.generatePartial.value,
-                    onChanged: (v) => controller.generatePartial.value = v,
+                    onChanged:
+                        controller.isGenerating.value
+                            ? null
+                            : (v) => controller.generatePartial.value = v,
                   ),
                 ],
               ),
@@ -229,7 +232,7 @@ class _JobDetailViewState extends State<JobDetailView> {
                             if (controller.canManage)
                               ElevatedButton(
                                 onPressed:
-                                    controller.isSaving.value
+                                    controller.isGenerating.value
                                         ? null
                                         : () =>
                                             controller.generateForRule(rule),
@@ -237,7 +240,17 @@ class _JobDetailViewState extends State<JobDetailView> {
                                   backgroundColor: AppColors.primary,
                                   foregroundColor: AppColors.onPrimary,
                                 ),
-                                child: const Text('Generate (14d)'),
+                                child:
+                                    controller.isGenerating.value
+                                        ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.onPrimary,
+                                          ),
+                                        )
+                                        : const Text('Generate (14d)'),
                               ),
                           ],
                         ),
