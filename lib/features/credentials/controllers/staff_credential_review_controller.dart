@@ -44,7 +44,7 @@ class StaffCredentialReviewController extends GetxController {
   final errorMessage = RxnString();
   final eligibilityReasons = <String>[].obs;
   final mfaRequired = false.obs;
-  final evidenceByCredentialType = <String, List<DocumentOut>>{}.obs;
+  final evidenceByCredentialId = <String, List<DocumentOut>>{}.obs;
 
   bool get canReview =>
       _session.hasPermission(AppPermissions.credentialsReview);
@@ -53,7 +53,7 @@ class StaffCredentialReviewController extends GetxController {
   bool get hasReviewContext => _contractorId != null && _engagementId != null;
 
   List<DocumentOut> evidenceFor(CredentialOut credential) {
-    return evidenceByCredentialType[credential.credentialType] ?? const [];
+    return evidenceByCredentialId[credential.id] ?? const [];
   }
 
   @override
@@ -97,10 +97,11 @@ class StaffCredentialReviewController extends GetxController {
       final list = await _repository.listForTenantContractor(contractorId);
       items.assignAll(list);
       final documents = await _pipeline.listEvidenceForContractor(contractorId);
-      evidenceByCredentialType.value = {
+      evidenceByCredentialId.value = {
         for (final credential in list)
-          credential.credentialType: documentsForCredentialType(
+          credential.id: documentsForCredential(
             documents: documents,
+            credentialId: credential.id,
             credentialType: credential.credentialType,
           ),
       };

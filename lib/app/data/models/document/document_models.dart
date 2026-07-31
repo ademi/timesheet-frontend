@@ -16,13 +16,13 @@ class UploadUrlRequest {
   final String? category;
 
   Map<String, dynamic> toJson() => {
-        'owner_type': ownerType,
-        'owner_id': ownerId,
-        'filename': filename,
-        'content_type': contentType,
-        'size_bytes': sizeBytes,
-        if (category != null) 'category': category,
-      };
+    'owner_type': ownerType,
+    'owner_id': ownerId,
+    'filename': filename,
+    'content_type': contentType,
+    'size_bytes': sizeBytes,
+    if (category != null) 'category': category,
+  };
 }
 
 class UploadUrlResponse {
@@ -58,6 +58,7 @@ class DocumentOut {
     required this.sizeBytes,
     required this.scanStatus,
     this.category,
+    this.credentialId,
     this.verificationStatus,
     this.createdAt,
   });
@@ -70,11 +71,11 @@ class DocumentOut {
   final int sizeBytes;
   final String scanStatus;
   final String? category;
+  final String? credentialId;
   final String? verificationStatus;
   final DateTime? createdAt;
 
-  bool get isScanPending =>
-      scanStatus == 'pending' || scanStatus == 'scanning';
+  bool get isScanPending => scanStatus == 'pending' || scanStatus == 'scanning';
 
   bool get isScanClean => scanStatus == 'clean';
 
@@ -90,10 +91,12 @@ class DocumentOut {
       sizeBytes: json['size_bytes'] as int,
       scanStatus: json['scan_status'] as String? ?? 'pending',
       category: json['category'] as String?,
+      credentialId: json['credential_id'] as String?,
       verificationStatus: json['verification_status'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString())
-          : null,
+      createdAt:
+          json['created_at'] != null
+              ? DateTime.tryParse(json['created_at'].toString())
+              : null,
     );
   }
 }
@@ -109,9 +112,8 @@ class DownloadUrlResponse {
 
   factory DownloadUrlResponse.fromJson(Map<String, dynamic> json) {
     return DownloadUrlResponse(
-      downloadUrl: (json['download_url'] as String?) ??
-          (json['url'] as String?) ??
-          '',
+      downloadUrl:
+          (json['download_url'] as String?) ?? (json['url'] as String?) ?? '',
       expiresInSeconds: json['expires_in_seconds'] as int? ?? 0,
     );
   }

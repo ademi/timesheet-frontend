@@ -46,7 +46,7 @@ class CredentialsController extends GetxController {
   final lastOpenedViaProxy = false.obs;
   final uploadProgress = RxnDouble();
   final selectedEvidence = <DocumentOut>[].obs;
-  final evidenceByCredentialType = <String, List<DocumentOut>>{}.obs;
+  final evidenceByCredentialId = <String, List<DocumentOut>>{}.obs;
 
   // Create form
   final selectedType = 'wwcc'.obs;
@@ -71,7 +71,7 @@ class CredentialsController extends GetxController {
   bool get hasSelectedEvidence => selectedEvidence.isNotEmpty;
 
   List<DocumentOut> evidenceFor(CredentialOut credential) {
-    return evidenceByCredentialType[credential.credentialType] ?? const [];
+    return evidenceByCredentialId[credential.id] ?? const [];
   }
 
   @override
@@ -100,10 +100,11 @@ class CredentialsController extends GetxController {
       final id = contractorId;
       if (id != null && id.isNotEmpty) {
         final documents = await _pipeline.listEvidenceForContractor(id);
-        evidenceByCredentialType.value = {
+        evidenceByCredentialId.value = {
           for (final credential in list)
-            credential.credentialType: documentsForCredentialType(
+            credential.id: documentsForCredential(
               documents: documents,
+              credentialId: credential.id,
               credentialType: credential.credentialType,
             ),
         };
