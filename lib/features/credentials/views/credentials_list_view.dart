@@ -4,9 +4,13 @@ import 'package:get/get.dart';
 import '../../../app/controllers/auth_controller.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../core/services/session_service.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
 import '../widgets/credential_status_chip.dart';
+import '../../engagements/bindings/engagements_binding.dart';
+import '../../engagements/controllers/contractor_engagements_controller.dart';
+import '../../engagements/widgets/engagement_docs_checklist.dart';
 
 class CredentialsListView extends GetView<CredentialsController> {
   const CredentialsListView({super.key, this.embedded = false});
@@ -16,6 +20,14 @@ class CredentialsListView extends GetView<CredentialsController> {
 
   @override
   Widget build(BuildContext context) {
+    ContractorEngagementsController? engagements;
+    if (Get.isRegistered<SessionService>()) {
+      ContractorEngagementsBinding.ensure();
+      if (Get.isRegistered<ContractorEngagementsController>()) {
+        engagements = Get.find<ContractorEngagementsController>();
+      }
+    }
+
     final body = Obx(() {
       if (controller.isLoading.value && controller.items.isEmpty) {
         return const Center(child: CircularProgressIndicator());
@@ -46,11 +58,40 @@ class CredentialsListView extends GetView<CredentialsController> {
               style: const TextStyle(color: AppColors.textMuted),
             ),
             const SizedBox(height: 12),
+            if (engagements != null &&
+                (Get.find<SessionService>().needsDocsAttention ||
+                    engagements.items.any((e) => e.isPendingDocs))) ...[
+              const Text(
+                'Engagement document checklist',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final engagement in engagements.items.where(
+                (engagement) => engagement.isPendingDocs,
+              ))
+                EngagementDocsChecklist(
+                  engagement: engagement,
+                  credentials: controller.items,
+                  onAddMissing:
+                      controller.canManage
+                          ? (categories) {
+                            controller.selectedType.value = categories.first;
+                            Get.toNamed(AppRoutes.contractorCredentialCreate);
+                          }
+                          : null,
+                ),
+              const SizedBox(height: 4),
+            ],
             if (controller.canManage)
               Align(
                 alignment: Alignment.centerLeft,
                 child: ElevatedButton.icon(
-                  onPressed: () => Get.toNamed(AppRoutes.contractorCredentialCreate),
+                  onPressed:
+                      () => Get.toNamed(AppRoutes.contractorCredentialCreate),
                   icon: const Icon(Icons.add),
                   label: const Text('Add credential'),
                   style: ElevatedButton.styleFrom(
@@ -108,9 +149,7 @@ class _Banner extends StatelessWidget {
       ),
       child: Text(
         message,
-        style: TextStyle(
-          color: error ? AppColors.error : AppColors.textDark,
-        ),
+        style: TextStyle(color: error ? AppColors.error : AppColors.textDark),
       ),
     );
   }
@@ -155,24 +194,26 @@ class _CredentialTile extends StatelessWidget {
                 await c.supersede(credential);
             }
           },
-          itemBuilder: (_) => [
-            const PopupMenuItem(value: 'detail', child: Text('Details')),
-            if (c.canManage)
-              const PopupMenuItem(
-                value: 'upload',
-                child: Text('Attach evidence'),
-              ),
-            if (c.canManage)
-              const PopupMenuItem(
-                value: 'supersede',
-                child: Text('Supersede'),
-              ),
-          ],
+          itemBuilder:
+              (_) => [
+                const PopupMenuItem(value: 'detail', child: Text('Details')),
+                if (c.canManage)
+                  const PopupMenuItem(
+                    value: 'upload',
+                    child: Text('Attach evidence'),
+                  ),
+                if (c.canManage)
+                  const PopupMenuItem(
+                    value: 'supersede',
+                    child: Text('Supersede'),
+                  ),
+              ],
         ),
-        onTap: () => Get.toNamed(
-          AppRoutes.contractorCredentialDetail,
-          arguments: credential,
-        ),
+        onTap:
+            () => Get.toNamed(
+              AppRoutes.contractorCredentialDetail,
+              arguments: credential,
+            ),
       ),
     );
   }

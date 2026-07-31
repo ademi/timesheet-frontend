@@ -6,6 +6,7 @@ import '../../credentials/data/models/credential_models.dart';
 import '../bindings/engagements_binding.dart';
 import '../controllers/contractor_engagements_controller.dart';
 import '../data/models/engagement_models.dart';
+import '../widgets/engagement_docs_checklist.dart';
 
 /// Embedded in onboarding or shown standalone.
 class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
@@ -84,16 +85,56 @@ class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
                     'Required: ${e.requiredDocCategories.map((c) => credentialTypeLabel(c.category)).join(", ").ifEmpty("—")}',
                   ),
                   isThreeLine: true,
-                  trailing: ElevatedButton(
-                    onPressed: () => controller.beginAccept(e),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.onPrimary,
-                    ),
-                    child: const Text('Accept'),
+                  trailing: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      EngagementStatusChip(status: e.status),
+                      const SizedBox(height: 4),
+                      ElevatedButton(
+                        onPressed: () => controller.beginAccept(e),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.onPrimary,
+                        ),
+                        child: const Text('Accept'),
+                      ),
+                    ],
                   ),
                 ),
               ),
+          if (controller.items.any(
+            (e) => e.isPendingDocs || e.isApproved || e.isActive,
+          )) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Accepted engagements',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textDark,
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final e in controller.items.where(
+              (e) => e.isPendingDocs || e.isApproved || e.isActive,
+            ))
+              Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: Text(
+                    e.tenantName?.isNotEmpty == true
+                        ? e.tenantName!
+                        : 'Provider ${e.tenantId}',
+                  ),
+                  subtitle: Text(
+                    e.isPendingDocs
+                        ? 'Documents still need attention in Credentials.'
+                        : 'Engagement accepted.',
+                  ),
+                  trailing: EngagementStatusChip(status: e.status),
+                ),
+              ),
+          ],
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
