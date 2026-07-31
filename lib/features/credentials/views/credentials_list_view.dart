@@ -6,6 +6,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
+import '../widgets/credential_status_chip.dart';
 
 class CredentialsListView extends GetView<CredentialsController> {
   const CredentialsListView({super.key, this.embedded = false});
@@ -126,9 +127,16 @@ class _CredentialTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        title: Text(credentialTypeLabel(credential.credentialType)),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(credentialTypeLabel(credential.credentialType)),
+            ),
+            CredentialStatusChip(status: credential.status),
+          ],
+        ),
         subtitle: Text(
-          'Status: ${credential.status} · Evidence: ${credential.evidencePresence}\n'
+          'Evidence: ${credential.evidencePresence} · '
           'Provenance: ${credential.provenanceState}'
           '${credential.identifierMasked != null ? '\nID: ${credential.identifierMasked}' : ''}',
         ),

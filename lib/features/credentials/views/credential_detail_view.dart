@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
+import '../widgets/credential_status_chip.dart';
 
 class CredentialDetailView extends GetView<CredentialsController> {
   const CredentialDetailView({super.key});
@@ -41,7 +42,7 @@ class CredentialDetailView extends GetView<CredentialsController> {
               ),
               const SizedBox(height: 12),
             ],
-            _row('Status', credential.status),
+            _statusRow(credential.status),
             _row('Evidence', credential.evidencePresence),
             _row('Provenance', credential.provenanceState),
             if (credential.issuer != null) _row('Issuer', credential.issuer!),
@@ -108,6 +109,37 @@ class CredentialDetailView extends GetView<CredentialsController> {
           ],
         );
       }),
+    );
+  }
+
+  Widget _statusRow(String status) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(
+            width: 110,
+            child: Text('Status', style: TextStyle(color: AppColors.textMuted)),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CredentialStatusChip(status: status),
+                const SizedBox(height: 4),
+                Text(
+                  status,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

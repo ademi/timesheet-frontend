@@ -5,6 +5,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../controllers/staff_credential_review_controller.dart';
 import '../data/models/credential_models.dart';
+import '../widgets/credential_status_chip.dart';
 
 class StaffCredentialReviewView
     extends GetView<StaffCredentialReviewController> {
@@ -117,13 +118,20 @@ class _StaffCredentialCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              credentialTypeLabel(c.credentialType),
-              style: const TextStyle(fontWeight: FontWeight.w600),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    credentialTypeLabel(c.credentialType),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                CredentialStatusChip(status: c.status),
+              ],
             ),
             const SizedBox(height: 4),
             Text(
-              'Status: ${c.status} · Evidence: ${c.evidencePresence}\n'
+              'Evidence: ${c.evidencePresence} · '
               'Provenance: ${c.provenanceState}',
               style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
             ),
