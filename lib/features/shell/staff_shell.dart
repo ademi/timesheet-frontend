@@ -68,11 +68,19 @@ abstract final class StaffShellNav {
   ];
 
   static List<_StaffDest> _visible() {
-    if (!Get.isRegistered<SessionService>()) {
-      return _all.where((d) => d.route == AppRoutes.staffHome).toList();
+    final filtered = Get.isRegistered<SessionService>()
+        ? _all
+            .where((d) => Get.find<SessionService>().hasAny(d.anyOf))
+            .toList(growable: false)
+        : <_StaffDest>[];
+
+    final hasHome = filtered.any((d) => d.route == AppRoutes.staffHome);
+    if (filtered.isEmpty || !hasHome) {
+      return _all
+          .where((d) => d.anyOf.contains(AppPermissions.authSession))
+          .toList(growable: false);
     }
-    final session = Get.find<SessionService>();
-    return _all.where((d) => session.hasAny(d.anyOf)).toList(growable: false);
+    return filtered;
   }
 
   static int selectedIndex(String route) {
