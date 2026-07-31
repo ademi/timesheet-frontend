@@ -82,51 +82,63 @@ class WorkforceDetailView extends GetView<WorkforceController> {
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (controller.canApprove && current.isPendingDocs) ...[
-                  _actionButton(
-                    label: 'Approve',
-                    onPressed: () => controller.runAction('approve', current),
-                  ),
-                  _actionButton(
-                    label: 'Approve & activate',
-                    onPressed:
-                        () => controller.runAction(
-                          'approve_and_activate',
-                          current,
-                        ),
-                  ),
+            if (!controller.canApprove && !controller.canManage)
+              const Text(
+                'No lifecycle actions available for your role. '
+                'Approve / activate need contractors.approve and contractors.manage.',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              )
+            else if (current.isInvited)
+              const Text(
+                'Waiting for the contractor to accept the invite.',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (controller.canApprove && current.isPendingDocs) ...[
+                    _actionButton(
+                      label: 'Approve',
+                      onPressed: () => controller.runAction('approve', current),
+                    ),
+                    _actionButton(
+                      label: 'Approve & activate',
+                      onPressed:
+                          () => controller.runAction(
+                            'approve_and_activate',
+                            current,
+                          ),
+                    ),
+                  ],
+                  if (controller.canManage && current.isApproved)
+                    _actionButton(
+                      label: 'Activate',
+                      onPressed: () => controller.runAction('activate', current),
+                    ),
+                  if (controller.canManage && current.isActive)
+                    _actionButton(
+                      label: 'Suspend',
+                      onPressed: () => controller.runAction('suspend', current),
+                    ),
+                  if (controller.canManage && current.isSuspended)
+                    _actionButton(
+                      label: 'Resume',
+                      onPressed: () => controller.runAction('resume', current),
+                    ),
+                  if (controller.canManage &&
+                      !current.isEnded &&
+                      !current.isInvited)
+                    OutlinedButton(
+                      onPressed:
+                          controller.isSaving.value
+                              ? null
+                              : () => controller.runAction('end', current),
+                      child: const Text('End engagement'),
+                    ),
                 ],
-                if (controller.canManage && current.isApproved)
-                  _actionButton(
-                    label: 'Activate',
-                    onPressed: () => controller.runAction('activate', current),
-                  ),
-                if (controller.canManage && current.isActive)
-                  _actionButton(
-                    label: 'Suspend',
-                    onPressed: () => controller.runAction('suspend', current),
-                  ),
-                if (controller.canManage && current.isSuspended)
-                  _actionButton(
-                    label: 'Resume',
-                    onPressed: () => controller.runAction('resume', current),
-                  ),
-                if (controller.canManage &&
-                    !current.isEnded &&
-                    !current.isInvited)
-                  OutlinedButton(
-                    onPressed:
-                        controller.isSaving.value
-                            ? null
-                            : () => controller.runAction('end', current),
-                    child: const Text('End engagement'),
-                  ),
-              ],
-            ),
+              ),
             const SizedBox(height: 24),
             const Text(
               'Credentials',
