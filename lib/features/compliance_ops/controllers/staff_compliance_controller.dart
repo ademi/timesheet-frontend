@@ -7,6 +7,8 @@ import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
+import '../../engagements/data/models/engagement_models.dart';
+import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../subscription/billing_gate.dart';
 import '../data/models/compliance_ops_models.dart';
 import '../data/repositories/compliance_ops_repository.dart';
@@ -15,13 +17,16 @@ class StaffComplianceController extends GetxController {
   StaffComplianceController({
     required ComplianceOpsRepository repository,
     required CredentialsRepository credentialsRepository,
+    required EngagementsRepository engagementsRepository,
     required SessionService session,
-  })  : _repository = repository,
-        _credentialsRepository = credentialsRepository,
-        _session = session;
+  }) : _repository = repository,
+       _credentialsRepository = credentialsRepository,
+       _engagementsRepository = engagementsRepository,
+       _session = session;
 
   final ComplianceOpsRepository _repository;
   final CredentialsRepository _credentialsRepository;
+  final EngagementsRepository _engagementsRepository;
   final SessionService _session;
 
   final tabIndex = 0.obs;
@@ -33,6 +38,9 @@ class StaffComplianceController extends GetxController {
   final accessHistory = <AccessHistoryEntry>[].obs;
   final accessHistoryError = RxnString();
   final isLoadingAccessHistory = false.obs;
+  final contractorOptions = <EngagementOut>[].obs;
+  final isLoadingContractors = false.obs;
+  final selectedContractorId = RxnString();
   final credentialOptions = <CredentialOut>[].obs;
   final isLoadingCredentials = false.obs;
   final selectedCredentialId = RxnString();
@@ -40,9 +48,9 @@ class StaffComplianceController extends GetxController {
   final selectedIncident = Rxn<IncidentOut>();
   final events = <NotificationEventOut>[].obs;
 
-  final contractorIdCtrl = TextEditingController();
   final incidentTitleCtrl = TextEditingController();
   final incidentDescCtrl = TextEditingController();
+  var _hasLoadedContractors = false;
 
   bool get canRights =>
       _session.hasPermission(AppPermissions.complianceRightsManage);
@@ -63,7 +71,6 @@ class StaffComplianceController extends GetxController {
 
   @override
   void onClose() {
-    contractorIdCtrl.dispose();
     incidentTitleCtrl.dispose();
     incidentDescCtrl.dispose();
     super.onClose();
@@ -95,14 +102,62 @@ class StaffComplianceController extends GetxController {
     isLoading.value = false;
   }
 
+  Future<void> openAccessHistory() async {
+    tabIndex.value = 1;
+    if (!_hasLoadedContractors) await loadContractors();
+  }
+
+  Future<void> loadContractors() async {
+    isLoadingContractors.value = true;
+    accessHistoryError.value = null;
+    try {
+      final engagements = await _engagementsRepository.listTenantEngagements();
+      final uniqueByContractorId = <String, EngagementOut>{};
+      for (final engagement in engagements) {
+        uniqueByContractorId.putIfAbsent(
+          engagement.contractorId,
+          () => engagement,
+        );
+      }
+      contractorOptions.assignAll(uniqueByContractorId.values);
+      _hasLoadedContractors = true;
+    } on AppFailure catch (e) {
+      accessHistoryError.value = e.message;
+    } catch (_) {
+      accessHistoryError.value = 'Could not load contractors.';
+    } finally {
+      isLoadingContractors.value = false;
+    }
+  }
+
+  String contractorLabel(EngagementOut contractor) {
+    final name = contractor.contractorName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    final id = contractor.contractorId;
+    if (id.length <= 8) return 'Contractor ${id.substring(0, 4)}…';
+    return 'Contractor ${id.substring(0, 4)}…${id.substring(id.length - 4)}';
+  }
+
+  void selectContractor(EngagementOut? contractor) {
+    final contractorId = contractor?.contractorId;
+    if (selectedContractorId.value == contractorId) return;
+    selectedContractorId.value = contractorId;
+    selectedCredentialId.value = null;
+    accessHistory.clear();
+    credentialOptions.clear();
+    accessHistoryError.value = null;
+  }
+
+  void clearSelectedContractor() => selectContractor(null);
+
   Future<void> loadContractorCredentials() async {
     if (!canReadCredentials) {
       accessHistoryError.value = 'Missing credentials.read permission.';
       return;
     }
-    final contractorId = contractorIdCtrl.text.trim();
-    if (contractorId.isEmpty) {
-      accessHistoryError.value = 'Enter a contractor id.';
+    final contractorId = selectedContractorId.value;
+    if (contractorId == null || contractorId.isEmpty) {
+      accessHistoryError.value = 'Select a contractor.';
       return;
     }
     isLoadingCredentials.value = true;
@@ -205,8 +260,10 @@ class StaffComplianceController extends GetxController {
     if (!canIncidents) return;
     isSaving.value = true;
     try {
-      final updated =
-          await _repository.patchIncident(incident.id, status: 'closed');
+      final updated = await _repository.patchIncident(
+        incident.id,
+        status: 'closed',
+      );
       selectedIncident.value = updated;
       incidents.assignAll(await _repository.listIncidents());
     } on AppFailure catch (e) {

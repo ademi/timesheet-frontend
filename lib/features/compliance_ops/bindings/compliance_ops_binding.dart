@@ -5,6 +5,8 @@ import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../credentials/bindings/credentials_binding.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
+import '../../engagements/bindings/engagements_binding.dart';
+import '../../engagements/data/repositories/engagements_repository.dart';
 import '../controllers/contractor_profile_controller.dart';
 import '../controllers/staff_compliance_controller.dart';
 import '../data/datasources/compliance_ops_remote_datasource.dart';
@@ -22,10 +24,7 @@ class ComplianceOpsBinding extends Bindings {
       Get.put<TokenStorage>(TokenStorage(), permanent: true);
     }
     if (!Get.isRegistered<ApiClient>()) {
-      Get.put<ApiClient>(
-        ApiClient(Get.find<TokenStorage>()),
-        permanent: true,
-      );
+      Get.put<ApiClient>(ApiClient(Get.find<TokenStorage>()), permanent: true);
     }
     if (!Get.isRegistered<ComplianceOpsRemoteDataSource>()) {
       Get.lazyPut<ComplianceOpsRemoteDataSource>(
@@ -51,12 +50,14 @@ class StaffComplianceBinding extends Bindings {
   void dependencies() {
     ComplianceOpsBinding.ensureShared();
     CredentialsBinding.ensureDependencies();
+    EngagementsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<StaffComplianceController>()) {
       Get.put(
         StaffComplianceController(
           repository: Get.find<ComplianceOpsRepository>(),
           credentialsRepository: Get.find<CredentialsRepository>(),
+          engagementsRepository: Get.find<EngagementsRepository>(),
           session: Get.find<SessionService>(),
         ),
       );

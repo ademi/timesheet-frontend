@@ -5,6 +5,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../subscription/billing_gate.dart';
 import '../../credentials/data/models/credential_models.dart';
+import '../../engagements/data/models/engagement_models.dart';
 import '../controllers/staff_compliance_controller.dart';
 
 class StaffComplianceView extends GetView<StaffComplianceController> {
@@ -30,10 +31,7 @@ class StaffComplianceView extends GetView<StaffComplianceController> {
         return Column(
           children: [
             if (err != null)
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: _ErrorBox(err),
-              ),
+              Padding(padding: const EdgeInsets.all(12), child: _ErrorBox(err)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Wrap(
@@ -49,7 +47,7 @@ class StaffComplianceView extends GetView<StaffComplianceController> {
                     ChoiceChip(
                       label: const Text('Access history'),
                       selected: tab == 1,
-                      onSelected: (_) => controller.tabIndex.value = 1,
+                      onSelected: (_) => controller.openAccessHistory(),
                     ),
                   if (controller.canIncidents)
                     ChoiceChip(
@@ -66,23 +64,26 @@ class StaffComplianceView extends GetView<StaffComplianceController> {
               ),
             ),
             Expanded(
-              child: controller.isLoading.value
-                  ? const Center(child: CircularProgressIndicator())
-                  : RefreshIndicator(
-                      onRefresh: tab == 1
-                          ? () async {
-                              await controller.load();
-                              await controller.refreshAccessHistory();
-                            }
-                          : controller.load,
-                      child: tab == 0
-                          ? _RightsTab(controller: controller)
-                          : tab == 1
-                              ? _AccessTab(controller: controller)
-                              : tab == 2
-                                  ? _IncidentsTab(controller: controller)
-                                  : _AlertsTab(controller: controller),
-                    ),
+              child:
+                  controller.isLoading.value
+                      ? const Center(child: CircularProgressIndicator())
+                      : RefreshIndicator(
+                        onRefresh:
+                            tab == 1
+                                ? () async {
+                                  await controller.load();
+                                  await controller.refreshAccessHistory();
+                                }
+                                : controller.load,
+                        child:
+                            tab == 0
+                                ? _RightsTab(controller: controller)
+                                : tab == 1
+                                ? _AccessTab(controller: controller)
+                                : tab == 2
+                                ? _IncidentsTab(controller: controller)
+                                : _AlertsTab(controller: controller),
+                      ),
             ),
           ],
         );
@@ -128,30 +129,98 @@ class _AccessTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final selectedId = controller.selectedCredentialId.value;
+      final selectedContractorId = controller.selectedContractorId.value;
       final err = controller.accessHistoryError.value;
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          TextField(
-            controller: controller.contractorIdCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Contractor id',
-              border: OutlineInputBorder(),
+          Autocomplete<EngagementOut>(
+            displayStringForOption: controller.contractorLabel,
+            optionsBuilder: (textEditingValue) {
+              final query = textEditingValue.text.trim().toLowerCase();
+              if (query.isEmpty) return controller.contractorOptions;
+              return controller.contractorOptions.where(
+                (contractor) => controller
+                    .contractorLabel(contractor)
+                    .toLowerCase()
+                    .contains(query),
+              );
+            },
+            onSelected: controller.selectContractor,
+            fieldViewBuilder: (
+              context,
+              textController,
+              focusNode,
+              onFieldSubmitted,
+            ) {
+              return TextField(
+                controller: textController,
+                focusNode: focusNode,
+                onChanged: (_) => controller.clearSelectedContractor(),
+                decoration: InputDecoration(
+                  labelText: 'Contractor',
+                  hintText:
+                      controller.isLoadingContractors.value
+                          ? 'Loading contractors…'
+                          : 'Search by name',
+                  border: const OutlineInputBorder(),
+                  suffixIcon:
+                      controller.isLoadingContractors.value
+                          ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                          : null,
+                ),
+              );
+            },
+            optionsViewBuilder: (context, onSelected, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 4,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 240),
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      children: options
+                          .map(
+                            (contractor) => ListTile(
+                              title: Text(
+                                controller.contractorLabel(contractor),
+                              ),
+                              onTap: () => onSelected(contractor),
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          if (selectedContractorId != null) ...[
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed:
+                  controller.isLoadingCredentials.value
+                      ? null
+                      : controller.loadContractorCredentials,
+              child:
+                  controller.isLoadingCredentials.value
+                      ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Text('Load credentials'),
             ),
-          ),
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: controller.isLoadingCredentials.value
-                ? null
-                : controller.loadContractorCredentials,
-            child: controller.isLoadingCredentials.value
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Load credentials'),
-          ),
+          ],
           if (controller.credentialOptions.isNotEmpty) ...[
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
@@ -175,10 +244,7 @@ class _AccessTab extends StatelessWidget {
               onChanged: controller.selectCredential,
             ),
           ],
-          if (err != null) ...[
-            const SizedBox(height: 12),
-            _ErrorBox(err),
-          ],
+          if (err != null) ...[const SizedBox(height: 12), _ErrorBox(err)],
           const SizedBox(height: 12),
           if (controller.isLoadingAccessHistory.value)
             const Center(child: CircularProgressIndicator())
