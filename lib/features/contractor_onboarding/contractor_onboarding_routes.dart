@@ -30,7 +30,14 @@ abstract final class ContractorOnboardingPages {
       name: AppRoutes.contractorOnboardingLegal,
       middlewares: [AuthGuard(), ActorGuard()],
       binding: OnboardingBinding(),
-      page: () => const OnboardingFunnelView(),
+      page: () {
+        // Cold start via entryRoute often lands here — skip if already accepted.
+        Future.microtask(() {
+          OnboardingBinding.ensure();
+          Get.find<OnboardingController>().navigateToFirstIncompleteStep();
+        });
+        return const OnboardingFunnelView();
+      },
       transition: Transition.fadeIn,
     ),
     GetPage(
@@ -40,9 +47,7 @@ abstract final class ContractorOnboardingPages {
       page: () {
         Future.microtask(() {
           OnboardingBinding.ensure();
-          final c = Get.find<OnboardingController>();
-          c.stepIndex.value = OnboardingStep.notices.index;
-          if (c.notices.isEmpty) c.loadNotices();
+          Get.find<OnboardingController>().navigateToFirstIncompleteStep();
         });
         return const OnboardingFunnelView();
       },
@@ -55,8 +60,7 @@ abstract final class ContractorOnboardingPages {
       page: () {
         Future.microtask(() {
           OnboardingBinding.ensure();
-          Get.find<OnboardingController>().stepIndex.value =
-              OnboardingStep.consents.index;
+          Get.find<OnboardingController>().navigateToFirstIncompleteStep();
         });
         return const OnboardingFunnelView();
       },

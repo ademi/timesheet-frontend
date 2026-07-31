@@ -77,7 +77,33 @@ void main() {
   }
 
   test(
-    'resolves engagement when platform complete and invite still open',
+    'resolveFirstIncompleteStep skips legal when already accepted',
+    () async {
+      await progressStore.markAcceptedDocument(
+        'contractor-a',
+        docKey: 'platform_terms',
+        version: 'v1',
+      );
+      await progressStore.markAcceptedDocument(
+        'contractor-a',
+        docKey: 'privacy_policy',
+        version: 'v1',
+      );
+      setEngagementStatus('invited');
+      final controller = OnboardingController(
+        repository: _MockComplianceRepository(),
+        progressStore: progressStore,
+      );
+
+      expect(
+        controller.resolveFirstIncompleteStep(),
+        isNot(OnboardingStep.legal),
+      );
+    },
+  );
+
+  test(
+    'invited engagement still resolves to engagement step when platform done',
     () async {
       await progressStore.markPlatformComplete('contractor-a');
       setEngagementStatus('invited');

@@ -107,8 +107,18 @@ class OnboardingController extends GetxController with PendingActionMixin {
     if (_restoredContractorId == contractorId) return;
 
     _restoredContractorId = contractorId;
-    _platformProgressComplete =
-        _progressStore.load(contractorId).platformComplete;
+    final snapshot = _progressStore.load(contractorId);
+    _platformProgressComplete = snapshot.platformComplete;
+    // Sync local already-accepted keys so resolve/skip works before async loads.
+    acceptedDocKeys
+      ..clear()
+      ..addAll(snapshot.acceptedDocVersions.keys);
+    acknowledgedNoticeKeys
+      ..clear()
+      ..addAll(snapshot.acknowledgedNoticeVersions.keys);
+    consentedTypes
+      ..clear()
+      ..addAll(snapshot.consentedTypes);
   }
 
   Future<void> loadLegal({bool refresh = false}) async {
@@ -129,6 +139,7 @@ class OnboardingController extends GetxController with PendingActionMixin {
     isLoading.value = true;
     errorMessage.value = null;
     legalDocs.clear();
+    acceptedDocKeys.clear();
     try {
       for (final key in requiredDocKeys) {
         final doc = await _repository.getCurrentLegalDocument(key);
@@ -174,14 +185,15 @@ class OnboardingController extends GetxController with PendingActionMixin {
     try {
       final list = await _repository.listCollectionNotices(jurisdiction: 'AU');
       notices.assignAll(list);
+      acknowledgedNoticeKeys.clear();
+      final snapshot = _progressStore.load(_contractorId);
+      // Re-seed consents from store, then keep only types still relevant.
+      consentedTypes
+        ..clear()
+        ..addAll(snapshot.consentedTypes);
       for (final n in list) {
-        final snapshot = _progressStore.load(_contractorId);
         if (snapshot.acknowledgedNoticeVersions[n.noticeKey] == n.version) {
           acknowledgedNoticeKeys.add(n.noticeKey);
-        }
-        if (n.credentialType != null &&
-            snapshot.consentedTypes.contains(n.credentialType)) {
-          consentedTypes.add(n.credentialType!);
         }
         await _recordPresentedNotice(n);
       }
@@ -446,10 +458,12 @@ class OnboardingController extends GetxController with PendingActionMixin {
 
   void navigateToFirstIncompleteStep() {
     final step = resolveFirstIncompleteStep();
-    final route =
-        step == null
-            ? AppRoutes.contractorHome
-            : OnboardingRouting.routeForStep(step);
-    if (Get.currentRoute != route) Get.offNamed(route);
+    if (step == null) {
+      if (Get.currentRoute != AppRoutes.contractorHome) {
+        Get.offAllNamed(AppRoutes.contractorHome);
+      }
+      return;
+    }
+    goToStep(step);
   }
 }
