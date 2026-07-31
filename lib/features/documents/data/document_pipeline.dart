@@ -40,7 +40,7 @@ class DocumentPipeline {
   }) async {
     DocumentOut? last;
     for (var i = 0; i < maxAttempts; i++) {
-      final docs = await _remote.listForOwner(
+      final docs = await _remote.listDocuments(
         ownerType: ownerType,
         ownerId: ownerId,
       );
@@ -85,7 +85,10 @@ class DocumentPipeline {
   }
 
   Future<List<DocumentOut>> listEvidenceForContractor(String contractorId) {
-    return _remote.listForOwner(ownerType: 'contractor', ownerId: contractorId);
+    return _remote.listDocuments(
+      ownerType: 'contractor',
+      ownerId: contractorId,
+    );
   }
 }
 

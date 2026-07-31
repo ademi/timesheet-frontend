@@ -91,11 +91,20 @@ class DocumentsRemoteDataSource {
     }
   }
 
-  Future<List<DocumentOut>> listForOwner({
+  /// Lists documents for an owner. Both [ownerType] and [ownerId] are required
+  /// by the API — bare `GET /v1/documents` returns 422.
+  Future<List<DocumentOut>> listDocuments({
     required String ownerType,
     required String ownerId,
     int limit = 100,
   }) async {
+    if (ownerType.trim().isEmpty || ownerId.trim().isEmpty) {
+      throw const AppFailure(
+        code: 'validation_error',
+        message: 'owner_type and owner_id are required to list documents',
+        presentation: AppFailurePresentation.toast,
+      );
+    }
     try {
       final response = await _authenticatedDio.get<List<dynamic>>(
         ApiPaths.documents,
