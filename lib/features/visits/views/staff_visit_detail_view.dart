@@ -71,8 +71,8 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                 onPressed:
                     controller.isSaving.value
                         ? null
-                        : () => _reschedule(controller),
-                child: const Text('Reschedule (+1 hour)'),
+                        : () => _reschedule(context, controller),
+                child: const Text('Reschedule…'),
               ),
               const SizedBox(height: 8),
               OutlinedButton(
@@ -89,12 +89,40 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
     );
   }
 
-  Future<void> _reschedule(StaffVisitsController controller) async {
+  Future<void> _reschedule(
+    BuildContext context,
+    StaffVisitsController controller,
+  ) async {
     final v = controller.selected.value;
     if (v == null) return;
-    final start = v.scheduledStart.add(const Duration(hours: 1));
-    final end = v.scheduledEnd.add(const Duration(hours: 1));
-    await controller.rescheduleSelected(start: start, end: end);
+
+    final current = v.scheduledStart.toLocal();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: current,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (pickedDate == null || !context.mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: current.hour, minute: current.minute),
+      helpText: 'Start time',
+    );
+    if (pickedTime == null || !context.mounted) return;
+
+    final duration = v.scheduledEnd.difference(v.scheduledStart);
+    final newStart = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+    final newEnd = newStart.add(duration);
+
+    await controller.rescheduleSelected(start: newStart, end: newEnd);
   }
 }
 
