@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../data/models/job_models.dart';
 import '../utils/recurrence_rrule_builder.dart';
+import '../utils/time_window_utils.dart';
 import 'jobs_controller.dart';
 
 class RecurrenceRuleFormController extends GetxController {
@@ -69,6 +70,34 @@ class RecurrenceRuleFormController extends GetxController {
     if (windows.length > 1) windows.removeAt(index);
   }
 
+  void setWindowStartTime(int index, String startTime) {
+    final window = windows[index];
+    windows[index] = TimeWindow(
+      startTime: startTime,
+      endTime: coerceEndTime(window.endTime),
+    );
+    _syncWindowError(index);
+  }
+
+  void setWindowEndTime(int index, String endTime) {
+    final window = windows[index];
+    final coercedEnd = coerceEndTime(endTime);
+    windows[index] = TimeWindow(
+      startTime: window.startTime,
+      endTime: coercedEnd,
+    );
+    _syncWindowError(index);
+  }
+
+  void _syncWindowError(int index) {
+    final window = windows[index];
+    if (window.endTime.compareTo(window.startTime) <= 0) {
+      error.value = endBeforeStartError;
+    } else if (error.value == endBeforeStartError) {
+      error.value = null;
+    }
+  }
+
   void toggleWeekday(int day) {
     weekdays.contains(day) ? weekdays.remove(day) : weekdays.add(day);
   }
@@ -92,24 +121,15 @@ class RecurrenceRuleFormController extends GetxController {
       error.value = 'End date must not be before the start date.';
       return false;
     }
-    final sorted =
-        windows.toList()..sort((a, b) => a.startTime.compareTo(b.startTime));
-    if (sorted.any(
-          (window) => window.endTime.compareTo(window.startTime) <= 0,
-        ) ||
-        sorted
-            .skip(1)
-            .toList()
-            .asMap()
-            .entries
-            .any(
-              (entry) =>
-                  entry.value.startTime.compareTo(sorted[entry.key].endTime) <
-                  0,
-            )) {
-      error.value = 'Visit windows must be ordered and not overlap.';
+    final coerced = coerceWindowEndTimes(windows);
+    windows.assignAll(coerced);
+    final windowError = validateVisitWindows(coerced);
+    if (windowError != null) {
+      error.value = windowError;
       return false;
     }
+    final sorted =
+        coerced.toList()..sort((a, b) => a.startTime.compareTo(b.startTime));
     if (preview.isEmpty) {
       error.value = 'This rule has no occurrences in the next 90 days.';
       return false;

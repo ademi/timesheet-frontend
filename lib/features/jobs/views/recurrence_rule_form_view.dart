@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../controllers/recurrence_rule_form_controller.dart';
-import '../data/models/job_models.dart';
 import '../utils/recurrence_rrule_builder.dart';
 
 class RecurrenceRuleFormView extends StatelessWidget {
@@ -207,10 +206,11 @@ class _WindowRow extends StatelessWidget {
       if (selected == null) return;
       final replacement =
           '${selected.hour.toString().padLeft(2, '0')}:${selected.minute.toString().padLeft(2, '0')}';
-      controller.windows[index] =
-          start
-              ? TimeWindow(startTime: replacement, endTime: window.endTime)
-              : TimeWindow(startTime: window.startTime, endTime: replacement);
+      if (start) {
+        controller.setWindowStartTime(index, replacement);
+      } else {
+        controller.setWindowEndTime(index, replacement);
+      }
     }
 
     return Row(
