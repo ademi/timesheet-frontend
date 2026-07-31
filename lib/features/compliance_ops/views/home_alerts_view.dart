@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/controllers/auth_controller.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
@@ -15,8 +16,8 @@ class HomeAlertsController extends GetxController {
   HomeAlertsController({
     required ComplianceOpsRepository repository,
     required SessionService session,
-  })  : _repository = repository,
-        _session = session;
+  }) : _repository = repository,
+       _session = session;
 
   final ComplianceOpsRepository _repository;
   final SessionService _session;
@@ -27,6 +28,7 @@ class HomeAlertsController extends GetxController {
   final subscription = Rxn<SubscriptionStatusOut>();
 
   bool get isStaff => _session.isStaff;
+  bool get shouldShowDocsBanner => !isStaff && _session.needsDocsAttention;
   bool get canViewBilling =>
       isStaff &&
       (_session.hasPermission(AppPermissions.subscriptionView) ||
@@ -92,6 +94,24 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (controller.shouldShowDocsBanner) ...[
+                MaterialBanner(
+                  content: const Text(
+                    'Documents still needed for an engagement. '
+                    'Upload required credentials to continue.',
+                  ),
+                  leading: const Icon(Icons.description_outlined),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                  actions: [
+                    TextButton(
+                      onPressed:
+                          () => Get.toNamed(AppRoutes.contractorCredentials),
+                      child: const Text('Upload credentials'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
               if (err != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),

@@ -42,7 +42,8 @@ class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
           const SizedBox(height: 8),
           const Text(
             'Accepting authorises sharing credential metadata with the '
-            'provider. You upload documents in the next step.',
+            'provider. If documents are required, upload them later from '
+            'the home banner or Credentials.',
             style: TextStyle(color: AppColors.textMuted),
           ),
           if (err != null) ...[
@@ -145,8 +146,9 @@ class _GrantForm extends GetView<ContractorEngagementsController> {
           Text(
             'You are authorising $provider to receive credential '
             'metadata needed for this engagement '
-            '(${engagement.requiredDocCategories.map((c) => c.category).join(", ").ifEmpty("required categories")}). '
-            'You upload documents in the next step.',
+            '(${engagement.requiredDocCategories.map((c) => c.category).join(", ").ifEmpty("required documents")}). '
+            'If documents are required, upload them later from the home '
+            'banner or Credentials.',
             style: const TextStyle(color: AppColors.textMuted),
           ),
           if (err != null) ...[
