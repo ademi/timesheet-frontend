@@ -53,6 +53,8 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
             const SizedBox(height: 4),
             Text('Status: ${v.status}'),
             Text('${_fmt(v.scheduledStart)} → ${_fmt(v.scheduledEnd)}'),
+            if (v.locationLabel?.isNotEmpty == true)
+              Text('Location: ${v.locationLabel}'),
             Text(
               'Geofence: ${v.geofenceMode}'
               '${v.geofenceEnforced ? ' (enforced)' : ''}',

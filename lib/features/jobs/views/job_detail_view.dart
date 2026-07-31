@@ -51,7 +51,7 @@ class _JobDetailViewState extends State<JobDetailView> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Location: ${job.clientSiteName ?? job.branchName ?? 'Location not set'}',
+              'Location: ${job.locationLabel ?? job.clientSiteName ?? job.branchName ?? 'Location not set'}',
             ),
             Text('Geofence: ${job.geofenceMode} / ${job.geofenceRadiusM}m'),
             if (controller.canManage && job.isOpen) ...[

@@ -16,6 +16,7 @@ class JobOut {
     this.branchName,
     this.clientSiteId,
     this.clientSiteName,
+    this.locationLabel,
     this.latitude,
     this.longitude,
   });
@@ -31,6 +32,7 @@ class JobOut {
   final String? branchName;
   final String? clientSiteId;
   final String? clientSiteName;
+  final String? locationLabel;
   final double? latitude;
   final double? longitude;
   final int geofenceRadiusM;
@@ -54,6 +56,7 @@ class JobOut {
       branchName: json['branch_name'] as String?,
       clientSiteId: json['client_site_id']?.toString(),
       clientSiteName: json['client_site_name'] as String?,
+      locationLabel: json['location_label'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       geofenceRadiusM: json['geofence_radius_m'] as int? ?? 100,

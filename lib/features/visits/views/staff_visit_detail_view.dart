@@ -47,6 +47,8 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
             Text('Status: ${v.status} · payment: ${v.paymentStatus}'),
             Text('Start: ${_fmt(v.scheduledStart)}'),
             Text('End: ${_fmt(v.scheduledEnd)}'),
+            if (v.locationLabel?.isNotEmpty == true)
+              Text('Location: ${v.locationLabel}'),
             Text(
               'Geofence: ${v.geofenceMode} / ${v.geofenceRadiusM}m'
               '${v.latitude != null ? ' @ ${v.latitude}, ${v.longitude}' : ''}',

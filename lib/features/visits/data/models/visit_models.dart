@@ -145,6 +145,7 @@ class VisitOut {
     this.jobTitle,
     this.tenantName,
     this.contractorName,
+    this.locationLabel,
     this.tasks = const [],
     this.formRequirements = const [],
     this.formSubmissions = const [],
@@ -168,6 +169,7 @@ class VisitOut {
   final String? jobTitle;
   final String? tenantName;
   final String? contractorName;
+  final String? locationLabel;
   final List<VisitTaskOut> tasks;
   final List<VisitFormRequirement> formRequirements;
   final List<VisitFormSubmissionOut> formSubmissions;
@@ -212,6 +214,7 @@ class VisitOut {
       jobTitle: json['job_title'] as String?,
       tenantName: json['tenant_name'] as String?,
       contractorName: json['contractor_name'] as String?,
+      locationLabel: json['location_label'] as String?,
       tasks: mapList(json['tasks'], VisitTaskOut.fromJson),
       formRequirements: mapList(
         json['form_requirements'] ?? json['required_forms'],
@@ -254,6 +257,7 @@ class VisitOut {
       jobTitle: jobTitle,
       tenantName: tenantName,
       contractorName: contractorName,
+      locationLabel: locationLabel,
       tasks: tasks ?? this.tasks,
       formRequirements: formRequirements ?? this.formRequirements,
       formSubmissions: formSubmissions ?? this.formSubmissions,
