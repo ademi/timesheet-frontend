@@ -142,6 +142,7 @@ class AppFailure implements Exception {
       'leave_in_past',
       'availability_windows_overlap',
       'credential_id_required',
+      'evidence_required',
     ];
     for (final k in known) {
       if (d == k || d.contains(k)) return k;
@@ -178,6 +179,7 @@ class AppFailure implements Exception {
       case 'visit_overlap':
       case 'leave_in_past':
       case 'availability_windows_overlap':
+      case 'evidence_required':
         return AppFailurePresentation.inline;
       case 'proxy_required':
         return AppFailurePresentation.inline;
@@ -247,6 +249,8 @@ class AppFailure implements Exception {
         return 'Availability windows on the same day cannot overlap.';
       case 'credential_id_required':
         return 'Select a credential to view access history.';
+      case 'evidence_required':
+        return 'Upload at least one evidence file before saving this credential.';
       case 'standing_job_exists':
         return 'An open standing job already exists for this client.';
       case 'contractor_not_found':

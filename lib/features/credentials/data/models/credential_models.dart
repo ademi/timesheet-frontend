@@ -29,10 +29,7 @@ const sensitiveCredentialTypes = <String>{
   'other_health_qualification',
 };
 
-const governmentIdCredentialTypes = <String>{
-  'passport_id',
-  'drivers_licence',
-};
+const governmentIdCredentialTypes = <String>{'passport_id', 'drivers_licence'};
 
 String credentialTypeLabel(String type) {
   return type.replaceAll('_', ' ');
@@ -109,6 +106,7 @@ class CredentialCreateRequest {
   const CredentialCreateRequest({
     required this.credentialType,
     required this.noticeEventId,
+    required this.evidenceDocumentIds,
     this.jurisdiction = 'AU',
     this.issuer,
     this.identifier,
@@ -120,6 +118,7 @@ class CredentialCreateRequest {
 
   final String credentialType;
   final String noticeEventId;
+  final List<String> evidenceDocumentIds;
   final String? jurisdiction;
   final String? issuer;
   final String? identifier;
@@ -129,17 +128,18 @@ class CredentialCreateRequest {
   final DateTime? expiresOn;
 
   Map<String, dynamic> toJson() => {
-        'credential_type': credentialType,
-        'notice_event_id': noticeEventId,
-        if (jurisdiction != null) 'jurisdiction': jurisdiction,
-        if (issuer != null && issuer!.trim().isNotEmpty) 'issuer': issuer,
-        if (identifier != null && identifier!.trim().isNotEmpty)
-          'identifier': identifier,
-        if (issuedOn != null) 'issued_on': _dateOnly(issuedOn!),
-        if (completedOn != null) 'completed_on': _dateOnly(completedOn!),
-        if (effectiveOn != null) 'effective_on': _dateOnly(effectiveOn!),
-        if (expiresOn != null) 'expires_on': _dateOnly(expiresOn!),
-      };
+    'credential_type': credentialType,
+    'notice_event_id': noticeEventId,
+    'evidence_document_ids': evidenceDocumentIds,
+    if (jurisdiction != null) 'jurisdiction': jurisdiction,
+    if (issuer != null && issuer!.trim().isNotEmpty) 'issuer': issuer,
+    if (identifier != null && identifier!.trim().isNotEmpty)
+      'identifier': identifier,
+    if (issuedOn != null) 'issued_on': _dateOnly(issuedOn!),
+    if (completedOn != null) 'completed_on': _dateOnly(completedOn!),
+    if (effectiveOn != null) 'effective_on': _dateOnly(effectiveOn!),
+    if (expiresOn != null) 'expires_on': _dateOnly(expiresOn!),
+  };
 
   static String _dateOnly(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-'
@@ -165,17 +165,17 @@ class CredentialUpdateRequest {
   final DateTime? expiresOn;
 
   Map<String, dynamic> toJson() => {
-        if (issuer != null) 'issuer': issuer,
-        if (jurisdiction != null) 'jurisdiction': jurisdiction,
-        if (issuedOn != null)
-          'issued_on': CredentialCreateRequest._dateOnly(issuedOn!),
-        if (completedOn != null)
-          'completed_on': CredentialCreateRequest._dateOnly(completedOn!),
-        if (effectiveOn != null)
-          'effective_on': CredentialCreateRequest._dateOnly(effectiveOn!),
-        if (expiresOn != null)
-          'expires_on': CredentialCreateRequest._dateOnly(expiresOn!),
-      };
+    if (issuer != null) 'issuer': issuer,
+    if (jurisdiction != null) 'jurisdiction': jurisdiction,
+    if (issuedOn != null)
+      'issued_on': CredentialCreateRequest._dateOnly(issuedOn!),
+    if (completedOn != null)
+      'completed_on': CredentialCreateRequest._dateOnly(completedOn!),
+    if (effectiveOn != null)
+      'effective_on': CredentialCreateRequest._dateOnly(effectiveOn!),
+    if (expiresOn != null)
+      'expires_on': CredentialCreateRequest._dateOnly(expiresOn!),
+  };
 }
 
 class CredentialSupersedeRequest {
@@ -198,19 +198,19 @@ class CredentialSupersedeRequest {
   final DateTime? expiresOn;
 
   Map<String, dynamic> toJson() => {
-        'notice_event_id': noticeEventId,
-        if (issuer != null && issuer!.trim().isNotEmpty) 'issuer': issuer,
-        if (identifier != null && identifier!.trim().isNotEmpty)
-          'identifier': identifier,
-        if (issuedOn != null)
-          'issued_on': CredentialCreateRequest._dateOnly(issuedOn!),
-        if (completedOn != null)
-          'completed_on': CredentialCreateRequest._dateOnly(completedOn!),
-        if (effectiveOn != null)
-          'effective_on': CredentialCreateRequest._dateOnly(effectiveOn!),
-        if (expiresOn != null)
-          'expires_on': CredentialCreateRequest._dateOnly(expiresOn!),
-      };
+    'notice_event_id': noticeEventId,
+    if (issuer != null && issuer!.trim().isNotEmpty) 'issuer': issuer,
+    if (identifier != null && identifier!.trim().isNotEmpty)
+      'identifier': identifier,
+    if (issuedOn != null)
+      'issued_on': CredentialCreateRequest._dateOnly(issuedOn!),
+    if (completedOn != null)
+      'completed_on': CredentialCreateRequest._dateOnly(completedOn!),
+    if (effectiveOn != null)
+      'effective_on': CredentialCreateRequest._dateOnly(effectiveOn!),
+    if (expiresOn != null)
+      'expires_on': CredentialCreateRequest._dateOnly(expiresOn!),
+  };
 }
 
 class CredentialReviewCreateRequest {
@@ -225,11 +225,11 @@ class CredentialReviewCreateRequest {
   final String? reasonCode;
 
   Map<String, dynamic> toJson() => {
-        'credential_id': credentialId,
-        'decision': decision,
-        if (reasonCode != null && reasonCode!.trim().isNotEmpty)
-          'reason_code': reasonCode,
-      };
+    'credential_id': credentialId,
+    'decision': decision,
+    if (reasonCode != null && reasonCode!.trim().isNotEmpty)
+      'reason_code': reasonCode,
+  };
 }
 
 class CredentialReviewOut {
@@ -269,9 +269,10 @@ class CredentialReviewOut {
       decision: json['decision'] as String,
       reasonCode: json['reason_code'] as String?,
       reviewedByUserId: json['reviewed_by_user_id']?.toString(),
-      decidedAt: json['decided_at'] != null
-          ? DateTime.tryParse(json['decided_at'].toString())
-          : null,
+      decidedAt:
+          json['decided_at'] != null
+              ? DateTime.tryParse(json['decided_at'].toString())
+              : null,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );

@@ -21,10 +21,10 @@ class CredentialsController extends GetxController {
     required DocumentPipeline documentPipeline,
     required ComplianceRepository complianceRepository,
     required SessionService session,
-  })  : _repository = repository,
-        _pipeline = documentPipeline,
-        _compliance = complianceRepository,
-        _session = session;
+  }) : _repository = repository,
+       _pipeline = documentPipeline,
+       _compliance = complianceRepository,
+       _session = session;
 
   final CredentialsRepository _repository;
   final DocumentPipeline _pipeline;
@@ -37,6 +37,7 @@ class CredentialsController extends GetxController {
   final errorMessage = RxnString();
   final lastScanStatus = RxnString();
   final lastOpenedViaProxy = false.obs;
+  final selectedEvidence = <DocumentOut>[].obs;
 
   // Create form
   final selectedType = 'wwcc'.obs;
@@ -58,6 +59,8 @@ class CredentialsController extends GetxController {
   String? get contractorId =>
       _session.contractorId.value ?? _session.claims?.contractorId;
 
+  bool get hasSelectedEvidence => selectedEvidence.isNotEmpty;
+
   @override
   void onInit() {
     super.onInit();
@@ -73,8 +76,7 @@ class CredentialsController extends GetxController {
 
   Future<void> load() async {
     if (!canRead) {
-      errorMessage.value =
-          'Missing credentials.read permission.';
+      errorMessage.value = 'Missing credentials.read permission.';
       return;
     }
     isLoading.value = true;
@@ -102,8 +104,7 @@ class CredentialsController extends GetxController {
     if (notices.isEmpty) {
       throw const AppFailure(
         code: 'notice_not_presented',
-        message:
-            'No collection notice available for this credential type yet.',
+        message: 'No collection notice available for this credential type yet.',
         presentation: AppFailurePresentation.inline,
       );
     }
@@ -157,10 +158,13 @@ class CredentialsController extends GetxController {
       errorMessage.value = 'Invalid credential type.';
       return null;
     }
-    if (isGovernmentIdCredentialType(type) &&
-        !governmentIdAcknowledged.value) {
+    if (isGovernmentIdCredentialType(type) && !governmentIdAcknowledged.value) {
       errorMessage.value =
           'Acknowledge government-ID handling before continuing.';
+      return null;
+    }
+    if (!hasSelectedEvidence) {
+      errorMessage.value = 'Evidence is required to save.';
       return null;
     }
 
@@ -173,14 +177,18 @@ class CredentialsController extends GetxController {
         CredentialCreateRequest(
           credentialType: type,
           noticeEventId: noticeEventId,
+          evidenceDocumentIds: selectedEvidence.map((doc) => doc.id).toList(),
           jurisdiction: 'AU',
-          issuer: issuerCtrl.text.trim().isEmpty ? null : issuerCtrl.text.trim(),
-          identifier: identifierCtrl.text.trim().isEmpty
-              ? null
-              : identifierCtrl.text.trim(),
+          issuer:
+              issuerCtrl.text.trim().isEmpty ? null : issuerCtrl.text.trim(),
+          identifier:
+              identifierCtrl.text.trim().isEmpty
+                  ? null
+                  : identifierCtrl.text.trim(),
         ),
       );
       await load();
+      selectedEvidence.clear();
       return created;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -188,6 +196,66 @@ class CredentialsController extends GetxController {
     } catch (e) {
       errorMessage.value = e.toString();
       return null;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> uploadEvidenceForCreate() async {
+    final ownerId = contractorId;
+    if (ownerId == null || ownerId.isEmpty) {
+      errorMessage.value = 'Contractor id missing from session.';
+      return;
+    }
+    if (!_session.hasPermission(AppPermissions.documentsUpload)) {
+      errorMessage.value = 'Missing documents.upload permission.';
+      return;
+    }
+
+    final result = await FilePicker.platform.pickFiles(
+      withData: true,
+      type: FileType.custom,
+      allowedExtensions: const ['pdf', 'png', 'jpg', 'jpeg', 'webp'],
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      errorMessage.value = 'Could not read file bytes.';
+      return;
+    }
+
+    isSaving.value = true;
+    errorMessage.value = null;
+    lastScanStatus.value = 'pending';
+    try {
+      final doc = await _pipeline.uploadEvidence(
+        request: UploadUrlRequest(
+          ownerType: 'contractor',
+          ownerId: ownerId,
+          filename: file.name,
+          contentType: _guessContentType(file.extension, file.name),
+          sizeBytes: bytes.length,
+          category: selectedType.value,
+        ),
+        bytes: bytes,
+      );
+      final polled = await _pipeline.pollScanStatus(
+        documentId: doc.id,
+        ownerType: 'contractor',
+        ownerId: ownerId,
+      );
+      lastScanStatus.value = polled.scanStatus;
+      if (polled.isScanBlocked) {
+        errorMessage.value =
+            'File failed security scan. Re-upload a clean file.';
+        return;
+      }
+      selectedEvidence.add(polled);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
     } finally {
       isSaving.value = false;
     }

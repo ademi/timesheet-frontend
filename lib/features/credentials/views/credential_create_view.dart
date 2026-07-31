@@ -48,17 +48,16 @@ class CredentialCreateView extends GetView<CredentialsController> {
                     child: Text(credentialTypeLabel(t)),
                   ),
               ],
-              onChanged: controller.isSaving.value
-                  ? null
-                  : (v) {
-                      if (v == null) return;
-                      controller.selectedType.value = v;
-                      controller.sensitiveConsentConfirmed.value = false;
-                      controller.governmentIdAcknowledged.value = false;
-                    },
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-              ),
+              onChanged:
+                  controller.isSaving.value || controller.hasSelectedEvidence
+                      ? null
+                      : (v) {
+                        if (v == null) return;
+                        controller.selectedType.value = v;
+                        controller.sensitiveConsentConfirmed.value = false;
+                        controller.governmentIdAcknowledged.value = false;
+                      },
+              decoration: const InputDecoration(border: OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -72,10 +71,38 @@ class CredentialCreateView extends GetView<CredentialsController> {
             TextField(
               controller: controller.identifierCtrl,
               decoration: InputDecoration(
-                labelText: govId
-                    ? 'Identifier (masked at rest)'
-                    : 'Identifier (optional)',
+                labelText:
+                    govId
+                        ? 'Identifier (masked at rest)'
+                        : 'Identifier (optional)',
                 border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Evidence',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            const Text('Evidence is required to save.'),
+            const SizedBox(height: 8),
+            for (final document in controller.selectedEvidence)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.description_outlined),
+                title: Text(document.filename),
+                subtitle: Text('Security scan: ${document.scanStatus}'),
+              ),
+            OutlinedButton.icon(
+              onPressed:
+                  controller.isSaving.value
+                      ? null
+                      : controller.uploadEvidenceForCreate,
+              icon: const Icon(Icons.upload_file),
+              label: Text(
+                controller.hasSelectedEvidence
+                    ? 'Add another evidence file'
+                    : 'Upload evidence file',
               ),
             ),
             if (sensitive) ...[
@@ -83,8 +110,9 @@ class CredentialCreateView extends GetView<CredentialsController> {
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
                 value: controller.sensitiveConsentConfirmed.value,
-                onChanged: (v) =>
-                    controller.sensitiveConsentConfirmed.value = v ?? false,
+                onChanged:
+                    (v) =>
+                        controller.sensitiveConsentConfirmed.value = v ?? false,
                 title: const Text(
                   'I consent to collecting this sensitive credential '
                   'for engagement eligibility with this provider.',
@@ -96,8 +124,9 @@ class CredentialCreateView extends GetView<CredentialsController> {
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
                 value: controller.governmentIdAcknowledged.value,
-                onChanged: (v) =>
-                    controller.governmentIdAcknowledged.value = v ?? false,
+                onChanged:
+                    (v) =>
+                        controller.governmentIdAcknowledged.value = v ?? false,
                 title: const Text(
                   'I understand government ID evidence is restricted and '
                   'downloaded only via a secure authenticated proxy '
@@ -107,32 +136,34 @@ class CredentialCreateView extends GetView<CredentialsController> {
             ],
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: controller.isSaving.value
-                  ? null
-                  : () async {
-                      final created = await controller.createCredential();
-                      if (created != null) {
-                        Get.back();
-                        Get.snackbar(
-                          'Created',
-                          'Credential saved. Attach evidence from the list.',
-                          snackPosition: SnackPosition.BOTTOM,
-                          margin: const EdgeInsets.all(16),
-                        );
-                      }
-                    },
+              onPressed:
+                  controller.isSaving.value || !controller.hasSelectedEvidence
+                      ? null
+                      : () async {
+                        final created = await controller.createCredential();
+                        if (created != null) {
+                          Get.back();
+                          Get.snackbar(
+                            'Created',
+                            'Credential saved with evidence.',
+                            snackPosition: SnackPosition.BOTTOM,
+                            margin: const EdgeInsets.all(16),
+                          );
+                        }
+                      },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
                 minimumSize: const Size.fromHeight(48),
               ),
-              child: controller.isSaving.value
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Create'),
+              child:
+                  controller.isSaving.value
+                      ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Text('Create'),
             ),
           ],
         );

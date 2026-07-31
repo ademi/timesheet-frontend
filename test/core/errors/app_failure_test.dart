@@ -36,6 +36,27 @@ void main() {
       expect(failure.isProxyRequired, isTrue);
     });
 
+    test('maps evidence_required to credential evidence guidance', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(path: '/contractor-me/credentials'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/contractor-me/credentials'),
+            statusCode: 422,
+            data: {'detail': 'evidence_required'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      expect(failure.code, 'evidence_required');
+      expect(
+        failure.message,
+        'Upload at least one evidence file before saving this credential.',
+      );
+      expect(failure.presentation, AppFailurePresentation.inline);
+    });
+
     test('maps 429', () {
       final failure = AppFailure.fromDio(
         DioException(
@@ -95,7 +116,9 @@ void main() {
           DioException(
             requestOptions: RequestOptions(path: '/contractor-me/availability'),
             response: Response(
-              requestOptions: RequestOptions(path: '/contractor-me/availability'),
+              requestOptions: RequestOptions(
+                path: '/contractor-me/availability',
+              ),
               statusCode: 400,
               data: {'detail': entry.key},
             ),

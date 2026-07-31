@@ -7,14 +7,14 @@ import 'datasources/documents_remote_datasource.dart';
 /// Upload → finalize → poll scan; signed URL vs `/content` proxy (design §6.4).
 class DocumentPipeline {
   DocumentPipeline({required DocumentsRemoteDataSource remote})
-      : _remote = remote;
+    : _remote = remote;
 
   final DocumentsRemoteDataSource _remote;
 
   Future<DocumentOut> uploadEvidence({
     required UploadUrlRequest request,
     required List<int> bytes,
-    required String credentialId,
+    String? credentialId,
   }) async {
     final upload = await _remote.createUploadUrl(request);
     await _remote.putToSignedUrl(
@@ -87,11 +87,7 @@ class DocumentPipeline {
 enum DocumentOpenMode { signedUrl, proxyBytes }
 
 class DocumentOpenResult {
-  const DocumentOpenResult._({
-    required this.mode,
-    this.signedUrl,
-    this.bytes,
-  });
+  const DocumentOpenResult._({required this.mode, this.signedUrl, this.bytes});
 
   factory DocumentOpenResult.signedUrl(String url) =>
       DocumentOpenResult._(mode: DocumentOpenMode.signedUrl, signedUrl: url);
