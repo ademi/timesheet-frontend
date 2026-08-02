@@ -60,6 +60,9 @@ abstract final class ApiPaths {
   // Compliance
   static const legalDocumentsCurrent =
       '$_v1/compliance/legal-documents/current';
+  /// Public register legal read (API-004). Query: `doc_key`.
+  static const publicLegalDocumentsCurrent =
+      '$_v1/public/legal-documents/current';
   static const collectionNotices = '$_v1/compliance/collection-notices';
   static const legalEvents = '$_v1/compliance/legal-events';
   static const rightsRequests = '$_v1/compliance/rights-requests';

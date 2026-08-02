@@ -87,12 +87,15 @@ class CredentialsRemoteDataSource {
     }
   }
 
+  /// Staff metadata list (API-003). Requires [engagementId]; no sharing grant.
   Future<List<CredentialOut>> listForTenantContractor(
-    String contractorId,
-  ) async {
+    String contractorId, {
+    required String engagementId,
+  }) async {
     try {
       final response = await _dio.get<List<dynamic>>(
         ApiPaths.tenantContractorCredentials(contractorId),
+        queryParameters: {'engagement_id': engagementId},
       );
       return _mapList(response.data);
     } on DioException catch (e) {

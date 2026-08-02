@@ -219,10 +219,16 @@ class WorkforceController extends GetxController {
   }
 
   Future<void> _ensureCredentialsLoaded() async {
-    final contractorIds = items.map((e) => e.contractorId).toSet();
+    final engagementByContractor = <String, EngagementOut>{};
+    for (final engagement in items) {
+      engagementByContractor.putIfAbsent(
+        engagement.contractorId,
+        () => engagement,
+      );
+    }
     final pending =
-        contractorIds
-            .where((id) => !credentialsByContractor.containsKey(id))
+        engagementByContractor.entries
+            .where((e) => !credentialsByContractor.containsKey(e.key))
             .toList();
     if (pending.isEmpty) return;
 
@@ -230,11 +236,14 @@ class WorkforceController extends GetxController {
     try {
       final results = await Future.wait(
         pending.map(
-          (id) => _credentialsRepository.listForTenantContractor(id),
+          (entry) => _credentialsRepository.listForTenantContractor(
+            entry.key,
+            engagementId: entry.value.id,
+          ),
         ),
       );
       for (var i = 0; i < pending.length; i++) {
-        credentialsByContractor[pending[i]] = results[i];
+        credentialsByContractor[pending[i].key] = results[i];
       }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;

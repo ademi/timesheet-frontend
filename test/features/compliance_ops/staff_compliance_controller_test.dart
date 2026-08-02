@@ -52,7 +52,10 @@ void main() {
         ],
       );
       when(
-        () => credentials.listForTenantContractor('contractor-1'),
+        () => credentials.listForTenantContractor(
+          'contractor-1',
+          engagementId: 'engagement-1',
+        ),
       ).thenAnswer((_) async => []);
       final controller = StaffComplianceController(
         repository: compliance,
@@ -71,7 +74,10 @@ void main() {
         'Ada Lovelace',
       );
       verify(
-        () => credentials.listForTenantContractor('contractor-1'),
+        () => credentials.listForTenantContractor(
+          'contractor-1',
+          engagementId: 'engagement-1',
+        ),
       ).called(1);
     },
   );

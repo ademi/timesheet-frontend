@@ -24,7 +24,11 @@ class ComplianceOpsRepository {
   }) =>
       _remote.listAccessHistory(credentialId: credentialId, limit: limit);
 
-  Future<List<IncidentOut>> listIncidents() => _remote.listIncidents();
+  Future<List<IncidentOut>> listIncidents({
+    int limit = 100,
+    String? status,
+  }) =>
+      _remote.listIncidents(limit: limit, status: status);
 
   Future<IncidentOut> getIncident(String id) => _remote.getIncident(id);
 

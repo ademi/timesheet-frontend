@@ -108,7 +108,8 @@ class StaffCredentialReviewController extends GetxController {
       return;
     }
     final contractorId = _contractorId;
-    if (contractorId == null) {
+    final engagementId = _engagementId;
+    if (contractorId == null || engagementId == null) {
       errorMessage.value = 'Open credential review from Workforce.';
       return;
     }
@@ -117,7 +118,10 @@ class StaffCredentialReviewController extends GetxController {
     needsShareRequest.value = false;
     eligibilityReasons.clear();
     try {
-      final list = await _repository.listForTenantContractor(contractorId);
+      final list = await _repository.listForTenantContractor(
+        contractorId,
+        engagementId: engagementId,
+      );
       items.assignAll(list);
       final documents = await _pipeline.listEvidenceForContractor(contractorId);
       evidenceByCredentialId.value = {

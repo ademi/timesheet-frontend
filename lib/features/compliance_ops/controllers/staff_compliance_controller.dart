@@ -34,6 +34,7 @@ class StaffComplianceController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+  final incidentsError = RxnString();
 
   final rights = <RightsRequestOut>[].obs;
   final accessHistory = <AccessHistoryEntry>[].obs;
@@ -42,6 +43,7 @@ class StaffComplianceController extends GetxController {
   final contractorOptions = <EngagementOut>[].obs;
   final isLoadingContractors = false.obs;
   final selectedContractorId = RxnString();
+  final selectedEngagementId = RxnString();
   final credentialOptions = <CredentialOut>[].obs;
   final isLoadingCredentials = false.obs;
   final selectedCredentialId = RxnString();
@@ -80,6 +82,7 @@ class StaffComplianceController extends GetxController {
   Future<void> load() async {
     isLoading.value = true;
     errorMessage.value = null;
+    incidentsError.value = null;
     if (canRights) {
       try {
         rights.assignAll(await _repository.listRightsRequests());
@@ -92,7 +95,8 @@ class StaffComplianceController extends GetxController {
       try {
         incidents.assignAll(await _repository.listIncidents());
       } on AppFailure catch (e) {
-        errorMessage.value ??= e.message;
+        incidents.clear();
+        incidentsError.value = e.message;
       }
     }
     try {
@@ -144,6 +148,7 @@ class StaffComplianceController extends GetxController {
     final contractorId = contractor?.contractorId;
     if (selectedContractorId.value == contractorId) return;
     selectedContractorId.value = contractorId;
+    selectedEngagementId.value = contractor?.id;
     selectedCredentialId.value = null;
     accessHistory.clear();
     credentialOptions.clear();
@@ -158,7 +163,12 @@ class StaffComplianceController extends GetxController {
       return;
     }
     final contractorId = selectedContractorId.value;
+    final engagementId = selectedEngagementId.value;
     if (contractorId == null || contractorId.isEmpty) {
+      accessHistoryError.value = 'Select a contractor.';
+      return;
+    }
+    if (engagementId == null || engagementId.isEmpty) {
       accessHistoryError.value = 'Select a contractor.';
       return;
     }
@@ -169,7 +179,10 @@ class StaffComplianceController extends GetxController {
     credentialOptions.clear();
     try {
       credentialOptions.assignAll(
-        await _credentialsRepository.listForTenantContractor(contractorId),
+        await _credentialsRepository.listForTenantContractor(
+          contractorId,
+          engagementId: engagementId,
+        ),
       );
       if (credentialOptions.isEmpty) {
         accessHistoryError.value = 'No credentials found for this contractor.';
@@ -212,10 +225,11 @@ class StaffComplianceController extends GetxController {
 
   Future<void> openIncident(IncidentOut incident) async {
     isSaving.value = true;
+    incidentsError.value = null;
     try {
       selectedIncident.value = await _repository.getIncident(incident.id);
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      incidentsError.value = e.message;
       selectedIncident.value = incident;
     } finally {
       isSaving.value = false;
@@ -226,11 +240,11 @@ class StaffComplianceController extends GetxController {
     if (!canIncidents) return;
     final title = incidentTitleCtrl.text.trim();
     if (title.isEmpty) {
-      errorMessage.value = 'Incident title is required.';
+      incidentsError.value = 'Incident title is required.';
       return;
     }
     isSaving.value = true;
-    errorMessage.value = null;
+    incidentsError.value = null;
     try {
       await _repository.createIncident(
         IncidentCreate(
@@ -252,7 +266,7 @@ class StaffComplianceController extends GetxController {
       );
     } on AppFailure catch (e) {
       await BillingGate.showIfNeeded(e);
-      errorMessage.value = e.message;
+      incidentsError.value = e.message;
     } finally {
       isSaving.value = false;
     }
@@ -261,6 +275,7 @@ class StaffComplianceController extends GetxController {
   Future<void> closeIncident(IncidentOut incident) async {
     if (!canIncidents) return;
     isSaving.value = true;
+    incidentsError.value = null;
     try {
       final updated = await _repository.patchIncident(
         incident.id,
@@ -269,7 +284,7 @@ class StaffComplianceController extends GetxController {
       selectedIncident.value = updated;
       incidents.assignAll(await _repository.listIncidents());
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      incidentsError.value = e.message;
     } finally {
       isSaving.value = false;
     }

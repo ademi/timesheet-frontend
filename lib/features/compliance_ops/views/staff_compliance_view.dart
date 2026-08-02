@@ -28,7 +28,10 @@ class StaffComplianceView extends GetView<StaffComplianceController> {
       ),
       body: Obx(() {
         final tab = controller.tabIndex.value;
-        final err = controller.errorMessage.value;
+        final err = switch (tab) {
+          2 => controller.incidentsError.value,
+          _ => controller.errorMessage.value,
+        };
         return Column(
           children: [
             if (err != null)
@@ -226,7 +229,7 @@ class _AccessTab extends StatelessWidget {
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               key: ValueKey<String?>(selectedId),
-              initialValue: selectedId,
+              value: selectedId,
               decoration: const InputDecoration(
                 labelText: 'Credential',
                 border: OutlineInputBorder(),

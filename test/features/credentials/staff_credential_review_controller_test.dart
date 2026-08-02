@@ -53,7 +53,12 @@ void main() {
   test(
     'load sets needsShareRequest when credentials require a sharing grant',
     () async {
-      when(() => credentials.listForTenantContractor('contractor-1')).thenThrow(
+      when(
+        () => credentials.listForTenantContractor(
+          'contractor-1',
+          engagementId: 'engagement-1',
+        ),
+      ).thenThrow(
         const AppFailure(
           code: 'sharing_grant_required',
           message: 'sharing_grant_required',
@@ -77,7 +82,12 @@ void main() {
         engagementId: 'engagement-1',
       ),
     ).thenAnswer((_) async {});
-    when(() => credentials.listForTenantContractor('contractor-1')).thenThrow(
+    when(
+      () => credentials.listForTenantContractor(
+        'contractor-1',
+        engagementId: 'engagement-1',
+      ),
+    ).thenThrow(
       const AppFailure(
         code: 'sharing_grant_required',
         message: 'sharing_grant_required',

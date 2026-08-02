@@ -27,7 +27,7 @@ class RecurrenceRuleFormView extends StatelessWidget {
                 ),
               ),
             DropdownButtonFormField<String>(
-              initialValue: c.selectedContractorId.value,
+              value: c.selectedContractorId.value,
               items: [
                 for (final engagement in c.jobs.assignableEngagements)
                   DropdownMenuItem(
@@ -45,7 +45,7 @@ class RecurrenceRuleFormView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<RecurrenceFrequency>(
-              initialValue: c.frequency.value,
+              value: c.frequency.value,
               items:
                   RecurrenceFrequency.values
                       .map(
@@ -101,7 +101,7 @@ class RecurrenceRuleFormView extends StatelessWidget {
             Text('Task titles', style: Get.textTheme.titleMedium),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              initialValue: null,
+              value: null,
               items: [
                 for (final preset in taskTitlePresets)
                   DropdownMenuItem(value: preset, child: Text(preset)),

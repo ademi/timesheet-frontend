@@ -21,8 +21,14 @@ class CredentialsRepository {
   ) =>
       _remote.supersede(id, body);
 
-  Future<List<CredentialOut>> listForTenantContractor(String contractorId) =>
-      _remote.listForTenantContractor(contractorId);
+  Future<List<CredentialOut>> listForTenantContractor(
+    String contractorId, {
+    required String engagementId,
+  }) =>
+      _remote.listForTenantContractor(
+        contractorId,
+        engagementId: engagementId,
+      );
 
   Future<CredentialReviewOut> createReview({
     required String engagementId,

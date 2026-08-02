@@ -33,7 +33,12 @@ void main() {
     pipeline = _MockDocumentPipeline();
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
-    when(() => credentials.listForTenantContractor('contractor-1')).thenThrow(
+    when(
+      () => credentials.listForTenantContractor(
+        'contractor-1',
+        engagementId: 'engagement-1',
+      ),
+    ).thenThrow(
       const AppFailure(
         code: 'sharing_grant_required',
         message: 'sharing_grant_required',

@@ -75,11 +75,17 @@ class ComplianceOpsRemoteDataSource {
     }
   }
 
-  Future<List<IncidentOut>> listIncidents({int limit = 100}) async {
+  Future<List<IncidentOut>> listIncidents({
+    int limit = 100,
+    String? status,
+  }) async {
     try {
       final response = await _dio.get<dynamic>(
         ApiPaths.incidents,
-        queryParameters: {'limit': limit},
+        queryParameters: {
+          'limit': limit,
+          if (status != null && status.isNotEmpty) 'status': status,
+        },
       );
       return _parseList(response.data, IncidentOut.fromJson);
     } on DioException catch (e) {
