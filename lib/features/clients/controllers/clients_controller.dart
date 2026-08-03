@@ -52,6 +52,8 @@ class ClientsController extends GetxController {
   final siteLngCtrl = TextEditingController();
   final siteRadiusCtrl = TextEditingController(text: '100');
   final siteIsPrimary = false.obs;
+  final isGeocoding = false.obs;
+  final geocodeHint = RxnString();
   ClientSiteOut? editingSite;
 
   // Contact form
@@ -272,24 +274,91 @@ class ClientsController extends GetxController {
     siteRadiusCtrl.text = (site?.geofenceRadiusM ?? 100).toString();
     siteIsPrimary.value = site?.isPrimary ?? false;
     errorMessage.value = null;
+    geocodeHint.value = null;
     Get.toNamed(AppRoutes.staffClientSiteForm);
+  }
+
+  /// Resolves lat/lng from address via `POST /v1/public/geocode`.
+  /// Returns coordinates on success, or null after setting [errorMessage].
+  Future<({double lat, double lng})?> geocodeFromAddress({
+    bool showSuccessHint = true,
+  }) async {
+    final address = siteAddressCtrl.text.trim();
+    final city = siteCityCtrl.text.trim();
+    final state = siteStateCtrl.text.trim();
+    final country = siteCountryCtrl.text.trim().toUpperCase();
+
+    if (address.isEmpty || city.isEmpty || country.isEmpty) {
+      errorMessage.value =
+          'Address line 1, city, and country (ISO code, e.g. AU) are '
+          'required to look up coordinates.';
+      return null;
+    }
+    if (country.length != 2) {
+      errorMessage.value =
+          'Country must be a 2-letter ISO code (e.g. AU, US, GB).';
+      return null;
+    }
+
+    isGeocoding.value = true;
+    errorMessage.value = null;
+    geocodeHint.value = null;
+    try {
+      final result = await _repository.geocode(
+        GeocodeRequest(
+          addressLine1: address,
+          city: city,
+          state: state.nullIfEmpty,
+          country: country,
+        ),
+      );
+      siteLatCtrl.text = result.latitude.toString();
+      siteLngCtrl.text = result.longitude.toString();
+      // Normalize country field to the ISO code we sent.
+      siteCountryCtrl.text = country;
+      if (showSuccessHint) {
+        final parts = <String>[
+          if (result.formattedAddress != null &&
+              result.formattedAddress!.isNotEmpty)
+            result.formattedAddress!,
+          if (result.confidence != null) 'confidence: ${result.confidence}',
+        ];
+        geocodeHint.value = parts.isEmpty
+            ? 'Coordinates filled from address.'
+            : parts.join(' · ');
+      }
+      return (lat: result.latitude, lng: result.longitude);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      return null;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return null;
+    } finally {
+      isGeocoding.value = false;
+    }
   }
 
   Future<void> saveSite() async {
     final clientId = selected.value?.id;
     if (clientId == null) return;
     final name = siteNameCtrl.text.trim();
-    final lat = double.tryParse(siteLatCtrl.text.trim());
-    final lng = double.tryParse(siteLngCtrl.text.trim());
     if (name.isEmpty) {
       errorMessage.value = 'Site name is required.';
       return;
     }
+
+    var lat = double.tryParse(siteLatCtrl.text.trim());
+    var lng = double.tryParse(siteLngCtrl.text.trim());
+
+    // Auto-geocode when coordinates were not entered manually.
     if (lat == null || lng == null) {
-      errorMessage.value =
-          'Latitude and longitude are required (design §6.6 / S5).';
-      return;
+      final coords = await geocodeFromAddress(showSuccessHint: true);
+      if (coords == null) return;
+      lat = coords.lat;
+      lng = coords.lng;
     }
+
     if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       errorMessage.value = 'Latitude/longitude out of range.';
       return;

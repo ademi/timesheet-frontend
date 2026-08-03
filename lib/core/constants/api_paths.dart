@@ -92,6 +92,8 @@ abstract final class ApiPaths {
       '$_v1/public/client-invites/$token';
   static String publicClientInviteAcknowledge(String token) =>
       '${publicClientInvite(token)}/acknowledge';
+  /// Address → coordinates (Google Geocoding via backend; no auth).
+  static const publicGeocode = '$_v1/public/geocode';
 
   // Forms / jobs / visits
   static const formTemplates = '$_v1/form-templates';

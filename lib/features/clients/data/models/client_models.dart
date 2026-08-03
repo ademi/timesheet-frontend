@@ -151,6 +151,51 @@ class ClientSiteOut {
   }
 }
 
+/// `POST /v1/public/geocode` — address_line1 + city + ISO country required.
+class GeocodeRequest {
+  const GeocodeRequest({
+    required this.addressLine1,
+    required this.city,
+    required this.country,
+    this.state,
+  });
+
+  final String addressLine1;
+  final String city;
+  final String country;
+  final String? state;
+
+  Map<String, dynamic> toJson() => {
+        'address_line1': addressLine1,
+        'city': city,
+        'country': country,
+        if (state != null && state!.isNotEmpty) 'state': state,
+      };
+}
+
+class GeocodeResponse {
+  const GeocodeResponse({
+    required this.latitude,
+    required this.longitude,
+    this.formattedAddress,
+    this.confidence,
+  });
+
+  final double latitude;
+  final double longitude;
+  final String? formattedAddress;
+  final String? confidence;
+
+  factory GeocodeResponse.fromJson(Map<String, dynamic> json) {
+    return GeocodeResponse(
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+      formattedAddress: json['formatted_address'] as String?,
+      confidence: json['confidence'] as String?,
+    );
+  }
+}
+
 class ClientSiteWriteRequest {
   const ClientSiteWriteRequest({
     required this.name,

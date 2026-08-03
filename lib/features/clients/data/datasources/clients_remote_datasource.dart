@@ -188,6 +188,18 @@ class ClientsRemoteDataSource {
     }
   }
 
+  Future<GeocodeResponse> geocode(GeocodeRequest body) async {
+    try {
+      final response = await _plain.post<Map<String, dynamic>>(
+        ApiPaths.publicGeocode,
+        data: body.toJson(),
+      );
+      return _require(response.data, GeocodeResponse.fromJson, 'geocode');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<ClientInvitePublicOut> getPublicInvite(String token) async {
     try {
       final response = await _plain.get<Map<String, dynamic>>(

@@ -51,6 +51,8 @@ class ClientsRepository {
   Future<List<ClientInviteOut>> listInvites(String clientId) =>
       _remote.listInvites(clientId);
 
+  Future<GeocodeResponse> geocode(GeocodeRequest body) => _remote.geocode(body);
+
   Future<ClientInvitePublicOut> getPublicInvite(String token) =>
       _remote.getPublicInvite(token);
   Future<ClientInviteAcknowledgeResponse> acknowledgePublicInvite({

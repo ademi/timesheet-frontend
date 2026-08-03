@@ -21,10 +21,19 @@ class AuthErrorModel implements Exception {
         code: m['code'] as String?,
       );
     }
-    final message = raw is String
-        ? raw
-        : raw?.toString() ?? 'Something went wrong';
-    return AuthErrorModel(detail: message);
+    if (raw is String) {
+      return AuthErrorModel(detail: raw, code: json['code'] as String?);
+    }
+    // Public API paths often return `{ "message": "..." }` instead of detail.
+    final publicMessage = json['message'];
+    if (publicMessage is String && publicMessage.isNotEmpty) {
+      return AuthErrorModel(
+        detail: publicMessage,
+        code: json['code'] as String?,
+      );
+    }
+    final message = raw?.toString() ?? 'Something went wrong';
+    return AuthErrorModel(detail: message, code: json['code'] as String?);
   }
 
   Map<String, dynamic> toJson() => {

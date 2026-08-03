@@ -16,6 +16,9 @@ class ClientSiteFormView extends GetView<ClientsController> {
       appBar: AppBar(title: Text(isEdit ? 'Edit site' : 'Add site')),
       body: Obx(() {
         final err = controller.errorMessage.value;
+        final hint = controller.geocodeHint.value;
+        final busy =
+            controller.isSaving.value || controller.isGeocoding.value;
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -41,15 +44,16 @@ class ClientSiteFormView extends GetView<ClientsController> {
             TextField(
               controller: controller.siteAddressCtrl,
               decoration: const InputDecoration(
-                labelText: 'Address line 1',
+                labelText: 'Address line 1 *',
                 border: OutlineInputBorder(),
+                helperText: 'Required to look up coordinates',
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: controller.siteCityCtrl,
               decoration: const InputDecoration(
-                labelText: 'City',
+                labelText: 'City *',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -59,14 +63,18 @@ class ClientSiteFormView extends GetView<ClientsController> {
               decoration: const InputDecoration(
                 labelText: 'State',
                 border: OutlineInputBorder(),
+                helperText: 'Optional (e.g. NSW)',
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: controller.siteCountryCtrl,
+              textCapitalization: TextCapitalization.characters,
               decoration: const InputDecoration(
-                labelText: 'Country',
+                labelText: 'Country *',
+                hintText: 'AU',
                 border: OutlineInputBorder(),
+                helperText: '2-letter ISO code (e.g. AU, US, GB)',
               ),
             ),
             const SizedBox(height: 12),
@@ -78,6 +86,26 @@ class ClientSiteFormView extends GetView<ClientsController> {
               ),
             ),
             const SizedBox(height: 12),
+            AsyncOutlinedButton(
+              onPressed: () => controller.geocodeFromAddress(),
+              isLoading: busy,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                foregroundColor: AppColors.primary,
+              ),
+              child: const Text('Look up coordinates from address'),
+            ),
+            if (hint != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                hint,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -88,7 +116,7 @@ class ClientSiteFormView extends GetView<ClientsController> {
                       signed: true,
                     ),
                     decoration: const InputDecoration(
-                      labelText: 'Latitude *',
+                      labelText: 'Latitude',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -102,7 +130,7 @@ class ClientSiteFormView extends GetView<ClientsController> {
                       signed: true,
                     ),
                     decoration: const InputDecoration(
-                      labelText: 'Longitude *',
+                      labelText: 'Longitude',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -111,8 +139,8 @@ class ClientSiteFormView extends GetView<ClientsController> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Map pin picker not in V1 — enter coordinates. Required for '
-              'visit geofence.',
+              'Filled automatically from the address, or enter manually. '
+              'Required for visit geofence.',
               style: TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
             const SizedBox(height: 12),
@@ -133,7 +161,7 @@ class ClientSiteFormView extends GetView<ClientsController> {
             const SizedBox(height: 16),
             AsyncElevatedButton(
               onPressed: controller.saveSite,
-              isLoading: controller.isSaving.value,
+              isLoading: busy,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
