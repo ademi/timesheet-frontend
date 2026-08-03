@@ -135,11 +135,17 @@ class StaffPaymentsController extends GetxController {
     unpaidVisits.assignAll(list);
   }
 
-  void setBatchStatusFilter(String? status) {
+  Future<void> setBatchStatusFilter(String? status) async {
     batchStatusFilter.value = status ?? '';
-    _loadBatches().catchError((e) {
-      if (e is AppFailure) errorMessage.value = e.message;
-    });
+    isLoading.value = true;
+    errorMessage.value = null;
+    try {
+      await _loadBatches();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> loadRatesFor(String? engagementId) async {

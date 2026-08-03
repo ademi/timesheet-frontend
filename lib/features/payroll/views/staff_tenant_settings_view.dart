@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../controllers/staff_tenant_settings_controller.dart';
 
 class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
@@ -97,8 +98,9 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
             ),
             const SizedBox(height: 16),
             if (controller.canManage)
-              ElevatedButton(
-                onPressed: controller.isSaving.value ? null : controller.save,
+              AsyncElevatedButton(
+                onPressed: controller.save,
+                isLoading: controller.isSaving.value,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.onPrimary,

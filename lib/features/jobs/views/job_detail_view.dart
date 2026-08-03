@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../controllers/jobs_controller.dart';
 import '../data/models/job_models.dart';
 import '../utils/recurrence_label.dart';
@@ -59,18 +60,14 @@ class _JobDetailViewState extends State<JobDetailView> {
               Wrap(
                 spacing: 8,
                 children: [
-                  OutlinedButton(
-                    onPressed:
-                        controller.isSaving.value
-                            ? null
-                            : () => controller.setStatus('closed'),
+                  AsyncOutlinedButton(
+                    onPressed: () => controller.setStatus('closed'),
+                    isLoading: controller.isSaving.value,
                     child: const Text('Close'),
                   ),
-                  OutlinedButton(
-                    onPressed:
-                        controller.isSaving.value
-                            ? null
-                            : () => controller.setStatus('cancelled'),
+                  AsyncOutlinedButton(
+                    onPressed: () => controller.setStatus('cancelled'),
+                    isLoading: controller.isSaving.value,
                     child: const Text('Cancel'),
                   ),
                 ],
@@ -136,10 +133,14 @@ class _JobDetailViewState extends State<JobDetailView> {
                                       controller.isTemplateAttached(t.id)
                                   ? null
                                   : () => controller.attachFormTemplate(t.id),
-                          child: Text(
-                            controller.isTemplateAttached(t.id)
-                                ? 'Attached'
-                                : 'Attach',
+                          child: AsyncButtonChild(
+                            isLoading: controller.isSaving.value &&
+                                !controller.isTemplateAttached(t.id),
+                            child: Text(
+                              controller.isTemplateAttached(t.id)
+                                  ? 'Attached'
+                                  : 'Attach',
+                            ),
                           ),
                         )
                         : null,
@@ -147,11 +148,9 @@ class _JobDetailViewState extends State<JobDetailView> {
             if (controller.canManage || controller.canManageForms)
               Align(
                 alignment: Alignment.centerLeft,
-                child: OutlinedButton(
-                  onPressed:
-                      controller.isSaving.value
-                          ? null
-                          : controller.openFormTemplatesAndRefresh,
+                child: AsyncOutlinedButton(
+                  onPressed: controller.openFormTemplatesAndRefresh,
+                  isLoading: controller.isSaving.value,
                   child: Text(
                     controller.formTemplates.isEmpty
                         ? 'Create form template'
@@ -219,38 +218,24 @@ class _JobDetailViewState extends State<JobDetailView> {
                           spacing: 8,
                           children: [
                             if (controller.canManage)
-                              OutlinedButton(
-                                onPressed:
-                                    controller.isSaving.value
-                                        ? null
-                                        : () =>
-                                            controller.toggleRuleActive(rule),
+                              AsyncOutlinedButton(
+                                onPressed: () =>
+                                    controller.toggleRuleActive(rule),
+                                isLoading: controller.isSaving.value,
                                 child: Text(
                                   rule.isActive ? 'Deactivate' : 'Activate',
                                 ),
                               ),
                             if (controller.canManage)
-                              ElevatedButton(
-                                onPressed:
-                                    controller.isGenerating.value
-                                        ? null
-                                        : () =>
-                                            controller.generateForRule(rule),
+                              AsyncElevatedButton(
+                                onPressed: () =>
+                                    controller.generateForRule(rule),
+                                isLoading: controller.isGenerating.value,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
                                   foregroundColor: AppColors.onPrimary,
                                 ),
-                                child:
-                                    controller.isGenerating.value
-                                        ? const SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: AppColors.onPrimary,
-                                          ),
-                                        )
-                                        : const Text('Generate (14d)'),
+                                child: const Text('Generate (14d)'),
                               ),
                           ],
                         ),
@@ -288,11 +273,9 @@ class _JobDetailViewState extends State<JobDetailView> {
                 ),
               ),
               const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed:
-                    controller.isSaving.value
-                        ? null
-                        : controller.createManualVisit,
+              AsyncElevatedButton(
+                onPressed: controller.createManualVisit,
+                isLoading: controller.isSaving.value,
                 child: const Text('Create manual visit'),
               ),
               const SizedBox(height: 8),

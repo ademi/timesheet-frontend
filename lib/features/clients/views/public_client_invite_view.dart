@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../controllers/public_client_invite_controller.dart';
 
 class PublicClientInviteView extends GetView<PublicClientInviteController> {
@@ -75,10 +76,9 @@ class PublicClientInviteView extends GetView<PublicClientInviteController> {
                 ),
               ] else ...[
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: controller.isSaving.value
-                      ? null
-                      : () => controller.acknowledge(accept: true),
+                AsyncElevatedButton(
+                  onPressed: () => controller.acknowledge(accept: true),
+                  isLoading: controller.isSaving.value,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.onPrimary,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../controllers/clients_controller.dart';
 
 class ClientSiteFormView extends GetView<ClientsController> {
@@ -130,8 +131,9 @@ class ClientSiteFormView extends GetView<ClientsController> {
               title: const Text('Primary site'),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: controller.isSaving.value ? null : controller.saveSite,
+            AsyncElevatedButton(
+              onPressed: controller.saveSite,
+              isLoading: controller.isSaving.value,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,

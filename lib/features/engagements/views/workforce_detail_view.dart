@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../controllers/workforce_controller.dart';
@@ -165,8 +166,9 @@ class WorkforceDetailView extends GetView<WorkforceController> {
     required String label,
     required VoidCallback onPressed,
   }) {
-    return ElevatedButton(
-      onPressed: controller.isSaving.value ? null : onPressed,
+    return AsyncElevatedButton(
+      onPressed: onPressed,
+      isLoading: controller.isSaving.value,
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,

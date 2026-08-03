@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../controllers/jobs_controller.dart';
 
 class FormTemplatesView extends GetView<JobsController> {
@@ -87,12 +88,11 @@ class FormTemplatesView extends GetView<JobsController> {
                   ),
                   trailing:
                       controller.canManageForms
-                          ? IconButton(
+                          ? AsyncIconButton(
                             tooltip: 'Delete',
-                            onPressed:
-                                controller.isSaving.value
-                                    ? null
-                                    : () => controller.deleteFormTemplate(t.id),
+                            onPressed: () =>
+                                controller.deleteFormTemplate(t.id),
+                            isLoading: controller.isSaving.value,
                             icon: const Icon(Icons.delete_outline),
                           )
                           : null,

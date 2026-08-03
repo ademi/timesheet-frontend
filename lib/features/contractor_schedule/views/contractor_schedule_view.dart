@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../controllers/contractor_schedule_controller.dart';
 import '../data/models/schedule_models.dart';
 
@@ -268,11 +269,9 @@ class _AvailabilityTab extends StatelessWidget {
               ),
             ),
           if (controller.canManage)
-            ElevatedButton(
-              onPressed:
-                  controller.isSaving.value
-                      ? null
-                      : controller.saveAvailability,
+            AsyncElevatedButton(
+              onPressed: controller.saveAvailability,
+              isLoading: controller.isSaving.value,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
@@ -354,9 +353,9 @@ class _LeaveTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed:
-                  controller.isSaving.value ? null : controller.createLeave,
+            AsyncElevatedButton(
+              onPressed: controller.createLeave,
+              isLoading: controller.isSaving.value,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
@@ -377,12 +376,10 @@ class _LeaveTab extends StatelessWidget {
                 subtitle: leave.notes != null ? Text(leave.notes!) : null,
                 trailing:
                     controller.canManage
-                        ? IconButton(
+                        ? AsyncIconButton(
                           tooltip: 'Delete',
-                          onPressed:
-                              controller.isSaving.value
-                                  ? null
-                                  : () => controller.deleteLeave(leave.id),
+                          onPressed: () => controller.deleteLeave(leave.id),
+                          isLoading: controller.isSaving.value,
                           icon: const Icon(Icons.delete_outline),
                         )
                         : null,

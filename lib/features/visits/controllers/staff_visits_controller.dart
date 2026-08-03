@@ -27,6 +27,7 @@ class StaffVisitsController extends GetxController {
   final selected = Rxn<VisitOut>();
   final isLoading = false.obs;
   final isSaving = false.obs;
+  final isRefreshing = false.obs;
   final errorMessage = RxnString();
 
   /// Board range: default current local day → +7 days.
@@ -129,6 +130,7 @@ class StaffVisitsController extends GetxController {
         selected.value?.id ??
         (Get.arguments is VisitOut ? (Get.arguments as VisitOut).id : null);
     if (id == null) return;
+    isRefreshing.value = true;
     try {
       selected.value = await _repository.getVisit(id);
       final idx = visits.indexWhere((v) => v.id == id);
@@ -137,6 +139,8 @@ class StaffVisitsController extends GetxController {
       }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+    } finally {
+      isRefreshing.value = false;
     }
   }
 

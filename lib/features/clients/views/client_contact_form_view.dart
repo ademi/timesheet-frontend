@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../controllers/clients_controller.dart';
 
 class ClientContactFormView extends GetView<ClientsController> {
@@ -67,9 +68,9 @@ class ClientContactFormView extends GetView<ClientsController> {
               title: const Text('Notify on visit complete'),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed:
-                  controller.isSaving.value ? null : controller.saveContact,
+            AsyncElevatedButton(
+              onPressed: controller.saveContact,
+              isLoading: controller.isSaving.value,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../controllers/staff_credential_review_controller.dart';
 import '../data/models/credential_models.dart';
@@ -195,34 +196,28 @@ class _StaffCredentialCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                OutlinedButton(
-                  onPressed:
-                      controller.isSaving.value
-                          ? null
-                          : () => controller.submitReview(
-                            credential: c,
-                            decision: 'accepted',
-                          ),
+                AsyncOutlinedButton(
+                  onPressed: () => controller.submitReview(
+                    credential: c,
+                    decision: 'accepted',
+                  ),
+                  isLoading: controller.isSaving.value,
                   child: const Text('Accept'),
                 ),
-                OutlinedButton(
-                  onPressed:
-                      controller.isSaving.value
-                          ? null
-                          : () => controller.submitReview(
-                            credential: c,
-                            decision: 'rejected',
-                          ),
+                AsyncOutlinedButton(
+                  onPressed: () => controller.submitReview(
+                    credential: c,
+                    decision: 'rejected',
+                  ),
+                  isLoading: controller.isSaving.value,
                   child: const Text('Reject'),
                 ),
-                OutlinedButton(
-                  onPressed:
-                      controller.isSaving.value
-                          ? null
-                          : () => controller.submitReview(
-                            credential: c,
-                            decision: 're_review_required',
-                          ),
+                AsyncOutlinedButton(
+                  onPressed: () => controller.submitReview(
+                    credential: c,
+                    decision: 're_review_required',
+                  ),
+                  isLoading: controller.isSaving.value,
                   child: const Text('Re-review'),
                 ),
               ],

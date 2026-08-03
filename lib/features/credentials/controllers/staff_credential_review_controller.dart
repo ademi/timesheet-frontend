@@ -184,6 +184,7 @@ class StaffCredentialReviewController extends GetxController {
     bool download = false,
   }) async {
     errorMessage.value = null;
+    isSaving.value = true;
     try {
       await _evidenceDocumentOpener.open(document, download: download);
     } on AppFailure catch (e) {
@@ -191,6 +192,8 @@ class StaffCredentialReviewController extends GetxController {
     } catch (_) {
       errorMessage.value =
           'Could not download this file. Check your connection and retry.';
+    } finally {
+      isSaving.value = false;
     }
   }
 

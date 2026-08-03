@@ -27,6 +27,7 @@ class ContractorVisitsController extends GetxController {
   final selected = Rxn<VisitOut>();
   final isLoading = false.obs;
   final isSaving = false.obs;
+  final isRefreshing = false.obs;
   final errorMessage = RxnString();
 
   final formNotesCtrl = TextEditingController();
@@ -109,6 +110,7 @@ class ContractorVisitsController extends GetxController {
     final id = selected.value?.id ??
         (Get.arguments is VisitOut ? (Get.arguments as VisitOut).id : null);
     if (id == null) return;
+    isRefreshing.value = true;
     try {
       final visit = await _repository.getVisit(id);
       selected.value = visit;
@@ -118,6 +120,8 @@ class ContractorVisitsController extends GetxController {
       }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+    } finally {
+      isRefreshing.value = false;
     }
   }
 

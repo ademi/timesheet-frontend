@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../controllers/jobs_controller.dart';
 
 class JobFormView extends GetView<JobsController> {
@@ -80,7 +81,9 @@ class JobFormView extends GetView<JobsController> {
                 for (final c in controller.clients)
                   DropdownMenuItem(value: c.id, child: Text(c.fullName)),
               ],
-              onChanged: controller.onClientChanged,
+              onChanged: controller.isLoadingSites.value
+                  ? null
+                  : controller.onClientChanged,
               decoration: InputDecoration(
                 labelText: controller.kind.value == 'standing'
                     ? 'Client * (standing)'
@@ -96,10 +99,24 @@ class JobFormView extends GetView<JobsController> {
                   for (final s in controller.sites)
                     DropdownMenuItem(value: s.id, child: Text(s.name)),
                 ],
-                onChanged: (v) => controller.selectedSiteId.value = v,
-                decoration: const InputDecoration(
-                  labelText: 'Client site *',
-                  border: OutlineInputBorder(),
+                onChanged: controller.isLoadingSites.value
+                    ? null
+                    : (v) => controller.selectedSiteId.value = v,
+                decoration: InputDecoration(
+                  labelText: controller.isLoadingSites.value
+                      ? 'Client site * (loading…)'
+                      : 'Client site *',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: controller.isLoadingSites.value
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : null,
                 ),
               )
             else
@@ -143,8 +160,9 @@ class JobFormView extends GetView<JobsController> {
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: controller.isSaving.value ? null : controller.saveJob,
+            AsyncElevatedButton(
+              onPressed: controller.saveJob,
+              isLoading: controller.isSaving.value,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,

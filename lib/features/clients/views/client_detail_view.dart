@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../controllers/clients_controller.dart';
 import '../data/models/client_models.dart';
 
@@ -15,7 +16,9 @@ class ClientDetailView extends GetView<ClientsController> {
       if (client == null) {
         return Scaffold(
           appBar: AppBar(title: const Text('Client')),
-          body: const Center(child: Text('Client not found.')),
+          body: controller.isLoading.value
+              ? const Center(child: CircularProgressIndicator())
+              : const Center(child: Text('Client not found.')),
         );
       }
       final err = controller.errorMessage.value;
@@ -27,19 +30,25 @@ class ClientDetailView extends GetView<ClientsController> {
             if (controller.canManage)
               IconButton(
                 tooltip: 'Edit',
-                onPressed: () => controller.openEdit(client),
+                onPressed: controller.isSaving.value
+                    ? null
+                    : () => controller.openEdit(client),
                 icon: const Icon(Icons.edit_outlined),
               ),
             if (controller.canManage)
               IconButton(
                 tooltip: 'Delete',
-                onPressed: () => controller.deleteClient(client),
+                onPressed: controller.isSaving.value
+                    ? null
+                    : () => controller.deleteClient(client),
                 icon: const Icon(Icons.delete_outline),
               ),
           ],
         ),
         body: Column(
           children: [
+            if (controller.isLoading.value)
+              const LinearProgressIndicator(minHeight: 2),
             if (err != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -266,9 +275,9 @@ class _InvitesTab extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (controller.canManage)
-            ElevatedButton.icon(
-              onPressed:
-                  controller.isSaving.value ? null : controller.createInvite,
+            AsyncElevatedButtonIcon(
+              onPressed: controller.createInvite,
+              isLoading: controller.isSaving.value,
               icon: const Icon(Icons.link),
               label: const Text('Create invite token'),
               style: ElevatedButton.styleFrom(

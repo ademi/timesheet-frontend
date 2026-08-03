@@ -20,6 +20,7 @@ class ContractorProfileController extends GetxController {
   final SessionService _session;
 
   final isSaving = false.obs;
+  final isLoading = false.obs;
   final errorMessage = RxnString();
   final lastRights = Rxn<RightsRequestOut>();
   final lastExport = Rxn<PrivacyExportResult>();
@@ -46,9 +47,13 @@ class ContractorProfileController extends GetxController {
   }
 
   Future<void> _loadEvents() async {
+    isLoading.value = true;
     try {
       events.assignAll(await _repository.listNotificationEvents());
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> submitRightsRequest() async {

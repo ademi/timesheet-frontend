@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/controllers/auth_controller.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../controllers/contractor_profile_controller.dart';
 import '../data/models/compliance_ops_models.dart';
 
@@ -74,10 +75,9 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
               ),
             ),
             const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: controller.isSaving.value
-                  ? null
-                  : controller.submitRightsRequest,
+            AsyncElevatedButton(
+              onPressed: controller.submitRightsRequest,
+              isLoading: controller.isSaving.value,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
@@ -95,10 +95,9 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
             const Divider(height: 32),
             Text('Privacy export', style: Get.textTheme.titleMedium),
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: controller.isSaving.value
-                  ? null
-                  : controller.runPrivacyExport,
+            AsyncOutlinedButton(
+              onPressed: controller.runPrivacyExport,
+              isLoading: controller.isSaving.value,
               child: const Text('Request privacy export'),
             ),
             if (controller.lastExport.value?.downloadUrl != null)
@@ -122,25 +121,30 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
               ),
             ),
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: controller.isSaving.value
-                  ? null
-                  : controller.confirmWithdrawConsent,
+            AsyncOutlinedButton(
+              onPressed: controller.confirmWithdrawConsent,
+              isLoading: controller.isSaving.value,
               child: const Text('Withdraw consent…'),
             ),
             const Divider(height: 32),
             Text('Recent alerts', style: Get.textTheme.titleMedium),
-            if (controller.events.isEmpty)
+            if (controller.isLoading.value)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (controller.events.isEmpty)
               const Padding(
                 padding: EdgeInsets.only(top: 8),
                 child: Text('No notification events.'),
-              ),
-            for (final e in controller.events.take(10))
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(e.summary),
-                subtitle: Text(e.createdAt.toLocal().toString()),
-              ),
+              )
+            else
+              for (final e in controller.events.take(10))
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(e.summary),
+                  subtitle: Text(e.createdAt.toLocal().toString()),
+                ),
           ],
         );
       }),

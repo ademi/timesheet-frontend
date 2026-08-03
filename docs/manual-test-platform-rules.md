@@ -377,11 +377,11 @@ Fail the build if any of these are violated.
 
 ## 10. Payments & rates
 
-- [ ] Staff: engagement rate bands editor (`base`, `evening`, `night`, `saturday`, `sunday`, `public_holiday`).
-- [ ] Payment batches: create / post / void; `band_breakdown` visible when API returns it.
-- [ ] Contractor: payments via visits `payment_status` filter / profile link as implemented.
-- [ ] Settings: timezone / `public_holiday_jurisdiction` when permitted.
-- [ ] No employee payroll-period UX.
+- [x] Staff: engagement rate bands editor (`base`, `evening`, `night`, `saturday`, `sunday`, `public_holiday`).
+- [x] Payment batches: create / post / void; `band_breakdown` visible when API returns it.
+- [x] Contractor: payments via visits `payment_status` filter / profile link as implemented.
+- [x] Settings: timezone / `public_holiday_jurisdiction` when permitted.
+- [x] No employee payroll-period UX.
 
 ---
 
@@ -393,27 +393,27 @@ Fail the build if any of these are violated.
 
 ### 11.1 Staff compliance
 
-- [ ] Compliance section loads for users with any of: credentials.review, rights.manage, incidents.manage, audit.view.
-- [ ] **Access history:** pick contractor by **name**, then credential; call requires `credential_id` on path `/v1/compliance/access-history` (not a wrong `/v1/access-history`).
-- [ ] No eager fetch without credential selection.
-- [ ] Rights queue / incidents create-open-close when permitted.
-- [ ] Home alerts: humanized titles (not raw event type codes as primary text).
+- [x] Compliance section loads for users with any of: credentials.review, rights.manage, incidents.manage, audit.view.
+- [x] **Access history:** pick contractor by **name**, then credential; call requires `credential_id` on path `/v1/compliance/access-history` (not a wrong `/v1/access-history`).
+- [x] No eager fetch without credential selection.
+- [x] Rights queue / incidents create-open-close when permitted.
+- [x] Home alerts: humanized titles (not raw event type codes as primary text).
 
 
 
 ### 11.2 Contractor profile ops
 
-- [ ] Rights request: access / correction / deletion / export.
-- [ ] Privacy export.
-- [ ] Consent withdraw with explanation dialog before withdraw.
-- [ ] Docs-needed banner CTA → Credentials when `needsDocsAttention`.
+- [x] Rights request: access / correction / deletion / export.
+- [x] Privacy export.
+- [x] Consent withdraw with explanation dialog before withdraw.
+- [x] Docs-needed banner CTA → Credentials when `needsDocsAttention`.
 
 
 
 ### 11.3 Notifications
 
-- [ ] Home alerts feed loads for both actors when events exist.
-- [ ] Device register on login (non-fatal if Firebase unset); logout cleans token when applicable.
+- [x] Home alerts feed loads for both actors when events exist.
+- [x] Device register on login (non-fatal if Firebase unset); logout cleans token when applicable.
 
 ---
 

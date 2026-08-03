@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../../subscription/billing_gate.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../engagements/data/models/engagement_models.dart';
@@ -310,9 +311,9 @@ class _IncidentsTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed:
-                  controller.isSaving.value ? null : controller.createIncident,
+            AsyncElevatedButton(
+              onPressed: controller.createIncident,
+              isLoading: controller.isSaving.value,
               child: const Text('Create incident'),
             ),
             const Divider(height: 32),
@@ -328,7 +329,13 @@ class _IncidentsTab extends StatelessWidget {
                   '${i.assessmentClockLabel != null ? '\n${i.assessmentClockLabel}' : ''}',
                 ),
                 isThreeLine: i.assessmentClockLabel != null,
-                onTap: () => controller.openIncident(i),
+                trailing: controller.isSaving.value &&
+                        controller.selectedIncident.value?.id == i.id
+                    ? const ButtonLoadingIndicator()
+                    : null,
+                onTap: controller.isSaving.value
+                    ? null
+                    : () => controller.openIncident(i),
               ),
             ),
           if (selected != null) ...[
@@ -341,8 +348,9 @@ class _IncidentsTab extends StatelessWidget {
                 child: Text(selected.assessmentClockLabel!),
               ),
             if (controller.canIncidents && selected.status != 'closed')
-              TextButton(
+              AsyncTextButton(
                 onPressed: () => controller.closeIncident(selected),
+                isLoading: controller.isSaving.value,
                 child: const Text('Mark closed'),
               ),
           ],

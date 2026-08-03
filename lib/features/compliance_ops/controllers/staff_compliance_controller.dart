@@ -224,13 +224,13 @@ class StaffComplianceController extends GetxController {
   }
 
   Future<void> openIncident(IncidentOut incident) async {
+    selectedIncident.value = incident;
     isSaving.value = true;
     incidentsError.value = null;
     try {
       selectedIncident.value = await _repository.getIncident(incident.id);
     } on AppFailure catch (e) {
       incidentsError.value = e.message;
-      selectedIncident.value = incident;
     } finally {
       isSaving.value = false;
     }

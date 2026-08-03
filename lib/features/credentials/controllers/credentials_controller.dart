@@ -393,6 +393,7 @@ class CredentialsController extends GetxController {
   }) async {
     errorMessage.value = null;
     lastOpenedViaProxy.value = false;
+    isSaving.value = true;
     try {
       await _evidenceDocumentOpener.open(document, download: download);
     } on AppFailure catch (e) {
@@ -400,6 +401,8 @@ class CredentialsController extends GetxController {
     } catch (_) {
       errorMessage.value =
           'Could not download this file. Check your connection and retry.';
+    } finally {
+      isSaving.value = false;
     }
   }
 

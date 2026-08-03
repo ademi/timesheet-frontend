@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../controllers/staff_payments_controller.dart';
 
 class StaffPaymentsView extends GetView<StaffPaymentsController> {
@@ -26,6 +27,10 @@ class StaffPaymentsView extends GetView<StaffPaymentsController> {
       body: Obx(() {
         final tab = controller.tabIndex.value;
         final err = controller.errorMessage.value;
+        final initialLoad = controller.isLoading.value &&
+            controller.batches.isEmpty &&
+            controller.unpaidVisits.isEmpty &&
+            controller.engagements.isEmpty;
         return Column(
           children: [
             if (err != null)
@@ -56,15 +61,19 @@ class StaffPaymentsView extends GetView<StaffPaymentsController> {
                 ],
               ),
             ),
+            if (controller.isLoading.value && !initialLoad)
+              const LinearProgressIndicator(minHeight: 2),
             Expanded(
-              child: RefreshIndicator(
-                onRefresh: controller.loadAll,
-                child: tab == 0
-                    ? _BatchesTab(controller: controller)
-                    : tab == 1
-                        ? _CreateBatchTab(controller: controller)
-                        : _RatesTab(controller: controller),
-              ),
+              child: initialLoad
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                      onRefresh: controller.loadAll,
+                      child: tab == 0
+                          ? _BatchesTab(controller: controller)
+                          : tab == 1
+                              ? _CreateBatchTab(controller: controller)
+                              : _RatesTab(controller: controller),
+                    ),
             ),
           ],
         );
@@ -131,18 +140,16 @@ class _BatchesTab extends StatelessWidget {
                     : Text('band_breakdown: ${line.bandBreakdown}'),
               ),
             if (controller.canManage && selected.isDraft)
-              ElevatedButton(
-                onPressed: controller.isSaving.value
-                    ? null
-                    : () => controller.postBatch(selected),
+              AsyncElevatedButton(
+                onPressed: () => controller.postBatch(selected),
+                isLoading: controller.isSaving.value,
                 child: const Text('Post batch'),
               ),
             if (controller.canManage && selected.isPosted) ...[
               const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: controller.isSaving.value
-                    ? null
-                    : () => controller.voidBatch(selected),
+              AsyncOutlinedButton(
+                onPressed: () => controller.voidBatch(selected),
+                isLoading: controller.isSaving.value,
                 child: const Text('Void batch'),
               ),
             ],
@@ -190,9 +197,9 @@ class _CreateBatchTab extends StatelessWidget {
               ),
             ),
           if (controller.canManage)
-            ElevatedButton(
-              onPressed:
-                  controller.isSaving.value ? null : controller.createBatch,
+            AsyncElevatedButton(
+              onPressed: controller.createBatch,
+              isLoading: controller.isSaving.value,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
@@ -234,7 +241,13 @@ class _RatesTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          if (controller.rates.isEmpty &&
+          if (controller.isLoading.value &&
+              controller.selectedEngagementId.value != null)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (controller.rates.isEmpty &&
               controller.selectedEngagementId.value != null)
             const Text('No rates yet for this engagement.'),
           for (final r in controller.rates)
@@ -311,9 +324,9 @@ class _RatesTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed:
-                  controller.isSaving.value ? null : controller.createRate,
+            AsyncElevatedButton(
+              onPressed: controller.createRate,
+              isLoading: controller.isSaving.value,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,

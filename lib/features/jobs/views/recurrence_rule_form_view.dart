@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/async_action.dart';
 import '../controllers/recurrence_rule_form_controller.dart';
 import '../utils/recurrence_rrule_builder.dart';
 import '../utils/task_title_presets.dart';
@@ -182,13 +183,11 @@ class RecurrenceRuleFormView extends StatelessWidget {
                 '${preview.window.startTime}–${preview.window.endTime}',
               ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed:
-                  c.jobs.isSaving.value
-                      ? null
-                      : () async {
-                        if (await c.save() && context.mounted) Get.back();
-                      },
+            AsyncElevatedButton(
+              onPressed: () async {
+                if (await c.save() && context.mounted) Get.back();
+              },
+              isLoading: c.jobs.isSaving.value,
               child: const Text('Save recurrence rule'),
             ),
           ],

@@ -43,6 +43,7 @@ class JobsController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final isGenerating = false.obs;
+  final isLoadingSites = false.obs;
   final errorMessage = RxnString();
   final lastGenerate = Rxn<GenerateVisitsResponse>();
 
@@ -185,14 +186,17 @@ class JobsController extends GetxController {
     templateNameCtrl.clear();
     errorMessage.value = null;
     await Get.toNamed(AppRoutes.staffFormTemplates);
+    isSaving.value = true;
     try {
       formTemplates.assignAll(
         await _repository.listFormTemplates(tenantLevel: true),
       );
+      await refreshFormCatalog();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
     }
-    await refreshFormCatalog();
   }
 
   Future<void> onClientChanged(String? clientId) async {
@@ -200,10 +204,14 @@ class JobsController extends GetxController {
     selectedSiteId.value = null;
     sites.clear();
     if (clientId == null) return;
+    isLoadingSites.value = true;
+    errorMessage.value = null;
     try {
       sites.assignAll(await _clients.listSites(clientId));
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+    } finally {
+      isLoadingSites.value = false;
     }
   }
 
