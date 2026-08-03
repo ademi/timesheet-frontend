@@ -74,29 +74,57 @@ class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
             for (final e in controller.invited)
               Card(
                 margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  title: Text(
-                    e.tenantName?.isNotEmpty == true
-                        ? e.tenantName!
-                        : 'Provider ${e.tenantId}',
-                  ),
-                  subtitle: Text(
-                    'Status: ${e.status}\n'
-                    'Required: ${e.requiredDocCategories.map((c) => credentialTypeLabel(c.category)).join(", ").ifEmpty("—")}',
-                  ),
-                  isThreeLine: true,
-                  trailing: Column(
-                    mainAxisSize: MainAxisSize.min,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      EngagementStatusChip(status: e.status),
-                      const SizedBox(height: 4),
-                      ElevatedButton(
-                        onPressed: () => controller.beginAccept(e),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.onPrimary,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              e.tenantName?.isNotEmpty == true
+                                  ? e.tenantName!
+                                  : 'Provider ${e.tenantId}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textDark,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Status: ${e.status}',
+                              style: const TextStyle(
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                            Text(
+                              'Required: ${e.requiredDocCategories.map((c) => credentialTypeLabel(c.category)).join(", ").ifEmpty("—")}',
+                              style: const TextStyle(
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ],
                         ),
-                        child: const Text('Accept'),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          EngagementStatusChip(status: e.status),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: () => controller.beginAccept(e),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.onPrimary,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            child: const Text('Accept'),
+                          ),
+                        ],
                       ),
                     ],
                   ),

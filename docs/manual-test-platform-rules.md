@@ -112,17 +112,17 @@ Fail the build if any of these are violated.
 
 ### 1.3 Contractor login (active)
 
-- [ ] Active contractor → **ContractorShell** home (or soft docs banner if docs still needed).
-- [ ] Tabs: Home, Visits, Schedule, Credentials, Profile.
-- [ ] Onboarding routes stay **outside** tab chrome when funnel is required.
+- [x] Active contractor → **ContractorShell** home (or soft docs banner if docs still needed).
+- [x] Tabs: Home, Visits, Schedule, Credentials, Profile.
+- [x] Onboarding routes stay **outside** tab chrome when funnel is required.
 
 
 
 ### 1.4 Guards & refresh
 
-- [ ] Staff token cannot open `/contractor/*` (and vice versa).
-- [ ] Web refresh with valid tokens restores session via `me/context` into correct shell.
-- [ ] Billing gate (402 / inactive subscription): modal + **Open billing** → `BILLING_URL`.
+- [x] Staff token cannot open `/contractor/*` (and vice versa).
+- [x] Web refresh with valid tokens restores session via `me/context` into correct shell.
+- [x] Billing gate (402 / inactive subscription): modal + **Open billing** → `BILLING_URL`.
 
 ---
 
@@ -134,20 +134,20 @@ Fail the build if any of these are violated.
 
 ### 2.1 Public register (no invite)
 
-- [ ] Gateway → Register as contractor.
-- [ ] Form: full name, email, password; optional phone/dob.
-- [ ] Terms + Privacy accepted **separately** (bundled versions match `TERMS_VERSION` / `PRIVACY_VERSION`).
-- [ ] Submit → success → navigate to **login** (no tokens issued).
-- [ ] Rate-limit / validation errors show readable messages (no crash).
+- [x] Gateway → Register as contractor.
+- [x] Form: full name, email, password; optional phone/dob.
+- [x] Terms + Privacy accepted **separately** (bundled versions match `TERMS_VERSION` / `PRIVACY_VERSION`).
+- [x] Submit → success → navigate to **login** (no tokens issued).
+- [x] Rate-limit / validation errors show readable messages (no crash).
 
 
 
 ### 2.2 Staff invite → unregistered email
 
-- [ ] Staff → Workforce → **Invite** with new email + required categories (allowlist only).
-- [ ] Success shows **Registration email sent** (not only “Engagement created”) when API returns registration-invite union.
-- [ ] Invite without email+phone or empty categories → validation; no crash.
-- [ ] Inviting an **already registered** email → clear message: ask contractor to log in (`email_already_registered`).
+- [x] Staff → Workforce → **Invite** with new email + required categories (allowlist only).
+- [x] Success shows **Registration email sent** (not only “Engagement created”) when API returns registration-invite union.
+- [x] Invite without email+phone or empty categories → validation; no crash.
+- [x] Inviting an **already registered** email → clear message: ask contractor to log in (`email_already_registered`).
 
 
 
@@ -169,11 +169,11 @@ Fail the build if any of these are violated.
 
 ### 3.1 Funnel chrome
 
-- [ ] No bottom-nav / rail during onboarding.
-- [ ] Progress steps visible; completed steps can be **skipped** on re-entry.
-- [ ] Continue blocked until current step’s N-of-M requirements met.
-- [ ] Async Accept/Continue shows spinner; double-tap does not double-submit.
-- [ ] UI does not dump raw `doc_key` chrome at users.
+- [x] No bottom-nav / rail during onboarding.
+- [x] Progress steps visible; completed steps can be **skipped** on re-entry.
+- [x] Continue blocked until current step’s N-of-M requirements met.
+- [x] Async Accept/Continue shows spinner; double-tap does not double-submit.
+- [x] UI does not dump raw `doc_key` chrome at users.
 
 
 
@@ -188,34 +188,34 @@ Fail the build if any of these are violated.
 
 ### 3.3 Collection notices
 
-- [ ] Notices listed; each acknowledged before Continue.
-- [ ] Cannot skip unread notices.
+- [x] Notices listed; each acknowledged before Continue.
+- [x] Cannot skip unread notices.
 
 
 
 ### 3.4 Sensitive consents
 
-- [ ] Consents for sensitive types before upload path (as product requires).
-- [ ] Checkbox / consent UI works; pending state independent of other actions.
+- [x] Consents for sensitive types before upload path (as product requires).
+- [x] Checkbox / consent UI works; pending state independent of other actions.
 
 
 
 ### 3.5 Engagement accept (R7)
 
-- [ ] Invited engagement shows **named provider** + required categories.
-- [ ] Accept UI: metadata sharing explanation + `allow_source_evidence` toggle warning + withdrawal/end effects.
-- [ ] Confirm → accept succeeds; status moves off `invited` (e.g. `pending_docs`).
-- [ ] Continue blocked while any invite remains `invited`.
-- [ ] After accept: **switch-tenant** if needed and route to **home** (not stuck in credentials step).
-- [ ] `pending_docs` exits funnel; soft **docs-needed banner** on home with CTA to Credentials.
+- [x] Invited engagement shows **named provider** + required categories.
+- [x] Accept UI: metadata sharing explanation + `allow_source_evidence` toggle warning + withdrawal/end effects.
+- [x] Confirm → accept succeeds; status moves off `invited` (e.g. `pending_docs`).
+- [x] Continue blocked while any invite remains `invited`.
+- [x] After accept: **switch-tenant** if needed and route to **home** (not stuck in credentials step).
+- [x] `pending_docs` exits funnel; soft **docs-needed banner** on home with CTA to Credentials.
 
 
 
 ### 3.6 Re-login / multi-tenant
 
-- [ ] Incomplete platform onboarding still redirects into funnel on next login.
-- [ ] Progress restored for that contractor (not another profile’s progress).
-- [ ] Profile → switch tenant → lists refresh; no stale other-tenant data; `me/context` not stuck on single-flight cache.
+- [x] Incomplete platform onboarding still redirects into funnel on next login.
+- [x] Progress restored for that contractor (not another profile’s progress).
+- [x] Profile → switch tenant → lists refresh; no stale other-tenant data; `me/context` not stuck on single-flight cache.
 
 ---
 
@@ -269,15 +269,15 @@ Fail the build if any of these are violated.
 
 ### 5.1 List & filters
 
-- [ ] Workforce list loads; status filters work (`invited`, `pending_docs`, `approved`, `active`, `suspended`, `ended`, etc.).
-- [ ] Human-friendly labels (not raw API enums as sole UI text where fixed).
+- [x] Workforce list loads; status filters work (`invited`, `pending_docs`, `approved`, `active`, `suspended`, `ended`, etc.).
+- [x] Human-friendly labels (not raw API enums as sole UI text where fixed).
 
 
 
 ### 5.2 Docs checklist on detail
 
-- [ ] Detail shows required vs missing credential categories.
-- [ ] Accepted credentials list visible when present.
+- [x] Detail shows required vs missing credential categories.
+- [x] Accepted credentials list visible when present.
 
 
 
@@ -294,11 +294,11 @@ Fail the build if any of these are violated.
 
 ## 6. Clients CRM
 
-- [ ] Create client (name required).
-- [ ] Add site with address + **lat/lng** (required in Flutter).
-- [ ] Contacts CRUD.
-- [ ] Create client invite token; public `/invites/client/:token` (or `/invite/:token`) acknowledge works.
-- [ ] No NDIS client-pack / records-engine UI (out of V1 — must not invent).
+- [x] Create client (name required).
+- [x] Add site with address + **lat/lng** (required in Flutter).
+- [x] Contacts CRUD.
+- [x] Create client invite token; public `/invites/client/:token` (or `/invite/:token`) acknowledge works.
+- [x] No NDIS client-pack / records-engine UI (out of V1 — must not invent).
 
 ---
 
@@ -310,26 +310,26 @@ Fail the build if any of these are violated.
 
 ### 7.1 Job + form catalog
 
-- [ ] Create job with location XOR (`client_site_id` **or** `branch_id`).
-- [ ] Job detail: create/manage form catalog entries; refresh works.
-- [ ] Jobs list → form templates action opens templates UI.
+- [x] Create job with location XOR (`client_site_id` **or** `branch_id`).
+- [x] Job detail: create/manage form catalog entries; refresh works.
+- [x] Jobs list → form templates action opens templates UI.
 
 
 
 ### 7.2 Recurrence builder
 
-- [ ] Open recurrence rule builder from job.
-- [ ] Human-readable RRULE labels; preview shows **start–end** windows.
-- [ ] End at midnight coerced to **23:59** (no zero-length day).
-- [ ] Form chips use **job catalog only** (not unrelated tenant noise).
-- [ ] Generate visits → loading spinner; visits appear; Idempotency safe on retry.
+- [x] Open recurrence rule builder from job.
+- [x] Human-readable RRULE labels; preview shows **start–end** windows.
+- [x] End at midnight coerced to **23:59** (no zero-length day).
+- [x] Form chips use **job catalog only** (not unrelated tenant noise).
+- [x] Generate visits → loading spinner; visits appear; Idempotency safe on retry.
 
 
 
 ### 7.3 Manual visit
 
-- [ ] Manual visit create includes catalog **form_requirements**.
-- [ ] Task title presets dropdown available where wired.
+- [x] Manual visit create includes catalog **form_requirements**.
+- [x] Task title presets dropdown available where wired.
 
 ---
 
@@ -341,23 +341,23 @@ Fail the build if any of these are violated.
 
 ### 8.1 Staff board
 
-- [ ] Visits board filters (`from`/`to`/`job_id`) load rows.
-- [ ] Detail: reschedule via **day/time picker** (not +1h hack).
-- [ ] Cancel works when permitted.
-- [ ] Address/site labels preferred over geofence-only text where available.
-- [ ] No raw UUID fields for contractor/job assignment where pickers exist.
+- [x] Visits board filters (`from`/`to`/`job_id`) load rows.
+- [x] Detail: reschedule via **day/time picker** (not +1h hack).
+- [x] Cancel works when permitted.
+- [x] Address/site labels preferred over geofence-only text where available.
+- [x] No raw UUID fields for contractor/job assignment where pickers exist.
 
 
 
 ### 8.2 Contractor visit loop (mobile — R10)
 
-- [ ] Visits list shows upcoming; open scheduled visit.
-- [ ] Shows job/client, schedule window, status, tasks, required forms.
-- [ ] **Check in** with GPS → `checked_in` (or API equivalent).
-- [ ] Toggle tasks; submit required form / progress notes.
-- [ ] **Complete** with GPS → completed.
-- [ ] Failures map clearly: geofence rejected, forms incomplete, scan blocked, engagement not active.
-- [ ] On **web**: check-in/complete disabled with mobile location message.
+- [x] Visits list shows upcoming; open scheduled visit.
+- [x] Shows job/client, schedule window, status, tasks, required forms.
+- [x] **Check in** with GPS → `checked_in` (or API equivalent).
+- [x] Toggle tasks; submit required form / progress notes.
+- [x] **Complete** with GPS → completed.
+- [x] Failures map clearly: geofence rejected, forms incomplete, scan blocked, engagement not active.
+- [x] On **web**: check-in/complete disabled with mobile location message.
 
 ---
 
@@ -365,11 +365,11 @@ Fail the build if any of these are violated.
 
 ## 9. Contractor schedule (R9)
 
-- [ ] Schedule tab: timetable / availability / leave.
-- [ ] Copy states preferences only — **does not create visits**.
-- [ ] Multi-window availability editor: add/edit multiple windows; save succeeds.
-- [ ] Leave in the past blocked in UI; API `leave_in_past` / overlap → readable snackbar.
-- [ ] Staff must not call contractor-me schedule APIs as staff.
+- [x] Schedule tab: timetable / availability / leave.
+- [x] Copy states preferences only — **does not create visits**.
+- [x] Multi-window availability editor: add/edit multiple windows; save succeeds.
+- [x] Leave in the past blocked in UI; API `leave_in_past` / overlap → readable snackbar.
+- [x] Staff must not call contractor-me schedule APIs as staff.
 
 ---
 
