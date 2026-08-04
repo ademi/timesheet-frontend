@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
 import '../models/client_models.dart';
+import '../models/client_profile_models.dart';
 
 class ClientsRemoteDataSource {
   ClientsRemoteDataSource({
@@ -13,6 +14,115 @@ class ClientsRemoteDataSource {
 
   final Dio _dio;
   final Dio _plain;
+
+  Future<List<ClientTypeOut>> listClientTypes() async {
+    try {
+      final response = await _dio.get<List<dynamic>>(ApiPaths.clientTypes);
+      return _mapList(response.data, ClientTypeOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<ClientTypeRequirement>> listTypeRequirements(
+    String clientTypeId,
+  ) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.clientTypeRequirements(clientTypeId),
+      );
+      final items = _mapList(response.data, ClientTypeRequirement.fromJson);
+      final sorted = [...items]
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      return sorted;
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ClientProfileBundle> getClientProfile(String clientId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.clientProfile(clientId),
+      );
+      return _require(response.data, ClientProfileBundle.fromJson, 'profile');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<void> upsertProfileFact(
+    String clientId,
+    String requirementKey,
+    ProfileFactUpsert body,
+  ) async {
+    try {
+      await _dio.put<void>(
+        ApiPaths.clientProfileFact(clientId, requirementKey),
+        data: body.toJson(),
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<void> submitClientForm(
+    String clientId,
+    String formKey,
+    ClientFormSubmitRequest body,
+  ) async {
+    try {
+      await _dio.post<void>(
+        ApiPaths.clientForm(clientId, formKey),
+        data: body.toJson(),
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ClientLegalDocumentCurrent> getLegalDocumentCurrent(
+    String legalDocKey,
+  ) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.clientLegalDocumentCurrent(legalDocKey),
+      );
+      return _require(
+        response.data,
+        ClientLegalDocumentCurrent.fromJson,
+        'legal document',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<void> acceptClientLegal(
+    String clientId,
+    String legalKey,
+    ClientLegalAcceptRequest body,
+  ) async {
+    try {
+      await _dio.post<void>(
+        ApiPaths.clientLegal(clientId, legalKey),
+        data: body.toJson(),
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<Map<String, dynamic>?> getClientReadiness(String clientId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.clientReadiness(clientId),
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
 
   Future<List<ClientOut>> listClients() async {
     try {

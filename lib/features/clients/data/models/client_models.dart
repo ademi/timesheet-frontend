@@ -11,6 +11,8 @@ class ClientOut {
     this.email,
     this.phone,
     this.serviceAgreementNotes,
+    this.clientTypeId,
+    this.dob,
   });
 
   final String id;
@@ -20,6 +22,8 @@ class ClientOut {
   final String? email;
   final String? phone;
   final String? serviceAgreementNotes;
+  final String? clientTypeId;
+  final String? dob; // YYYY-MM-DD
   final Map<String, dynamic> metadata;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -34,6 +38,8 @@ class ClientOut {
       email: json['email'] as String?,
       phone: json['phone'] as String?,
       serviceAgreementNotes: json['service_agreement_notes'] as String?,
+      clientTypeId: json['client_type_id']?.toString(),
+      dob: json['dob'] as String?,
       metadata: meta is Map
           ? Map<String, dynamic>.from(meta)
           : const <String, dynamic>{},
@@ -50,6 +56,9 @@ class ClientCreateRequest {
     this.email,
     this.phone,
     this.serviceAgreementNotes,
+    this.clientTypeId,
+    this.dob,
+    this.metadata,
   });
 
   final String fullName;
@@ -57,6 +66,9 @@ class ClientCreateRequest {
   final String? email;
   final String? phone;
   final String? serviceAgreementNotes;
+  final String? clientTypeId;
+  final String? dob;
+  final Map<String, dynamic>? metadata;
 
   Map<String, dynamic> toJson() => {
         'full_name': fullName,
@@ -65,6 +77,10 @@ class ClientCreateRequest {
         if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
         if (serviceAgreementNotes != null)
           'service_agreement_notes': serviceAgreementNotes,
+        if (clientTypeId != null && clientTypeId!.isNotEmpty)
+          'client_type_id': clientTypeId,
+        if (dob != null && dob!.isNotEmpty) 'dob': dob,
+        if (metadata != null) 'metadata': metadata,
       };
 }
 
@@ -75,6 +91,8 @@ class ClientUpdateRequest {
     this.email,
     this.phone,
     this.serviceAgreementNotes,
+    this.clientTypeId,
+    this.dob,
   });
 
   final String? fullName;
@@ -82,6 +100,8 @@ class ClientUpdateRequest {
   final String? email;
   final String? phone;
   final String? serviceAgreementNotes;
+  final String? clientTypeId;
+  final String? dob;
 
   Map<String, dynamic> toJson() => {
         if (fullName != null) 'full_name': fullName,
@@ -90,6 +110,8 @@ class ClientUpdateRequest {
         if (phone != null) 'phone': phone,
         if (serviceAgreementNotes != null)
           'service_agreement_notes': serviceAgreementNotes,
+        if (clientTypeId != null) 'client_type_id': clientTypeId,
+        if (dob != null) 'dob': dob,
       };
 }
 

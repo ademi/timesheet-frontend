@@ -1,29 +1,38 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/data/models/document/document_models.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../documents/data/document_pipeline.dart';
 import '../data/models/client_models.dart';
+import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
+import 'requirement_draft.dart';
 
 class ClientsController extends GetxController {
   ClientsController({
     required ClientsRepository repository,
     required SessionService session,
+    DocumentPipeline? documentPipeline,
   })  : _repository = repository,
-        _session = session;
+        _session = session,
+        _pipeline = documentPipeline;
 
   final ClientsRepository _repository;
   final SessionService _session;
+  final DocumentPipeline? _pipeline;
 
   final items = <ClientOut>[].obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+  final profileSaveProgress = RxnString();
 
   // Create / edit form
   final nameCtrl = TextEditingController();
@@ -32,6 +41,13 @@ class ClientsController extends GetxController {
   final notesCtrl = TextEditingController();
   final status = 'active'.obs;
   ClientOut? editing;
+
+  // Client types / dynamic requirements
+  final clientTypes = <ClientTypeOut>[].obs;
+  final selectedClientTypeId = RxnString();
+  final isLoadingTypes = false.obs;
+  final isLoadingRequirements = false.obs;
+  final requirementDrafts = <RequirementDraft>[].obs;
 
   // Detail
   final selected = Rxn<ClientOut>();
@@ -67,6 +83,13 @@ class ClientsController extends GetxController {
   bool get canManage =>
       _session.hasPermission(AppPermissions.clientsManage);
   bool get canRead => _session.hasPermission(AppPermissions.clientsRead);
+  bool get canReadTypes =>
+      _session.hasPermission(AppPermissions.clientsTypesRead) || canManage;
+  bool get canManageProfile =>
+      _session.hasPermission(AppPermissions.clientsProfileManage) || canManage;
+  bool get canUploadDocs =>
+      _session.hasPermission(AppPermissions.documentsUpload) ||
+      _session.hasPermission(AppPermissions.clientsDocsManage);
 
   @override
   void onInit() {
@@ -76,6 +99,7 @@ class ClientsController extends GetxController {
 
   @override
   void onClose() {
+    _disposeRequirementDrafts();
     nameCtrl.dispose();
     emailCtrl.dispose();
     phoneCtrl.dispose();
@@ -113,26 +137,227 @@ class ClientsController extends GetxController {
     }
   }
 
-  void openCreate() {
+  Future<void> openCreate() async {
     editing = null;
     nameCtrl.clear();
     emailCtrl.clear();
     phoneCtrl.clear();
     notesCtrl.clear();
     status.value = 'active';
+    selectedClientTypeId.value = null;
+    _disposeRequirementDrafts();
+    requirementDrafts.clear();
     errorMessage.value = null;
+    profileSaveProgress.value = null;
     Get.toNamed(AppRoutes.staffClientForm);
+    await loadClientTypes();
   }
 
-  void openEdit(ClientOut client) {
+  Future<void> openEdit(ClientOut client) async {
     editing = client;
     nameCtrl.text = client.fullName;
     emailCtrl.text = client.email ?? '';
     phoneCtrl.text = client.phone ?? '';
     notesCtrl.text = client.serviceAgreementNotes ?? '';
     status.value = client.status;
+    selectedClientTypeId.value = client.clientTypeId;
+    _disposeRequirementDrafts();
+    requirementDrafts.clear();
     errorMessage.value = null;
+    profileSaveProgress.value = null;
     Get.toNamed(AppRoutes.staffClientForm, arguments: client);
+    await loadClientTypes();
+    if (client.clientTypeId != null && client.clientTypeId!.isNotEmpty) {
+      await _loadRequirementsForType(client.clientTypeId!);
+      await _prefillFromProfile(client.id);
+    } else if (client.dob != null && client.dob!.isNotEmpty) {
+      // Core DOB without type — nothing dynamic to load.
+    }
+  }
+
+  Future<void> loadClientTypes() async {
+    if (!canReadTypes) return;
+    isLoadingTypes.value = true;
+    try {
+      final types = await _repository.listClientTypes();
+      clientTypes.assignAll(
+        types.where((t) => t.isActive).toList()
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoadingTypes.value = false;
+    }
+  }
+
+  Future<void> onClientTypeChanged(String? typeId) async {
+    if (typeId == null || typeId.isEmpty) {
+      selectedClientTypeId.value = null;
+      _disposeRequirementDrafts();
+      requirementDrafts.clear();
+      return;
+    }
+    if (selectedClientTypeId.value == typeId && requirementDrafts.isNotEmpty) {
+      return;
+    }
+    selectedClientTypeId.value = typeId;
+    await _loadRequirementsForType(typeId);
+  }
+
+  Future<void> _loadRequirementsForType(String typeId) async {
+    isLoadingRequirements.value = true;
+    errorMessage.value = null;
+    try {
+      final reqs = await _repository.listTypeRequirements(typeId);
+      _disposeRequirementDrafts();
+      final drafts = reqs.map(RequirementDraft.new).toList();
+      requirementDrafts.assignAll(drafts);
+      for (final draft in drafts) {
+        if (draft.requirement.isLegal &&
+            draft.requirement.legalDocKey != null) {
+          _loadLegalDoc(draft);
+        }
+      }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      _disposeRequirementDrafts();
+      requirementDrafts.clear();
+    } catch (e) {
+      errorMessage.value = e.toString();
+      _disposeRequirementDrafts();
+      requirementDrafts.clear();
+    } finally {
+      isLoadingRequirements.value = false;
+    }
+  }
+
+  Future<void> _prefillFromProfile(String clientId) async {
+    if (!canManageProfile && !canRead) return;
+    try {
+      final bundle = await _repository.getClientProfile(clientId);
+      if (bundle.requirements.isNotEmpty && requirementDrafts.isEmpty) {
+        _disposeRequirementDrafts();
+        requirementDrafts.assignAll(
+          bundle.requirements.map(RequirementDraft.new).toList(),
+        );
+      }
+      if (bundle.clientType != null) {
+        selectedClientTypeId.value = bundle.clientType!.id;
+      }
+      final factByKey = {
+        for (final f in bundle.facts) f.requirementKey: f,
+      };
+      final formByKey = {
+        for (final f in bundle.formSubmissions) f.requirementKey: f,
+      };
+      final legalByKey = {
+        for (final f in bundle.legalAcceptances) f.requirementKey: f,
+      };
+      for (final draft in requirementDrafts) {
+        final key = draft.requirement.requirementKey;
+        final fact = factByKey[key];
+        if (fact != null) draft.applyFact(fact);
+        final form = formByKey[key];
+        if (form != null) draft.applyForm(form);
+        final legal = legalByKey[key];
+        if (legal != null) draft.applyLegal(legal);
+        if (draft.requirement.isLegal &&
+            draft.requirement.legalDocKey != null &&
+            draft.legalDoc.value == null) {
+          _loadLegalDoc(draft);
+        }
+      }
+      // Prefill DOB from core client if requirement empty.
+      for (final draft in requirementDrafts) {
+        if (draft.requirement.requirementKey != 'dob') continue;
+        if (draft.dateValue.value == null && editing?.dob != null) {
+          draft.dateValue.value = DateTime.tryParse(editing!.dob!);
+        }
+        break;
+      }
+    } on AppFailure catch (e) {
+      // Soft: edit still works with core fields.
+      errorMessage.value ??= e.message;
+    } catch (_) {}
+  }
+
+  Future<void> _loadLegalDoc(RequirementDraft draft) async {
+    final key = draft.requirement.legalDocKey;
+    if (key == null || key.isEmpty) return;
+    draft.legalLoading.value = true;
+    try {
+      draft.legalDoc.value = await _repository.getLegalDocumentCurrent(key);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      draft.legalLoading.value = false;
+    }
+  }
+
+  Future<void> pickFilesForRequirement(RequirementDraft draft) async {
+    final accept = draft.requirement.acceptMimeTypes;
+    final extensions = _extensionsFromAccept(accept);
+    final allowMultiple = draft.requirement.maxFiles > 1;
+    final remaining =
+        draft.requirement.maxFiles - draft.localFiles.length;
+    if (remaining <= 0) {
+      errorMessage.value =
+          'Maximum ${draft.requirement.maxFiles} file(s) for this field.';
+      return;
+    }
+
+    final result = await FilePicker.platform.pickFiles(
+      withData: true,
+      allowMultiple: allowMultiple && remaining > 1,
+      type: extensions.isEmpty ? FileType.any : FileType.custom,
+      allowedExtensions: extensions.isEmpty ? null : extensions,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final picked = <PickedClientFile>[];
+    for (final file in result.files) {
+      final bytes = file.bytes;
+      if (bytes == null || bytes.isEmpty) continue;
+      picked.add(
+        PickedClientFile(
+          name: file.name,
+          contentType: _guessContentType(file.extension, file.name),
+          bytes: bytes,
+        ),
+      );
+      if (draft.localFiles.length + picked.length >= draft.requirement.maxFiles) {
+        break;
+      }
+    }
+    if (picked.isEmpty) {
+      errorMessage.value = 'Could not read file bytes.';
+      return;
+    }
+    draft.localFiles.addAll(picked);
+  }
+
+  void removePickedFile(RequirementDraft draft, int index) {
+    if (index < 0 || index >= draft.localFiles.length) return;
+    draft.localFiles.removeAt(index);
+  }
+
+  Future<void> pickDateForRequirement(RequirementDraft draft) async {
+    final now = DateTime.now();
+    final initial = draft.dateValue.value ?? DateTime(now.year - 30);
+    final picked = await showDatePicker(
+      context: Get.context!,
+      initialDate: initial,
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+    if (picked != null) {
+      draft.dateValue.value = picked;
+    }
   }
 
   Future<void> saveClient() async {
@@ -141,9 +366,22 @@ class ClientsController extends GetxController {
       errorMessage.value = 'Full name is required.';
       return;
     }
+
+    // Soft-required dynamic fields (only when is_required == true).
+    for (final draft in requirementDrafts) {
+      if (!draft.requirement.isRequired) continue;
+      if (draft.hasAnyContent) continue;
+      errorMessage.value = '${draft.requirement.label} is required.';
+      return;
+    }
+
     isSaving.value = true;
     errorMessage.value = null;
+    profileSaveProgress.value = null;
     try {
+      final dob = _resolveDobForCore();
+      final typeId = selectedClientTypeId.value;
+
       if (editing == null) {
         final created = await _repository.createClient(
           ClientCreateRequest(
@@ -154,10 +392,23 @@ class ClientsController extends GetxController {
             serviceAgreementNotes: notesCtrl.text.trim().isEmpty
                 ? null
                 : notesCtrl.text.trim(),
+            clientTypeId: typeId,
+            dob: dob,
           ),
         );
+        final profileErrors = await _saveDynamicAnswers(created.id);
         Get.back();
         await load();
+        if (profileErrors.isNotEmpty) {
+          Get.snackbar(
+            'Client created',
+            'Some profile items could not be saved. Finish them on Edit client.\n'
+                '${profileErrors.take(3).join('\n')}',
+            snackPosition: SnackPosition.BOTTOM,
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 6),
+          );
+        }
         openDetail(created);
       } else {
         await _repository.patchClient(
@@ -168,12 +419,24 @@ class ClientsController extends GetxController {
             email: emailCtrl.text.trim(),
             phone: phoneCtrl.text.trim(),
             serviceAgreementNotes: notesCtrl.text.trim(),
+            clientTypeId: typeId,
+            dob: dob,
           ),
         );
+        final profileErrors = await _saveDynamicAnswers(editing!.id);
         Get.back();
         await load();
         if (selected.value?.id == editing!.id) {
           await openDetailById(editing!.id);
+        }
+        if (profileErrors.isNotEmpty) {
+          Get.snackbar(
+            'Saved with warnings',
+            profileErrors.take(3).join('\n'),
+            snackPosition: SnackPosition.BOTTOM,
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 6),
+          );
         }
       }
     } on AppFailure catch (e) {
@@ -182,6 +445,169 @@ class ClientsController extends GetxController {
       errorMessage.value = e.toString();
     } finally {
       isSaving.value = false;
+      profileSaveProgress.value = null;
+    }
+  }
+
+  String? _resolveDobForCore() {
+    for (final draft in requirementDrafts) {
+      if (draft.requirement.requirementKey != 'dob') continue;
+      final d = draft.dateValue.value;
+      if (d == null) return editing?.dob;
+      return RequirementDraft.formatDate(d);
+    }
+    return editing?.dob;
+  }
+
+  Future<List<String>> _saveDynamicAnswers(String clientId) async {
+    final errors = <String>[];
+    final total = requirementDrafts.where((d) => d.hasAnyContent).length;
+    var done = 0;
+
+    for (final draft in requirementDrafts) {
+      if (!draft.hasAnyContent) continue;
+
+      done++;
+      profileSaveProgress.value =
+          'Saving profile ($done/$total): ${draft.requirement.label}';
+
+      try {
+        await _saveOneRequirement(clientId, draft);
+      } on AppFailure catch (e) {
+        errors.add('${draft.requirement.label}: ${e.message}');
+      } catch (e) {
+        errors.add('${draft.requirement.label}: $e');
+      }
+    }
+    return errors;
+  }
+
+  Future<void> _saveOneRequirement(
+    String clientId,
+    RequirementDraft draft,
+  ) async {
+    final req = draft.requirement;
+
+    if (req.isForm) {
+      final payload = draft.formPayload;
+      if (payload == null) return;
+      await _repository.submitClientForm(
+        clientId,
+        req.requirementKey,
+        ClientFormSubmitRequest(status: 'submitted', payloadJson: payload),
+      );
+      return;
+    }
+
+    if (req.isLegal) {
+      if (!draft.legalAccepted.value) return;
+      final name = draft.participantNameCtrl.text.trim();
+      if (name.isEmpty) {
+        throw const AppFailure(
+          code: 'attestation_required',
+          message: 'Consent requires participant name and method.',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      final doc = draft.legalDoc.value;
+      if (doc == null || doc.id.isEmpty) {
+        throw const AppFailure(
+          code: 'legal_version_unavailable',
+          message: 'Legal document text is unavailable.',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      await _repository.acceptClientLegal(
+        clientId,
+        req.requirementKey,
+        ClientLegalAcceptRequest(
+          eventType: 'consented',
+          legalDocumentVersionId: doc.id,
+          participantOrRepName: name,
+          relationship: draft.relationshipCtrl.text.trim().nullIfEmpty,
+          method: draft.method.value,
+          note: draft.noteCtrl.text.trim().nullIfEmpty,
+        ),
+      );
+      return;
+    }
+
+    String? uploadedDocId;
+    if (draft.capturesDocument && draft.localFiles.isNotEmpty) {
+      uploadedDocId = await _uploadClientFiles(
+        clientId: clientId,
+        category: req.documentCategory ?? req.requirementKey,
+        files: draft.localFiles,
+      );
+    }
+
+    if (draft.capturesField || req.isSharingFlag) {
+      final value = draft.fieldValueJson;
+      final shouldPutValue = draft.hasFieldContent && value != null;
+      final shouldLinkDoc =
+          uploadedDocId != null && draft.capturesField;
+      if (shouldPutValue || shouldLinkDoc) {
+        await _repository.upsertProfileFact(
+          clientId,
+          req.requirementKey,
+          ProfileFactUpsert(
+            valueJson: shouldPutValue ? value : null,
+            documentId: shouldLinkDoc ? uploadedDocId : null,
+          ),
+        );
+      }
+    } else if (uploadedDocId != null && draft.capturesDocument) {
+      // Document-only: upload with category is enough; link for UX.
+      await _repository.upsertProfileFact(
+        clientId,
+        req.requirementKey,
+        ProfileFactUpsert(documentId: uploadedDocId),
+      );
+    }
+  }
+
+  Future<String?> _uploadClientFiles({
+    required String clientId,
+    required String category,
+    required List<PickedClientFile> files,
+  }) async {
+    final pipeline = _pipeline;
+    if (pipeline == null) {
+      throw const AppFailure(
+        code: 'unknown',
+        message: 'Document upload is not configured.',
+        presentation: AppFailurePresentation.inline,
+      );
+    }
+    if (!canUploadDocs) {
+      throw const AppFailure(
+        code: 'forbidden',
+        message: 'Missing documents.upload / clients.docs.manage permission.',
+        presentation: AppFailurePresentation.inline,
+      );
+    }
+
+    String? lastId;
+    for (final file in files) {
+      final doc = await pipeline.uploadEvidence(
+        request: UploadUrlRequest(
+          ownerType: 'client',
+          ownerId: clientId,
+          filename: file.name,
+          contentType: file.contentType,
+          sizeBytes: file.bytes.length,
+          category: category,
+        ),
+        bytes: file.bytes,
+      );
+      lastId = doc.id;
+    }
+    return lastId;
+  }
+
+  void _disposeRequirementDrafts() {
+    for (final d in requirementDrafts) {
+      d.dispose();
     }
   }
 
@@ -279,7 +705,6 @@ class ClientsController extends GetxController {
   }
 
   /// Resolves lat/lng from address via `POST /v1/public/geocode`.
-  /// Returns coordinates on success, or null after setting [errorMessage].
   Future<({double lat, double lng})?> geocodeFromAddress({
     bool showSuccessHint = true,
   }) async {
@@ -314,7 +739,6 @@ class ClientsController extends GetxController {
       );
       siteLatCtrl.text = result.latitude.toString();
       siteLngCtrl.text = result.longitude.toString();
-      // Normalize country field to the ISO code we sent.
       siteCountryCtrl.text = country;
       if (showSuccessHint) {
         final parts = <String>[
@@ -351,7 +775,6 @@ class ClientsController extends GetxController {
     var lat = double.tryParse(siteLatCtrl.text.trim());
     var lng = double.tryParse(siteLngCtrl.text.trim());
 
-    // Auto-geocode when coordinates were not entered manually.
     if (lat == null || lng == null) {
       final coords = await geocodeFromAddress(showSuccessHint: true);
       if (coords == null) return;
@@ -501,6 +924,40 @@ class ClientsController extends GetxController {
       snackPosition: SnackPosition.BOTTOM,
       margin: const EdgeInsets.all(16),
     );
+  }
+
+  static List<String> _extensionsFromAccept(List<String> accept) {
+    if (accept.isEmpty) {
+      return const ['pdf', 'png', 'jpg', 'jpeg', 'webp'];
+    }
+    final exts = <String>{};
+    for (final mime in accept) {
+      final m = mime.toLowerCase();
+      if (m.contains('pdf')) exts.add('pdf');
+      if (m.contains('png')) exts.add('png');
+      if (m.contains('jpeg') || m.contains('jpg')) {
+        exts.addAll(['jpg', 'jpeg']);
+      }
+      if (m.contains('webp')) exts.add('webp');
+      if (m.contains('image/*')) {
+        exts.addAll(['png', 'jpg', 'jpeg', 'webp']);
+      }
+      if (m.startsWith('.')) exts.add(m.substring(1));
+    }
+    return exts.isEmpty
+        ? const ['pdf', 'png', 'jpg', 'jpeg', 'webp']
+        : exts.toList();
+  }
+
+  static String _guessContentType(String? ext, String name) {
+    final e = (ext ?? name.split('.').last).toLowerCase();
+    return switch (e) {
+      'pdf' => 'application/pdf',
+      'png' => 'image/png',
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'webp' => 'image/webp',
+      _ => 'application/octet-stream',
+    };
   }
 }
 

@@ -1,10 +1,43 @@
 import '../datasources/clients_remote_datasource.dart';
 import '../models/client_models.dart';
+import '../models/client_profile_models.dart';
 
 class ClientsRepository {
   ClientsRepository({required ClientsRemoteDataSource remote}) : _remote = remote;
 
   final ClientsRemoteDataSource _remote;
+
+  Future<List<ClientTypeOut>> listClientTypes() => _remote.listClientTypes();
+  Future<List<ClientTypeRequirement>> listTypeRequirements(
+    String clientTypeId,
+  ) =>
+      _remote.listTypeRequirements(clientTypeId);
+  Future<ClientProfileBundle> getClientProfile(String clientId) =>
+      _remote.getClientProfile(clientId);
+  Future<void> upsertProfileFact(
+    String clientId,
+    String requirementKey,
+    ProfileFactUpsert body,
+  ) =>
+      _remote.upsertProfileFact(clientId, requirementKey, body);
+  Future<void> submitClientForm(
+    String clientId,
+    String formKey,
+    ClientFormSubmitRequest body,
+  ) =>
+      _remote.submitClientForm(clientId, formKey, body);
+  Future<ClientLegalDocumentCurrent> getLegalDocumentCurrent(
+    String legalDocKey,
+  ) =>
+      _remote.getLegalDocumentCurrent(legalDocKey);
+  Future<void> acceptClientLegal(
+    String clientId,
+    String legalKey,
+    ClientLegalAcceptRequest body,
+  ) =>
+      _remote.acceptClientLegal(clientId, legalKey, body);
+  Future<Map<String, dynamic>?> getClientReadiness(String clientId) =>
+      _remote.getClientReadiness(clientId);
 
   Future<List<ClientOut>> listClients() => _remote.listClients();
   Future<ClientOut> getClient(String id) => _remote.getClient(id);

@@ -20,6 +20,12 @@ abstract final class AppPermissions {
 
   static const clientsRead = 'clients.read';
   static const clientsManage = 'clients.manage';
+  static const clientsTypesRead = 'clients.types.read';
+  static const clientsProfileManage = 'clients.profile.manage';
+  static const clientsLegalAccept = 'clients.legal.accept';
+  static const clientsDocsManage = 'clients.docs.manage';
+  static const clientsDocsShare = 'clients.docs.share';
+  static const clientsReadinessRead = 'clients.readiness.read';
 
   static const jobsRead = 'jobs.read';
   static const jobsManage = 'jobs.manage';

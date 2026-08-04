@@ -81,6 +81,24 @@ abstract final class ApiPaths {
   // Clients
   static const clients = '$_v1/clients';
   static String client(String id) => '$clients/$id';
+  static const clientTypes = '$clients/types';
+  static String clientType(String id) => '$clientTypes/$id';
+  static String clientTypeRequirements(String clientTypeId) =>
+      '${clientType(clientTypeId)}/requirements';
+  static String clientProfile(String id) => '${client(id)}/profile';
+  static String clientProfileFact(String id, String requirementKey) =>
+      '${clientProfile(id)}/$requirementKey';
+  static String clientForm(String id, String formKey) =>
+      '${client(id)}/forms/$formKey';
+  static String clientLegal(String id, String legalKey) =>
+      '${client(id)}/legal/$legalKey';
+  static String clientLegalDocumentCurrent(String legalDocKey) =>
+      '$clients/legal-documents/$legalDocKey/current';
+  static String clientReadiness(String id) => '${client(id)}/readiness';
+  static String clientDocumentShares(String id) =>
+      '${client(id)}/document-shares';
+  static String clientDocumentShare(String id, String shareId) =>
+      '${clientDocumentShares(id)}/$shareId';
   static String clientSites(String id) => '${client(id)}/sites';
   static String clientSite(String id, String siteId) =>
       '${clientSites(id)}/$siteId';

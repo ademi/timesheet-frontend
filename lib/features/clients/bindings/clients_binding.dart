@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
+import '../../documents/data/datasources/documents_remote_datasource.dart';
+import '../../documents/data/document_pipeline.dart';
 import '../controllers/clients_controller.dart';
 import '../controllers/public_client_invite_controller.dart';
 import '../data/datasources/clients_remote_datasource.dart';
@@ -18,6 +20,7 @@ class ClientsBinding extends Bindings {
         ClientsController(
           repository: Get.find<ClientsRepository>(),
           session: Get.find<SessionService>(),
+          documentPipeline: Get.find<DocumentPipeline>(),
         ),
       );
     }
@@ -45,6 +48,21 @@ class ClientsBinding extends Bindings {
     if (!Get.isRegistered<ClientsRepository>()) {
       Get.lazyPut<ClientsRepository>(
         () => ClientsRepository(remote: Get.find<ClientsRemoteDataSource>()),
+        fenix: true,
+      );
+    }
+    if (!Get.isRegistered<DocumentsRemoteDataSource>()) {
+      Get.lazyPut<DocumentsRemoteDataSource>(
+        () => DocumentsRemoteDataSource(
+          authenticatedDio: Get.find<ApiClient>().dio,
+          plainDio: Get.find<ApiClient>().plainDio,
+        ),
+        fenix: true,
+      );
+    }
+    if (!Get.isRegistered<DocumentPipeline>()) {
+      Get.lazyPut<DocumentPipeline>(
+        () => DocumentPipeline(remote: Get.find<DocumentsRemoteDataSource>()),
         fenix: true,
       );
     }
