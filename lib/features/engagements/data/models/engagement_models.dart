@@ -11,15 +11,34 @@ const engagementStatuses = <String>[
 ];
 
 class RequiredDocCategory {
-  const RequiredDocCategory({required this.category, required this.isRequired});
+  const RequiredDocCategory({
+    required this.category,
+    required this.isRequired,
+    this.label = '',
+  });
 
+  /// Stable wire code (e.g. `passport_id`) — use for API / matching.
   final String category;
+
+  /// Human-readable display name from the API when present.
+  final String label;
+
   final bool isRequired;
 
+  /// Prefer API [label]; fall back to catalog / local map via [credentialTypeLabel].
+  String get displayLabel =>
+      label.trim().isNotEmpty ? label.trim() : credentialTypeLabel(category);
+
   factory RequiredDocCategory.fromJson(Map<String, dynamic> json) {
+    final category = json['category'] as String;
+    final label = json['label'] as String?;
     return RequiredDocCategory(
-      category: json['category'] as String,
+      category: category,
       isRequired: json['is_required'] as bool? ?? true,
+      label:
+          (label != null && label.trim().isNotEmpty)
+              ? label.trim()
+              : credentialTypeLabel(category),
     );
   }
 }

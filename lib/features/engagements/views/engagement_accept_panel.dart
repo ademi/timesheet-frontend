@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../credentials/data/models/credential_models.dart';
 import '../bindings/engagements_binding.dart';
 import '../controllers/contractor_engagements_controller.dart';
 import '../data/models/engagement_models.dart';
@@ -100,7 +99,7 @@ class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
                               ),
                             ),
                             Text(
-                              'Required: ${e.requiredDocCategories.map((c) => credentialTypeLabel(c.category)).join(", ").ifEmpty("—")}',
+                              'Required: ${e.requiredDocCategories.map((c) => c.displayLabel).join(", ").ifEmpty("—")}',
                               style: const TextStyle(
                                 color: AppColors.textMuted,
                               ),
@@ -215,7 +214,7 @@ class _GrantForm extends GetView<ContractorEngagementsController> {
           Text(
             'You are authorising $provider to receive credential '
             'metadata needed for this engagement '
-            '(${engagement.requiredDocCategories.map((c) => c.category).join(", ").ifEmpty("required documents")}). '
+            '(${engagement.requiredDocCategories.map((c) => c.displayLabel).join(", ").ifEmpty("required documents")}). '
             'If documents are required, upload them later from the home '
             'banner or Credentials.',
             style: const TextStyle(color: AppColors.textMuted),

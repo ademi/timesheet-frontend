@@ -51,8 +51,11 @@ void main() {
 
     expect(find.text('Acme Care'), findsOneWidget);
     expect(find.textContaining('Required', findRichText: true), findsOneWidget);
-    expect(find.textContaining('wwcc', findRichText: true), findsNWidgets(2));
-    expect(find.textContaining('cpr', findRichText: true), findsNWidgets(2));
+    expect(
+      find.textContaining('Working with Children Check', findRichText: true),
+      findsNWidgets(2),
+    );
+    expect(find.textContaining('CPR', findRichText: true), findsNWidgets(2));
     expect(find.textContaining('Have', findRichText: true), findsOneWidget);
     expect(find.textContaining('Missing', findRichText: true), findsOneWidget);
     expect(find.text('Add missing credential'), findsOneWidget);

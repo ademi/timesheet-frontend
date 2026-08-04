@@ -10,6 +10,23 @@ class CredentialsRemoteDataSource {
 
   final Dio _dio;
 
+  Future<List<CredentialCategory>> listCredentialCategories() async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.credentialCategories,
+      );
+      final list = response.data ?? const [];
+      return list
+          .whereType<Map>()
+          .map(
+            (e) => CredentialCategory.fromJson(Map<String, dynamic>.from(e)),
+          )
+          .toList(growable: false);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<List<CredentialOut>> listMine() async {
     try {
       final response = await _dio.get<List<dynamic>>(

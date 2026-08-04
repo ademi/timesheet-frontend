@@ -7,6 +7,12 @@ class CredentialsRepository {
 
   final CredentialsRemoteDataSource _remote;
 
+  Future<List<CredentialCategory>> listCredentialCategories() async {
+    final categories = await _remote.listCredentialCategories();
+    cacheCredentialCategoryLabels(categories);
+    return categories;
+  }
+
   Future<List<CredentialOut>> listMine() => _remote.listMine();
 
   Future<CredentialOut> create(CredentialCreateRequest body) =>

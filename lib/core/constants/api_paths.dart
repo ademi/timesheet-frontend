@@ -39,6 +39,9 @@ abstract final class ApiPaths {
   static String contractorMeSharingAccessRequestApprove(String id) =>
       '$contractorMeSharingAccessRequests/$id/approve';
 
+  /// Credential category catalog (code + human-readable label).
+  static const credentialCategories = '$_v1/credential-categories';
+
   // Engagements
   static const tenantEngagements = '$_v1/tenants/current/engagements';
   static String tenantContractorCredentials(String contractorId) =>

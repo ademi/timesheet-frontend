@@ -40,4 +40,35 @@ void main() {
     expect(response.engagement?.id, 'engagement-1');
     expect(response.registrationInvite, isNull);
   });
+
+  test('RequiredDocCategory parses label and falls back when missing', () {
+    final withLabel = RequiredDocCategory.fromJson({
+      'category': 'passport_id',
+      'label': 'Passport',
+      'is_required': true,
+    });
+    expect(withLabel.category, 'passport_id');
+    expect(withLabel.label, 'Passport');
+    expect(withLabel.displayLabel, 'Passport');
+    expect(withLabel.isRequired, isTrue);
+
+    final withoutLabel = RequiredDocCategory.fromJson({
+      'category': 'wwcc',
+      'is_required': false,
+    });
+    expect(withoutLabel.category, 'wwcc');
+    expect(withoutLabel.isRequired, isFalse);
+    expect(withoutLabel.displayLabel, 'Working with Children Check');
+  });
+
+  test('invite payload still sends codes only', () {
+    const request = EngagementInviteRequest(
+      email: 'contractor@example.com',
+      requiredCategories: ['passport_id', 'wwcc'],
+    );
+    expect(request.toJson(), {
+      'email': 'contractor@example.com',
+      'required_categories': ['passport_id', 'wwcc'],
+    });
+  });
 }

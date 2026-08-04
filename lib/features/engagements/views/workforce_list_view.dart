@@ -127,7 +127,7 @@ class WorkforceListView extends GetView<WorkforceController> {
                               ),
                               subtitle: Text(
                                 'Status: ${e.status}\n'
-                                'Required: ${e.requiredDocCategories.map((c) => c.category).join(", ").ifEmpty("—")}',
+                                'Required: ${e.requiredDocCategories.map((c) => c.displayLabel).join(", ").ifEmpty("—")}',
                               ),
                               isThreeLine: true,
                               trailing: _StatusChip(status: e.status),

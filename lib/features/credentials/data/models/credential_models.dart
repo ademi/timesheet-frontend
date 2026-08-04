@@ -1,4 +1,8 @@
 /// Credential allowlist + DTOs (design §6.4).
+///
+/// Wire codes are stable API values. Prefer [CredentialCategory.label] from
+/// `GET /v1/credential-categories` for display; [credentialTypeLabel] falls
+/// back to this map when the catalog is unavailable or a response omits label.
 const credentialTypesAllowlist = <String>[
   'passport_id',
   'drivers_licence',
@@ -20,6 +24,28 @@ const credentialTypesAllowlist = <String>[
   'other',
 ];
 
+/// Local fallback labels (offline / old API responses). Prefer catalog labels.
+const credentialCategoryFallbackLabels = <String, String>{
+  'passport_id': 'Passport',
+  'drivers_licence': 'Driver licence',
+  'ndis_worker_screening': 'NDIS Worker Screening Check',
+  'police_check': 'National Police Check',
+  'wwcc': 'Working with Children Check',
+  'first_aid': 'First aid',
+  'cpr': 'CPR',
+  'infection_control': 'Infection control',
+  'worker_orientation': 'Worker orientation',
+  'abn': 'ABN',
+  'resume': 'Resume / CV',
+  'cert_iii': 'Certificate III',
+  'nursing_bachelor': 'Bachelor of Nursing',
+  'nursing_diploma': 'Diploma of Nursing',
+  'other_health_qualification': 'Other health qualification',
+  'trade_certificate': 'Trade certificate',
+  'insurance': 'Insurance',
+  'other': 'Other',
+};
+
 const sensitiveCredentialTypes = <String>{
   'police_check',
   'ndis_worker_screening',
@@ -31,8 +57,51 @@ const sensitiveCredentialTypes = <String>{
 
 const governmentIdCredentialTypes = <String>{'passport_id', 'drivers_licence'};
 
+/// Runtime labels from the last successful catalog fetch (code → label).
+final Map<String, String> _credentialCategoryLabelCache = {};
+
+/// Cache labels from [GET /v1/credential-categories] for app-wide display.
+void cacheCredentialCategoryLabels(Iterable<CredentialCategory> categories) {
+  for (final category in categories) {
+    if (category.code.isEmpty || category.label.isEmpty) continue;
+    _credentialCategoryLabelCache[category.code] = category.label;
+  }
+}
+
+/// Clears cached catalog labels (tests / logout).
+void clearCredentialCategoryLabelCache() {
+  _credentialCategoryLabelCache.clear();
+}
+
+/// Human-readable label for a credential wire code.
+///
+/// Order: catalog cache → local fallback map → prettified code.
 String credentialTypeLabel(String type) {
+  final cached = _credentialCategoryLabelCache[type];
+  if (cached != null && cached.isNotEmpty) return cached;
+  final fallback = credentialCategoryFallbackLabels[type];
+  if (fallback != null && fallback.isNotEmpty) return fallback;
   return type.replaceAll('_', ' ');
+}
+
+/// Catalog entry from `GET /v1/credential-categories`.
+class CredentialCategory {
+  const CredentialCategory({required this.code, required this.label});
+
+  final String code;
+  final String label;
+
+  factory CredentialCategory.fromJson(Map<String, dynamic> json) {
+    final code = json['code'] as String? ?? '';
+    final label = json['label'] as String?;
+    return CredentialCategory(
+      code: code,
+      label:
+          (label != null && label.trim().isNotEmpty)
+              ? label.trim()
+              : credentialTypeLabel(code),
+    );
+  }
 }
 
 bool isSensitiveCredentialType(String type) =>

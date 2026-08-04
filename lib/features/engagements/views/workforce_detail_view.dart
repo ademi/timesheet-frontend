@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
-import '../../credentials/data/models/credential_models.dart';
 import '../controllers/workforce_controller.dart';
 import '../data/models/engagement_models.dart';
 
@@ -74,7 +73,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
               current.requiredDocCategories.isEmpty
                   ? '—'
                   : current.requiredDocCategories
-                      .map((c) => credentialTypeLabel(c.category))
+                      .map((c) => c.displayLabel)
                       .join(', '),
             ),
             const SizedBox(height: 16),

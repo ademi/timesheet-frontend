@@ -2,12 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../credentials/data/models/credential_models.dart';
 import '../controllers/workforce_controller.dart';
-import '../data/models/engagement_models.dart';
 
-class WorkforceInviteView extends GetView<WorkforceController> {
+class WorkforceInviteView extends StatefulWidget {
   const WorkforceInviteView({super.key});
+
+  @override
+  State<WorkforceInviteView> createState() => _WorkforceInviteViewState();
+}
+
+class _WorkforceInviteViewState extends State<WorkforceInviteView> {
+  late final WorkforceController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.find<WorkforceController>();
+    controller.errorMessage.value = null;
+    controller.loadCredentialCategories();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +34,7 @@ class WorkforceInviteView extends GetView<WorkforceController> {
           children: [
             const Text(
               'Invite by email and/or phone. At least one required credential '
-              'category must be selected from the allowlist.',
+              'category must be selected.',
               style: TextStyle(color: AppColors.textMuted),
             ),
             if (err != null) ...[
@@ -59,18 +72,27 @@ class WorkforceInviteView extends GetView<WorkforceController> {
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final cat in inviteCategoryOptions)
-                  FilterChip(
-                    label: Text(credentialTypeLabel(cat)),
-                    selected: controller.selectedCategories.contains(cat),
-                    onSelected: (_) => controller.toggleCategory(cat),
-                  ),
-              ],
-            ),
+            if (controller.isLoadingCatalog.value &&
+                controller.catalogCategories.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final cat in controller.inviteCategoryChoices)
+                    FilterChip(
+                      label: Text(cat.label),
+                      selected: controller.selectedCategories.contains(
+                        cat.code,
+                      ),
+                      onSelected: (_) => controller.toggleCategory(cat.code),
+                    ),
+                ],
+              ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed:
@@ -80,13 +102,14 @@ class WorkforceInviteView extends GetView<WorkforceController> {
                 foregroundColor: AppColors.onPrimary,
                 minimumSize: const Size.fromHeight(48),
               ),
-              child: controller.isSaving.value
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Send invite'),
+              child:
+                  controller.isSaving.value
+                      ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Text('Send invite'),
             ),
           ],
         );

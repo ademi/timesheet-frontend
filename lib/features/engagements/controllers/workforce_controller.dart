@@ -39,8 +39,21 @@ class WorkforceController extends GetxController {
   final emailCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
   final selectedCategories = <String>{}.obs;
+  final catalogCategories = <CredentialCategory>[].obs;
+  final isLoadingCatalog = false.obs;
 
   EngagementOut? selected;
+
+  /// Invite multi-select options (catalog when loaded, else allowlist fallback).
+  List<CredentialCategory> get inviteCategoryChoices {
+    if (catalogCategories.isNotEmpty) return catalogCategories.toList();
+    return credentialTypesAllowlist
+        .map(
+          (code) =>
+              CredentialCategory(code: code, label: credentialTypeLabel(code)),
+        )
+        .toList(growable: false);
+  }
 
   bool get canInvite =>
       _session.hasPermission(AppPermissions.contractorsInvite);
@@ -123,6 +136,20 @@ class WorkforceController extends GetxController {
       selectedCategories.remove(category);
     } else {
       selectedCategories.add(category);
+    }
+  }
+
+  Future<void> loadCredentialCategories() async {
+    isLoadingCatalog.value = true;
+    try {
+      final list = await _credentialsRepository.listCredentialCategories();
+      catalogCategories.assignAll(list);
+    } on AppFailure {
+      // Keep allowlist fallback via [inviteCategoryChoices].
+    } catch (_) {
+      // Keep allowlist fallback via [inviteCategoryChoices].
+    } finally {
+      isLoadingCatalog.value = false;
     }
   }
 

@@ -18,6 +18,13 @@ class EngagementDocsChecklist extends StatelessWidget {
   final List<CredentialOut> credentials;
   final ValueChanged<List<String>>? onAddMissing;
 
+  String _labelFor(String code) {
+    for (final item in engagement.requiredDocCategories) {
+      if (item.category == code) return item.displayLabel;
+    }
+    return credentialTypeLabel(code);
+  }
+
   @override
   Widget build(BuildContext context) {
     final required =
@@ -55,15 +62,21 @@ class EngagementDocsChecklist extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            _CategoryRow(label: 'Required', categories: required),
+            _CategoryRow(
+              label: 'Required',
+              categories: required,
+              labelFor: _labelFor,
+            ),
             _CategoryRow(
               label: 'Have',
               categories: have,
+              labelFor: _labelFor,
               color: AppColors.success,
             ),
             _CategoryRow(
               label: 'Missing',
               categories: missing,
+              labelFor: _labelFor,
               color: missing.isEmpty ? AppColors.success : AppColors.error,
             ),
             if (missing.isNotEmpty && onAddMissing != null) ...[
@@ -88,11 +101,13 @@ class _CategoryRow extends StatelessWidget {
   const _CategoryRow({
     required this.label,
     required this.categories,
+    required this.labelFor,
     this.color,
   });
 
   final String label;
   final List<String> categories;
+  final String Function(String code) labelFor;
   final Color? color;
 
   @override
@@ -111,7 +126,7 @@ class _CategoryRow extends StatelessWidget {
               text:
                   categories.isEmpty
                       ? '—'
-                      : categories.map(credentialTypeLabel).join(', '),
+                      : categories.map(labelFor).join(', '),
               style: TextStyle(color: color),
             ),
           ],

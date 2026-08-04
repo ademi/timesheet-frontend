@@ -78,6 +78,15 @@ class CredentialsController extends GetxController {
   void onInit() {
     super.onInit();
     load();
+    _loadCredentialCategories();
+  }
+
+  Future<void> _loadCredentialCategories() async {
+    try {
+      await _repository.listCredentialCategories();
+    } catch (_) {
+      // Fallback labels remain available via credentialTypeLabel.
+    }
   }
 
   @override
