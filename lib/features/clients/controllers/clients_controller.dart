@@ -64,9 +64,9 @@ class ClientsController extends GetxController {
   final siteStateCtrl = TextEditingController();
   final siteCountryCtrl = TextEditingController();
   final sitePostalCtrl = TextEditingController();
+  /// Held after geocode / edit hydrate; not shown on the site form.
   final siteLatCtrl = TextEditingController();
   final siteLngCtrl = TextEditingController();
-  final siteRadiusCtrl = TextEditingController(text: '100');
   final siteIsPrimary = false.obs;
   final isGeocoding = false.obs;
   final geocodeHint = RxnString();
@@ -112,7 +112,6 @@ class ClientsController extends GetxController {
     sitePostalCtrl.dispose();
     siteLatCtrl.dispose();
     siteLngCtrl.dispose();
-    siteRadiusCtrl.dispose();
     contactNameCtrl.dispose();
     contactEmailCtrl.dispose();
     contactPhoneCtrl.dispose();
@@ -144,13 +143,9 @@ class ClientsController extends GetxController {
     phoneCtrl.clear();
     notesCtrl.clear();
     status.value = 'active';
-    selectedClientTypeId.value = null;
-    _disposeRequirementDrafts();
-    requirementDrafts.clear();
     errorMessage.value = null;
     profileSaveProgress.value = null;
     Get.toNamed(AppRoutes.staffClientForm);
-    await loadClientTypes();
   }
 
   Future<void> openEdit(ClientOut client) async {
@@ -160,19 +155,9 @@ class ClientsController extends GetxController {
     phoneCtrl.text = client.phone ?? '';
     notesCtrl.text = client.serviceAgreementNotes ?? '';
     status.value = client.status;
-    selectedClientTypeId.value = client.clientTypeId;
-    _disposeRequirementDrafts();
-    requirementDrafts.clear();
     errorMessage.value = null;
     profileSaveProgress.value = null;
     Get.toNamed(AppRoutes.staffClientForm, arguments: client);
-    await loadClientTypes();
-    if (client.clientTypeId != null && client.clientTypeId!.isNotEmpty) {
-      await _loadRequirementsForType(client.clientTypeId!);
-      await _prefillFromProfile(client.id);
-    } else if (client.dob != null && client.dob!.isNotEmpty) {
-      // Core DOB without type — nothing dynamic to load.
-    }
   }
 
   Future<void> loadClientTypes() async {
@@ -273,8 +258,9 @@ class ClientsController extends GetxController {
       // Prefill DOB from core client if requirement empty.
       for (final draft in requirementDrafts) {
         if (draft.requirement.requirementKey != 'dob') continue;
-        if (draft.dateValue.value == null && editing?.dob != null) {
-          draft.dateValue.value = DateTime.tryParse(editing!.dob!);
+        final coreDob = selected.value?.dob ?? editing?.dob;
+        if (draft.dateValue.value == null && coreDob != null) {
+          draft.dateValue.value = DateTime.tryParse(coreDob);
         }
         break;
       }
@@ -367,7 +353,57 @@ class ClientsController extends GetxController {
       return;
     }
 
-    // Soft-required dynamic fields (only when is_required == true).
+    isSaving.value = true;
+    errorMessage.value = null;
+    profileSaveProgress.value = null;
+    try {
+      if (editing == null) {
+        final created = await _repository.createClient(
+          ClientCreateRequest(
+            fullName: name,
+            status: status.value,
+            email: emailCtrl.text.trim(),
+            phone: phoneCtrl.text.trim(),
+            serviceAgreementNotes: notesCtrl.text.trim().isEmpty
+                ? null
+                : notesCtrl.text.trim(),
+          ),
+        );
+        Get.back();
+        await load();
+        openDetail(created);
+      } else {
+        await _repository.patchClient(
+          editing!.id,
+          ClientUpdateRequest(
+            fullName: name,
+            status: status.value,
+            email: emailCtrl.text.trim(),
+            phone: phoneCtrl.text.trim(),
+            serviceAgreementNotes: notesCtrl.text.trim(),
+          ),
+        );
+        Get.back();
+        await load();
+        if (selected.value?.id == editing!.id) {
+          await openDetailById(editing!.id);
+        }
+      }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isSaving.value = false;
+      profileSaveProgress.value = null;
+    }
+  }
+
+  /// Saves client type + profile requirements from the Types tab.
+  Future<void> saveClientTypeProfile() async {
+    final client = selected.value;
+    if (client == null) return;
+
     for (final draft in requirementDrafts) {
       if (!draft.requirement.isRequired) continue;
       if (draft.hasAnyContent) continue;
@@ -379,65 +415,34 @@ class ClientsController extends GetxController {
     errorMessage.value = null;
     profileSaveProgress.value = null;
     try {
-      final dob = _resolveDobForCore();
       final typeId = selectedClientTypeId.value;
-
-      if (editing == null) {
-        final created = await _repository.createClient(
-          ClientCreateRequest(
-            fullName: name,
-            status: status.value,
-            email: emailCtrl.text.trim(),
-            phone: phoneCtrl.text.trim(),
-            serviceAgreementNotes: notesCtrl.text.trim().isEmpty
-                ? null
-                : notesCtrl.text.trim(),
-            clientTypeId: typeId,
-            dob: dob,
-          ),
+      final dob = _resolveDobForCore();
+      await _repository.patchClient(
+        client.id,
+        ClientUpdateRequest(
+          clientTypeId: typeId,
+          dob: dob,
+        ),
+      );
+      final profileErrors = typeId == null || typeId.isEmpty
+          ? <String>[]
+          : await _saveDynamicAnswers(client.id);
+      await openDetailById(client.id);
+      if (profileErrors.isNotEmpty) {
+        Get.snackbar(
+          'Saved with warnings',
+          profileErrors.take(3).join('\n'),
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 6),
         );
-        final profileErrors = await _saveDynamicAnswers(created.id);
-        Get.back();
-        await load();
-        if (profileErrors.isNotEmpty) {
-          Get.snackbar(
-            'Client created',
-            'Some profile items could not be saved. Finish them on Edit client.\n'
-                '${profileErrors.take(3).join('\n')}',
-            snackPosition: SnackPosition.BOTTOM,
-            margin: const EdgeInsets.all(16),
-            duration: const Duration(seconds: 6),
-          );
-        }
-        openDetail(created);
       } else {
-        await _repository.patchClient(
-          editing!.id,
-          ClientUpdateRequest(
-            fullName: name,
-            status: status.value,
-            email: emailCtrl.text.trim(),
-            phone: phoneCtrl.text.trim(),
-            serviceAgreementNotes: notesCtrl.text.trim(),
-            clientTypeId: typeId,
-            dob: dob,
-          ),
+        Get.snackbar(
+          'Saved',
+          'Client type and profile updated.',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
         );
-        final profileErrors = await _saveDynamicAnswers(editing!.id);
-        Get.back();
-        await load();
-        if (selected.value?.id == editing!.id) {
-          await openDetailById(editing!.id);
-        }
-        if (profileErrors.isNotEmpty) {
-          Get.snackbar(
-            'Saved with warnings',
-            profileErrors.take(3).join('\n'),
-            snackPosition: SnackPosition.BOTTOM,
-            margin: const EdgeInsets.all(16),
-            duration: const Duration(seconds: 6),
-          );
-        }
       }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -453,10 +458,10 @@ class ClientsController extends GetxController {
     for (final draft in requirementDrafts) {
       if (draft.requirement.requirementKey != 'dob') continue;
       final d = draft.dateValue.value;
-      if (d == null) return editing?.dob;
+      if (d == null) return selected.value?.dob ?? editing?.dob;
       return RequirementDraft.formatDate(d);
     }
-    return editing?.dob;
+    return selected.value?.dob ?? editing?.dob;
   }
 
   Future<List<String>> _saveDynamicAnswers(String clientId) async {
@@ -649,6 +654,9 @@ class ClientsController extends GetxController {
     lastInvite.value = null;
     invites.clear();
     tabIndex.value = 0;
+    selectedClientTypeId.value = client.clientTypeId;
+    _disposeRequirementDrafts();
+    requirementDrafts.clear();
     Get.toNamed(AppRoutes.staffClientDetail, arguments: client);
     await openDetailById(client.id);
   }
@@ -659,10 +667,26 @@ class ClientsController extends GetxController {
       final client = await _repository.getClient(id);
       selected.value = client;
       await refreshDetailExtras();
+      await loadTypeTabForSelected();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Loads types list + requirements/profile for the Types tab.
+  Future<void> loadTypeTabForSelected() async {
+    final client = selected.value;
+    if (client == null) return;
+    await loadClientTypes();
+    selectedClientTypeId.value = client.clientTypeId;
+    _disposeRequirementDrafts();
+    requirementDrafts.clear();
+    final typeId = client.clientTypeId;
+    if (typeId != null && typeId.isNotEmpty) {
+      await _loadRequirementsForType(typeId);
+      await _prefillFromProfile(client.id);
     }
   }
 
@@ -697,7 +721,6 @@ class ClientsController extends GetxController {
     sitePostalCtrl.text = site?.postalCode ?? '';
     siteLatCtrl.text = site?.latitude?.toString() ?? '';
     siteLngCtrl.text = site?.longitude?.toString() ?? '';
-    siteRadiusCtrl.text = (site?.geofenceRadiusM ?? 100).toString();
     siteIsPrimary.value = site?.isPrimary ?? false;
     errorMessage.value = null;
     geocodeHint.value = null;
@@ -748,7 +771,7 @@ class ClientsController extends GetxController {
           if (result.confidence != null) 'confidence: ${result.confidence}',
         ];
         geocodeHint.value = parts.isEmpty
-            ? 'Coordinates filled from address.'
+            ? 'Coordinates found from address.'
             : parts.join(' · ');
       }
       return (lat: result.latitude, lng: result.longitude);
@@ -786,7 +809,7 @@ class ClientsController extends GetxController {
       errorMessage.value = 'Latitude/longitude out of range.';
       return;
     }
-    final radius = int.tryParse(siteRadiusCtrl.text.trim()) ?? 100;
+    final radius = editingSite?.geofenceRadiusM ?? 100;
     isSaving.value = true;
     errorMessage.value = null;
     try {

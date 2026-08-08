@@ -105,53 +105,6 @@ class ClientSiteFormView extends GetView<ClientsController> {
                 ),
               ),
             ],
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: controller.siteLatCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                      signed: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'Latitude',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: controller.siteLngCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                      signed: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'Longitude',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Filled automatically from the address, or enter manually. '
-              'Required for visit geofence.',
-              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller.siteRadiusCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Geofence radius (m)',
-                border: OutlineInputBorder(),
-              ),
-            ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: controller.siteIsPrimary.value,
