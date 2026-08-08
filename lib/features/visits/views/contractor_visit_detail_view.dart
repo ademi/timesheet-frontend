@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/utils/external_url.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/contractor_visits_controller.dart';
 import '../services/visit_location_service.dart';
@@ -65,12 +66,22 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                   const SizedBox(height: 4),
                   Text('Status: ${v.status}'),
                   Text('${_fmt(v.scheduledStart)} → ${_fmt(v.scheduledEnd)}'),
-                  if (v.locationLabel?.isNotEmpty == true)
-                    Text('Location: ${v.locationLabel}'),
-                  Text(
-                    'Geofence: ${v.geofenceMode}'
-                    '${v.geofenceEnforced ? ' (enforced)' : ''}',
-                  ),
+                  if (v.locationLabel?.isNotEmpty == true ||
+                      (v.latitude != null && v.longitude != null)) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                        onPressed: () => openMapLocation(
+                          latitude: v.latitude,
+                          longitude: v.longitude,
+                          label: v.locationLabel,
+                        ),
+                        icon: const Icon(Icons.map_outlined),
+                        label: const Text('Open in Maps'),
+                      ),
+                    ),
+                  ],
                   if (gpsBlocked) ...[
                     const SizedBox(height: 12),
                     Container(
