@@ -30,7 +30,6 @@ class ContractorVisitsController extends GetxController {
   final isRefreshing = false.obs;
   final errorMessage = RxnString();
 
-  final formNotesCtrl = TextEditingController();
   final manualTemplateIdCtrl = TextEditingController();
 
   /// Template ids submitted this session (until visit refresh returns summaries).
@@ -66,7 +65,6 @@ class ContractorVisitsController extends GetxController {
 
   @override
   void onClose() {
-    formNotesCtrl.dispose();
     manualTemplateIdCtrl.dispose();
     super.onClose();
   }
@@ -124,10 +122,16 @@ class ContractorVisitsController extends GetxController {
     }
   }
 
-  Future<void> submitForm(VisitFormRequirement req) async {
+  Future<void> submitForm(
+    VisitFormRequirement req, {
+    required Map<String, dynamic> payloadJson,
+  }) async {
     final visit = selected.value;
     if (visit == null) return;
-    final notes = formNotesCtrl.text.trim();
+    if (payloadJson.isEmpty) {
+      errorMessage.value = 'Form payload is empty.';
+      return;
+    }
     isSaving.value = true;
     errorMessage.value = null;
     try {
@@ -135,12 +139,9 @@ class ContractorVisitsController extends GetxController {
         visitId: visit.id,
         body: VisitFormSubmitRequest(
           formTemplateId: req.formTemplateId,
-          payloadJson: {
-            'notes': notes.isEmpty ? 'Submitted' : notes,
-          },
+          payloadJson: payloadJson,
         ),
       );
-      formNotesCtrl.clear();
       submittedTemplateIds.add(req.formTemplateId);
       await refreshSelected();
       Get.snackbar(
@@ -155,21 +156,6 @@ class ContractorVisitsController extends GetxController {
       errorMessage.value = e.message;
     } finally {
       isSaving.value = false;
-    }
-  }
-
-  Future<void> submitManualForm() async {
-    final id = manualTemplateIdCtrl.text.trim();
-    if (id.isEmpty) {
-      errorMessage.value =
-          'Paste the form template ID from Staff → Jobs → Form templates.';
-      return;
-    }
-    await submitForm(
-      VisitFormRequirement(formTemplateId: id, name: 'Progress form'),
-    );
-    if (errorMessage.value == null) {
-      manualTemplateIdCtrl.clear();
     }
   }
 

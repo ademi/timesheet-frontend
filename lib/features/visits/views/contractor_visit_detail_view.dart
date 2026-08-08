@@ -6,6 +6,7 @@ import '../../../shared/utils/external_url.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/contractor_visits_controller.dart';
 import '../services/visit_location_service.dart';
+import '../widgets/visit_schema_form.dart';
 
 String _fmt(DateTime dt) {
   final l = dt.toLocal();
@@ -108,52 +109,38 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                               ? null
                               : (_) => controller.toggleTask(t),
                     ),
-                  const Divider(height: 32),
-                  Text('Progress form', style: Get.textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: controller.formNotesCtrl,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Notes',
-                      hintText: 'Progress / shift notes',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (reqs.isNotEmpty) ...[
-                    for (final req in reqs)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(req.name ?? 'Progress form'),
-                        subtitle: Text(
-                          controller.isFormSubmitted(req.formTemplateId)
-                              ? 'Submitted ✓'
-                              : (req.isRequired ? 'Required' : 'Optional'),
+                  if (v.isCheckedIn || v.isCompleted) ...[
+                    const Divider(height: 32),
+                    Text('Forms', style: Get.textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    if (reqs.isEmpty)
+                      const Text(
+                        'Contact your coordinator — form not configured.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
                         ),
-                        trailing: TextButton(
-                          onPressed:
-                              controller.isSaving.value || !v.isCheckedIn
-                                  ? null
-                                  : () => controller.submitForm(req),
-                          child: AsyncButtonChild(
-                            isLoading: controller.isSaving.value,
-                            child: const Text('Submit'),
+                      )
+                    else
+                      for (final req in reqs)
+                        VisitSchemaForm(
+                          requirement: req,
+                          canSubmit: v.isCheckedIn,
+                          isSubmitting: controller.isSaving.value,
+                          isSubmitted:
+                              controller.isFormSubmitted(req.formTemplateId),
+                          onSubmit: (payload) => controller.submitForm(
+                            req,
+                            payloadJson: payload,
                           ),
                         ),
+                    if (v.formSubmissions.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Submissions on file: ${v.formSubmissions.length}',
+                        style: const TextStyle(fontSize: 12),
                       ),
-                  ] else ...[
-                    const Text(
-                      'Contact your coordinator — form not configured.',
-                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-                    ),
-                  ],
-                  if (v.formSubmissions.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Submissions on file: ${v.formSubmissions.length}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
+                    ],
                   ],
                   const SizedBox(height: 24),
                   if (v.isScheduled && controller.canCheckIn)

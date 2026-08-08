@@ -75,17 +75,71 @@ class VisitFormRequirement {
     required this.formTemplateId,
     this.isRequired = true,
     this.name,
+    this.schemaJson = const {},
   });
 
   final String formTemplateId;
   final bool isRequired;
   final String? name;
+  final Map<String, dynamic> schemaJson;
+
+  List<VisitFormFieldSchema> get fields {
+    final raw = schemaJson['fields'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => VisitFormFieldSchema.fromJson(Map<String, dynamic>.from(e)))
+        .where((f) => f.id.isNotEmpty)
+        .toList(growable: false);
+  }
 
   factory VisitFormRequirement.fromJson(Map<String, dynamic> json) {
+    final schema = json['schema_json'];
     return VisitFormRequirement(
       formTemplateId: (json['form_template_id'] ?? json['id']).toString(),
       isRequired: json['is_required'] as bool? ?? true,
       name: json['name'] as String? ?? json['form_template_name'] as String?,
+      schemaJson: schema is Map
+          ? Map<String, dynamic>.from(schema)
+          : const <String, dynamic>{},
+    );
+  }
+}
+
+class VisitFormFieldSchema {
+  const VisitFormFieldSchema({
+    required this.id,
+    required this.type,
+    required this.label,
+    required this.required,
+    this.options = const [],
+    this.section,
+    this.accept = const [],
+  });
+
+  final String id;
+  final String type;
+  final String label;
+  final bool required;
+  final List<String> options;
+  final String? section;
+  final List<String> accept;
+
+  factory VisitFormFieldSchema.fromJson(Map<String, dynamic> json) {
+    final optionsRaw = json['options'];
+    final acceptRaw = json['accept'];
+    return VisitFormFieldSchema(
+      id: (json['id'] ?? json['key'] ?? '').toString(),
+      type: json['type'] as String? ?? 'text',
+      label: json['label'] as String? ?? '',
+      required: json['required'] as bool? ?? false,
+      options: optionsRaw is List
+          ? optionsRaw.map((e) => e.toString()).where((s) => s.isNotEmpty).toList()
+          : const <String>[],
+      section: json['section']?.toString(),
+      accept: acceptRaw is List
+          ? acceptRaw.map((e) => e.toString()).where((s) => s.isNotEmpty).toList()
+          : const <String>[],
     );
   }
 }
