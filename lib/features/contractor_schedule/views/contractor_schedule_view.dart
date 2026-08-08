@@ -7,17 +7,27 @@ import '../../../shared/widgets/async_action.dart';
 import '../controllers/contractor_schedule_controller.dart';
 import '../data/models/schedule_models.dart';
 
-String _fmt(DateTime dt) {
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
-}
-
 String _fmtDay(DateTime dt) {
   final l = dt.toLocal();
   String two(int n) => n.toString().padLeft(2, '0');
   return '${l.year}-${two(l.month)}-${two(l.day)}';
 }
+
+String _fmtTime(DateTime dt) {
+  final l = dt.toLocal();
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(l.hour)}:${two(l.minute)}';
+}
+
+const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+String _fmtAgendaDay(DateTime day) {
+  final wd = _weekdayShort[(day.weekday - 1) % 7];
+  return '$wd ${day.day}/${day.month}';
+}
+
+bool _isSameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
 
 class ContractorScheduleView extends GetView<ContractorScheduleController> {
   const ContractorScheduleView({super.key});
@@ -127,7 +137,11 @@ class _TimetableTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final start = controller.rangeStart.value;
-      final end = start.add(const Duration(days: 6));
+      final end = DateTime(start.year, start.month, start.day)
+          .add(const Duration(days: 6));
+      final today = DateTime.now();
+      final days = controller.agendaDays();
+
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -150,25 +164,30 @@ class _TimetableTab extends StatelessWidget {
               ),
             ],
           ),
-          if (controller.timetableVisits.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Text('No visits in this week.'),
+          const SizedBox(height: 8),
+          for (final entry in days) ...[
+            _AgendaDayHeader(
+              label: _fmtAgendaDay(entry.day),
+              isToday: _isSameDay(entry.day, today),
+              visitCount: entry.visits.length,
             ),
-          for (final v in controller.timetableVisits)
-            Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                title: Text(v.jobTitle ?? v.tenantName ?? 'Visit'),
-                subtitle: Text(
-                  '${_fmt(v.scheduledStart)} → ${_fmt(v.scheduledEnd)}\n'
-                  '${v.status}',
+            if (entry.visits.isEmpty)
+              const Padding(
+                padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
+                child: Text(
+                  'No visits',
+                  style: TextStyle(fontSize: 13, color: AppColors.textMuted),
                 ),
-                isThreeLine: true,
-                trailing: const Icon(Icons.chevron_right),
-                onTap: controller.openVisitsTab,
-              ),
-            ),
+              )
+            else
+              for (final v in entry.visits)
+                _AgendaVisitTile(
+                  visit: v,
+                  onTap: () => controller.openVisit(v),
+                ),
+            const SizedBox(height: 4),
+          ],
+          const SizedBox(height: 8),
           TextButton(
             onPressed: controller.openVisitsTab,
             child: const Text('Open Visits to check in'),
@@ -176,6 +195,88 @@ class _TimetableTab extends StatelessWidget {
         ],
       );
     });
+  }
+}
+
+class _AgendaDayHeader extends StatelessWidget {
+  const _AgendaDayHeader({
+    required this.label,
+    required this.isToday,
+    required this.visitCount,
+  });
+
+  final String label;
+  final bool isToday;
+  final int visitCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 6),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              color: isToday ? AppColors.primary : AppColors.textDark,
+            ),
+          ),
+          if (isToday) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'Today',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.onPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+          const Spacer(),
+          if (visitCount > 0)
+            Text(
+              '$visitCount',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textMuted,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AgendaVisitTile extends StatelessWidget {
+  const _AgendaVisitTile({required this.visit, required this.onTap});
+
+  final TimetableVisitOut visit;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = visit.jobTitle ?? visit.tenantName ?? 'Visit';
+    final time =
+        '${_fmtTime(visit.scheduledStart)} – ${_fmtTime(visit.scheduledEnd)}';
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text('$time · ${visit.status}'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
+    );
   }
 }
 

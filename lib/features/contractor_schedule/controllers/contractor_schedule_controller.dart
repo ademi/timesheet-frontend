@@ -109,6 +109,28 @@ class ContractorScheduleController extends GetxController {
     Get.toNamed(AppRoutes.contractorVisits);
   }
 
+  void openVisit(TimetableVisitOut visit) {
+    Get.toNamed(AppRoutes.contractorVisitDetail, arguments: visit.id);
+  }
+
+  /// Seven calendar days for the current timetable range, each with its visits.
+  List<({DateTime day, List<TimetableVisitOut> visits})> agendaDays() {
+    final start = rangeStart.value;
+    final base = DateTime(start.year, start.month, start.day);
+    return List.generate(7, (i) {
+      final day = base.add(Duration(days: i));
+      final visits = timetableVisits
+          .where((v) {
+            final s = v.scheduledStart.toLocal();
+            return s.year == day.year &&
+                s.month == day.month &&
+                s.day == day.day;
+          })
+          .toList(growable: false);
+      return (day: day, visits: visits);
+    });
+  }
+
   Future<void> _loadTimetable() async {
     final tt = await _repository.getTimetable(from: _from, to: _to);
     final visits = [...tt.visits]

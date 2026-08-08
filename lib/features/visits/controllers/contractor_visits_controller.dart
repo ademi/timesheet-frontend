@@ -107,8 +107,7 @@ class ContractorVisitsController extends GetxController {
   }
 
   Future<void> refreshSelected() async {
-    final id = selected.value?.id ??
-        (Get.arguments is VisitOut ? (Get.arguments as VisitOut).id : null);
+    final id = selected.value?.id ?? _visitIdFromArgs(Get.arguments);
     if (id == null) return;
     isRefreshing.value = true;
     try {
@@ -281,4 +280,10 @@ class ContractorVisitsController extends GetxController {
       isSaving.value = false;
     }
   }
+}
+
+String? _visitIdFromArgs(Object? arg) {
+  if (arg is VisitOut) return arg.id;
+  if (arg is String && arg.isNotEmpty) return arg;
+  return null;
 }
