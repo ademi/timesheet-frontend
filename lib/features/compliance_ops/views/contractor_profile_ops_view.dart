@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/controllers/auth_controller.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/profile_photo_editor.dart';
 import '../controllers/contractor_profile_controller.dart';
 import '../data/models/compliance_ops_models.dart';
 
@@ -42,6 +43,20 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
               ),
               const SizedBox(height: 12),
             ],
+            Center(
+              child: ProfilePhotoEditor(
+                localBytes: controller.localPhotoBytes.value,
+                networkUrl: controller.photo.value?.downloadUrl,
+                isLoading: controller.isPhotoLoading.value,
+                enabled: controller.canUploadPhoto,
+                onChanged: controller.onPhotoPicked,
+                onRemove: controller.photo.value?.hasPhoto == true ||
+                        (controller.localPhotoBytes.value?.isNotEmpty ?? false)
+                    ? controller.removeProfilePhoto
+                    : null,
+              ),
+            ),
+            const Divider(height: 32),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.payments_outlined),

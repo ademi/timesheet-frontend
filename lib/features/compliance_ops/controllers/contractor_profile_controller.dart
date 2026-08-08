@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/data/models/document/document_models.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/models/profile_photo_models.dart';
+import '../../documents/data/document_pipeline.dart';
 import '../../subscription/billing_gate.dart';
 import '../data/models/compliance_ops_models.dart';
 import '../data/repositories/compliance_ops_repository.dart';
@@ -13,18 +16,25 @@ class ContractorProfileController extends GetxController {
   ContractorProfileController({
     required ComplianceOpsRepository repository,
     required SessionService session,
+    DocumentPipeline? documentPipeline,
   })  : _repository = repository,
-        _session = session;
+        _session = session,
+        _pipeline = documentPipeline;
 
   final ComplianceOpsRepository _repository;
   final SessionService _session;
+  final DocumentPipeline? _pipeline;
 
   final isSaving = false.obs;
   final isLoading = false.obs;
+  final isPhotoLoading = false.obs;
   final errorMessage = RxnString();
   final lastRights = Rxn<RightsRequestOut>();
   final lastExport = Rxn<PrivacyExportResult>();
   final events = <NotificationEventOut>[].obs;
+
+  final photo = Rxn<ProfilePhotoOut>();
+  final localPhotoBytes = Rxn<List<int>>();
 
   final rightsNotesCtrl = TextEditingController();
   final rightsType = 'access'.obs;
@@ -33,10 +43,16 @@ class ContractorProfileController extends GetxController {
   bool get canConsent =>
       _session.hasPermission(AppPermissions.complianceConsentManage);
 
+  bool get canUploadPhoto =>
+      _session.hasPermission(AppPermissions.documentsUpload) &&
+      _pipeline != null &&
+      (_session.contractorId.value?.isNotEmpty ?? false);
+
   @override
   void onInit() {
     super.onInit();
     _loadEvents();
+    loadProfilePhoto();
   }
 
   @override
@@ -53,6 +69,92 @@ class ContractorProfileController extends GetxController {
     } catch (_) {
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> loadProfilePhoto() async {
+    isPhotoLoading.value = true;
+    try {
+      final result = await _repository.getContractorProfilePhoto();
+      photo.value = result;
+      if (result.hasDisplayableUrl) {
+        localPhotoBytes.value = null;
+      }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (_) {
+      // Non-blocking for privacy ops screen.
+    } finally {
+      isPhotoLoading.value = false;
+    }
+  }
+
+  Future<void> onPhotoPicked(PickedProfilePhoto picked) async {
+    final contractorId = _session.contractorId.value;
+    final pipeline = _pipeline;
+    if (contractorId == null || contractorId.isEmpty || pipeline == null) {
+      errorMessage.value = 'Cannot upload photo: missing contractor session.';
+      return;
+    }
+    if (!canUploadPhoto) {
+      errorMessage.value = 'Missing documents.upload permission.';
+      return;
+    }
+
+    isPhotoLoading.value = true;
+    errorMessage.value = null;
+    localPhotoBytes.value = picked.bytes;
+    try {
+      final doc = await pipeline.uploadEvidence(
+        request: UploadUrlRequest(
+          ownerType: 'contractor',
+          ownerId: contractorId,
+          filename: picked.name,
+          contentType: picked.contentType,
+          sizeBytes: picked.bytes.length,
+          category: 'contractor_photo',
+        ),
+        bytes: picked.bytes,
+      );
+      final result = await _repository.setContractorProfilePhoto(doc.id);
+      photo.value = result;
+      Get.snackbar(
+        'Profile photo updated',
+        'Your photo was saved.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: AppColors.primary,
+        colorText: AppColors.onPrimary,
+      );
+    } on AppFailure catch (e) {
+      await BillingGate.showIfNeeded(e);
+      errorMessage.value = e.message;
+      localPhotoBytes.value = null;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      localPhotoBytes.value = null;
+    } finally {
+      isPhotoLoading.value = false;
+    }
+  }
+
+  Future<void> removeProfilePhoto() async {
+    isPhotoLoading.value = true;
+    errorMessage.value = null;
+    try {
+      final result = await _repository.clearContractorProfilePhoto();
+      photo.value = result;
+      localPhotoBytes.value = null;
+      Get.snackbar(
+        'Profile photo removed',
+        'Your photo was cleared.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isPhotoLoading.value = false;
     }
   }
 

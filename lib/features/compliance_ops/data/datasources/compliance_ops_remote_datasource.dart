@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
+import '../../../../shared/models/profile_photo_models.dart';
 import '../models/compliance_ops_models.dart';
 
 class ComplianceOpsRemoteDataSource {
@@ -213,6 +214,52 @@ class ComplianceOpsRemoteDataSource {
         response.data,
         SharingAccessRequestOut.fromJson,
         'approve sharing access request',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ProfilePhotoOut> getContractorProfilePhoto() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.contractorMeProfilePhoto,
+      );
+      return _require(
+        response.data,
+        ProfilePhotoOut.fromJson,
+        'profile photo',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ProfilePhotoOut> setContractorProfilePhoto(String documentId) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        ApiPaths.contractorMeProfilePhoto,
+        data: ProfilePhotoSetRequest(documentId: documentId).toJson(),
+      );
+      return _require(
+        response.data,
+        ProfilePhotoOut.fromJson,
+        'set profile photo',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ProfilePhotoOut> clearContractorProfilePhoto() async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        ApiPaths.contractorMeProfilePhoto,
+      );
+      return _require(
+        response.data,
+        ProfilePhotoOut.fromJson,
+        'clear profile photo',
       );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);

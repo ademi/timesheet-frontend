@@ -9,6 +9,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/models/profile_photo_models.dart';
 import '../../documents/data/document_pipeline.dart';
 import '../data/models/client_models.dart';
 import '../data/models/client_profile_models.dart';
@@ -41,6 +42,13 @@ class ClientsController extends GetxController {
   final notesCtrl = TextEditingController();
   final status = 'active'.obs;
   ClientOut? editing;
+
+  // Profile photo (create / edit form)
+  final formPhoto = Rxn<ProfilePhotoOut>();
+  final formLocalPhotoBytes = Rxn<List<int>>();
+  final formPendingPhoto = Rxn<PickedProfilePhoto>();
+  final isFormPhotoLoading = false.obs;
+  final formPhotoCleared = false.obs;
 
   // Client types / dynamic requirements
   final clientTypes = <ClientTypeOut>[].obs;
@@ -145,6 +153,7 @@ class ClientsController extends GetxController {
     status.value = 'active';
     errorMessage.value = null;
     profileSaveProgress.value = null;
+    _resetFormPhoto();
     Get.toNamed(AppRoutes.staffClientForm);
   }
 
@@ -157,7 +166,82 @@ class ClientsController extends GetxController {
     status.value = client.status;
     errorMessage.value = null;
     profileSaveProgress.value = null;
+    _resetFormPhoto();
     Get.toNamed(AppRoutes.staffClientForm, arguments: client);
+    await loadFormProfilePhoto(client.id);
+  }
+
+  void _resetFormPhoto() {
+    formPhoto.value = null;
+    formLocalPhotoBytes.value = null;
+    formPendingPhoto.value = null;
+    formPhotoCleared.value = false;
+    isFormPhotoLoading.value = false;
+  }
+
+  Future<void> loadFormProfilePhoto(String clientId) async {
+    isFormPhotoLoading.value = true;
+    try {
+      final photo = await _repository.getClientProfilePhoto(clientId);
+      formPhoto.value = photo;
+      formLocalPhotoBytes.value = null;
+      formPendingPhoto.value = null;
+      formPhotoCleared.value = false;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (_) {
+    } finally {
+      isFormPhotoLoading.value = false;
+    }
+  }
+
+  void onFormPhotoPicked(PickedProfilePhoto picked) {
+    formPendingPhoto.value = picked;
+    formLocalPhotoBytes.value = picked.bytes;
+    formPhotoCleared.value = false;
+  }
+
+  void clearFormPhoto() {
+    formPendingPhoto.value = null;
+    formLocalPhotoBytes.value = null;
+    formPhotoCleared.value = true;
+    if (editing == null) {
+      formPhoto.value = null;
+    }
+  }
+
+  Future<void> _persistFormPhoto(String clientId) async {
+    final pending = formPendingPhoto.value;
+    if (pending != null) {
+      profileSaveProgress.value = 'Uploading profile photo…';
+      final docId = await _uploadClientFiles(
+        clientId: clientId,
+        category: 'client_photo',
+        files: [
+          PickedClientFile(
+            name: pending.name,
+            contentType: pending.contentType,
+            bytes: pending.bytes,
+          ),
+        ],
+      );
+      if (docId == null) {
+        throw const AppFailure(
+          code: 'unknown',
+          message: 'Profile photo upload failed.',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      formPhoto.value = await _repository.setClientProfilePhoto(clientId, docId);
+      formPendingPhoto.value = null;
+      formPhotoCleared.value = false;
+      return;
+    }
+
+    if (formPhotoCleared.value && editing != null) {
+      formPhoto.value = await _repository.clearClientProfilePhoto(clientId);
+      formPhotoCleared.value = false;
+    }
   }
 
   Future<void> loadClientTypes() async {
@@ -369,6 +453,23 @@ class ClientsController extends GetxController {
                 : notesCtrl.text.trim(),
           ),
         );
+        if (formPendingPhoto.value != null) {
+          try {
+            await _persistFormPhoto(created.id);
+          } on AppFailure catch (e) {
+            Get.back();
+            await load();
+            openDetail(created);
+            Get.snackbar(
+              'Client saved',
+              'Profile photo failed: ${e.message}',
+              snackPosition: SnackPosition.BOTTOM,
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 6),
+            );
+            return;
+          }
+        }
         Get.back();
         await load();
         openDetail(created);
@@ -383,6 +484,9 @@ class ClientsController extends GetxController {
             serviceAgreementNotes: notesCtrl.text.trim(),
           ),
         );
+        if (formPendingPhoto.value != null || formPhotoCleared.value) {
+          await _persistFormPhoto(editing!.id);
+        }
         Get.back();
         await load();
         if (selected.value?.id == editing!.id) {

@@ -30,6 +30,7 @@ abstract final class ApiPaths {
   static String contractorMeCredentialSupersede(String id) =>
       '${contractorMeCredential(id)}/supersede';
   static const contractorMePrivacyExport = '$_v1/contractor-me/privacy-export';
+  static const contractorMeProfilePhoto = '$_v1/contractor-me/profile-photo';
   static const contractorMeTimetable = '$_v1/contractor-me/timetable';
   static const contractorMeAvailability = '$_v1/contractor-me/availability';
   static const contractorMeLeave = '$_v1/contractor-me/leave';
@@ -89,6 +90,7 @@ abstract final class ApiPaths {
   static String clientTypeRequirements(String clientTypeId) =>
       '${clientType(clientTypeId)}/requirements';
   static String clientProfile(String id) => '${client(id)}/profile';
+  static String clientProfilePhoto(String id) => '${client(id)}/profile-photo';
   static String clientProfileFact(String id, String requirementKey) =>
       '${clientProfile(id)}/$requirementKey';
   static String clientForm(String id, String formKey) =>

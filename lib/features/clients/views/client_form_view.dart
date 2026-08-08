@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/profile_photo_editor.dart';
 import '../controllers/clients_controller.dart';
 
 class ClientFormView extends GetView<ClientsController> {
@@ -16,6 +17,7 @@ class ClientFormView extends GetView<ClientsController> {
       appBar: AppBar(title: Text(isEdit ? 'Edit client' : 'New client')),
       body: Obx(() {
         final err = controller.errorMessage.value;
+        final progress = controller.profileSaveProgress.value;
 
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -31,6 +33,32 @@ class ClientFormView extends GetView<ClientsController> {
               ),
               const SizedBox(height: 12),
             ],
+            Center(
+              child: ProfilePhotoEditor(
+                localBytes: controller.formLocalPhotoBytes.value,
+                networkUrl: controller.formPhotoCleared.value
+                    ? null
+                    : controller.formPhoto.value?.downloadUrl,
+                isLoading: controller.isFormPhotoLoading.value ||
+                    controller.isSaving.value,
+                enabled: controller.canUploadDocs || controller.canManage,
+                onChanged: controller.onFormPhotoPicked,
+                onRemove: (controller.formPendingPhoto.value != null ||
+                        (!controller.formPhotoCleared.value &&
+                            (controller.formPhoto.value?.hasPhoto ?? false)))
+                    ? controller.clearFormPhoto
+                    : null,
+              ),
+            ),
+            if (progress != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                progress,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+              ),
+            ],
+            const SizedBox(height: 16),
             const Text(
               'Core details',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
+import '../../../../shared/models/profile_photo_models.dart';
 import '../models/client_models.dart';
 import '../models/client_profile_models.dart';
 
@@ -161,6 +162,55 @@ class ClientsRemoteDataSource {
         data: body.toJson(),
       );
       return _require(response.data, ClientOut.fromJson, 'patch client');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ProfilePhotoOut> getClientProfilePhoto(String clientId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.clientProfilePhoto(clientId),
+      );
+      return _require(
+        response.data,
+        ProfilePhotoOut.fromJson,
+        'client profile photo',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ProfilePhotoOut> setClientProfilePhoto(
+    String clientId,
+    String documentId,
+  ) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        ApiPaths.clientProfilePhoto(clientId),
+        data: ProfilePhotoSetRequest(documentId: documentId).toJson(),
+      );
+      return _require(
+        response.data,
+        ProfilePhotoOut.fromJson,
+        'set client profile photo',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ProfilePhotoOut> clearClientProfilePhoto(String clientId) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        ApiPaths.clientProfilePhoto(clientId),
+      );
+      return _require(
+        response.data,
+        ProfilePhotoOut.fromJson,
+        'clear client profile photo',
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

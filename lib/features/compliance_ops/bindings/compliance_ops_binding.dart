@@ -5,6 +5,7 @@ import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../credentials/bindings/credentials_binding.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
+import '../../documents/data/document_pipeline.dart';
 import '../../engagements/bindings/engagements_binding.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../controllers/contractor_profile_controller.dart';
@@ -69,12 +70,16 @@ class ContractorProfileOpsBinding extends Bindings {
   @override
   void dependencies() {
     ComplianceOpsBinding.ensureShared();
+    CredentialsBinding.ensureDependencies();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<ContractorProfileController>()) {
       Get.put(
         ContractorProfileController(
           repository: Get.find<ComplianceOpsRepository>(),
           session: Get.find<SessionService>(),
+          documentPipeline: Get.isRegistered<DocumentPipeline>()
+              ? Get.find<DocumentPipeline>()
+              : null,
         ),
       );
     }

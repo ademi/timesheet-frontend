@@ -1,3 +1,4 @@
+import '../../../../shared/models/profile_photo_models.dart';
 import '../datasources/compliance_ops_remote_datasource.dart';
 import '../models/compliance_ops_models.dart';
 
@@ -62,4 +63,13 @@ class ComplianceOpsRepository {
     String requestId,
   ) =>
       _remote.approveSharingAccessRequest(requestId);
+
+  Future<ProfilePhotoOut> getContractorProfilePhoto() =>
+      _remote.getContractorProfilePhoto();
+
+  Future<ProfilePhotoOut> setContractorProfilePhoto(String documentId) =>
+      _remote.setContractorProfilePhoto(documentId);
+
+  Future<ProfilePhotoOut> clearContractorProfilePhoto() =>
+      _remote.clearContractorProfilePhoto();
 }

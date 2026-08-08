@@ -1,3 +1,4 @@
+import '../../../../shared/models/profile_photo_models.dart';
 import '../datasources/clients_remote_datasource.dart';
 import '../models/client_models.dart';
 import '../models/client_profile_models.dart';
@@ -46,6 +47,16 @@ class ClientsRepository {
   Future<ClientOut> patchClient(String id, ClientUpdateRequest body) =>
       _remote.patchClient(id, body);
   Future<void> deleteClient(String id) => _remote.deleteClient(id);
+
+  Future<ProfilePhotoOut> getClientProfilePhoto(String clientId) =>
+      _remote.getClientProfilePhoto(clientId);
+  Future<ProfilePhotoOut> setClientProfilePhoto(
+    String clientId,
+    String documentId,
+  ) =>
+      _remote.setClientProfilePhoto(clientId, documentId);
+  Future<ProfilePhotoOut> clearClientProfilePhoto(String clientId) =>
+      _remote.clearClientProfilePhoto(clientId);
 
   Future<List<ClientSiteOut>> listSites(String clientId) =>
       _remote.listSites(clientId);
