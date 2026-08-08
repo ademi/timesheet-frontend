@@ -66,7 +66,10 @@ class JobFormView extends GetView<JobsController> {
                 ),
               ],
               onChanged: (v) {
-                if (v != null) controller.locationMode.value = v;
+                if (v != null) {
+                  controller.locationMode.value = v;
+                  controller.refreshClientSiteWarning();
+                }
               },
               decoration: const InputDecoration(
                 labelText: 'Location mode',
@@ -91,6 +94,25 @@ class JobFormView extends GetView<JobsController> {
                 border: const OutlineInputBorder(),
               ),
             ),
+            if (controller.clientSiteWarning.value != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8E1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFF59E0B)),
+                ),
+                child: Text(
+                  controller.clientSiteWarning.value!,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF92400E),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             if (useSite)
               DropdownButtonFormField<String>(
@@ -99,13 +121,17 @@ class JobFormView extends GetView<JobsController> {
                   for (final s in controller.sites)
                     DropdownMenuItem(value: s.id, child: Text(s.name)),
                 ],
-                onChanged: controller.isLoadingSites.value
+                onChanged: controller.isLoadingSites.value ||
+                        controller.sites.isEmpty
                     ? null
                     : (v) => controller.selectedSiteId.value = v,
                 decoration: InputDecoration(
                   labelText: controller.isLoadingSites.value
                       ? 'Client site * (loading…)'
-                      : 'Client site *',
+                      : controller.sites.isEmpty &&
+                              controller.selectedClientId.value != null
+                          ? 'Client site * (none available)'
+                          : 'Client site *',
                   border: const OutlineInputBorder(),
                   suffixIcon: controller.isLoadingSites.value
                       ? const Padding(

@@ -45,6 +45,7 @@ class JobsController extends GetxController {
   final isGenerating = false.obs;
   final isLoadingSites = false.obs;
   final errorMessage = RxnString();
+  final clientSiteWarning = RxnString();
   final lastGenerate = Rxn<GenerateVisitsResponse>();
 
   final selected = Rxn<JobOut>();
@@ -203,17 +204,41 @@ class JobsController extends GetxController {
     selectedClientId.value = clientId;
     selectedSiteId.value = null;
     sites.clear();
+    clientSiteWarning.value = null;
     if (clientId == null) return;
     isLoadingSites.value = true;
     errorMessage.value = null;
     try {
       sites.assignAll(await _clients.listSites(clientId));
+      _refreshClientSiteWarning();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
       isLoadingSites.value = false;
     }
   }
+
+  void _refreshClientSiteWarning() {
+    if (locationMode.value != 'site') {
+      clientSiteWarning.value = null;
+      return;
+    }
+    if (selectedClientId.value == null) {
+      clientSiteWarning.value = null;
+      return;
+    }
+    if (isLoadingSites.value) return;
+    if (sites.isEmpty) {
+      clientSiteWarning.value =
+          'This client has no sites. Add a site for the client before '
+          'creating a job.';
+    } else {
+      clientSiteWarning.value = null;
+    }
+  }
+
+  /// Public wrapper for the job form when location mode changes.
+  void refreshClientSiteWarning() => _refreshClientSiteWarning();
 
   void openCreate() {
     titleCtrl.clear();
@@ -226,6 +251,7 @@ class JobsController extends GetxController {
     geofenceMode.value = 'informational';
     geofenceRadiusCtrl.text = '100';
     errorMessage.value = null;
+    clientSiteWarning.value = null;
     Get.toNamed(AppRoutes.staffJobForm);
   }
 
@@ -236,16 +262,23 @@ class JobsController extends GetxController {
       return;
     }
     final useSite = locationMode.value == 'site';
+    if (kind.value == 'standing' && selectedClientId.value == null) {
+      errorMessage.value = 'Standing jobs require a client.';
+      return;
+    }
+    if (useSite && selectedClientId.value != null && sites.isEmpty) {
+      errorMessage.value =
+          'This client has no sites. Add a site for the client before '
+          'creating a job.';
+      clientSiteWarning.value = errorMessage.value;
+      return;
+    }
     if (useSite && selectedSiteId.value == null) {
       errorMessage.value = 'Select a client site (XOR with branch).';
       return;
     }
     if (!useSite && selectedBranchId.value == null) {
       errorMessage.value = 'Select a branch (XOR with client site).';
-      return;
-    }
-    if (kind.value == 'standing' && selectedClientId.value == null) {
-      errorMessage.value = 'Standing jobs require a client.';
       return;
     }
     isSaving.value = true;
