@@ -118,6 +118,16 @@ class OnboardingController extends GetxController with PendingActionMixin {
     }
   }
 
+  /// Primary footer label — Finish when the next action leaves the funnel.
+  bool get nextFinishesFunnel {
+    if (currentStep == OnboardingStep.engagement) return true;
+    if (currentStep == OnboardingStep.consents) {
+      return _sessionService?.needsEngagementWork.value != true;
+    }
+    if (currentStep == OnboardingStep.credentials) return true;
+    return false;
+  }
+
   /// First notice in list order that is not yet acknowledged, if any.
   CollectionNotice? get nextIncompleteNotice {
     for (final n in notices) {
@@ -157,6 +167,13 @@ class OnboardingController extends GetxController with PendingActionMixin {
     _restoredContractorId = contractorId;
     final snapshot = _progressStore.load(contractorId);
     _platformProgressComplete = snapshot.platformComplete;
+    // Active / pending_docs / approved contractors already finished platform
+    // onboarding even if this device has an empty local store.
+    if (!_platformProgressComplete &&
+        (_sessionService?.hasPostInviteEngagement ?? false)) {
+      _platformProgressComplete = true;
+      _progressStore.markPlatformComplete(contractorId);
+    }
     // Sync local already-accepted keys so resolve/skip works before async loads.
     acceptedDocKeys
       ..clear()
@@ -429,10 +446,8 @@ class OnboardingController extends GetxController with PendingActionMixin {
           _toast('Record consent for each sensitive credential type.');
           return;
         }
-        goToStep(OnboardingStep.credentials);
-        if (Get.isRegistered<CredentialsController>()) {
-          await Get.find<CredentialsController>().load();
-        }
+        // Credentials live on the contractor Credentials tab — not in this funnel.
+        await completeFunnel();
       case OnboardingStep.engagement:
         if (!canAdvanceEngagement) {
           _toast('Accept each invited engagement before continuing.');
@@ -440,18 +455,29 @@ class OnboardingController extends GetxController with PendingActionMixin {
         }
         await completeFunnel();
       case OnboardingStep.credentials:
+        // Legacy URL / step — finish without showing credentials UI.
         await completeFunnel();
     }
   }
 
   void back() {
     if (stepIndex.value <= 0) return;
+    // Skip credentials when walking backward (removed from funnel).
+    if (currentStep == OnboardingStep.engagement) {
+      goToStep(OnboardingStep.consents);
+      return;
+    }
     stepIndex.value -= 1;
+    if (currentStep == OnboardingStep.credentials) {
+      goToStep(OnboardingStep.consents);
+      return;
+    }
     _syncRoute();
   }
 
   Future<void> completeFunnel() async {
-    await _progressStore.markCredentialsStepDone(_contractorId);
+    await _progressStore.markPlatformComplete(_contractorId);
+    _platformProgressComplete = true;
     final session = _sessionService;
     session?.refreshOnboardingFlags();
     if (session?.needsEngagementWork.value == true) {
@@ -495,9 +521,7 @@ class OnboardingController extends GetxController with PendingActionMixin {
     if (!canAdvanceLegal) return OnboardingStep.legal;
     if (!canAdvanceNotices) return OnboardingStep.notices;
     if (!canAdvanceConsents) return OnboardingStep.consents;
-    if (!_progressStore.isPlatformComplete(_contractorId)) {
-      return OnboardingStep.credentials;
-    }
+    // Platform interactive steps done — credentials are managed in-app.
     if (_sessionService?.needsEngagementWork.value == true) {
       return OnboardingStep.engagement;
     }
@@ -507,6 +531,13 @@ class OnboardingController extends GetxController with PendingActionMixin {
   void navigateToFirstIncompleteStep() {
     final step = resolveFirstIncompleteStep();
     if (step == null) {
+      // Ensure local flag is set when funnel has nothing left (e.g. legacy
+      // credentials URL after consents already done).
+      if (canAdvanceLegal && canAdvanceNotices && canAdvanceConsents) {
+        _progressStore.markPlatformComplete(_contractorId);
+        _platformProgressComplete = true;
+        _sessionService?.refreshOnboardingFlags();
+      }
       if (Get.currentRoute != AppRoutes.contractorHome) {
         Get.offAllNamed(AppRoutes.contractorHome);
       }

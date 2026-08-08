@@ -118,6 +118,40 @@ void main() {
       expect(session.resolvePostLoginRoute(), AppRoutes.contractorHome);
     });
 
+    test(
+      'active contractor without local platform flag → home (no legal funnel)',
+      () {
+        tokenStorage.claims = const JwtClaims(
+          sub: 'u2',
+          tenantId: 't1',
+          permissions: ['auth.session'],
+          actorType: 'contractor',
+          iat: 1,
+          exp: 2,
+          contractorId: 'c1',
+        );
+        session.applyMeContext(
+          const MeContextModel(
+            actorType: 'contractor',
+            tenantId: 't1',
+            contractorId: 'c1',
+            engagements: [
+              EngagementSummaryModel(
+                id: 'e1',
+                tenantId: 't1',
+                tenantName: 'Acme',
+                status: 'active',
+              ),
+            ],
+          ),
+        );
+        expect(session.needsPlatformCompliance.value, isFalse);
+        expect(session.needsOnboarding.value, isFalse);
+        expect(session.resolvePostLoginRoute(), AppRoutes.contractorHome);
+        expect(progressStore.isPlatformComplete('c1'), isTrue);
+      },
+    );
+
     test('contractor invited with incomplete platform → onboarding legal', () {
       tokenStorage.claims = const JwtClaims(
         sub: 'u2',

@@ -143,7 +143,7 @@ void main() {
         repository: _MockComplianceRepository(),
         progressStore: progressStore,
       );
-      controller.stepIndex.value = OnboardingStep.credentials.index;
+      controller.stepIndex.value = OnboardingStep.consents.index;
 
       await controller.completeFunnel();
 
@@ -166,8 +166,7 @@ void main() {
 
       await controller.next();
 
-      // In test mode navigation does not change currentRoute; it must not
-      // advance back into credentials after the invite is already accepted.
+      // Must not advance into the removed credentials step.
       expect(controller.currentStep, isNot(OnboardingStep.credentials));
     },
   );
@@ -181,11 +180,55 @@ void main() {
         repository: _MockComplianceRepository(),
         progressStore: progressStore,
       );
-      controller.stepIndex.value = OnboardingStep.credentials.index;
+      controller.stepIndex.value = OnboardingStep.consents.index;
 
       await controller.completeFunnel();
 
       expect(controller.currentStep, OnboardingStep.engagement);
+    },
+  );
+
+  test(
+    'resolveFirstIncompleteStep never returns credentials',
+    () async {
+      await progressStore.markAcceptedDocument(
+        'contractor-a',
+        docKey: 'platform_terms',
+        version: 'v1',
+      );
+      await progressStore.markAcceptedDocument(
+        'contractor-a',
+        docKey: 'privacy_policy',
+        version: 'v1',
+      );
+      setEngagementStatus('invited');
+      final controller = OnboardingController(
+        repository: _MockComplianceRepository(),
+        progressStore: progressStore,
+      );
+      // Notices/consents empty → advanceable; platform flag still false.
+      expect(
+        controller.resolveFirstIncompleteStep(),
+        OnboardingStep.engagement,
+      );
+      expect(
+        controller.resolveFirstIncompleteStep(),
+        isNot(OnboardingStep.credentials),
+      );
+    },
+  );
+
+  test(
+    'active engagement without local flag skips platform funnel',
+    () async {
+      setEngagementStatus('active');
+      final controller = OnboardingController(
+        repository: _MockComplianceRepository(),
+        progressStore: progressStore,
+      );
+
+      expect(controller.resolveFirstIncompleteStep(), isNull);
+      expect(progressStore.isPlatformComplete('contractor-a'), isTrue);
     },
   );
 

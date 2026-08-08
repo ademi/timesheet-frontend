@@ -198,6 +198,20 @@ class SessionService extends GetxController {
     _recomputeOnboarding();
   }
 
+  /// Engagement statuses that mean the contractor already passed platform
+  /// onboarding (legal/notices/consents) and should not be forced through it
+  /// again when local GetStorage progress is missing.
+  static const _platformOnboardingSatisfiedStatuses = {
+    'pending_docs',
+    'approved',
+    'active',
+  };
+
+  /// True when at least one engagement proves platform onboarding is done.
+  bool get hasPostInviteEngagement => engagements.any(
+        (e) => _platformOnboardingSatisfiedStatuses.contains(e.status),
+      );
+
   void _recomputeOnboarding() {
     if (!isContractor) {
       needsOnboarding.value = false;
@@ -205,10 +219,15 @@ class SessionService extends GetxController {
       needsEngagementWork.value = false;
       return;
     }
-    final statuses = engagements.map((e) => e.status).toSet();
-    needsPlatformCompliance.value =
-        !_onboardingProgressStore.isPlatformComplete(contractorId.value);
-    needsEngagementWork.value = statuses.contains('invited');
+    final id = contractorId.value;
+    final localComplete = _onboardingProgressStore.isPlatformComplete(id);
+    final progressed = hasPostInviteEngagement;
+    if (!localComplete && progressed && id != null && id.isNotEmpty) {
+      // Persist so later logins on this device do not re-run the funnel.
+      _onboardingProgressStore.markPlatformComplete(id);
+    }
+    needsPlatformCompliance.value = !localComplete && !progressed;
+    needsEngagementWork.value = engagements.any((e) => e.status == 'invited');
     needsOnboarding.value =
         needsPlatformCompliance.value || needsEngagementWork.value;
   }
