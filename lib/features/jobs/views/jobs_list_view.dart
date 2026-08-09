@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/jobs_controller.dart';
 
 class JobsListView extends GetView<JobsController> {
@@ -14,19 +14,15 @@ class JobsListView extends GetView<JobsController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Jobs'),
-        actions: [
-          IconButton(
-            tooltip: 'Form templates',
-            onPressed: controller.openFormTemplatesAndRefresh,
-            icon: const Icon(Icons.description_outlined),
-          ),
-          if (Get.isRegistered<AuthController>())
+        actions: shellAppBarActions(
+          leadingActions: [
             IconButton(
-              tooltip: 'Log out',
-              onPressed: () => Get.find<AuthController>().logout(),
-              icon: const Icon(Icons.logout),
+              tooltip: 'Form templates',
+              onPressed: controller.openFormTemplatesAndRefresh,
+              icon: const Icon(Icons.description_outlined),
             ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: !controller.canManage
           ? null

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/contractor_visits_controller.dart';
 
 String _fmt(DateTime dt) {
@@ -20,14 +20,7 @@ class ContractorVisitsListView extends GetView<ContractorVisitsController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('My visits'),
-        actions: [
-          if (Get.isRegistered<AuthController>())
-            IconButton(
-              tooltip: 'Log out',
-              onPressed: () => Get.find<AuthController>().logout(),
-              icon: const Icon(Icons.logout),
-            ),
-        ],
+        actions: shellAppBarActions(),
       ),
       body: Obx(() {
         final err = controller.errorMessage.value;

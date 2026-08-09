@@ -1,13 +1,13 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../app/controllers/auth_controller.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../controllers/contractor_profile_controller.dart';
 import '../data/models/compliance_ops_models.dart';
+import '../widgets/notification_bell_button.dart';
 
 class ContractorProfileOpsView extends GetView<ContractorProfileController> {
   const ContractorProfileOpsView({super.key});
@@ -18,14 +18,7 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Profile'),
-        actions: [
-          if (Get.isRegistered<AuthController>())
-            IconButton(
-              tooltip: 'Log out',
-              onPressed: () => Get.find<AuthController>().logout(),
-              icon: const Icon(Icons.logout),
-            ),
-        ],
+        actions: shellAppBarActions(),
       ),
       body: Obx(() {
         final err = controller.errorMessage.value;

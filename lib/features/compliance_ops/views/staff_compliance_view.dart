@@ -9,6 +9,7 @@ import '../../credentials/data/models/credential_models.dart';
 import '../../engagements/data/models/engagement_models.dart';
 import '../controllers/staff_compliance_controller.dart';
 import '../data/models/notification_display.dart';
+import '../widgets/notification_bell_button.dart';
 
 class StaffComplianceView extends GetView<StaffComplianceController> {
   const StaffComplianceView({super.key});
@@ -19,13 +20,15 @@ class StaffComplianceView extends GetView<StaffComplianceController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Compliance'),
-        actions: [
-          if (controller.canReviewCreds)
-            TextButton(
-              onPressed: () => Get.toNamed(AppRoutes.staffCredentialReview),
-              child: const Text('Credential review'),
-            ),
-        ],
+        actions: shellAppBarActions(
+          leadingActions: [
+            if (controller.canReviewCreds)
+              TextButton(
+                onPressed: () => Get.toNamed(AppRoutes.staffCredentialReview),
+                child: const Text('Credential review'),
+              ),
+          ],
+        ),
       ),
       body: Obx(() {
         final tab = controller.tabIndex.value;

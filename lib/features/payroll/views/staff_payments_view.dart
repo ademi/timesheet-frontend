@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/staff_payments_controller.dart';
 
 class StaffPaymentsView extends GetView<StaffPaymentsController> {
@@ -15,14 +15,7 @@ class StaffPaymentsView extends GetView<StaffPaymentsController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Payments'),
-        actions: [
-          if (Get.isRegistered<AuthController>())
-            IconButton(
-              tooltip: 'Log out',
-              onPressed: () => Get.find<AuthController>().logout(),
-              icon: const Icon(Icons.logout),
-            ),
-        ],
+        actions: shellAppBarActions(),
       ),
       body: Obx(() {
         final tab = controller.tabIndex.value;

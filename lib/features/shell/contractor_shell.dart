@@ -6,6 +6,7 @@ import '../../app/themes/app_colors.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../shared/widgets/closed_beta_banner.dart';
+import '../compliance_ops/controllers/notifications_feed_controller.dart';
 
 /// ContractorShell nav (design §4.4).
 abstract final class ContractorShellNav {
@@ -59,6 +60,7 @@ class ContractorShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    NotificationsFeedController.ensureRegistered();
     final body = _shellBody(child);
     return LayoutBuilder(
       builder: (context, constraints) {

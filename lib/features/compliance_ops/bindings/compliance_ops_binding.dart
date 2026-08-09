@@ -3,12 +3,19 @@ import 'package:get/get.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
+import '../../clients/bindings/clients_binding.dart';
+import '../../clients/data/repositories/clients_repository.dart';
 import '../../credentials/bindings/credentials_binding.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
 import '../../documents/data/document_pipeline.dart';
 import '../../engagements/bindings/engagements_binding.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
+import '../../jobs/bindings/jobs_binding.dart';
+import '../../jobs/data/repositories/jobs_repository.dart';
+import '../../visits/bindings/visits_binding.dart';
+import '../../visits/data/repositories/visits_repository.dart';
 import '../controllers/contractor_profile_controller.dart';
+import '../controllers/notifications_feed_controller.dart';
 import '../controllers/staff_compliance_controller.dart';
 import '../data/datasources/compliance_ops_remote_datasource.dart';
 import '../data/repositories/compliance_ops_repository.dart';
@@ -90,6 +97,11 @@ class HomeAlertsBinding extends Bindings {
   @override
   void dependencies() {
     ComplianceOpsBinding.ensureShared();
+    ClientsBinding.ensureShared();
+    EngagementsBinding.ensureShared();
+    JobsBinding.ensureShared();
+    VisitsBinding.ensureShared();
+    NotificationsFeedController.ensureRegistered();
     if (!Get.isRegistered<SessionService>()) return;
     if (Get.isRegistered<HomeAlertsController>()) {
       Get.delete<HomeAlertsController>();
@@ -98,6 +110,11 @@ class HomeAlertsBinding extends Bindings {
       HomeAlertsController(
         repository: Get.find<ComplianceOpsRepository>(),
         session: Get.find<SessionService>(),
+        clientsRepository: Get.find<ClientsRepository>(),
+        engagementsRepository: Get.find<EngagementsRepository>(),
+        jobsRepository: Get.find<JobsRepository>(),
+        visitsRepository: Get.find<VisitsRepository>(),
+        notificationsFeed: Get.find<NotificationsFeedController>(),
       ),
     );
   }

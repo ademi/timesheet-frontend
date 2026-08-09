@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/staff_tenant_settings_controller.dart';
 
 class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
@@ -15,14 +15,7 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Settings'),
-        actions: [
-          if (Get.isRegistered<AuthController>())
-            IconButton(
-              tooltip: 'Log out',
-              onPressed: () => Get.find<AuthController>().logout(),
-              icon: const Icon(Icons.logout),
-            ),
-        ],
+        actions: shellAppBarActions(),
       ),
       body: Obx(() {
         final err = controller.errorMessage.value;

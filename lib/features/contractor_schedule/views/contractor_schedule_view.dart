@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/contractor_schedule_controller.dart';
 import '../data/models/schedule_models.dart';
 
@@ -38,14 +38,7 @@ class ContractorScheduleView extends GetView<ContractorScheduleController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Schedule'),
-        actions: [
-          if (Get.isRegistered<AuthController>())
-            IconButton(
-              tooltip: 'Log out',
-              onPressed: () => Get.find<AuthController>().logout(),
-              icon: const Icon(Icons.logout),
-            ),
-        ],
+        actions: shellAppBarActions(),
       ),
       body: Obx(() {
         final err = controller.errorMessage.value;

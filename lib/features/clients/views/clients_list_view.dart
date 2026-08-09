@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/clients_controller.dart';
 
 class ClientsListView extends GetView<ClientsController> {
@@ -14,14 +14,7 @@ class ClientsListView extends GetView<ClientsController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Clients'),
-        actions: [
-          if (Get.isRegistered<AuthController>())
-            IconButton(
-              tooltip: 'Log out',
-              onPressed: () => Get.find<AuthController>().logout(),
-              icon: const Icon(Icons.logout),
-            ),
-        ],
+        actions: shellAppBarActions(),
       ),
       floatingActionButton: !controller.canManage
           ? null

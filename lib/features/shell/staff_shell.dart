@@ -8,6 +8,7 @@ import '../../app/views/shell/responsive_scaffold.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../core/services/session_service.dart';
 import '../../shared/widgets/closed_beta_banner.dart';
+import '../compliance_ops/controllers/notifications_feed_controller.dart';
 
 /// StaffShell nav (design §4.3).
 abstract final class StaffShellNav {
@@ -126,6 +127,7 @@ class StaffShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    NotificationsFeedController.ensureRegistered();
     final body = _shellBody(child);
     return Obx(() {
       if (Get.isRegistered<SessionService>()) {

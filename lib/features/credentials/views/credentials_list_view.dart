@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../app/controllers/auth_controller.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/services/session_service.dart';
+import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
 import '../widgets/evidence_document_actions.dart';
@@ -119,14 +119,7 @@ class CredentialsListView extends GetView<CredentialsController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Credentials'),
-        actions: [
-          if (Get.isRegistered<AuthController>())
-            IconButton(
-              tooltip: 'Log out',
-              onPressed: () => Get.find<AuthController>().logout(),
-              icon: const Icon(Icons.logout),
-            ),
-        ],
+        actions: shellAppBarActions(),
       ),
       body: body,
     );
