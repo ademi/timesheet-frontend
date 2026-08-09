@@ -4,9 +4,71 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/jobs_controller.dart';
+import '../data/models/job_models.dart';
 
 class FormTemplatesView extends GetView<JobsController> {
   const FormTemplatesView({super.key});
+
+  Future<void> _editTemplate(
+    BuildContext context,
+    FormTemplateOut template,
+  ) async {
+    final nameCtrl = TextEditingController(text: template.name);
+    var isActive = template.isActive;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setLocal) {
+            return AlertDialog(
+              title: const Text('Edit template'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameCtrl,
+                    autofocus: true,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      labelText: 'Template name *',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Active'),
+                    value: isActive,
+                    onChanged: (v) => setLocal(() => isActive = v),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    final name = nameCtrl.text;
+    nameCtrl.dispose();
+    if (saved != true) return;
+    await controller.updateFormTemplate(
+      id: template.id,
+      name: name,
+      isActive: isActive,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +98,7 @@ class FormTemplatesView extends GetView<JobsController> {
               const Padding(
                 padding: EdgeInsets.only(bottom: 16),
                 child: Text(
-                  'You can view templates but need clients.manage to create or delete.',
+                  'You can view templates but need clients.manage to create or edit.',
                   style: TextStyle(color: AppColors.textMuted),
                 ),
               ),
@@ -88,12 +150,25 @@ class FormTemplatesView extends GetView<JobsController> {
                   ),
                   trailing:
                       controller.canManageForms
-                          ? AsyncIconButton(
-                            tooltip: 'Delete',
-                            onPressed: () =>
-                                controller.deleteFormTemplate(t.id),
-                            isLoading: controller.isSaving.value,
-                            icon: const Icon(Icons.delete_outline),
+                          ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                tooltip: 'Edit',
+                                onPressed:
+                                    controller.isSaving.value
+                                        ? null
+                                        : () => _editTemplate(context, t),
+                                icon: const Icon(Icons.edit_outlined),
+                              ),
+                              AsyncIconButton(
+                                tooltip: 'Delete',
+                                onPressed: () =>
+                                    controller.deleteFormTemplate(t.id),
+                                isLoading: controller.isSaving.value,
+                                icon: const Icon(Icons.delete_outline),
+                              ),
+                            ],
                           )
                           : null,
                 ),

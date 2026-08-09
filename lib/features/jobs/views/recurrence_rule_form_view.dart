@@ -169,7 +169,7 @@ class RecurrenceRuleFormView extends StatelessWidget {
               ),
             ] else
               const Text(
-                'Attach form templates in Form catalog above first.',
+                'Attach form templates via Manage templates on the job first.',
                 style: TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
             const Divider(height: 32),

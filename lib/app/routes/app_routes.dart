@@ -51,6 +51,7 @@ abstract class AppRoutes {
   static const staffJobDetail = '/staff/jobs/detail';
   static const staffRecurrenceRuleForm = '/staff/jobs/recurrence-rule-form';
   static const staffFormTemplates = '/staff/jobs/form-templates';
+  static const staffJobManageTemplates = '/staff/jobs/manage-templates';
   static const staffVisits = '/staff/visits';
   static const staffVisitDetail = '/staff/visits/detail';
   static const staffPayments = '/staff/payments';

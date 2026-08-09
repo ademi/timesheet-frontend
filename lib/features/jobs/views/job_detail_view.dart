@@ -74,90 +74,32 @@ class _JobDetailViewState extends State<JobDetailView> {
               ),
             ],
             const Divider(height: 32),
-            Text('Form catalog', style: Get.textTheme.titleMedium),
+            Text('Templates', style: Get.textTheme.titleMedium),
             const SizedBox(height: 4),
-            const Text(
-              'Templates used on visits for this job. Attach templates here, '
-              'then select them when adding recurrence rules or creating '
-              'manual visits.',
-              style: TextStyle(fontSize: 12),
+            Text(
+              controller.formCatalog.isEmpty
+                  ? 'No templates attached to this job yet.'
+                  : '${controller.formCatalog.length} template'
+                      '${controller.formCatalog.length == 1 ? '' : 's'} '
+                      'attached to this job.',
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
-            if (controller.formCatalog.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              for (final c in controller.formCatalog)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  leading: Icon(
-                    c.isActive ? Icons.check_circle : Icons.pause_circle,
-                    color: c.isActive ? AppColors.primary : AppColors.textMuted,
-                    size: 20,
-                  ),
-                  title: Text(c.name),
-                  subtitle: Text(
-                    '${c.isActive ? 'active' : 'inactive'} · '
-                    '${c.clientId == null ? 'tenant-wide' : 'client'}',
-                  ),
-                ),
-            ] else
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'No templates attached yet.',
-                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-                ),
-              ),
             const SizedBox(height: 12),
-            if (controller.formTemplates.isEmpty)
-              const Text('No templates yet.'),
-            for (final t in controller.formTemplates)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(t.name),
-                subtitle: Text(
-                  '${t.isActive ? 'active' : 'inactive'} · '
-                  '${t.clientId == null ? 'tenant-wide' : 'client'}'
-                  '${controller.isTemplateAttached(t.id) ? ' · attached' : ''}',
-                  style: TextStyle(
-                    color:
-                        controller.isTemplateAttached(t.id)
-                            ? AppColors.primary
-                            : null,
-                  ),
-                ),
-                trailing:
-                    controller.canManage
-                        ? TextButton(
-                          onPressed:
-                              controller.isSaving.value ||
-                                      controller.isTemplateAttached(t.id)
-                                  ? null
-                                  : () => controller.attachFormTemplate(t.id),
-                          child: AsyncButtonChild(
-                            isLoading: controller.isSaving.value &&
-                                !controller.isTemplateAttached(t.id),
-                            child: Text(
-                              controller.isTemplateAttached(t.id)
-                                  ? 'Attached'
-                                  : 'Attach',
-                            ),
-                          ),
-                        )
-                        : null,
-              ),
-            if (controller.canManage || controller.canManageForms)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: AsyncOutlinedButton(
-                  onPressed: controller.openFormTemplatesAndRefresh,
-                  isLoading: controller.isSaving.value,
-                  child: Text(
-                    controller.formTemplates.isEmpty
-                        ? 'Create form template'
-                        : 'Manage form templates',
-                  ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ElevatedButton.icon(
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : controller.openManageTemplatesAndRefresh,
+                icon: const Icon(Icons.description_outlined),
+                label: const Text('Manage templates'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.onPrimary,
                 ),
               ),
+            ),
             const Divider(height: 32),
             Text('Recurrence', style: Get.textTheme.titleMedium),
             if (!job.isStanding)

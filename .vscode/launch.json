@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "web view",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "chrome",
+      "args": [
+        "--web-port=5173",
+        "--dart-define=API_BASE_URL=http://localhost:8000",
+        "--dart-define=BILLING_URL=https://rostiq.co/billing",
+        "--dart-define=LANDING_URL=https://rostiq.co/signup",
+        "--dart-define=TERMS_VERSION=v0.1-placeholder",
+        "--dart-define=PRIVACY_VERSION=v0.1-placeholder",
+        "--dart-define=DOMAIN_V2=true"
+      ]
+    }
+  ]
+}

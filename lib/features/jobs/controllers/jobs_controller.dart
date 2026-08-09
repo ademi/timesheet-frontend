@@ -187,6 +187,23 @@ class JobsController extends GetxController {
     templateNameCtrl.clear();
     errorMessage.value = null;
     await Get.toNamed(AppRoutes.staffFormTemplates);
+    await _refreshTemplatesAndCatalog();
+  }
+
+  /// Job-scoped screen: attach catalog templates + create/edit/delete.
+  Future<void> openManageTemplatesAndRefresh() async {
+    templateNameCtrl.clear();
+    errorMessage.value = null;
+    final job = selected.value;
+    await Get.toNamed(
+      AppRoutes.staffJobManageTemplates,
+      arguments: job,
+      parameters: job != null ? {'id': job.id} : null,
+    );
+    await _refreshTemplatesAndCatalog();
+  }
+
+  Future<void> _refreshTemplatesAndCatalog() async {
     isSaving.value = true;
     try {
       formTemplates.assignAll(
@@ -441,6 +458,56 @@ class JobsController extends GetxController {
     }
   }
 
+  Future<void> updateFormTemplate({
+    required String id,
+    required String name,
+    required bool isActive,
+  }) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      errorMessage.value = 'Template name is required.';
+      return;
+    }
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _repository.patchFormTemplate(
+        id,
+        name: trimmed,
+        isActive: isActive,
+      );
+      final idx = formTemplates.indexWhere((t) => t.id == id);
+      if (idx >= 0) {
+        formTemplates[idx] = updated;
+      } else {
+        formTemplates.assignAll(
+          await _repository.listFormTemplates(tenantLevel: true),
+        );
+      }
+      await refreshFormCatalog();
+      Get.snackbar(
+        'Updated',
+        'Form template “$trimmed” saved.',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: AppColors.primary,
+        colorText: AppColors.onPrimary,
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      Get.snackbar(
+        'Could not update template',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+      );
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
   Future<void> deleteFormTemplate(String id) async {
     isSaving.value = true;
     try {
@@ -448,6 +515,7 @@ class JobsController extends GetxController {
       formTemplates.assignAll(
         await _repository.listFormTemplates(tenantLevel: true),
       );
+      await refreshFormCatalog();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
