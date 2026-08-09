@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../../../../app/data/models/document/document_models.dart';
 import '../../../../core/constants/api_paths.dart';
@@ -63,6 +64,76 @@ class DocumentsRemoteDataSource {
       }
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
+    }
+  }
+
+  /// Authenticated upload via API (avoids browser→GCS CORS on Flutter web).
+  Future<void> putContentViaApi({
+    required String documentId,
+    required String contentType,
+    required List<int> bytes,
+    void Function(int sent, int total)? onSendProgress,
+  }) async {
+    try {
+      final response = await _authenticatedDio.put<void>(
+        ApiPaths.documentContent(documentId),
+        data: Uint8List.fromList(bytes),
+        options: Options(
+          headers: {'Content-Type': contentType},
+          validateStatus: (status) => status != null && status < 400,
+        ),
+        onSendProgress: onSendProgress,
+      );
+      if (response.statusCode == null || response.statusCode! >= 400) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Document content PUT failed (${response.statusCode})',
+        );
+      }
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  /// Prefer direct GCS signed PUT; on web (or CORS/network failure) use API proxy.
+  Future<void> uploadBytes({
+    required String documentId,
+    required String uploadUrl,
+    required String contentType,
+    required List<int> bytes,
+    void Function(int sent, int total)? onSendProgress,
+  }) async {
+    if (kIsWeb) {
+      await putContentViaApi(
+        documentId: documentId,
+        contentType: contentType,
+        bytes: bytes,
+        onSendProgress: onSendProgress,
+      );
+      return;
+    }
+    try {
+      await putToSignedUrl(
+        uploadUrl: uploadUrl,
+        contentType: contentType,
+        bytes: bytes,
+        onSendProgress: onSendProgress,
+      );
+    } on AppFailure catch (e) {
+      // Mobile/desktop rare CORS-like failures: fall back to API proxy.
+      final looksNetwork =
+          e.message.toLowerCase().contains('xmlhttprequest') ||
+          e.message.toLowerCase().contains('connection errored') ||
+          e.message.toLowerCase().contains('cors') ||
+          e.code == 'network';
+      if (!looksNetwork) rethrow;
+      await putContentViaApi(
+        documentId: documentId,
+        contentType: contentType,
+        bytes: bytes,
+        onSendProgress: onSendProgress,
+      );
     }
   }
 

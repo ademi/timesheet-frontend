@@ -18,7 +18,8 @@ class DocumentPipeline {
     void Function(int sent, int total)? onSendProgress,
   }) async {
     final upload = await _remote.createUploadUrl(request);
-    await _remote.putToSignedUrl(
+    await _remote.uploadBytes(
+      documentId: upload.documentId,
       uploadUrl: upload.uploadUrl,
       contentType: request.contentType,
       bytes: bytes,
