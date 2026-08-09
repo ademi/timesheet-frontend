@@ -47,6 +47,7 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
               child: ProfilePhotoEditor(
                 localBytes: controller.localPhotoBytes.value,
                 networkUrl: controller.photo.value?.downloadUrl,
+                documentId: controller.photo.value?.documentId,
                 isLoading: controller.isPhotoLoading.value,
                 enabled: controller.canUploadPhoto,
                 onChanged: controller.onPhotoPicked,

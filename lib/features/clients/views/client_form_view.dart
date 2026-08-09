@@ -39,6 +39,9 @@ class ClientFormView extends GetView<ClientsController> {
                 networkUrl: controller.formPhotoCleared.value
                     ? null
                     : controller.formPhoto.value?.downloadUrl,
+                documentId: controller.formPhotoCleared.value
+                    ? null
+                    : controller.formPhoto.value?.documentId,
                 isLoading: controller.isFormPhotoLoading.value ||
                     controller.isSaving.value,
                 enabled: controller.canUploadDocs || controller.canManage,

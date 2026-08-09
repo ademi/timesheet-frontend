@@ -5,6 +5,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
+import '../../payroll/widgets/engagement_rate_bands_section.dart';
 import '../controllers/workforce_controller.dart';
 import '../data/models/engagement_models.dart';
 
@@ -72,6 +73,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
               children: [
                 ProfilePhotoEditor(
                   networkUrl: controller.detailPhoto.value?.downloadUrl,
+                  documentId: controller.detailPhoto.value?.documentId,
                   isLoading: controller.isDetailPhotoLoading.value,
                   readOnly: true,
                   size: 72,
@@ -175,10 +177,15 @@ class WorkforceDetailView extends GetView<WorkforceController> {
               icon: const Icon(Icons.badge_outlined),
               label: const Text('Review credentials'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 24),
             const Text(
-              'Rate card link lands with payroll (S8).',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              'Payment rates',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            EngagementRateBandsSection(
+              key: ValueKey(current.id),
+              engagementId: current.id,
             ),
           ],
         ),

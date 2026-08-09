@@ -74,6 +74,7 @@ class ClientDetailView extends GetView<ClientsController> {
                 children: [
                   ProfilePhotoEditor(
                     networkUrl: controller.detailPhoto.value?.downloadUrl,
+                    documentId: controller.detailPhoto.value?.documentId,
                     isLoading: controller.isDetailPhotoLoading.value,
                     readOnly: true,
                     size: 72,

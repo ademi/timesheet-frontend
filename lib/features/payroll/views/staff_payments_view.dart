@@ -29,8 +29,7 @@ class StaffPaymentsView extends GetView<StaffPaymentsController> {
         final err = controller.errorMessage.value;
         final initialLoad = controller.isLoading.value &&
             controller.batches.isEmpty &&
-            controller.unpaidVisits.isEmpty &&
-            controller.engagements.isEmpty;
+            controller.unpaidVisits.isEmpty;
         return Column(
           children: [
             if (err != null)
@@ -53,11 +52,6 @@ class StaffPaymentsView extends GetView<StaffPaymentsController> {
                     selected: tab == 1,
                     onSelected: (_) => controller.tabIndex.value = 1,
                   ),
-                  ChoiceChip(
-                    label: const Text('Rate bands'),
-                    selected: tab == 2,
-                    onSelected: (_) => controller.tabIndex.value = 2,
-                  ),
                 ],
               ),
             ),
@@ -70,9 +64,7 @@ class StaffPaymentsView extends GetView<StaffPaymentsController> {
                       onRefresh: controller.loadAll,
                       child: tab == 0
                           ? _BatchesTab(controller: controller)
-                          : tab == 1
-                              ? _CreateBatchTab(controller: controller)
-                              : _RatesTab(controller: controller),
+                          : _CreateBatchTab(controller: controller),
                     ),
             ),
           ],
@@ -210,148 +202,6 @@ class _CreateBatchTab extends StatelessWidget {
         ],
       );
     });
-  }
-}
-
-class _RatesTab extends StatelessWidget {
-  const _RatesTab({required this.controller});
-  final StaffPaymentsController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          DropdownButtonFormField<String>(
-            value: controller.selectedEngagementId.value,
-            items: [
-              for (final e in controller.engagements)
-                DropdownMenuItem(
-                  value: e.id,
-                  child: Text(
-                    '${e.contractorName ?? e.contractorId} · ${e.status}',
-                  ),
-                ),
-            ],
-            onChanged: controller.loadRatesFor,
-            decoration: const InputDecoration(
-              labelText: 'Engagement',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (controller.isLoading.value &&
-              controller.selectedEngagementId.value != null)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (controller.rates.isEmpty &&
-              controller.selectedEngagementId.value != null)
-            const Text('No rates yet for this engagement.'),
-          for (final r in controller.rates)
-            Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                title: Text(
-                  'Base ${r.displayBase} ${r.currencyCode}',
-                ),
-                subtitle: Text(
-                  '${r.effectiveFrom} → ${r.effectiveTo ?? 'open'}'
-                  '${r.bands.evening != null ? ' · eve ${r.bands.evening}' : ''}'
-                  '${r.bands.night != null ? ' · night ${r.bands.night}' : ''}',
-                ),
-              ),
-            ),
-          if (controller.canManage &&
-              controller.selectedEngagementId.value != null) ...[
-            const Divider(height: 32),
-            Text('New rate card', style: Get.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller.effectiveFromCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Effective from (YYYY-MM-DD)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller.baseRateCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Base *',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            _bandField(controller.eveningRateCtrl, 'Evening'),
-            _bandField(controller.nightRateCtrl, 'Night'),
-            _bandField(controller.saturdayRateCtrl, 'Saturday'),
-            _bandField(controller.sundayRateCtrl, 'Sunday'),
-            _bandField(controller.phRateCtrl, 'Public holiday'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller.eveningStartCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Evening start',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller.eveningEndCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Evening end',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller.nightStartCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Night start',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller.nightEndCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Night end',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            AsyncElevatedButton(
-              onPressed: controller.createRate,
-              isLoading: controller.isSaving.value,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                minimumSize: const Size.fromHeight(48),
-              ),
-              child: const Text('Save rate bands'),
-            ),
-          ],
-        ],
-      );
-    });
-  }
-
-  Widget _bandField(TextEditingController c, String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: TextField(
-        controller: c,
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-      ),
-    );
   }
 }
 

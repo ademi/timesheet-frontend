@@ -31,6 +31,7 @@ class WorkforceController extends GetxController {
   final missingDocsFilter = false.obs;
   final credentialsByContractor = <String, List<CredentialOut>>{}.obs;
   final isLoadingCredentials = false.obs;
+  final photosByContractor = <String, ProfilePhotoOut>{}.obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
@@ -114,6 +115,9 @@ class WorkforceController extends GetxController {
     try {
       final list = await _repository.listTenantEngagements();
       items.assignAll(list);
+      photosByContractor.clear();
+      // Load avatars in the background so the list can render immediately.
+      _ensureListPhotosLoaded();
       if (missingDocsFilter.value) {
         credentialsByContractor.clear();
         await _ensureCredentialsLoaded();
@@ -127,11 +131,20 @@ class WorkforceController extends GetxController {
     }
   }
 
+  String? photoUrlFor(String contractorId) {
+    final photo = photosByContractor[contractorId];
+    if (photo == null || !photo.hasDisplayableUrl) return null;
+    return photo.downloadUrl;
+  }
+
+  String? photoDocumentIdFor(String contractorId) =>
+      photosByContractor[contractorId]?.documentId;
+
   void openDetail(EngagementOut e) {
     selected = e;
     eligibilityReasons.clear();
     errorMessage.value = null;
-    detailPhoto.value = null;
+    detailPhoto.value = photosByContractor[e.contractorId];
     Get.toNamed(AppRoutes.staffWorkforceDetail, arguments: e);
     loadDetailProfilePhoto(e.contractorId);
   }
@@ -262,6 +275,33 @@ class WorkforceController extends GetxController {
       errorMessage.value = e.toString();
     } finally {
       isSaving.value = false;
+    }
+  }
+
+  Future<void> _ensureListPhotosLoaded() async {
+    if (!canRead) return;
+    final contractorIds =
+        items.map((e) => e.contractorId).where((id) => id.isNotEmpty).toSet();
+    final pending =
+        contractorIds.where((id) => !photosByContractor.containsKey(id)).toList();
+    if (pending.isEmpty) return;
+
+    final results = await Future.wait(
+      pending.map((id) async {
+        try {
+          return MapEntry(id, await _repository.getContractorProfilePhoto(id));
+        } on AppFailure {
+          return MapEntry(id, null);
+        } catch (_) {
+          return MapEntry(id, null);
+        }
+      }),
+    );
+    for (final entry in results) {
+      final photo = entry.value;
+      if (photo != null) {
+        photosByContractor[entry.key] = photo;
+      }
     }
   }
 

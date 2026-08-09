@@ -66,7 +66,7 @@ class AdminPanelView extends GetView<AdminPanelController> {
                         AdminHubCard(
                           icon: Icons.account_balance_wallet_rounded,
                           title: 'Payments',
-                          subtitle: 'Rate bands, payment batches, and post/void',
+                          subtitle: 'Payment batches and post/void',
                           onTap: controller.openPayments,
                           accentColor: AppColors.primaryDark,
                         ),

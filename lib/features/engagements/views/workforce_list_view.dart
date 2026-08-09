@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/controllers/auth_controller.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/profile_photo_editor.dart';
 import '../controllers/workforce_controller.dart';
 import '../data/models/engagement_models.dart';
 
@@ -120,6 +121,17 @@ class WorkforceListView extends GetView<WorkforceController> {
                           return Card(
                             margin: const EdgeInsets.only(bottom: 8),
                             child: ListTile(
+                              leading: Obx(() {
+                                final photo = controller
+                                    .photosByContractor[e.contractorId];
+                                return ProfilePhotoEditor(
+                                  networkUrl: photo?.downloadUrl,
+                                  documentId: photo?.documentId,
+                                  readOnly: true,
+                                  size: 48,
+                                  showLabel: false,
+                                );
+                              }),
                               title: Text(
                                 e.contractorName?.isNotEmpty == true
                                     ? e.contractorName!

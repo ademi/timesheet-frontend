@@ -5,8 +5,6 @@ import '../../../app/constants/app_permissions.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
-import '../../engagements/data/models/engagement_models.dart';
-import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../data/models/payroll_models.dart';
@@ -15,16 +13,13 @@ import '../data/repositories/payroll_repository.dart';
 class StaffPaymentsController extends GetxController {
   StaffPaymentsController({
     required PayrollRepository payroll,
-    required EngagementsRepository engagements,
     required VisitsRepository visits,
     required SessionService session,
   })  : _payroll = payroll,
-        _engagements = engagements,
         _visits = visits,
         _session = session;
 
   final PayrollRepository _payroll;
-  final EngagementsRepository _engagements;
   final VisitsRepository _visits;
   final SessionService _session;
 
@@ -37,25 +32,10 @@ class StaffPaymentsController extends GetxController {
   final selectedBatch = Rxn<PaymentBatchOut>();
   final batchStatusFilter = ''.obs;
 
-  final engagements = <EngagementOut>[].obs;
-  final selectedEngagementId = RxnString();
-  final rates = <EngagementRateOut>[].obs;
-
   final unpaidVisits = <VisitOut>[].obs;
   final selectedVisitIds = <String>{}.obs;
 
   final periodLabelCtrl = TextEditingController();
-  final effectiveFromCtrl = TextEditingController();
-  final baseRateCtrl = TextEditingController(text: '45.00');
-  final eveningRateCtrl = TextEditingController();
-  final nightRateCtrl = TextEditingController();
-  final saturdayRateCtrl = TextEditingController();
-  final sundayRateCtrl = TextEditingController();
-  final phRateCtrl = TextEditingController();
-  final eveningStartCtrl = TextEditingController(text: '18:00:00');
-  final eveningEndCtrl = TextEditingController(text: '22:00:00');
-  final nightStartCtrl = TextEditingController(text: '22:00:00');
-  final nightEndCtrl = TextEditingController(text: '06:00:00');
 
   bool get canView =>
       _session.hasPermission(AppPermissions.paymentsView) ||
@@ -67,27 +47,15 @@ class StaffPaymentsController extends GetxController {
   void onInit() {
     super.onInit();
     final now = DateTime.now();
-    effectiveFromCtrl.text =
+    final today =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    periodLabelCtrl.text =
-        '${effectiveFromCtrl.text}..${effectiveFromCtrl.text}';
+    periodLabelCtrl.text = '$today..$today';
     loadAll();
   }
 
   @override
   void onClose() {
     periodLabelCtrl.dispose();
-    effectiveFromCtrl.dispose();
-    baseRateCtrl.dispose();
-    eveningRateCtrl.dispose();
-    nightRateCtrl.dispose();
-    saturdayRateCtrl.dispose();
-    sundayRateCtrl.dispose();
-    phRateCtrl.dispose();
-    eveningStartCtrl.dispose();
-    eveningEndCtrl.dispose();
-    nightStartCtrl.dispose();
-    nightEndCtrl.dispose();
     super.onClose();
   }
 
@@ -102,11 +70,6 @@ class StaffPaymentsController extends GetxController {
       await _loadBatches();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
-    }
-    try {
-      engagements.assignAll(await _engagements.listTenantEngagements());
-    } on AppFailure catch (e) {
-      errorMessage.value ??= e.message;
     }
     try {
       await _loadUnpaidVisits();
@@ -141,21 +104,6 @@ class StaffPaymentsController extends GetxController {
     errorMessage.value = null;
     try {
       await _loadBatches();
-    } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  Future<void> loadRatesFor(String? engagementId) async {
-    selectedEngagementId.value = engagementId;
-    rates.clear();
-    if (engagementId == null) return;
-    isLoading.value = true;
-    errorMessage.value = null;
-    try {
-      rates.assignAll(await _payroll.listRates(engagementId));
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -241,54 +189,5 @@ class StaffPaymentsController extends GetxController {
 
   void openBatch(PaymentBatchOut batch) {
     selectedBatch.value = batch;
-  }
-
-  Future<void> createRate() async {
-    final engagementId = selectedEngagementId.value;
-    if (!canManage || engagementId == null) return;
-    final base = double.tryParse(baseRateCtrl.text.trim());
-    if (base == null || base <= 0) {
-      errorMessage.value = 'Base rate is required.';
-      return;
-    }
-    double? opt(TextEditingController c) {
-      final t = c.text.trim();
-      if (t.isEmpty) return null;
-      return double.tryParse(t);
-    }
-
-    isSaving.value = true;
-    errorMessage.value = null;
-    try {
-      await _payroll.createRate(
-        engagementId,
-        EngagementRateCreateRequest(
-          effectiveFrom: effectiveFromCtrl.text.trim(),
-          bands: RateBands(
-            base: base,
-            evening: opt(eveningRateCtrl),
-            night: opt(nightRateCtrl),
-            saturday: opt(saturdayRateCtrl),
-            sunday: opt(sundayRateCtrl),
-            publicHoliday: opt(phRateCtrl),
-          ),
-          eveningStart: eveningStartCtrl.text.trim(),
-          eveningEnd: eveningEndCtrl.text.trim(),
-          nightStart: nightStartCtrl.text.trim(),
-          nightEnd: nightEndCtrl.text.trim(),
-        ),
-      );
-      await loadRatesFor(engagementId);
-      Get.snackbar(
-        'Rate saved',
-        'New rate card applied (prior open rates end automatically).',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-      );
-    } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-    } finally {
-      isSaving.value = false;
-    }
   }
 }
