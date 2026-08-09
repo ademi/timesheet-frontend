@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -12,9 +13,11 @@ import '../models/profile_photo_models.dart';
 
 /// Circle avatar with view / change / remove for profile photos.
 ///
-/// On Flutter web, GCS signed URLs often fail with `statusCode: 0` (CORS).
-/// When [documentId] is set, web loads bytes via the authenticated
-/// `GET /documents/{id}/content` proxy instead of hitting GCS directly.
+/// Display strategy:
+/// 1. Local picked bytes (if any)
+/// 2. Signed GCS [networkUrl] via [NetworkImage] (native + web when CORS is set)
+/// 3. On Flutter web, if signed URL fails (CORS / fake storage) or is missing,
+///    load bytes via authenticated `GET /documents/{id}/content`
 class ProfilePhotoEditor extends StatefulWidget {
   const ProfilePhotoEditor({
     super.key,
@@ -33,7 +36,7 @@ class ProfilePhotoEditor extends StatefulWidget {
 
   final List<int>? localBytes;
   final String? networkUrl;
-  /// Document id for web content-proxy loading (avoids GCS CORS).
+  /// Document id for web content-proxy fallback (avoids GCS CORS).
   final String? documentId;
   final bool isLoading;
   final bool enabled;
@@ -55,22 +58,33 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
   List<int>? _proxiedBytes;
   bool _proxyLoading = false;
   String? _proxyDocId;
+  bool _signedUrlFailed = false;
+  ImageStream? _networkStream;
+  ImageStreamListener? _networkListener;
 
-  bool get _hasImage =>
-      (widget.localBytes != null && widget.localBytes!.isNotEmpty) ||
-      (_proxiedBytes != null && _proxiedBytes!.isNotEmpty) ||
-      (!kIsWeb &&
-          widget.networkUrl != null &&
-          widget.networkUrl!.trim().isNotEmpty);
+  bool get _hasLocalBytes =>
+      widget.localBytes != null && widget.localBytes!.isNotEmpty;
+
+  bool get _hasNetworkUrl =>
+      widget.networkUrl != null && widget.networkUrl!.trim().isNotEmpty;
+
+  bool get _hasDocumentId =>
+      widget.documentId != null && widget.documentId!.trim().isNotEmpty;
+
+  bool get _preferSignedUrl => _hasNetworkUrl && !_signedUrlFailed;
 
   bool get _useWebProxy =>
-      kIsWeb &&
-      (widget.documentId != null && widget.documentId!.trim().isNotEmpty);
+      kIsWeb && _hasDocumentId && !_hasLocalBytes && !_preferSignedUrl;
+
+  bool get _hasImage =>
+      _hasLocalBytes ||
+      (_proxiedBytes != null && _proxiedBytes!.isNotEmpty) ||
+      _preferSignedUrl;
 
   @override
   void initState() {
     super.initState();
-    _syncProxy();
+    _syncDisplay();
   }
 
   @override
@@ -79,13 +93,71 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
     if (oldWidget.documentId != widget.documentId ||
         oldWidget.localBytes != widget.localBytes ||
         oldWidget.networkUrl != widget.networkUrl) {
-      _syncProxy();
+      _signedUrlFailed = false;
+      _syncDisplay();
     }
   }
 
+  @override
+  void dispose() {
+    _detachNetworkListener();
+    super.dispose();
+  }
+
+  void _syncDisplay() {
+    _detachNetworkListener();
+    if (_hasLocalBytes) {
+      _proxiedBytes = null;
+      _proxyDocId = null;
+      _proxyLoading = false;
+      return;
+    }
+    if (_preferSignedUrl) {
+      _proxiedBytes = null;
+      _proxyDocId = null;
+      _proxyLoading = false;
+      if (kIsWeb && _hasDocumentId) {
+        _attachNetworkListener(NetworkImage(widget.networkUrl!.trim()));
+      }
+      return;
+    }
+    if (_useWebProxy) {
+      _syncProxy();
+      return;
+    }
+    _proxiedBytes = null;
+    _proxyDocId = null;
+    _proxyLoading = false;
+  }
+
+  void _detachNetworkListener() {
+    if (_networkStream != null && _networkListener != null) {
+      _networkStream!.removeListener(_networkListener!);
+    }
+    _networkStream = null;
+    _networkListener = null;
+  }
+
+  void _attachNetworkListener(NetworkImage image) {
+    final stream = image.resolve(ImageConfiguration.empty);
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (ImageInfo info, bool synchronousCall) {
+        // Signed URL loaded successfully — keep NetworkImage path.
+      },
+      onError: (Object error, StackTrace? stackTrace) {
+        if (!mounted || _signedUrlFailed) return;
+        setState(() => _signedUrlFailed = true);
+        _syncProxy();
+      },
+    );
+    _networkStream = stream;
+    _networkListener = listener;
+    stream.addListener(listener);
+  }
+
   void _syncProxy() {
-    if (!_useWebProxy ||
-        (widget.localBytes != null && widget.localBytes!.isNotEmpty)) {
+    if (!_useWebProxy) {
       _proxiedBytes = null;
       _proxyDocId = null;
       _proxyLoading = false;
@@ -102,7 +174,7 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
     if (_proxyDocId == docId && (_proxyLoading || _proxiedBytes != null)) {
       return;
     }
-    _loadProxiedBytes(docId);
+    unawaited(_loadProxiedBytes(docId));
   }
 
   Future<void> _loadProxiedBytes(String documentId) async {
@@ -183,7 +255,7 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
     final radius = widget.size / 2;
     final showLoading = widget.isLoading || _proxyLoading;
     ImageProvider? provider;
-    if (widget.localBytes != null && widget.localBytes!.isNotEmpty) {
+    if (_hasLocalBytes) {
       provider = MemoryImage(Uint8List.fromList(widget.localBytes!));
     } else if (_proxiedBytes != null && _proxiedBytes!.isNotEmpty) {
       provider = MemoryImage(
@@ -191,12 +263,8 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
             ? _proxiedBytes as Uint8List
             : Uint8List.fromList(_proxiedBytes!),
       );
-    } else if (!kIsWeb &&
-        widget.networkUrl != null &&
-        widget.networkUrl!.trim().isNotEmpty) {
-      // Native platforms can load signed GCS URLs directly. Flutter web cannot
-      // (CORS → statusCode 0); web uses the document content proxy above.
-      provider = NetworkImage(widget.networkUrl!);
+    } else if (_preferSignedUrl) {
+      provider = NetworkImage(widget.networkUrl!.trim());
     }
 
     return Column(
