@@ -431,3 +431,32 @@ Map<String, dynamic> simpleTextFormSchema({
     {'id': fieldId, 'type': 'textarea', 'label': label, 'required': false},
   ],
 };
+
+/// Backend-allowed form field types for visit/job templates.
+const formTemplateFieldTypes = <String>[
+  'text',
+  'textarea',
+  'boolean',
+  'number',
+  'date',
+  'file',
+];
+
+String formTemplateFieldTypeLabel(String type) => switch (type) {
+  'text' => 'Short text',
+  'textarea' => 'Long text',
+  'boolean' => 'Yes / No',
+  'number' => 'Number',
+  'date' => 'Date',
+  'file' => 'File upload',
+  _ => type,
+};
+
+String slugifyFormFieldId(String label) {
+  final slug = label
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+      .replaceAll(RegExp(r'^_+|_+$'), '');
+  return slug.isEmpty ? 'field' : slug;
+}

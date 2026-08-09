@@ -7,6 +7,7 @@ import '../../app/routes/middlewares/auth_guard.dart';
 import '../../app/routes/middlewares/permission_guard.dart';
 import '../shell/staff_shell.dart';
 import 'bindings/jobs_binding.dart';
+import 'views/form_template_editor_view.dart';
 import 'views/form_templates_view.dart';
 import 'views/job_detail_view.dart';
 import 'views/job_form_view.dart';
@@ -94,6 +95,21 @@ abstract final class JobsPages {
       ],
       binding: JobsBinding(),
       page: () => const JobManageTemplatesView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.staffFormTemplateEditor,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [
+            AppPermissions.clientsManage,
+          ],
+        ),
+      ],
+      binding: JobsBinding(),
+      page: () => const FormTemplateEditorView(),
       transition: Transition.rightToLeft,
     ),
   ];

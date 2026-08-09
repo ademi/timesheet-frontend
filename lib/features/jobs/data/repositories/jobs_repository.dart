@@ -62,8 +62,14 @@ class JobsRepository {
     String id, {
     String? name,
     bool? isActive,
+    Map<String, dynamic>? schemaJson,
   }) =>
-      _remote.patchFormTemplate(id, name: name, isActive: isActive);
+      _remote.patchFormTemplate(
+        id,
+        name: name,
+        isActive: isActive,
+        schemaJson: schemaJson,
+      );
   Future<void> deleteFormTemplate(String id) =>
       _remote.deleteFormTemplate(id);
 

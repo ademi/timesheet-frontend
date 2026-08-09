@@ -61,9 +61,6 @@ class JobsController extends GetxController {
   final geofenceMode = 'informational'.obs;
   final geofenceRadiusCtrl = TextEditingController(text: '100');
 
-  // Form template
-  final templateNameCtrl = TextEditingController();
-
   // Recurrence / manual visit
   final selectedContractorId = RxnString();
   final generatePartial = false.obs;
@@ -94,7 +91,6 @@ class JobsController extends GetxController {
   void onClose() {
     titleCtrl.dispose();
     geofenceRadiusCtrl.dispose();
-    templateNameCtrl.dispose();
     manualTaskCtrl.dispose();
     super.onClose();
   }
@@ -184,7 +180,6 @@ class JobsController extends GetxController {
       formCatalog.any((c) => c.formTemplateId == templateId);
 
   Future<void> openFormTemplatesAndRefresh() async {
-    templateNameCtrl.clear();
     errorMessage.value = null;
     await Get.toNamed(AppRoutes.staffFormTemplates);
     await _refreshTemplatesAndCatalog();
@@ -192,13 +187,21 @@ class JobsController extends GetxController {
 
   /// Job-scoped screen: attach catalog templates + create/edit/delete.
   Future<void> openManageTemplatesAndRefresh() async {
-    templateNameCtrl.clear();
     errorMessage.value = null;
     final job = selected.value;
     await Get.toNamed(
       AppRoutes.staffJobManageTemplates,
       arguments: job,
       parameters: job != null ? {'id': job.id} : null,
+    );
+    await _refreshTemplatesAndCatalog();
+  }
+
+  Future<void> openFormTemplateEditor({FormTemplateOut? existing}) async {
+    errorMessage.value = null;
+    await Get.toNamed(
+      AppRoutes.staffFormTemplateEditor,
+      arguments: existing,
     );
     await _refreshTemplatesAndCatalog();
   }
@@ -385,124 +388,88 @@ class JobsController extends GetxController {
     }
   }
 
-  Future<void> createFormTemplate() async {
-    final name = templateNameCtrl.text.trim();
-    if (name.isEmpty) {
-      errorMessage.value = 'Template name is required.';
-      Get.snackbar(
-        'Form template',
-        'Enter a template name first.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.error,
-        colorText: Colors.white,
-      );
-      return;
-    }
-    isSaving.value = true;
-    errorMessage.value = null;
-    try {
-      // Form Templates screen always creates tenant-wide templates
-      // (`client_id` null). Do not inherit client_id from a previously
-      // opened job — that hides the new row under tenant_level=true list.
-      final created = await _repository.createFormTemplate(
-        FormTemplateCreateRequest(
-          name: name,
-          schemaJson: simpleTextFormSchema(label: name),
-        ),
-      );
-      templateNameCtrl.clear();
-      try {
-        formTemplates.assignAll(
-          await _repository.listFormTemplates(tenantLevel: true),
-        );
-      } on AppFailure {
-        // List refresh failed — still show the created row locally.
-        if (!formTemplates.any((t) => t.id == created.id)) {
-          formTemplates.insert(0, created);
-        }
-      }
-      if (!formTemplates.any((t) => t.id == created.id)) {
-        formTemplates.insert(0, created);
-      }
-      Get.snackbar(
-        'Created',
-        'Form template “$name” is ready.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
-      );
-    } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-      Get.snackbar(
-        'Could not create template',
-        e.message,
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.error,
-        colorText: Colors.white,
-      );
-    } catch (e) {
-      errorMessage.value = e.toString();
-      Get.snackbar(
-        'Could not create template',
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.error,
-        colorText: Colors.white,
-      );
-    } finally {
-      isSaving.value = false;
-    }
-  }
-
-  Future<void> updateFormTemplate({
-    required String id,
+  /// Create or update a tenant-wide form template with a full field schema.
+  Future<bool> saveFormTemplate({
+    String? id,
     required String name,
     required bool isActive,
+    required Map<String, dynamic> schemaJson,
   }) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) {
       errorMessage.value = 'Template name is required.';
-      return;
+      return false;
     }
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      final updated = await _repository.patchFormTemplate(
-        id,
-        name: trimmed,
-        isActive: isActive,
-      );
-      final idx = formTemplates.indexWhere((t) => t.id == id);
-      if (idx >= 0) {
-        formTemplates[idx] = updated;
-      } else {
-        formTemplates.assignAll(
-          await _repository.listFormTemplates(tenantLevel: true),
+      final FormTemplateOut saved;
+      if (id == null) {
+        saved = await _repository.createFormTemplate(
+          FormTemplateCreateRequest(
+            name: trimmed,
+            schemaJson: schemaJson,
+            isActive: isActive,
+          ),
         );
+      } else {
+        saved = await _repository.patchFormTemplate(
+          id,
+          name: trimmed,
+          isActive: isActive,
+          schemaJson: schemaJson,
+        );
+      }
+
+      final idx = formTemplates.indexWhere((t) => t.id == saved.id);
+      if (idx >= 0) {
+        formTemplates[idx] = saved;
+      } else {
+        try {
+          formTemplates.assignAll(
+            await _repository.listFormTemplates(tenantLevel: true),
+          );
+        } on AppFailure {
+          if (!formTemplates.any((t) => t.id == saved.id)) {
+            formTemplates.insert(0, saved);
+          }
+        }
+        if (!formTemplates.any((t) => t.id == saved.id)) {
+          formTemplates.insert(0, saved);
+        }
       }
       await refreshFormCatalog();
       Get.snackbar(
-        'Updated',
+        id == null ? 'Created' : 'Updated',
         'Form template “$trimmed” saved.',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         backgroundColor: AppColors.primary,
         colorText: AppColors.onPrimary,
       );
+      return true;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
       Get.snackbar(
-        'Could not update template',
+        'Could not save template',
         e.message,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         backgroundColor: AppColors.error,
         colorText: Colors.white,
       );
+      return false;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      Get.snackbar(
+        'Could not save template',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: AppColors.error,
+        colorText: Colors.white,
+      );
+      return false;
     } finally {
       isSaving.value = false;
     }

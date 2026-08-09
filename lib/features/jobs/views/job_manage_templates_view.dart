@@ -6,7 +6,7 @@ import '../../../shared/widgets/async_action.dart';
 import '../controllers/jobs_controller.dart';
 import '../data/models/job_models.dart';
 
-/// Job-scoped screen to attach catalog templates and create/edit/delete them.
+/// Job-scoped screen to attach catalog templates and open create/edit.
 class JobManageTemplatesView extends StatefulWidget {
   const JobManageTemplatesView({super.key});
 
@@ -25,63 +25,10 @@ class _JobManageTemplatesViewState extends State<JobManageTemplatesView> {
     }
   }
 
-  Future<void> _editTemplate(FormTemplateOut template) async {
-    final controller = Get.find<JobsController>();
-    final nameCtrl = TextEditingController(text: template.name);
-    var isActive = template.isActive;
-
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setLocal) {
-            return AlertDialog(
-              title: const Text('Edit template'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameCtrl,
-                    autofocus: true,
-                    textInputAction: TextInputAction.done,
-                    decoration: const InputDecoration(
-                      labelText: 'Template name *',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Active'),
-                    value: isActive,
-                    onChanged: (v) => setLocal(() => isActive = v),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  child: const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    final name = nameCtrl.text;
-    nameCtrl.dispose();
-    if (saved != true) return;
-    await controller.updateFormTemplate(
-      id: template.id,
-      name: name,
-      isActive: isActive,
-    );
+  String _fieldSummary(FormTemplateOut t) {
+    final raw = t.schemaJson['fields'];
+    final count = raw is List ? raw.length : 0;
+    return '$count field${count == 1 ? '' : 's'}';
   }
 
   @override
@@ -162,44 +109,24 @@ class _JobManageTemplatesViewState extends State<JobManageTemplatesView> {
               const Padding(
                 padding: EdgeInsets.only(bottom: 16),
                 child: Text(
-                  'You can view templates but need clients.manage to create or edit.',
+                  'You can view templates but need clients.manage to create or edit fields.',
                   style: TextStyle(color: AppColors.textMuted),
                 ),
               ),
             if (controller.canManageForms) ...[
-              Text('Add template', style: Get.textTheme.titleSmall),
-              const SizedBox(height: 8),
-              TextField(
-                controller: controller.templateNameCtrl,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => controller.createFormTemplate(),
-                decoration: const InputDecoration(
-                  labelText: 'New template name *',
-                  hintText: 'e.g. Progress notes',
-                  border: OutlineInputBorder(),
-                  helperText:
-                      'Creates a tenant-wide Notes (textarea) form schema',
+              Align(
+                alignment: Alignment.centerLeft,
+                child: ElevatedButton.icon(
+                  onPressed: controller.isSaving.value
+                      ? null
+                      : () => controller.openFormTemplateEditor(),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Create template'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed:
-                    controller.isSaving.value
-                        ? null
-                        : controller.createFormTemplate,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                  minimumSize: const Size.fromHeight(44),
-                ),
-                child:
-                    controller.isSaving.value
-                        ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Text('Create template'),
               ),
               const Divider(height: 32),
             ],
@@ -214,28 +141,27 @@ class _JobManageTemplatesViewState extends State<JobManageTemplatesView> {
                   title: Text(t.name),
                   subtitle: Text(
                     '${t.isActive ? 'active' : 'inactive'} · '
-                    '${t.clientId == null ? 'tenant-wide' : 'client'}'
+                    '${t.clientId == null ? 'tenant-wide' : 'client'} · '
+                    '${_fieldSummary(t)}'
                     '${controller.isTemplateAttached(t.id) ? ' · attached' : ''}',
                     style: TextStyle(
-                      color:
-                          controller.isTemplateAttached(t.id)
-                              ? AppColors.primary
-                              : null,
+                      color: controller.isTemplateAttached(t.id)
+                          ? AppColors.primary
+                          : null,
                     ),
                   ),
+                  isThreeLine: true,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (controller.canManage)
                         TextButton(
-                          onPressed:
-                              controller.isSaving.value ||
-                                      controller.isTemplateAttached(t.id)
-                                  ? null
-                                  : () => controller.attachFormTemplate(t.id),
+                          onPressed: controller.isSaving.value ||
+                                  controller.isTemplateAttached(t.id)
+                              ? null
+                              : () => controller.attachFormTemplate(t.id),
                           child: AsyncButtonChild(
-                            isLoading:
-                                controller.isSaving.value &&
+                            isLoading: controller.isSaving.value &&
                                 !controller.isTemplateAttached(t.id),
                             child: Text(
                               controller.isTemplateAttached(t.id)
@@ -246,11 +172,12 @@ class _JobManageTemplatesViewState extends State<JobManageTemplatesView> {
                         ),
                       if (controller.canManageForms) ...[
                         IconButton(
-                          tooltip: 'Edit',
-                          onPressed:
-                              controller.isSaving.value
-                                  ? null
-                                  : () => _editTemplate(t),
+                          tooltip: 'Edit fields',
+                          onPressed: controller.isSaving.value
+                              ? null
+                              : () => controller.openFormTemplateEditor(
+                                    existing: t,
+                                  ),
                           icon: const Icon(Icons.edit_outlined),
                         ),
                         AsyncIconButton(
