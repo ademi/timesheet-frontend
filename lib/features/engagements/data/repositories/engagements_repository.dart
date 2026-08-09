@@ -1,3 +1,4 @@
+import '../../../../shared/models/profile_photo_models.dart';
 import '../datasources/engagements_remote_datasource.dart';
 import '../models/engagement_models.dart';
 
@@ -36,4 +37,7 @@ class EngagementsRepository {
     engagementId: engagementId,
     allowSourceEvidence: allowSourceEvidence,
   );
+
+  Future<ProfilePhotoOut> getContractorProfilePhoto(String contractorId) =>
+      _remote.getContractorProfilePhoto(contractorId);
 }

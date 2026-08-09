@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
+import '../../../shared/widgets/profile_photo_editor.dart';
 import '../controllers/workforce_controller.dart';
 import '../data/models/engagement_models.dart';
 
@@ -67,6 +68,30 @@ class WorkforceDetailView extends GetView<WorkforceController> {
               ),
               const SizedBox(height: 12),
             ],
+            Row(
+              children: [
+                ProfilePhotoEditor(
+                  networkUrl: controller.detailPhoto.value?.downloadUrl,
+                  isLoading: controller.isDetailPhotoLoading.value,
+                  readOnly: true,
+                  size: 72,
+                  showLabel: false,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    current.contractorName?.isNotEmpty == true
+                        ? current.contractorName!
+                        : 'Contractor',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             _row('Status', current.status),
             _row(
               'Required categories',

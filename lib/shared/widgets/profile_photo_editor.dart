@@ -14,8 +14,10 @@ class ProfilePhotoEditor extends StatelessWidget {
     this.networkUrl,
     this.isLoading = false,
     this.enabled = true,
+    this.readOnly = false,
     this.size = 112,
     this.label = 'Profile photo',
+    this.showLabel = true,
     this.onChanged,
     this.onRemove,
   });
@@ -24,8 +26,11 @@ class ProfilePhotoEditor extends StatelessWidget {
   final String? networkUrl;
   final bool isLoading;
   final bool enabled;
+  /// When true, shows avatar only (no camera / change controls).
+  final bool readOnly;
   final double size;
   final String label;
+  final bool showLabel;
   final ValueChanged<PickedProfilePhoto>? onChanged;
   final VoidCallback? onRemove;
 
@@ -34,7 +39,7 @@ class ProfilePhotoEditor extends StatelessWidget {
       (networkUrl != null && networkUrl!.trim().isNotEmpty);
 
   Future<void> _pick(BuildContext context) async {
-    if (!enabled || isLoading || onChanged == null) return;
+    if (readOnly || !enabled || isLoading || onChanged == null) return;
     final picker = ImagePicker();
     final file = await picker.pickImage(
       source: ImageSource.gallery,
@@ -76,20 +81,24 @@ class ProfilePhotoEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 12),
+        if (showLabel && !readOnly) ...[
+          Text(
+            label,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 12),
+        ],
         Stack(
           alignment: Alignment.center,
           children: [
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: enabled && !isLoading ? () => _pick(context) : null,
+                onTap: !readOnly && enabled && !isLoading
+                    ? () => _pick(context)
+                    : null,
                 customBorder: const CircleBorder(),
                 child: CircleAvatar(
                   radius: radius,
@@ -111,7 +120,7 @@ class ProfilePhotoEditor extends StatelessWidget {
                 height: size,
                 child: const CircularProgressIndicator(strokeWidth: 3),
               ),
-            if (enabled && !isLoading)
+            if (!readOnly && enabled && !isLoading)
               Positioned(
                 right: 0,
                 bottom: 0,
@@ -134,24 +143,26 @@ class ProfilePhotoEditor extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 8,
-          children: [
-            TextButton.icon(
-              onPressed: enabled && !isLoading ? () => _pick(context) : null,
-              icon: const Icon(Icons.photo_library_outlined, size: 18),
-              label: Text(_hasImage ? 'Change photo' : 'Add photo'),
-            ),
-            if (_hasImage && onRemove != null)
+        if (!readOnly) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            children: [
               TextButton.icon(
-                onPressed: enabled && !isLoading ? onRemove : null,
-                icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('Remove'),
+                onPressed: enabled && !isLoading ? () => _pick(context) : null,
+                icon: const Icon(Icons.photo_library_outlined, size: 18),
+                label: Text(_hasImage ? 'Change photo' : 'Add photo'),
               ),
-          ],
-        ),
+              if (_hasImage && onRemove != null)
+                TextButton.icon(
+                  onPressed: enabled && !isLoading ? onRemove : null,
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Remove'),
+                ),
+            ],
+          ),
+        ],
       ],
     );
   }

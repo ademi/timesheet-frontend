@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
+import '../../../../shared/models/profile_photo_models.dart';
 import '../models/engagement_models.dart';
 
 class EngagementsRemoteDataSource {
@@ -89,6 +90,25 @@ class EngagementsRemoteDataSource {
         ApiPaths.engagementSharingAccessRequests(engagementId),
         data: {'allow_source_evidence': allowSourceEvidence},
       );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ProfilePhotoOut> getContractorProfilePhoto(String contractorId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.tenantContractorProfilePhoto(contractorId),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'unknown',
+          message: 'Empty contractor profile photo response',
+          presentation: AppFailurePresentation.toast,
+        );
+      }
+      return ProfilePhotoOut.fromJson(data);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

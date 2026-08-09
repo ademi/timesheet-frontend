@@ -50,6 +50,10 @@ class ClientsController extends GetxController {
   final isFormPhotoLoading = false.obs;
   final formPhotoCleared = false.obs;
 
+  // Profile photo (detail page, read-only)
+  final detailPhoto = Rxn<ProfilePhotoOut>();
+  final isDetailPhotoLoading = false.obs;
+
   // Client types / dynamic requirements
   final clientTypes = <ClientTypeOut>[].obs;
   final selectedClientTypeId = RxnString();
@@ -759,6 +763,7 @@ class ClientsController extends GetxController {
     invites.clear();
     tabIndex.value = 0;
     selectedClientTypeId.value = client.clientTypeId;
+    detailPhoto.value = null;
     _disposeRequirementDrafts();
     requirementDrafts.clear();
     Get.toNamed(AppRoutes.staffClientDetail, arguments: client);
@@ -770,12 +775,28 @@ class ClientsController extends GetxController {
     try {
       final client = await _repository.getClient(id);
       selected.value = client;
-      await refreshDetailExtras();
-      await loadTypeTabForSelected();
+      await Future.wait([
+        refreshDetailExtras(),
+        loadTypeTabForSelected(),
+        loadDetailProfilePhoto(id),
+      ]);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> loadDetailProfilePhoto(String clientId) async {
+    isDetailPhotoLoading.value = true;
+    try {
+      detailPhoto.value = await _repository.getClientProfilePhoto(clientId);
+    } on AppFailure {
+      detailPhoto.value = null;
+    } catch (_) {
+      detailPhoto.value = null;
+    } finally {
+      isDetailPhotoLoading.value = false;
     }
   }
 

@@ -6,6 +6,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/models/profile_photo_models.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
 import '../data/models/engagement_models.dart';
@@ -34,6 +35,8 @@ class WorkforceController extends GetxController {
   final isSaving = false.obs;
   final errorMessage = RxnString();
   final eligibilityReasons = <String>[].obs;
+  final detailPhoto = Rxn<ProfilePhotoOut>();
+  final isDetailPhotoLoading = false.obs;
 
   // Invite form
   final emailCtrl = TextEditingController();
@@ -128,7 +131,24 @@ class WorkforceController extends GetxController {
     selected = e;
     eligibilityReasons.clear();
     errorMessage.value = null;
+    detailPhoto.value = null;
     Get.toNamed(AppRoutes.staffWorkforceDetail, arguments: e);
+    loadDetailProfilePhoto(e.contractorId);
+  }
+
+  Future<void> loadDetailProfilePhoto(String contractorId) async {
+    if (contractorId.isEmpty || !canRead) return;
+    isDetailPhotoLoading.value = true;
+    try {
+      detailPhoto.value =
+          await _repository.getContractorProfilePhoto(contractorId);
+    } on AppFailure {
+      detailPhoto.value = null;
+    } catch (_) {
+      detailPhoto.value = null;
+    } finally {
+      isDetailPhotoLoading.value = false;
+    }
   }
 
   void toggleCategory(String category) {

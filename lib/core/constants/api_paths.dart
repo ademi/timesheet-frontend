@@ -47,6 +47,8 @@ abstract final class ApiPaths {
   static const tenantEngagements = '$_v1/tenants/current/engagements';
   static String tenantContractorCredentials(String contractorId) =>
       '$_v1/tenants/current/contractors/$contractorId/credentials';
+  static String tenantContractorProfilePhoto(String contractorId) =>
+      '$_v1/tenants/current/contractors/$contractorId/profile-photo';
   static String engagement(String id) => '$_v1/engagements/$id';
   static String engagementAccept(String id) => '${engagement(id)}/accept';
   static String engagementApprove(String id) => '${engagement(id)}/approve';
