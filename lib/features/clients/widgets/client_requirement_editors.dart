@@ -22,72 +22,81 @@ class ClientRequirementEditor extends StatelessWidget {
     final req = draft.requirement;
     final title = req.isRequired ? '${req.label} *' : req.label;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.divider),
-        borderRadius: BorderRadius.circular(8),
+    // Use Material (not a colored Container) so SwitchListTile / ListTile ink
+    // and tile colors paint on the nearest Material instead of being obscured.
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
         color: AppColors.surface,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: AppColors.divider),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-              if (req.sensitivityClass != null &&
-                  req.sensitivityClass!.isNotEmpty)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.errorBackground,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    req.sensitivityClass!,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.error,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
+                  if (req.sensitivityClass != null &&
+                      req.sensitivityClass!.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.errorBackground,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        req.sensitivityClass!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              if (req.helpText != null && req.helpText!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  req.helpText!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
                 ),
+              ],
+              const SizedBox(height: 10),
+              if (req.isForm)
+                _FormFields(draft: draft)
+              else if (req.isLegal)
+                _LegalBlock(controller: controller, draft: draft)
+              else if (req.isSharingFlag)
+                _SharingSwitch(draft: draft)
+              else ...[
+                if (draft.capturesField)
+                  _FieldInput(controller: controller, draft: draft),
+                if (draft.capturesField && draft.capturesDocument)
+                  const SizedBox(height: 10),
+                if (draft.capturesDocument)
+                  _DocumentPicker(controller: controller, draft: draft),
+              ],
             ],
           ),
-          if (req.helpText != null && req.helpText!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              req.helpText!,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textMuted,
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          if (req.isForm)
-            _FormFields(draft: draft)
-          else if (req.isLegal)
-            _LegalBlock(controller: controller, draft: draft)
-          else if (req.isSharingFlag)
-            _SharingSwitch(draft: draft)
-          else ...[
-            if (draft.capturesField) _FieldInput(controller: controller, draft: draft),
-            if (draft.capturesField && draft.capturesDocument)
-              const SizedBox(height: 10),
-            if (draft.capturesDocument)
-              _DocumentPicker(controller: controller, draft: draft),
-          ],
-        ],
+        ),
       ),
     );
   }
