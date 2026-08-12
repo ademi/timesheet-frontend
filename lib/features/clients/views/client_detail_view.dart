@@ -26,6 +26,14 @@ class ClientDetailView extends GetView<ClientsController> {
         );
       }
       final err = controller.errorMessage.value;
+      final quickFacts = controller.quickFacts;
+      final sites = controller.sites.toList();
+      final contacts = controller.contacts.toList();
+      final upcomingVisits = controller.upcomingVisits.toList();
+      final pastVisits = controller.pastVisits.toList();
+      final isLoadingVisits = controller.isLoadingVisits.value;
+      final visitsError = controller.visitsError.value;
+      final visitsTruncated = controller.visitsTruncated.value;
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
@@ -97,10 +105,10 @@ class ClientDetailView extends GetView<ClientsController> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  ClientDetailFactsSection(facts: controller.quickFacts),
+                  ClientDetailFactsSection(facts: quickFacts),
                   const SizedBox(height: 24),
                   ClientDetailSitesSection(
-                    sites: controller.sites,
+                    sites: sites,
                     canManage: controller.canManage,
                     onAdd: () => controller.beginSiteForm(),
                     onEdit: (s) => controller.beginSiteForm(site: s),
@@ -108,7 +116,7 @@ class ClientDetailView extends GetView<ClientsController> {
                   ),
                   const SizedBox(height: 24),
                   ClientDetailContactsSection(
-                    contacts: controller.contacts,
+                    contacts: contacts,
                     canManage: controller.canManage,
                     onAdd: () => controller.beginContactForm(),
                     onEdit: (c) => controller.beginContactForm(contact: c),
@@ -116,11 +124,11 @@ class ClientDetailView extends GetView<ClientsController> {
                   ),
                   const SizedBox(height: 24),
                   ClientDetailVisitsSection(
-                    upcoming: controller.upcomingVisits,
-                    past: controller.pastVisits,
-                    isLoading: controller.isLoadingVisits.value,
-                    error: controller.visitsError.value,
-                    truncated: controller.visitsTruncated.value,
+                    upcoming: upcomingVisits,
+                    past: pastVisits,
+                    isLoading: isLoadingVisits,
+                    error: visitsError,
+                    truncated: visitsTruncated,
                     hasVisitsAccess: controller.canViewVisits,
                     onOpen: controller.openVisitDetail,
                   ),

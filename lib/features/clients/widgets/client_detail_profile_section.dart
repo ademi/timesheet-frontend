@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
@@ -12,13 +13,14 @@ class ClientDetailProfileSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final types = controller.clientTypes;
-    final selectedTypeId = controller.selectedClientTypeId.value;
-    final drafts = controller.requirementDrafts;
-    final progress = controller.profileSaveProgress.value;
-    final canEdit = controller.canManage || controller.canManageProfile;
+    return Obx(() {
+      final types = controller.clientTypes;
+      final selectedTypeId = controller.selectedClientTypeId.value;
+      final drafts = controller.requirementDrafts;
+      final progress = controller.profileSaveProgress.value;
+      final canEdit = controller.canManage || controller.canManageProfile;
 
-    return Column(
+      return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
@@ -107,6 +109,7 @@ class ClientDetailProfileSection extends StatelessWidget {
           ),
         ],
       ],
-    );
+      );
+    });
   }
 }
