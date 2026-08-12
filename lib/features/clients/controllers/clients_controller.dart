@@ -874,6 +874,7 @@ class ClientsController extends GetxController {
     upcomingVisits.clear();
     pastVisits.clear();
     if (id == null || visitsRepo == null) {
+      visitsTruncated.value = false;
       return;
     }
     if (!_session.hasPermission(AppPermissions.visitsRead) &&
@@ -882,6 +883,7 @@ class ClientsController extends GetxController {
       upcomingVisits.clear();
       pastVisits.clear();
       visitsError.value = null;
+      visitsTruncated.value = false;
       return;
     }
     isLoadingVisits.value = true;

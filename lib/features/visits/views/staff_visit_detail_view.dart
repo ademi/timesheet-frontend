@@ -23,6 +23,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
   void initState() {
     super.initState();
     final c = Get.find<StaffVisitsController>();
+    c.applyRouteArgs();
     c.hydrateFromArgs();
     c.refreshSelected();
   }
