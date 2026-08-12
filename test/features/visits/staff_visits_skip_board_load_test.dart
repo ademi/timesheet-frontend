@@ -90,6 +90,55 @@ void main() {
     );
   });
 
+  test('shiftRange after skipBoardLoad still calls listVisits', () async {
+    final c = StaffVisitsController(
+      repository: visits,
+      jobsRepository: jobs,
+      session: session,
+    );
+    Get.put(c);
+    Get.routing.args = {'skipBoardLoad': true, 'visit': _visit()};
+    c.applyRouteArgs();
+    c.shiftRange(1);
+    await Future<void>.delayed(Duration.zero);
+    verify(
+      () => visits.listVisits(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        jobId: any(named: 'jobId'),
+        clientId: any(named: 'clientId'),
+        status: any(named: 'status'),
+        paymentStatus: any(named: 'paymentStatus'),
+        limit: any(named: 'limit'),
+      ),
+    ).called(1);
+  });
+
+  test('applyRouteArgs with VisitOut clears skipBoardLoad', () async {
+    final c = StaffVisitsController(
+      repository: visits,
+      jobsRepository: jobs,
+      session: session,
+    );
+    Get.put(c);
+    Get.routing.args = {'skipBoardLoad': true, 'visit': _visit()};
+    c.applyRouteArgs();
+    Get.routing.args = _visit();
+    c.applyRouteArgs();
+    await c.load();
+    verify(
+      () => visits.listVisits(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        jobId: any(named: 'jobId'),
+        clientId: any(named: 'clientId'),
+        status: any(named: 'status'),
+        paymentStatus: any(named: 'paymentStatus'),
+        limit: any(named: 'limit'),
+      ),
+    ).called(1);
+  });
+
   test('ensureBoardLoaded clears skip and calls listVisits', () async {
     final c = StaffVisitsController(
       repository: visits,

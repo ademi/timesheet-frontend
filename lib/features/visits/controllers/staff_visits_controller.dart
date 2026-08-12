@@ -58,8 +58,8 @@ class StaffVisitsController extends GetxController {
 
   void applyRouteArgs() {
     final args = Get.arguments;
+    _skipBoardLoad = args is Map && args['skipBoardLoad'] == true;
     if (args is Map) {
-      _skipBoardLoad = args['skipBoardLoad'] == true;
       final v = args['visit'];
       if (v is VisitOut) selected.value = v;
       if (args['job_id'] != null) {
@@ -78,7 +78,7 @@ class StaffVisitsController extends GetxController {
   }
 
   Future<void> load() async {
-    if (_skipBoardLoad) return;
+    _skipBoardLoad = false;
     if (!canRead) {
       errorMessage.value = 'Missing visits.read permission.';
       return;
