@@ -10,15 +10,19 @@ class VisitsRepository {
     DateTime? from,
     DateTime? to,
     String? jobId,
+    String? clientId,
     String? status,
     String? paymentStatus,
+    int limit = 100,
   }) =>
       _remote.listVisits(
         from: from,
         to: to,
         jobId: jobId,
+        clientId: clientId,
         status: status,
         paymentStatus: paymentStatus,
+        limit: limit,
       );
 
   Future<VisitOut> getVisit(String id) => _remote.getVisit(id);
