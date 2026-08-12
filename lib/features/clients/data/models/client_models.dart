@@ -152,6 +152,24 @@ class ClientSiteOut {
 
   bool get hasCoordinates => latitude != null && longitude != null;
 
+  /// Human-readable address for display/copy; falls back to [name].
+  String get displayAddress {
+    final parts = <String>[
+      if (addressLine1 != null && addressLine1!.trim().isNotEmpty)
+        addressLine1!.trim(),
+      if (city != null && city!.trim().isNotEmpty) city!.trim(),
+      if (state != null && state!.trim().isNotEmpty) state!.trim(),
+      if (postalCode != null && postalCode!.trim().isNotEmpty)
+        postalCode!.trim(),
+      if (country != null && country!.trim().isNotEmpty) country!.trim(),
+    ];
+    if (parts.isEmpty) return name;
+    return parts.join(', ');
+  }
+
+  /// Label passed to [openMapLocation] when coordinates are missing.
+  String get mapsQueryLabel => displayAddress;
+
   factory ClientSiteOut.fromJson(Map<String, dynamic> json) {
     return ClientSiteOut(
       id: json['id'].toString(),
