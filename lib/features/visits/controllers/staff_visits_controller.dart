@@ -22,6 +22,8 @@ class StaffVisitsController extends GetxController {
   final JobsRepository _jobsRepository;
   final SessionService _session;
 
+  bool _skipBoardLoad = false;
+
   final visits = <VisitOut>[].obs;
   final jobs = <JobOut>[].obs;
   final selected = Rxn<VisitOut>();
@@ -52,22 +54,31 @@ class StaffVisitsController extends GetxController {
   void onInit() {
     super.onInit();
     applyRouteArgs();
-    loadJobs();
-    load();
   }
 
   void applyRouteArgs() {
     final args = Get.arguments;
-    if (args is Map && args['job_id'] != null) {
-      final id = args['job_id'].toString();
-      if (id != jobIdFilter.value) {
-        jobIdFilter.value = id;
-        load();
+    if (args is Map) {
+      _skipBoardLoad = args['skipBoardLoad'] == true;
+      final v = args['visit'];
+      if (v is VisitOut) selected.value = v;
+      if (args['job_id'] != null) {
+        jobIdFilter.value = args['job_id'].toString();
       }
+      return;
     }
+    if (args is VisitOut) selected.value = args;
+  }
+
+  /// Only entry point for board list fetch (D4-A + D8-A).
+  Future<void> ensureBoardLoaded() async {
+    _skipBoardLoad = false;
+    await loadJobs();
+    await load();
   }
 
   Future<void> load() async {
+    if (_skipBoardLoad) return;
     if (!canRead) {
       errorMessage.value = 'Missing visits.read permission.';
       return;
@@ -146,7 +157,13 @@ class StaffVisitsController extends GetxController {
 
   void hydrateFromArgs() {
     final arg = Get.arguments;
-    if (arg is VisitOut) selected.value = arg;
+    if (arg is VisitOut) {
+      selected.value = arg;
+      return;
+    }
+    if (arg is Map && arg['visit'] is VisitOut) {
+      selected.value = arg['visit'] as VisitOut;
+    }
   }
 
   Future<void> cancelSelected() async {

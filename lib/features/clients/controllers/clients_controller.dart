@@ -11,9 +11,13 @@ import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
 import '../../documents/data/document_pipeline.dart';
+import '../../visits/data/models/visit_models.dart';
+import '../../visits/data/repositories/visits_repository.dart';
 import '../data/models/client_models.dart';
 import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
+import '../utils/client_quick_facts.dart';
+import '../utils/client_visit_windows.dart';
 import 'requirement_draft.dart';
 
 class ClientsController extends GetxController {
@@ -21,13 +25,16 @@ class ClientsController extends GetxController {
     required ClientsRepository repository,
     required SessionService session,
     DocumentPipeline? documentPipeline,
+    VisitsRepository? visitsRepository,
   })  : _repository = repository,
         _session = session,
-        _pipeline = documentPipeline;
+        _pipeline = documentPipeline,
+        _visits = visitsRepository;
 
   final ClientsRepository _repository;
   final SessionService _session;
   final DocumentPipeline? _pipeline;
+  final VisitsRepository? _visits;
 
   final items = <ClientOut>[].obs;
   final isLoading = false.obs;
@@ -68,6 +75,30 @@ class ClientsController extends GetxController {
   final lastInvite = Rxn<ClientInviteCreateResponse>();
   final invites = <ClientInviteOut>[].obs;
   final tabIndex = 0.obs;
+  final upcomingVisits = <VisitOut>[].obs;
+  final pastVisits = <VisitOut>[].obs;
+  final isLoadingVisits = false.obs;
+  final visitsError = RxnString();
+  final visitsTruncated = false.obs;
+  final profileFacts = <ClientProfileFactOut>[].obs;
+
+  String? get ndisNumber =>
+      ndisFromFacts(profileFacts) ?? ndisFromDrafts(requirementDrafts);
+
+  ClientQuickFacts? get quickFacts {
+    final c = selected.value;
+    if (c == null) return null;
+    final typeName = clientTypes
+        .where((t) => t.id == (selectedClientTypeId.value ?? c.clientTypeId))
+        .map((t) => t.name)
+        .cast<String?>()
+        .firstWhere((_) => true, orElse: () => null);
+    return buildQuickFacts(
+      client: c,
+      ndisNumber: ndisNumber,
+      clientTypeName: typeName,
+    );
+  }
 
   // Site form
   final siteNameCtrl = TextEditingController();
@@ -311,6 +342,7 @@ class ClientsController extends GetxController {
     if (!canManageProfile && !canRead) return;
     try {
       final bundle = await _repository.getClientProfile(clientId);
+      profileFacts.assignAll(bundle.facts);
       if (bundle.requirements.isNotEmpty && requirementDrafts.isEmpty) {
         _disposeRequirementDrafts();
         requirementDrafts.assignAll(
@@ -764,6 +796,11 @@ class ClientsController extends GetxController {
     tabIndex.value = 0;
     selectedClientTypeId.value = client.clientTypeId;
     detailPhoto.value = null;
+    upcomingVisits.clear();
+    pastVisits.clear();
+    visitsError.value = null;
+    visitsTruncated.value = false;
+    profileFacts.clear();
     _disposeRequirementDrafts();
     requirementDrafts.clear();
     Get.toNamed(AppRoutes.staffClientDetail, arguments: client);
@@ -811,8 +848,8 @@ class ClientsController extends GetxController {
     final typeId = client.clientTypeId;
     if (typeId != null && typeId.isNotEmpty) {
       await _loadRequirementsForType(typeId);
-      await _prefillFromProfile(client.id);
     }
+    await _prefillFromProfile(client.id);
   }
 
   Future<void> refreshDetailExtras() async {
@@ -828,12 +865,56 @@ class ClientsController extends GetxController {
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     }
-    try {
-      invites.assignAll(await _repository.listInvites(id));
-    } on AppFailure catch (e) {
-      invites.clear();
-      errorMessage.value ??= e.message;
+    await loadClientVisits();
+  }
+
+  Future<void> loadClientVisits() async {
+    final id = selected.value?.id;
+    final visitsRepo = _visits;
+    upcomingVisits.clear();
+    pastVisits.clear();
+    if (id == null || visitsRepo == null) {
+      return;
     }
+    if (!_session.hasPermission(AppPermissions.visitsRead) &&
+        !_session.hasPermission(AppPermissions.visitsManage) &&
+        !_session.hasPermission(AppPermissions.jobsManage)) {
+      upcomingVisits.clear();
+      pastVisits.clear();
+      visitsError.value = null;
+      return;
+    }
+    isLoadingVisits.value = true;
+    visitsError.value = null;
+    try {
+      final now = DateTime.now().toUtc();
+      final list = await visitsRepo.listVisits(
+        clientId: id,
+        from: now.subtract(clientVisitLookback),
+        to: now.add(clientVisitLookahead),
+        limit: clientVisitFetchLimit,
+      );
+      visitsTruncated.value = list.length >= clientVisitFetchLimit;
+      final parts = partitionClientVisits(list, now: now);
+      upcomingVisits.assignAll(parts.upcoming);
+      pastVisits.assignAll(parts.past);
+    } on AppFailure catch (e) {
+      visitsError.value = e.message;
+      upcomingVisits.clear();
+      pastVisits.clear();
+    } finally {
+      isLoadingVisits.value = false;
+    }
+  }
+
+  void openVisitDetail(VisitOut visit) {
+    Get.toNamed(
+      AppRoutes.staffVisitDetail,
+      arguments: <String, dynamic>{
+        'visit': visit,
+        'skipBoardLoad': true,
+      },
+    );
   }
 
   void beginSiteForm({ClientSiteOut? site}) {

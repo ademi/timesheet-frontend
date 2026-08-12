@@ -17,13 +17,27 @@ String _fmtDay(DateTime dt) {
   return '${l.year}-${two(l.month)}-${two(l.day)}';
 }
 
-class StaffVisitsBoardView extends GetView<StaffVisitsController> {
+class StaffVisitsBoardView extends StatefulWidget {
   const StaffVisitsBoardView({super.key});
 
   @override
+  State<StaffVisitsBoardView> createState() => _StaffVisitsBoardViewState();
+}
+
+class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
+  @override
+  void initState() {
+    super.initState();
+    final c = Get.find<StaffVisitsController>();
+    c.applyRouteArgs();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      c.ensureBoardLoaded();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // A job detail can set the internal filter through route arguments.
-    controller.applyRouteArgs();
+    final controller = Get.find<StaffVisitsController>();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(

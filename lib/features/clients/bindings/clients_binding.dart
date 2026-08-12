@@ -5,6 +5,8 @@ import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../documents/data/datasources/documents_remote_datasource.dart';
 import '../../documents/data/document_pipeline.dart';
+import '../../visits/bindings/visits_binding.dart';
+import '../../visits/data/repositories/visits_repository.dart';
 import '../controllers/clients_controller.dart';
 import '../controllers/public_client_invite_controller.dart';
 import '../data/datasources/clients_remote_datasource.dart';
@@ -21,12 +23,14 @@ class ClientsBinding extends Bindings {
           repository: Get.find<ClientsRepository>(),
           session: Get.find<SessionService>(),
           documentPipeline: Get.find<DocumentPipeline>(),
+          visitsRepository: Get.find<VisitsRepository>(),
         ),
       );
     }
   }
 
   static void ensureShared() {
+    VisitsBinding.ensureShared();
     if (!Get.isRegistered<TokenStorage>()) {
       Get.put<TokenStorage>(TokenStorage(), permanent: true);
     }
