@@ -133,6 +133,10 @@ class ClientsController extends GetxController {
   bool get canUploadDocs =>
       _session.hasPermission(AppPermissions.documentsUpload) ||
       _session.hasPermission(AppPermissions.clientsDocsManage);
+  bool get canViewVisits =>
+      _session.hasPermission(AppPermissions.visitsRead) ||
+      _session.hasPermission(AppPermissions.visitsManage) ||
+      _session.hasPermission(AppPermissions.jobsManage);
 
   @override
   void onInit() {

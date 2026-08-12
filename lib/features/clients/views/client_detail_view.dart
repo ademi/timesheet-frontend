@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../controllers/clients_controller.dart';
-import '../data/models/client_models.dart';
-import '../widgets/client_requirement_editors.dart';
+import '../widgets/client_detail_contacts_section.dart';
+import '../widgets/client_detail_facts_section.dart';
+import '../widgets/client_detail_profile_section.dart';
+import '../widgets/client_detail_sites_section.dart';
+import '../widgets/client_detail_visits_section.dart';
 
 class ClientDetailView extends GetView<ClientsController> {
   const ClientDetailView({super.key});
@@ -67,386 +69,68 @@ class ClientDetailView extends GetView<ClientsController> {
                   ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  ProfilePhotoEditor(
-                    networkUrl: controller.detailPhoto.value?.downloadUrl,
-                    documentId: controller.detailPhoto.value?.documentId,
-                    isLoading: controller.isDetailPhotoLoading.value,
-                    readOnly: true,
-                    size: 72,
-                    showLabel: false,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      '${client.status}'
-                      '${client.email != null ? ' · ${client.email}' : ''}'
-                      '${client.phone != null ? ' · ${client.phone}' : ''}',
-                      style: const TextStyle(color: AppColors.textMuted),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Wrap(
-                spacing: 8,
-                children: [
-                  for (final entry in const [
-                    (0, 'Sites'),
-                    (1, 'Contacts'),
-                    (2, 'Invites'),
-                    (3, 'Types'),
-                  ])
-                    ChoiceChip(
-                      label: Text(entry.$2),
-                      selected: controller.tabIndex.value == entry.$1,
-                      onSelected: (_) => controller.tabIndex.value = entry.$1,
-                    ),
-                ],
-              ),
-            ),
             Expanded(
-              child: switch (controller.tabIndex.value) {
-                1 => _ContactsTab(controller: controller),
-                2 => _InvitesTab(controller: controller),
-                3 => _TypesTab(controller: controller),
-                _ => _SitesTab(controller: controller),
-              },
-            ),
-          ],
-        ),
-      );
-    });
-  }
-}
-
-class _SitesTab extends StatelessWidget {
-  const _SitesTab({required this.controller});
-  final ClientsController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (controller.canManage)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ElevatedButton.icon(
-                onPressed: () => controller.beginSiteForm(),
-                icon: const Icon(Icons.add_location_alt_outlined),
-                label: const Text('Add site'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                ),
-              ),
-            ),
-          const SizedBox(height: 8),
-          const Text(
-            'Latitude and longitude are required for geofence check-in.',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 12),
-          if (controller.sites.isEmpty) const Text('No sites yet.'),
-          for (final s in controller.sites) _SiteTile(site: s, c: controller),
-        ],
-      );
-    });
-  }
-}
-
-class _SiteTile extends StatelessWidget {
-  const _SiteTile({required this.site, required this.c});
-  final ClientSiteOut site;
-  final ClientsController c;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Text(site.name),
-        subtitle: Text(
-          [
-            if (site.addressLine1 != null) site.addressLine1!,
-            if (site.hasCoordinates)
-              'lat ${site.latitude}, lng ${site.longitude}'
-            else
-              'Missing coordinates',
-            'geofence ${site.geofenceRadiusM}m'
-            '${site.isPrimary ? ' · primary' : ''}',
-          ].join('\n'),
-        ),
-        isThreeLine: true,
-        trailing: c.canManage
-            ? PopupMenuButton<String>(
-                onSelected: (v) {
-                  if (v == 'edit') c.beginSiteForm(site: site);
-                  if (v == 'delete') c.deleteSite(site);
-                },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'edit', child: Text('Edit')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      ProfilePhotoEditor(
+                        networkUrl: controller.detailPhoto.value?.downloadUrl,
+                        documentId: controller.detailPhoto.value?.documentId,
+                        isLoading: controller.isDetailPhotoLoading.value,
+                        readOnly: true,
+                        size: 72,
+                        showLabel: false,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          client.fullName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  ClientDetailFactsSection(facts: controller.quickFacts),
+                  const SizedBox(height: 24),
+                  ClientDetailSitesSection(
+                    sites: controller.sites,
+                    canManage: controller.canManage,
+                    onAdd: () => controller.beginSiteForm(),
+                    onEdit: (s) => controller.beginSiteForm(site: s),
+                    onDelete: controller.deleteSite,
+                  ),
+                  const SizedBox(height: 24),
+                  ClientDetailContactsSection(
+                    contacts: controller.contacts,
+                    canManage: controller.canManage,
+                    onAdd: () => controller.beginContactForm(),
+                    onEdit: (c) => controller.beginContactForm(contact: c),
+                    onDelete: controller.deleteContact,
+                  ),
+                  const SizedBox(height: 24),
+                  ClientDetailVisitsSection(
+                    upcoming: controller.upcomingVisits,
+                    past: controller.pastVisits,
+                    isLoading: controller.isLoadingVisits.value,
+                    error: controller.visitsError.value,
+                    truncated: controller.visitsTruncated.value,
+                    hasVisitsAccess: controller.canViewVisits,
+                    onOpen: controller.openVisitDetail,
+                  ),
+                  const SizedBox(height: 24),
+                  ClientDetailProfileSection(controller: controller),
                 ],
-              )
-            : null,
-      ),
-    );
-  }
-}
-
-class _ContactsTab extends StatelessWidget {
-  const _ContactsTab({required this.controller});
-  final ClientsController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (controller.canManage)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ElevatedButton.icon(
-                onPressed: () => controller.beginContactForm(),
-                icon: const Icon(Icons.person_add_alt_1),
-                label: const Text('Add contact'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                ),
               ),
-            ),
-          const SizedBox(height: 12),
-          if (controller.contacts.isEmpty) const Text('No contacts yet.'),
-          for (final contact in controller.contacts)
-            Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                title: Text(contact.name?.isNotEmpty == true
-                    ? contact.name!
-                    : (contact.email ?? contact.phone ?? 'Contact')),
-                subtitle: Text(
-                  [
-                    if (contact.email != null) contact.email!,
-                    if (contact.phone != null) contact.phone!,
-                    if (contact.isPrimary) 'primary',
-                    if (contact.notifyVisitComplete) 'notify on visit complete',
-                  ].join(' · '),
-                ),
-                trailing: controller.canManage
-                    ? PopupMenuButton<String>(
-                        onSelected: (v) {
-                          if (v == 'edit') {
-                            controller.beginContactForm(contact: contact);
-                          }
-                          if (v == 'delete') {
-                            controller.deleteContact(contact);
-                          }
-                        },
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(value: 'edit', child: Text('Edit')),
-                          PopupMenuItem(value: 'delete', child: Text('Delete')),
-                        ],
-                      )
-                    : null,
-              ),
-            ),
-        ],
-      );
-    });
-  }
-}
-
-class _InvitesTab extends StatelessWidget {
-  const _InvitesTab({required this.controller});
-  final ClientsController controller;
-
-  String _fmt(DateTime dt) {
-    final l = dt.toLocal();
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      final invite = controller.lastInvite.value;
-      final history = controller.invites;
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text(
-            'Create a one-time client invite. The raw token is shown only once '
-            'at create time; history below shows metadata only.',
-            style: TextStyle(color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 12),
-          if (controller.canManage)
-            AsyncElevatedButtonIcon(
-              onPressed: controller.createInvite,
-              isLoading: controller.isSaving.value,
-              icon: const Icon(Icons.link),
-              label: const Text('Create invite token'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-              ),
-            ),
-          if (invite != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              'New invite — expires ${_fmt(invite.expiresAt)}',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            SelectableText(controller.invitePath(invite.token)),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => controller.copyInviteLink(invite.token),
-              icon: const Icon(Icons.copy),
-              label: const Text('Copy invite path'),
             ),
           ],
-          const Divider(height: 32),
-          Text('Invite history', style: Get.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          if (history.isEmpty)
-            const Text(
-              'No invites yet.',
-              style: TextStyle(color: AppColors.textMuted),
-            )
-          else
-            for (final row in history)
-              Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  title: Text(row.statusLabel),
-                  subtitle: Text(
-                    'Created ${_fmt(row.createdAt)}\n'
-                    'Expires ${_fmt(row.expiresAt)}'
-                    '${row.consumedAt != null ? '\nConsumed ${_fmt(row.consumedAt!)}' : ''}',
-                  ),
-                  isThreeLine: row.consumedAt != null,
-                ),
-              ),
-        ],
-      );
-    });
-  }
-}
-
-class _TypesTab extends StatelessWidget {
-  const _TypesTab({required this.controller});
-  final ClientsController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      final types = controller.clientTypes;
-      final selectedTypeId = controller.selectedClientTypeId.value;
-      final drafts = controller.requirementDrafts;
-      final progress = controller.profileSaveProgress.value;
-      final canEdit = controller.canManage || controller.canManageProfile;
-
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text(
-            'Client type',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Select a type to show optional profile requirements and documents.',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 12),
-          if (progress != null) ...[
-            Text(
-              progress,
-              style: const TextStyle(color: AppColors.textMuted),
-            ),
-            const SizedBox(height: 8),
-            const LinearProgressIndicator(minHeight: 2),
-            const SizedBox(height: 12),
-          ],
-          if (controller.isLoadingTypes.value)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: LinearProgressIndicator(minHeight: 2),
-            )
-          else if (types.isEmpty)
-            const Text(
-              'No client types available.',
-              style: TextStyle(color: AppColors.textMuted),
-            )
-          else
-            DropdownButtonFormField<String>(
-              value: selectedTypeId != null &&
-                      types.any((t) => t.id == selectedTypeId)
-                  ? selectedTypeId
-                  : null,
-              items: [
-                for (final t in types)
-                  DropdownMenuItem(
-                    value: t.id,
-                    child: Text(t.name),
-                  ),
-              ],
-              onChanged: !canEdit || controller.isSaving.value
-                  ? null
-                  : (v) => controller.onClientTypeChanged(v),
-              decoration: const InputDecoration(
-                labelText: 'Type',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          if (controller.isLoadingRequirements.value) ...[
-            const SizedBox(height: 16),
-            const LinearProgressIndicator(minHeight: 2),
-          ],
-          if (drafts.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            const Text(
-              'Type-specific details',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'All items are optional unless marked required.',
-              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
-            const SizedBox(height: 12),
-            for (final draft in drafts)
-              ClientRequirementEditor(
-                controller: controller,
-                draft: draft,
-              ),
-          ],
-          if (canEdit) ...[
-            const SizedBox(height: 24),
-            AsyncElevatedButton(
-              onPressed: controller.saveClientTypeProfile,
-              isLoading: controller.isSaving.value,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                minimumSize: const Size.fromHeight(48),
-              ),
-              child: const Text('Save type & profile'),
-            ),
-          ],
-        ],
+        ),
       );
     });
   }
