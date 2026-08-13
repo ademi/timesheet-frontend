@@ -8,6 +8,7 @@ import '../../engagements/bindings/engagements_binding.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../controllers/jobs_controller.dart';
+import '../controllers/ongoing_support_controller.dart';
 import '../data/datasources/jobs_remote_datasource.dart';
 import '../data/repositories/jobs_repository.dart';
 
@@ -35,16 +36,11 @@ class JobsBinding extends Bindings {
       Get.put<TokenStorage>(TokenStorage(), permanent: true);
     }
     if (!Get.isRegistered<ApiClient>()) {
-      Get.put<ApiClient>(
-        ApiClient(Get.find<TokenStorage>()),
-        permanent: true,
-      );
+      Get.put<ApiClient>(ApiClient(Get.find<TokenStorage>()), permanent: true);
     }
     if (!Get.isRegistered<JobsRemoteDataSource>()) {
       Get.lazyPut<JobsRemoteDataSource>(
-        () => JobsRemoteDataSource(
-          authenticatedDio: Get.find<ApiClient>().dio,
-        ),
+        () => JobsRemoteDataSource(authenticatedDio: Get.find<ApiClient>().dio),
         fenix: true,
       );
     }
@@ -54,5 +50,21 @@ class JobsBinding extends Bindings {
         fenix: true,
       );
     }
+  }
+}
+
+class OngoingSupportBinding extends Bindings {
+  @override
+  void dependencies() {
+    JobsBinding.ensureShared();
+    if (!Get.isRegistered<SessionService>()) return;
+    Get.put(
+      OngoingSupportController(
+        jobsRepository: Get.find<JobsRepository>(),
+        clientsRepository: Get.find<ClientsRepository>(),
+        engagementsRepository: Get.find<EngagementsRepository>(),
+        session: Get.find<SessionService>(),
+      ),
+    );
   }
 }

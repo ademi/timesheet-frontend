@@ -13,6 +13,7 @@ import 'views/job_detail_view.dart';
 import 'views/job_form_view.dart';
 import 'views/job_manage_templates_view.dart';
 import 'views/jobs_list_view.dart';
+import 'views/ongoing_support_view.dart';
 import 'views/recurrence_rule_form_view.dart';
 
 abstract final class JobsPages {
@@ -39,6 +40,17 @@ abstract final class JobsPages {
       ],
       binding: JobsBinding(),
       page: () => const JobFormView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.staffOngoingSupport,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(anyOf: [AppPermissions.jobsManage]),
+      ],
+      binding: OngoingSupportBinding(),
+      page: () => const OngoingSupportView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
@@ -102,11 +114,7 @@ abstract final class JobsPages {
       middlewares: [
         AuthGuard(),
         ActorGuard(),
-        PermissionGuard(
-          anyOf: [
-            AppPermissions.clientsManage,
-          ],
-        ),
+        PermissionGuard(anyOf: [AppPermissions.clientsManage]),
       ],
       binding: JobsBinding(),
       page: () => const FormTemplateEditorView(),

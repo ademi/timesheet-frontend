@@ -48,6 +48,7 @@ abstract class AppRoutes {
   static const staffClientContactForm = '/staff/clients/contact-form';
   static const staffJobs = '/staff/jobs';
   static const staffJobForm = '/staff/jobs/form';
+  static const staffOngoingSupport = '/staff/jobs/ongoing-support';
   static const staffJobDetail = '/staff/jobs/detail';
   static const staffRecurrenceRuleForm = '/staff/jobs/recurrence-rule-form';
   static const staffFormTemplates = '/staff/jobs/form-templates';
