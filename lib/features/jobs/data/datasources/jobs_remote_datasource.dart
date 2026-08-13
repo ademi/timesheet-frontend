@@ -225,6 +225,36 @@ class JobsRemoteDataSource {
     }
   }
 
+  Future<HorizonOut> ensureHorizon(HorizonRequest body) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.jobsHorizon,
+        data: body.toJson(),
+      );
+      return _require(response.data, HorizonOut.fromJson, 'ensure horizon');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<OngoingSupportOut> createOngoingSupport(
+    OngoingSupportCreateRequest body,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.jobsOngoingSupport,
+        data: body.toJson(),
+      );
+      return _require(
+        response.data,
+        OngoingSupportOut.fromJson,
+        'create ongoing support',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<List<BranchOut>> listBranches() async {
     try {
       final response = await _dio.get<List<dynamic>>(ApiPaths.branches);

@@ -124,6 +124,8 @@ abstract final class ApiPaths {
   static const formTemplates = '$_v1/form-templates';
   static String formTemplate(String id) => '$formTemplates/$id';
   static const jobs = '$_v1/jobs';
+  static const jobsHorizon = '$_v1/jobs/horizon';
+  static const jobsOngoingSupport = '$_v1/jobs/ongoing-support';
   static String job(String id) => '$jobs/$id';
   static String jobFormCatalog(String id) => '${job(id)}/form-catalog';
   static String jobRecurrenceRules(String id) => '${job(id)}/recurrence-rules';

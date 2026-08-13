@@ -74,4 +74,12 @@ class JobsRepository {
       _remote.deleteFormTemplate(id);
 
   Future<List<BranchOut>> listBranches() => _remote.listBranches();
+
+  Future<HorizonOut> ensureHorizon(HorizonRequest body) =>
+      _remote.ensureHorizon(body);
+
+  Future<OngoingSupportOut> createOngoingSupport(
+    OngoingSupportCreateRequest body,
+  ) =>
+      _remote.createOngoingSupport(body);
 }

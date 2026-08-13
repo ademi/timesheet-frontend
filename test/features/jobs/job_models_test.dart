@@ -56,6 +56,88 @@ void main() {
     expect(rule.contractorName, 'Sam Worker');
   });
 
+  test('parses horizon and ongoing-support payloads', () {
+    final horizon = HorizonOut.fromJson({
+      'created_shift_ids': ['s1'],
+      'created_visit_ids': <String>[],
+      'skipped': [
+        {'scheduled_start': '2026-08-10T09:00:00Z', 'detail': 'visit_overlap'},
+      ],
+      'rules_processed': 1,
+      'truncated': false,
+    });
+    expect(horizon.createdShiftIds, ['s1']);
+    expect(horizon.skipped.first.detail, 'visit_overlap');
+
+    final ongoing = OngoingSupportOut.fromJson({
+      'job': {
+        'id': 'job-1',
+        'tenant_id': 'tenant-1',
+        'kind': 'standing',
+        'status': 'open',
+        'title': 'Morning support',
+        'geofence_radius_m': 100,
+        'geofence_mode': 'informational',
+        'created_at': '2026-07-30T09:00:00Z',
+        'updated_at': '2026-07-30T09:00:00Z',
+      },
+      'rule': {
+        'id': 'rule-1',
+        'tenant_id': 'tenant-1',
+        'job_id': 'job-1',
+        'rrule': 'FREQ=WEEKLY',
+        'dtstart': '2026-07-30T09:00:00Z',
+        'time_windows_json': [
+          {'start_time': '09:00', 'end_time': '12:00'},
+        ],
+        'is_active': true,
+        'created_at': '2026-07-30T09:00:00Z',
+        'updated_at': '2026-07-30T09:00:00Z',
+      },
+      'horizon': {
+        'created_shift_ids': ['s1'],
+        'created_visit_ids': <String>[],
+        'skipped': <Map<String, dynamic>>[],
+        'rules_processed': 1,
+        'truncated': false,
+      },
+    });
+    expect(ongoing.job.id, 'job-1');
+    expect(ongoing.rule.id, 'rule-1');
+    expect(ongoing.horizon.createdShiftIds, ['s1']);
+  });
+
+  test('serializes horizon and ongoing-support requests', () {
+    final horizonReq = HorizonRequest(
+      from: DateTime.utc(2026, 8, 3),
+      to: DateTime.utc(2026, 8, 17),
+      ruleIds: const ['rule-1'],
+    );
+    expect(horizonReq.toJson(), {
+      'from': '2026-08-03T00:00:00.000Z',
+      'to': '2026-08-17T00:00:00.000Z',
+      'rule_ids': ['rule-1'],
+    });
+
+    final ongoingReq = OngoingSupportCreateRequest(
+      clientId: 'client-1',
+      title: 'Morning support',
+      clientSiteId: 'site-1',
+      rrule: 'FREQ=WEEKLY',
+      dtstart: DateTime.utc(2026, 7, 30, 9),
+      timeWindows: const [TimeWindow(startTime: '09:00', endTime: '12:00')],
+      horizonFrom: DateTime.utc(2026, 8, 3),
+      horizonTo: DateTime.utc(2026, 8, 17),
+    );
+    final json = ongoingReq.toJson();
+    expect(json['client_id'], 'client-1');
+    expect(json['client_site_id'], 'site-1');
+    expect(json['branch_id'], isNull);
+    expect(json['time_windows'], [
+      {'start_time': '09:00', 'end_time': '12:00'},
+    ]);
+  });
+
   test('parses a visit location label from the API', () {
     final visit = VisitOut.fromJson({
       'id': 'visit-1',

@@ -309,6 +309,142 @@ class GenerateVisitsResponse {
   }
 }
 
+class HorizonRequest {
+  const HorizonRequest({
+    required this.from,
+    required this.to,
+    this.ruleIds,
+  });
+
+  final DateTime from;
+  final DateTime to;
+  final List<String>? ruleIds;
+
+  Map<String, dynamic> toJson() => {
+    'from': from.toUtc().toIso8601String(),
+    'to': to.toUtc().toIso8601String(),
+    if (ruleIds != null) 'rule_ids': ruleIds,
+  };
+}
+
+class HorizonOut {
+  const HorizonOut({
+    required this.createdShiftIds,
+    required this.createdVisitIds,
+    required this.skipped,
+    required this.rulesProcessed,
+    required this.truncated,
+  });
+
+  static const empty = HorizonOut(
+    createdShiftIds: [],
+    createdVisitIds: [],
+    skipped: [],
+    rulesProcessed: 0,
+    truncated: false,
+  );
+
+  final List<String> createdShiftIds;
+  final List<String> createdVisitIds;
+  final List<GenerateVisitsConflict> skipped;
+  final int rulesProcessed;
+  final bool truncated;
+
+  factory HorizonOut.fromJson(Map<String, dynamic> json) {
+    final skippedRaw = json['skipped'];
+    return HorizonOut(
+      createdShiftIds: (json['created_shift_ids'] as List? ?? const [])
+          .map((e) => e.toString())
+          .toList(growable: false),
+      createdVisitIds: (json['created_visit_ids'] as List? ?? const [])
+          .map((e) => e.toString())
+          .toList(growable: false),
+      skipped:
+          skippedRaw is List
+              ? skippedRaw
+                  .whereType<Map>()
+                  .map(
+                    (e) => GenerateVisitsConflict.fromJson(
+                      Map<String, dynamic>.from(e),
+                    ),
+                  )
+                  .toList(growable: false)
+              : const [],
+      rulesProcessed: json['rules_processed'] as int? ?? 0,
+      truncated: json['truncated'] as bool? ?? false,
+    );
+  }
+}
+
+class OngoingSupportCreateRequest {
+  const OngoingSupportCreateRequest({
+    required this.clientId,
+    required this.title,
+    this.clientSiteId,
+    this.branchId,
+    this.contractorId,
+    required this.rrule,
+    required this.dtstart,
+    this.until,
+    this.requiredSlots = 1,
+    required this.timeWindows,
+    required this.horizonFrom,
+    required this.horizonTo,
+  });
+
+  final String clientId;
+  final String title;
+  final String? clientSiteId;
+  final String? branchId;
+  final String? contractorId;
+  final String rrule;
+  final DateTime dtstart;
+  final DateTime? until;
+  final int requiredSlots;
+  final List<TimeWindow> timeWindows;
+  final DateTime horizonFrom;
+  final DateTime horizonTo;
+
+  Map<String, dynamic> toJson() => {
+    'client_id': clientId,
+    'title': title,
+    'client_site_id': clientSiteId,
+    'branch_id': branchId,
+    'contractor_id': contractorId,
+    'rrule': rrule,
+    'dtstart': dtstart.toUtc().toIso8601String(),
+    if (until != null) 'until': until!.toUtc().toIso8601String(),
+    'required_slots': requiredSlots,
+    'time_windows': [for (final window in timeWindows) window.toJson()],
+    'horizon_from': horizonFrom.toUtc().toIso8601String(),
+    'horizon_to': horizonTo.toUtc().toIso8601String(),
+  };
+}
+
+class OngoingSupportOut {
+  const OngoingSupportOut({
+    required this.job,
+    required this.rule,
+    required this.horizon,
+  });
+
+  final JobOut job;
+  final RecurrenceRuleOut rule;
+  final HorizonOut horizon;
+
+  factory OngoingSupportOut.fromJson(Map<String, dynamic> json) {
+    return OngoingSupportOut(
+      job: JobOut.fromJson(Map<String, dynamic>.from(json['job'] as Map)),
+      rule: RecurrenceRuleOut.fromJson(
+        Map<String, dynamic>.from(json['rule'] as Map),
+      ),
+      horizon: HorizonOut.fromJson(
+        Map<String, dynamic>.from(json['horizon'] as Map),
+      ),
+    );
+  }
+}
+
 class GenerateVisitsConflict {
   const GenerateVisitsConflict({
     required this.scheduledStart,
