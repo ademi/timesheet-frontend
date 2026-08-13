@@ -3,9 +3,36 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
+import '../../jobs/data/models/job_models.dart';
 import '../../shifts/widgets/shift_slot_pips.dart';
 import '../../../shared/utils/roster_time_format.dart';
 import '../controllers/staff_visits_controller.dart';
+
+/// DropdownButton asserts if [value] is set but not present exactly once.
+String? _jobDropdownValue(String? filter, Iterable<JobOut> jobs) {
+  if (filter == null || filter.isEmpty) return null;
+  for (final job in jobs) {
+    if (job.id == filter) return filter;
+  }
+  return null;
+}
+
+List<DropdownMenuItem<String>> _jobDropdownItems(
+  Iterable<JobOut> jobs, {
+  bool includeAll = true,
+}) {
+  final seen = <String>{};
+  return [
+    if (includeAll)
+      const DropdownMenuItem(value: null, child: Text('All jobs')),
+    for (final job in jobs)
+      if (seen.add(job.id))
+        DropdownMenuItem(
+          value: job.id,
+          child: Text(job.title, overflow: TextOverflow.ellipsis),
+        ),
+  ];
+}
 
 String _fmt(DateTime dt) {
   final l = dt.toLocal();
@@ -89,25 +116,12 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                   if (controller.isFillingHorizon.value)
                     const LinearProgressIndicator(minHeight: 2),
                   DropdownButtonFormField<String>(
-                    value:
-                        controller.jobIdFilter.value.isEmpty
-                            ? null
-                            : controller.jobIdFilter.value,
+                    value: _jobDropdownValue(
+                      controller.jobIdFilter.value,
+                      controller.jobs,
+                    ),
                     isExpanded: true,
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('All jobs'),
-                      ),
-                      for (final job in controller.jobs)
-                        DropdownMenuItem(
-                          value: job.id,
-                          child: Text(
-                            job.title,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                    ],
+                    items: _jobDropdownItems(controller.jobs),
                     onChanged: controller.setJobFilter,
                     decoration: const InputDecoration(
                       labelText: 'Job',
@@ -252,18 +266,12 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                       const SizedBox(height: 12),
                     ],
                     DropdownButtonFormField<String>(
-                      value: jobId,
+                      value: _jobDropdownValue(jobId, controller.jobs),
                       isExpanded: true,
-                      items: [
-                        for (final job in controller.jobs)
-                          DropdownMenuItem(
-                            value: job.id,
-                            child: Text(
-                              job.title,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                      ],
+                      items: _jobDropdownItems(
+                        controller.jobs,
+                        includeAll: false,
+                      ),
                       onChanged: (v) => setState(() => jobId = v),
                       decoration: const InputDecoration(
                         labelText: 'Job',
