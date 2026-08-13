@@ -14,7 +14,7 @@ class RecurrenceRuleFormView extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = Get.put(RecurrenceRuleFormController());
     return Scaffold(
-      appBar: AppBar(title: const Text('Add recurrence rule')),
+      appBar: AppBar(title: const Text('Add weekly pattern')),
       body: Obx(
         () => ListView(
           padding: const EdgeInsets.all(16),
@@ -32,7 +32,7 @@ class RecurrenceRuleFormView extends StatelessWidget {
               items: [
                 const DropdownMenuItem(
                   value: null,
-                  child: Text('Unassigned (publish holes)'),
+                  child: Text('Unfilled (leave open to claim)'),
                 ),
                 for (final engagement in c.jobs.assignableEngagements)
                   DropdownMenuItem(
@@ -44,7 +44,7 @@ class RecurrenceRuleFormView extends StatelessWidget {
               ],
               onChanged: (value) => c.selectedContractorId.value = value,
               decoration: const InputDecoration(
-                labelText: 'Contractor (optional)',
+                labelText: 'Worker (optional)',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -59,13 +59,13 @@ class RecurrenceRuleFormView extends StatelessWidget {
                 if (value != null) c.requiredSlots.value = value;
               },
               decoration: const InputDecoration(
-                labelText: 'Required workers',
+                labelText: 'Needs how many people',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 8),
             const Text(
-              'Creates published shifts for this window. Unfilled slots stay open for claim.',
+              'Creates upcoming shifts. Unfilled slots stay open to claim.',
               style: TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
             const SizedBox(height: 16),

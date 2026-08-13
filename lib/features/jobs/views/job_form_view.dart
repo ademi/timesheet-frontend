@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/jobs_controller.dart';
+import '../utils/job_copy.dart';
 
 class JobFormView extends GetView<JobsController> {
   const JobFormView({super.key});
@@ -40,9 +41,15 @@ class JobFormView extends GetView<JobsController> {
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: controller.kind.value,
-              items: const [
-                DropdownMenuItem(value: 'standing', child: Text('standing')),
-                DropdownMenuItem(value: 'ad_hoc', child: Text('ad_hoc')),
+              items: [
+                DropdownMenuItem(
+                  value: 'standing',
+                  child: Text(kindLabel('standing')),
+                ),
+                DropdownMenuItem(
+                  value: 'ad_hoc',
+                  child: Text(kindLabel('ad_hoc')),
+                ),
               ],
               onChanged: (v) {
                 if (v != null) controller.kind.value = v;
@@ -55,14 +62,14 @@ class JobFormView extends GetView<JobsController> {
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: controller.locationMode.value,
-              items: const [
+              items: [
                 DropdownMenuItem(
                   value: 'site',
-                  child: Text('Client site (XOR)'),
+                  child: Text(locationModeLabel('site')),
                 ),
                 DropdownMenuItem(
                   value: 'branch',
-                  child: Text('Branch (XOR)'),
+                  child: Text(locationModeLabel('branch')),
                 ),
               ],
               onChanged: (v) {
@@ -74,7 +81,6 @@ class JobFormView extends GetView<JobsController> {
               decoration: const InputDecoration(
                 labelText: 'Location mode',
                 border: OutlineInputBorder(),
-                helperText: 'Exactly one of client_site_id or branch_id',
               ),
             ),
             const SizedBox(height: 12),
@@ -89,7 +95,7 @@ class JobFormView extends GetView<JobsController> {
                   : controller.onClientChanged,
               decoration: InputDecoration(
                 labelText: controller.kind.value == 'standing'
-                    ? 'Client * (standing)'
+                    ? 'Client *'
                     : 'Client (optional)',
                 border: const OutlineInputBorder(),
               ),

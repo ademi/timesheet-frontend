@@ -5,7 +5,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/jobs_controller.dart';
-import '../data/models/job_models.dart';
+import '../utils/job_copy.dart';
 import '../utils/recurrence_label.dart';
 
 class JobDetailView extends StatefulWidget {
@@ -47,7 +47,7 @@ class _JobDetailViewState extends State<JobDetailView> {
           children: [
             if (err != null) ...[_ErrorBox(err), const SizedBox(height: 12)],
             Text(
-              '${job.kind} · ${job.status}',
+              '${kindLabel(job.kind)} · ${jobStatusLabel(job.status)}',
               style: Get.textTheme.titleMedium,
             ),
             const SizedBox(height: 4),
@@ -101,11 +101,11 @@ class _JobDetailViewState extends State<JobDetailView> {
               ),
             ),
             const Divider(height: 32),
-            Text('Recurrence', style: Get.textTheme.titleMedium),
+            Text('Patterns', style: Get.textTheme.titleMedium),
             if (!job.isStanding)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text('Recurrence requires a standing job.'),
+                child: Text('Patterns need ongoing support.'),
               )
             else ...[
               const SizedBox(height: 8),
@@ -123,22 +123,6 @@ class _JobDetailViewState extends State<JobDetailView> {
                   ),
                 ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Text('Generate with partial'),
-                  Switch(
-                    value: controller.generatePartial.value,
-                    onChanged:
-                        controller.isGenerating.value
-                            ? null
-                            : (v) => controller.generatePartial.value = v,
-                  ),
-                ],
-              ),
-              if (controller.lastGenerate.value != null) ...[
-                const SizedBox(height: 8),
-                _GenerateResult(controller.lastGenerate.value!),
-              ],
               for (final rule in controller.rules)
                 Card(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -152,8 +136,8 @@ class _JobDetailViewState extends State<JobDetailView> {
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         Text(
-                          '${rule.isActive ? 'active' : 'inactive'} · '
-                          '${rule.contractorName ?? 'Assigned contractor'}',
+                          '${rule.isActive ? 'Active' : 'Paused'} · '
+                          '${rule.contractorName ?? 'Unfilled'}',
                         ),
                         const SizedBox(height: 8),
                         Wrap(
@@ -168,17 +152,6 @@ class _JobDetailViewState extends State<JobDetailView> {
                                   rule.isActive ? 'Deactivate' : 'Activate',
                                 ),
                               ),
-                            if (controller.canManage)
-                              AsyncElevatedButton(
-                                onPressed: () =>
-                                    controller.generateForRule(rule),
-                                isLoading: controller.isGenerating.value,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: AppColors.onPrimary,
-                                ),
-                                child: const Text('Generate (14d)'),
-                              ),
                           ],
                         ),
                       ],
@@ -186,76 +159,9 @@ class _JobDetailViewState extends State<JobDetailView> {
                   ),
                 ),
             ],
-            if (controller.canManageVisits) ...[
-              const Divider(height: 32),
-              Text('Manual visit', style: Get.textTheme.titleMedium),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: controller.selectedContractorId.value,
-                items: [
-                  for (final e in controller.assignableEngagements)
-                    DropdownMenuItem(
-                      value: e.contractorId,
-                      child: Text(e.contractorName ?? 'Contractor'),
-                    ),
-                ],
-                onChanged: (v) => controller.selectedContractorId.value = v,
-                decoration: const InputDecoration(
-                  labelText: 'Contractor',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: controller.manualTaskCtrl,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Task titles (one per line)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              AsyncElevatedButton(
-                onPressed: controller.createManualVisit,
-                isLoading: controller.isSaving.value,
-                child: const Text('Create manual visit'),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed:
-                    () => Get.toNamed(
-                      AppRoutes.staffVisits,
-                      arguments: {'job_id': job.id},
-                    ),
-                child: const Text('Open visits for this job'),
-              ),
-            ],
           ],
         );
       }),
-    );
-  }
-}
-
-class _GenerateResult extends StatelessWidget {
-  const _GenerateResult(this.result);
-  final GenerateVisitsResponse result;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        'Created ${result.createdShiftIds.length} shift(s), '
-        '${result.createdVisitIds.length} visit(s); '
-        'skipped ${result.skipped.length}'
-        '${result.skipped.isEmpty ? '' : ': ${result.skipped.map((s) => s.detail).join('; ')}'}',
-      ),
     );
   }
 }

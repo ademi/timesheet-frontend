@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/jobs_controller.dart';
+import '../data/models/job_models.dart';
+import '../utils/job_copy.dart';
 
 class JobsListView extends GetView<JobsController> {
   const JobsListView({super.key});
@@ -38,6 +40,13 @@ class JobsListView extends GetView<JobsController> {
         if (controller.isLoading.value && controller.jobs.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
+        final jobs = [...controller.jobs]..sort((a, b) {
+          final ga = a.clientName ?? 'No client';
+          final gb = b.clientName ?? 'No client';
+          final byClient = ga.compareTo(gb);
+          if (byClient != 0) return byClient;
+          return a.title.compareTo(b.title);
+        });
         return RefreshIndicator(
           onRefresh: controller.loadAll,
           child: ListView(
@@ -47,30 +56,60 @@ class JobsListView extends GetView<JobsController> {
                 _ErrorBox(err),
                 const SizedBox(height: 12),
               ],
-              if (controller.jobs.isEmpty)
+              if (jobs.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 32),
                   child: Text('No jobs yet.'),
-                ),
-              for (final job in controller.jobs)
-                Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    title: Text(job.title),
-                    subtitle: Text(
-                      '${job.kind} · ${job.status}'
-                      '${job.clientSiteId != null ? ' · site' : ''}'
-                      '${job.branchId != null ? ' · branch' : ''}',
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => controller.openDetail(job),
-                  ),
-                ),
+                )
+              else
+                ..._groupedJobTiles(context, jobs),
             ],
           ),
         );
       }),
     );
+  }
+
+  List<Widget> _groupedJobTiles(BuildContext context, List<JobOut> jobs) {
+    final children = <Widget>[];
+    String? lastGroup;
+    for (final job in jobs) {
+      final group = job.clientName ?? 'No client';
+      if (group != lastGroup) {
+        if (lastGroup != null) {
+          children.add(const SizedBox(height: 8));
+        }
+        lastGroup = group;
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              group,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        );
+      }
+      children.add(
+        Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            title: Text(job.title),
+            subtitle: Text(
+              jobListSubtitle(
+                kind: job.kind,
+                status: job.status,
+                hasSite: job.clientSiteId != null,
+                hasBranch: job.branchId != null,
+              ),
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => controller.openDetail(job),
+          ),
+        ),
+      );
+    }
+    return children;
   }
 }
 

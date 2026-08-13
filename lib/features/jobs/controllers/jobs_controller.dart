@@ -283,7 +283,7 @@ class JobsController extends GetxController {
     }
     final useSite = locationMode.value == 'site';
     if (kind.value == 'standing' && selectedClientId.value == null) {
-      errorMessage.value = 'Standing jobs require a client.';
+      errorMessage.value = 'Ongoing support needs a client.';
       return;
     }
     if (useSite && selectedClientId.value != null && sites.isEmpty) {
@@ -294,11 +294,11 @@ class JobsController extends GetxController {
       return;
     }
     if (useSite && selectedSiteId.value == null) {
-      errorMessage.value = 'Select a client site (XOR with branch).';
+      errorMessage.value = 'Select a client site.';
       return;
     }
     if (!useSite && selectedBranchId.value == null) {
-      errorMessage.value = 'Select a branch (XOR with client site).';
+      errorMessage.value = 'Select a branch.';
       return;
     }
     isSaving.value = true;
@@ -494,7 +494,7 @@ class JobsController extends GetxController {
     final job = selected.value;
     if (job == null) return false;
     if (!job.isStanding) {
-      errorMessage.value = 'Recurrence requires a standing job.';
+      errorMessage.value = 'Patterns need ongoing support.';
       return false;
     }
     isSaving.value = true;

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../shifts/widgets/shift_slot_pips.dart';
+import '../../../shared/utils/roster_time_format.dart';
 import '../controllers/staff_visits_controller.dart';
 
 String _fmt(DateTime dt) {
@@ -118,10 +119,10 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                         value: null,
                         child: Text('All statuses'),
                       ),
-                      DropdownMenuItem(value: 'draft', child: Text('Draft')),
+                      DropdownMenuItem(value: 'draft', child: Text('Unpublished')),
                       DropdownMenuItem(
                         value: 'published',
-                        child: Text('Published'),
+                        child: Text('Live'),
                       ),
                       DropdownMenuItem(
                         value: 'cancelled',
@@ -155,7 +156,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                             if (controller.shifts.isEmpty) {
                               return const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 32),
-                                child: Text('No shifts in this range.'),
+                                child: Text('No shifts this week.'),
                               );
                             }
                             final shift = controller.shifts[i];
@@ -181,7 +182,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '${_fmt(shift.scheduledStart)} · ${shift.status}'
+                                      '${formatRosterStamp(shift.scheduledStart)} · ${shift.status}'
                                       '${shift.clientName != null ? ' · ${shift.clientName}' : ''}',
                                       style: TextStyle(
                                         color:

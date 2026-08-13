@@ -23,4 +23,16 @@ void main() {
   test('defaultOngoingTitle uses client name', () {
     expect(defaultOngoingTitle('Sam Lee'), 'Sam Lee support');
   });
+
+  test('jobListSubtitle never contains xor or standing', () {
+    final s = jobListSubtitle(
+      kind: 'standing',
+      status: 'open',
+      hasSite: true,
+      hasBranch: false,
+    );
+    expect(s.toLowerCase(), isNot(contains('xor')));
+    expect(s.toLowerCase(), isNot(contains('standing')));
+    expect(s, contains('Ongoing support'));
+  });
 }
