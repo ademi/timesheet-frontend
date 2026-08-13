@@ -46,6 +46,7 @@ class StaffVisitsController extends GetxController {
   final rangeStart = DateTime.now().obs;
   final jobIdFilter = ''.obs;
   final statusFilter = ''.obs;
+  bool pendingCreateShift = false;
 
   bool get canManage => _session.hasPermission(AppPermissions.shiftsManage);
   bool get canRead =>
@@ -82,10 +83,17 @@ class StaffVisitsController extends GetxController {
       if (args['job_id'] != null) {
         jobIdFilter.value = args['job_id'].toString();
       }
+      pendingCreateShift = args['create'] == true;
       return;
     }
     if (args is VisitOut) selected.value = args;
     if (args is ShiftOut) selectedShift.value = args;
+  }
+
+  bool consumePendingCreateShift() {
+    if (!pendingCreateShift) return false;
+    pendingCreateShift = false;
+    return true;
   }
 
   /// Only entry point for roster board list fetch.

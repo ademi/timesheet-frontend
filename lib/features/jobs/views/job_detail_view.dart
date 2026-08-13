@@ -59,6 +59,7 @@ class _JobDetailViewState extends State<JobDetailView> {
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
+                runSpacing: 8,
                 children: [
                   AsyncOutlinedButton(
                     onPressed: () => controller.setStatus('closed'),
@@ -69,6 +70,23 @@ class _JobDetailViewState extends State<JobDetailView> {
                     onPressed: () => controller.setStatus('cancelled'),
                     isLoading: controller.isSaving.value,
                     child: const Text('Cancel'),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: controller.isSaving.value
+                        ? null
+                        : () => Get.toNamed(
+                              AppRoutes.staffVisits,
+                              arguments: <String, dynamic>{
+                                'job_id': job.id,
+                                'create': true,
+                              },
+                            ),
+                    icon: const Icon(Icons.event_outlined),
+                    label: const Text('Book one session'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.onPrimary,
+                    ),
                   ),
                 ],
               ),

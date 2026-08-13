@@ -169,4 +169,19 @@ void main() {
       ),
     ).called(1);
   });
+
+  test('applyRouteArgs sets job filter and pending create from map', () {
+    Get.routing.args = {'job_id': 'job-standing', 'create': true};
+    final c = _controller(
+      visits: visits,
+      shifts: shifts,
+      jobs: jobs,
+      engagements: engagements,
+      session: session,
+    );
+    c.applyRouteArgs();
+    expect(c.jobIdFilter.value, 'job-standing');
+    expect(c.consumePendingCreateShift(), isTrue);
+    expect(c.consumePendingCreateShift(), isFalse);
+  });
 }

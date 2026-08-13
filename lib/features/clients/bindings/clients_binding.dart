@@ -5,6 +5,8 @@ import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../documents/data/datasources/documents_remote_datasource.dart';
 import '../../documents/data/document_pipeline.dart';
+import '../../jobs/data/datasources/jobs_remote_datasource.dart';
+import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../controllers/clients_controller.dart';
@@ -24,6 +26,7 @@ class ClientsBinding extends Bindings {
           session: Get.find<SessionService>(),
           documentPipeline: Get.find<DocumentPipeline>(),
           visitsRepository: Get.find<VisitsRepository>(),
+          jobsRepository: Get.find<JobsRepository>(),
         ),
       );
     }
@@ -67,6 +70,18 @@ class ClientsBinding extends Bindings {
     if (!Get.isRegistered<DocumentPipeline>()) {
       Get.lazyPut<DocumentPipeline>(
         () => DocumentPipeline(remote: Get.find<DocumentsRemoteDataSource>()),
+        fenix: true,
+      );
+    }
+    if (!Get.isRegistered<JobsRemoteDataSource>()) {
+      Get.lazyPut<JobsRemoteDataSource>(
+        () => JobsRemoteDataSource(authenticatedDio: Get.find<ApiClient>().dio),
+        fenix: true,
+      );
+    }
+    if (!Get.isRegistered<JobsRepository>()) {
+      Get.lazyPut<JobsRepository>(
+        () => JobsRepository(remote: Get.find<JobsRemoteDataSource>()),
         fenix: true,
       );
     }

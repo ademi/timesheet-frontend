@@ -11,6 +11,9 @@ import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
 import '../../documents/data/document_pipeline.dart';
+import '../../jobs/controllers/jobs_controller.dart';
+import '../../jobs/data/models/job_models.dart';
+import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../data/models/client_models.dart';
@@ -26,15 +29,18 @@ class ClientsController extends GetxController {
     required SessionService session,
     DocumentPipeline? documentPipeline,
     VisitsRepository? visitsRepository,
+    JobsRepository? jobsRepository,
   })  : _repository = repository,
         _session = session,
         _pipeline = documentPipeline,
-        _visits = visitsRepository;
+        _visits = visitsRepository,
+        _jobs = jobsRepository;
 
   final ClientsRepository _repository;
   final SessionService _session;
   final DocumentPipeline? _pipeline;
   final VisitsRepository? _visits;
+  final JobsRepository? _jobs;
 
   final items = <ClientOut>[].obs;
   final isLoading = false.obs;
@@ -81,6 +87,8 @@ class ClientsController extends GetxController {
   final visitsError = RxnString();
   final visitsTruncated = false.obs;
   final profileFacts = <ClientProfileFactOut>[].obs;
+  final standingJob = Rxn<JobOut>();
+  final isLoadingStandingJob = false.obs;
 
   String? get ndisNumber =>
       ndisFromFacts(profileFacts) ?? ndisFromDrafts(requirementDrafts);
@@ -137,6 +145,9 @@ class ClientsController extends GetxController {
       _session.hasPermission(AppPermissions.visitsRead) ||
       _session.hasPermission(AppPermissions.visitsManage) ||
       _session.hasPermission(AppPermissions.jobsManage);
+  bool get canManageSupport =>
+      _session.hasPermission(AppPermissions.jobsManage);
+  bool get hasOngoing => standingJob.value != null;
 
   @override
   void onInit() {
@@ -805,6 +816,7 @@ class ClientsController extends GetxController {
     visitsError.value = null;
     visitsTruncated.value = false;
     profileFacts.clear();
+    standingJob.value = null;
     _disposeRequirementDrafts();
     requirementDrafts.clear();
     Get.toNamed(AppRoutes.staffClientDetail, arguments: client);
@@ -870,6 +882,69 @@ class ClientsController extends GetxController {
       errorMessage.value = e.message;
     }
     await loadClientVisits();
+    await loadStandingJob();
+  }
+
+  Future<void> loadStandingJob() async {
+    final client = selected.value;
+    final jobsRepo = _jobs;
+    if (client == null || jobsRepo == null) {
+      standingJob.value = null;
+      return;
+    }
+    if (!_session.hasPermission(AppPermissions.jobsRead) &&
+        !_session.hasPermission(AppPermissions.jobsManage)) {
+      standingJob.value = null;
+      return;
+    }
+    isLoadingStandingJob.value = true;
+    try {
+      final list = await jobsRepo.listJobs();
+      standingJob.value = list
+          .where(
+            (job) =>
+                job.clientId == client.id && job.isStanding && job.isOpen,
+          )
+          .firstOrNull;
+    } on AppFailure {
+      standingJob.value = null;
+    } catch (_) {
+      standingJob.value = null;
+    } finally {
+      isLoadingStandingJob.value = false;
+    }
+  }
+
+  void startOngoingSupport() {
+    final client = selected.value;
+    if (client == null) return;
+    Get.toNamed(AppRoutes.staffOngoingSupport, arguments: client);
+  }
+
+  void openOngoingSupport() {
+    final job = standingJob.value;
+    if (job == null) return;
+    if (Get.isRegistered<JobsController>()) {
+      Get.find<JobsController>().openDetail(job);
+      return;
+    }
+    Get.toNamed(
+      AppRoutes.staffJobDetail,
+      arguments: job,
+      parameters: {'id': job.id},
+    );
+  }
+
+  void bookOneSession() {
+    final job = standingJob.value;
+    if (job == null) return;
+    Get.toNamed(
+      AppRoutes.staffVisits,
+      arguments: <String, dynamic>{
+        'job_id': job.id,
+        'create': true,
+      },
+    );
   }
 
   Future<void> loadClientVisits() async {

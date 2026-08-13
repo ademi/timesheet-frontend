@@ -8,6 +8,7 @@ import '../widgets/client_detail_contacts_section.dart';
 import '../widgets/client_detail_facts_section.dart';
 import '../widgets/client_detail_profile_section.dart';
 import '../widgets/client_detail_sites_section.dart';
+import '../widgets/client_detail_support_section.dart';
 import '../widgets/client_detail_visits_section.dart';
 
 class ClientDetailView extends GetView<ClientsController> {
@@ -123,6 +124,16 @@ class ClientDetailView extends GetView<ClientsController> {
                     onDelete: controller.deleteContact,
                   ),
                   const SizedBox(height: 24),
+                  if (controller.canManageSupport || controller.hasOngoing) ...[
+                    ClientDetailSupportSection(
+                      hasOngoing: controller.hasOngoing,
+                      canManage: controller.canManageSupport,
+                      onStartOngoing: controller.startOngoingSupport,
+                      onBookOne: controller.bookOneSession,
+                      onOpenOngoing: controller.openOngoingSupport,
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                   ClientDetailVisitsSection(
                     upcoming: upcomingVisits,
                     past: pastVisits,

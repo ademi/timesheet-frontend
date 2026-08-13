@@ -32,8 +32,12 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
     super.initState();
     final c = Get.find<StaffVisitsController>();
     c.applyRouteArgs();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      c.ensureBoardLoaded();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await c.ensureBoardLoaded();
+      if (!mounted) return;
+      if (c.consumePendingCreateShift()) {
+        await _showCreateShiftDialog(context, c);
+      }
     });
   }
 
