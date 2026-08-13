@@ -1,7 +1,11 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../engagements/data/models/engagement_models.dart';
@@ -40,6 +44,7 @@ class StaffVisitsController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final isRefreshing = false.obs;
+  final isFillingHorizon = false.obs;
   final errorMessage = RxnString();
 
   /// Board range: default current local day → +7 days.
@@ -47,6 +52,14 @@ class StaffVisitsController extends GetxController {
   final jobIdFilter = ''.obs;
   final statusFilter = ''.obs;
   bool pendingCreateShift = false;
+  bool skipHorizonOnce = false;
+  String? pendingClientIdFilter;
+
+  bool _horizonInFlight = false;
+  DateTime? _horizonLastAttempt;
+
+  @visibleForTesting
+  int horizonSnackCount = 0;
 
   bool get canManage => _session.hasPermission(AppPermissions.shiftsManage);
   bool get canRead =>
@@ -67,6 +80,14 @@ class StaffVisitsController extends GetxController {
 
   DateTime get _toUtc => _fromUtc.add(const Duration(days: 7));
 
+  /// Rolling 14-day fill window from local start of today (D15). Not the visible week.
+  DateTime get _horizonFromUtc {
+    final n = DateTime.now();
+    return DateTime(n.year, n.month, n.day).toUtc();
+  }
+
+  DateTime get _horizonToUtc => _horizonFromUtc.add(const Duration(days: 14));
+
   @override
   void onInit() {
     super.onInit();
@@ -82,6 +103,10 @@ class StaffVisitsController extends GetxController {
       if (shift is ShiftOut) selectedShift.value = shift;
       if (args['job_id'] != null) {
         jobIdFilter.value = args['job_id'].toString();
+      }
+      if (args['skipHorizonOnce'] == true) skipHorizonOnce = true;
+      if (args['client_id'] != null) {
+        pendingClientIdFilter = args['client_id'].toString();
       }
       pendingCreateShift = args['create'] == true;
       return;
@@ -101,6 +126,53 @@ class StaffVisitsController extends GetxController {
     await loadJobs();
     await loadEngagements();
     await load();
+    if (skipHorizonOnce) {
+      skipHorizonOnce = false;
+      return;
+    }
+    unawaited(_fillHorizon());
+  }
+
+  Future<void> _fillHorizon() async {
+    if (_horizonInFlight) return;
+    if (!_session.hasPermission(AppPermissions.jobsManage)) return;
+    final last = _horizonLastAttempt;
+    if (last != null &&
+        DateTime.now().difference(last) < const Duration(seconds: 60)) {
+      return;
+    }
+    _horizonInFlight = true;
+    isFillingHorizon.value = true;
+    _horizonLastAttempt = DateTime.now();
+    try {
+      final result = await _jobsRepository.ensureHorizon(
+        HorizonRequest(from: _horizonFromUtc, to: _horizonToUtc),
+      );
+      final created = result.createdShiftIds.length;
+      if (created > 0) {
+        await load();
+        notifyRosterUpdated(created);
+      }
+    } on AppFailure catch (_) {
+      // D17: list already painted — do not set errorMessage. 429 toast is mapped.
+    } finally {
+      _horizonInFlight = false;
+      isFillingHorizon.value = false;
+    }
+  }
+
+  void notifyRosterUpdated(int created) {
+    if (created <= 0) return;
+    horizonSnackCount++;
+    if (Get.testMode) return;
+    Get.snackbar(
+      'Roster updated',
+      '$created new time${created == 1 ? '' : 's'} added.',
+      snackPosition: SnackPosition.BOTTOM,
+      margin: const EdgeInsets.all(16),
+      backgroundColor: AppColors.primary,
+      colorText: AppColors.onPrimary,
+    );
   }
 
   Future<void> load() async {
@@ -136,8 +208,21 @@ class StaffVisitsController extends GetxController {
   Future<void> loadJobs() async {
     try {
       jobs.assignAll(await _jobsRepository.listJobs());
+      _applyPendingClientFilter();
     } catch (_) {
       // Optional filter list.
+    }
+  }
+
+  void _applyPendingClientFilter() {
+    final clientId = pendingClientIdFilter;
+    if (clientId == null || clientId.isEmpty) return;
+    if (jobIdFilter.value.isNotEmpty) return;
+    for (final job in jobs) {
+      if (job.clientId == clientId) {
+        jobIdFilter.value = job.id;
+        return;
+      }
     }
   }
 
@@ -156,7 +241,12 @@ class StaffVisitsController extends GetxController {
 
   void shiftRange(int days) {
     rangeStart.value = rangeStart.value.add(Duration(days: days));
-    load();
+    unawaited(_reloadThenFill());
+  }
+
+  Future<void> _reloadThenFill() async {
+    await load();
+    unawaited(_fillHorizon());
   }
 
   void setStatusFilter(String? status) {

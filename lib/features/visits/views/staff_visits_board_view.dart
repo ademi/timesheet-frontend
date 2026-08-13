@@ -86,6 +86,8 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                       ),
                     ],
                   ),
+                  if (controller.isFillingHorizon.value)
+                    const LinearProgressIndicator(minHeight: 2),
                   DropdownButtonFormField<String>(
                     value:
                         controller.jobIdFilter.value.isEmpty

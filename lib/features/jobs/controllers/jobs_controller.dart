@@ -43,6 +43,7 @@ class JobsController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final isGenerating = false.obs;
+  final isFillingHorizon = false.obs;
   final isLoadingSites = false.obs;
   final errorMessage = RxnString();
   final clientSiteWarning = RxnString();
@@ -72,6 +73,15 @@ class JobsController extends GetxController {
 
   bool get canManage => _session.hasPermission(AppPermissions.jobsManage);
   bool get canRead => _session.hasPermission(AppPermissions.jobsRead);
+  bool get canFillHorizon =>
+      canManage && rules.any((rule) => rule.isActive);
+
+  List<String> get _activeRuleIds =>
+      rules
+          .where((rule) => rule.isActive)
+          .map((rule) => rule.id)
+          .toList(growable: false);
+
   bool get canManageVisits =>
       _session.hasPermission(AppPermissions.visitsManage);
   bool get canManageForms =>
@@ -526,6 +536,34 @@ class JobsController extends GetxController {
       errorMessage.value = e.message;
     } finally {
       isSaving.value = false;
+    }
+  }
+
+  Future<void> fillNext14Days() async {
+    if (!canFillHorizon) return;
+    isFillingHorizon.value = true;
+    try {
+      final now = DateTime.now();
+      final from = DateTime(now.year, now.month, now.day).toUtc();
+      final to = from.add(const Duration(days: 14));
+      final result = await _repository.ensureHorizon(
+        HorizonRequest(from: from, to: to, ruleIds: _activeRuleIds),
+      );
+      final created = result.createdShiftIds.length;
+      if (created > 0 && !Get.testMode) {
+        Get.snackbar(
+          'Roster updated',
+          '$created new time${created == 1 ? '' : 's'} added.',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: AppColors.primary,
+          colorText: AppColors.onPrimary,
+        );
+      }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isFillingHorizon.value = false;
     }
   }
 

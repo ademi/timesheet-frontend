@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
+import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
@@ -20,6 +21,8 @@ class _MockEngagementsRepository extends Mock
     implements EngagementsRepository {}
 
 class _MockSessionService extends Mock implements SessionService {}
+
+class _FakeHorizonRequest extends Fake implements HorizonRequest {}
 
 VisitOut _visit() {
   final t = DateTime.utc(2026, 8, 12, 9);
@@ -65,6 +68,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(DateTime.utc(2026, 1, 1));
+    registerFallbackValue(_FakeHorizonRequest());
   });
 
   setUp(() {
@@ -84,6 +88,9 @@ void main() {
       ),
     ).thenAnswer((_) async => <ShiftOut>[]);
     when(() => jobs.listJobs()).thenAnswer((_) async => []);
+    when(
+      () => jobs.ensureHorizon(any()),
+    ).thenAnswer((_) async => HorizonOut.empty);
     when(
       () => engagements.listTenantEngagements(),
     ).thenAnswer((_) async => []);

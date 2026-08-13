@@ -88,6 +88,12 @@ class _JobDetailViewState extends State<JobDetailView> {
                       foregroundColor: AppColors.onPrimary,
                     ),
                   ),
+                  if (controller.canFillHorizon)
+                    AsyncOutlinedButton(
+                      onPressed: controller.fillNext14Days,
+                      isLoading: controller.isFillingHorizon.value,
+                      child: const Text('Fill next 14 days'),
+                    ),
                 ],
               ),
             ],
