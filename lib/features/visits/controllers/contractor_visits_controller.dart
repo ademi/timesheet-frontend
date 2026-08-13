@@ -6,6 +6,8 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../shifts/data/models/shift_models.dart';
+import '../../shifts/data/repositories/shifts_repository.dart';
 import '../data/models/visit_models.dart';
 import '../data/repositories/visits_repository.dart';
 import '../services/visit_location_service.dart';
@@ -13,17 +15,22 @@ import '../services/visit_location_service.dart';
 class ContractorVisitsController extends GetxController {
   ContractorVisitsController({
     required VisitsRepository repository,
+    required ShiftsRepository shiftsRepository,
     required SessionService session,
     VisitLocationService location = const VisitLocationService(),
   })  : _repository = repository,
+        _shiftsRepository = shiftsRepository,
         _session = session,
         _location = location;
 
   final VisitsRepository _repository;
+  final ShiftsRepository _shiftsRepository;
   final SessionService _session;
   final VisitLocationService _location;
 
   final visits = <VisitOut>[].obs;
+  final openShifts = <OpenShiftOut>[].obs;
+  final selectedTab = 'mine'.obs;
   final selected = Rxn<VisitOut>();
   final isLoading = false.obs;
   final isSaving = false.obs;
@@ -41,6 +48,8 @@ class ContractorVisitsController extends GetxController {
       _session.hasPermission(AppPermissions.visitsCheckIn);
   bool get canComplete =>
       _session.hasPermission(AppPermissions.visitsComplete);
+  bool get canClaimShifts =>
+      _session.hasPermission(AppPermissions.shiftsClaim);
   bool get canRead =>
       _session.hasPermission(AppPermissions.visitsRead) ||
       canCheckIn ||
@@ -69,6 +78,15 @@ class ContractorVisitsController extends GetxController {
     super.onClose();
   }
 
+  Future<void> selectTab(String tab) async {
+    selectedTab.value = tab;
+    if (tab == 'open') {
+      await loadOpenShifts();
+    } else {
+      await load();
+    }
+  }
+
   Future<void> load() async {
     if (!canRead) {
       errorMessage.value = 'Missing visits.read permission.';
@@ -89,6 +107,51 @@ class ContractorVisitsController extends GetxController {
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> loadOpenShifts() async {
+    if (!canClaimShifts) return;
+    isLoading.value = true;
+    errorMessage.value = null;
+    try {
+      final now = DateTime.now();
+      final from = DateTime(now.year, now.month, now.day).toUtc();
+      final to = from.add(const Duration(days: 14));
+      final list = await _shiftsRepository.listOpenShifts(from: from, to: to);
+      list.sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
+      openShifts.assignAll(list);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> claimShift(String shiftId) async {
+    if (!canClaimShifts) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final shift = await _shiftsRepository.claimShift(shiftId);
+      openShifts.removeWhere((s) => s.id == shiftId);
+      final assignment = shift.assignments.last;
+      final visit = await _repository.getVisit(assignment.visitId);
+      final idx = visits.indexWhere((v) => v.id == visit.id);
+      if (idx >= 0) {
+        visits[idx] = visit;
+      } else {
+        visits.add(visit);
+        visits.sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
+      }
+      selectedTab.value = 'mine';
+      await openDetail(visit);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
     }
   }
 

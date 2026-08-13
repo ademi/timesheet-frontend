@@ -3,8 +3,12 @@ import 'package:get/get.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
+import '../../engagements/bindings/engagements_binding.dart';
+import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/bindings/jobs_binding.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
+import '../../shifts/data/datasources/shifts_remote_datasource.dart';
+import '../../shifts/data/repositories/shifts_repository.dart';
 import '../controllers/contractor_visits_controller.dart';
 import '../controllers/staff_visits_controller.dart';
 import '../data/datasources/visits_remote_datasource.dart';
@@ -37,6 +41,19 @@ class VisitsBinding extends Bindings {
         fenix: true,
       );
     }
+    if (!Get.isRegistered<ShiftsRemoteDataSource>()) {
+      Get.lazyPut<ShiftsRemoteDataSource>(
+        () =>
+            ShiftsRemoteDataSource(authenticatedDio: Get.find<ApiClient>().dio),
+        fenix: true,
+      );
+    }
+    if (!Get.isRegistered<ShiftsRepository>()) {
+      Get.lazyPut<ShiftsRepository>(
+        () => ShiftsRepository(remote: Get.find<ShiftsRemoteDataSource>()),
+        fenix: true,
+      );
+    }
     if (!Get.isRegistered<VisitLocationService>()) {
       Get.put<VisitLocationService>(const VisitLocationService());
     }
@@ -48,12 +65,15 @@ class StaffVisitsBinding extends Bindings {
   void dependencies() {
     VisitsBinding.ensureShared();
     JobsBinding.ensureShared();
+    EngagementsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<StaffVisitsController>()) {
       Get.put(
         StaffVisitsController(
           repository: Get.find<VisitsRepository>(),
+          shiftsRepository: Get.find<ShiftsRepository>(),
           jobsRepository: Get.find<JobsRepository>(),
+          engagementsRepository: Get.find<EngagementsRepository>(),
           session: Get.find<SessionService>(),
         ),
       );
@@ -70,6 +90,7 @@ class ContractorVisitsBinding extends Bindings {
       Get.put(
         ContractorVisitsController(
           repository: Get.find<VisitsRepository>(),
+          shiftsRepository: Get.find<ShiftsRepository>(),
           session: Get.find<SessionService>(),
           location: Get.find<VisitLocationService>(),
         ),

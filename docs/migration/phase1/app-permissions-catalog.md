@@ -15,8 +15,8 @@
 `contractors.read` · `contractors.invite` · `contractors.approve` · `contractors.manage` · `contractors.docs.read`  
 `credentials.read` · `credentials.manage` · `credentials.review` · `credentials.source.read`
 
-### Clients / jobs / visits
-`clients.read` · `clients.manage` · `jobs.read` · `jobs.manage` · `visits.read` · `visits.manage` · `visits.check_in` · `visits.complete`
+### Clients / jobs / visits / shifts
+`clients.read` · `clients.manage` · `jobs.read` · `jobs.manage` · `visits.read` · `visits.manage` · `visits.check_in` · `visits.complete` · `shifts.read` · `shifts.manage` · `shifts.claim`
 
 ### Documents / payments / schedule
 `documents.upload` · `payments.view` · `payments.manage` · `payments.view_own` · `contractor.schedule.manage` · `attendance.adjust`

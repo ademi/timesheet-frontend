@@ -55,6 +55,7 @@ abstract class AppRoutes {
   static const staffFormTemplateEditor = '/staff/jobs/form-template-editor';
   static const staffVisits = '/staff/visits';
   static const staffVisitDetail = '/staff/visits/detail';
+  static const staffShiftDetail = '/staff/visits/shift-detail';
   static const staffPayments = '/staff/payments';
   static const staffCompliance = '/staff/compliance';
   static const staffSettings = '/staff/settings';

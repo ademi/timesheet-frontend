@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
+import '../../shifts/widgets/shift_slot_pips.dart';
 import '../controllers/staff_visits_controller.dart';
 
 String _fmt(DateTime dt) {
@@ -41,9 +42,16 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Visits'),
+        title: const Text('Roster'),
         actions: shellAppBarActions(),
       ),
+      floatingActionButton:
+          controller.canManage
+              ? FloatingActionButton(
+                onPressed: () => _showCreateShiftDialog(context, controller),
+                child: const Icon(Icons.add),
+              )
+              : null,
       body: Obx(() {
         final err = controller.errorMessage.value;
         final start = controller.rangeStart.value;
@@ -78,13 +86,20 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                         controller.jobIdFilter.value.isEmpty
                             ? null
                             : controller.jobIdFilter.value,
+                    isExpanded: true,
                     items: [
                       const DropdownMenuItem(
                         value: null,
                         child: Text('All jobs'),
                       ),
                       for (final job in controller.jobs)
-                        DropdownMenuItem(value: job.id, child: Text(job.title)),
+                        DropdownMenuItem(
+                          value: job.id,
+                          child: Text(
+                            job.title,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                     ],
                     onChanged: controller.setJobFilter,
                     decoration: const InputDecoration(
@@ -103,17 +118,10 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                         value: null,
                         child: Text('All statuses'),
                       ),
+                      DropdownMenuItem(value: 'draft', child: Text('Draft')),
                       DropdownMenuItem(
-                        value: 'scheduled',
-                        child: Text('Scheduled'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'checked_in',
-                        child: Text('Checked in'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'completed',
-                        child: Text('Completed'),
+                        value: 'published',
+                        child: Text('Published'),
                       ),
                       DropdownMenuItem(
                         value: 'cancelled',
@@ -133,34 +141,64 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
               Padding(padding: const EdgeInsets.all(16), child: _ErrorBox(err)),
             Expanded(
               child:
-                  controller.isLoading.value && controller.visits.isEmpty
+                  controller.isLoading.value && controller.shifts.isEmpty
                       ? const Center(child: CircularProgressIndicator())
                       : RefreshIndicator(
                         onRefresh: controller.load,
                         child: ListView.builder(
                           padding: const EdgeInsets.all(16),
                           itemCount:
-                              controller.visits.isEmpty
+                              controller.shifts.isEmpty
                                   ? 1
-                                  : controller.visits.length,
+                                  : controller.shifts.length,
                           itemBuilder: (context, i) {
-                            if (controller.visits.isEmpty) {
+                            if (controller.shifts.isEmpty) {
                               return const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 32),
-                                child: Text('No visits in this range.'),
+                                child: Text('No shifts in this range.'),
                               );
                             }
-                            final v = controller.visits[i];
+                            final shift = controller.shifts[i];
+                            final hasOpenHole =
+                                shift.status == 'published' &&
+                                shift.openSlots > 0;
+                            final isDraft = shift.status == 'draft';
                             return Card(
                               margin: const EdgeInsets.only(bottom: 8),
+                              color:
+                                  hasOpenHole
+                                      ? AppColors.openSlotBackground
+                                      : null,
                               child: ListTile(
-                                title: Text(v.jobTitle ?? 'Visit'),
-                                subtitle: Text(
-                                  '${_fmt(v.scheduledStart)} · ${v.status}'
-                                  '${v.contractorName != null ? ' · ${v.contractorName}' : ''}',
+                                title: Text(
+                                  shift.jobTitle,
+                                  style: TextStyle(
+                                    color:
+                                        isDraft ? AppColors.slate400 : null,
+                                  ),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${_fmt(shift.scheduledStart)} · ${shift.status}'
+                                      '${shift.clientName != null ? ' · ${shift.clientName}' : ''}',
+                                      style: TextStyle(
+                                        color:
+                                            isDraft
+                                                ? AppColors.slate400
+                                                : null,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    ShiftSlotPips(
+                                      requiredSlots: shift.requiredSlots,
+                                      filledSlots: shift.filledSlots,
+                                    ),
+                                  ],
                                 ),
                                 trailing: const Icon(Icons.chevron_right),
-                                onTap: () => controller.openDetail(v),
+                                onTap: () => controller.openShiftDetail(shift),
                               ),
                             );
                           },
@@ -170,6 +208,202 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
           ],
         );
       }),
+    );
+  }
+
+  Future<void> _showCreateShiftDialog(
+    BuildContext context,
+    StaffVisitsController controller,
+  ) async {
+    String? jobId =
+        controller.jobIdFilter.value.isEmpty
+            ? null
+            : controller.jobIdFilter.value;
+    var start = DateTime.now().add(const Duration(hours: 1));
+    var end = start.add(const Duration(hours: 2));
+    var slots = 1;
+    var publish = true;
+    String? dialogError;
+    var isSubmitting = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            return AlertDialog(
+              title: const Text('Create shift'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (dialogError != null) ...[
+                      Text(
+                        dialogError!,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    DropdownButtonFormField<String>(
+                      value: jobId,
+                      isExpanded: true,
+                      items: [
+                        for (final job in controller.jobs)
+                          DropdownMenuItem(
+                            value: job.id,
+                            child: Text(
+                              job.title,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: (v) => setState(() => jobId = v),
+                      decoration: const InputDecoration(
+                        labelText: 'Job',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Start'),
+                      subtitle: Text(_fmt(start)),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: ctx,
+                          initialDate: start,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                        );
+                        if (date == null) return;
+                        if (!ctx.mounted) return;
+                        final time = await showTimePicker(
+                          context: ctx,
+                          initialTime: TimeOfDay.fromDateTime(start),
+                        );
+                        if (time == null) return;
+                        setState(() {
+                          start = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                            time.hour,
+                            time.minute,
+                          );
+                          if (!end.isAfter(start)) {
+                            end = start.add(const Duration(hours: 1));
+                          }
+                        });
+                      },
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('End'),
+                      subtitle: Text(_fmt(end)),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: ctx,
+                          initialDate: end,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                        );
+                        if (date == null) return;
+                        if (!ctx.mounted) return;
+                        final time = await showTimePicker(
+                          context: ctx,
+                          initialTime: TimeOfDay.fromDateTime(end),
+                        );
+                        if (time == null) return;
+                        setState(() {
+                          end = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                            time.hour,
+                            time.minute,
+                          );
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<int>(
+                      value: slots,
+                      items: [
+                        for (var n = 1; n <= 8; n++)
+                          DropdownMenuItem(value: n, child: Text('$n')),
+                      ],
+                      onChanged: (v) => setState(() => slots = v ?? 1),
+                      decoration: const InputDecoration(
+                        labelText: 'Required workers',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Publish immediately'),
+                      value: publish,
+                      onChanged: (v) => setState(() => publish = v),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed:
+                      isSubmitting
+                          ? null
+                          : () async {
+                            if (jobId == null) {
+                              setState(() => dialogError = 'Select a job.');
+                              return;
+                            }
+                            if (!end.isAfter(start)) {
+                              setState(
+                                () => dialogError = 'End must be after start.',
+                              );
+                              return;
+                            }
+                            setState(() {
+                              isSubmitting = true;
+                              dialogError = null;
+                            });
+                            final ok = await controller.createShift(
+                              jobId: jobId!,
+                              start: start,
+                              end: end,
+                              requiredSlots: slots,
+                              publish: publish,
+                            );
+                            if (!ctx.mounted) return;
+                            if (ok) {
+                              Navigator.pop(ctx);
+                              return;
+                            }
+                            setState(() {
+                              isSubmitting = false;
+                              dialogError =
+                                  controller.errorMessage.value ??
+                                  'Could not create shift.';
+                            });
+                          },
+                  child:
+                      isSubmitting
+                          ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Text('Create'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

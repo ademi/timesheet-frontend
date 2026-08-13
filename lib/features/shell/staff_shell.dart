@@ -41,9 +41,9 @@ abstract final class StaffShellNav {
     ),
     _StaffDest(
       icon: Icons.event_available_outlined,
-      label: 'Visits',
+      label: 'Roster',
       route: AppRoutes.staffVisits,
-      anyOf: [AppPermissions.visitsRead],
+      anyOf: [AppPermissions.visitsRead, AppPermissions.shiftsRead],
     ),
     _StaffDest(
       icon: Icons.payments_outlined,

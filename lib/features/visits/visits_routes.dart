@@ -7,6 +7,7 @@ import '../../app/routes/middlewares/auth_guard.dart';
 import '../../app/routes/middlewares/permission_guard.dart';
 import '../shell/contractor_shell.dart';
 import '../shell/staff_shell.dart';
+import '../shifts/views/staff_shift_detail_view.dart';
 import 'bindings/visits_binding.dart';
 import 'views/contractor_visit_detail_view.dart';
 import 'views/contractor_visits_list_view.dart';
@@ -24,6 +25,8 @@ abstract final class VisitsPages {
             ActorGuard(),
             PermissionGuard(
               anyOf: [
+                AppPermissions.shiftsRead,
+                AppPermissions.shiftsManage,
                 AppPermissions.visitsRead,
                 AppPermissions.visitsManage,
                 AppPermissions.jobsManage,
@@ -33,6 +36,25 @@ abstract final class VisitsPages {
           binding: StaffVisitsBinding(),
           page: () => staffShellPage(const StaffVisitsBoardView()),
           transition: Transition.fadeIn,
+        ),
+        GetPage(
+          name: AppRoutes.staffShiftDetail,
+          middlewares: [
+            AuthGuard(),
+            ActorGuard(),
+            PermissionGuard(
+              anyOf: [
+                AppPermissions.shiftsRead,
+                AppPermissions.shiftsManage,
+                AppPermissions.visitsRead,
+                AppPermissions.visitsManage,
+                AppPermissions.jobsManage,
+              ],
+            ),
+          ],
+          binding: StaffVisitsBinding(),
+          page: () => const StaffShiftDetailView(),
+          transition: Transition.rightToLeft,
         ),
         GetPage(
           name: AppRoutes.staffVisitDetail,

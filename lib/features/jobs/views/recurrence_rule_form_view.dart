@@ -30,6 +30,10 @@ class RecurrenceRuleFormView extends StatelessWidget {
             DropdownButtonFormField<String>(
               value: c.selectedContractorId.value,
               items: [
+                const DropdownMenuItem(
+                  value: null,
+                  child: Text('Unassigned (publish holes)'),
+                ),
                 for (final engagement in c.jobs.assignableEngagements)
                   DropdownMenuItem(
                     value: engagement.contractorId,
@@ -40,9 +44,29 @@ class RecurrenceRuleFormView extends StatelessWidget {
               ],
               onChanged: (value) => c.selectedContractorId.value = value,
               decoration: const InputDecoration(
-                labelText: 'Contractor *',
+                labelText: 'Contractor (optional)',
                 border: OutlineInputBorder(),
               ),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<int>(
+              value: c.requiredSlots.value,
+              items: [
+                for (var n = 1; n <= 8; n++)
+                  DropdownMenuItem(value: n, child: Text('$n')),
+              ],
+              onChanged: (value) {
+                if (value != null) c.requiredSlots.value = value;
+              },
+              decoration: const InputDecoration(
+                labelText: 'Required workers',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Creates published shifts for this window. Unfilled slots stay open for claim.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<RecurrenceFrequency>(

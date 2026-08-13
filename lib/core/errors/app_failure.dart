@@ -123,6 +123,7 @@ class AppFailure implements Exception {
       'engagement_not_active',
       'invalid_visit_status',
       'visit_overlap',
+      'shift_overlap',
       'standing_job_exists',
       'contractor_not_found',
       'hard_split_violation',
@@ -147,14 +148,19 @@ class AppFailure implements Exception {
       'availability_windows_overlap',
       'credential_id_required',
       'evidence_required',
+      'shift_full',
+      'invalid_shift_status',
+      'contractor_on_leave',
+      'shift_not_found',
+      'shift_overlap',
     ];
     for (final k in known) {
       if (d == k || d.contains(k)) return k;
     }
+    if (d.toLowerCase().contains('permission')) return 'missing_permission';
     if (status == 403) return 'forbidden';
     if (status == 402) return 'billing_gate';
     if (status == 429) return 'rate_limited';
-    if (d.toLowerCase().contains('permission')) return 'missing_permission';
     if (d.toLowerCase().contains('subscription')) {
       return 'require_active_subscription';
     }
@@ -182,9 +188,14 @@ class AppFailure implements Exception {
       case 'standing_job_exists':
       case 'contractor_not_found':
       case 'visit_overlap':
+      case 'shift_overlap':
       case 'leave_in_past':
       case 'availability_windows_overlap':
       case 'evidence_required':
+      case 'shift_full':
+      case 'invalid_shift_status':
+      case 'contractor_on_leave':
+      case 'shift_not_found':
         return AppFailurePresentation.inline;
       case 'proxy_required':
         return AppFailurePresentation.inline;
@@ -254,6 +265,8 @@ class AppFailure implements Exception {
         return 'Visit status changed. Refresh and try again.';
       case 'visit_overlap':
         return 'Overlapping visit — adjust the window or use partial generate.';
+      case 'shift_overlap':
+        return 'A shift for this job already exists in that time window.';
       case 'leave_in_past':
         return 'Leave cannot end before today. Choose dates that are still current or in the future.';
       case 'availability_windows_overlap':
@@ -284,6 +297,14 @@ class AppFailure implements Exception {
         return 'Visit not found.';
       case 'rate_limited':
         return 'Too many attempts — try again shortly.';
+      case 'shift_full':
+        return 'This shift is already filled.';
+      case 'invalid_shift_status':
+        return 'This shift can’t be changed in its current state.';
+      case 'contractor_on_leave':
+        return 'You’re on leave for this day.';
+      case 'shift_not_found':
+        return 'Shift not found.';
       default:
         return fallback;
     }

@@ -556,7 +556,8 @@ class JobsController extends GetxController {
       lastGenerate.value = result;
       Get.snackbar(
         'Generate complete',
-        'Created ${result.createdVisitIds.length} visit(s); '
+        'Created ${result.createdShiftIds.length} shift(s), '
+            '${result.createdVisitIds.length} visit(s); '
             'skipped ${result.skipped.length}.',
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),

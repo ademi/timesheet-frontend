@@ -2,14 +2,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/services/session_service.dart';
+import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
+import 'package:rostiq/features/shifts/data/models/shift_models.dart';
+import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/controllers/staff_visits_controller.dart';
 import 'package:rostiq/features/visits/data/models/visit_models.dart';
 import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
 
 class _MockVisitsRepository extends Mock implements VisitsRepository {}
 
+class _MockShiftsRepository extends Mock implements ShiftsRepository {}
+
 class _MockJobsRepository extends Mock implements JobsRepository {}
+
+class _MockEngagementsRepository extends Mock
+    implements EngagementsRepository {}
 
 class _MockSessionService extends Mock implements SessionService {}
 
@@ -32,9 +40,27 @@ VisitOut _visit() {
   );
 }
 
+StaffVisitsController _controller({
+  required _MockVisitsRepository visits,
+  required _MockShiftsRepository shifts,
+  required _MockJobsRepository jobs,
+  required _MockEngagementsRepository engagements,
+  required _MockSessionService session,
+}) {
+  return StaffVisitsController(
+    repository: visits,
+    shiftsRepository: shifts,
+    jobsRepository: jobs,
+    engagementsRepository: engagements,
+    session: session,
+  );
+}
+
 void main() {
   late _MockVisitsRepository visits;
+  late _MockShiftsRepository shifts;
   late _MockJobsRepository jobs;
+  late _MockEngagementsRepository engagements;
   late _MockSessionService session;
 
   setUpAll(() {
@@ -45,119 +71,101 @@ void main() {
     Get.testMode = true;
     Get.reset();
     visits = _MockVisitsRepository();
+    shifts = _MockShiftsRepository();
     jobs = _MockJobsRepository();
+    engagements = _MockEngagementsRepository();
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
     when(
-      () => visits.listVisits(
+      () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
         jobId: any(named: 'jobId'),
-        clientId: any(named: 'clientId'),
-        status: any(named: 'status'),
-        paymentStatus: any(named: 'paymentStatus'),
-        limit: any(named: 'limit'),
       ),
-    ).thenAnswer((_) async => <VisitOut>[]);
+    ).thenAnswer((_) async => <ShiftOut>[]);
     when(() => jobs.listJobs()).thenAnswer((_) async => []);
+    when(
+      () => engagements.listTenantEngagements(),
+    ).thenAnswer((_) async => []);
   });
 
   tearDown(Get.reset);
 
-  test('onInit with skipBoardLoad does not call listVisits', () async {
-    Get.routing.args = {
-      'visit': _visit(),
-      'skipBoardLoad': true,
-    };
+  test('onInit does not call listShifts', () async {
+    Get.routing.args = {'visit': _visit()};
     Get.put(
-      StaffVisitsController(
-        repository: visits,
-        jobsRepository: jobs,
+      _controller(
+        visits: visits,
+        shifts: shifts,
+        jobs: jobs,
+        engagements: engagements,
         session: session,
       ),
     );
     await Future<void>.delayed(Duration.zero);
     verifyNever(
-      () => visits.listVisits(
+      () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
         jobId: any(named: 'jobId'),
-        clientId: any(named: 'clientId'),
-        status: any(named: 'status'),
-        paymentStatus: any(named: 'paymentStatus'),
-        limit: any(named: 'limit'),
       ),
     );
   });
 
-  test('shiftRange after skipBoardLoad still calls listVisits', () async {
-    final c = StaffVisitsController(
-      repository: visits,
-      jobsRepository: jobs,
+  test('shiftRange calls listShifts', () async {
+    final c = _controller(
+      visits: visits,
+      shifts: shifts,
+      jobs: jobs,
+      engagements: engagements,
       session: session,
     );
     Get.put(c);
-    Get.routing.args = {'skipBoardLoad': true, 'visit': _visit()};
-    c.applyRouteArgs();
     c.shiftRange(1);
     await Future<void>.delayed(Duration.zero);
     verify(
-      () => visits.listVisits(
+      () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
         jobId: any(named: 'jobId'),
-        clientId: any(named: 'clientId'),
-        status: any(named: 'status'),
-        paymentStatus: any(named: 'paymentStatus'),
-        limit: any(named: 'limit'),
       ),
     ).called(1);
   });
 
-  test('applyRouteArgs with VisitOut clears skipBoardLoad', () async {
-    final c = StaffVisitsController(
-      repository: visits,
-      jobsRepository: jobs,
+  test('load calls listShifts', () async {
+    final c = _controller(
+      visits: visits,
+      shifts: shifts,
+      jobs: jobs,
+      engagements: engagements,
       session: session,
     );
     Get.put(c);
-    Get.routing.args = {'skipBoardLoad': true, 'visit': _visit()};
-    c.applyRouteArgs();
-    Get.routing.args = _visit();
-    c.applyRouteArgs();
     await c.load();
     verify(
-      () => visits.listVisits(
+      () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
         jobId: any(named: 'jobId'),
-        clientId: any(named: 'clientId'),
-        status: any(named: 'status'),
-        paymentStatus: any(named: 'paymentStatus'),
-        limit: any(named: 'limit'),
       ),
     ).called(1);
   });
 
-  test('ensureBoardLoaded clears skip and calls listVisits', () async {
-    final c = StaffVisitsController(
-      repository: visits,
-      jobsRepository: jobs,
+  test('ensureBoardLoaded calls listShifts', () async {
+    final c = _controller(
+      visits: visits,
+      shifts: shifts,
+      jobs: jobs,
+      engagements: engagements,
       session: session,
     );
     Get.put(c);
-    Get.routing.args = {'skipBoardLoad': true, 'visit': _visit()};
-    c.applyRouteArgs();
     await c.ensureBoardLoaded();
     verify(
-      () => visits.listVisits(
+      () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
         jobId: any(named: 'jobId'),
-        clientId: any(named: 'clientId'),
-        status: any(named: 'status'),
-        paymentStatus: any(named: 'paymentStatus'),
-        limit: any(named: 'limit'),
       ),
     ).called(1);
   });

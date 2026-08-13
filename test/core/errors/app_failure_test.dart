@@ -36,6 +36,23 @@ void main() {
       expect(failure.isProxyRequired, isTrue);
     });
 
+    test('maps Missing permission before generic 403 forbidden', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(path: '/shifts'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/shifts'),
+            statusCode: 403,
+            data: {'detail': 'Missing permission'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      expect(failure.code, 'missing_permission');
+      expect(failure.message, 'You don’t have permission for this action.');
+    });
+
     test('maps a forbidden document response to file-access guidance', () {
       final failure = AppFailure.fromDio(
         DioException(
@@ -215,6 +232,35 @@ void main() {
       );
       expect(failure.isEligibilityIncomplete, isTrue);
       expect(failure.eligibilityReasons, isNotEmpty);
+    });
+
+    test('maps shift claim error codes', () {
+      const expectedMessages = {
+        'shift_full': 'This shift is already filled.',
+        'invalid_shift_status':
+            'This shift can’t be changed in its current state.',
+        'contractor_on_leave': 'You’re on leave for this day.',
+        'shift_not_found': 'Shift not found.',
+        'shift_overlap': 'A shift for this job already exists in that time window.',
+      };
+
+      for (final entry in expectedMessages.entries) {
+        final failure = AppFailure.fromDio(
+          DioException(
+            requestOptions: RequestOptions(path: '/shifts/x/claim'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/shifts/x/claim'),
+              statusCode: 409,
+              data: {'detail': entry.key},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        expect(failure.code, entry.key);
+        expect(failure.message, entry.value);
+        expect(failure.presentation, AppFailurePresentation.inline);
+      }
     });
   });
 }

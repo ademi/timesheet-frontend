@@ -142,6 +142,17 @@ abstract final class ApiPaths {
   static String visitFormSubmissions(String id) =>
       '${visit(id)}/form-submissions';
 
+  // Shifts / roster
+  static const shifts = '$_v1/shifts';
+  static const shiftsOpen = '$_v1/shifts/open';
+  static String shift(String id) => '$shifts/$id';
+  static String shiftPublish(String id) => '${shift(id)}/publish';
+  static String shiftClaim(String id) => '${shift(id)}/claim';
+  static String shiftAssign(String id) => '${shift(id)}/assign';
+  static String shiftRelease(String id) => '${shift(id)}/release';
+  static String shiftUnassign(String id) => '${shift(id)}/unassign';
+  static String shiftCancel(String id) => '${shift(id)}/cancel';
+
   // Payroll / payments
   static String engagementRates(String engagementId) =>
       '$_v1/payroll/engagement-rates/$engagementId';

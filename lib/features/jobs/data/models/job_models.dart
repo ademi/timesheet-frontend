@@ -126,7 +126,8 @@ class RecurrenceRuleOut {
     required this.id,
     required this.tenantId,
     required this.jobId,
-    required this.contractorId,
+    this.contractorId,
+    required this.requiredSlots,
     required this.rrule,
     required this.dtstart,
     required this.timeWindows,
@@ -145,7 +146,8 @@ class RecurrenceRuleOut {
   final String id;
   final String tenantId;
   final String jobId;
-  final String contractorId;
+  final String? contractorId;
+  final int requiredSlots;
   final String? contractorName;
   final String rrule;
   final DateTime dtstart;
@@ -173,7 +175,8 @@ class RecurrenceRuleOut {
       id: json['id'].toString(),
       tenantId: json['tenant_id'].toString(),
       jobId: json['job_id'].toString(),
-      contractorId: json['contractor_id'].toString(),
+      contractorId: json['contractor_id']?.toString(),
+      requiredSlots: json['required_slots'] as int? ?? 1,
       contractorName: json['contractor_name'] as String?,
       rrule: json['rrule'] as String,
       dtstart: DateTime.parse(json['dtstart'] as String),
@@ -199,7 +202,8 @@ class RecurrenceRuleOut {
 
 class RecurrenceRuleCreateRequest {
   const RecurrenceRuleCreateRequest({
-    required this.contractorId,
+    this.contractorId,
+    this.requiredSlots = 1,
     required this.rrule,
     required this.dtstart,
     required this.timeWindows,
@@ -208,7 +212,8 @@ class RecurrenceRuleCreateRequest {
     this.formTemplateIds = const [],
   });
 
-  final String contractorId;
+  final String? contractorId;
+  final int requiredSlots;
   final String rrule;
   final DateTime dtstart;
   final DateTime? until;
@@ -217,7 +222,8 @@ class RecurrenceRuleCreateRequest {
   final List<String> formTemplateIds;
 
   Map<String, dynamic> toJson() => {
-    'contractor_id': contractorId,
+    if (contractorId != null) 'contractor_id': contractorId,
+    'required_slots': requiredSlots,
     'rrule': rrule,
     'dtstart': dtstart.toUtc().toIso8601String(),
     if (until != null) 'until': until!.toUtc().toIso8601String(),
@@ -271,16 +277,21 @@ class GenerateVisitsRequest {
 class GenerateVisitsResponse {
   const GenerateVisitsResponse({
     required this.createdVisitIds,
+    this.createdShiftIds = const [],
     this.skipped = const [],
   });
 
   final List<String> createdVisitIds;
+  final List<String> createdShiftIds;
   final List<GenerateVisitsConflict> skipped;
 
   factory GenerateVisitsResponse.fromJson(Map<String, dynamic> json) {
     final skippedRaw = json['skipped'];
     return GenerateVisitsResponse(
       createdVisitIds: (json['created_visit_ids'] as List? ?? const [])
+          .map((e) => e.toString())
+          .toList(growable: false),
+      createdShiftIds: (json['created_shift_ids'] as List? ?? const [])
           .map((e) => e.toString())
           .toList(growable: false),
       skipped:

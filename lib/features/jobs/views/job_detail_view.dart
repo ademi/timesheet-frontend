@@ -251,7 +251,9 @@ class _GenerateResult extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        'Created ${result.createdVisitIds.length}; skipped ${result.skipped.length}'
+        'Created ${result.createdShiftIds.length} shift(s), '
+        '${result.createdVisitIds.length} visit(s); '
+        'skipped ${result.skipped.length}'
         '${result.skipped.isEmpty ? '' : ': ${result.skipped.map((s) => s.detail).join('; ')}'}',
       ),
     );

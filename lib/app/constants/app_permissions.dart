@@ -35,6 +35,10 @@ abstract final class AppPermissions {
   static const visitsCheckIn = 'visits.check_in';
   static const visitsComplete = 'visits.complete';
 
+  static const shiftsRead = 'shifts.read';
+  static const shiftsManage = 'shifts.manage';
+  static const shiftsClaim = 'shifts.claim';
+
   static const documentsUpload = 'documents.upload';
 
   static const paymentsView = 'payments.view';

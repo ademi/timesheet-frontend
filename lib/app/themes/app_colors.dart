@@ -48,5 +48,9 @@ class AppColors {
 
   static const Color success = Color(0xFF16A34A);
 
+  /// Open roster slot indicators (warm amber — not error-red).
+  static const Color openSlot = Color(0xFFB45309);
+  static const Color openSlotBackground = Color(0xFFFFF7ED);
+
   static const Color divider = slate200;
 }

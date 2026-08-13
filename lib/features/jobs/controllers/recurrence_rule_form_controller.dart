@@ -20,6 +20,7 @@ class RecurrenceRuleFormController extends GetxController {
   final otherTitleCtrl = TextEditingController();
   final showOtherTitleField = false.obs;
   final selectedFormTemplateIds = <String>{}.obs;
+  final requiredSlots = 1.obs;
   final error = RxnString();
 
   bool get requiresWeekdays =>
@@ -133,10 +134,6 @@ class RecurrenceRuleFormController extends GetxController {
   }
 
   Future<bool> save() async {
-    if (selectedContractorId.value == null) {
-      error.value = 'Select a contractor.';
-      return false;
-    }
     if (requiresWeekdays && weekdays.isEmpty) {
       error.value = 'Select at least one weekday.';
       return false;
@@ -161,7 +158,8 @@ class RecurrenceRuleFormController extends GetxController {
     error.value = null;
     return jobs.createRecurrenceRule(
       RecurrenceRuleCreateRequest(
-        contractorId: selectedContractorId.value!,
+        contractorId: selectedContractorId.value,
+        requiredSlots: requiredSlots.value,
         rrule: rrule,
         dtstart: startDate.value,
         until: endDate.value?.add(const Duration(days: 1, microseconds: -1)),

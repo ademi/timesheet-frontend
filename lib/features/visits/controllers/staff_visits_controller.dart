@@ -4,29 +4,39 @@ import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../engagements/data/models/engagement_models.dart';
+import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
+import '../../shifts/data/models/shift_models.dart';
+import '../../shifts/data/repositories/shifts_repository.dart';
 import '../data/models/visit_models.dart';
 import '../data/repositories/visits_repository.dart';
 
 class StaffVisitsController extends GetxController {
   StaffVisitsController({
     required VisitsRepository repository,
+    required ShiftsRepository shiftsRepository,
     required JobsRepository jobsRepository,
+    required EngagementsRepository engagementsRepository,
     required SessionService session,
   }) : _repository = repository,
+       _shiftsRepository = shiftsRepository,
        _jobsRepository = jobsRepository,
+       _engagementsRepository = engagementsRepository,
        _session = session;
 
   final VisitsRepository _repository;
+  final ShiftsRepository _shiftsRepository;
   final JobsRepository _jobsRepository;
+  final EngagementsRepository _engagementsRepository;
   final SessionService _session;
 
-  bool _skipBoardLoad = false;
-
-  final visits = <VisitOut>[].obs;
+  final shifts = <ShiftOut>[].obs;
   final jobs = <JobOut>[].obs;
+  final engagements = <EngagementOut>[].obs;
   final selected = Rxn<VisitOut>();
+  final selectedShift = Rxn<ShiftOut>();
   final isLoading = false.obs;
   final isSaving = false.obs;
   final isRefreshing = false.obs;
@@ -37,11 +47,17 @@ class StaffVisitsController extends GetxController {
   final jobIdFilter = ''.obs;
   final statusFilter = ''.obs;
 
-  bool get canManage => _session.hasPermission(AppPermissions.visitsManage);
+  bool get canManage => _session.hasPermission(AppPermissions.shiftsManage);
   bool get canRead =>
+      _session.hasPermission(AppPermissions.shiftsRead) ||
+      _session.hasPermission(AppPermissions.shiftsManage) ||
       _session.hasPermission(AppPermissions.visitsRead) ||
       _session.hasPermission(AppPermissions.visitsManage) ||
       _session.hasPermission(AppPermissions.jobsManage);
+
+  List<EngagementOut> get assignableEngagements => engagements
+      .where((e) => e.isActive || e.isApproved || e.isPendingDocs)
+      .toList(growable: false);
 
   DateTime get _fromUtc {
     final d = rangeStart.value;
@@ -58,46 +74,48 @@ class StaffVisitsController extends GetxController {
 
   void applyRouteArgs() {
     final args = Get.arguments;
-    _skipBoardLoad = args is Map && args['skipBoardLoad'] == true;
     if (args is Map) {
       final v = args['visit'];
       if (v is VisitOut) selected.value = v;
+      final shift = args['shift'];
+      if (shift is ShiftOut) selectedShift.value = shift;
       if (args['job_id'] != null) {
         jobIdFilter.value = args['job_id'].toString();
       }
       return;
     }
     if (args is VisitOut) selected.value = args;
+    if (args is ShiftOut) selectedShift.value = args;
   }
 
-  /// Only entry point for board list fetch (D4-A + D8-A).
+  /// Only entry point for roster board list fetch.
   Future<void> ensureBoardLoaded() async {
-    _skipBoardLoad = false;
     await loadJobs();
+    await loadEngagements();
     await load();
   }
 
   Future<void> load() async {
-    _skipBoardLoad = false;
     if (!canRead) {
-      errorMessage.value = 'Missing visits.read permission.';
+      errorMessage.value = 'Missing shifts.read permission.';
       return;
     }
     isLoading.value = true;
     errorMessage.value = null;
     try {
-      final list = await _repository.listVisits(
+      final list = await _shiftsRepository.listShifts(
         from: _fromUtc,
         to: _toUtc,
         jobId:
             jobIdFilter.value.trim().isEmpty ? null : jobIdFilter.value.trim(),
-        status:
-            statusFilter.value.trim().isEmpty
-                ? null
-                : statusFilter.value.trim(),
       );
-      list.sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
-      visits.assignAll(list);
+      final status = statusFilter.value.trim();
+      final filtered =
+          status.isEmpty
+              ? list
+              : list.where((s) => s.status == status).toList(growable: false);
+      filtered.sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
+      shifts.assignAll(filtered);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (e) {
@@ -111,7 +129,15 @@ class StaffVisitsController extends GetxController {
     try {
       jobs.assignAll(await _jobsRepository.listJobs());
     } catch (_) {
-      // The visit board remains usable without an optional filter list.
+      // Optional filter list.
+    }
+  }
+
+  Future<void> loadEngagements() async {
+    try {
+      engagements.assignAll(await _engagementsRepository.listTenantEngagements());
+    } catch (_) {
+      // Assign picker may be empty without engagements.read.
     }
   }
 
@@ -130,6 +156,134 @@ class StaffVisitsController extends GetxController {
     load();
   }
 
+  Future<void> openShiftDetail(ShiftOut shift) async {
+    selectedShift.value = shift;
+    Get.toNamed(AppRoutes.staffShiftDetail, arguments: shift);
+    await refreshSelectedShift();
+  }
+
+  Future<void> refreshSelectedShift() async {
+    final id =
+        selectedShift.value?.id ??
+        (Get.arguments is ShiftOut ? (Get.arguments as ShiftOut).id : null);
+    if (id == null) return;
+    isRefreshing.value = true;
+    try {
+      selectedShift.value = await _shiftsRepository.getShift(id);
+      final idx = shifts.indexWhere((s) => s.id == id);
+      if (idx >= 0 && selectedShift.value != null) {
+        shifts[idx] = selectedShift.value!;
+      }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isRefreshing.value = false;
+    }
+  }
+
+  void hydrateShiftFromArgs() {
+    final arg = Get.arguments;
+    if (arg is ShiftOut) {
+      selectedShift.value = arg;
+      return;
+    }
+    if (arg is Map && arg['shift'] is ShiftOut) {
+      selectedShift.value = arg['shift'] as ShiftOut;
+    }
+  }
+
+  Future<void> publishSelectedShift() async {
+    final shift = selectedShift.value;
+    if (shift == null) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      selectedShift.value = await _shiftsRepository.publishShift(shift.id);
+      await load();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> assignSelectedShift(String contractorId) async {
+    final shift = selectedShift.value;
+    if (shift == null) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      selectedShift.value = await _shiftsRepository.assignShift(
+        shiftId: shift.id,
+        contractorId: contractorId,
+      );
+      await load();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> cancelSelectedShift() async {
+    final shift = selectedShift.value;
+    if (shift == null) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      selectedShift.value = await _shiftsRepository.cancelShift(shift.id);
+      await load();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<bool> createShift({
+    required String jobId,
+    required DateTime start,
+    required DateTime end,
+    required int requiredSlots,
+    bool publish = false,
+  }) async {
+    if (isSaving.value) return false;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      await _shiftsRepository.createShift(
+        ShiftCreateRequest(
+          jobId: jobId,
+          scheduledStart: start,
+          scheduledEnd: end,
+          requiredSlots: requiredSlots,
+          status: publish ? 'published' : 'draft',
+        ),
+      );
+      // Refresh roster after the dialog closes so a slow list fetch cannot block UI.
+      load();
+      return true;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> openAssignmentVisit(String visitId) async {
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final visit = await _repository.getVisit(visitId);
+      await openDetail(visit);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
   Future<void> openDetail(VisitOut visit) async {
     selected.value = visit;
     Get.toNamed(AppRoutes.staffVisitDetail, arguments: visit);
@@ -144,10 +298,6 @@ class StaffVisitsController extends GetxController {
     isRefreshing.value = true;
     try {
       selected.value = await _repository.getVisit(id);
-      final idx = visits.indexWhere((v) => v.id == id);
-      if (idx >= 0 && selected.value != null) {
-        visits[idx] = selected.value!;
-      }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -174,7 +324,6 @@ class StaffVisitsController extends GetxController {
     try {
       await _repository.cancel(visit.id);
       await refreshSelected();
-      await load();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -196,7 +345,6 @@ class StaffVisitsController extends GetxController {
         scheduledStart: start,
         scheduledEnd: end,
       );
-      await load();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
