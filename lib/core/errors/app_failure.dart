@@ -125,6 +125,8 @@ class AppFailure implements Exception {
       'visit_overlap',
       'shift_overlap',
       'standing_job_exists',
+      'horizon_window_too_large',
+      'horizon_truncated',
       'contractor_not_found',
       'hard_split_violation',
       'email_required_for_registration_invite',
@@ -186,6 +188,8 @@ class AppFailure implements Exception {
       case 'docs_incomplete':
       case 'scan_blocked':
       case 'standing_job_exists':
+      case 'horizon_window_too_large':
+      case 'horizon_truncated':
       case 'contractor_not_found':
       case 'visit_overlap':
       case 'shift_overlap':

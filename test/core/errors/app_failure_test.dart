@@ -251,6 +251,40 @@ void main() {
       );
     });
 
+    test('horizon_window_too_large is coordinator copy', () {
+      expect(
+        AppFailure.fromDio(
+          DioException(
+            requestOptions: RequestOptions(path: '/jobs'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/jobs'),
+              statusCode: 422,
+              data: {'detail': 'horizon_window_too_large'},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        ).message,
+        contains('14 days'),
+      );
+    });
+
+    test('horizon_truncated is coordinator copy', () {
+      expect(
+        AppFailure.fromDio(
+          DioException(
+            requestOptions: RequestOptions(path: '/jobs'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/jobs'),
+              statusCode: 422,
+              data: {'detail': 'horizon_truncated'},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        ).message,
+        contains('Open roster again'),
+      );
+    });
+
     test('maps shift claim error codes', () {
       const expectedMessages = {
         'shift_full': 'This shift is already filled.',
