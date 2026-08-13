@@ -234,6 +234,23 @@ void main() {
       expect(failure.eligibilityReasons, isNotEmpty);
     });
 
+    test('standing_job_exists is coordinator copy', () {
+      expect(
+        AppFailure.fromDio(
+          DioException(
+            requestOptions: RequestOptions(path: '/jobs'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/jobs'),
+              statusCode: 409,
+              data: {'detail': 'standing_job_exists'},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        ).message,
+        contains('already has ongoing support'),
+      );
+    });
+
     test('maps shift claim error codes', () {
       const expectedMessages = {
         'shift_full': 'This shift is already filled.',

@@ -276,7 +276,11 @@ class AppFailure implements Exception {
       case 'evidence_required':
         return 'Upload at least one evidence file before saving this credential.';
       case 'standing_job_exists':
-        return 'An open standing job already exists for this client.';
+        return 'This client already has ongoing support. Open it, or book one extra session.';
+      case 'horizon_window_too_large':
+        return 'Choose a window of 14 days or less.';
+      case 'horizon_truncated':
+        return 'Filled as many upcoming shifts as allowed. Open roster again to continue.';
       case 'contractor_not_found':
         return 'No contractor registered with that email/phone.';
       case 'hard_split_violation':
