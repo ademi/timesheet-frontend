@@ -132,8 +132,8 @@ RosterGrid buildRosterGrid({
     growable: false,
   );
 
-  final publishedShifts = shifts.where((shift) {
-    if (shift.status != 'published') return false;
+  // Controller owns status filtering; include every shift passed in.
+  final filteredShifts = shifts.where((shift) {
     if (clientIdFilter == null || clientIdFilter.isEmpty) return true;
     return shift.clientId == clientIdFilter;
   }).toList(growable: false);
@@ -141,7 +141,7 @@ RosterGrid buildRosterGrid({
   final unfilledCells = _emptyCells(dayCount);
   final unfilledTileCells = List<RosterCell>.from(unfilledCells);
 
-  for (final shift in publishedShifts) {
+  for (final shift in filteredShifts) {
     if (shift.openSlots <= 0) continue;
     final dayIndex = _dayIndex(dayStarts, shift.scheduledStart);
     if (dayIndex == null) continue;
@@ -179,7 +179,7 @@ RosterGrid buildRosterGrid({
           : _availabilityHintForDay(day, contractorOverlay.availability);
 
       final tiles = <RosterTile>[];
-      for (final shift in publishedShifts) {
+      for (final shift in filteredShifts) {
         final shiftDayIndex = _dayIndex(dayStarts, shift.scheduledStart);
         if (shiftDayIndex != dayIndex) continue;
 

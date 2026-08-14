@@ -31,7 +31,10 @@ String? visitStatusChipLabel(String? visitStatus) {
 }
 
 /// People-by-day roster board (staff laptop/web — D17).
-class RosterGridView extends StatelessWidget {
+///
+/// Each person is one horizontal [Row] (sticky name + day cells) so name and
+/// day columns share a single row height when cells have multiple tiles.
+class RosterGridView extends StatefulWidget {
   const RosterGridView({
     super.key,
     required this.grid,
@@ -45,7 +48,72 @@ class RosterGridView extends StatelessWidget {
   static const double dayColWidth = 150;
 
   @override
+  State<RosterGridView> createState() => _RosterGridViewState();
+}
+
+class _RosterGridViewState extends State<RosterGridView> {
+  late ScrollController _headerHScroll;
+  late List<ScrollController> _rowHScrolls;
+  bool _syncingH = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _headerHScroll = ScrollController();
+    _headerHScroll.addListener(() => _syncFrom(_headerHScroll));
+    _rowHScrolls = _controllersForRowCount(widget.grid.rows.length);
+  }
+
+  @override
+  void didUpdateWidget(covariant RosterGridView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.grid.rows.length != widget.grid.rows.length) {
+      _disposeRowControllers();
+      _rowHScrolls = _controllersForRowCount(widget.grid.rows.length);
+    }
+  }
+
+  List<ScrollController> _controllersForRowCount(int count) {
+    return List.generate(count, (_) {
+      final c = ScrollController();
+      c.addListener(() => _syncFrom(c));
+      return c;
+    });
+  }
+
+  void _syncFrom(ScrollController source) {
+    if (_syncingH || !source.hasClients) return;
+    _syncingH = true;
+    final offset = source.offset;
+    void jump(ScrollController c) {
+      if (c != source && c.hasClients && c.offset != offset) {
+        c.jumpTo(offset);
+      }
+    }
+
+    jump(_headerHScroll);
+    for (final c in _rowHScrolls) {
+      jump(c);
+    }
+    _syncingH = false;
+  }
+
+  void _disposeRowControllers() {
+    for (final c in _rowHScrolls) {
+      c.dispose();
+    }
+  }
+
+  @override
+  void dispose() {
+    _headerHScroll.dispose();
+    _disposeRowControllers();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final grid = widget.grid;
     return LayoutBuilder(
       builder: (context, constraints) {
         final minHeight = constraints.maxHeight;
@@ -53,60 +121,89 @@ class RosterGridView extends StatelessWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: minHeight),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(
-                  width: nameColWidth,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _HeaderCell(
-                        label: '',
-                        width: nameColWidth,
-                        sticky: true,
-                      ),
-                      for (final row in grid.rows)
-                        _NameCell(label: row.label, isUnfilled: row.isUnfilled),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                Row(
+                  children: [
+                    const _HeaderCell(
+                      label: '',
+                      width: RosterGridView.nameColWidth,
+                      sticky: true,
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: _headerHScroll,
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
                           children: [
                             for (final day in grid.dayStarts)
                               _HeaderCell(
                                 label: formatRosterDayHeader(day),
-                                width: dayColWidth,
+                                width: RosterGridView.dayColWidth,
                               ),
                           ],
                         ),
-                        for (final row in grid.rows)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              for (final cell in row.cells)
-                                _DayCell(
-                                  cell: cell,
-                                  isUnfilledRow: row.isUnfilled,
-                                  onTileTap: onTileTap,
-                                ),
-                            ],
-                          ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
+                for (var i = 0; i < grid.rows.length; i++)
+                  _RosterBodyRow(
+                    row: grid.rows[i],
+                    hScroll: _rowHScrolls[i],
+                    onTileTap: widget.onTileTap,
+                  ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _RosterBodyRow extends StatelessWidget {
+  const _RosterBodyRow({
+    required this.row,
+    required this.hScroll,
+    required this.onTileTap,
+  });
+
+  final RosterRow row;
+  final ScrollController hScroll;
+  final ValueChanged<RosterTile> onTileTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _NameCell(
+            key: ValueKey('roster-name-${row.id}'),
+            label: row.label,
+            isUnfilled: row.isUnfilled,
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              controller: hScroll,
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final cell in row.cells)
+                    _DayCell(
+                      cell: cell,
+                      isUnfilledRow: row.isUnfilled,
+                      onTileTap: onTileTap,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -149,7 +246,11 @@ class _HeaderCell extends StatelessWidget {
 }
 
 class _NameCell extends StatelessWidget {
-  const _NameCell({required this.label, required this.isUnfilled});
+  const _NameCell({
+    super.key,
+    required this.label,
+    required this.isUnfilled,
+  });
 
   final String label;
   final bool isUnfilled;

@@ -121,7 +121,8 @@ void main() {
       expect(unfilled.cells[0].tiles.single.shiftId, 's-a');
     });
 
-    test('excludes draft shifts and sorts people by name', () {
+    test('includes draft/cancelled shifts passed in and sorts people by name',
+        () {
       final monday = DateTime(2026, 8, 10, 9);
       final draft = ShiftOut(
         id: 'draft',
@@ -129,7 +130,7 @@ void main() {
         jobId: 'j',
         jobTitle: 'Draft',
         clientId: 'cl',
-        clientName: 'Hidden',
+        clientName: 'Unpublished',
         scheduledStart: monday,
         scheduledEnd: monday.add(const Duration(hours: 1)),
         requiredSlots: 1,
@@ -138,10 +139,25 @@ void main() {
         createdAt: monday,
         updatedAt: monday,
       );
+      final cancelled = ShiftOut(
+        id: 'cancelled',
+        tenantId: 't',
+        jobId: 'j',
+        jobTitle: 'Cancelled',
+        clientId: 'cl',
+        clientName: 'Cancelled Client',
+        scheduledStart: monday.add(const Duration(days: 1)),
+        scheduledEnd: monday.add(const Duration(days: 1, hours: 1)),
+        requiredSlots: 1,
+        openSlots: 1,
+        status: 'cancelled',
+        createdAt: monday,
+        updatedAt: monday,
+      );
       final grid = buildRosterGrid(
         rangeStart: DateTime(2026, 8, 10),
         dayCount: 3,
-        shifts: [draft],
+        shifts: [draft, cancelled],
         people: const [
           RosterPerson(contractorId: 'zoe', displayName: 'Zoe'),
           RosterPerson(contractorId: 'ali', displayName: 'Ali'),
@@ -149,7 +165,8 @@ void main() {
         overlay: const RosterOverlayOut(contractors: []),
       );
       expect(grid.rows.first.id, 'unfilled');
-      expect(grid.rows.first.cells[0].tiles, isEmpty);
+      expect(grid.rows.first.cells[0].tiles.single.shiftId, 'draft');
+      expect(grid.rows.first.cells[1].tiles.single.shiftId, 'cancelled');
       expect(grid.rows.skip(1).map((r) => r.id).toList(), ['ali', 'zoe']);
     });
 
