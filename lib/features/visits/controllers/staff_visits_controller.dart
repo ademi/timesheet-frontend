@@ -8,6 +8,9 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../core/time/tenant_civil_time.dart';
+import '../../payroll/controllers/staff_tenant_settings_controller.dart';
+import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../engagements/data/models/engagement_models.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/data/models/job_models.dart';
@@ -66,17 +69,20 @@ class StaffVisitsController extends GetxController {
     required JobsRepository jobsRepository,
     required EngagementsRepository engagementsRepository,
     required SessionService session,
+    PayrollRepository? payroll,
   }) : _repository = repository,
        _shiftsRepository = shiftsRepository,
        _jobsRepository = jobsRepository,
        _engagementsRepository = engagementsRepository,
-       _session = session;
+       _session = session,
+       _payroll = payroll;
 
   final VisitsRepository _repository;
   final ShiftsRepository _shiftsRepository;
   final JobsRepository _jobsRepository;
   final EngagementsRepository _engagementsRepository;
   final SessionService _session;
+  final PayrollRepository? _payroll;
 
   final shifts = <ShiftOut>[].obs;
   final jobs = <JobOut>[].obs;
@@ -91,8 +97,10 @@ class StaffVisitsController extends GetxController {
   final overlay = Rxn<RosterOverlayOut>();
   final overlayWarning = RxnString();
 
-  /// Board range: default current local day → +7 days.
+  /// Board range: aligned to tenant civil week when timezone is available.
   final rangeStart = DateTime.now().obs;
+  final tenantTimezone = ''.obs;
+  bool _tenantTimezoneLoaded = false;
   final jobIdFilter = ''.obs;
   final clientIdFilter = ''.obs;
   /// Default Live (published) so draft/cancelled do not clutter the board.
@@ -223,8 +231,40 @@ class StaffVisitsController extends GetxController {
     return true;
   }
 
+  /// Loads tenant IANA timezone once (settings controller or payroll API).
+  Future<void> loadTenantTimezone() async {
+    if (_tenantTimezoneLoaded) return;
+    _tenantTimezoneLoaded = true;
+    if (Get.isRegistered<StaffTenantSettingsController>()) {
+      final tz = Get.find<StaffTenantSettingsController>().tenant.value?.timezone;
+      if (tz != null && tz.trim().isNotEmpty) {
+        tenantTimezone.value = tz.trim();
+        return;
+      }
+    }
+    final id = _session.tenantId.value;
+    if (id == null || id.isEmpty || _payroll == null) return;
+    try {
+      final t = await _payroll.getTenant(id);
+      tenantTimezone.value = t.timezone?.trim() ?? '';
+    } catch (_) {
+      // Roster still works on device-local civil days.
+    }
+  }
+
+  /// Sets [rangeStart] to Monday 00:00 of the tenant civil week containing [utcNow].
+  void alignRangeToTenantWeek(DateTime utcNow) {
+    final tz = tenantTimezone.value.trim();
+    rangeStart.value = startOfTenantWeekMonday(
+      utcNow,
+      tz.isEmpty ? null : tz,
+    );
+  }
+
   /// Only entry point for roster board list fetch.
   Future<void> ensureBoardLoaded() async {
+    await loadTenantTimezone();
+    alignRangeToTenantWeek(DateTime.now().toUtc());
     await loadJobs();
     await loadEngagements();
     await load();

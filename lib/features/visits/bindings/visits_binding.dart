@@ -4,6 +4,8 @@ import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../engagements/bindings/engagements_binding.dart';
+import '../../payroll/bindings/payroll_binding.dart';
+import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/bindings/jobs_binding.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
@@ -66,6 +68,7 @@ class StaffVisitsBinding extends Bindings {
     VisitsBinding.ensureShared();
     JobsBinding.ensureShared();
     EngagementsBinding.ensureShared();
+    PayrollBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<StaffVisitsController>()) {
       Get.put(
@@ -75,6 +78,9 @@ class StaffVisitsBinding extends Bindings {
           jobsRepository: Get.find<JobsRepository>(),
           engagementsRepository: Get.find<EngagementsRepository>(),
           session: Get.find<SessionService>(),
+          payroll: Get.isRegistered<PayrollRepository>()
+              ? Get.find<PayrollRepository>()
+              : null,
         ),
       );
     }
