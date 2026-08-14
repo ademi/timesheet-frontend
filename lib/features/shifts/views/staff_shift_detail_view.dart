@@ -83,8 +83,24 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text(a.contractorName),
-                      subtitle: Text('${a.source} · ${a.status}'),
-                      trailing: const Icon(Icons.chevron_right),
+                      subtitle: Text(
+                        '${a.source} · ${a.status}'
+                        '${a.visitStatus != null ? ' · ${a.visitStatus}' : ''}',
+                      ),
+                      trailing:
+                          controller.canManage && a.status == 'active'
+                              ? TextButton(
+                                onPressed:
+                                    controller.isSaving.value
+                                        ? null
+                                        : () => controller.releaseAssignment(
+                                          shiftId: shift.id,
+                                          contractorId: a.contractorId,
+                                          workerName: a.contractorName,
+                                        ),
+                                child: const Text('Release'),
+                              )
+                              : const Icon(Icons.chevron_right),
                       onTap: () => controller.openAssignmentVisit(a.visitId),
                     ),
                   if (controller.canManage &&

@@ -5,6 +5,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../controllers/staff_visits_controller.dart';
+import '../roster/roster_grid_model.dart';
 import '../roster/roster_grid_view.dart';
 
 /// DropdownButton asserts if [value] is set but not present exactly once.
@@ -215,12 +216,42 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                         child: RosterGridView(
                           grid: controller.grid,
                           onTileTap: controller.openShiftFromTile,
+                          onTileLongPress:
+                              controller.canManage
+                                  ? (tile) => _releaseFromTile(
+                                    context,
+                                    controller,
+                                    tile,
+                                  )
+                                  : null,
                         ),
                       ),
             ),
           ],
         );
       }),
+    );
+  }
+
+  Future<void> _releaseFromTile(
+    BuildContext context,
+    StaffVisitsController controller,
+    RosterTile tile,
+  ) async {
+    final contractorId = tile.assignmentContractorId;
+    if (contractorId == null || contractorId.isEmpty) return;
+    String workerName = 'Worker';
+    for (final e in controller.engagements) {
+      if (e.contractorId == contractorId) {
+        final n = e.contractorName?.trim();
+        if (n != null && n.isNotEmpty) workerName = n;
+        break;
+      }
+    }
+    await controller.releaseAssignment(
+      shiftId: tile.shiftId,
+      contractorId: contractorId,
+      workerName: workerName,
     );
   }
 

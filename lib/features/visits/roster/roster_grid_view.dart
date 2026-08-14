@@ -39,10 +39,12 @@ class RosterGridView extends StatefulWidget {
     super.key,
     required this.grid,
     required this.onTileTap,
+    this.onTileLongPress,
   });
 
   final RosterGrid grid;
   final ValueChanged<RosterTile> onTileTap;
+  final ValueChanged<RosterTile>? onTileLongPress;
 
   static const double nameColWidth = 140;
   static const double dayColWidth = 150;
@@ -153,6 +155,7 @@ class _RosterGridViewState extends State<RosterGridView> {
                     row: grid.rows[i],
                     hScroll: _rowHScrolls[i],
                     onTileTap: widget.onTileTap,
+                    onTileLongPress: widget.onTileLongPress,
                   ),
               ],
             ),
@@ -168,11 +171,13 @@ class _RosterBodyRow extends StatelessWidget {
     required this.row,
     required this.hScroll,
     required this.onTileTap,
+    this.onTileLongPress,
   });
 
   final RosterRow row;
   final ScrollController hScroll;
   final ValueChanged<RosterTile> onTileTap;
+  final ValueChanged<RosterTile>? onTileLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -197,6 +202,7 @@ class _RosterBodyRow extends StatelessWidget {
                       cell: cell,
                       isUnfilledRow: row.isUnfilled,
                       onTileTap: onTileTap,
+                      onTileLongPress: onTileLongPress,
                     ),
                 ],
               ),
@@ -286,11 +292,13 @@ class _DayCell extends StatelessWidget {
     required this.cell,
     required this.isUnfilledRow,
     required this.onTileTap,
+    this.onTileLongPress,
   });
 
   final RosterCell cell;
   final bool isUnfilledRow;
   final ValueChanged<RosterTile> onTileTap;
+  final ValueChanged<RosterTile>? onTileLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -331,6 +339,10 @@ class _DayCell extends StatelessWidget {
               tile: tile,
               emphasizeOpen: isUnfilledRow || tile.openSlots > 0,
               onTap: () => onTileTap(tile),
+              onLongPress:
+                  onTileLongPress == null
+                      ? null
+                      : () => onTileLongPress!(tile),
             ),
         ],
       ),
@@ -343,11 +355,13 @@ class _ShiftTile extends StatelessWidget {
     required this.tile,
     required this.emphasizeOpen,
     required this.onTap,
+    this.onLongPress,
   });
 
   final RosterTile tile;
   final bool emphasizeOpen;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -362,6 +376,7 @@ class _ShiftTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         child: InkWell(
           onTap: onTap,
+          onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(4),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),

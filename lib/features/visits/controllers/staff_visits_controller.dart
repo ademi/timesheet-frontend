@@ -432,6 +432,85 @@ class StaffVisitsController extends GetxController {
     }
   }
 
+  /// Staff release (unassign) — opens a hole and notifies eligible contractors.
+  @visibleForTesting
+  String? lastReleaseSnack;
+
+  Future<bool> confirmRelease(String workerName) async {
+    if (Get.testMode) return true;
+    final result = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Release worker?'),
+        content: Text(
+          'Release $workerName? Hole opens for claim and eligible workers are notified.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Release'),
+          ),
+        ],
+      ),
+    );
+    return result == true;
+  }
+
+  Future<void> releaseAssignment({
+    required String shiftId,
+    required String contractorId,
+    String workerName = 'Worker',
+    bool skipConfirm = false,
+  }) async {
+    if (!canManage) return;
+    if (!skipConfirm && !await confirmRelease(workerName)) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    lastReleaseSnack = null;
+    try {
+      final updated = await _shiftsRepository.unassignShift(
+        shiftId,
+        contractorId,
+      );
+      if (selectedShift.value?.id == shiftId) {
+        selectedShift.value = updated;
+      }
+      await load();
+      lastReleaseSnack = 'Hole opened — eligible workers notified.';
+      if (!Get.testMode) {
+        Get.snackbar(
+          'Released',
+          lastReleaseSnack!,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: AppColors.primary,
+          colorText: AppColors.onPrimary,
+        );
+      }
+    } on AppFailure catch (e) {
+      final msg = e.code == 'invalid_visit_status'
+          ? 'Already checked in — cancel visit first.'
+          : e.message;
+      errorMessage.value = msg;
+      lastReleaseSnack = msg;
+      if (!Get.testMode) {
+        Get.snackbar(
+          'Could not release',
+          msg,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: AppColors.error,
+          colorText: AppColors.onPrimary,
+        );
+      }
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
   Future<bool> createShift({
     required String jobId,
     required DateTime start,
