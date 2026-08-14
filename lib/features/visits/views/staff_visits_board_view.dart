@@ -270,7 +270,8 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                 title: const Text('Cancel this one'),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  final ok = await _confirmCancelOccurrence(ctx);
+                  if (!context.mounted) return;
+                  final ok = await _confirmCancelOccurrence(context);
                   if (!ok || !context.mounted) return;
                   await controller.cancelThisOccurrence(shift!.id);
                 },
