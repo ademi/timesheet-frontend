@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/widgets/shift_slot_pips.dart';
 import '../../visits/controllers/staff_visits_controller.dart';
 
@@ -20,8 +21,6 @@ class StaffShiftDetailView extends StatefulWidget {
 }
 
 class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
-  String? _assignContractorId;
-
   @override
   void initState() {
     super.initState();
@@ -107,33 +106,19 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                       shift.status != 'cancelled' &&
                       shift.openSlots > 0) ...[
                     const Divider(height: 32),
-                    DropdownButtonFormField<String>(
-                      value: _assignContractorId,
-                      items: [
-                        for (final e in controller.assignableEngagements)
-                          DropdownMenuItem(
-                            value: e.contractorId,
-                            child: Text(
-                              e.contractorName ?? e.contractorId,
-                            ),
-                          ),
-                      ],
-                      onChanged: (v) => setState(() => _assignContractorId = v),
-                      decoration: const InputDecoration(
-                        labelText: 'Assign contractor',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
+                    Text('Assign worker', style: Get.textTheme.titleMedium),
                     const SizedBox(height: 8),
-                    AsyncElevatedButton(
+                    OutlinedButton.icon(
                       onPressed:
-                          _assignContractorId == null
+                          controller.isSaving.value
                               ? null
-                              : () => controller.assignSelectedShift(
-                                _assignContractorId!,
+                              : () => _showAssignPicker(
+                                context,
+                                controller,
+                                shift,
                               ),
-                      isLoading: controller.isSaving.value,
-                      child: const Text('Assign'),
+                      icon: const Icon(Icons.person_add_outlined),
+                      label: const Text('Choose contractor'),
                     ),
                   ],
                   if (controller.canManage) ...[
@@ -157,6 +142,85 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
           ],
         );
       }),
+    );
+  }
+
+  Future<void> _showAssignPicker(
+    BuildContext context,
+    StaffVisitsController controller,
+    ShiftOut shift,
+  ) async {
+    final engagements = controller.assignableEngagements;
+    if (engagements.isEmpty) {
+      await showDialog<void>(
+        context: context,
+        builder:
+            (ctx) => AlertDialog(
+              title: const Text('Assign worker'),
+              content: const Text('No assignable contractors found.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+      );
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Assign worker'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (final e in engagements)
+                  Builder(
+                    builder: (context) {
+                      final label = controller.availabilityLabelForAssign(
+                        contractorId: e.contractorId,
+                        shift: shift,
+                      );
+                      return ListTile(
+                        title: Text(e.contractorName ?? e.contractorId),
+                        trailing: Text(
+                          label,
+                          style: TextStyle(
+                            color: switch (label) {
+                              'Leave' => AppColors.error,
+                              'Busy' => AppColors.openSlot,
+                              _ => AppColors.success,
+                            },
+                          ),
+                        ),
+                        onTap:
+                            controller.isSaving.value
+                                ? null
+                                : () async {
+                                  Navigator.pop(ctx);
+                                  await controller.assignSelectedShift(
+                                    e.contractorId,
+                                  );
+                                },
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

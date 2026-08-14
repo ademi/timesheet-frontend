@@ -19,6 +19,46 @@ import '../data/models/visit_models.dart';
 import '../data/repositories/visits_repository.dart';
 import '../roster/roster_grid_model.dart';
 
+String assignAvailabilityLabel({
+  required String contractorId,
+  required DateTime day,
+  required DateTime shiftStart,
+  required DateTime shiftEnd,
+  required RosterOverlayOut overlay,
+  required List<ShiftOut> shifts,
+}) {
+  final civil = DateTime(day.year, day.month, day.day);
+  for (final c in overlay.contractors) {
+    if (c.contractorId != contractorId) continue;
+    for (final leave in c.leave) {
+      final start = DateTime(
+        leave.startDate.year,
+        leave.startDate.month,
+        leave.startDate.day,
+      );
+      final end = DateTime(
+        leave.endDate.year,
+        leave.endDate.month,
+        leave.endDate.day,
+      );
+      if (!civil.isBefore(start) && !civil.isAfter(end)) return 'Leave';
+    }
+  }
+  for (final s in shifts) {
+    if (s.status == 'cancelled') continue;
+    final overlaps =
+        s.scheduledStart.isBefore(shiftEnd) &&
+        s.scheduledEnd.isAfter(shiftStart);
+    if (!overlaps) continue;
+    for (final a in s.assignments) {
+      if (a.status == 'active' && a.contractorId == contractorId) {
+        return 'Busy';
+      }
+    }
+  }
+  return 'Free';
+}
+
 class StaffVisitsController extends GetxController {
   StaffVisitsController({
     required VisitsRepository repository,
@@ -399,9 +439,61 @@ class StaffVisitsController extends GetxController {
     }
   }
 
-  Future<void> assignSelectedShift(String contractorId) async {
+  Future<bool> confirmAssignAnyway() async {
+    if (Get.testMode) return true;
+    final result = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Assign anyway?'),
+        content: const Text(
+          'This worker is marked Leave or Busy for this time. Assign anyway?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Assign'),
+          ),
+        ],
+      ),
+    );
+    return result == true;
+  }
+
+  String availabilityLabelForAssign({
+    required String contractorId,
+    required ShiftOut shift,
+  }) {
+    final day = DateTime(
+      shift.scheduledStart.year,
+      shift.scheduledStart.month,
+      shift.scheduledStart.day,
+    );
+    return assignAvailabilityLabel(
+      contractorId: contractorId,
+      day: day,
+      shiftStart: shift.scheduledStart,
+      shiftEnd: shift.scheduledEnd,
+      overlay: overlay.value ?? const RosterOverlayOut(contractors: []),
+      shifts: shifts.toList(growable: false),
+    );
+  }
+
+  Future<void> assignSelectedShift(
+    String contractorId, {
+    bool skipConfirm = false,
+  }) async {
     final shift = selectedShift.value;
     if (shift == null) return;
+    if (!skipConfirm) {
+      final label = availabilityLabelForAssign(
+        contractorId: contractorId,
+        shift: shift,
+      );
+      if (label != 'Free' && !await confirmAssignAnyway()) return;
+    }
     isSaving.value = true;
     errorMessage.value = null;
     try {
