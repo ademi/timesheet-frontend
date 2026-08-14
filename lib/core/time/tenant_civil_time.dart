@@ -5,6 +5,13 @@ import 'package:flutter/foundation.dart';
 @visibleForTesting
 Duration Function(String tenantTimezone, DateTime utc)? tenantUtcOffsetOverride;
 
+/// True when [tenantTimezone] is applied for civil calendar math (IANA or test override).
+bool isTenantTimezoneConversionApplied(String? tenantTimezone) {
+  final tz = tenantTimezone?.trim();
+  if (tz == null || tz.isEmpty) return false;
+  return tenantUtcOffsetOverride != null;
+}
+
 /// Tenant civil instant for calendar math (week boundaries, day chips).
 ///
 /// Without an IANA package in pubspec, non-empty [tenantTimezone] is honoured

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/time/tenant_civil_time.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../shifts/data/models/shift_models.dart';
@@ -142,6 +143,19 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                   ),
                   if (controller.isFillingHorizon.value)
                     const LinearProgressIndicator(minHeight: 2),
+                  if (!isTenantTimezoneConversionApplied(
+                    controller.tenantTimezone.value,
+                  ))
+                    const Padding(
+                      padding: EdgeInsets.only(top: 4, bottom: 8),
+                      child: Text(
+                        'Times use your device timezone while tenant timezone conversion is unavailable.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
                   DropdownButtonFormField<String>(
                     value: _clientDropdownValue(
                       controller.clientIdFilter.value,

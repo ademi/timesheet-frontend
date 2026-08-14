@@ -81,6 +81,7 @@ void main() {
     engagements = _MockEngagementsRepository();
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
+    when(() => session.tenantId).thenReturn(RxnString());
     when(
       () => shifts.listShifts(
         from: any(named: 'from'),
