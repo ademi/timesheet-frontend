@@ -98,6 +98,18 @@ class ShiftsRemoteDataSource {
     }
   }
 
+  Future<ShiftOut> unassignShift(String shiftId, String contractorId) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.shiftUnassign(shiftId),
+        data: {'contractor_id': contractorId},
+      );
+      return ShiftOut.fromJson(_require(response.data));
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<ShiftOut> claimShift(String id) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -129,5 +141,16 @@ class ShiftsRemoteDataSource {
         .whereType<Map>()
         .map((e) => fromJson(Map<String, dynamic>.from(e)))
         .toList(growable: false);
+  }
+
+  Map<String, dynamic> _require(Map<String, dynamic>? data) {
+    if (data == null) {
+      throw const AppFailure(
+        code: 'unknown',
+        message: 'Empty shift response',
+        presentation: AppFailurePresentation.toast,
+      );
+    }
+    return data;
   }
 }

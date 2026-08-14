@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
+import '../models/roster_overlay_models.dart';
 import '../models/visit_models.dart';
 
 class VisitsRemoteDataSource {
@@ -147,6 +148,25 @@ class VisitsRemoteDataSource {
         ApiPaths.jobFormCatalog(jobId),
       );
       return _mapList(response.data, JobFormCatalogItem.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  /// Leave + availability for engaged contractors in a window (`shifts.read`).
+  Future<RosterOverlayOut> fetchRosterOverlay({
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.workforceRosterOverlay,
+        queryParameters: {
+          'from': from.toUtc().toIso8601String(),
+          'to': to.toUtc().toIso8601String(),
+        },
+      );
+      return _require(response.data, RosterOverlayOut.fromJson, 'roster overlay');
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

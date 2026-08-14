@@ -1,4 +1,5 @@
 import '../datasources/visits_remote_datasource.dart';
+import '../models/roster_overlay_models.dart';
 import '../models/visit_models.dart';
 
 class VisitsRepository {
@@ -69,4 +70,10 @@ class VisitsRepository {
 
   Future<List<JobFormCatalogItem>> listJobFormCatalog(String jobId) =>
       _remote.listJobFormCatalog(jobId);
+
+  Future<RosterOverlayOut> fetchRosterOverlay({
+    required DateTime from,
+    required DateTime to,
+  }) =>
+      _remote.fetchRosterOverlay(from: from, to: to);
 }

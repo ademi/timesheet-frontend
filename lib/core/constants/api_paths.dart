@@ -155,6 +155,9 @@ abstract final class ApiPaths {
   static String shiftUnassign(String id) => '${shift(id)}/unassign';
   static String shiftCancel(String id) => '${shift(id)}/cancel';
 
+  // Workforce / roster overlay
+  static const workforceRosterOverlay = '$_v1/workforce/roster-overlay';
+
   // Payroll / payments
   static String engagementRates(String engagementId) =>
       '$_v1/payroll/engagement-rates/$engagementId';

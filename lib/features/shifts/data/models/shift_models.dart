@@ -8,6 +8,7 @@ class ShiftAssignmentOut {
     required this.visitId,
     required this.source,
     required this.status,
+    this.visitStatus,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class ShiftAssignmentOut {
   final String visitId;
   final String source;
   final String status;
+  final String? visitStatus;
 
   factory ShiftAssignmentOut.fromJson(Map<String, dynamic> json) {
     return ShiftAssignmentOut(
@@ -25,6 +27,7 @@ class ShiftAssignmentOut {
       visitId: json['visit_id'].toString(),
       source: json['source'] as String? ?? 'staff_assign',
       status: json['status'] as String? ?? 'active',
+      visitStatus: json['visit_status'] as String?,
     );
   }
 }
@@ -42,6 +45,7 @@ class ShiftOut {
     required this.requiredSlots,
     required this.openSlots,
     required this.status,
+    this.recurrenceRuleId,
     this.locationLabel,
     this.suburb,
     this.postalCode,
@@ -62,6 +66,7 @@ class ShiftOut {
   final int requiredSlots;
   final int openSlots;
   final String status;
+  final String? recurrenceRuleId;
   final String? locationLabel;
   final String? suburb;
   final String? postalCode;
@@ -85,6 +90,7 @@ class ShiftOut {
       requiredSlots: json['required_slots'] as int? ?? 1,
       openSlots: json['open_slots'] as int? ?? 0,
       status: json['status'] as String? ?? 'draft',
+      recurrenceRuleId: json['recurrence_rule_id']?.toString(),
       locationLabel: json['location_label'] as String?,
       suburb: json['suburb'] as String?,
       postalCode: json['postal_code'] as String?,

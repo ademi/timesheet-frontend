@@ -43,6 +43,38 @@ void main() {
       expect(shift.assignments, hasLength(1));
       expect(shift.assignments.first.contractorName, 'Alex');
     });
+
+    test('parses recurrenceRuleId and visitStatus on assignments', () {
+      final s = ShiftOut.fromJson({
+        'id': 's1',
+        'tenant_id': 't',
+        'job_id': 'j',
+        'job_title': 'Support',
+        'client_id': 'c',
+        'client_name': 'Pat',
+        'scheduled_start': '2026-08-20T09:00:00+00:00',
+        'scheduled_end': '2026-08-20T12:00:00+00:00',
+        'required_slots': 1,
+        'open_slots': 0,
+        'status': 'published',
+        'recurrence_rule_id': 'rule-1',
+        'assignments': [
+          {
+            'id': 'a1',
+            'contractor_id': 'c1',
+            'contractor_name': 'Jane',
+            'visit_id': 'v1',
+            'source': 'staff_assign',
+            'status': 'active',
+            'visit_status': 'checked_in',
+          },
+        ],
+        'created_at': '2026-08-01T00:00:00+00:00',
+        'updated_at': '2026-08-01T00:00:00+00:00',
+      });
+      expect(s.recurrenceRuleId, 'rule-1');
+      expect(s.assignments.first.visitStatus, 'checked_in');
+    });
   });
 
   group('OpenShiftOut', () {

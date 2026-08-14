@@ -32,6 +32,9 @@ class ShiftsRepository {
   }) =>
       _remote.assignShift(shiftId: shiftId, contractorId: contractorId);
 
+  Future<ShiftOut> unassignShift(String shiftId, String contractorId) =>
+      _remote.unassignShift(shiftId, contractorId);
+
   Future<ShiftOut> claimShift(String id) => _remote.claimShift(id);
 
   Future<ShiftOut> cancelShift(String id) => _remote.cancelShift(id);
