@@ -603,6 +603,54 @@ class StaffVisitsController extends GetxController {
     }
   }
 
+  Future<void> copyTile({
+    required ShiftOut source,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    if (!canManage) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      await _shiftsRepository.createShift(
+        ShiftCreateRequest(
+          jobId: source.jobId,
+          scheduledStart: start.toUtc(),
+          scheduledEnd: end.toUtc(),
+          requiredSlots: source.requiredSlots,
+          status: 'published',
+        ),
+      );
+      await load();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> cancelThisOccurrence(String shiftId) async {
+    if (!canManage) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      await _shiftsRepository.cancelShift(shiftId);
+      await load();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  /// Task 9: split recurrence rule from this occurrence onward.
+  Future<void> editThisAndFuture({
+    required ShiftOut source,
+    required DateTime fromDate,
+  }) async {
+    throw UnimplementedError('editThisAndFuture is implemented in Task 9');
+  }
+
   Future<bool> createShift({
     required String jobId,
     required DateTime start,

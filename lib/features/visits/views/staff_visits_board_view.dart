@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
+import '../../shifts/data/models/shift_models.dart';
 import '../controllers/staff_visits_controller.dart';
 import '../roster/roster_grid_model.dart';
 import '../roster/roster_grid_view.dart';
@@ -218,7 +219,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                           onTileTap: controller.openShiftFromTile,
                           onTileLongPress:
                               controller.canManage
-                                  ? (tile) => _releaseFromTile(
+                                  ? (tile) => _showTileActionSheet(
                                     context,
                                     controller,
                                     tile,
@@ -230,6 +231,253 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
           ],
         );
       }),
+    );
+  }
+
+  Future<void> _showTileActionSheet(
+    BuildContext context,
+    StaffVisitsController controller,
+    RosterTile tile,
+  ) async {
+    ShiftOut? shift;
+    for (final s in controller.shifts) {
+      if (s.id == tile.shiftId) {
+        shift = s;
+        break;
+      }
+    }
+    if (shift == null) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text(
+                  tile.clientName.isEmpty ? 'Shift' : tile.clientName,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  '${_fmt(tile.start)} – ${_fmt(tile.end)}',
+                ),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.cancel_outlined),
+                title: const Text('Cancel this one'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final ok = await _confirmCancelOccurrence(ctx);
+                  if (!ok || !context.mounted) return;
+                  await controller.cancelThisOccurrence(shift!.id);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.copy_outlined),
+                title: const Text('Copy to…'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  if (!context.mounted) return;
+                  await _showCopyTileDialog(context, controller, shift!);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.event_repeat_outlined),
+                title: const Text('This and future…'),
+                subtitle: const Text('Next update'),
+                enabled: false,
+              ),
+              if (tile.assignmentContractorId != null &&
+                  tile.assignmentContractorId!.isNotEmpty) ...[
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.person_remove_outlined),
+                  title: const Text('Release worker'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    if (!context.mounted) return;
+                    await _releaseFromTile(context, controller, tile);
+                  },
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<bool> _confirmCancelOccurrence(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Cancel this one?'),
+            content: const Text(
+              'This shift will be cancelled. Assigned visits must be handled separately.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Keep'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Cancel shift'),
+              ),
+            ],
+          ),
+    );
+    return result == true;
+  }
+
+  Future<void> _showCopyTileDialog(
+    BuildContext context,
+    StaffVisitsController controller,
+    ShiftOut source,
+  ) async {
+    final duration = source.scheduledEnd.difference(source.scheduledStart);
+    var start = source.scheduledStart.toLocal();
+    var end = start.add(duration);
+    String? dialogError;
+    var isSubmitting = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            return AlertDialog(
+              title: const Text('Copy to…'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (dialogError != null) ...[
+                      Text(
+                        dialogError!,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Start'),
+                      subtitle: Text(_fmt(start)),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: ctx,
+                          initialDate: start,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                        );
+                        if (date == null) return;
+                        if (!ctx.mounted) return;
+                        final time = await showTimePicker(
+                          context: ctx,
+                          initialTime: TimeOfDay.fromDateTime(start),
+                        );
+                        if (time == null) return;
+                        setState(() {
+                          start = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                            time.hour,
+                            time.minute,
+                          );
+                          if (!end.isAfter(start)) {
+                            end = start.add(duration);
+                          }
+                        });
+                      },
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('End'),
+                      subtitle: Text(_fmt(end)),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: ctx,
+                          initialDate: end,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                        );
+                        if (date == null) return;
+                        if (!ctx.mounted) return;
+                        final time = await showTimePicker(
+                          context: ctx,
+                          initialTime: TimeOfDay.fromDateTime(end),
+                        );
+                        if (time == null) return;
+                        setState(() {
+                          end = DateTime(
+                            date.year,
+                            date.month,
+                            date.day,
+                            time.hour,
+                            time.minute,
+                          );
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed:
+                      isSubmitting
+                          ? null
+                          : () async {
+                            if (!end.isAfter(start)) {
+                              setState(
+                                () => dialogError = 'End must be after start.',
+                              );
+                              return;
+                            }
+                            setState(() {
+                              isSubmitting = true;
+                              dialogError = null;
+                            });
+                            await controller.copyTile(
+                              source: source,
+                              start: start,
+                              end: end,
+                            );
+                            if (!ctx.mounted) return;
+                            if (controller.errorMessage.value == null) {
+                              Navigator.pop(ctx);
+                              return;
+                            }
+                            setState(() {
+                              isSubmitting = false;
+                              dialogError =
+                                  controller.errorMessage.value ??
+                                  'Could not copy shift.';
+                            });
+                          },
+                  child:
+                      isSubmitting
+                          ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Text('Copy'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
