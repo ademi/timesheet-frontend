@@ -11,6 +11,7 @@ import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/controllers/staff_visits_controller.dart';
+import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
 import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
 import 'package:rostiq/features/visits/views/staff_visits_board_view.dart';
 
@@ -74,8 +75,15 @@ void main() {
       ),
     ).thenAnswer((_) async => <ShiftOut>[]);
     when(
+      () => visits.fetchRosterOverlay(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async => const RosterOverlayOut(contractors: []));
+    when(
       () => jobs.ensureHorizon(any()),
     ).thenAnswer((_) async => HorizonOut.empty);
+    when(() => jobs.listJobs()).thenAnswer((_) async => []);
     when(
       () => engagements.listTenantEngagements(),
     ).thenAnswer((_) async => []);
@@ -110,6 +118,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('All jobs'), findsOneWidget);
+      expect(find.text('All clients'), findsOneWidget);
       expect(find.text('Roster'), findsOneWidget);
 
       gate.complete([_job()]);
@@ -117,6 +126,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Morning support'), findsOneWidget);
+      expect(find.text('Unfilled'), findsOneWidget);
     },
   );
 

@@ -4,9 +4,8 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
-import '../../shifts/widgets/shift_slot_pips.dart';
-import '../../../shared/utils/roster_time_format.dart';
 import '../controllers/staff_visits_controller.dart';
+import '../roster/roster_grid_view.dart';
 
 /// DropdownButton asserts if [value] is set but not present exactly once.
 String? _jobDropdownValue(String? filter, Iterable<JobOut> jobs) {
@@ -31,6 +30,30 @@ List<DropdownMenuItem<String>> _jobDropdownItems(
           value: job.id,
           child: Text(job.title, overflow: TextOverflow.ellipsis),
         ),
+  ];
+}
+
+String? _clientDropdownValue(
+  String? filter,
+  Iterable<({String id, String name})> clients,
+) {
+  if (filter == null || filter.isEmpty) return null;
+  for (final c in clients) {
+    if (c.id == filter) return filter;
+  }
+  return null;
+}
+
+List<DropdownMenuItem<String>> _clientDropdownItems(
+  Iterable<({String id, String name})> clients,
+) {
+  return [
+    const DropdownMenuItem(value: null, child: Text('All clients')),
+    for (final c in clients)
+      DropdownMenuItem(
+        value: c.id,
+        child: Text(c.name, overflow: TextOverflow.ellipsis),
+      ),
   ];
 }
 
@@ -86,8 +109,10 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
               : null,
       body: Obx(() {
         final err = controller.errorMessage.value;
+        final overlayWarn = controller.overlayWarning.value;
         final start = controller.rangeStart.value;
         final end = start.add(const Duration(days: 6));
+        final clients = controller.clientFilterOptions;
         return Column(
           children: [
             Padding(
@@ -115,6 +140,20 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                   ),
                   if (controller.isFillingHorizon.value)
                     const LinearProgressIndicator(minHeight: 2),
+                  DropdownButtonFormField<String>(
+                    value: _clientDropdownValue(
+                      controller.clientIdFilter.value,
+                      clients,
+                    ),
+                    isExpanded: true,
+                    items: _clientDropdownItems(clients),
+                    onChanged: controller.setClientFilter,
+                    decoration: const InputDecoration(
+                      labelText: 'Client',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _jobDropdownValue(
                       controller.jobIdFilter.value,
@@ -158,71 +197,24 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                 ],
               ),
             ),
+            if (overlayWarn != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: _WarningBox(overlayWarn),
+              ),
             if (err != null)
               Padding(padding: const EdgeInsets.all(16), child: _ErrorBox(err)),
             Expanded(
               child:
-                  controller.isLoading.value && controller.shifts.isEmpty
+                  controller.isLoading.value &&
+                          controller.shifts.isEmpty &&
+                          controller.overlay.value == null
                       ? const Center(child: CircularProgressIndicator())
                       : RefreshIndicator(
                         onRefresh: controller.load,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount:
-                              controller.shifts.isEmpty
-                                  ? 1
-                                  : controller.shifts.length,
-                          itemBuilder: (context, i) {
-                            if (controller.shifts.isEmpty) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 32),
-                                child: Text('No shifts this week.'),
-                              );
-                            }
-                            final shift = controller.shifts[i];
-                            final hasOpenHole =
-                                shift.status == 'published' &&
-                                shift.openSlots > 0;
-                            final isDraft = shift.status == 'draft';
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              color:
-                                  hasOpenHole
-                                      ? AppColors.openSlotBackground
-                                      : null,
-                              child: ListTile(
-                                title: Text(
-                                  shift.jobTitle,
-                                  style: TextStyle(
-                                    color:
-                                        isDraft ? AppColors.slate400 : null,
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${formatRosterStamp(shift.scheduledStart)} · ${shift.status}'
-                                      '${shift.clientName != null ? ' · ${shift.clientName}' : ''}',
-                                      style: TextStyle(
-                                        color:
-                                            isDraft
-                                                ? AppColors.slate400
-                                                : null,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    ShiftSlotPips(
-                                      requiredSlots: shift.requiredSlots,
-                                      filledSlots: shift.filledSlots,
-                                    ),
-                                  ],
-                                ),
-                                trailing: const Icon(Icons.chevron_right),
-                                onTap: () => controller.openShiftDetail(shift),
-                              ),
-                            );
-                          },
+                        child: RosterGridView(
+                          grid: controller.grid,
+                          onTileTap: controller.openShiftFromTile,
                         ),
                       ),
             ),
@@ -437,6 +429,24 @@ class _ErrorBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(message, style: const TextStyle(color: AppColors.error)),
+    );
+  }
+}
+
+class _WarningBox extends StatelessWidget {
+  const _WarningBox(this.message);
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.openSlotBackground,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(message, style: const TextStyle(color: AppColors.openSlot)),
     );
   }
 }

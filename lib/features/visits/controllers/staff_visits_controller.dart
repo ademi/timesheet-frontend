@@ -14,8 +14,10 @@ import '../../jobs/data/models/job_models.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
+import '../data/models/roster_overlay_models.dart';
 import '../data/models/visit_models.dart';
 import '../data/repositories/visits_repository.dart';
+import '../roster/roster_grid_model.dart';
 
 class StaffVisitsController extends GetxController {
   StaffVisitsController({
@@ -46,11 +48,15 @@ class StaffVisitsController extends GetxController {
   final isRefreshing = false.obs;
   final isFillingHorizon = false.obs;
   final errorMessage = RxnString();
+  final overlay = Rxn<RosterOverlayOut>();
+  final overlayWarning = RxnString();
 
   /// Board range: default current local day → +7 days.
   final rangeStart = DateTime.now().obs;
   final jobIdFilter = ''.obs;
-  final statusFilter = ''.obs;
+  final clientIdFilter = ''.obs;
+  /// Default Live (published) so draft/cancelled do not clutter the board.
+  final statusFilter = 'published'.obs;
   bool pendingCreateShift = false;
   bool skipHorizonOnce = false;
   String? pendingClientIdFilter;
@@ -72,6 +78,62 @@ class StaffVisitsController extends GetxController {
   List<EngagementOut> get assignableEngagements => engagements
       .where((e) => e.isActive || e.isApproved || e.isPendingDocs)
       .toList(growable: false);
+
+  /// Unique clients from jobs + loaded shifts for the board filter.
+  List<({String id, String name})> get clientFilterOptions {
+    final byId = <String, String>{};
+    for (final job in jobs) {
+      final id = job.clientId?.trim();
+      if (id == null || id.isEmpty) continue;
+      byId.putIfAbsent(id, () => (job.clientName?.trim().isNotEmpty == true)
+          ? job.clientName!.trim()
+          : id);
+    }
+    for (final shift in shifts) {
+      final id = shift.clientId?.trim();
+      if (id == null || id.isEmpty) continue;
+      byId.putIfAbsent(id, () => (shift.clientName?.trim().isNotEmpty == true)
+          ? shift.clientName!.trim()
+          : id);
+    }
+    final list = byId.entries
+        .map((e) => (id: e.key, name: e.value))
+        .toList(growable: false)
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return list;
+  }
+
+  RosterGrid get grid {
+    final start = DateTime(
+      rangeStart.value.year,
+      rangeStart.value.month,
+      rangeStart.value.day,
+    );
+    final people = assignableEngagements
+        .map(
+          (e) => RosterPerson(
+            contractorId: e.contractorId,
+            displayName:
+                (e.contractorName?.trim().isNotEmpty == true)
+                    ? e.contractorName!.trim()
+                    : 'Worker',
+          ),
+        )
+        .toList()
+      ..sort(
+        (a, b) =>
+            a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()),
+      );
+    return buildRosterGrid(
+      rangeStart: start,
+      dayCount: 7,
+      shifts: shifts.toList(),
+      people: people,
+      overlay: overlay.value ?? const RosterOverlayOut(contractors: []),
+      clientIdFilter:
+          clientIdFilter.value.isEmpty ? null : clientIdFilter.value,
+    );
+  }
 
   DateTime get _fromUtc {
     final d = rangeStart.value;
@@ -182,26 +244,47 @@ class StaffVisitsController extends GetxController {
     }
     isLoading.value = true;
     errorMessage.value = null;
+    overlayWarning.value = null;
+    Future<RosterOverlayOut?>? overlayFuture;
     try {
-      final list = await _shiftsRepository.listShifts(
-        from: _fromUtc,
-        to: _toUtc,
+      final from = _fromUtc;
+      final to = _toUtc;
+      // D20: isolate overlay failure from shifts — soft banner only.
+      final shiftsFuture = _shiftsRepository.listShifts(
+        from: from,
+        to: to,
         jobId:
             jobIdFilter.value.trim().isEmpty ? null : jobIdFilter.value.trim(),
       );
+      overlayFuture = () async {
+        try {
+          return await _repository.fetchRosterOverlay(from: from, to: to);
+        } catch (_) {
+          overlayWarning.value = 'Leave/availability unavailable';
+          return null;
+        }
+      }();
+      final listRaw = await shiftsFuture;
       final status = statusFilter.value.trim();
-      final filtered =
+      final list =
           status.isEmpty
-              ? list
-              : list.where((s) => s.status == status).toList(growable: false);
-      filtered.sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
-      shifts.assignAll(filtered);
+              ? listRaw
+              : listRaw
+                  .where((s) => s.status == status)
+                  .toList(growable: false);
+      list.sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
+      shifts.assignAll(list);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
+      // Paint shifts before waiting on overlay (D20 / paint-first).
       isLoading.value = false;
+    }
+    if (overlayFuture != null) {
+      overlay.value =
+          await overlayFuture ?? const RosterOverlayOut(contractors: []);
     }
   }
 
@@ -217,13 +300,8 @@ class StaffVisitsController extends GetxController {
   void _applyPendingClientFilter() {
     final clientId = pendingClientIdFilter;
     if (clientId == null || clientId.isEmpty) return;
-    if (jobIdFilter.value.isNotEmpty) return;
-    for (final job in jobs) {
-      if (job.clientId == clientId) {
-        jobIdFilter.value = job.id;
-        return;
-      }
-    }
+    clientIdFilter.value = clientId;
+    pendingClientIdFilter = null;
   }
 
   Future<void> loadEngagements() async {
@@ -237,6 +315,10 @@ class StaffVisitsController extends GetxController {
   void setJobFilter(String? jobId) {
     jobIdFilter.value = jobId ?? '';
     load();
+  }
+
+  void setClientFilter(String? clientId) {
+    clientIdFilter.value = clientId ?? '';
   }
 
   void shiftRange(int days) {
@@ -258,6 +340,18 @@ class StaffVisitsController extends GetxController {
     selectedShift.value = shift;
     Get.toNamed(AppRoutes.staffShiftDetail, arguments: shift);
     await refreshSelectedShift();
+  }
+
+  Future<void> openShiftFromTile(RosterTile tile) async {
+    ShiftOut? match;
+    for (final shift in shifts) {
+      if (shift.id == tile.shiftId) {
+        match = shift;
+        break;
+      }
+    }
+    if (match == null) return;
+    await openShiftDetail(match);
   }
 
   Future<void> refreshSelectedShift() async {

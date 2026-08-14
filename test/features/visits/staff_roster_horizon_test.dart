@@ -12,6 +12,7 @@ import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/controllers/staff_visits_controller.dart';
+import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
 import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
 
 class _MockVisitsRepository extends Mock implements VisitsRepository {}
@@ -89,6 +90,12 @@ void main() {
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
     _stubListShifts(shifts);
+    when(
+      () => visits.fetchRosterOverlay(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async => const RosterOverlayOut(contractors: []));
     when(() => jobs.listJobs()).thenAnswer((_) async => []);
     when(
       () => engagements.listTenantEngagements(),
@@ -334,5 +341,65 @@ void main() {
         jobId: any(named: 'jobId'),
       ),
     ).called(1);
+  });
+
+  test('default statusFilter is published', () {
+    expect(controller.statusFilter.value, 'published');
+  });
+
+  test('overlay failure sets soft banner and still loads shifts', () async {
+    when(
+      () => visits.fetchRosterOverlay(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenThrow(
+      const AppFailure(
+        code: 'server_error',
+        message: 'overlay down',
+        presentation: AppFailurePresentation.screen,
+      ),
+    );
+    when(
+      () => jobs.ensureHorizon(any()),
+    ).thenAnswer((_) async => HorizonOut.empty);
+
+    await controller.ensureBoardLoaded();
+    await _flushHorizon();
+
+    expect(controller.errorMessage.value, isNull);
+    expect(controller.overlayWarning.value, 'Leave/availability unavailable');
+    expect(controller.overlay.value?.contractors, isEmpty);
+    verify(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        jobId: any(named: 'jobId'),
+      ),
+    ).called(1);
+  });
+
+  test('paint-first: shifts paint while overlay still pending', () async {
+    final overlayGate = Completer<RosterOverlayOut>();
+    when(
+      () => visits.fetchRosterOverlay(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) => overlayGate.future);
+    final horizonGate = Completer<HorizonOut>();
+    when(() => jobs.ensureHorizon(any())).thenAnswer((_) => horizonGate.future);
+
+    final loadFuture = controller.ensureBoardLoaded();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(controller.isLoading.value, isFalse);
+    expect(controller.shifts, isEmpty);
+    expect(controller.errorMessage.value, isNull);
+
+    overlayGate.complete(const RosterOverlayOut(contractors: []));
+    horizonGate.complete(HorizonOut.empty);
+    await loadFuture;
+    await _flushHorizon();
   });
 }
