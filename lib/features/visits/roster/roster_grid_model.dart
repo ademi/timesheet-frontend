@@ -63,8 +63,10 @@ class RosterGrid {
   final List<RosterRow> rows;
 }
 
-DateTime _startOfDay(DateTime value) =>
-    DateTime(value.year, value.month, value.day);
+DateTime _startOfDay(DateTime value) {
+  final local = value.toLocal();
+  return DateTime(local.year, local.month, local.day);
+}
 
 int _dowFromDate(DateTime day) => day.weekday - 1;
 

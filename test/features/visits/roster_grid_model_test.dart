@@ -194,5 +194,52 @@ void main() {
       expect(jane.cells[0].availabilityHint, '09:00–17:00');
       expect(jane.cells[1].availabilityHint, isNull);
     });
+
+    test(
+      'UTC Sunday evening shift buckets to Monday local column',
+      () {
+        // Mon 09:00 AEST = Sun 23:00Z. API payloads are UTC; week chrome is local.
+        final utcSundayEvening = DateTime.utc(2026, 8, 9, 23);
+        final localMonday = DateTime(2026, 8, 10);
+        expect(
+          DateTime(
+            utcSundayEvening.toLocal().year,
+            utcSundayEvening.toLocal().month,
+            utcSundayEvening.toLocal().day,
+          ),
+          localMonday,
+          reason: 'device TZ must place Sun 23:00Z on local Monday',
+        );
+
+        final shift = ShiftOut(
+          id: 's-utc',
+          tenantId: 't',
+          jobId: 'j',
+          jobTitle: 'Morning',
+          clientId: 'cl',
+          clientName: 'Sam',
+          scheduledStart: utcSundayEvening,
+          scheduledEnd: utcSundayEvening.add(const Duration(hours: 3)),
+          requiredSlots: 1,
+          openSlots: 1,
+          status: 'published',
+          createdAt: utcSundayEvening,
+          updatedAt: utcSundayEvening,
+        );
+        final grid = buildRosterGrid(
+          rangeStart: localMonday,
+          dayCount: 5,
+          shifts: [shift],
+          people: const [],
+          overlay: const RosterOverlayOut(contractors: []),
+        );
+        final unfilled = grid.rows.first;
+        expect(unfilled.cells[0].tiles, hasLength(1));
+        expect(unfilled.cells[0].tiles.single.shiftId, 's-utc');
+        for (var i = 1; i < 5; i++) {
+          expect(unfilled.cells[i].tiles, isEmpty);
+        }
+      },
+    );
   });
 }

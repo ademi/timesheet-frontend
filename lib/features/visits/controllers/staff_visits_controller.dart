@@ -30,19 +30,22 @@ String assignAvailabilityLabel({
   required RosterOverlayOut overlay,
   required List<ShiftOut> shifts,
 }) {
-  final civil = DateTime(day.year, day.month, day.day);
+  final dayLocal = day.toLocal();
+  final civil = DateTime(dayLocal.year, dayLocal.month, dayLocal.day);
   for (final c in overlay.contractors) {
     if (c.contractorId != contractorId) continue;
     for (final leave in c.leave) {
+      final leaveStart = leave.startDate.toLocal();
+      final leaveEnd = leave.endDate.toLocal();
       final start = DateTime(
-        leave.startDate.year,
-        leave.startDate.month,
-        leave.startDate.day,
+        leaveStart.year,
+        leaveStart.month,
+        leaveStart.day,
       );
       final end = DateTime(
-        leave.endDate.year,
-        leave.endDate.month,
-        leave.endDate.day,
+        leaveEnd.year,
+        leaveEnd.month,
+        leaveEnd.day,
       );
       if (!civil.isBefore(start) && !civil.isAfter(end)) return 'Leave';
     }
