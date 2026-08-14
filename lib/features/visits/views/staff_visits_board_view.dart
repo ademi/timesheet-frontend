@@ -288,8 +288,24 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
               ListTile(
                 leading: const Icon(Icons.event_repeat_outlined),
                 title: const Text('This and future…'),
-                subtitle: const Text('Next update'),
-                enabled: false,
+                subtitle: Text(
+                  shift!.recurrenceRuleId == null
+                      ? 'Not part of a pattern'
+                      : 'Change from this day onward',
+                ),
+                enabled: shift.recurrenceRuleId != null,
+                onTap:
+                    shift.recurrenceRuleId == null
+                        ? null
+                        : () async {
+                          Navigator.pop(ctx);
+                          if (!context.mounted) return;
+                          await _showThisAndFutureDialog(
+                            context,
+                            controller,
+                            shift!,
+                          );
+                        },
               ),
               if (tile.assignmentContractorId != null &&
                   tile.assignmentContractorId!.isNotEmpty) ...[
@@ -333,6 +349,140 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
           ),
     );
     return result == true;
+  }
+
+  String _hhmm(DateTime dt) =>
+      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
+  Future<void> _showThisAndFutureDialog(
+    BuildContext context,
+    StaffVisitsController controller,
+    ShiftOut source,
+  ) async {
+    var start = source.scheduledStart.toLocal();
+    var end = source.scheduledEnd.toLocal();
+    String? dialogError;
+    var isSubmitting = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            return AlertDialog(
+              title: const Text('This and future…'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'New visit times apply from this day onward. Past days stay as they are.',
+                    ),
+                    const SizedBox(height: 12),
+                    if (dialogError != null) ...[
+                      Text(
+                        dialogError!,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Start time'),
+                      subtitle: Text(_hhmm(start)),
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: ctx,
+                          initialTime: TimeOfDay.fromDateTime(start),
+                        );
+                        if (picked == null) return;
+                        setState(() {
+                          start = DateTime(
+                            start.year,
+                            start.month,
+                            start.day,
+                            picked.hour,
+                            picked.minute,
+                          );
+                          if (!end.isAfter(start)) {
+                            end = start.add(const Duration(hours: 3));
+                          }
+                        });
+                      },
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('End time'),
+                      subtitle: Text(_hhmm(end)),
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: ctx,
+                          initialTime: TimeOfDay.fromDateTime(end),
+                        );
+                        if (picked == null) return;
+                        setState(() {
+                          end = DateTime(
+                            end.year,
+                            end.month,
+                            end.day,
+                            picked.hour,
+                            picked.minute,
+                          );
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed:
+                      isSubmitting ? null : () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed:
+                      isSubmitting
+                          ? null
+                          : () async {
+                            if (!end.isAfter(start)) {
+                              setState(() {
+                                dialogError = 'End time must be after start.';
+                              });
+                              return;
+                            }
+                            setState(() {
+                              isSubmitting = true;
+                              dialogError = null;
+                            });
+                            await controller.editThisAndFuture(
+                              tile: source,
+                              windows: [
+                                TimeWindow(
+                                  startTime: _hhmm(start),
+                                  endTime: _hhmm(end),
+                                ),
+                              ],
+                            );
+                            if (!ctx.mounted) return;
+                            if (controller.errorMessage.value != null) {
+                              setState(() {
+                                dialogError = controller.errorMessage.value;
+                                isSubmitting = false;
+                              });
+                              return;
+                            }
+                            Navigator.pop(ctx);
+                          },
+                  child: const Text('Apply'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _showCopyTileDialog(

@@ -82,4 +82,11 @@ class JobsRepository {
     OngoingSupportCreateRequest body,
   ) =>
       _remote.createOngoingSupport(body);
+
+  Future<SplitRecurrenceOut> splitRecurrenceFrom({
+    required String jobId,
+    required String ruleId,
+    required SplitRecurrenceRequest body,
+  }) =>
+      _remote.splitRecurrenceFrom(jobId: jobId, ruleId: ruleId, body: body);
 }

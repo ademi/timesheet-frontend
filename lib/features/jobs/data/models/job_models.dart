@@ -445,6 +445,62 @@ class OngoingSupportOut {
   }
 }
 
+class SplitRecurrenceRequest {
+  const SplitRecurrenceRequest({
+    required this.fromDate,
+    required this.timeWindows,
+    this.contractorId,
+    this.requiredSlots = 1,
+    required this.horizonFrom,
+    required this.horizonTo,
+  });
+
+  final DateTime fromDate;
+  final List<TimeWindow> timeWindows;
+  final String? contractorId;
+  final int requiredSlots;
+  final DateTime horizonFrom;
+  final DateTime horizonTo;
+
+  Map<String, dynamic> toJson() => {
+    'from_date':
+        '${fromDate.year.toString().padLeft(4, '0')}-'
+        '${fromDate.month.toString().padLeft(2, '0')}-'
+        '${fromDate.day.toString().padLeft(2, '0')}',
+    'time_windows': [for (final window in timeWindows) window.toJson()],
+    'contractor_id': contractorId,
+    'required_slots': requiredSlots,
+    'horizon_from': horizonFrom.toUtc().toIso8601String(),
+    'horizon_to': horizonTo.toUtc().toIso8601String(),
+  };
+}
+
+class SplitRecurrenceOut {
+  const SplitRecurrenceOut({
+    required this.oldRule,
+    required this.newRule,
+    required this.horizon,
+  });
+
+  final RecurrenceRuleOut oldRule;
+  final RecurrenceRuleOut newRule;
+  final HorizonOut horizon;
+
+  factory SplitRecurrenceOut.fromJson(Map<String, dynamic> json) {
+    return SplitRecurrenceOut(
+      oldRule: RecurrenceRuleOut.fromJson(
+        Map<String, dynamic>.from(json['old_rule'] as Map),
+      ),
+      newRule: RecurrenceRuleOut.fromJson(
+        Map<String, dynamic>.from(json['new_rule'] as Map),
+      ),
+      horizon: HorizonOut.fromJson(
+        Map<String, dynamic>.from(json['horizon'] as Map),
+      ),
+    );
+  }
+}
+
 class GenerateVisitsConflict {
   const GenerateVisitsConflict({
     required this.scheduledStart,

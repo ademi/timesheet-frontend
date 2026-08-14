@@ -643,12 +643,45 @@ class StaffVisitsController extends GetxController {
     }
   }
 
-  /// Task 9: split recurrence rule from this occurrence onward.
+  /// Split recurrence from this occurrence onward (this and future).
   Future<void> editThisAndFuture({
-    required ShiftOut source,
-    required DateTime fromDate,
+    required ShiftOut tile,
+    required List<TimeWindow> windows,
+    String? contractorId,
   }) async {
-    throw UnimplementedError('editThisAndFuture is implemented in Task 9');
+    if (!canManage) return;
+    final ruleId = tile.recurrenceRuleId;
+    if (ruleId == null || ruleId.isEmpty) {
+      errorMessage.value = 'This visit is not part of a pattern.';
+      return;
+    }
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final localStart = tile.scheduledStart.toLocal();
+      final fromDate = DateTime(
+        localStart.year,
+        localStart.month,
+        localStart.day,
+      );
+      await _jobsRepository.splitRecurrenceFrom(
+        jobId: tile.jobId,
+        ruleId: ruleId,
+        body: SplitRecurrenceRequest(
+          fromDate: fromDate,
+          timeWindows: windows,
+          contractorId: contractorId,
+          requiredSlots: tile.requiredSlots,
+          horizonFrom: fromDate.toUtc(),
+          horizonTo: fromDate.add(const Duration(days: 14)).toUtc(),
+        ),
+      );
+      await load();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
   }
 
   Future<bool> createShift({

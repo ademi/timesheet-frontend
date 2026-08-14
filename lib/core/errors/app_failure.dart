@@ -127,6 +127,7 @@ class AppFailure implements Exception {
       'standing_job_exists',
       'horizon_window_too_large',
       'horizon_truncated',
+      'split_blocked_by_active_visit',
       'contractor_not_found',
       'hard_split_violation',
       'email_required_for_registration_invite',
@@ -190,6 +191,7 @@ class AppFailure implements Exception {
       case 'standing_job_exists':
       case 'horizon_window_too_large':
       case 'horizon_truncated':
+      case 'split_blocked_by_active_visit':
       case 'contractor_not_found':
       case 'visit_overlap':
       case 'shift_overlap':
@@ -285,6 +287,8 @@ class AppFailure implements Exception {
         return 'Choose a window of 14 days or less.';
       case 'horizon_truncated':
         return 'Filled as many upcoming shifts as allowed. Open roster again to continue.';
+      case 'split_blocked_by_active_visit':
+        return 'Can’t change this pattern — a future visit is already in progress or completed.';
       case 'contractor_not_found':
         return 'No contractor registered with that email/phone.';
       case 'hard_split_violation':

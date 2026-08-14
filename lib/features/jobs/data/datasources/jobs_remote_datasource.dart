@@ -255,6 +255,26 @@ class JobsRemoteDataSource {
     }
   }
 
+  Future<SplitRecurrenceOut> splitRecurrenceFrom({
+    required String jobId,
+    required String ruleId,
+    required SplitRecurrenceRequest body,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.jobRecurrenceSplitFrom(jobId, ruleId),
+        data: body.toJson(),
+      );
+      return _require(
+        response.data,
+        SplitRecurrenceOut.fromJson,
+        'split recurrence',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<List<BranchOut>> listBranches() async {
     try {
       final response = await _dio.get<List<dynamic>>(ApiPaths.branches);

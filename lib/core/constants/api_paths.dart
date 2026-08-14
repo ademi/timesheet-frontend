@@ -133,6 +133,8 @@ abstract final class ApiPaths {
       '${jobRecurrenceRules(id)}/$ruleId';
   static String jobRecurrenceGenerate(String id, String ruleId) =>
       '${jobRecurrenceRule(id, ruleId)}/generate';
+  static String jobRecurrenceSplitFrom(String id, String ruleId) =>
+      '${jobRecurrenceRule(id, ruleId)}/split-from';
   static String jobVisits(String id) => '${job(id)}/visits';
   static const visits = '$_v1/visits';
   static String visit(String id) => '$visits/$id';
