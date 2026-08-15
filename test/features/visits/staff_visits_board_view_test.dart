@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
@@ -32,10 +31,15 @@ const _jobId = 'd65d130b-baca-4fe0-8f18-de65356b7a22';
 
 final _now = DateTime.utc(2026, 8, 14, 9);
 
-JobOut _job({String id = _jobId, String title = 'Morning support'}) {
+JobOut _job({
+  String id = _jobId,
+  String title = 'Morning support',
+  String? clientId,
+}) {
   return JobOut(
     id: id,
     tenantId: 'tenant-1',
+    clientId: clientId,
     kind: 'standing',
     status: 'open',
     title: title,
@@ -105,11 +109,12 @@ void main() {
   }
 
   testWidgets(
-    'does not assert when route job_id is set before jobs have loaded',
+    'client filter primary; support filter hidden with no client selected',
     (tester) async {
       final gate = Completer<List<JobOut>>();
       when(() => jobs.listJobs()).thenAnswer((_) => gate.future);
 
+      // Deep-link job_id must not crash while jobs are still loading (D3).
       Get.routing.args = {'job_id': _jobId};
       putController();
 
@@ -118,27 +123,30 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('All jobs'), findsOneWidget);
       expect(find.text('All clients'), findsOneWidget);
       expect(find.text('Roster'), findsOneWidget);
+      // No client selected → support sub-filter hidden.
+      expect(find.text('All supports'), findsNothing);
 
-      gate.complete([_job()]);
+      gate.complete([_job(clientId: 'c1')]);
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Morning support'), findsOneWidget);
-      expect(find.text('Unfilled'), findsOneWidget);
+      // Single support for client, and none selected → still hidden.
+      expect(find.text('All supports'), findsNothing);
     },
   );
 
   testWidgets(
-    'dedupes duplicate job ids so the filter dropdown can select one',
+    'support sub-filter appears when selected client has two open supports',
     (tester) async {
       when(() => jobs.listJobs()).thenAnswer(
-        (_) async => [_job(), _job(title: 'Duplicate copy')],
+        (_) async => [
+          _job(id: 'j1', title: 'Morning support', clientId: 'c1'),
+          _job(id: 'j2', title: 'Evening support', clientId: 'c1'),
+        ],
       );
 
-      Get.routing.args = {'job_id': _jobId};
       putController();
 
       await tester.pumpWidget(
@@ -147,8 +155,13 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Morning support'), findsOneWidget);
-      expect(find.text('Duplicate copy'), findsNothing);
+      // Hidden until a client is picked.
+      expect(find.text('All supports'), findsNothing);
+
+      Get.find<StaffVisitsController>().setClientFilter('c1');
+      await tester.pump();
+
+      expect(find.text('All supports'), findsOneWidget);
     },
   );
 }

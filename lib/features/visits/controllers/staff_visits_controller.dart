@@ -21,6 +21,7 @@ import '../data/models/roster_overlay_models.dart';
 import '../data/models/visit_models.dart';
 import '../data/repositories/visits_repository.dart';
 import '../roster/roster_grid_model.dart';
+import '../roster/support_filter.dart';
 
 String assignAvailabilityLabel({
   required String contractorId,
@@ -402,7 +403,25 @@ class StaffVisitsController extends GetxController {
 
   void setClientFilter(String? clientId) {
     clientIdFilter.value = clientId ?? '';
+    // The support sub-filter only applies to a client with >1 open support (D3).
+    // Drop any stale support selection when it can no longer be shown.
+    if (jobIdFilter.value.isNotEmpty &&
+        !shouldShowSupportFilter(jobs, clientId: clientIdFilter.value)) {
+      jobIdFilter.value = '';
+      load();
+    }
   }
+
+  /// Whether the per-support sub-filter should show for the current client (D3).
+  bool get showSupportFilter => shouldShowSupportFilter(
+        jobs,
+        clientId: clientIdFilter.value.isEmpty ? null : clientIdFilter.value,
+      );
+
+  /// Open supports for the currently selected client (empty when none selected).
+  List<JobOut> get supportsForSelectedClient => clientIdFilter.value.isEmpty
+      ? const <JobOut>[]
+      : jobsForClientFilter(jobs, clientId: clientIdFilter.value);
 
   void shiftRange(int days) {
     rangeStart.value = rangeStart.value.add(Duration(days: days));
@@ -741,6 +760,41 @@ class StaffVisitsController extends GetxController {
       await _shiftsRepository.createShift(
         ShiftCreateRequest(
           jobId: jobId,
+          scheduledStart: start,
+          scheduledEnd: end,
+          requiredSlots: requiredSlots,
+          status: publish ? 'published' : 'draft',
+        ),
+      );
+      // Refresh roster after the dialog closes so a slow list fetch cannot block UI.
+      load();
+      return true;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  /// Client-first booking: ensure the client's ongoing support exists, then
+  /// create a shift against it. The user never picks a "job" (D9). Errors from
+  /// ensure (e.g. `site_or_branch_required`, D10) surface via [errorMessage].
+  Future<bool> bookOneForClient({
+    required String clientId,
+    required DateTime start,
+    required DateTime end,
+    int requiredSlots = 1,
+    bool publish = true,
+  }) async {
+    if (isSaving.value) return false;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final support = await _jobsRepository.ensureOngoingSupport(clientId);
+      await _shiftsRepository.createShift(
+        ShiftCreateRequest(
+          jobId: support.id,
           scheduledStart: start,
           scheduledEnd: end,
           requiredSlots: requiredSlots,

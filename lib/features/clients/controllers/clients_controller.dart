@@ -921,9 +921,24 @@ class ClientsController extends GetxController {
     Get.toNamed(AppRoutes.staffOngoingSupport, arguments: client);
   }
 
-  void openOngoingSupport() {
-    final job = standingJob.value;
-    if (job == null) return;
+  /// Opens the client's ongoing support detail. Prefers the already-loaded
+  /// standing job; otherwise resolves it fresh via `GET .../ongoing-support`.
+  Future<void> openOngoingSupport() async {
+    var job = standingJob.value;
+    if (job == null) {
+      final client = selected.value;
+      final jobsRepo = _jobs;
+      if (client == null || jobsRepo == null) return;
+      try {
+        job = await jobsRepo.getOngoingSupport(client.id);
+        standingJob.value = job;
+      } on AppFailure catch (e) {
+        errorMessage.value = e.message;
+        return;
+      } catch (_) {
+        return;
+      }
+    }
     if (Get.isRegistered<JobsController>()) {
       Get.find<JobsController>().openDetail(job);
       return;
@@ -935,13 +950,15 @@ class ClientsController extends GetxController {
     );
   }
 
+  /// Client-first book-one: route to the roster book sheet by client so support
+  /// is ensured on submit (D9). No "job" is chosen by the user.
   void bookOneSession() {
-    final job = standingJob.value;
-    if (job == null) return;
+    final client = selected.value;
+    if (client == null) return;
     Get.toNamed(
       AppRoutes.staffVisits,
       arguments: <String, dynamic>{
-        'job_id': job.id,
+        'client_id': client.id,
         'create': true,
       },
     );

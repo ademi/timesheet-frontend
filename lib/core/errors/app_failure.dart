@@ -124,6 +124,7 @@ class AppFailure implements Exception {
       'invalid_visit_status',
       'visit_overlap',
       'shift_overlap',
+      'site_or_branch_required',
       'standing_job_exists',
       'horizon_window_too_large',
       'horizon_truncated',
@@ -195,6 +196,7 @@ class AppFailure implements Exception {
       case 'contractor_not_found':
       case 'visit_overlap':
       case 'shift_overlap':
+      case 'site_or_branch_required':
       case 'leave_in_past':
       case 'availability_windows_overlap':
       case 'evidence_required':
@@ -281,6 +283,8 @@ class AppFailure implements Exception {
         return 'Select a credential to view access history.';
       case 'evidence_required':
         return 'Upload at least one evidence file before saving this credential.';
+      case 'site_or_branch_required':
+        return 'Add a site or branch for this client before booking support.';
       case 'standing_job_exists':
         return 'This client already has ongoing support. Open it, or book one extra session.';
       case 'horizon_window_too_large':

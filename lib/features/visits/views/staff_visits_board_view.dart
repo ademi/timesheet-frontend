@@ -19,14 +19,10 @@ String? _jobDropdownValue(String? filter, Iterable<JobOut> jobs) {
   return null;
 }
 
-List<DropdownMenuItem<String>> _jobDropdownItems(
-  Iterable<JobOut> jobs, {
-  bool includeAll = true,
-}) {
+List<DropdownMenuItem<String>> _supportDropdownItems(Iterable<JobOut> jobs) {
   final seen = <String>{};
   return [
-    if (includeAll)
-      const DropdownMenuItem(value: null, child: Text('All jobs')),
+    const DropdownMenuItem(value: null, child: Text('All supports')),
     for (final job in jobs)
       if (seen.add(job.id))
         DropdownMenuItem(
@@ -52,6 +48,19 @@ List<DropdownMenuItem<String>> _clientDropdownItems(
 ) {
   return [
     const DropdownMenuItem(value: null, child: Text('All clients')),
+    for (final c in clients)
+      DropdownMenuItem(
+        value: c.id,
+        child: Text(c.name, overflow: TextOverflow.ellipsis),
+      ),
+  ];
+}
+
+/// Client picker for the book-one sheet (required, no "All" entry).
+List<DropdownMenuItem<String>> _clientPickerItems(
+  Iterable<({String id, String name})> clients,
+) {
+  return [
     for (final c in clients)
       DropdownMenuItem(
         value: c.id,
@@ -89,7 +98,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
       await c.ensureBoardLoaded();
       if (!mounted) return;
       if (c.consumePendingCreateShift()) {
-        await _showCreateShiftDialog(context, c);
+        await _showBookOneDialog(context, c);
       }
     });
   }
@@ -106,7 +115,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
       floatingActionButton:
           controller.canManage
               ? FloatingActionButton(
-                onPressed: () => _showCreateShiftDialog(context, controller),
+                onPressed: () => _showBookOneDialog(context, controller),
                 child: const Icon(Icons.add),
               )
               : null,
@@ -169,20 +178,26 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _jobDropdownValue(
-                      controller.jobIdFilter.value,
-                      controller.jobs,
+                  // Support sub-filter only when the selected client has >1 open
+                  // support (D3). Client dropdown stays primary otherwise.
+                  if (controller.showSupportFilter) ...[
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _jobDropdownValue(
+                        controller.jobIdFilter.value,
+                        controller.supportsForSelectedClient,
+                      ),
+                      isExpanded: true,
+                      items: _supportDropdownItems(
+                        controller.supportsForSelectedClient,
+                      ),
+                      onChanged: controller.setJobFilter,
+                      decoration: const InputDecoration(
+                        labelText: 'Support',
+                        border: OutlineInputBorder(),
+                      ),
                     ),
-                    isExpanded: true,
-                    items: _jobDropdownItems(controller.jobs),
-                    onChanged: controller.setJobFilter,
-                    decoration: const InputDecoration(
-                      labelText: 'Job',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+                  ],
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value:
@@ -668,14 +683,15 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
     );
   }
 
-  Future<void> _showCreateShiftDialog(
+  Future<void> _showBookOneDialog(
     BuildContext context,
     StaffVisitsController controller,
   ) async {
-    String? jobId =
-        controller.jobIdFilter.value.isEmpty
-            ? null
-            : controller.jobIdFilter.value;
+    final clients = controller.clientFilterOptions;
+    String? clientId = _clientDropdownValue(
+      controller.clientIdFilter.value,
+      clients,
+    );
     var start = DateTime.now().add(const Duration(hours: 1));
     var end = start.add(const Duration(hours: 2));
     var slots = 1;
@@ -689,7 +705,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
         return StatefulBuilder(
           builder: (ctx, setState) {
             return AlertDialog(
-              title: const Text('Create shift'),
+              title: const Text('Book one session'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -701,16 +717,22 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                       ),
                       const SizedBox(height: 12),
                     ],
-                    DropdownButtonFormField<String>(
-                      value: _jobDropdownValue(jobId, controller.jobs),
-                      isExpanded: true,
-                      items: _jobDropdownItems(
-                        controller.jobs,
-                        includeAll: false,
+                    if (clients.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          'No clients yet. Start ongoing support from a '
+                          'client first.',
+                          style: TextStyle(color: AppColors.textMuted),
+                        ),
                       ),
-                      onChanged: (v) => setState(() => jobId = v),
+                    DropdownButtonFormField<String>(
+                      value: clientId,
+                      isExpanded: true,
+                      items: _clientPickerItems(clients),
+                      onChanged: (v) => setState(() => clientId = v),
                       decoration: const InputDecoration(
-                        labelText: 'Job',
+                        labelText: 'Client',
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -808,8 +830,8 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                       isSubmitting
                           ? null
                           : () async {
-                            if (jobId == null) {
-                              setState(() => dialogError = 'Select a job.');
+                            if (clientId == null) {
+                              setState(() => dialogError = 'Select a client.');
                               return;
                             }
                             if (!end.isAfter(start)) {
@@ -822,8 +844,8 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                               isSubmitting = true;
                               dialogError = null;
                             });
-                            final ok = await controller.createShift(
-                              jobId: jobId!,
+                            final ok = await controller.bookOneForClient(
+                              clientId: clientId!,
                               start: start,
                               end: end,
                               requiredSlots: slots,
@@ -838,7 +860,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                               isSubmitting = false;
                               dialogError =
                                   controller.errorMessage.value ??
-                                  'Could not create shift.';
+                                  'Could not book session.';
                             });
                           },
                   child:
@@ -848,7 +870,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                          : const Text('Create'),
+                          : const Text('Book'),
                 ),
               ],
             );
