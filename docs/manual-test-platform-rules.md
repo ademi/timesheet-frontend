@@ -31,7 +31,6 @@ Mark each checkbox as you go. Fail anything that crashes, shows blank screens, i
 ```bash
 flutter run -d chrome \
   --dart-define=API_BASE_URL=http://localhost:8000 \
-  --dart-define=DOMAIN_V2=true \
   --dart-define=TERMS_VERSION=v0.1-placeholder \
   --dart-define=PRIVACY_VERSION=v0.1-placeholder \
   --dart-define=BILLING_URL=https://example.com/billing
@@ -42,8 +41,7 @@ flutter run -d chrome \
 ```bash
 adb reverse tcp:8000 tcp:8000
 flutter run \
-  --dart-define=API_BASE_URL=http://127.0.0.1:8000 \
-  --dart-define=DOMAIN_V2=true
+  --dart-define=API_BASE_URL=http://127.0.0.1:8000
 ```
 
 See [local-emulator-api.md](./local-emulator-api.md).

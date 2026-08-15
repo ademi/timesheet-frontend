@@ -16,8 +16,7 @@ Root workspace `.vscode/launch.json` — **Android: frontend** — should includ
 
 ```json
 "toolArgs": [
-  "--dart-define=API_BASE_URL=http://127.0.0.1:8000",
-  "--dart-define=DOMAIN_V2=true"
+  "--dart-define=API_BASE_URL=http://127.0.0.1:8000"
 ]
 ```
 

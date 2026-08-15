@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rostiq/app/routes/app_routes.dart';
 import 'package:rostiq/app/views/shell/responsive_scaffold.dart';
 import 'package:rostiq/app/views/shell/two_pane.dart';
 import 'package:rostiq/core/responsive/adaptive_grid.dart';
