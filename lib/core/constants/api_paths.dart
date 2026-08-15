@@ -45,6 +45,8 @@ abstract final class ApiPaths {
 
   // Engagements
   static const tenantEngagements = '$_v1/tenants/current/engagements';
+  static const tenantEngagementInvitePreview =
+      '$tenantEngagements/invite-preview';
   static String tenantContractorCredentials(String contractorId) =>
       '$_v1/tenants/current/contractors/$contractorId/credentials';
   static String tenantContractorProfilePhoto(String contractorId) =>

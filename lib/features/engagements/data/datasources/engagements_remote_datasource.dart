@@ -34,6 +34,28 @@ class EngagementsRemoteDataSource {
     }
   }
 
+  Future<EngagementInvitePreviewOut> previewInvite(
+    EngagementInvitePreviewRequest body,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.tenantEngagementInvitePreview,
+        data: body.toJson(),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'empty_preview',
+          message: 'Empty invite preview response',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      return EngagementInvitePreviewOut.fromJson(data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<List<EngagementOut>> listMyEngagements() async {
     try {
       final response = await _dio.get<List<dynamic>>(

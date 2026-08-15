@@ -217,17 +217,57 @@ class EngagementInviteRequest {
     this.email,
     this.phone,
     this.requiredCategories = const [],
+    this.sendEmail = true,
   });
 
   final String? email;
   final String? phone;
   final List<String> requiredCategories;
+  final bool sendEmail;
 
   Map<String, dynamic> toJson() => {
     if (email != null && email!.trim().isNotEmpty) 'email': email!.trim(),
     if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
     'required_categories': requiredCategories,
+    'send_email': sendEmail,
   };
+}
+
+class EngagementInvitePreviewRequest {
+  const EngagementInvitePreviewRequest({this.email, this.phone});
+
+  final String? email;
+  final String? phone;
+
+  Map<String, dynamic> toJson() => {
+    if (email != null && email!.trim().isNotEmpty) 'email': email!.trim(),
+    if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
+  };
+}
+
+class EngagementInvitePreviewOut {
+  const EngagementInvitePreviewOut({
+    required this.outcome,
+    required this.message,
+  });
+
+  final String outcome;
+  final String message;
+
+  bool get needsRegistration => outcome == 'needs_registration';
+  bool get isExistingContractor => outcome == 'existing_contractor';
+  bool get isBlocking =>
+      outcome == 'email_already_registered' ||
+      outcome == 'email_required_for_registration' ||
+      outcome == 'hard_split_violation' ||
+      outcome == 'engagement_already_exists';
+
+  factory EngagementInvitePreviewOut.fromJson(Map<String, dynamic> json) {
+    return EngagementInvitePreviewOut(
+      outcome: json['outcome'] as String? ?? '',
+      message: json['message'] as String? ?? '',
+    );
+  }
 }
 
 class EngagementAcceptRequest {

@@ -230,14 +230,36 @@ class WorkforceController extends GetxController {
       _setError('Select at least one required document.');
       return;
     }
+
     isSaving.value = true;
     clearError();
     try {
+      final preview = await _repository.previewInvite(
+        EngagementInvitePreviewRequest(
+          email: email.isEmpty ? null : email,
+          phone: phone.isEmpty ? null : phone,
+        ),
+      );
+      if (preview.isBlocking) {
+        _setError(preview.message);
+        return;
+      }
+
+      var sendEmail = true;
+      if (preview.needsRegistration) {
+        final choice = await _confirmRegistrationInviteEmail(
+          message: preview.message,
+        );
+        if (choice == null) return; // cancelled
+        sendEmail = choice;
+      }
+
       final result = await _repository.invite(
         EngagementInviteRequest(
           email: email.isEmpty ? null : email,
           phone: phone.isEmpty ? null : phone,
           requiredCategories: selectedCategories.toList(),
+          sendEmail: sendEmail,
         ),
       );
       emailCtrl.clear();
@@ -252,6 +274,7 @@ class WorkforceController extends GetxController {
         await _showRegistrationInviteLinkDialog(
           inviteUrl: inviteUrl,
           expiresAt: invite!.expiresAt,
+          emailRequested: sendEmail,
         );
       } else {
         Get.snackbar(
@@ -275,9 +298,41 @@ class WorkforceController extends GetxController {
     }
   }
 
+  /// Returns `true` to send email, `false` for link-only, `null` if cancelled.
+  Future<bool?> _confirmRegistrationInviteEmail({
+    required String message,
+  }) async {
+    return Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Contractor not in Rostiq'),
+        content: Text(
+          '$message\n\n'
+          'Send an invitation email now? You can still copy a registration '
+          'link either way.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: null),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Link only'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Send email'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
   Future<void> _showRegistrationInviteLinkDialog({
     required String inviteUrl,
     required DateTime expiresAt,
+    bool emailRequested = true,
   }) async {
     await Get.dialog<void>(
       AlertDialog(
@@ -286,9 +341,13 @@ class WorkforceController extends GetxController {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Copy and share this link with the contractor. '
-              'Email delivery depends on server email configuration.',
+            Text(
+              emailRequested
+                  ? 'An invitation email was requested (delivery depends on '
+                      'server email configuration). Copy and share this link '
+                      'as a backup.'
+                  : 'No invitation email was sent. Copy and share this link '
+                      'with the contractor.',
             ),
             const SizedBox(height: 12),
             SelectableText(inviteUrl),

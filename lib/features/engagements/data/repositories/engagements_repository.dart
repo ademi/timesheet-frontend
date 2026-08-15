@@ -14,6 +14,10 @@ class EngagementsRepository {
   Future<EngagementInviteResponse> invite(EngagementInviteRequest body) =>
       _remote.invite(body);
 
+  Future<EngagementInvitePreviewOut> previewInvite(
+    EngagementInvitePreviewRequest body,
+  ) => _remote.previewInvite(body);
+
   Future<List<EngagementOut>> listMyEngagements() =>
       _remote.listMyEngagements();
 

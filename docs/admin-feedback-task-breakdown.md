@@ -13,7 +13,7 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 
 | ID | Task | Notes / decision needed |
 |----|------|-------------------------|
-| MVP-1 | [ ] Clarify whether **shift creation** is in MVP scope | Product decision |
+| MVP-1 | [x] Clarify whether **shift creation** is in MVP scope | **In MVP** — admin Shift Schedule create/assign stays in scope (matches original “What is an MVP” note) |
 | MVP-2 | [x] Improve copy / wording across the app (**better language**) | Done — humanized statuses, softer role copy, document wording |
 
 ---
@@ -77,7 +77,7 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 | IC-2 | [x] Rename **Required Categories** → **Required Document** | Done — “Required documents” on invite + detail |
 | IC-3 | [ ] Move **balloons** (chips/tags?) into a **dropdown** | UI cleanup |
 | IC-4 | [x] Fix **invitation emails not sent** | Done on this branch + BE `refactor/client-info-update` — API returns `invite_url`; UI shows copy dialog (real SMTP still needs `AZURE_EMAIL_ENABLED` in deploy) |
-| IC-5 | [ ] If contractor is **not in Rostiq**, ask admin whether to send an email | Confirmation / prompt flow |
+| IC-5 | [x] If contractor is **not in Rostiq**, ask admin whether to send an email | Done — invite preview + confirm (Send email / Link only / Cancel); `send_email` on create |
 
 ---
 
@@ -145,7 +145,7 @@ Rough priority for tackling one-by-one (adjust as needed):
 3. **Navigation & layout:** ~~AD-1, WF-9, CL-13, CL-8~~ **done** (all four existed on this branch)  
 4. **Copy & clarity:** ~~MVP-2, WF-7, IC-1–IC-2, CL-4, CL-6, ST-3~~ **done** (all existed on this branch)  
 5. **Enhancements:** ~~WF-1–WF-5, CL-3, CL-5, CL-7, CL-9–CL-10, ST-1–ST-5~~ **done**  
-6. **Product decisions:** MVP-1, IC-5  
+6. **Product decisions:** ~~MVP-1, IC-5~~ **done**  
 
 ---
 
@@ -178,14 +178,15 @@ Verified on FE `refactor/client_info_update` / BE `refactor/client-info-update`:
 
 | Topic | Decision | Date |
 |-------|----------|------|
-| Shift creation in MVP? | | |
+| Shift creation in MVP? | **Yes** — keep Shift Schedule create/assign in MVP | 2026-08-15 |
 | Default invite display: name vs email? | Prefer name; fall back to email (never UUID / Demo Free Contractor) | 2026-08-15 |
 | Low-confidence geocoding = hard error? | Yes — block coords; require re-lookup | 2026-08-15 |
+| Invite email when not in Rostiq? | Ask admin: Send email / Link only / Cancel | 2026-08-15 |
 
 ---
 
 ## Progress
 
-- Active tasks: **~8** remaining (excluding MVP questions; visits/jobs deferred)  
-- Completed: `31`  
+- Active tasks: **~6** remaining (visits/jobs deferred)  
+- Completed: `33`  
 - Last updated: 2026-08-15
