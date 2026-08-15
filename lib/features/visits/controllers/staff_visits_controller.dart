@@ -403,10 +403,10 @@ class StaffVisitsController extends GetxController {
 
   void setClientFilter(String? clientId) {
     clientIdFilter.value = clientId ?? '';
-    // The support sub-filter only applies to a client with >1 open support (D3).
-    // Drop any stale support selection when it can no longer be shown.
-    if (jobIdFilter.value.isNotEmpty &&
-        !shouldShowSupportFilter(jobs, clientId: clientIdFilter.value)) {
+    // Always drop support selection on client change — a previous client's
+    // jobId must not pin the shift query when switching between clients
+    // that both show the support sub-filter (D3).
+    if (jobIdFilter.value.isNotEmpty) {
       jobIdFilter.value = '';
       load();
     }

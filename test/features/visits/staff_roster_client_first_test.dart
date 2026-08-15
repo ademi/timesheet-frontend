@@ -187,15 +187,21 @@ void main() {
       verifyNever(() => shifts.createShift(any()));
     });
 
-    test('setClientFilter clears stale support filter when not gated', () async {
-      controller.jobs.assignAll([_job(id: 'only-support')]);
-      controller.jobIdFilter.value = 'only-support';
+    test('setClientFilter always clears prior support filter', () async {
+      controller.jobs.assignAll([
+        _job(id: 'j1'),
+        _job(id: 'j2'),
+        _job(id: 'j3', clientId: 'c2'),
+        _job(id: 'j4', clientId: 'c2'),
+      ]);
+      controller.clientIdFilter.value = 'c1';
+      controller.jobIdFilter.value = 'j1';
 
-      controller.setClientFilter('c1');
+      controller.setClientFilter('c2');
 
-      // Single open support → sub-filter hidden → stale support selection cleared.
       expect(controller.jobIdFilter.value, '');
-      expect(controller.showSupportFilter, isFalse);
+      expect(controller.clientIdFilter.value, 'c2');
+      expect(controller.showSupportFilter, isTrue);
     });
 
     test('showSupportFilter true when client has two open supports', () {
