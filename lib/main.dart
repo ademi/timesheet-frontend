@@ -11,7 +11,6 @@ import 'app/data/datasources/remote/auth_remote_datasource.dart';
 import 'app/routes/app_pages.dart';
 import 'app/themes/app_colors.dart';
 import 'core/network/api_client.dart';
-import 'core/services/domain_v2_cutover.dart';
 import 'core/services/session_service.dart';
 import 'core/services/token_storage.dart';
 
@@ -26,8 +25,6 @@ Future<void> main() async {
   final tokenStorage = TokenStorage();
   await tokenStorage.loadFromStorage();
 
-  final wiped = await DomainV2Cutover.runIfNeeded(tokenStorage);
-
   Get.put<TokenStorage>(tokenStorage, permanent: true);
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -39,13 +36,11 @@ Future<void> main() async {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-  runApp(RostiqApp(showCutoverMessage: wiped));
+  runApp(const RostiqApp());
 }
 
 class RostiqApp extends StatefulWidget {
-  const RostiqApp({super.key, this.showCutoverMessage = false});
-
-  final bool showCutoverMessage;
+  const RostiqApp({super.key});
 
   @override
   State<RostiqApp> createState() => _RostiqAppState();
@@ -56,16 +51,6 @@ class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    if (widget.showCutoverMessage) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.snackbar(
-          'App updated',
-          'Please sign in again.',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 5),
-        );
-      });
-    }
   }
 
   @override

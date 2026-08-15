@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 
-import '../../../../core/constants/app_constants.dart';
 import '../../models/auth/auth_error_model.dart';
 import '../../models/auth/auth_token_model.dart';
 import '../../models/auth/first_login_request_model.dart';
@@ -10,8 +9,6 @@ import '../../models/auth/logout_response_model.dart';
 import '../../models/auth/me_context_model.dart';
 import '../../models/auth/refresh_request_model.dart';
 import '../../models/auth/switch_tenant_request_model.dart';
-import '../../models/auth/verify_user_request_model.dart';
-import '../../models/auth/verify_user_response_model.dart';
 
 /// Shared refresh call used by [AuthInterceptor] and [AuthRemoteDataSource].
 Future<AuthTokenModel> executeRefreshRequest(
@@ -39,23 +36,6 @@ class AuthRemoteDataSource {
 
   final Dio _plainDio;
   final Dio _authenticatedDio;
-
-  Future<VerifyUserResponseModel> verifyUser(
-    VerifyUserRequestModel request,
-  ) async {
-    final response = await _plainDio.post<Map<String, dynamic>>(
-      AppConstants.verifyUserPath,
-      data: request.toJson(),
-    );
-    final data = response.data;
-    if (data == null) {
-      throw DioException(
-        requestOptions: response.requestOptions,
-        message: 'Empty verify user response',
-      );
-    }
-    return VerifyUserResponseModel.fromJson(data);
-  }
 
   Future<AuthTokenModel> login(LoginRequestModel request) async {
     try {

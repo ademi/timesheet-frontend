@@ -2,36 +2,7 @@ abstract class AppRoutes {
   static const gateway = '/gateway';
   static const login = '/login';
   static const firstLogin = '/first-login';
-  static const home = '/home';
   static const adminBranchGateway = '/admin/branches';
-  static const adminPanel = '/admin-panel';
-  static const adminEmployees = '/admin/employees';
-  static const adminAttendanceReport = '/admin/attendance-report';
-  static const adminAttendanceCorrections = '/admin/attendance-corrections';
-  @Deprecated('Removed in S7; use staffVisits')
-  static const adminAttendanceAdjustment = '/admin/attendance-adjustment';
-
-  /// Removed in S6 — use Staff Jobs (`staffJobs`) instead.
-  @Deprecated('Removed in S6; use staffJobs')
-  static const adminShiftSchedule = '/admin/shift-schedule';
-  static const employeeDetail = '/admin/employees/detail';
-  static const createEmployee = '/create-employee';
-  static const createEmployeeSuccess = '/create-employee/success';
-  static const employeePicker = '/employees/pick';
-  static const paymentMain = '/payments';
-  static const paymentCreate = '/payments/create';
-  static const paymentReport = '/payments/report';
-  static const paymentHistory = '/payments/history';
-  static const payrollMain = '/payroll';
-  static const payrollPeriods = '/payroll/periods';
-  static const payrollSettings = '/payroll/settings';
-  static const payrollPeriodDetail = '/payroll/periods/detail';
-  static const payrollPeriodResults = '/payroll/periods/results';
-  static const payrollEmployeeRates = '/payroll/rates';
-  static const payrollEmployeeRateForm = '/payroll/rates/form';
-  static const payrollPeriodResultDetail = '/payroll/periods/results/detail';
-  static const payrollEmployeeBalance = '/payroll/balance';
-  static const payrollSummaryReport = '/payroll/summary';
 
   // --- Dual shells (contractor domain) ---
   static const wrongActor = '/wrong-actor';
@@ -87,34 +58,6 @@ abstract class AppRoutes {
 
   /// Alias for backend email links (`public_app_base_url/invite/{token}`).
   static const publicClientInviteLegacy = '/invite/:token';
-
-  // Deprecated aliases (removed /v2 stubs) — keep names for any leftover refs.
-  @Deprecated('Use staffHome')
-  static const adminHub = staffHome;
-  @Deprecated('Use staffWorkforce')
-  static const adminTeam = staffWorkforce;
-  @Deprecated('Use staffWorkforce')
-  static const adminEngagements = staffWorkforce;
-  @Deprecated('Use staffClients')
-  static const adminClients = staffClients;
-  @Deprecated('Use staffJobs')
-  static const adminJobs = staffJobs;
-  @Deprecated('Use staffPayments')
-  static const adminPayments = staffPayments;
-  @Deprecated('Use staffSettings')
-  static const adminForms = staffSettings;
-  @Deprecated('Use staffSettings')
-  static const adminSettings = staffSettings;
-  @Deprecated('Use contractorCredentials')
-  static const contractorDocuments = contractorCredentials;
-  @Deprecated('Use contractorHome')
-  static const contractorPaymentsAlias = contractorHome;
-  @Deprecated('Use contractorProfile')
-  static const contractorSwitchTenant = contractorProfile;
-  @Deprecated('Use contractorSchedule')
-  static const contractorTimetable = contractorSchedule;
-  @Deprecated('Use contractorOnboarding')
-  static const contractorEngagementAccept = contractorOnboarding;
 }
 
 /// Staff shell route names.
@@ -164,6 +107,3 @@ abstract final class ContractorRoutes {
     profile,
   ];
 }
-
-/// @Deprecated Use [StaffRoutes].
-typedef AdminRoutes = StaffRoutes;

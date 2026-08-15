@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rostiq/app/routes/app_routes.dart';
-import 'package:rostiq/app/views/shell/admin_shell_routes.dart';
 import 'package:rostiq/app/views/shell/responsive_scaffold.dart';
 import 'package:rostiq/app/views/shell/two_pane.dart';
 import 'package:rostiq/core/responsive/adaptive_grid.dart';
@@ -12,6 +11,11 @@ import 'package:rostiq/core/responsive/breakpoints.dart';
 import 'package:rostiq/core/responsive/max_width_box.dart';
 
 void main() {
+  const sampleDestinations = [
+    ResponsiveDestination(icon: Icons.home_outlined, label: 'Home'),
+    ResponsiveDestination(icon: Icons.work_outline, label: 'Jobs'),
+  ];
+
   group('Phase 7 — breakpoint matrix', () {
     test('7.1 phone 360dp classifies as phone', () {
       expect(Breakpoints.classify(360), DeviceClass.phone);
@@ -100,7 +104,7 @@ void main() {
           home: ResponsiveScaffold(
             selectedIndex: 0,
             onDestinationSelected: (_) {},
-            destinations: AdminShellRoutes.destinations,
+            destinations: sampleDestinations,
             child: const Text('Content'),
           ),
         ),
@@ -119,7 +123,7 @@ void main() {
           home: ResponsiveScaffold(
             selectedIndex: 0,
             onDestinationSelected: (_) {},
-            destinations: AdminShellRoutes.destinations,
+            destinations: sampleDestinations,
             child: const Text('PhoneContent'),
           ),
         ),
@@ -224,30 +228,6 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-    });
-  });
-
-  group('Phase 7 — admin shell routes (7.5)', () {
-    test('maps employee routes to rail index 0', () {
-      expect(
-        AdminShellRoutes.selectedIndex(AppRoutes.employeeDetail),
-        0,
-      );
-    });
-
-    test('maps shift schedule routes to rail index 3', () {
-      expect(
-        AdminShellRoutes.selectedIndex(AppRoutes.adminShiftSchedule),
-        3,
-      );
-    });
-
-    test('maps payroll routes to rail index 4', () {
-      expect(AdminShellRoutes.selectedIndex(AppRoutes.payrollPeriods), 4);
-    });
-
-    test('maps payment routes to rail index 5', () {
-      expect(AdminShellRoutes.selectedIndex(AppRoutes.paymentMain), 5);
     });
   });
 

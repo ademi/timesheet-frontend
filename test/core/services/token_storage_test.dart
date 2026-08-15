@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rostiq/app/constants/scheduling_permissions.dart';
+import 'package:rostiq/app/constants/app_permissions.dart';
 import 'package:rostiq/core/services/token_storage.dart';
 
 String _fakeJwt(Map<String, dynamic> payload) {
@@ -88,27 +88,27 @@ void main() {
     expect(storage.canManageSchedule, isFalse);
   });
 
-  test('scheduling.read grants view only', () async {
+  test('visits.read grants view only', () async {
     final storage = TokenStorage();
     await storage.persistTokens(
       accessToken: _fakeJwt({
-        'permissions': [SchedulingPermissions.read],
+        'permissions': [AppPermissions.visitsRead],
         'exp': 9999999999,
       }),
       refreshToken: 'refresh',
     );
 
-    expect(storage.hasPermission(SchedulingPermissions.read), isTrue);
-    expect(storage.hasPermission(SchedulingPermissions.manage), isFalse);
+    expect(storage.hasPermission(AppPermissions.visitsRead), isTrue);
+    expect(storage.hasPermission(AppPermissions.visitsManage), isFalse);
     expect(storage.canViewSchedule, isTrue);
     expect(storage.canManageSchedule, isFalse);
   });
 
-  test('scheduling.manage grants view and manage', () async {
+  test('visits.manage grants view and manage', () async {
     final storage = TokenStorage();
     await storage.persistTokens(
       accessToken: _fakeJwt({
-        'permissions': [SchedulingPermissions.manage],
+        'permissions': [AppPermissions.visitsManage],
         'exp': 9999999999,
       }),
       refreshToken: 'refresh',
@@ -128,7 +128,7 @@ void main() {
       refreshToken: 'refresh',
     );
 
-    expect(storage.hasPermission(SchedulingPermissions.read), isTrue);
-    expect(storage.hasPermission(SchedulingPermissions.manage), isTrue);
+    expect(storage.hasPermission(AppPermissions.jobsRead), isTrue);
+    expect(storage.hasPermission(AppPermissions.visitsManage), isTrue);
   });
 }

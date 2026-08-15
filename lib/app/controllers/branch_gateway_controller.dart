@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 
+import '../../core/services/session_service.dart';
 import '../../core/services/token_storage.dart';
 import '../data/models/branch/branch_model.dart';
 import '../data/repositories/branch_repository.dart';
@@ -49,10 +50,11 @@ class BranchGatewayController extends GetxController {
       branchId: branch.id,
       branchName: branch.name,
     );
-    final role = _tokenStorage.role;
-    final destination =
-        role == 'attendance' ? AppRoutes.staffVisits : AppRoutes.adminPanel;
-    Get.offAllNamed(destination);
+    if (Get.isRegistered<SessionService>()) {
+      Get.offAllNamed(Get.find<SessionService>().resolvePostLoginRoute());
+      return;
+    }
+    Get.offAllNamed(AppRoutes.staffHome);
   }
 
   Future<void> logout() async {

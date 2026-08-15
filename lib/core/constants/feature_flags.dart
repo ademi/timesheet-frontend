@@ -31,22 +31,4 @@ abstract final class AppEnv {
     'PRIVACY_VERSION',
     defaultValue: 'v0.1-placeholder',
   );
-
-  static const String _domainV2Raw = String.fromEnvironment(
-    'DOMAIN_V2',
-    defaultValue: 'true',
-  );
-
-  /// Contractor-domain shells (default on). Legacy portal only if explicitly false.
-  static bool get domainV2 {
-    final v = _domainV2Raw.toLowerCase().trim();
-    return v == 'true' || v == '1' || v == 'yes';
-  }
-}
-
-/// Backward-compatible alias used by earlier Phase 2 code.
-abstract final class FeatureFlags {
-  FeatureFlags._();
-
-  static bool get domainV2 => AppEnv.domainV2;
 }

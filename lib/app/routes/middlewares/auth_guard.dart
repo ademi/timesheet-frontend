@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
-import '../../../core/constants/feature_flags.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../app_routes.dart';
@@ -15,8 +14,6 @@ class AuthGuard extends GetMiddleware {
     if (!hasToken) {
       return const RouteSettings(name: AppRoutes.gateway);
     }
-
-    if (!FeatureFlags.domainV2) return null;
 
     final claims = Get.find<TokenStorage>().jwtClaims;
     if (claims?.mustChangePassword == true && route != AppRoutes.firstLogin) {

@@ -15,7 +15,7 @@ import '../../routes/app_routes.dart';
 /// Works unchanged on mobile: there the stack is never reset, `canPop()` is true,
 /// and the fallback branch is never reached.
 class AppBackButton extends StatelessWidget {
-  const AppBackButton({super.key, this.fallbackRoute = AppRoutes.adminPanel});
+  const AppBackButton({super.key, this.fallbackRoute = AppRoutes.staffHome});
 
   /// Logical parent to land on when nothing can be popped (post-refresh on web).
   final String fallbackRoute;

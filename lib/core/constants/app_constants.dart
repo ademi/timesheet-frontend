@@ -56,11 +56,6 @@ abstract final class AppConstants {
   static const String branchesPath = '$apiV1/branches';
   static const String notificationDevicesPath = '$apiV1/notifications/devices';
   static const String notificationEventsPath = '$apiV1/notifications/events';
-
-  // --- Deprecated / unmounted (expect 404) — do not use in new code ---
-
-  @Deprecated('Unmounted V2 — use tenant-members')
-  static const String verifyUserPath = '$apiV1/auth/verify_user';
 }
 
 /// Keys used with [GetStorage] for auth tokens.

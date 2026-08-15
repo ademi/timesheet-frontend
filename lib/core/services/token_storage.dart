@@ -2,7 +2,6 @@ import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../app/constants/app_permissions.dart';
-import '../../app/constants/scheduling_permissions.dart';
 import '../auth/jwt_claims.dart';
 
 /// Single source of truth for persisting and reading auth tokens.
@@ -19,7 +18,6 @@ class TokenStorage {
   static const _keyRefresh = 'refresh_token';
   static const _keyBranch = 'branch_id';
   static const _keyBranchName = 'branch_name';
-  static const _keyRole = 'user_role';
   static const _keyLastTenantId = 'last_tenant_id';
   static const _keyLastEngagementId = 'last_engagement_id';
 
@@ -27,7 +25,6 @@ class TokenStorage {
   String? _cachedRefreshToken;
   String? _cachedBranchId;
   String? _cachedBranchName;
-  String? _cachedRole;
   String? _cachedLastTenantId;
   String? _cachedLastEngagementId;
 
@@ -35,9 +32,6 @@ class TokenStorage {
   String? get refreshToken => _cachedRefreshToken;
   String? get branchId => _cachedBranchId;
   String? get branchName => _cachedBranchName;
-
-  /// Legacy portal role (`admin` / `attendance`). Cleared on DOMAIN_V2 cutover.
-  String? get role => _cachedRole;
 
   String? get lastTenantId => _cachedLastTenantId;
   String? get lastEngagementId => _cachedLastEngagementId;
@@ -54,16 +48,12 @@ class TokenStorage {
     return jwtClaims?.hasPermission(permission) ?? false;
   }
 
-  /// Legacy scheduling.* **or** V2 jobs/visits read.
   bool get canViewSchedule =>
-      hasPermission(SchedulingPermissions.read) ||
-      hasPermission(SchedulingPermissions.manage) ||
       hasPermission(AppPermissions.jobsRead) ||
       hasPermission(AppPermissions.visitsRead) ||
       hasPermission(AppPermissions.visitsManage);
 
   bool get canManageSchedule =>
-      hasPermission(SchedulingPermissions.manage) ||
       hasPermission(AppPermissions.jobsManage) ||
       hasPermission(AppPermissions.visitsManage);
 
@@ -87,14 +77,8 @@ class TokenStorage {
     _cachedRefreshToken = await _storage.read(key: _keyRefresh);
     _cachedBranchId = await _storage.read(key: _keyBranch);
     _cachedBranchName = await _storage.read(key: _keyBranchName);
-    _cachedRole = await _storage.read(key: _keyRole);
     _cachedLastTenantId = await _storage.read(key: _keyLastTenantId);
     _cachedLastEngagementId = await _storage.read(key: _keyLastEngagementId);
-  }
-
-  Future<void> persistRole(String role) async {
-    _cachedRole = role;
-    await _storage.write(key: _keyRole, value: role);
   }
 
   Future<void> persistLastTenantSelection({
@@ -166,7 +150,6 @@ class TokenStorage {
     _cachedRefreshToken = null;
     _cachedBranchId = null;
     _cachedBranchName = null;
-    _cachedRole = null;
     _cachedLastTenantId = null;
     _cachedLastEngagementId = null;
     await _storage.deleteAll();

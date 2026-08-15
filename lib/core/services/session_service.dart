@@ -8,7 +8,6 @@ import '../../app/routes/app_routes.dart';
 import '../../features/contractor_onboarding/data/onboarding_progress_store.dart';
 import '../../features/contractor_onboarding/onboarding_routing.dart';
 import '../auth/jwt_claims.dart';
-import '../constants/feature_flags.dart';
 import 'token_storage.dart';
 
 /// Permanent session: actor, engagements, permissions, post-login routing.
@@ -140,7 +139,6 @@ class SessionService extends GetxController {
   }
 
   Future<void> hydrateFromMeContext() async {
-    if (!FeatureFlags.domainV2) return;
     if (_tokenStorage.accessToken == null) return;
     final inFlight = _hydratingMeContext;
     if (inFlight != null) return inFlight;

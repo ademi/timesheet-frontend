@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
-import '../../../core/constants/feature_flags.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../../features/shell/staff_shell.dart';
@@ -20,7 +19,6 @@ class PermissionGuard extends GetMiddleware {
 
   @override
   RouteSettings? redirect(String? route) {
-    if (!FeatureFlags.domainV2) return null;
     if (anyOf.isEmpty && allOf.isEmpty) return null;
 
     if (!Get.isRegistered<SessionService>()) {

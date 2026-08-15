@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../core/constants/feature_flags.dart';
 import '../../core/network/must_change_password.dart';
 import '../../core/services/session_service.dart';
 import '../../features/contractor_onboarding/bindings/onboarding_binding.dart';
@@ -63,7 +62,7 @@ class AuthController extends GetxController {
       );
       if (tokens.mustChangePassword) return;
 
-      if (FeatureFlags.domainV2 && Get.isRegistered<SessionService>()) {
+      if (Get.isRegistered<SessionService>()) {
         final session = Get.find<SessionService>();
         Get.offAllNamed(session.resolvePostLoginRoute());
         return;

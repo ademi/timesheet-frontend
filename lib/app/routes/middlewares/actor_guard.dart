@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/constants/feature_flags.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../../features/shell/contractor_shell.dart';
@@ -12,8 +11,6 @@ import '../app_routes.dart';
 class ActorGuard extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
-    if (!FeatureFlags.domainV2) return null;
-
     final hasToken = Get.isRegistered<TokenStorage>() &&
         (Get.find<TokenStorage>().accessToken?.isNotEmpty ?? false);
     if (!hasToken) {
