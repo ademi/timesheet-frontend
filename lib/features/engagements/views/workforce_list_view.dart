@@ -91,14 +91,22 @@ class WorkforceListView extends GetView<WorkforceController> {
             if (err != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.errorBackground,
-                    borderRadius: BorderRadius.circular(8),
+                child: Material(
+                  color: AppColors.errorBackground,
+                  borderRadius: BorderRadius.circular(8),
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    title: Text(
+                      err,
+                      style: const TextStyle(color: AppColors.error),
+                    ),
+                    trailing: IconButton(
+                      tooltip: 'Dismiss',
+                      onPressed: controller.clearError,
+                      icon: const Icon(Icons.close, color: AppColors.error),
+                    ),
                   ),
-                  child: Text(err, style: const TextStyle(color: AppColors.error)),
                 ),
               ),
             Expanded(

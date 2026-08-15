@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -39,6 +41,9 @@ class WorkforceController extends GetxController {
   final eligibilityReasons = <String>[].obs;
   final detailPhoto = Rxn<ProfilePhotoOut>();
   final isDetailPhotoLoading = false.obs;
+
+  Timer? _errorClearTimer;
+  static const _errorClearDelay = Duration(seconds: 8);
 
   // Invite form
   final emailCtrl = TextEditingController();
@@ -101,18 +106,32 @@ class WorkforceController extends GetxController {
 
   @override
   void onClose() {
+    _errorClearTimer?.cancel();
     emailCtrl.dispose();
     phoneCtrl.dispose();
     super.onClose();
   }
 
+  void clearError() {
+    _errorClearTimer?.cancel();
+    _errorClearTimer = null;
+    errorMessage.value = null;
+    eligibilityReasons.clear();
+  }
+
+  void _setError(String message) {
+    errorMessage.value = message;
+    _errorClearTimer?.cancel();
+    _errorClearTimer = Timer(_errorClearDelay, clearError);
+  }
+
   Future<void> load() async {
     if (!canRead) {
-      errorMessage.value = 'Missing contractors.read permission.';
+      _setError('Missing contractors.read permission.');
       return;
     }
     isLoading.value = true;
-    errorMessage.value = null;
+    clearError();
     try {
       final list = await _repository.listTenantEngagements();
       items.assignAll(list);
@@ -124,9 +143,9 @@ class WorkforceController extends GetxController {
         await _ensureCredentialsLoaded();
       }
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      _setError(e.message);
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setError(e.toString());
     } finally {
       isLoading.value = false;
     }
@@ -143,8 +162,7 @@ class WorkforceController extends GetxController {
 
   void openDetail(EngagementOut e) {
     selected = e;
-    eligibilityReasons.clear();
-    errorMessage.value = null;
+    clearError();
     detailPhoto.value = photosByContractor[e.contractorId];
     Get.toNamed(AppRoutes.staffWorkforceDetail, arguments: e);
     loadDetailProfilePhoto(e.contractorId);
@@ -189,21 +207,21 @@ class WorkforceController extends GetxController {
 
   Future<void> submitInvite() async {
     if (!canInvite) {
-      errorMessage.value = 'Missing contractors.invite permission.';
+      _setError('Missing contractors.invite permission.');
       return;
     }
     final email = emailCtrl.text.trim();
     final phone = phoneCtrl.text.trim();
     if (email.isEmpty && phone.isEmpty) {
-      errorMessage.value = 'Provide an email and/or phone.';
+      _setError('Provide an email and/or phone.');
       return;
     }
     if (selectedCategories.isEmpty) {
-      errorMessage.value = 'Select at least one required credential category.';
+      _setError('Select at least one required credential category.');
       return;
     }
     isSaving.value = true;
-    errorMessage.value = null;
+    clearError();
     try {
       final result = await _repository.invite(
         EngagementInviteRequest(
@@ -239,9 +257,9 @@ class WorkforceController extends GetxController {
       }
       await load();
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      _setError(e.message);
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setError(e.toString());
     } finally {
       isSaving.value = false;
     }
@@ -292,9 +310,33 @@ class WorkforceController extends GetxController {
   }
 
   Future<void> runAction(String action, EngagementOut engagement) async {
+    if (action == 'end') {
+      final confirmed = await Get.dialog<bool>(
+        AlertDialog(
+          title: const Text('End engagement?'),
+          content: Text(
+            'This will end the engagement'
+            '${engagement.contractorName != null && engagement.contractorName!.isNotEmpty ? ' with ${engagement.contractorName}' : ''}. '
+            'This cannot be undone from here.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Get.back(result: true),
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+              child: const Text('End engagement'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+
     isSaving.value = true;
-    errorMessage.value = null;
-    eligibilityReasons.clear();
+    clearError();
     try {
       final updated = await switch (action) {
         'approve' => _repository.approve(engagement.id),
@@ -321,12 +363,12 @@ class WorkforceController extends GetxController {
         colorText: AppColors.onPrimary,
       );
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      _setError(e.message);
       if (e.isEligibilityIncomplete) {
         eligibilityReasons.assignAll(e.eligibilityReasons);
       }
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setError(e.toString());
     } finally {
       isSaving.value = false;
     }
@@ -387,9 +429,9 @@ class WorkforceController extends GetxController {
         credentialsByContractor[pending[i].key] = results[i];
       }
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      _setError(e.message);
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setError(e.toString());
     } finally {
       isLoadingCredentials.value = false;
     }

@@ -54,9 +54,9 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 | ID | Task | Details |
 |----|------|---------|
 | WF-5 | [ ] Add option to **withdraw invite** while waiting for invite acceptance | Lifecycle gap |
-| WF-6 | [ ] Add **confirm popup** before **End engagement** | Destructive action confirmation |
+| WF-6 | [x] Add **confirm popup** before **End engagement** | Done on `refactor/client_info_update` — confirm dialog before end |
 | WF-7 | [ ] Improve unclear error: *"This engagement can't move to that status from here (pending docs)"* | Clearer message + next step for user |
-| WF-8 | [ ] Make error messages **disappear** after dismiss / timeout / success | Sticky errors today |
+| WF-8 | [x] Make error messages **disappear** after dismiss / timeout / success | Done — dismiss button + 8s auto-clear on workforce errors |
 
 ### Payment rates
 
@@ -109,7 +109,7 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 
 | ID | Task | Details |
 |----|------|---------|
-| CL-11 | [ ] Prevent saving a client with **no information** — validate form before save | Required fields / empty-state guard |
+| CL-11 | [x] Prevent saving a client with **no information** — validate form before save | Done — Form validators + require name and email/phone |
 | CL-12 | [ ] Remove **Service Agreement Notes** | Field removal |
 | CL-13 | [ ] After create, **route to the new client Type/Details banner** | Post-save navigation |
 | CL-14 | [x] Fix **upload client image** returning **400** | Done on `refactor/client_info_update` — MIME guess no longer sends `image/gif` / `application/octet-stream` |
@@ -141,7 +141,7 @@ Not tracked in active work:
 Rough priority for tackling one-by-one (adjust as needed):
 
 1. **Broken flows first:** ~~IC-4, CL-14, AD-2~~ **done** (all three existed on this branch)  
-2. **Data loss / destructive UX:** WF-6, CL-11, WF-8  
+2. **Data loss / destructive UX:** ~~WF-6, CL-11, WF-8~~ **done** (all three existed on this branch)  
 3. **Navigation & layout:** AD-1, WF-9, CL-13, CL-8  
 4. **Copy & clarity:** MVP-2, WF-7, IC-1–IC-2, CL-4, CL-6, ST-3  
 5. **Enhancements:** WF-1–WF-5, CL-3, CL-5, CL-7, CL-9–CL-10, ST-1–ST-5  
@@ -158,6 +158,9 @@ Verified on FE `refactor/client_info_update` / BE `refactor/client-info-update`:
 | IC-4 | Yes | Fixed |
 | CL-14 | Yes (profile photo feature present) | Fixed |
 | AD-2 | Yes (delete+recreate home controller + uncached load) | Fixed |
+| WF-6 | Yes (End engagement had no confirm) | Fixed |
+| CL-11 | Yes (name-only check; empty contact allowed) | Fixed |
+| WF-8 | Yes (sticky error banners, no dismiss/timeout) | Fixed |
 ---
 
 ## Decision log (fill in during work)
@@ -172,6 +175,6 @@ Verified on FE `refactor/client_info_update` / BE `refactor/client-info-update`:
 
 ## Progress
 
-- Active tasks: **~30** remaining (excluding MVP questions; visits/jobs deferred)  
-- Completed: `3` (IC-4, CL-14, AD-2)  
+- Active tasks: **~27** remaining (excluding MVP questions; visits/jobs deferred)  
+- Completed: `6` (IC-4, CL-14, AD-2, WF-6, CL-11, WF-8)  
 - Last updated: 2026-08-15

@@ -36,6 +36,7 @@ class ClientsController extends GetxController {
   final profileSaveProgress = RxnString();
 
   // Create / edit form
+  final clientFormKey = GlobalKey<FormState>();
   final nameCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
@@ -435,9 +436,22 @@ class ClientsController extends GetxController {
   }
 
   Future<void> saveClient() async {
+    final form = clientFormKey.currentState;
+    if (form == null || !form.validate()) {
+      errorMessage.value =
+          'Please complete the required client details before saving.';
+      return;
+    }
+
     final name = nameCtrl.text.trim();
+    final email = emailCtrl.text.trim();
+    final phone = phoneCtrl.text.trim();
     if (name.isEmpty) {
       errorMessage.value = 'Full name is required.';
+      return;
+    }
+    if (email.isEmpty && phone.isEmpty) {
+      errorMessage.value = 'Provide an email and/or phone number.';
       return;
     }
 
@@ -450,8 +464,8 @@ class ClientsController extends GetxController {
           ClientCreateRequest(
             fullName: name,
             status: status.value,
-            email: emailCtrl.text.trim(),
-            phone: phoneCtrl.text.trim(),
+            email: email.isEmpty ? null : email,
+            phone: phone.isEmpty ? null : phone,
             serviceAgreementNotes: notesCtrl.text.trim().isEmpty
                 ? null
                 : notesCtrl.text.trim(),
@@ -483,8 +497,8 @@ class ClientsController extends GetxController {
           ClientUpdateRequest(
             fullName: name,
             status: status.value,
-            email: emailCtrl.text.trim(),
-            phone: phoneCtrl.text.trim(),
+            email: email,
+            phone: phone,
             serviceAgreementNotes: notesCtrl.text.trim(),
           ),
         );
