@@ -30,7 +30,7 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 
 | ID | Task | Details |
 |----|------|---------|
-| AD-1 | [ ] Move crowded admin **menu to the left side** | Side nav instead of crowded top/header menu |
+| AD-1 | [x] Move crowded admin **menu to the left side** | Done — left `NavigationRail` on all widths (compact labels on phone) |
 | AD-2 | [x] Home: stop **multiple duplicate server requests**; add **caching** | Done on `refactor/client_info_update` — permanent controller + 45s TTL / single-flight; refresh forces reload |
 
 ---
@@ -62,7 +62,7 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 
 | ID | Task | Details |
 |----|------|---------|
-| WF-9 | [ ] Hide **New Payment Rate** form on card; use a **button** that navigates to another screen | Separate screen for rate entry |
+| WF-9 | [x] Hide **New Payment Rate** form on card; use a **button** that navigates to another screen | Done — list on detail; form on `/staff/workforce/detail/rate-form` |
 | WF-10 | [ ] Mark **Evening, Night**, etc. rates as **optional** in UI | Label optional fields |
 | WF-11 | [ ] If contractor has an **active rate**, new-rate button / copy should warn that previous rate ends and new rate starts from effective date | Messaging + behavior |
 | WF-12 | [ ] Remove display of raw rate summary like `evening 47.0-night 57.0` | Cleaner presentation |
@@ -101,7 +101,7 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 | CL-5 | [ ] File upload on Android should open the **photos** folder / gallery | Picker intent |
 | CL-6 | [ ] Add more explanation for **Australian 100-point identification** | Help text / link |
 | CL-7 | [ ] Fix **Consent Method** UX; allow option to **upload a version** | Off today |
-| CL-8 | [ ] **Intake form** should go to the **invite** part of the flow | Routing |
+| CL-8 | [x] **Intake form** should go to the **invite** part of the flow | Done — after Types/intake save, switch to Invites tab |
 | CL-9 | [ ] **Emergency contact phone**: number keypad; include field in **invite** | Input + invite payload |
 | CL-10 | [ ] Allow **sharing with contractor** for diagnoses and behavior diagnoses | Permissions / visibility |
 
@@ -111,7 +111,7 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 |----|------|---------|
 | CL-11 | [x] Prevent saving a client with **no information** — validate form before save | Done — Form validators + require name and email/phone |
 | CL-12 | [ ] Remove **Service Agreement Notes** | Field removal |
-| CL-13 | [ ] After create, **route to the new client Type/Details banner** | Post-save navigation |
+| CL-13 | [x] After create, **route to the new client Type/Details banner** | Done — create opens detail on Types tab |
 | CL-14 | [x] Fix **upload client image** returning **400** | Done on `refactor/client_info_update` — MIME guess no longer sends `image/gif` / `application/octet-stream` |
 
 ### Sites
@@ -142,7 +142,7 @@ Rough priority for tackling one-by-one (adjust as needed):
 
 1. **Broken flows first:** ~~IC-4, CL-14, AD-2~~ **done** (all three existed on this branch)  
 2. **Data loss / destructive UX:** ~~WF-6, CL-11, WF-8~~ **done** (all three existed on this branch)  
-3. **Navigation & layout:** AD-1, WF-9, CL-13, CL-8  
+3. **Navigation & layout:** ~~AD-1, WF-9, CL-13, CL-8~~ **done** (all four existed on this branch)  
 4. **Copy & clarity:** MVP-2, WF-7, IC-1–IC-2, CL-4, CL-6, ST-3  
 5. **Enhancements:** WF-1–WF-5, CL-3, CL-5, CL-7, CL-9–CL-10, ST-1–ST-5  
 6. **Product decisions:** MVP-1, ST-4, IC-5  
@@ -161,6 +161,10 @@ Verified on FE `refactor/client_info_update` / BE `refactor/client-info-update`:
 | WF-6 | Yes (End engagement had no confirm) | Fixed |
 | CL-11 | Yes (name-only check; empty contact allowed) | Fixed |
 | WF-8 | Yes (sticky error banners, no dismiss/timeout) | Fixed |
+| AD-1 | Yes (crowded bottom nav on phone) | Fixed |
+| WF-9 | Yes (inline New Payment Rate form on detail) | Fixed |
+| CL-13 | Yes (create opened Sites tab) | Fixed |
+| CL-8 | Yes (Types save stayed on Types) | Fixed |
 ---
 
 ## Decision log (fill in during work)
@@ -175,6 +179,6 @@ Verified on FE `refactor/client_info_update` / BE `refactor/client-info-update`:
 
 ## Progress
 
-- Active tasks: **~27** remaining (excluding MVP questions; visits/jobs deferred)  
-- Completed: `6` (IC-4, CL-14, AD-2, WF-6, CL-11, WF-8)  
+- Active tasks: **~23** remaining (excluding MVP questions; visits/jobs deferred)  
+- Completed: `10` (IC-4, CL-14, AD-2, WF-6, CL-11, WF-8, AD-1, WF-9, CL-13, CL-8)  
 - Last updated: 2026-08-15

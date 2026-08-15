@@ -477,7 +477,7 @@ class ClientsController extends GetxController {
           } on AppFailure catch (e) {
             Get.back();
             await load();
-            openDetail(created);
+            openDetail(created, initialTab: ClientsController.tabTypes);
             Get.snackbar(
               'Client saved',
               'Profile photo failed: ${e.message}',
@@ -490,7 +490,7 @@ class ClientsController extends GetxController {
         }
         Get.back();
         await load();
-        openDetail(created);
+        openDetail(created, initialTab: ClientsController.tabTypes);
       } else {
         await _repository.patchClient(
           editing!.id,
@@ -550,6 +550,8 @@ class ClientsController extends GetxController {
           ? <String>[]
           : await _saveDynamicAnswers(client.id);
       await openDetailById(client.id);
+      // After Types / intake save, continue to Invites (admin note CL-8).
+      tabIndex.value = tabInvites;
       if (profileErrors.isNotEmpty) {
         Get.snackbar(
           'Saved with warnings',
@@ -561,7 +563,7 @@ class ClientsController extends GetxController {
       } else {
         Get.snackbar(
           'Saved',
-          'Client type and profile updated.',
+          'Client type and profile updated. Create an invite next.',
           snackPosition: SnackPosition.BOTTOM,
           margin: const EdgeInsets.all(16),
         );
@@ -771,11 +773,17 @@ class ClientsController extends GetxController {
     }
   }
 
-  Future<void> openDetail(ClientOut client) async {
+  /// Tab indices on client detail: Sites=0, Contacts=1, Invites=2, Types=3.
+  static const tabSites = 0;
+  static const tabContacts = 1;
+  static const tabInvites = 2;
+  static const tabTypes = 3;
+
+  Future<void> openDetail(ClientOut client, {int initialTab = tabSites}) async {
     selected.value = client;
     lastInvite.value = null;
     invites.clear();
-    tabIndex.value = 0;
+    tabIndex.value = initialTab;
     selectedClientTypeId.value = client.clientTypeId;
     detailPhoto.value = null;
     _disposeRequirementDrafts();

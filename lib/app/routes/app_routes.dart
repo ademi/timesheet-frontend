@@ -41,6 +41,7 @@ abstract class AppRoutes {
   static const staffWorkforce = '/staff/workforce';
   static const staffWorkforceInvite = '/staff/workforce/invite';
   static const staffWorkforceDetail = '/staff/workforce/detail';
+  static const staffWorkforceRateForm = '/staff/workforce/detail/rate-form';
   static const staffClients = '/staff/clients';
   static const staffClientForm = '/staff/clients/form';
   static const staffClientDetail = '/staff/clients/detail';

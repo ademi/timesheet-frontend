@@ -96,7 +96,7 @@ void main() {
     expect(labels, isNot(contains('Workforce')));
   });
 
-  testWidgets('phone width shows NavigationBar with Workforce when perms present', (
+  testWidgets('phone width shows left NavigationRail with Workforce when perms present', (
     tester,
   ) async {
     tokenStorage.claims = const JwtClaims(
@@ -116,7 +116,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
     expect(find.text('Workforce'), findsOneWidget);
   });
 }
