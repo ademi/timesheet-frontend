@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/utils/external_url.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../controllers/clients_controller.dart';
@@ -170,13 +172,14 @@ class _SiteTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final address = site.displayAddress;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         title: Text(site.name),
         subtitle: Text(
           [
-            if (site.addressLine1 != null) site.addressLine1!,
+            if (address.isNotEmpty) address else 'No address',
             if (site.hasCoordinates)
               'lat ${site.latitude}, lng ${site.longitude}'
             else
@@ -186,15 +189,55 @@ class _SiteTile extends StatelessWidget {
           ].join('\n'),
         ),
         isThreeLine: true,
-        trailing: c.canManage
+        onTap: address.isEmpty && !site.hasCoordinates
+            ? null
+            : () => openMapLocation(
+                  latitude: site.latitude,
+                  longitude: site.longitude,
+                  label: address.isEmpty ? site.name : address,
+                ),
+        onLongPress: address.isEmpty
+            ? null
+            : () async {
+                await Clipboard.setData(ClipboardData(text: address));
+                Get.snackbar(
+                  'Copied',
+                  address,
+                  snackPosition: SnackPosition.BOTTOM,
+                  margin: const EdgeInsets.all(16),
+                );
+              },
+        trailing: (address.isNotEmpty || c.canManage)
             ? PopupMenuButton<String>(
                 onSelected: (v) {
                   if (v == 'edit') c.beginSiteForm(site: site);
                   if (v == 'delete') c.deleteSite(site);
+                  if (v == 'copy' && address.isNotEmpty) {
+                    Clipboard.setData(ClipboardData(text: address));
+                    Get.snackbar(
+                      'Copied',
+                      address,
+                      snackPosition: SnackPosition.BOTTOM,
+                      margin: const EdgeInsets.all(16),
+                    );
+                  }
+                  if (v == 'map') {
+                    openMapLocation(
+                      latitude: site.latitude,
+                      longitude: site.longitude,
+                      label: address.isEmpty ? site.name : address,
+                    );
+                  }
                 },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'edit', child: Text('Edit')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                itemBuilder: (_) => [
+                  if (address.isNotEmpty)
+                    const PopupMenuItem(value: 'map', child: Text('Open in maps')),
+                  if (address.isNotEmpty)
+                    const PopupMenuItem(value: 'copy', child: Text('Copy address')),
+                  if (c.canManage)
+                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  if (c.canManage)
+                    const PopupMenuItem(value: 'delete', child: Text('Delete')),
                 ],
               )
             : null,

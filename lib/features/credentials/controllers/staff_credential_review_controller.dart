@@ -57,8 +57,26 @@ class StaffCredentialReviewController extends GetxController {
   }
 
   final reasonCtrl = TextEditingController();
+  final selectedReasonCode = RxnString();
   String? _contractorId;
   String? _engagementId;
+
+  /// Optional reason codes for credential review decisions (WF-4).
+  static const reasonCodeOptions = <(String, String)>[
+    ('incomplete_evidence', 'Incomplete evidence'),
+    ('expired_document', 'Expired document'),
+    ('unreadable_scan', 'Unreadable scan'),
+    ('wrong_document_type', 'Wrong document type'),
+    ('name_mismatch', 'Name mismatch'),
+    ('other', 'Other'),
+  ];
+
+  String? get effectiveReasonCode {
+    final selected = selectedReasonCode.value?.trim();
+    if (selected != null && selected.isNotEmpty) return selected;
+    final typed = reasonCtrl.text.trim();
+    return typed.isEmpty ? null : typed;
+  }
 
   final items = <CredentialOut>[].obs;
   final isLoading = false.obs;
@@ -220,8 +238,7 @@ class StaffCredentialReviewController extends GetxController {
         body: CredentialReviewCreateRequest(
           credentialId: credential.id,
           decision: decision,
-          reasonCode:
-              reasonCtrl.text.trim().isEmpty ? null : reasonCtrl.text.trim(),
+          reasonCode: effectiveReasonCode,
         ),
       );
       _showSnack('Review recorded', 'Decision: $decision');

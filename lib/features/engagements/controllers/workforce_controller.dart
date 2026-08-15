@@ -82,6 +82,16 @@ class WorkforceController extends GetxController {
     if (missingDocsFilter.value) {
       list = list.where(hasMissingRequiredDocs).toList();
     }
+    // Status order (engagementStatuses), then display name.
+    list.sort((a, b) {
+      final ai = engagementStatuses.indexOf(a.status);
+      final bi = engagementStatuses.indexOf(b.status);
+      final aOrder = ai < 0 ? engagementStatuses.length : ai;
+      final bOrder = bi < 0 ? engagementStatuses.length : bi;
+      final byStatus = aOrder.compareTo(bOrder);
+      if (byStatus != 0) return byStatus;
+      return a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
+    });
     return list;
   }
 
@@ -310,14 +320,17 @@ class WorkforceController extends GetxController {
   }
 
   Future<void> runAction(String action, EngagementOut engagement) async {
-    if (action == 'end') {
+    if (action == 'end' || action == 'withdraw') {
+      final isWithdraw = action == 'withdraw' || engagement.isInvited;
       final confirmed = await Get.dialog<bool>(
         AlertDialog(
-          title: const Text('End engagement?'),
+          title: Text(isWithdraw ? 'Withdraw invite?' : 'End engagement?'),
           content: Text(
-            'This will end the engagement'
-            '${engagement.contractorName != null && engagement.contractorName!.isNotEmpty ? ' with ${engagement.contractorName}' : ''}. '
-            'This cannot be undone from here.',
+            isWithdraw
+                ? 'This will withdraw the invite for ${engagement.displayName}. '
+                    'They will no longer be able to accept this invitation.'
+                : 'This will end the engagement with ${engagement.displayName}. '
+                    'This cannot be undone from here.',
           ),
           actions: [
             TextButton(
@@ -327,7 +340,7 @@ class WorkforceController extends GetxController {
             TextButton(
               onPressed: () => Get.back(result: true),
               style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              child: const Text('End engagement'),
+              child: Text(isWithdraw ? 'Withdraw invite' : 'End engagement'),
             ),
           ],
         ),
@@ -344,7 +357,7 @@ class WorkforceController extends GetxController {
         'approve_and_activate' => _repository.approveAndActivate(engagement.id),
         'suspend' => _repository.suspend(engagement.id),
         'resume' => _repository.resume(engagement.id),
-        'end' => _repository.end(engagement.id),
+        'end' || 'withdraw' => _repository.end(engagement.id),
         _ => throw StateError('Unknown action $action'),
       };
       selected = updated;

@@ -5,6 +5,31 @@ import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/clients_controller.dart';
 
+/// Australian states/territories for site forms.
+const auStates = <String>[
+  'NSW',
+  'VIC',
+  'QLD',
+  'WA',
+  'SA',
+  'TAS',
+  'ACT',
+  'NT',
+];
+
+/// Common ISO country codes for site forms (AU first).
+const siteCountries = <String>[
+  'AU',
+  'NZ',
+  'US',
+  'GB',
+  'CA',
+  'IE',
+  'SG',
+  'IN',
+  'PH',
+];
+
 class ClientSiteFormView extends GetView<ClientsController> {
   const ClientSiteFormView({super.key});
 
@@ -19,6 +44,11 @@ class ClientSiteFormView extends GetView<ClientsController> {
         final hint = controller.geocodeHint.value;
         final busy =
             controller.isSaving.value || controller.isGeocoding.value;
+        final stateValue = controller.siteState.value;
+        final countryValue = controller.siteCountry.value;
+        final stateItems = {stateValue, ...auStates}.toList();
+        final countryItems = {countryValue, ...siteCountries}.toList();
+
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -58,23 +88,38 @@ class ClientSiteFormView extends GetView<ClientsController> {
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: controller.siteStateCtrl,
+            DropdownButtonFormField<String>(
+              value: stateValue,
+              items: [
+                for (final s in stateItems)
+                  DropdownMenuItem(value: s, child: Text(s)),
+              ],
+              onChanged: (v) {
+                if (v == null) return;
+                controller.siteState.value = v;
+                controller.siteStateCtrl.text = v;
+              },
               decoration: const InputDecoration(
                 labelText: 'State',
                 border: OutlineInputBorder(),
-                helperText: 'Optional (e.g. NSW)',
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: controller.siteCountryCtrl,
-              textCapitalization: TextCapitalization.characters,
+            DropdownButtonFormField<String>(
+              value: countryValue,
+              items: [
+                for (final c in countryItems)
+                  DropdownMenuItem(value: c, child: Text(c)),
+              ],
+              onChanged: (v) {
+                if (v == null) return;
+                controller.siteCountry.value = v;
+                controller.siteCountryCtrl.text = v;
+              },
               decoration: const InputDecoration(
                 labelText: 'Country *',
-                hintText: 'AU',
                 border: OutlineInputBorder(),
-                helperText: '2-letter ISO code (e.g. AU, US, GB)',
+                helperText: '2-letter ISO code',
               ),
             ),
             const SizedBox(height: 12),
@@ -99,9 +144,16 @@ class ClientSiteFormView extends GetView<ClientsController> {
               const SizedBox(height: 8),
               Text(
                 hint,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textMuted,
+                  color:
+                      hint.toLowerCase().contains('low confidence')
+                          ? AppColors.error
+                          : AppColors.textMuted,
+                  fontWeight:
+                      hint.toLowerCase().contains('low confidence')
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                 ),
               ),
             ],

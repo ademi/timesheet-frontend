@@ -34,11 +34,26 @@ class StaffCredentialReviewView
                 'Open a person from Workforce to review their credentials.',
                 style: TextStyle(color: AppColors.textMuted),
               ),
-            TextField(
-              controller: controller.reasonCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Reason code (optional)',
-                border: OutlineInputBorder(),
+            Obx(
+              () => DropdownButtonFormField<String?>(
+                value: controller.selectedReasonCode.value,
+                decoration: const InputDecoration(
+                  labelText: 'Reason code (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('None'),
+                  ),
+                  for (final option
+                      in StaffCredentialReviewController.reasonCodeOptions)
+                    DropdownMenuItem<String?>(
+                      value: option.$1,
+                      child: Text(option.$2),
+                    ),
+                ],
+                onChanged: (v) => controller.selectedReasonCode.value = v,
               ),
             ),
             const SizedBox(height: 12),

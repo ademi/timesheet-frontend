@@ -39,21 +39,21 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 
 | ID | Task | Details |
 |----|------|---------|
-| WF-1 | [ ] Do not display **Required** section on the workforce card itself | Move elsewhere or show only on detail |
-| WF-2 | [ ] **Order cards** by contractor status, then by name | Sort: status → name |
-| WF-3 | [ ] Add **photo caching** for contractor / workforce images | Avoid refetch flicker |
+| WF-1 | [x] Do not display **Required** section on the workforce card itself | Done — list card shows status only; required docs on detail |
+| WF-2 | [x] **Order cards** by contractor status, then by name | Done — status order then displayName |
+| WF-3 | [x] Add **photo caching** for contractor / workforce images | Done — in-memory bytes cache by documentId |
 
 ### Credential Review
 
 | ID | Task | Details |
 |----|------|---------|
-| WF-4 | [ ] Add optional **Reason Code** dropdown on credential review | Optional field |
+| WF-4 | [x] Add optional **Reason Code** dropdown on credential review | Done — optional reason code dropdown |
 
 ### Contractor card — Lifecycle & engagement
 
 | ID | Task | Details |
 |----|------|---------|
-| WF-5 | [ ] Add option to **withdraw invite** while waiting for invite acceptance | Lifecycle gap |
+| WF-5 | [x] Add option to **withdraw invite** while waiting for invite acceptance | Done — Withdraw invite + confirm → end API |
 | WF-6 | [x] Add **confirm popup** before **End engagement** | Done on `refactor/client_info_update` — confirm dialog before end |
 | WF-7 | [x] Improve unclear error: *"This engagement can't move to that status from here (pending docs)"* | Done — clearer invalid_transition message with next step |
 | WF-8 | [x] Make error messages **disappear** after dismiss / timeout / success | Done — dismiss button + 8s auto-clear on workforce errors |
@@ -91,19 +91,19 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 
 | ID | Task | Details |
 |----|------|---------|
-| CL-3 | [ ] Make **address** clickable (open maps) and **copyable** | Client card address |
+| CL-3 | [x] Make **address** clickable (open maps) and **copyable** | Done — list shows primary site; tap maps / long-press copy |
 
 ### Client Types (rename & intake)
 
 | ID | Task | Details |
 |----|------|---------|
 | CL-4 | [x] Rename **Types** → **Details** | Done — tab + section labels |
-| CL-5 | [ ] File upload on Android should open the **photos** folder / gallery | Picker intent |
+| CL-5 | [x] File upload on Android should open the **photos** folder / gallery | Done — ImagePicker gallery when accept is images-only |
 | CL-6 | [x] Add more explanation for **Australian 100-point identification** | Done — richer help text (FE + V021 migration) |
-| CL-7 | [ ] Fix **Consent Method** UX; allow option to **upload a version** | Off today |
+| CL-7 | [x] Fix **Consent Method** UX; allow option to **upload a version** | Done — uploaded_scan shows picker; scan uploaded with acceptance |
 | CL-8 | [x] **Intake form** should go to the **invite** part of the flow | Done — after Types/intake save, switch to Invites tab |
-| CL-9 | [ ] **Emergency contact phone**: number keypad; include field in **invite** | Input + invite payload |
-| CL-10 | [ ] Allow **sharing with contractor** for diagnoses and behavior diagnoses | Permissions / visibility |
+| CL-9 | [x] **Emergency contact phone**: number keypad; include field in **invite** | Done — intake field type `phone` (V022) + phone keypad; field remains on intake before invite |
+| CL-10 | [x] Allow **sharing with contractor** for diagnoses and behavior diagnoses | Done — V022 sharing_flag requirements + existing share UI |
 
 ### New Client
 
@@ -118,11 +118,11 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 
 | ID | Task | Details |
 |----|------|---------|
-| ST-1 | [ ] Default **country to AU** (dropdown); default **state to NSW** (dropdown) | Defaults + selects |
-| ST-2 | [ ] Fix country **default value disappearing** | State retention bug |
+| ST-1 | [x] Default **country to AU** (dropdown); default **state to NSW** (dropdown) | Done — AU/NSW defaults + dropdowns |
+| ST-2 | [x] Fix country **default value disappearing** | Done — siteCountry/siteState obs retained |
 | ST-3 | [x] Clarify site form error messages (e.g. *"Address Line 1, C"*) | Done — shorter geocode error without truncation trap |
-| ST-4 | [ ] Flag **low-confidence geocoding** as an error (or strong warning) | Product: treat as hard fail? |
-| ST-5 | [ ] Site card should **display address** | List / card UI |
+| ST-4 | [x] Flag **low-confidence geocoding** as an error (or strong warning) | Done — treated as hard fail; coords not applied |
+| ST-5 | [x] Site card should **display address** | Done — full displayAddress + maps/copy |
 
 ---
 
@@ -144,8 +144,8 @@ Rough priority for tackling one-by-one (adjust as needed):
 2. **Data loss / destructive UX:** ~~WF-6, CL-11, WF-8~~ **done** (all three existed on this branch)  
 3. **Navigation & layout:** ~~AD-1, WF-9, CL-13, CL-8~~ **done** (all four existed on this branch)  
 4. **Copy & clarity:** ~~MVP-2, WF-7, IC-1–IC-2, CL-4, CL-6, ST-3~~ **done** (all existed on this branch)  
-5. **Enhancements:** WF-1–WF-5, CL-3, CL-5, CL-7, CL-9–CL-10, ST-1–ST-5  
-6. **Product decisions:** MVP-1, ST-4, IC-5  
+5. **Enhancements:** ~~WF-1–WF-5, CL-3, CL-5, CL-7, CL-9–CL-10, ST-1–ST-5~~ **done**  
+6. **Product decisions:** MVP-1, IC-5  
 
 ---
 
@@ -180,12 +180,12 @@ Verified on FE `refactor/client_info_update` / BE `refactor/client-info-update`:
 |-------|----------|------|
 | Shift creation in MVP? | | |
 | Default invite display: name vs email? | Prefer name; fall back to email (never UUID / Demo Free Contractor) | 2026-08-15 |
-| Low-confidence geocoding = hard error? | | |
+| Low-confidence geocoding = hard error? | Yes — block coords; require re-lookup | 2026-08-15 |
 
 ---
 
 ## Progress
 
-- Active tasks: **~16** remaining (excluding MVP questions; visits/jobs deferred)  
-- Completed: `17`  
+- Active tasks: **~8** remaining (excluding MVP questions; visits/jobs deferred)  
+- Completed: `31`  
 - Last updated: 2026-08-15

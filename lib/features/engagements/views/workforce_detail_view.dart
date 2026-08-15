@@ -115,9 +115,27 @@ class WorkforceDetailView extends GetView<WorkforceController> {
                 style: TextStyle(color: AppColors.textMuted, fontSize: 13),
               )
             else if (current.isInvited)
-              const Text(
-                'Waiting for the contractor to accept the invite.',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Waiting for the contractor to accept the invite.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  ),
+                  if (controller.canManage) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed:
+                          controller.isSaving.value
+                              ? null
+                              : () => controller.runAction(
+                                'withdraw',
+                                current,
+                              ),
+                      child: const Text('Withdraw invite'),
+                    ),
+                  ],
+                ],
               )
             else
               Wrap(

@@ -234,7 +234,14 @@ class _DocumentPicker extends StatelessWidget {
             label: Text(
               draft.requirement.maxFiles > 1
                   ? 'Add file(s)'
-                  : 'Upload file',
+                  : (draft.requirement.acceptMimeTypes.any(
+                          (m) => m.toLowerCase().startsWith('image'),
+                        ) ||
+                        draft.requirement.acceptMimeTypes.any(
+                          (m) => m.toLowerCase().contains('image/*'),
+                        ))
+                      ? 'Choose from photos'
+                      : 'Upload file',
             ),
           ),
           if (existing != null) ...[
@@ -284,12 +291,7 @@ class _FormFields extends StatelessWidget {
           TextField(
             controller: draft.formFieldCtrls[field.id],
             maxLines: field.type == 'textarea' ? 3 : 1,
-            keyboardType: switch (field.type) {
-              'number' => TextInputType.number,
-              'phone' => TextInputType.phone,
-              'email' => TextInputType.emailAddress,
-              _ => TextInputType.text,
-            },
+            keyboardType: _keyboardForFormField(field),
             decoration: InputDecoration(
               labelText: field.required ? '${field.label} *' : field.label,
               border: const OutlineInputBorder(),
@@ -299,6 +301,19 @@ class _FormFields extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  static TextInputType _keyboardForFormField(ClientFormFieldSchema field) {
+    final type = field.type.toLowerCase();
+    final id = field.id.toLowerCase();
+    if (type == 'number') return TextInputType.number;
+    if (type == 'phone' || id.contains('phone')) {
+      return TextInputType.phone;
+    }
+    if (type == 'email' || id.contains('email')) {
+      return TextInputType.emailAddress;
+    }
+    return TextInputType.text;
   }
 }
 
@@ -443,6 +458,15 @@ class _LegalBlock extends StatelessWidget {
               border: OutlineInputBorder(),
             ),
           ),
+          if (draft.method.value == 'uploaded_scan') ...[
+            const SizedBox(height: 10),
+            Text(
+              'Upload a scanned copy of the signed consent.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+            const SizedBox(height: 6),
+            _DocumentPicker(controller: controller, draft: draft),
+          ],
           const SizedBox(height: 10),
           TextField(
             controller: draft.noteCtrl,

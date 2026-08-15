@@ -134,11 +134,7 @@ class WorkforceListView extends GetView<WorkforceController> {
                                 );
                               }),
                               title: Text(e.displayName),
-                              subtitle: Text(
-                                'Status: ${e.statusLabel}\n'
-                                'Required documents: ${e.requiredDocCategories.map((c) => c.displayLabel).join(", ").ifEmpty("—")}',
-                              ),
-                              isThreeLine: true,
+                              subtitle: Text('Status: ${e.statusLabel}'),
                               trailing: _StatusChip(status: e.status),
                               onTap: () => controller.openDetail(e),
                             ),
@@ -172,7 +168,10 @@ class _StatusChip extends StatelessWidget {
       _ => AppColors.slate600,
     };
     return Chip(
-      label: Text(status, style: TextStyle(color: color, fontSize: 11)),
+      label: Text(
+        engagementStatusLabel(status),
+        style: TextStyle(color: color, fontSize: 11),
+      ),
       visualDensity: VisualDensity.compact,
       backgroundColor: color.withValues(alpha: 0.12),
     );
