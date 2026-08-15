@@ -15,7 +15,7 @@ class JobsListView extends GetView<JobsController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Jobs'),
+        title: const Text('Supports'),
         actions: shellAppBarActions(
           leadingActions: [
             IconButton(

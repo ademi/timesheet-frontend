@@ -34,12 +34,6 @@ abstract final class StaffShellNav {
       anyOf: [AppPermissions.clientsRead],
     ),
     _StaffDest(
-      icon: Icons.work_outline,
-      label: 'Jobs',
-      route: AppRoutes.staffJobs,
-      anyOf: [AppPermissions.jobsRead],
-    ),
-    _StaffDest(
       icon: Icons.event_available_outlined,
       label: 'Roster',
       route: AppRoutes.staffVisits,

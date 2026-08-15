@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
@@ -67,6 +68,13 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
               ),
             ],
             const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.work_outline),
+              title: const Text('Supports'),
+              subtitle: const Text('Advanced list of ongoing support'),
+              onTap: () => Get.toNamed(AppRoutes.staffJobs),
+            ),
+            const Divider(height: 32),
             const Text(
               'Timezone and public holiday jurisdiction (when API exposes them).',
               style: TextStyle(fontSize: 13),

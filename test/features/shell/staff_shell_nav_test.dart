@@ -85,7 +85,22 @@ void main() {
     final labels = StaffShellNav.destinations().map((d) => d.label).toList();
     expect(labels, contains('Home'));
     expect(labels, contains('Workforce'));
-    expect(labels, contains('Jobs'));
+    expect(labels, isNot(contains('Jobs')));
+  });
+
+  test('destinations do not include Jobs label', () {
+    tokenStorage.claims = const JwtClaims(
+      sub: 'u1',
+      tenantId: 't1',
+      permissions: ['auth.session', 'clients.read', 'jobs.read', 'shifts.read'],
+      actorType: 'tenant_member',
+      iat: 1,
+      exp: 2,
+    );
+    final labels = StaffShellNav.destinations().map((d) => d.label).toList();
+    expect(labels, isNot(contains('Jobs')));
+    expect(labels, contains('Clients'));
+    expect(labels, contains('Roster'));
   });
 
   test('destinations fall back to Home+Settings when no claims', () {
