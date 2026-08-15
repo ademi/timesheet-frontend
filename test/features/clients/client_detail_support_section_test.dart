@@ -14,7 +14,7 @@ void main() {
       ),
     ));
     expect(find.text('Start ongoing support'), findsOneWidget);
-    expect(find.text('Book one session'), findsNothing);
+    expect(find.text('Book one session'), findsOneWidget);
   });
 
   testWidgets('book one session enabled when ongoing exists', (tester) async {
@@ -32,7 +32,7 @@ void main() {
     expect(find.text('Open support'), findsOneWidget);
   });
 
-  testWidgets('disables book one with start-first copy when no standing job',
+  testWidgets('book one available without standing job (D9 auto-ensure)',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: ClientDetailSupportSection(
@@ -43,7 +43,8 @@ void main() {
         onOpenOngoing: () {},
       ),
     ));
-    expect(find.text('Start ongoing support first.'), findsOneWidget);
+    expect(find.text('Book one session'), findsOneWidget);
+    expect(find.text('Start ongoing support first.'), findsNothing);
   });
 
   testWidgets('support section copy never says XOR standing or Generate',

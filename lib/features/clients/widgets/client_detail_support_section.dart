@@ -42,12 +42,8 @@ class ClientDetailSupportSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Start ongoing support first.',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-          ),
         ],
-        if (hasOngoing)
+        if (canManage || hasOngoing)
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -62,10 +58,11 @@ class ClientDetailSupportSection extends StatelessWidget {
                     foregroundColor: AppColors.onPrimary,
                   ),
                 ),
-              OutlinedButton(
-                onPressed: onOpenOngoing,
-                child: const Text('Open support'),
-              ),
+              if (hasOngoing)
+                OutlinedButton(
+                  onPressed: onOpenOngoing,
+                  child: const Text('Open support'),
+                ),
             ],
           ),
       ],

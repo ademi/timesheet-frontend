@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/time/tenant_civil_time.dart';
+import '../../clients/controllers/clients_controller.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../shifts/data/models/shift_models.dart';
@@ -17,6 +18,33 @@ String? _jobDropdownValue(String? filter, Iterable<JobOut> jobs) {
     if (job.id == filter) return filter;
   }
   return null;
+}
+
+/// Clients for book-one: board options plus any pending/selected client not yet
+/// on the board (so ensure-create from client detail works — D9).
+List<({String id, String name})> _bookOneClientOptions(
+  StaffVisitsController controller,
+) {
+  final byId = <String, String>{
+    for (final c in controller.clientFilterOptions) c.id: c.name,
+  };
+  final pending = controller.clientIdFilter.value.trim();
+  if (pending.isNotEmpty && !byId.containsKey(pending)) {
+    var name = pending;
+    if (Get.isRegistered<ClientsController>()) {
+      final selected = Get.find<ClientsController>().selected.value;
+      if (selected != null && selected.id == pending) {
+        final n = selected.fullName.trim();
+        if (n.isNotEmpty) name = n;
+      }
+    }
+    byId[pending] = name;
+  }
+  final list = byId.entries
+      .map((e) => (id: e.key, name: e.value))
+      .toList(growable: false)
+    ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  return list;
 }
 
 List<DropdownMenuItem<String>> _supportDropdownItems(Iterable<JobOut> jobs) {
@@ -687,7 +715,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
     BuildContext context,
     StaffVisitsController controller,
   ) async {
-    final clients = controller.clientFilterOptions;
+    final clients = _bookOneClientOptions(controller);
     String? clientId = _clientDropdownValue(
       controller.clientIdFilter.value,
       clients,
@@ -721,8 +749,8 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                       const Padding(
                         padding: EdgeInsets.only(bottom: 12),
                         child: Text(
-                          'No clients yet. Start ongoing support from a '
-                          'client first.',
+                          'No clients yet. Open a client and book from there, '
+                          'or start ongoing support first.',
                           style: TextStyle(color: AppColors.textMuted),
                         ),
                       ),
