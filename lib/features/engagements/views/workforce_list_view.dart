@@ -8,7 +8,7 @@ import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/workforce_controller.dart';
 import '../data/models/engagement_models.dart';
 
-String _statusChipLabel(String status) => status.replaceAll('_', ' ');
+String _statusChipLabel(String status) => engagementStatusLabel(status);
 
 class WorkforceListView extends GetView<WorkforceController> {
   const WorkforceListView({super.key});
@@ -133,14 +133,10 @@ class WorkforceListView extends GetView<WorkforceController> {
                                   showLabel: false,
                                 );
                               }),
-                              title: Text(
-                                e.contractorName?.isNotEmpty == true
-                                    ? e.contractorName!
-                                    : e.contractorId,
-                              ),
+                              title: Text(e.displayName),
                               subtitle: Text(
-                                'Status: ${e.status}\n'
-                                'Required: ${e.requiredDocCategories.map((c) => c.displayLabel).join(", ").ifEmpty("—")}',
+                                'Status: ${e.statusLabel}\n'
+                                'Required documents: ${e.requiredDocCategories.map((c) => c.displayLabel).join(", ").ifEmpty("—")}',
                               ),
                               isThreeLine: true,
                               trailing: _StatusChip(status: e.status),

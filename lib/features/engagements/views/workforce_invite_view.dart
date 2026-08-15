@@ -33,8 +33,8 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
           padding: const EdgeInsets.all(16),
           children: [
             const Text(
-              'Invite by email and/or phone. At least one required credential '
-              'category must be selected.',
+              'Invite by email and/or phone. Select at least one required '
+              'document type.',
               style: TextStyle(color: AppColors.textMuted),
             ),
             if (err != null) ...[
@@ -77,7 +77,7 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Required categories',
+              'Required documents',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),

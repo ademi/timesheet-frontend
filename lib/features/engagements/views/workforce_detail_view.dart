@@ -40,11 +40,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: Text(
-            current.contractorName?.isNotEmpty == true
-                ? current.contractorName!
-                : 'Engagement',
-          ),
+          title: Text(current.displayName),
         ),
         body: ListView(
           padding: const EdgeInsets.all(16),
@@ -88,9 +84,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    current.contractorName?.isNotEmpty == true
-                        ? current.contractorName!
-                        : 'Contractor',
+                    current.displayName,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 18,
@@ -100,9 +94,9 @@ class WorkforceDetailView extends GetView<WorkforceController> {
               ],
             ),
             const SizedBox(height: 16),
-            _row('Status', current.status),
+            _row('Status', current.statusLabel),
             _row(
-              'Required categories',
+              'Required documents',
               current.requiredDocCategories.isEmpty
                   ? '—'
                   : current.requiredDocCategories
@@ -117,8 +111,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
             const SizedBox(height: 8),
             if (!controller.canApprove && !controller.canManage)
               const Text(
-                'No lifecycle actions available for your role. '
-                'Approve / activate need contractors.approve and contractors.manage.',
+                'No lifecycle actions available for your role.',
                 style: TextStyle(color: AppColors.textMuted, fontSize: 13),
               )
             else if (current.isInvited)

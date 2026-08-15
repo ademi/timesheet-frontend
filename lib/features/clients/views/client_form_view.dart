@@ -85,7 +85,7 @@ class ClientFormView extends GetView<ClientsController> {
               const SizedBox(height: 8),
               const Text(
                 'Name plus email or phone are required. Set client type and '
-                'documents on the Types tab after saving.',
+                'documents on the Details tab after saving.',
                 style: TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
               const SizedBox(height: 12),

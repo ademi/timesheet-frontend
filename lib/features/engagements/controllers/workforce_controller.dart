@@ -217,7 +217,7 @@ class WorkforceController extends GetxController {
       return;
     }
     if (selectedCategories.isEmpty) {
-      _setError('Select at least one required credential category.');
+      _setError('Select at least one required document.');
       return;
     }
     isSaving.value = true;

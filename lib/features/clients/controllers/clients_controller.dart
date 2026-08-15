@@ -885,8 +885,8 @@ class ClientsController extends GetxController {
 
     if (address.isEmpty || city.isEmpty || country.isEmpty) {
       errorMessage.value =
-          'Address line 1, city, and country (ISO code, e.g. AU) are '
-          'required to look up coordinates.';
+          'Enter street address, city, and a 2-letter country code '
+          '(for example AU) before looking up coordinates.';
       return null;
     }
     if (country.length != 2) {

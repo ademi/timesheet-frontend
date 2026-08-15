@@ -14,7 +14,7 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 | ID | Task | Notes / decision needed |
 |----|------|-------------------------|
 | MVP-1 | [ ] Clarify whether **shift creation** is in MVP scope | Product decision |
-| MVP-2 | [ ] Improve copy / wording across the app (**better language**) | Cross-cutting; track per screen as issues are found |
+| MVP-2 | [x] Improve copy / wording across the app (**better language**) | Done — humanized statuses, softer role copy, document wording |
 
 ---
 
@@ -55,7 +55,7 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 |----|------|---------|
 | WF-5 | [ ] Add option to **withdraw invite** while waiting for invite acceptance | Lifecycle gap |
 | WF-6 | [x] Add **confirm popup** before **End engagement** | Done on `refactor/client_info_update` — confirm dialog before end |
-| WF-7 | [ ] Improve unclear error: *"This engagement can't move to that status from here (pending docs)"* | Clearer message + next step for user |
+| WF-7 | [x] Improve unclear error: *"This engagement can't move to that status from here (pending docs)"* | Done — clearer invalid_transition message with next step |
 | WF-8 | [x] Make error messages **disappear** after dismiss / timeout / success | Done — dismiss button + 8s auto-clear on workforce errors |
 
 ### Payment rates
@@ -73,8 +73,8 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 
 | ID | Task | Details |
 |----|------|---------|
-| IC-1 | [ ] Fix default contractor name after invite (**Demo Free Contractor**) — use real name or show **email** instead | Product preference |
-| IC-2 | [ ] Rename **Required Categories** → **Required Document** | Copy change |
+| IC-1 | [x] Fix default contractor name after invite (**Demo Free Contractor**) — use real name or show **email** instead | Done — API `contractor_email` + displayName; seed renamed |
+| IC-2 | [x] Rename **Required Categories** → **Required Document** | Done — “Required documents” on invite + detail |
 | IC-3 | [ ] Move **balloons** (chips/tags?) into a **dropdown** | UI cleanup |
 | IC-4 | [x] Fix **invitation emails not sent** | Done on this branch + BE `refactor/client-info-update` — API returns `invite_url`; UI shows copy dialog (real SMTP still needs `AZURE_EMAIL_ENABLED` in deploy) |
 | IC-5 | [ ] If contractor is **not in Rostiq**, ask admin whether to send an email | Confirmation / prompt flow |
@@ -97,9 +97,9 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 
 | ID | Task | Details |
 |----|------|---------|
-| CL-4 | [ ] Rename **Types** → **Details** | Label change |
+| CL-4 | [x] Rename **Types** → **Details** | Done — tab + section labels |
 | CL-5 | [ ] File upload on Android should open the **photos** folder / gallery | Picker intent |
-| CL-6 | [ ] Add more explanation for **Australian 100-point identification** | Help text / link |
+| CL-6 | [x] Add more explanation for **Australian 100-point identification** | Done — richer help text (FE + V021 migration) |
 | CL-7 | [ ] Fix **Consent Method** UX; allow option to **upload a version** | Off today |
 | CL-8 | [x] **Intake form** should go to the **invite** part of the flow | Done — after Types/intake save, switch to Invites tab |
 | CL-9 | [ ] **Emergency contact phone**: number keypad; include field in **invite** | Input + invite payload |
@@ -120,7 +120,7 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 |----|------|---------|
 | ST-1 | [ ] Default **country to AU** (dropdown); default **state to NSW** (dropdown) | Defaults + selects |
 | ST-2 | [ ] Fix country **default value disappearing** | State retention bug |
-| ST-3 | [ ] Clarify site form error messages (e.g. *"Address Line 1, C"*) | Human-readable validation |
+| ST-3 | [x] Clarify site form error messages (e.g. *"Address Line 1, C"*) | Done — shorter geocode error without truncation trap |
 | ST-4 | [ ] Flag **low-confidence geocoding** as an error (or strong warning) | Product: treat as hard fail? |
 | ST-5 | [ ] Site card should **display address** | List / card UI |
 
@@ -143,7 +143,7 @@ Rough priority for tackling one-by-one (adjust as needed):
 1. **Broken flows first:** ~~IC-4, CL-14, AD-2~~ **done** (all three existed on this branch)  
 2. **Data loss / destructive UX:** ~~WF-6, CL-11, WF-8~~ **done** (all three existed on this branch)  
 3. **Navigation & layout:** ~~AD-1, WF-9, CL-13, CL-8~~ **done** (all four existed on this branch)  
-4. **Copy & clarity:** MVP-2, WF-7, IC-1–IC-2, CL-4, CL-6, ST-3  
+4. **Copy & clarity:** ~~MVP-2, WF-7, IC-1–IC-2, CL-4, CL-6, ST-3~~ **done** (all existed on this branch)  
 5. **Enhancements:** WF-1–WF-5, CL-3, CL-5, CL-7, CL-9–CL-10, ST-1–ST-5  
 6. **Product decisions:** MVP-1, ST-4, IC-5  
 
@@ -165,6 +165,13 @@ Verified on FE `refactor/client_info_update` / BE `refactor/client-info-update`:
 | WF-9 | Yes (inline New Payment Rate form on detail) | Fixed |
 | CL-13 | Yes (create opened Sites tab) | Fixed |
 | CL-8 | Yes (Types save stayed on Types) | Fixed |
+| MVP-2 | Yes (raw statuses / jargon) | Fixed |
+| WF-7 | Yes (vague invalid_transition) | Fixed |
+| IC-1 | Yes (Demo Free Contractor + no email fallback) | Fixed |
+| IC-2 | Yes (“Required categories”) | Fixed |
+| CL-4 | Yes (“Types” tab) | Fixed |
+| CL-6 | Partial (thin help) → Fixed | Fixed |
+| ST-3 | Yes (long geocode error truncates oddly) | Fixed |
 ---
 
 ## Decision log (fill in during work)
@@ -172,13 +179,13 @@ Verified on FE `refactor/client_info_update` / BE `refactor/client-info-update`:
 | Topic | Decision | Date |
 |-------|----------|------|
 | Shift creation in MVP? | | |
-| Default invite display: name vs email? | | |
+| Default invite display: name vs email? | Prefer name; fall back to email (never UUID / Demo Free Contractor) | 2026-08-15 |
 | Low-confidence geocoding = hard error? | | |
 
 ---
 
 ## Progress
 
-- Active tasks: **~23** remaining (excluding MVP questions; visits/jobs deferred)  
-- Completed: `10` (IC-4, CL-14, AD-2, WF-6, CL-11, WF-8, AD-1, WF-9, CL-13, CL-8)  
+- Active tasks: **~16** remaining (excluding MVP questions; visits/jobs deferred)  
+- Completed: `17`  
 - Last updated: 2026-08-15

@@ -101,7 +101,7 @@ class ClientDetailView extends GetView<ClientsController> {
                     (0, 'Sites'),
                     (1, 'Contacts'),
                     (2, 'Invites'),
-                    (3, 'Types'),
+                    (3, 'Details'),
                   ])
                     ChoiceChip(
                       label: Text(entry.$2),
@@ -418,7 +418,7 @@ class _TypesTab extends StatelessWidget {
           if (drafts.isNotEmpty) ...[
             const SizedBox(height: 24),
             const Text(
-              'Type-specific details',
+              'Client details',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
             const SizedBox(height: 4),

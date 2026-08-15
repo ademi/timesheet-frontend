@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../controllers/clients_controller.dart';
 import '../controllers/requirement_draft.dart';
+import '../data/models/client_profile_models.dart';
 
 /// Renders one schema-driven client type requirement.
 class ClientRequirementEditor extends StatelessWidget {
@@ -17,10 +18,25 @@ class ClientRequirementEditor extends StatelessWidget {
   final ClientsController controller;
   final RequirementDraft draft;
 
+  static String? _helpTextFor(ClientTypeRequirement req) {
+    final key = req.requirementKey;
+    if (key == 'identity_100_point') {
+      return 'Upload identity documents that together reach 100 points under '
+          'the Australian Document Verification framework. Common examples: '
+          'passport or birth certificate (70), Australian driver licence (40), '
+          'Medicare card (25). Combine documents until the total is at least '
+          '100 points.';
+    }
+    final help = req.helpText?.trim();
+    if (help == null || help.isEmpty) return null;
+    return help;
+  }
+
   @override
   Widget build(BuildContext context) {
     final req = draft.requirement;
     final title = req.isRequired ? '${req.label} *' : req.label;
+    final help = _helpTextFor(req);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -63,10 +79,10 @@ class ClientRequirementEditor extends StatelessWidget {
                 ),
             ],
           ),
-          if (req.helpText != null && req.helpText!.isNotEmpty) ...[
+          if (help != null) ...[
             const SizedBox(height: 4),
             Text(
-              req.helpText!,
+              help,
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.textMuted,
