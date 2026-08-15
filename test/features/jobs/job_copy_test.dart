@@ -20,8 +20,25 @@ void main() {
     expect(locationModeLabel('site').toLowerCase(), isNot(contains('xor')));
   });
 
+  test('kindLabel standing is Ongoing support', () {
+    expect(kindLabel('standing'), 'Ongoing support');
+  });
+
   test('defaultOngoingTitle uses client name', () {
-    expect(defaultOngoingTitle('Sam Lee'), 'Sam Lee support');
+    expect(defaultOngoingTitle('Pat Nguyen'), 'Pat Nguyen support');
+    expect(defaultOngoingTitle('  '), 'Ongoing support');
+  });
+
+  test('jobListSubtitle uses support label', () {
+    expect(
+      jobListSubtitle(
+        kind: 'standing',
+        status: 'open',
+        hasSite: true,
+        hasBranch: false,
+      ),
+      contains('Ongoing support'),
+    );
   });
 
   test('jobListSubtitle never contains xor or standing', () {
