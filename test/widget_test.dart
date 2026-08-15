@@ -25,6 +25,7 @@ void main() {
     await tester.pumpWidget(const RostiqApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Select Your Portal'), findsOneWidget);
+    expect(find.text('Rostiq'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
   });
 }
