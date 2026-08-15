@@ -246,7 +246,7 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
     final lower = name.toLowerCase();
     if (lower.endsWith('.png')) return 'image/png';
     if (lower.endsWith('.webp')) return 'image/webp';
-    if (lower.endsWith('.gif')) return 'image/gif';
+    // Backend allowlist rejects image/gif; map unknown/gif to jpeg.
     return 'image/jpeg';
   }
 

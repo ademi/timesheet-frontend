@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
@@ -215,18 +216,27 @@ class WorkforceController extends GetxController {
       phoneCtrl.clear();
       selectedCategories.clear();
       Get.back();
-      Get.snackbar(
-        result.isRegistrationInvite
-            ? 'Registration email sent'
-            : 'Engagement created',
-        result.isRegistrationInvite
-            ? 'The contractor can register using the link in their email.'
-            : 'Engagement created for this provider.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
-      );
+      final invite = result.registrationInvite;
+      final inviteUrl = invite?.inviteUrl?.trim();
+      if (result.isRegistrationInvite &&
+          inviteUrl != null &&
+          inviteUrl.isNotEmpty) {
+        await _showRegistrationInviteLinkDialog(
+          inviteUrl: inviteUrl,
+          expiresAt: invite!.expiresAt,
+        );
+      } else {
+        Get.snackbar(
+          result.isRegistrationInvite ? 'Invite created' : 'Engagement created',
+          result.isRegistrationInvite
+              ? 'Share the registration link with the contractor.'
+              : 'Engagement created for this provider.',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: AppColors.primary,
+          colorText: AppColors.onPrimary,
+        );
+      }
       await load();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -235,6 +245,50 @@ class WorkforceController extends GetxController {
     } finally {
       isSaving.value = false;
     }
+  }
+
+  Future<void> _showRegistrationInviteLinkDialog({
+    required String inviteUrl,
+    required DateTime expiresAt,
+  }) async {
+    await Get.dialog<void>(
+      AlertDialog(
+        title: const Text('Invite created'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Copy and share this link with the contractor. '
+              'Email delivery depends on server email configuration.',
+            ),
+            const SizedBox(height: 12),
+            SelectableText(inviteUrl),
+            const SizedBox(height: 8),
+            Text(
+              'Expires ${expiresAt.toLocal()}.',
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: inviteUrl));
+              Get.back();
+              Get.snackbar(
+                'Copied',
+                inviteUrl,
+                snackPosition: SnackPosition.BOTTOM,
+                margin: const EdgeInsets.all(16),
+              );
+            },
+            child: const Text('Copy link'),
+          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('Close')),
+        ],
+      ),
+    );
   }
 
   Future<void> runAction(String action, EngagementOut engagement) async {

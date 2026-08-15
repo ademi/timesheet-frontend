@@ -103,19 +103,27 @@ class HomeAlertsBinding extends Bindings {
     VisitsBinding.ensureShared();
     NotificationsFeedController.ensureRegistered();
     if (!Get.isRegistered<SessionService>()) return;
-    if (Get.isRegistered<HomeAlertsController>()) {
-      Get.delete<HomeAlertsController>();
+    // Keep across shell Get.offNamed tab switches to avoid refetch storms.
+    if (!Get.isRegistered<HomeAlertsController>()) {
+      Get.put(
+        HomeAlertsController(
+          repository: Get.find<ComplianceOpsRepository>(),
+          session: Get.find<SessionService>(),
+          clientsRepository: Get.find<ClientsRepository>(),
+          engagementsRepository: Get.find<EngagementsRepository>(),
+          jobsRepository: Get.find<JobsRepository>(),
+          visitsRepository: Get.find<VisitsRepository>(),
+          notificationsFeed: Get.find<NotificationsFeedController>(),
+        ),
+        permanent: true,
+      );
     }
-    Get.put(
-      HomeAlertsController(
-        repository: Get.find<ComplianceOpsRepository>(),
-        session: Get.find<SessionService>(),
-        clientsRepository: Get.find<ClientsRepository>(),
-        engagementsRepository: Get.find<EngagementsRepository>(),
-        jobsRepository: Get.find<JobsRepository>(),
-        visitsRepository: Get.find<VisitsRepository>(),
-        notificationsFeed: Get.find<NotificationsFeedController>(),
-      ),
-    );
+  }
+
+  /// Drop permanent home controller on logout / tenant switch.
+  static void reset() {
+    if (Get.isRegistered<HomeAlertsController>()) {
+      Get.delete<HomeAlertsController>(force: true);
+    }
   }
 }

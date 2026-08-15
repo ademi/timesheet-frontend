@@ -1102,9 +1102,16 @@ class ClientsController extends GetxController {
     return switch (e) {
       'pdf' => 'application/pdf',
       'png' => 'image/png',
-      'jpg' || 'jpeg' => 'image/jpeg',
+      'jpg' || 'jpeg' || 'gif' || 'heic' || 'heif' || 'bmp' => 'image/jpeg',
       'webp' => 'image/webp',
-      _ => 'application/octet-stream',
+      'doc' => 'application/msword',
+      'docx' =>
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls' => 'application/vnd.ms-excel',
+      'xlsx' =>
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      // Never send octet-stream — backend rejects it with 400.
+      _ => 'image/jpeg',
     };
   }
 }

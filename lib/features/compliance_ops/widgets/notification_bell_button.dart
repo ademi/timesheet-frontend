@@ -117,7 +117,10 @@ Future<void> showNotificationsSheet(BuildContext context) async {
                       ),
                       IconButton(
                         tooltip: 'Refresh',
-                        onPressed: feed.isLoading.value ? null : feed.load,
+                        onPressed:
+                            feed.isLoading.value
+                                ? null
+                                : () => feed.load(force: true),
                         icon:
                             feed.isLoading.value
                                 ? const SizedBox(
@@ -157,7 +160,7 @@ Future<void> showNotificationsSheet(BuildContext context) async {
                             ],
                           )
                           : RefreshIndicator(
-                            onRefresh: feed.load,
+                            onRefresh: () => feed.load(force: true),
                             child: ListView.separated(
                               controller: scrollController,
                               padding: const EdgeInsets.symmetric(vertical: 8),

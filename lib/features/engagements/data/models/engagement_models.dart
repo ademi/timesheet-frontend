@@ -124,6 +124,7 @@ class ContractorRegistrationInviteOut {
     required this.expiresAt,
     required this.createdAt,
     this.phone,
+    this.inviteUrl,
   });
 
   final String id;
@@ -132,6 +133,7 @@ class ContractorRegistrationInviteOut {
   final List<String> requiredCategories;
   final DateTime expiresAt;
   final DateTime createdAt;
+  final String? inviteUrl;
 
   factory ContractorRegistrationInviteOut.fromJson(Map<String, dynamic> json) {
     return ContractorRegistrationInviteOut(
@@ -143,6 +145,7 @@ class ContractorRegistrationInviteOut {
           .toList(growable: false),
       expiresAt: DateTime.parse(json['expires_at'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
+      inviteUrl: json['invite_url'] as String?,
     );
   }
 }

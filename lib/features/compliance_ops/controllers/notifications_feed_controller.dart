@@ -67,7 +67,30 @@ class NotificationsFeedController extends GetxController {
     load();
   }
 
-  Future<void> load() async {
+  static const _cacheTtl = Duration(seconds: 45);
+  DateTime? _lastLoadedAt;
+  Future<void>? _loadInFlight;
+
+  bool get _isFresh =>
+      _lastLoadedAt != null &&
+      DateTime.now().difference(_lastLoadedAt!) < _cacheTtl;
+
+  Future<void> load({bool force = false}) async {
+    if (_loadInFlight != null) return _loadInFlight!;
+    if (!force && _isFresh) return;
+
+    final future = _loadBody();
+    _loadInFlight = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_loadInFlight, future)) {
+        _loadInFlight = null;
+      }
+    }
+  }
+
+  Future<void> _loadBody() async {
     isLoading.value = true;
     errorMessage.value = null;
     try {
@@ -76,6 +99,7 @@ class NotificationsFeedController extends GetxController {
       if (acknowledgedCount.value > events.length) {
         acknowledgedCount.value = events.length;
       }
+      _lastLoadedAt = DateTime.now();
     } on AppFailure catch (e) {
       await BillingGate.showIfNeeded(e);
       errorMessage.value = e.message;
