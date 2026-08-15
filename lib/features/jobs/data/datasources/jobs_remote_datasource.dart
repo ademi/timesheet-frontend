@@ -255,6 +255,35 @@ class JobsRemoteDataSource {
     }
   }
 
+  Future<JobOut> getOngoingSupport(String clientId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.clientOngoingSupport(clientId),
+      );
+      return _require(response.data, JobOut.fromJson, 'get ongoing support');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<JobOut> ensureOngoingSupport(String clientId, {String? title}) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.clientOngoingSupportEnsure(clientId),
+        data: {
+          if (title != null && title.trim().isNotEmpty) 'title': title.trim(),
+        },
+      );
+      return _require(
+        response.data,
+        JobOut.fromJson,
+        'ensure ongoing support',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<SplitRecurrenceOut> splitRecurrenceFrom({
     required String jobId,
     required String ruleId,

@@ -113,6 +113,10 @@ abstract final class ApiPaths {
   static String clientContact(String id, String contactId) =>
       '${clientContacts(id)}/$contactId';
   static String clientInvites(String id) => '${client(id)}/invites';
+  static String clientOngoingSupport(String clientId) =>
+      '${client(clientId)}/ongoing-support';
+  static String clientOngoingSupportEnsure(String clientId) =>
+      '${clientOngoingSupport(clientId)}/ensure';
   static String publicClientInvite(String token) =>
       '$_v1/public/client-invites/$token';
   static String publicClientInviteAcknowledge(String token) =>
