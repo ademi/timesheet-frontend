@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
@@ -49,6 +50,7 @@ class ClientsController extends GetxController {
   final profileSaveProgress = RxnString();
 
   // Create / edit form
+  final clientFormKey = GlobalKey<FormState>();
   final nameCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
@@ -121,6 +123,9 @@ class ClientsController extends GetxController {
   final siteIsPrimary = false.obs;
   final isGeocoding = false.obs;
   final geocodeHint = RxnString();
+  /// Observable country/state for dropdowns (defaults AU / NSW).
+  final siteCountry = 'AU'.obs;
+  final siteState = 'NSW'.obs;
   ClientSiteOut? editingSite;
 
   // Contact form
@@ -432,27 +437,36 @@ class ClientsController extends GetxController {
       return;
     }
 
-    final result = await FilePicker.platform.pickFiles(
-      withData: true,
-      allowMultiple: allowMultiple && remaining > 1,
-      type: extensions.isEmpty ? FileType.any : FileType.custom,
-      allowedExtensions: extensions.isEmpty ? null : extensions,
-    );
-    if (result == null || result.files.isEmpty) return;
-
     final picked = <PickedClientFile>[];
-    for (final file in result.files) {
-      final bytes = file.bytes;
-      if (bytes == null || bytes.isEmpty) continue;
-      picked.add(
-        PickedClientFile(
-          name: file.name,
-          contentType: _guessContentType(file.extension, file.name),
-          bytes: bytes,
-        ),
+    if (_acceptIsImagesOnly(accept, extensions)) {
+      final galleryFiles = await _pickImagesFromGallery(
+        allowMultiple: allowMultiple && remaining > 1,
+        maxCount: remaining,
       );
-      if (draft.localFiles.length + picked.length >= draft.requirement.maxFiles) {
-        break;
+      picked.addAll(galleryFiles);
+    } else {
+      final result = await FilePicker.platform.pickFiles(
+        withData: true,
+        allowMultiple: allowMultiple && remaining > 1,
+        type: extensions.isEmpty ? FileType.any : FileType.custom,
+        allowedExtensions: extensions.isEmpty ? null : extensions,
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      for (final file in result.files) {
+        final bytes = file.bytes;
+        if (bytes == null || bytes.isEmpty) continue;
+        picked.add(
+          PickedClientFile(
+            name: file.name,
+            contentType: _guessContentType(file.extension, file.name),
+            bytes: bytes,
+          ),
+        );
+        if (draft.localFiles.length + picked.length >=
+            draft.requirement.maxFiles) {
+          break;
+        }
       }
     }
     if (picked.isEmpty) {
@@ -460,6 +474,78 @@ class ClientsController extends GetxController {
       return;
     }
     draft.localFiles.addAll(picked);
+  }
+
+  static bool _acceptIsImagesOnly(
+    List<String> accept,
+    List<String> extensions,
+  ) {
+    const imageExts = {'png', 'jpg', 'jpeg', 'webp', 'heic', 'heif', 'gif'};
+    if (accept.isNotEmpty) {
+      final lower = accept.map((e) => e.toLowerCase()).toList();
+      final hasNonImage = lower.any(
+        (m) =>
+            m.contains('pdf') ||
+            m.contains('msword') ||
+            m.contains('officedocument') ||
+            m.contains('application/'),
+      );
+      if (hasNonImage) return false;
+      return lower.every(
+        (m) =>
+            m.startsWith('image/') ||
+            m == 'image/*' ||
+            imageExts.any((e) => m.contains(e)),
+      );
+    }
+    return extensions.isNotEmpty &&
+        extensions.every((e) => imageExts.contains(e.toLowerCase()));
+  }
+
+  Future<List<PickedClientFile>> _pickImagesFromGallery({
+    required bool allowMultiple,
+    required int maxCount,
+  }) async {
+    final picker = ImagePicker();
+    final out = <PickedClientFile>[];
+    if (allowMultiple && maxCount > 1) {
+      final files = await picker.pickMultiImage(
+        maxWidth: 2400,
+        maxHeight: 2400,
+        imageQuality: 88,
+      );
+      for (final file in files.take(maxCount)) {
+        final bytes = await file.readAsBytes();
+        if (bytes.isEmpty) continue;
+        final name = file.name.trim().isEmpty ? 'image.jpg' : file.name;
+        out.add(
+          PickedClientFile(
+            name: name,
+            contentType: _guessContentType(null, name),
+            bytes: bytes,
+          ),
+        );
+      }
+      return out;
+    }
+    final file = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 2400,
+      maxHeight: 2400,
+      imageQuality: 88,
+    );
+    if (file == null) return out;
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) return out;
+    final name = file.name.trim().isEmpty ? 'image.jpg' : file.name;
+    out.add(
+      PickedClientFile(
+        name: name,
+        contentType: _guessContentType(null, name),
+        bytes: bytes,
+      ),
+    );
+    return out;
   }
 
   void removePickedFile(RequirementDraft draft, int index) {
@@ -482,9 +568,22 @@ class ClientsController extends GetxController {
   }
 
   Future<void> saveClient() async {
+    final form = clientFormKey.currentState;
+    if (form == null || !form.validate()) {
+      errorMessage.value =
+          'Please complete the required client details before saving.';
+      return;
+    }
+
     final name = nameCtrl.text.trim();
+    final email = emailCtrl.text.trim();
+    final phone = phoneCtrl.text.trim();
     if (name.isEmpty) {
       errorMessage.value = 'Full name is required.';
+      return;
+    }
+    if (email.isEmpty && phone.isEmpty) {
+      errorMessage.value = 'Provide an email and/or phone number.';
       return;
     }
 
@@ -497,8 +596,8 @@ class ClientsController extends GetxController {
           ClientCreateRequest(
             fullName: name,
             status: status.value,
-            email: emailCtrl.text.trim(),
-            phone: phoneCtrl.text.trim(),
+            email: email.isEmpty ? null : email,
+            phone: phone.isEmpty ? null : phone,
             serviceAgreementNotes: notesCtrl.text.trim().isEmpty
                 ? null
                 : notesCtrl.text.trim(),
@@ -510,7 +609,7 @@ class ClientsController extends GetxController {
           } on AppFailure catch (e) {
             Get.back();
             await load();
-            openDetail(created);
+            openDetail(created, initialTab: ClientsController.tabTypes);
             Get.snackbar(
               'Client saved',
               'Profile photo failed: ${e.message}',
@@ -523,15 +622,15 @@ class ClientsController extends GetxController {
         }
         Get.back();
         await load();
-        openDetail(created);
+        openDetail(created, initialTab: ClientsController.tabTypes);
       } else {
         await _repository.patchClient(
           editing!.id,
           ClientUpdateRequest(
             fullName: name,
             status: status.value,
-            email: emailCtrl.text.trim(),
-            phone: phoneCtrl.text.trim(),
+            email: email,
+            phone: phone,
             serviceAgreementNotes: notesCtrl.text.trim(),
           ),
         );
@@ -583,6 +682,8 @@ class ClientsController extends GetxController {
           ? <String>[]
           : await _saveDynamicAnswers(client.id);
       await openDetailById(client.id);
+      // After Types / intake save, continue to Invites (admin note CL-8).
+      tabIndex.value = tabInvites;
       if (profileErrors.isNotEmpty) {
         Get.snackbar(
           'Saved with warnings',
@@ -594,7 +695,7 @@ class ClientsController extends GetxController {
       } else {
         Get.snackbar(
           'Saved',
-          'Client type and profile updated.',
+          'Client type and profile updated. Create an invite next.',
           snackPosition: SnackPosition.BOTTOM,
           margin: const EdgeInsets.all(16),
         );
@@ -677,6 +778,31 @@ class ClientsController extends GetxController {
           presentation: AppFailurePresentation.inline,
         );
       }
+      final method = draft.method.value;
+      var note = draft.noteCtrl.text.trim();
+      if (method == 'uploaded_scan') {
+        if (draft.localFiles.isEmpty) {
+          throw const AppFailure(
+            code: 'scan_required',
+            message: 'Upload a scanned consent document for this method.',
+            presentation: AppFailurePresentation.inline,
+          );
+        }
+        final scanDocId = await _uploadClientFiles(
+          clientId: clientId,
+          category: req.documentCategory ?? 'consent_scan',
+          files: draft.localFiles,
+        );
+        if (scanDocId == null || scanDocId.isEmpty) {
+          throw const AppFailure(
+            code: 'scan_upload_failed',
+            message: 'Could not upload the consent scan.',
+            presentation: AppFailurePresentation.inline,
+          );
+        }
+        final scanNote = 'Uploaded scan document_id=$scanDocId';
+        note = note.isEmpty ? scanNote : '$note\n$scanNote';
+      }
       await _repository.acceptClientLegal(
         clientId,
         req.requirementKey,
@@ -685,8 +811,8 @@ class ClientsController extends GetxController {
           legalDocumentVersionId: doc.id,
           participantOrRepName: name,
           relationship: draft.relationshipCtrl.text.trim().nullIfEmpty,
-          method: draft.method.value,
-          note: draft.noteCtrl.text.trim().nullIfEmpty,
+          method: method,
+          note: note.nullIfEmpty,
         ),
       );
       return;
@@ -804,11 +930,17 @@ class ClientsController extends GetxController {
     }
   }
 
-  Future<void> openDetail(ClientOut client) async {
+  /// Tab indices on client detail: Sites=0, Contacts=1, Invites=2, Types=3.
+  static const tabSites = 0;
+  static const tabContacts = 1;
+  static const tabInvites = 2;
+  static const tabTypes = 3;
+
+  Future<void> openDetail(ClientOut client, {int initialTab = tabSites}) async {
     selected.value = client;
     lastInvite.value = null;
     invites.clear();
-    tabIndex.value = 0;
+    tabIndex.value = initialTab;
     selectedClientTypeId.value = client.clientTypeId;
     detailPhoto.value = null;
     upcomingVisits.clear();
@@ -1020,8 +1152,16 @@ class ClientsController extends GetxController {
     siteNameCtrl.text = site?.name ?? '';
     siteAddressCtrl.text = site?.addressLine1 ?? '';
     siteCityCtrl.text = site?.city ?? '';
-    siteStateCtrl.text = site?.state ?? '';
-    siteCountryCtrl.text = site?.country ?? '';
+    final state = (site?.state?.trim().isNotEmpty == true)
+        ? site!.state!.trim().toUpperCase()
+        : 'NSW';
+    final country = (site?.country?.trim().isNotEmpty == true)
+        ? site!.country!.trim().toUpperCase()
+        : 'AU';
+    siteStateCtrl.text = state;
+    siteCountryCtrl.text = country;
+    siteState.value = state;
+    siteCountry.value = country;
     sitePostalCtrl.text = site?.postalCode ?? '';
     siteLatCtrl.text = site?.latitude?.toString() ?? '';
     siteLngCtrl.text = site?.longitude?.toString() ?? '';
@@ -1037,13 +1177,19 @@ class ClientsController extends GetxController {
   }) async {
     final address = siteAddressCtrl.text.trim();
     final city = siteCityCtrl.text.trim();
-    final state = siteStateCtrl.text.trim();
-    final country = siteCountryCtrl.text.trim().toUpperCase();
+    final state = siteState.value.trim().isNotEmpty
+        ? siteState.value.trim()
+        : siteStateCtrl.text.trim();
+    final country = (siteCountry.value.trim().isNotEmpty
+            ? siteCountry.value
+            : siteCountryCtrl.text)
+        .trim()
+        .toUpperCase();
 
     if (address.isEmpty || city.isEmpty || country.isEmpty) {
       errorMessage.value =
-          'Address line 1, city, and country (ISO code, e.g. AU) are '
-          'required to look up coordinates.';
+          'Enter street address, city, and a 2-letter country code '
+          '(for example AU) before looking up coordinates.';
       return null;
     }
     if (country.length != 2) {
@@ -1064,9 +1210,22 @@ class ClientsController extends GetxController {
           country: country,
         ),
       );
+      siteCountryCtrl.text = country;
+      siteCountry.value = country;
+      final confidence = result.confidence?.toLowerCase();
+      if (confidence == 'low') {
+        siteLatCtrl.clear();
+        siteLngCtrl.clear();
+        errorMessage.value =
+            'Address lookup has low confidence. Check the street, city, and '
+            'country, then look up again before saving.';
+        geocodeHint.value =
+            'Low confidence — coordinates were not applied. Fix the address '
+            'and look up again.';
+        return null;
+      }
       siteLatCtrl.text = result.latitude.toString();
       siteLngCtrl.text = result.longitude.toString();
-      siteCountryCtrl.text = country;
       if (showSuccessHint) {
         final parts = <String>[
           if (result.formattedAddress != null &&
@@ -1121,8 +1280,10 @@ class ClientsController extends GetxController {
         name: name,
         addressLine1: siteAddressCtrl.text.trim().nullIfEmpty,
         city: siteCityCtrl.text.trim().nullIfEmpty,
-        state: siteStateCtrl.text.trim().nullIfEmpty,
-        country: siteCountryCtrl.text.trim().nullIfEmpty,
+        state: siteState.value.trim().nullIfEmpty ??
+            siteStateCtrl.text.trim().nullIfEmpty,
+        country: siteCountry.value.trim().nullIfEmpty ??
+            siteCountryCtrl.text.trim().nullIfEmpty,
         postalCode: sitePostalCtrl.text.trim().nullIfEmpty,
         latitude: lat,
         longitude: lng,
@@ -1281,9 +1442,16 @@ class ClientsController extends GetxController {
     return switch (e) {
       'pdf' => 'application/pdf',
       'png' => 'image/png',
-      'jpg' || 'jpeg' => 'image/jpeg',
+      'jpg' || 'jpeg' || 'gif' || 'heic' || 'heif' || 'bmp' => 'image/jpeg',
       'webp' => 'image/webp',
-      _ => 'application/octet-stream',
+      'doc' => 'application/msword',
+      'docx' =>
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls' => 'application/vnd.ms-excel',
+      'xlsx' =>
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      // Never send octet-stream — backend rejects it with 400.
+      _ => 'image/jpeg',
     };
   }
 }

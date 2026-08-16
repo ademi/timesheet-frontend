@@ -115,6 +115,25 @@ void main() {
     );
   });
 
+  test('second load without force skips network when cache is fresh', () async {
+    when(
+      () => repository.listSharingAccessRequests(status: 'pending'),
+    ).thenAnswer((_) async => [pendingRequest()]);
+
+    final controller = HomeAlertsController(
+      repository: repository,
+      session: session,
+      showSnack: (_, __) {},
+    );
+    await controller.load();
+    await controller.load();
+    await controller.load(force: true);
+
+    verify(
+      () => repository.listSharingAccessRequests(status: 'pending'),
+    ).called(2);
+  });
+
   test('staff load aggregates dashboard stats from list APIs', () async {
     when(() => session.isStaff).thenReturn(true);
     when(() => session.isContractor).thenReturn(false);

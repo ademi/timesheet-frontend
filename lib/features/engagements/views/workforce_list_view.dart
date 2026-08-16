@@ -8,7 +8,7 @@ import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/workforce_controller.dart';
 import '../data/models/engagement_models.dart';
 
-String _statusChipLabel(String status) => status.replaceAll('_', ' ');
+String _statusChipLabel(String status) => engagementStatusLabel(status);
 
 class WorkforceListView extends GetView<WorkforceController> {
   const WorkforceListView({super.key});
@@ -91,14 +91,22 @@ class WorkforceListView extends GetView<WorkforceController> {
             if (err != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.errorBackground,
-                    borderRadius: BorderRadius.circular(8),
+                child: Material(
+                  color: AppColors.errorBackground,
+                  borderRadius: BorderRadius.circular(8),
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    title: Text(
+                      err,
+                      style: const TextStyle(color: AppColors.error),
+                    ),
+                    trailing: IconButton(
+                      tooltip: 'Dismiss',
+                      onPressed: controller.clearError,
+                      icon: const Icon(Icons.close, color: AppColors.error),
+                    ),
                   ),
-                  child: Text(err, style: const TextStyle(color: AppColors.error)),
                 ),
               ),
             Expanded(
@@ -125,16 +133,8 @@ class WorkforceListView extends GetView<WorkforceController> {
                                   showLabel: false,
                                 );
                               }),
-                              title: Text(
-                                e.contractorName?.isNotEmpty == true
-                                    ? e.contractorName!
-                                    : e.contractorId,
-                              ),
-                              subtitle: Text(
-                                'Status: ${e.status}\n'
-                                'Required: ${e.requiredDocCategories.map((c) => c.displayLabel).join(", ").ifEmpty("—")}',
-                              ),
-                              isThreeLine: true,
+                              title: Text(e.displayName),
+                              subtitle: Text('Status: ${e.statusLabel}'),
                               trailing: _StatusChip(status: e.status),
                               onTap: () => controller.openDetail(e),
                             ),
@@ -168,7 +168,10 @@ class _StatusChip extends StatelessWidget {
       _ => AppColors.slate600,
     };
     return Chip(
-      label: Text(status, style: TextStyle(color: color, fontSize: 11)),
+      label: Text(
+        engagementStatusLabel(status),
+        style: TextStyle(color: color, fontSize: 11),
+      ),
       visualDensity: VisualDensity.compact,
       backgroundColor: color.withValues(alpha: 0.12),
     );

@@ -91,13 +91,36 @@ class HomeAlertsController extends GetxController {
 
   bool get showDashboard => isStaff;
 
+  static const _cacheTtl = Duration(seconds: 45);
+  DateTime? _lastLoadedAt;
+  Future<void>? _loadInFlight;
+
   @override
   void onInit() {
     super.onInit();
     load();
   }
 
-  Future<void> load() async {
+  bool get _isFresh =>
+      _lastLoadedAt != null &&
+      DateTime.now().difference(_lastLoadedAt!) < _cacheTtl;
+
+  Future<void> load({bool force = false}) async {
+    if (_loadInFlight != null) return _loadInFlight!;
+    if (!force && _isFresh) return;
+
+    final future = _loadBody(force: force);
+    _loadInFlight = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_loadInFlight, future)) {
+        _loadInFlight = null;
+      }
+    }
+  }
+
+  Future<void> _loadBody({required bool force}) async {
     isLoading.value = true;
     errorMessage.value = null;
 
@@ -106,7 +129,7 @@ class HomeAlertsController extends GetxController {
         (Get.isRegistered<NotificationsFeedController>()
             ? Get.find<NotificationsFeedController>()
             : null);
-    final notificationsFuture = feed?.load();
+    final notificationsFuture = feed?.load(force: force);
 
     if (isContractor) {
       try {
@@ -135,6 +158,7 @@ class HomeAlertsController extends GetxController {
     } else {
       stats.value = null;
     }
+    _lastLoadedAt = DateTime.now();
   }
 
   Future<void> loadStats() async {
@@ -296,7 +320,11 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(title),
-        actions: shellAppBarActions(onRefresh: controller.load),
+        actions: shellAppBarActions(
+          onRefresh: () {
+            controller.load(force: true);
+          },
+        ),
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.stats.value == null) {
@@ -306,7 +334,7 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
         final sub = controller.subscription.value;
         final stats = controller.stats.value;
         return RefreshIndicator(
-          onRefresh: controller.load,
+          onRefresh: () => controller.load(force: true),
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [

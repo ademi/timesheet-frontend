@@ -71,7 +71,7 @@ void main() {
         MaterialApp(home: Scaffold(body: EngagementStatusChip(status: status))),
       );
 
-      expect(find.text(status.replaceAll('_', ' ')), findsOneWidget);
+      expect(find.text(engagementStatusLabel(status)), findsOneWidget);
     }
   });
 }

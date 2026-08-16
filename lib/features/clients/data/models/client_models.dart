@@ -13,6 +13,7 @@ class ClientOut {
     this.serviceAgreementNotes,
     this.clientTypeId,
     this.dob,
+    this.primarySite,
   });
 
   final String id;
@@ -27,9 +28,13 @@ class ClientOut {
   final Map<String, dynamic> metadata;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final ClientPrimarySiteSummary? primarySite;
+
+  String get primaryDisplayAddress => primarySite?.displayAddress ?? '';
 
   factory ClientOut.fromJson(Map<String, dynamic> json) {
     final meta = json['metadata'];
+    final siteRaw = json['primary_site'];
     return ClientOut(
       id: json['id'].toString(),
       tenantId: json['tenant_id'].toString(),
@@ -45,6 +50,61 @@ class ClientOut {
           : const <String, dynamic>{},
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      primarySite: siteRaw is Map
+          ? ClientPrimarySiteSummary.fromJson(
+              Map<String, dynamic>.from(siteRaw),
+            )
+          : null,
+    );
+  }
+}
+
+class ClientPrimarySiteSummary {
+  const ClientPrimarySiteSummary({
+    required this.name,
+    this.addressLine1,
+    this.city,
+    this.state,
+    this.country,
+    this.postalCode,
+    this.latitude,
+    this.longitude,
+  });
+
+  final String name;
+  final String? addressLine1;
+  final String? city;
+  final String? state;
+  final String? country;
+  final String? postalCode;
+  final double? latitude;
+  final double? longitude;
+
+  bool get hasCoordinates => latitude != null && longitude != null;
+
+  String get displayAddress {
+    final parts = <String>[
+      if (addressLine1 != null && addressLine1!.trim().isNotEmpty)
+        addressLine1!.trim(),
+      if (city != null && city!.trim().isNotEmpty) city!.trim(),
+      if (state != null && state!.trim().isNotEmpty) state!.trim(),
+      if (postalCode != null && postalCode!.trim().isNotEmpty)
+        postalCode!.trim(),
+      if (country != null && country!.trim().isNotEmpty) country!.trim(),
+    ];
+    return parts.join(', ');
+  }
+
+  factory ClientPrimarySiteSummary.fromJson(Map<String, dynamic> json) {
+    return ClientPrimarySiteSummary(
+      name: json['name'] as String? ?? '',
+      addressLine1: json['address_line1'] as String?,
+      city: json['city'] as String?,
+      state: json['state'] as String?,
+      country: json['country'] as String?,
+      postalCode: json['postal_code'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 }

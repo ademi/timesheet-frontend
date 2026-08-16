@@ -10,6 +10,7 @@ import 'bindings/engagements_binding.dart';
 import 'views/workforce_detail_view.dart';
 import 'views/workforce_invite_view.dart';
 import 'views/workforce_list_view.dart';
+import '../payroll/views/engagement_rate_form_view.dart';
 
 abstract final class EngagementsPages {
   EngagementsPages._();
@@ -46,6 +47,19 @@ abstract final class EngagementsPages {
           ],
           binding: EngagementsBinding(),
           page: () => const WorkforceDetailView(),
+          transition: Transition.rightToLeft,
+        ),
+        GetPage(
+          name: AppRoutes.staffWorkforceRateForm,
+          middlewares: [
+            AuthGuard(),
+            ActorGuard(),
+            PermissionGuard(
+              anyOf: [AppPermissions.paymentsManage],
+            ),
+          ],
+          binding: EngagementsBinding(),
+          page: () => const EngagementRateFormView(),
           transition: Transition.rightToLeft,
         ),
       ];

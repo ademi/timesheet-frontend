@@ -152,7 +152,7 @@ class EngagementStatusChip extends StatelessWidget {
     };
     return Chip(
       label: Text(
-        status.replaceAll('_', ' '),
+        engagementStatusLabel(status),
         style: TextStyle(color: color, fontSize: 11),
       ),
       visualDensity: VisualDensity.compact,

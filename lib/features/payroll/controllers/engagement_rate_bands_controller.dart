@@ -87,7 +87,7 @@ class EngagementRateBandsController extends GetxController {
     }
   }
 
-  Future<void> createRate() async {
+  Future<void> createRate({bool popOnSuccess = false}) async {
     final id = engagementId.value;
     if (!canManage || id == null || id.isEmpty) return;
     final base = double.tryParse(baseRateCtrl.text.trim());
@@ -123,6 +123,9 @@ class EngagementRateBandsController extends GetxController {
         ),
       );
       await loadFor(id);
+      if (popOnSuccess) {
+        Get.back();
+      }
       Get.snackbar(
         'Payment rates saved',
         'New payment rate applied (prior open rates end automatically).',

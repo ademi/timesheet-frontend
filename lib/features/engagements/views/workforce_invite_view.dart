@@ -18,7 +18,7 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
   void initState() {
     super.initState();
     controller = Get.find<WorkforceController>();
-    controller.errorMessage.value = null;
+    controller.clearError();
     controller.loadCredentialCategories();
   }
 
@@ -33,19 +33,29 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
           padding: const EdgeInsets.all(16),
           children: [
             const Text(
-              'Invite by email and/or phone. At least one required credential '
-              'category must be selected.',
+              'Invite by email and/or phone. Select at least one required '
+              'document type. If the person is not already in Rostiq, you will '
+              'be asked whether to send an invitation email.',
               style: TextStyle(color: AppColors.textMuted),
             ),
             if (err != null) ...[
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.errorBackground,
-                  borderRadius: BorderRadius.circular(8),
+              Material(
+                color: AppColors.errorBackground,
+                borderRadius: BorderRadius.circular(8),
+                child: ListTile(
+                  dense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  title: Text(
+                    err,
+                    style: const TextStyle(color: AppColors.error),
+                  ),
+                  trailing: IconButton(
+                    tooltip: 'Dismiss',
+                    onPressed: controller.clearError,
+                    icon: const Icon(Icons.close, color: AppColors.error),
+                  ),
                 ),
-                child: Text(err, style: const TextStyle(color: AppColors.error)),
               ),
             ],
             const SizedBox(height: 16),
@@ -68,7 +78,7 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Required categories',
+              'Required documents',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),

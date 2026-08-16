@@ -40,25 +40,27 @@ class WorkforceDetailView extends GetView<WorkforceController> {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: Text(
-            current.contractorName?.isNotEmpty == true
-                ? current.contractorName!
-                : 'Engagement',
-          ),
+          title: Text(current.displayName),
         ),
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             if (err != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.errorBackground,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  err,
-                  style: const TextStyle(color: AppColors.error),
+              Material(
+                color: AppColors.errorBackground,
+                borderRadius: BorderRadius.circular(8),
+                child: ListTile(
+                  dense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  title: Text(
+                    err,
+                    style: const TextStyle(color: AppColors.error),
+                  ),
+                  trailing: IconButton(
+                    tooltip: 'Dismiss',
+                    onPressed: controller.clearError,
+                    icon: const Icon(Icons.close, color: AppColors.error),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -82,9 +84,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    current.contractorName?.isNotEmpty == true
-                        ? current.contractorName!
-                        : 'Contractor',
+                    current.displayName,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 18,
@@ -94,9 +94,9 @@ class WorkforceDetailView extends GetView<WorkforceController> {
               ],
             ),
             const SizedBox(height: 16),
-            _row('Status', current.status),
+            _row('Status', current.statusLabel),
             _row(
-              'Required categories',
+              'Required documents',
               current.requiredDocCategories.isEmpty
                   ? '—'
                   : current.requiredDocCategories
@@ -111,14 +111,31 @@ class WorkforceDetailView extends GetView<WorkforceController> {
             const SizedBox(height: 8),
             if (!controller.canApprove && !controller.canManage)
               const Text(
-                'No lifecycle actions available for your role. '
-                'Approve / activate need contractors.approve and contractors.manage.',
+                'No lifecycle actions available for your role.',
                 style: TextStyle(color: AppColors.textMuted, fontSize: 13),
               )
             else if (current.isInvited)
-              const Text(
-                'Waiting for the contractor to accept the invite.',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Waiting for the contractor to accept the invite.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  ),
+                  if (controller.canManage) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed:
+                          controller.isSaving.value
+                              ? null
+                              : () => controller.runAction(
+                                'withdraw',
+                                current,
+                              ),
+                      child: const Text('Withdraw invite'),
+                    ),
+                  ],
+                ],
               )
             else
               Wrap(

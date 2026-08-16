@@ -14,8 +14,9 @@ class ResponsiveDestination {
   final String label;
 }
 
-/// Wide-screen shell: [NavigationRail] + content. Below [Breakpoints.tablet] renders
-/// [child] only (phone / narrow tablet unchanged).
+/// Wide-screen shell: [NavigationRail] + content.
+/// On narrow widths uses a compact rail (icons + selected label) so nav stays
+/// on the left instead of a crowded bottom bar.
 class ResponsiveScaffold extends StatelessWidget {
   const ResponsiveScaffold({
     super.key,
@@ -34,11 +35,8 @@ class ResponsiveScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < Breakpoints.tablet) {
-          return child;
-        }
-
         final index = selectedIndex < 0 ? 0 : selectedIndex;
+        final compact = constraints.maxWidth < Breakpoints.tablet;
 
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -46,7 +44,11 @@ class ResponsiveScaffold extends StatelessWidget {
             NavigationRail(
               selectedIndex: index,
               onDestinationSelected: onDestinationSelected,
-              labelType: NavigationRailLabelType.all,
+              labelType:
+                  compact
+                      ? NavigationRailLabelType.selected
+                      : NavigationRailLabelType.all,
+              groupAlignment: -1,
               backgroundColor: AppColors.cardBackground,
               indicatorColor: AppColors.primary.withValues(alpha: 0.18),
               selectedIconTheme: const IconThemeData(color: AppColors.primary),
@@ -76,3 +78,4 @@ class ResponsiveScaffold extends StatelessWidget {
     );
   }
 }
+

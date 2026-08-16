@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -53,7 +52,8 @@ class ProfilePhotoEditor extends StatefulWidget {
 }
 
 class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
-  static final Map<String, Uint8List> _webBytesCache = {};
+  /// In-memory photo bytes keyed by document id (all platforms).
+  static final Map<String, Uint8List> _bytesCache = {};
 
   List<int>? _proxiedBytes;
   bool _proxyLoading = false;
@@ -73,8 +73,8 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
 
   bool get _preferSignedUrl => _hasNetworkUrl && !_signedUrlFailed;
 
-  bool get _useWebProxy =>
-      kIsWeb && _hasDocumentId && !_hasLocalBytes && !_preferSignedUrl;
+  /// Prefer document-id bytes cache to avoid refetch flicker on list scroll.
+  bool get _useDocBytesCache => _hasDocumentId && !_hasLocalBytes;
 
   bool get _hasImage =>
       _hasLocalBytes ||
@@ -112,17 +112,22 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
       _proxyLoading = false;
       return;
     }
+    if (_useDocBytesCache) {
+      final docId = widget.documentId!.trim();
+      final cached = _bytesCache[docId];
+      if (cached != null) {
+        _proxiedBytes = cached;
+        _proxyDocId = docId;
+        _proxyLoading = false;
+        return;
+      }
+      _syncProxy();
+      return;
+    }
     if (_preferSignedUrl) {
       _proxiedBytes = null;
       _proxyDocId = null;
       _proxyLoading = false;
-      if (kIsWeb && _hasDocumentId) {
-        _attachNetworkListener(NetworkImage(widget.networkUrl!.trim()));
-      }
-      return;
-    }
-    if (_useWebProxy) {
-      _syncProxy();
       return;
     }
     _proxiedBytes = null;
@@ -138,33 +143,15 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
     _networkListener = null;
   }
 
-  void _attachNetworkListener(NetworkImage image) {
-    final stream = image.resolve(ImageConfiguration.empty);
-    late final ImageStreamListener listener;
-    listener = ImageStreamListener(
-      (ImageInfo info, bool synchronousCall) {
-        // Signed URL loaded successfully — keep NetworkImage path.
-      },
-      onError: (Object error, StackTrace? stackTrace) {
-        if (!mounted || _signedUrlFailed) return;
-        setState(() => _signedUrlFailed = true);
-        _syncProxy();
-      },
-    );
-    _networkStream = stream;
-    _networkListener = listener;
-    stream.addListener(listener);
-  }
-
   void _syncProxy() {
-    if (!_useWebProxy) {
+    if (!_useDocBytesCache) {
       _proxiedBytes = null;
       _proxyDocId = null;
       _proxyLoading = false;
       return;
     }
     final docId = widget.documentId!.trim();
-    final cached = _webBytesCache[docId];
+    final cached = _bytesCache[docId];
     if (cached != null) {
       _proxiedBytes = cached;
       _proxyDocId = docId;
@@ -188,7 +175,7 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
       if (!mounted || _proxyDocId != documentId) return;
       if (bytes != null && bytes.isNotEmpty) {
         final copy = Uint8List.fromList(bytes);
-        _webBytesCache[documentId] = copy;
+        _bytesCache[documentId] = copy;
         setState(() {
           _proxiedBytes = copy;
           _proxyLoading = false;
@@ -246,7 +233,7 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
     final lower = name.toLowerCase();
     if (lower.endsWith('.png')) return 'image/png';
     if (lower.endsWith('.webp')) return 'image/webp';
-    if (lower.endsWith('.gif')) return 'image/gif';
+    // Backend allowlist rejects image/gif; map unknown/gif to jpeg.
     return 'image/jpeg';
   }
 

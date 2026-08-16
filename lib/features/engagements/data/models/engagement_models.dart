@@ -10,6 +10,17 @@ const engagementStatuses = <String>[
   'ended',
 ];
 
+/// Human-readable engagement status for staff UI.
+String engagementStatusLabel(String status) => switch (status) {
+  'invited' => 'Invited',
+  'pending_docs' => 'Pending documents',
+  'approved' => 'Approved',
+  'active' => 'Active',
+  'suspended' => 'Suspended',
+  'ended' => 'Ended',
+  _ => status.replaceAll('_', ' '),
+};
+
 class RequiredDocCategory {
   const RequiredDocCategory({
     required this.category,
@@ -53,6 +64,7 @@ class EngagementOut {
     required this.updatedAt,
     this.tenantName,
     this.contractorName,
+    this.contractorEmail,
     this.consentedAt,
     this.consentRevokedAt,
     this.invitedByUserId,
@@ -65,6 +77,7 @@ class EngagementOut {
   final String? tenantName;
   final String contractorId;
   final String? contractorName;
+  final String? contractorEmail;
   final String status;
   final DateTime? consentedAt;
   final DateTime? consentRevokedAt;
@@ -81,6 +94,21 @@ class EngagementOut {
   bool get isSuspended => status == 'suspended';
   bool get isEnded => status == 'ended';
 
+  /// Prefer a real name; fall back to email (never raw UUID).
+  String get displayName {
+    final name = contractorName?.trim() ?? '';
+    if (name.isNotEmpty &&
+        name.toLowerCase() != 'demo free contractor') {
+      return name;
+    }
+    final email = contractorEmail?.trim() ?? '';
+    if (email.isNotEmpty) return email;
+    if (name.isNotEmpty) return name;
+    return 'Contractor';
+  }
+
+  String get statusLabel => engagementStatusLabel(status);
+
   factory EngagementOut.fromJson(Map<String, dynamic> json) {
     DateTime? parseDt(Object? v) {
       if (v == null) return null;
@@ -94,6 +122,7 @@ class EngagementOut {
       tenantName: json['tenant_name'] as String?,
       contractorId: json['contractor_id'].toString(),
       contractorName: json['contractor_name'] as String?,
+      contractorEmail: json['contractor_email'] as String?,
       status: json['status'] as String,
       consentedAt: parseDt(json['consented_at']),
       consentRevokedAt: parseDt(json['consent_revoked_at']),
@@ -124,6 +153,7 @@ class ContractorRegistrationInviteOut {
     required this.expiresAt,
     required this.createdAt,
     this.phone,
+    this.inviteUrl,
   });
 
   final String id;
@@ -132,6 +162,7 @@ class ContractorRegistrationInviteOut {
   final List<String> requiredCategories;
   final DateTime expiresAt;
   final DateTime createdAt;
+  final String? inviteUrl;
 
   factory ContractorRegistrationInviteOut.fromJson(Map<String, dynamic> json) {
     return ContractorRegistrationInviteOut(
@@ -143,6 +174,7 @@ class ContractorRegistrationInviteOut {
           .toList(growable: false),
       expiresAt: DateTime.parse(json['expires_at'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
+      inviteUrl: json['invite_url'] as String?,
     );
   }
 }
@@ -185,17 +217,57 @@ class EngagementInviteRequest {
     this.email,
     this.phone,
     this.requiredCategories = const [],
+    this.sendEmail = true,
   });
 
   final String? email;
   final String? phone;
   final List<String> requiredCategories;
+  final bool sendEmail;
 
   Map<String, dynamic> toJson() => {
     if (email != null && email!.trim().isNotEmpty) 'email': email!.trim(),
     if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
     'required_categories': requiredCategories,
+    'send_email': sendEmail,
   };
+}
+
+class EngagementInvitePreviewRequest {
+  const EngagementInvitePreviewRequest({this.email, this.phone});
+
+  final String? email;
+  final String? phone;
+
+  Map<String, dynamic> toJson() => {
+    if (email != null && email!.trim().isNotEmpty) 'email': email!.trim(),
+    if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
+  };
+}
+
+class EngagementInvitePreviewOut {
+  const EngagementInvitePreviewOut({
+    required this.outcome,
+    required this.message,
+  });
+
+  final String outcome;
+  final String message;
+
+  bool get needsRegistration => outcome == 'needs_registration';
+  bool get isExistingContractor => outcome == 'existing_contractor';
+  bool get isBlocking =>
+      outcome == 'email_already_registered' ||
+      outcome == 'email_required_for_registration' ||
+      outcome == 'hard_split_violation' ||
+      outcome == 'engagement_already_exists';
+
+  factory EngagementInvitePreviewOut.fromJson(Map<String, dynamic> json) {
+    return EngagementInvitePreviewOut(
+      outcome: json['outcome'] as String? ?? '',
+      message: json['message'] as String? ?? '',
+    );
+  }
 }
 
 class EngagementAcceptRequest {

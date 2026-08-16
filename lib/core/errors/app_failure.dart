@@ -262,7 +262,9 @@ class AppFailure implements Exception {
       case 'sharing_grant_required':
         return 'This contractor has not shared credentials with your organisation yet.';
       case 'invalid_transition':
-        return 'This engagement can’t move to that status from here.';
+        return 'This action isn’t available for the engagement’s current '
+            'status. If documents are still pending, review credentials '
+            'first, then try again.';
       case 'counsel_pending':
       case 'counsel_pending_policy':
       case 'legal_document_unavailable':

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
@@ -39,6 +42,9 @@ class WorkforceController extends GetxController {
   final detailPhoto = Rxn<ProfilePhotoOut>();
   final isDetailPhotoLoading = false.obs;
 
+  Timer? _errorClearTimer;
+  static const _errorClearDelay = Duration(seconds: 8);
+
   // Invite form
   final emailCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
@@ -76,6 +82,16 @@ class WorkforceController extends GetxController {
     if (missingDocsFilter.value) {
       list = list.where(hasMissingRequiredDocs).toList();
     }
+    // Status order (engagementStatuses), then display name.
+    list.sort((a, b) {
+      final ai = engagementStatuses.indexOf(a.status);
+      final bi = engagementStatuses.indexOf(b.status);
+      final aOrder = ai < 0 ? engagementStatuses.length : ai;
+      final bOrder = bi < 0 ? engagementStatuses.length : bi;
+      final byStatus = aOrder.compareTo(bOrder);
+      if (byStatus != 0) return byStatus;
+      return a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
+    });
     return list;
   }
 
@@ -100,18 +116,32 @@ class WorkforceController extends GetxController {
 
   @override
   void onClose() {
+    _errorClearTimer?.cancel();
     emailCtrl.dispose();
     phoneCtrl.dispose();
     super.onClose();
   }
 
+  void clearError() {
+    _errorClearTimer?.cancel();
+    _errorClearTimer = null;
+    errorMessage.value = null;
+    eligibilityReasons.clear();
+  }
+
+  void _setError(String message) {
+    errorMessage.value = message;
+    _errorClearTimer?.cancel();
+    _errorClearTimer = Timer(_errorClearDelay, clearError);
+  }
+
   Future<void> load() async {
     if (!canRead) {
-      errorMessage.value = 'Missing contractors.read permission.';
+      _setError('Missing contractors.read permission.');
       return;
     }
     isLoading.value = true;
-    errorMessage.value = null;
+    clearError();
     try {
       final list = await _repository.listTenantEngagements();
       items.assignAll(list);
@@ -123,9 +153,9 @@ class WorkforceController extends GetxController {
         await _ensureCredentialsLoaded();
       }
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      _setError(e.message);
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setError(e.toString());
     } finally {
       isLoading.value = false;
     }
@@ -142,8 +172,7 @@ class WorkforceController extends GetxController {
 
   void openDetail(EngagementOut e) {
     selected = e;
-    eligibilityReasons.clear();
-    errorMessage.value = null;
+    clearError();
     detailPhoto.value = photosByContractor[e.contractorId];
     Get.toNamed(AppRoutes.staffWorkforceDetail, arguments: e);
     loadDetailProfilePhoto(e.contractorId);
@@ -188,59 +217,198 @@ class WorkforceController extends GetxController {
 
   Future<void> submitInvite() async {
     if (!canInvite) {
-      errorMessage.value = 'Missing contractors.invite permission.';
+      _setError('Missing contractors.invite permission.');
       return;
     }
     final email = emailCtrl.text.trim();
     final phone = phoneCtrl.text.trim();
     if (email.isEmpty && phone.isEmpty) {
-      errorMessage.value = 'Provide an email and/or phone.';
+      _setError('Provide an email and/or phone.');
       return;
     }
     if (selectedCategories.isEmpty) {
-      errorMessage.value = 'Select at least one required credential category.';
+      _setError('Select at least one required document.');
       return;
     }
+
     isSaving.value = true;
-    errorMessage.value = null;
+    clearError();
     try {
+      final preview = await _repository.previewInvite(
+        EngagementInvitePreviewRequest(
+          email: email.isEmpty ? null : email,
+          phone: phone.isEmpty ? null : phone,
+        ),
+      );
+      if (preview.isBlocking) {
+        _setError(preview.message);
+        return;
+      }
+
+      var sendEmail = true;
+      if (preview.needsRegistration) {
+        final choice = await _confirmRegistrationInviteEmail(
+          message: preview.message,
+        );
+        if (choice == null) return; // cancelled
+        sendEmail = choice;
+      }
+
       final result = await _repository.invite(
         EngagementInviteRequest(
           email: email.isEmpty ? null : email,
           phone: phone.isEmpty ? null : phone,
           requiredCategories: selectedCategories.toList(),
+          sendEmail: sendEmail,
         ),
       );
       emailCtrl.clear();
       phoneCtrl.clear();
       selectedCategories.clear();
       Get.back();
-      Get.snackbar(
-        result.isRegistrationInvite
-            ? 'Registration email sent'
-            : 'Engagement created',
-        result.isRegistrationInvite
-            ? 'The contractor can register using the link in their email.'
-            : 'Engagement created for this provider.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
-      );
+      final invite = result.registrationInvite;
+      final inviteUrl = invite?.inviteUrl?.trim();
+      if (result.isRegistrationInvite &&
+          inviteUrl != null &&
+          inviteUrl.isNotEmpty) {
+        await _showRegistrationInviteLinkDialog(
+          inviteUrl: inviteUrl,
+          expiresAt: invite!.expiresAt,
+          emailRequested: sendEmail,
+        );
+      } else {
+        Get.snackbar(
+          result.isRegistrationInvite ? 'Invite created' : 'Engagement created',
+          result.isRegistrationInvite
+              ? 'Share the registration link with the contractor.'
+              : 'Engagement created for this provider.',
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: AppColors.primary,
+          colorText: AppColors.onPrimary,
+        );
+      }
       await load();
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      _setError(e.message);
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setError(e.toString());
     } finally {
       isSaving.value = false;
     }
   }
 
+  /// Returns `true` to send email, `false` for link-only, `null` if cancelled.
+  Future<bool?> _confirmRegistrationInviteEmail({
+    required String message,
+  }) async {
+    return Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Contractor not in Rostiq'),
+        content: Text(
+          '$message\n\n'
+          'Send an invitation email now? You can still copy a registration '
+          'link either way.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: null),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Link only'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Send email'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  Future<void> _showRegistrationInviteLinkDialog({
+    required String inviteUrl,
+    required DateTime expiresAt,
+    bool emailRequested = true,
+  }) async {
+    await Get.dialog<void>(
+      AlertDialog(
+        title: const Text('Invite created'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              emailRequested
+                  ? 'An invitation email was requested (delivery depends on '
+                      'server email configuration). Copy and share this link '
+                      'as a backup.'
+                  : 'No invitation email was sent. Copy and share this link '
+                      'with the contractor.',
+            ),
+            const SizedBox(height: 12),
+            SelectableText(inviteUrl),
+            const SizedBox(height: 8),
+            Text(
+              'Expires ${expiresAt.toLocal()}.',
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: inviteUrl));
+              Get.back();
+              Get.snackbar(
+                'Copied',
+                inviteUrl,
+                snackPosition: SnackPosition.BOTTOM,
+                margin: const EdgeInsets.all(16),
+              );
+            },
+            child: const Text('Copy link'),
+          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
   Future<void> runAction(String action, EngagementOut engagement) async {
+    if (action == 'end' || action == 'withdraw') {
+      final isWithdraw = action == 'withdraw' || engagement.isInvited;
+      final confirmed = await Get.dialog<bool>(
+        AlertDialog(
+          title: Text(isWithdraw ? 'Withdraw invite?' : 'End engagement?'),
+          content: Text(
+            isWithdraw
+                ? 'This will withdraw the invite for ${engagement.displayName}. '
+                    'They will no longer be able to accept this invitation.'
+                : 'This will end the engagement with ${engagement.displayName}. '
+                    'This cannot be undone from here.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Get.back(result: true),
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+              child: Text(isWithdraw ? 'Withdraw invite' : 'End engagement'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+
     isSaving.value = true;
-    errorMessage.value = null;
-    eligibilityReasons.clear();
+    clearError();
     try {
       final updated = await switch (action) {
         'approve' => _repository.approve(engagement.id),
@@ -248,7 +416,7 @@ class WorkforceController extends GetxController {
         'approve_and_activate' => _repository.approveAndActivate(engagement.id),
         'suspend' => _repository.suspend(engagement.id),
         'resume' => _repository.resume(engagement.id),
-        'end' => _repository.end(engagement.id),
+        'end' || 'withdraw' => _repository.end(engagement.id),
         _ => throw StateError('Unknown action $action'),
       };
       selected = updated;
@@ -267,12 +435,12 @@ class WorkforceController extends GetxController {
         colorText: AppColors.onPrimary,
       );
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      _setError(e.message);
       if (e.isEligibilityIncomplete) {
         eligibilityReasons.assignAll(e.eligibilityReasons);
       }
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setError(e.toString());
     } finally {
       isSaving.value = false;
     }
@@ -333,9 +501,9 @@ class WorkforceController extends GetxController {
         credentialsByContractor[pending[i].key] = results[i];
       }
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      _setError(e.message);
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setError(e.toString());
     } finally {
       isLoadingCredentials.value = false;
     }
