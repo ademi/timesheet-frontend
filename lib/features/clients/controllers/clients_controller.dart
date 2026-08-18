@@ -58,6 +58,9 @@ class ClientsController extends GetxController {
   final notesCtrl = TextEditingController();
   final status = 'active'.obs;
   ClientOut? editing;
+  final isCreateFlow = false.obs;
+  final createStepIndex = 0.obs;
+  final createdClient = Rxn<ClientOut>();
 
   // Profile photo (create / edit form)
   final formPhoto = Rxn<ProfilePhotoOut>();
@@ -201,6 +204,10 @@ class ClientsController extends GetxController {
   }
 
   Future<void> openCreate() async {
+    isCreateFlow.value = true;
+    createStepIndex.value = 0;
+    createdClient.value = null;
+    selected.value = null;
     editing = null;
     nameCtrl.clear();
     emailCtrl.clear();
@@ -214,6 +221,9 @@ class ClientsController extends GetxController {
   }
 
   Future<void> openEdit(ClientOut client) async {
+    isCreateFlow.value = false;
+    createStepIndex.value = 0;
+    createdClient.value = null;
     editing = client;
     nameCtrl.text = client.fullName;
     emailCtrl.text = client.email ?? '';
@@ -592,15 +602,14 @@ class ClientsController extends GetxController {
     profileSaveProgress.value = null;
     try {
       if (editing == null) {
+        final patientTypeId = await _resolveDefaultPatientTypeId();
         final created = await _repository.createClient(
           ClientCreateRequest(
             fullName: name,
             status: status.value,
             email: email.isEmpty ? null : email,
             phone: phone.isEmpty ? null : phone,
-            serviceAgreementNotes: notesCtrl.text.trim().isEmpty
-                ? null
-                : notesCtrl.text.trim(),
+            clientTypeId: patientTypeId,
           ),
         );
         if (formPendingPhoto.value != null) {
@@ -620,6 +629,13 @@ class ClientsController extends GetxController {
             return;
           }
         }
+        if (isCreateFlow.value) {
+          createdClient.value = created;
+          editing = created;
+          selected.value = created;
+          await openDetailById(created.id);
+          return;
+        }
         Get.back();
         await load();
         openDetail(created, initialTab: ClientsController.tabDetails);
@@ -637,12 +653,105 @@ class ClientsController extends GetxController {
         if (formPendingPhoto.value != null || formPhotoCleared.value) {
           await _persistFormPhoto(editing!.id);
         }
+        if (isCreateFlow.value) {
+          await openDetailById(editing!.id);
+          return;
+        }
         Get.back();
         await load();
         if (selected.value?.id == editing!.id) {
           await openDetailById(editing!.id);
         }
       }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isSaving.value = false;
+      profileSaveProgress.value = null;
+    }
+  }
+
+  Future<String?> _resolveDefaultPatientTypeId() async {
+    if (!canReadTypes) return null;
+    if (clientTypes.isEmpty) {
+      await loadClientTypes();
+    }
+    for (final type in clientTypes) {
+      final code = type.code.trim().toLowerCase();
+      final name = type.name.trim().toLowerCase();
+      if (code == 'patient' || name == 'patient') {
+        selectedClientTypeId.value = type.id;
+        return type.id;
+      }
+    }
+    return null;
+  }
+
+  Future<void> continueCreateFlow() async {
+    errorMessage.value = null;
+    if (createStepIndex.value == 0) {
+      final hadClient = createdClient.value != null;
+      await saveClient();
+      if (createdClient.value != null || hadClient) {
+        createStepIndex.value = 1;
+      }
+      return;
+    }
+    if (createStepIndex.value < 3) {
+      createStepIndex.value++;
+    }
+  }
+
+  void backCreateFlow() {
+    if (createStepIndex.value > 0) {
+      createStepIndex.value--;
+    }
+  }
+
+  Future<void> finishCreateFlow() async {
+    final client = createdClient.value ?? selected.value;
+    if (client == null) {
+      await continueCreateFlow();
+      return;
+    }
+    isSaving.value = true;
+    errorMessage.value = null;
+    profileSaveProgress.value = null;
+    try {
+      final typeId =
+          selectedClientTypeId.value ?? await _resolveDefaultPatientTypeId();
+      final dob = _resolveDobForCore();
+      await _repository.patchClient(
+        client.id,
+        ClientUpdateRequest(
+          clientTypeId: typeId,
+          dob: dob,
+        ),
+      );
+      if (typeId != null && typeId.isNotEmpty && requirementDrafts.isNotEmpty) {
+        for (final draft in requirementDrafts) {
+          if (!draft.requirement.isRequired) continue;
+          if (draft.hasAnyContent) continue;
+          errorMessage.value = '${draft.requirement.label} is required.';
+          return;
+        }
+        final profileErrors = await _saveDynamicAnswers(client.id);
+        if (profileErrors.isNotEmpty) {
+          Get.snackbar(
+            'Saved with warnings',
+            profileErrors.take(3).join('\n'),
+            snackPosition: SnackPosition.BOTTOM,
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 6),
+          );
+        }
+      }
+      isCreateFlow.value = false;
+      Get.back();
+      await load();
+      await openDetail(client, initialTab: ClientsController.tabDetails);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (e) {
