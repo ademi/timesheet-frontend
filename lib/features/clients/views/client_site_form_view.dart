@@ -17,19 +17,6 @@ const auStates = <String>[
   'NT',
 ];
 
-/// Common ISO country codes for site forms (AU first).
-const siteCountries = <String>[
-  'AU',
-  'NZ',
-  'US',
-  'GB',
-  'CA',
-  'IE',
-  'SG',
-  'IN',
-  'PH',
-];
-
 class ClientSiteFormView extends GetView<ClientsController> {
   const ClientSiteFormView({super.key});
 
@@ -41,13 +28,10 @@ class ClientSiteFormView extends GetView<ClientsController> {
       appBar: AppBar(title: Text(isEdit ? 'Edit site' : 'Add site')),
       body: Obx(() {
         final err = controller.errorMessage.value;
-        final hint = controller.geocodeHint.value;
         final busy =
             controller.isSaving.value || controller.isGeocoding.value;
         final stateValue = controller.siteState.value;
-        final countryValue = controller.siteCountry.value;
         final stateItems = {stateValue, ...auStates}.toList();
-        final countryItems = {countryValue, ...siteCountries}.toList();
 
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -76,7 +60,6 @@ class ClientSiteFormView extends GetView<ClientsController> {
               decoration: const InputDecoration(
                 labelText: 'Address line 1 *',
                 border: OutlineInputBorder(),
-                helperText: 'Required to look up coordinates',
               ),
             ),
             const SizedBox(height: 12),
@@ -105,24 +88,6 @@ class ClientSiteFormView extends GetView<ClientsController> {
               ),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: countryValue,
-              items: [
-                for (final c in countryItems)
-                  DropdownMenuItem(value: c, child: Text(c)),
-              ],
-              onChanged: (v) {
-                if (v == null) return;
-                controller.siteCountry.value = v;
-                controller.siteCountryCtrl.text = v;
-              },
-              decoration: const InputDecoration(
-                labelText: 'Country *',
-                border: OutlineInputBorder(),
-                helperText: '2-letter ISO code',
-              ),
-            ),
-            const SizedBox(height: 12),
             TextField(
               controller: controller.sitePostalCtrl,
               decoration: const InputDecoration(
@@ -130,33 +95,6 @@ class ClientSiteFormView extends GetView<ClientsController> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 12),
-            AsyncOutlinedButton(
-              onPressed: () => controller.geocodeFromAddress(),
-              isLoading: busy,
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(44),
-                foregroundColor: AppColors.primary,
-              ),
-              child: const Text('Look up coordinates from address'),
-            ),
-            if (hint != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                hint,
-                style: TextStyle(
-                  fontSize: 12,
-                  color:
-                      hint.toLowerCase().contains('low confidence')
-                          ? AppColors.error
-                          : AppColors.textMuted,
-                  fontWeight:
-                      hint.toLowerCase().contains('low confidence')
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                ),
-              ),
-            ],
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: controller.siteIsPrimary.value,

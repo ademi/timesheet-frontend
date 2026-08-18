@@ -138,4 +138,44 @@ void main() {
     expect(nameRect.bottom, greaterThan(gammaRect.bottom));
     expect(nameRect.top, lessThanOrEqualTo(gammaRect.top));
   });
+
+  testWidgets('day header stays pinned while scrolling rows', (tester) async {
+    final monday = DateTime(2026, 8, 10);
+    final people = List.generate(
+      30,
+      (i) => RosterPerson(
+        contractorId: 'person-$i',
+        displayName: 'Contractor $i',
+      ),
+    );
+    final grid = buildRosterGrid(
+      rangeStart: monday,
+      dayCount: 5,
+      shifts: const [],
+      people: people,
+      overlay: const RosterOverlayOut(contractors: []),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 900,
+            height: 420,
+            child: RosterGridView(grid: grid, onTileTap: (_) {}),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final headerFinder = find.text('Mon 10');
+    final before = tester.getTopLeft(headerFinder).dy;
+
+    await tester.drag(find.byType(RosterGridView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+
+    final after = tester.getTopLeft(headerFinder).dy;
+    expect(after, equals(before));
+  });
 }

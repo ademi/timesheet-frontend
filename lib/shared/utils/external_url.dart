@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
 
 /// Opens an https URL in the system browser / new tab.
@@ -20,8 +21,14 @@ Future<bool> openMapLocation({
       : (label?.trim().isNotEmpty == true ? label!.trim() : null);
   if (query == null) return false;
 
-  // Prefer geo: so Android can hand off to a installed Maps app.
-  if (hasCoords) {
+  final https = Uri.https(
+    'www.google.com',
+    '/maps/search/',
+    {'api': '1', 'query': query},
+  );
+
+  // geo: is for native map apps; browsers open a useless blank tab.
+  if (!kIsWeb && hasCoords) {
     final geo = Uri(
       scheme: 'geo',
       path: '$latitude,$longitude',
@@ -30,11 +37,6 @@ Future<bool> openMapLocation({
     if (await _launchExternal(geo)) return true;
   }
 
-  final https = Uri.https(
-    'www.google.com',
-    '/maps/search/',
-    {'api': '1', 'query': query},
-  );
   return _launchExternal(https);
 }
 

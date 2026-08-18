@@ -116,52 +116,97 @@ class _RosterGridViewState extends State<RosterGridView> {
   @override
   Widget build(BuildContext context) {
     final grid = widget.grid;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final minHeight = constraints.maxHeight;
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: minHeight),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _RosterHeaderDelegate(
+            header: _RosterHeaderRow(
+              grid: grid,
+              headerHScroll: _headerHScroll,
+            ),
+          ),
+        ),
+        SliverList.builder(
+          itemCount: grid.rows.length,
+          itemBuilder: (context, index) {
+            return _RosterBodyRow(
+              row: grid.rows[index],
+              hScroll: _rowHScrolls[index],
+              onTileTap: widget.onTileTap,
+              onTileLongPress: widget.onTileLongPress,
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _RosterHeaderDelegate extends SliverPersistentHeaderDelegate {
+  const _RosterHeaderDelegate({required this.header});
+
+  final Widget header;
+
+  @override
+  double get minExtent => 36;
+
+  @override
+  double get maxExtent => 36;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return ColoredBox(
+      color: AppColors.background,
+      child: header,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _RosterHeaderDelegate oldDelegate) {
+    return oldDelegate.header != header;
+  }
+}
+
+class _RosterHeaderRow extends StatelessWidget {
+  const _RosterHeaderRow({
+    required this.grid,
+    required this.headerHScroll,
+  });
+
+  final RosterGrid grid;
+  final ScrollController headerHScroll;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const _HeaderCell(
+          label: '',
+          width: RosterGridView.nameColWidth,
+          sticky: true,
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            controller: headerHScroll,
+            scrollDirection: Axis.horizontal,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    const _HeaderCell(
-                      label: '',
-                      width: RosterGridView.nameColWidth,
-                      sticky: true,
-                    ),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        controller: _headerHScroll,
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            for (final day in grid.dayStarts)
-                              _HeaderCell(
-                                label: formatRosterDayHeader(day),
-                                width: RosterGridView.dayColWidth,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                for (var i = 0; i < grid.rows.length; i++)
-                  _RosterBodyRow(
-                    row: grid.rows[i],
-                    hScroll: _rowHScrolls[i],
-                    onTileTap: widget.onTileTap,
-                    onTileLongPress: widget.onTileLongPress,
+                for (final day in grid.dayStarts)
+                  _HeaderCell(
+                    label: formatRosterDayHeader(day),
+                    width: RosterGridView.dayColWidth,
                   ),
               ],
             ),
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }

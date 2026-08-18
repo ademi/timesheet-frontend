@@ -1158,13 +1158,10 @@ class ClientsController extends GetxController {
     final state = (site?.state?.trim().isNotEmpty == true)
         ? site!.state!.trim().toUpperCase()
         : 'NSW';
-    final country = (site?.country?.trim().isNotEmpty == true)
-        ? site!.country!.trim().toUpperCase()
-        : 'AU';
     siteStateCtrl.text = state;
-    siteCountryCtrl.text = country;
+    siteCountryCtrl.text = 'AU';
     siteState.value = state;
-    siteCountry.value = country;
+    siteCountry.value = 'AU';
     sitePostalCtrl.text = site?.postalCode ?? '';
     siteLatCtrl.text = site?.latitude?.toString() ?? '';
     siteLngCtrl.text = site?.longitude?.toString() ?? '';
@@ -1183,21 +1180,12 @@ class ClientsController extends GetxController {
     final state = siteState.value.trim().isNotEmpty
         ? siteState.value.trim()
         : siteStateCtrl.text.trim();
-    final country = (siteCountry.value.trim().isNotEmpty
-            ? siteCountry.value
-            : siteCountryCtrl.text)
-        .trim()
-        .toUpperCase();
+    const country = 'AU';
+    siteCountryCtrl.text = country;
+    siteCountry.value = country;
 
-    if (address.isEmpty || city.isEmpty || country.isEmpty) {
-      errorMessage.value =
-          'Enter street address, city, and a 2-letter country code '
-          '(for example AU) before looking up coordinates.';
-      return null;
-    }
-    if (country.length != 2) {
-      errorMessage.value =
-          'Country must be a 2-letter ISO code (e.g. AU, US, GB).';
+    if (address.isEmpty || city.isEmpty) {
+      errorMessage.value = 'Enter street address and city before saving.';
       return null;
     }
 
@@ -1213,18 +1201,13 @@ class ClientsController extends GetxController {
           country: country,
         ),
       );
-      siteCountryCtrl.text = country;
-      siteCountry.value = country;
       final confidence = result.confidence?.toLowerCase();
       if (confidence == 'low') {
         siteLatCtrl.clear();
         siteLngCtrl.clear();
         errorMessage.value =
-            'Address lookup has low confidence. Check the street, city, and '
-            'country, then look up again before saving.';
-        geocodeHint.value =
-            'Low confidence — coordinates were not applied. Fix the address '
-            'and look up again.';
+            'Address lookup has low confidence. Check the street and city, '
+            'then try again.';
         return null;
       }
       siteLatCtrl.text = result.latitude.toString();
@@ -1264,8 +1247,9 @@ class ClientsController extends GetxController {
     var lat = double.tryParse(siteLatCtrl.text.trim());
     var lng = double.tryParse(siteLngCtrl.text.trim());
 
-    if (lat == null || lng == null) {
-      final coords = await geocodeFromAddress(showSuccessHint: true);
+    // New sites always geocode from the address; edits only when coords are missing.
+    if (editingSite == null || lat == null || lng == null) {
+      final coords = await geocodeFromAddress(showSuccessHint: false);
       if (coords == null) return;
       lat = coords.lat;
       lng = coords.lng;
@@ -1285,8 +1269,7 @@ class ClientsController extends GetxController {
         city: siteCityCtrl.text.trim().nullIfEmpty,
         state: siteState.value.trim().nullIfEmpty ??
             siteStateCtrl.text.trim().nullIfEmpty,
-        country: siteCountry.value.trim().nullIfEmpty ??
-            siteCountryCtrl.text.trim().nullIfEmpty,
+        country: 'AU',
         postalCode: sitePostalCtrl.text.trim().nullIfEmpty,
         latitude: lat,
         longitude: lng,
