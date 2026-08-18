@@ -2,8 +2,7 @@
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../controllers/clients_controller.dart';
@@ -30,9 +29,11 @@ class ClientFormView extends GetView<ClientsController> {
           key: controller.clientFormKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           child: controller.isCreateFlow.value
-              ? MaxWidthBox(
-                  maxWidth: Breakpoints.workflowContent,
-                  child: Stepper(
+              ? ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    PageContent(
+                      child: Stepper(
                     currentStep: controller.createStepIndex.value,
                     onStepContinue:
                         controller.isSaving.value
@@ -113,12 +114,17 @@ class ClientFormView extends GetView<ClientsController> {
                       ),
                     ],
                   ),
+                    ),
+                  ],
                 )
-              : MaxWidthBox(
-                  maxWidth: Breakpoints.narrowContent,
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
+              : ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    PageContent(
+                      width: PageContentWidth.narrow,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
                       _CoreDetailsStep(
                         controller: controller,
                         emailPattern: _emailPattern,
@@ -138,8 +144,10 @@ class ClientFormView extends GetView<ClientsController> {
                         ),
                         child: const Text('Save client'),
                       ),
-                    ],
-                  ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
         );
       }),

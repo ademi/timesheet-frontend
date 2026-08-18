@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/engagement_rate_bands_controller.dart';
 
@@ -40,11 +39,14 @@ class _EngagementRateFormViewState extends State<EngagementRateFormView> {
       appBar: AppBar(title: const Text('New payment rate')),
       body: Obx(() {
         final err = _controller.errorMessage.value;
-        return MaxWidthBox(
-          maxWidth: Breakpoints.narrowContent,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            PageContent(
+              width: PageContentWidth.narrow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
               if (err != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -132,8 +134,10 @@ class _EngagementRateFormViewState extends State<EngagementRateFormView> {
                 ),
                 child: const Text('Save payment rate'),
               ),
-            ],
-          ),
+                ],
+              ),
+            ),
+          ],
         );
       }),
     );

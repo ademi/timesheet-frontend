@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/staff_visits_controller.dart';
 
@@ -50,11 +49,14 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
             if (controller.isRefreshing.value)
               const LinearProgressIndicator(minHeight: 2),
             Expanded(
-              child: MaxWidthBox(
-                maxWidth: Breakpoints.narrowContent,
-                child: ListView(
+              child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  PageContent(
+                    width: PageContentWidth.narrow,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                   if (err != null) ...[
                     _ErrorBox(err),
                     const SizedBox(height: 12),
@@ -102,8 +104,10 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                       child: const Text('Cancel visit'),
                     ),
                   ],
+                      ],
+                    ),
+                  ),
                 ],
-              ),
               ),
             ),
           ],

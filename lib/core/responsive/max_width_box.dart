@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// Centers content horizontally and caps its maximum width (forms, page bodies).
+/// Caps content width and aligns it within the parent (forms, page bodies).
 class MaxWidthBox extends StatelessWidget {
   const MaxWidthBox({
     super.key,
     required this.maxWidth,
     required this.child,
-    this.alignment = Alignment.topCenter,
+    this.alignment = Alignment.topLeft,
   });
 
   final double maxWidth;

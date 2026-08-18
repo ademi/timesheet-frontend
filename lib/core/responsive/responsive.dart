@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'breakpoints.dart';
+import 'max_width_box.dart';
+import 'page_content.dart';
 
 extension ResponsiveContext on BuildContext {
   /// Classifies device from a [LayoutBuilder]'s `constraints.maxWidth`.

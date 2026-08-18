@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
 
@@ -19,11 +18,14 @@ class CredentialCreateView extends GetView<CredentialsController> {
         final type = controller.selectedType.value;
         final sensitive = isSensitiveCredentialType(type);
         final govId = isGovernmentIdCredentialType(type);
-        return MaxWidthBox(
-          maxWidth: Breakpoints.narrowContent,
-          child: ListView(
+        return ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            PageContent(
+              width: PageContentWidth.narrow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             if (controller.errorMessage.value != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
@@ -179,7 +181,9 @@ class CredentialCreateView extends GetView<CredentialsController> {
                       : const Text('Create'),
             ),
           ],
-        ),
+              ),
+            ),
+          ],
         );
       }),
     );

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../controllers/staff_credential_review_controller.dart';
@@ -31,11 +30,13 @@ class StaffCredentialReviewView
       appBar: AppBar(title: const Text('Credential review')),
       body: Obx(() {
         final err = controller.errorMessage.value;
-        return MaxWidthBox(
-          maxWidth: Breakpoints.workflowContent,
-          child: ListView(
+        return ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            PageContent(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             const Text(
               'Review each credential, then view or download its evidence '
               'file before you accept or reject it.',
@@ -106,7 +107,9 @@ class StaffCredentialReviewView
             else
               for (final c in controller.items) _StaffCredentialCard(c: c),
           ],
-        ),
+              ),
+            ),
+          ],
         );
       }),
     );

@@ -3,8 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../controllers/contractor_profile_controller.dart';
@@ -24,11 +23,14 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
       ),
       body: Obx(() {
         final err = controller.errorMessage.value;
-        return MaxWidthBox(
-          maxWidth: Breakpoints.narrowContent,
-          child: ListView(
+        return ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            PageContent(
+              width: PageContentWidth.narrow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             if (err != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
@@ -159,7 +161,9 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
                   subtitle: Text(e.createdAt.toLocal().toString()),
                 ),
           ],
-        ),
+              ),
+            ),
+          ],
         );
       }),
     );

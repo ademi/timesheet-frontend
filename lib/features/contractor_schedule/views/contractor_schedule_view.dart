@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/contractor_schedule_controller.dart';
@@ -42,9 +41,7 @@ class ContractorScheduleView extends GetView<ContractorScheduleController> {
         title: const Text('Schedule'),
         actions: shellAppBarActions(),
       ),
-      body: MaxWidthBox(
-        maxWidth: Breakpoints.workflowContent,
-        child: Obx(() {
+      body: Obx(() {
         final err = controller.errorMessage.value;
         final tab = controller.tabIndex.value;
         return Column(
@@ -101,7 +98,6 @@ class ContractorScheduleView extends GetView<ContractorScheduleController> {
           ],
         );
       }),
-      ),
     );
   }
 }
@@ -143,52 +139,59 @@ class _TimetableTab extends StatelessWidget {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: () => controller.shiftRange(-7),
-                icon: const Icon(Icons.chevron_left),
-              ),
-              Expanded(
-                child: Text(
-                  '${_fmtDay(start)} – ${_fmtDay(end)}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+          PageContent(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => controller.shiftRange(-7),
+                      icon: const Icon(Icons.chevron_left),
+                    ),
+                    Expanded(
+                      child: Text(
+                        '${_fmtDay(start)} – ${_fmtDay(end)}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => controller.shiftRange(7),
+                      icon: const Icon(Icons.chevron_right),
+                    ),
+                  ],
                 ),
-              ),
-              IconButton(
-                onPressed: () => controller.shiftRange(7),
-                icon: const Icon(Icons.chevron_right),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          for (final entry in days) ...[
-            _AgendaDayHeader(
-              label: _fmtAgendaDay(entry.day),
-              isToday: _isSameDay(entry.day, today),
-              visitCount: entry.visits.length,
+                const SizedBox(height: 8),
+                for (final entry in days) ...[
+                  _AgendaDayHeader(
+                    label: _fmtAgendaDay(entry.day),
+                    isToday: _isSameDay(entry.day, today),
+                    visitCount: entry.visits.length,
+                  ),
+                  if (entry.visits.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
+                      child: Text(
+                        'No visits',
+                        style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                      ),
+                    )
+                  else
+                    for (final v in entry.visits)
+                      _AgendaVisitTile(
+                        visit: v,
+                        onTap: () => controller.openVisit(v),
+                      ),
+                  const SizedBox(height: 4),
+                ],
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: controller.openVisitsTab,
+                  child: const Text('Open Visits to check in'),
+                ),
+              ],
             ),
-            if (entry.visits.isEmpty)
-              const Padding(
-                padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: Text(
-                  'No visits',
-                  style: TextStyle(fontSize: 13, color: AppColors.textMuted),
-                ),
-              )
-            else
-              for (final v in entry.visits)
-                _AgendaVisitTile(
-                  visit: v,
-                  onTap: () => controller.openVisit(v),
-                ),
-            const SizedBox(height: 4),
-          ],
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: controller.openVisitsTab,
-            child: const Text('Open Visits to check in'),
           ),
         ],
       );
@@ -288,101 +291,109 @@ class _AvailabilityTab extends StatelessWidget {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Set weekly windows you prefer to work. Saving overwrites prior rules.',
-            style: TextStyle(fontSize: 13),
-          ),
-          const SizedBox(height: 12),
-          for (var i = 0; i < 7; i++)
-            Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(dayOfWeekLabels[i]),
-                      value: controller.draftWindows[i].isNotEmpty,
-                      onChanged:
-                          controller.canManage
-                              ? (v) => controller.toggleDay(i, v)
-                              : null,
-                    ),
-                    for (var j = 0; j < controller.draftWindows[i].length; j++)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                initialValue:
-                                    controller.draftWindows[i][j].startTime,
-                                decoration: const InputDecoration(
-                                  labelText: 'Start (HH:MM)',
-                                  border: OutlineInputBorder(),
-                                ),
-                                onChanged:
-                                    (v) => controller.setDraftWindow(
-                                      i,
-                                      j,
-                                      start: v,
-                                    ),
-                                enabled: controller.canManage,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextFormField(
-                                initialValue:
-                                    controller.draftWindows[i][j].endTime,
-                                decoration: const InputDecoration(
-                                  labelText: 'End (HH:MM)',
-                                  border: OutlineInputBorder(),
-                                ),
-                                onChanged:
-                                    (v) =>
-                                        controller.setDraftWindow(i, j, end: v),
-                                enabled: controller.canManage,
-                              ),
-                            ),
-                            if (controller.canManage)
-                              IconButton(
-                                tooltip: 'Remove window',
-                                onPressed: () => controller.removeWindow(i, j),
-                                icon: const Icon(Icons.remove_circle_outline),
-                              ),
-                          ],
-                        ),
-                      ),
-                    if (controller.draftWindows[i].isNotEmpty &&
-                        controller.canManage)
-                      TextButton.icon(
-                        onPressed: () => controller.addWindow(i),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add window'),
-                      ),
-                  ],
+          PageContent(
+            width: PageContentWidth.narrow,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Set weekly windows you prefer to work. Saving overwrites prior rules.',
+                  style: TextStyle(fontSize: 13),
                 ),
-              ),
+                const SizedBox(height: 12),
+                for (var i = 0; i < 7; i++)
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(dayOfWeekLabels[i]),
+                            value: controller.draftWindows[i].isNotEmpty,
+                            onChanged:
+                                controller.canManage
+                                    ? (v) => controller.toggleDay(i, v)
+                                    : null,
+                          ),
+                          for (var j = 0; j < controller.draftWindows[i].length; j++)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      initialValue:
+                                          controller.draftWindows[i][j].startTime,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Start (HH:MM)',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      onChanged:
+                                          (v) => controller.setDraftWindow(
+                                            i,
+                                            j,
+                                            start: v,
+                                          ),
+                                      enabled: controller.canManage,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextFormField(
+                                      initialValue:
+                                          controller.draftWindows[i][j].endTime,
+                                      decoration: const InputDecoration(
+                                        labelText: 'End (HH:MM)',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      onChanged:
+                                          (v) =>
+                                              controller.setDraftWindow(i, j, end: v),
+                                      enabled: controller.canManage,
+                                    ),
+                                  ),
+                                  if (controller.canManage)
+                                    IconButton(
+                                      tooltip: 'Remove window',
+                                      onPressed: () => controller.removeWindow(i, j),
+                                      icon: const Icon(Icons.remove_circle_outline),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          if (controller.draftWindows[i].isNotEmpty &&
+                              controller.canManage)
+                            TextButton.icon(
+                              onPressed: () => controller.addWindow(i),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add window'),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (controller.canManage)
+                  AsyncElevatedButton(
+                    onPressed: controller.saveAvailability,
+                    isLoading: controller.isSaving.value,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.onPrimary,
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    child: const Text('Save availability'),
+                  )
+                else
+                  const Text(
+                    'Read-only — missing contractor.schedule.manage.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+              ],
             ),
-          if (controller.canManage)
-            AsyncElevatedButton(
-              onPressed: controller.saveAvailability,
-              isLoading: controller.isSaving.value,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                minimumSize: const Size.fromHeight(48),
-              ),
-              child: const Text('Save availability'),
-            )
-          else
-            const Text(
-              'Read-only — missing contractor.schedule.manage.',
-              style: TextStyle(fontSize: 12),
-            ),
+          ),
         ],
       );
     });
@@ -399,91 +410,99 @@ class _LeaveTab extends StatelessWidget {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Leave is a preference signal only — it does not cancel assigned visits.',
-            style: TextStyle(fontSize: 13),
-          ),
-          const SizedBox(height: 12),
-          if (controller.canManage) ...[
-            TextField(
-              controller: controller.leaveStartCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Start date (YYYY-MM-DD) *',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller.leaveEndCtrl,
-              decoration: const InputDecoration(
-                labelText: 'End date (YYYY-MM-DD) *',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            if (controller.leaveValidationMessage.value != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  controller.leaveValidationMessage.value!,
-                  style: const TextStyle(color: AppColors.error, fontSize: 12),
+          PageContent(
+            width: PageContentWidth.narrow,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Leave is a preference signal only — it does not cancel assigned visits.',
+                  style: TextStyle(fontSize: 13),
                 ),
-              ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: controller.leaveType.value,
-              items: [
-                for (final t in leaveTypeOptions)
-                  DropdownMenuItem(value: t, child: Text(t)),
+                const SizedBox(height: 12),
+                if (controller.canManage) ...[
+                  TextField(
+                    controller: controller.leaveStartCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Start date (YYYY-MM-DD) *',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: controller.leaveEndCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'End date (YYYY-MM-DD) *',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  if (controller.leaveValidationMessage.value != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        controller.leaveValidationMessage.value!,
+                        style: const TextStyle(color: AppColors.error, fontSize: 12),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: controller.leaveType.value,
+                    items: [
+                      for (final t in leaveTypeOptions)
+                        DropdownMenuItem(value: t, child: Text(t)),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) controller.leaveType.value = v;
+                    },
+                    decoration: const InputDecoration(
+                      labelText: 'Leave type',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: controller.leaveNotesCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  AsyncElevatedButton(
+                    onPressed: controller.createLeave,
+                    isLoading: controller.isSaving.value,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.onPrimary,
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                    child: const Text('Add leave'),
+                  ),
+                  const Divider(height: 32),
+                ],
+                if (controller.leaveItems.isEmpty) const Text('No leave recorded.'),
+                for (final leave in controller.leaveItems)
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      title: Text(
+                        '${leave.leaveType}: ${leave.startDate} → ${leave.endDate}',
+                      ),
+                      subtitle: leave.notes != null ? Text(leave.notes!) : null,
+                      trailing:
+                          controller.canManage
+                              ? AsyncIconButton(
+                                tooltip: 'Delete',
+                                onPressed: () => controller.deleteLeave(leave.id),
+                                isLoading: controller.isSaving.value,
+                                icon: const Icon(Icons.delete_outline),
+                              )
+                              : null,
+                    ),
+                  ),
               ],
-              onChanged: (v) {
-                if (v != null) controller.leaveType.value = v;
-              },
-              decoration: const InputDecoration(
-                labelText: 'Leave type',
-                border: OutlineInputBorder(),
-              ),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller.leaveNotesCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            AsyncElevatedButton(
-              onPressed: controller.createLeave,
-              isLoading: controller.isSaving.value,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                minimumSize: const Size.fromHeight(44),
-              ),
-              child: const Text('Add leave'),
-            ),
-            const Divider(height: 32),
-          ],
-          if (controller.leaveItems.isEmpty) const Text('No leave recorded.'),
-          for (final leave in controller.leaveItems)
-            Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                title: Text(
-                  '${leave.leaveType}: ${leave.startDate} → ${leave.endDate}',
-                ),
-                subtitle: leave.notes != null ? Text(leave.notes!) : null,
-                trailing:
-                    controller.canManage
-                        ? AsyncIconButton(
-                          tooltip: 'Delete',
-                          onPressed: () => controller.deleteLeave(leave.id),
-                          isLoading: controller.isSaving.value,
-                          icon: const Icon(Icons.delete_outline),
-                        )
-                        : null,
-              ),
-            ),
+          ),
         ],
       );
     });

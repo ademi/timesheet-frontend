@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/widgets/shift_slot_pips.dart';
@@ -52,6 +53,10 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  PageContent(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                   if (err != null) ...[
                     _ErrorBox(err),
                     const SizedBox(height: 12),
@@ -136,6 +141,9 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                         child: const Text('Cancel shift'),
                       ),
                   ],
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),

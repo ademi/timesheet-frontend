@@ -3,8 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/jobs_controller.dart';
 import '../utils/job_copy.dart';
@@ -44,11 +43,13 @@ class _JobDetailViewState extends State<JobDetailView> {
           );
         }
         final err = controller.errorMessage.value;
-        return MaxWidthBox(
-          maxWidth: Breakpoints.workflowContent,
-          child: ListView(
+        return ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            PageContent(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             if (err != null) ...[_ErrorBox(err), const SizedBox(height: 12)],
             Text(
               '${kindLabel(job.kind)} · ${jobStatusLabel(job.status)}',
@@ -188,7 +189,9 @@ class _JobDetailViewState extends State<JobDetailView> {
                 ),
             ],
           ],
-        ),
+              ),
+            ),
+          ],
         );
       }),
     );

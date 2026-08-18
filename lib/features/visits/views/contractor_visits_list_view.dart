@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/contractor_visits_controller.dart';
@@ -31,7 +32,8 @@ class ContractorVisitsListView extends GetView<ContractorVisitsController> {
             if (showOpenTab)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: SegmentedButton<String>(
+                child: PageContent(
+                  child: SegmentedButton<String>(
                   segments: const [
                     ButtonSegment(value: 'mine', label: Text('Mine')),
                     ButtonSegment(value: 'open', label: Text('Open')),
@@ -41,11 +43,12 @@ class ContractorVisitsListView extends GetView<ContractorVisitsController> {
                     controller.selectTab(values.first);
                   },
                 ),
+                ),
               ),
             if (err != null)
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: _ErrorBox(err),
+                child: PageContent(child: _ErrorBox(err)),
               ),
             Expanded(
               child:
@@ -76,6 +79,10 @@ class _MineVisitsList extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          PageContent(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           if (controller.isWeb)
             const Padding(
               padding: EdgeInsets.only(bottom: 12),
@@ -99,6 +106,9 @@ class _MineVisitsList extends StatelessWidget {
                 onTap: () => controller.openDetail(v),
               ),
             ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -116,6 +126,10 @@ class _OpenShiftsList extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          PageContent(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           if (controller.openShifts.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 32),
@@ -154,6 +168,9 @@ class _OpenShiftsList extends StatelessWidget {
                 ),
               ),
             ),
+              ],
+            ),
+          ),
         ],
       ),
     );

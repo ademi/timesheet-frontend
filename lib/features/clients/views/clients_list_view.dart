@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/external_url.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/clients_controller.dart';
@@ -38,17 +39,27 @@ class ClientsListView extends GetView<ClientsController> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              if (err != null) ...[
-                _ErrorBox(err),
-                const SizedBox(height: 12),
-              ],
-              if (controller.items.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Text('No clients yet.'),
+              PageContent(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (err != null) ...[
+                      _ErrorBox(err),
+                      const SizedBox(height: 12),
+                    ],
+                    if (controller.items.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Text('No clients yet.'),
+                      ),
+                    for (final c in controller.items)
+                      _ClientCard(
+                        client: c,
+                        onOpen: () => controller.openDetail(c),
+                      ),
+                  ],
                 ),
-              for (final c in controller.items)
-                _ClientCard(client: c, onOpen: () => controller.openDetail(c)),
+              ),
             ],
           ),
         );

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../controllers/workforce_controller.dart';
 
 class WorkforceInviteView extends StatefulWidget {
@@ -31,11 +30,14 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
       appBar: AppBar(title: const Text('Invite contractor')),
       body: Obx(() {
         final err = controller.errorMessage.value;
-        return MaxWidthBox(
-          maxWidth: Breakpoints.narrowContent,
-          child: ListView(
+        return ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            PageContent(
+              width: PageContentWidth.narrow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             const Text(
               'Invite by email and/or phone. Select at least one required '
               'document type. If the person is not already in Rostiq, you will '
@@ -125,8 +127,10 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
                       )
                       : const Text('Send invite'),
             ),
+                ],
+              ),
+            ),
           ],
-        ),
         );
       }),
     );

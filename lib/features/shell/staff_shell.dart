@@ -4,8 +4,6 @@ import 'package:get/get.dart';
 import '../../app/constants/app_permissions.dart';
 import '../../app/routes/app_routes.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
-import '../../core/responsive/breakpoints.dart';
-import '../../core/responsive/max_width_box.dart';
 import '../../core/services/session_service.dart';
 import '../../shared/widgets/closed_beta_banner.dart';
 import '../compliance_ops/controllers/notifications_feed_controller.dart';
@@ -126,19 +124,14 @@ class _StaffDest {
 }
 
 class StaffShell extends StatelessWidget {
-  const StaffShell({
-    super.key,
-    required this.child,
-    this.constrainContent = true,
-  });
+  const StaffShell({super.key, required this.child});
 
   final Widget child;
-  final bool constrainContent;
 
   @override
   Widget build(BuildContext context) {
     NotificationsFeedController.ensureRegistered();
-    final body = _shellBody(child, constrainContent: constrainContent);
+    final body = _shellBody(child);
     return Obx(() {
       if (Get.isRegistered<SessionService>()) {
         final session = Get.find<SessionService>();
@@ -178,34 +171,12 @@ class StaffShell extends StatelessWidget {
   }
 }
 
-Widget _shellBody(Widget child, {required bool constrainContent}) => Column(
+Widget _shellBody(Widget child) => Column(
   crossAxisAlignment: CrossAxisAlignment.stretch,
-  children: [
-    const ClosedBetaBanner(),
-    Expanded(
-      child:
-          constrainContent
-              ? LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth < Breakpoints.tablet) {
-                    return child;
-                  }
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: MaxWidthBox(
-                      maxWidth: Breakpoints.maxContent,
-                      child: child,
-                    ),
-                  );
-                },
-              )
-              : child,
-    ),
-  ],
+  children: [const ClosedBetaBanner(), Expanded(child: child)],
 );
 
-Widget staffShellPage(Widget child, {bool constrainContent = true}) =>
-    StaffShell(constrainContent: constrainContent, child: child);
+Widget staffShellPage(Widget child) => StaffShell(child: child);
 
 bool isStaffRoute(String? route) {
   if (route == null) return false;

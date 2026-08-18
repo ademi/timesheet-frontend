@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/jobs_controller.dart';
 import '../data/models/job_models.dart';
@@ -25,6 +26,10 @@ class FormTemplatesView extends GetView<JobsController> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            PageContent(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             if (err != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
@@ -101,6 +106,9 @@ class FormTemplatesView extends GetView<JobsController> {
                       : null,
                 ),
               ),
+                ],
+              ),
+            ),
           ],
         );
       }),

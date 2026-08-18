@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/responsive/breakpoints.dart';
 import '../../../core/services/session_service.dart';
@@ -338,6 +339,10 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              PageContent(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
               if (controller.shouldShowDocsBanner) ...[
                 MaterialBanner(
                   content: const Text(
@@ -442,6 +447,9 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                     style: TextStyle(color: AppColors.textMuted),
                   ),
                 ),
+                  ],
+                ),
+              ),
             ],
           ),
         );

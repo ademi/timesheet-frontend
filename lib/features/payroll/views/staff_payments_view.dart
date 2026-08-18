@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/staff_payments_controller.dart';
@@ -32,9 +31,7 @@ class StaffPaymentsView extends GetView<StaffPaymentsController> {
         title: const Text('Payments'),
         actions: shellAppBarActions(),
       ),
-      body: MaxWidthBox(
-        maxWidth: Breakpoints.workflowContent,
-        child: Obx(() {
+      body: Obx(() {
         final tab = controller.tabIndex.value;
         final err = controller.errorMessage.value;
         final initialLoad = controller.isLoading.value &&
@@ -42,27 +39,33 @@ class StaffPaymentsView extends GetView<StaffPaymentsController> {
             controller.unpaidVisits.isEmpty;
         return Column(
           children: [
-            if (err != null)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: _ErrorBox(err),
-              ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Wrap(
-                spacing: 8,
-                children: [
-                  ChoiceChip(
-                    label: const Text('Batches'),
-                    selected: tab == 0,
-                    onSelected: (_) => controller.tabIndex.value = 0,
-                  ),
-                  ChoiceChip(
-                    label: const Text('Create batch'),
-                    selected: tab == 1,
-                    onSelected: (_) => controller.tabIndex.value = 1,
-                  ),
-                ],
+            PageContent(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (err != null) ...[
+                      _ErrorBox(err),
+                      const SizedBox(height: 12),
+                    ],
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Batches'),
+                          selected: tab == 0,
+                          onSelected: (_) => controller.tabIndex.value = 0,
+                        ),
+                        ChoiceChip(
+                          label: const Text('Create batch'),
+                          selected: tab == 1,
+                          onSelected: (_) => controller.tabIndex.value = 1,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             if (controller.isLoading.value && !initialLoad)
@@ -80,7 +83,6 @@ class StaffPaymentsView extends GetView<StaffPaymentsController> {
           ],
         );
       }),
-      ),
     );
   }
 }
@@ -96,6 +98,10 @@ class _BatchesTab extends StatelessWidget {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          PageContent(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           DropdownButtonFormField<String>(
             value: controller.batchStatusFilter.value.isEmpty
                 ? null
@@ -157,6 +163,9 @@ class _BatchesTab extends StatelessWidget {
               ),
             ],
           ],
+              ],
+            ),
+          ),
         ],
       );
     });
@@ -173,6 +182,10 @@ class _CreateBatchTab extends StatelessWidget {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          PageContent(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           const Text(
             'Choose the pay period, then select the contractors to include. Each contractor will bring in all unpaid completed visits for that period.',
             style: TextStyle(fontSize: 13),
@@ -279,6 +292,9 @@ class _CreateBatchTab extends StatelessWidget {
               ),
               child: const Text('Create draft batch'),
             ),
+              ],
+            ),
+          ),
         ],
       );
     });

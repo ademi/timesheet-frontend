@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/workforce_controller.dart';
@@ -32,126 +33,127 @@ class WorkforceListView extends GetView<WorkforceController> {
             ),
       body: Obx(() {
         final err = controller.errorMessage.value;
-        return Column(
-          children: [
-            SizedBox(
-              height: 48,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: const Text('All'),
-                      selected: controller.statusFilter.value == null,
-                      onSelected: (_) => controller.statusFilter.value = null,
-                    ),
-                  ),
-                  for (final s in engagementStatuses)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(_statusChipLabel(s)),
-                        selected: controller.statusFilter.value == s,
-                        onSelected: (_) => controller.statusFilter.value = s,
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Row(
-                        mainAxisSize: MainAxisSize.min,
+        if (controller.isLoading.value && controller.items.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return RefreshIndicator(
+          onRefresh: controller.load,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              PageContent(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      height: 48,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         children: [
-                          const Text('Missing required docs'),
-                          if (controller.isLoadingCredentials.value) ...[
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Theme.of(context).colorScheme.primary,
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: const Text('All'),
+                              selected: controller.statusFilter.value == null,
+                              onSelected:
+                                  (_) => controller.statusFilter.value = null,
+                            ),
+                          ),
+                          for (final s in engagementStatuses)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                label: Text(_statusChipLabel(s)),
+                                selected: controller.statusFilter.value == s,
+                                onSelected:
+                                    (_) => controller.statusFilter.value = s,
                               ),
                             ),
-                          ],
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('Missing required docs'),
+                                  if (controller.isLoadingCredentials.value) ...[
+                                    const SizedBox(width: 8),
+                                    SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color:
+                                            Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              selected: controller.missingDocsFilter.value,
+                              onSelected:
+                                  controller.isLoadingCredentials.value
+                                      ? null
+                                      : (selected) => controller
+                                          .setMissingDocsFilter(selected),
+                            ),
+                          ),
                         ],
                       ),
-                      selected: controller.missingDocsFilter.value,
-                      onSelected:
-                          controller.isLoadingCredentials.value
-                              ? null
-                              : (selected) =>
-                                  controller.setMissingDocsFilter(selected),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            if (err != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Material(
-                  color: AppColors.errorBackground,
-                  borderRadius: BorderRadius.circular(8),
-                  child: ListTile(
-                    dense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                    title: Text(
-                      err,
-                      style: const TextStyle(color: AppColors.error),
-                    ),
-                    trailing: IconButton(
-                      tooltip: 'Dismiss',
-                      onPressed: controller.clearError,
-                      icon: const Icon(Icons.close, color: AppColors.error),
-                    ),
-                  ),
+                    if (err != null) ...[
+                      Material(
+                        color: AppColors.errorBackground,
+                        borderRadius: BorderRadius.circular(8),
+                        child: ListTile(
+                          dense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                          ),
+                          title: Text(
+                            err,
+                            style: const TextStyle(color: AppColors.error),
+                          ),
+                          trailing: IconButton(
+                            tooltip: 'Dismiss',
+                            onPressed: controller.clearError,
+                            icon: const Icon(Icons.close, color: AppColors.error),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    for (final e in controller.filtered)
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: Obx(() {
+                            final photo =
+                                controller.photosByContractor[e.contractorId];
+                            return ProfilePhotoEditor(
+                              networkUrl: photo?.downloadUrl,
+                              documentId: photo?.documentId,
+                              readOnly: true,
+                              size: 48,
+                              showLabel: false,
+                            );
+                          }),
+                          title: Text(e.displayName),
+                          subtitle: Text('Status: ${e.statusLabel}'),
+                          trailing: _StatusChip(status: e.status),
+                          onTap: () => controller.openDetail(e),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-            Expanded(
-              child: controller.isLoading.value && controller.items.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : RefreshIndicator(
-                      onRefresh: controller.load,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: controller.filtered.length,
-                        itemBuilder: (context, index) {
-                          final e = controller.filtered[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: Obx(() {
-                                final photo = controller
-                                    .photosByContractor[e.contractorId];
-                                return ProfilePhotoEditor(
-                                  networkUrl: photo?.downloadUrl,
-                                  documentId: photo?.documentId,
-                                  readOnly: true,
-                                  size: 48,
-                                  showLabel: false,
-                                );
-                              }),
-                              title: Text(e.displayName),
-                              subtitle: Text('Status: ${e.statusLabel}'),
-                              trailing: _StatusChip(status: e.status),
-                              onTap: () => controller.openDetail(e),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-            ),
-          ],
+            ],
+          ),
         );
       }),
     );
   }
-}
-
-extension on String {
-  String ifEmpty(String fallback) => isEmpty ? fallback : this;
 }
 
 class _StatusChip extends StatelessWidget {

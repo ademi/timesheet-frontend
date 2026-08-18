@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/jobs_controller.dart';
 import '../utils/job_copy.dart';
@@ -19,11 +18,14 @@ class JobFormView extends GetView<JobsController> {
       body: Obx(() {
         final err = controller.errorMessage.value;
         final useSite = controller.locationMode.value == 'site';
-        return MaxWidthBox(
-          maxWidth: Breakpoints.narrowContent,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            PageContent(
+              width: PageContentWidth.narrow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
               if (err != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -219,8 +221,10 @@ class JobFormView extends GetView<JobsController> {
                 ),
                 child: const Text('Create'),
               ),
-            ],
-          ),
+                ],
+              ),
+            ),
+          ],
         );
       }),
     );

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/markdown_viewer.dart';
 import '../../credentials/data/models/credential_models.dart';
@@ -50,6 +51,11 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  PageContent(
+                    width: PageContentWidth.narrow,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                   if (err != null) ...[
                     _ErrorBanner(message: err),
                     const SizedBox(height: 12),
@@ -62,6 +68,9 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
                     // Credentials are managed under the contractor Credentials tab.
                     OnboardingStep.credentials => const SizedBox.shrink(),
                   },
+                      ],
+                    ),
+                  ),
                 ],
               );
             }),

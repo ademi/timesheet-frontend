@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../subscription/billing_gate.dart';
 import '../../credentials/data/models/credential_models.dart';
@@ -110,6 +111,10 @@ class _RightsTab extends StatelessWidget {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          PageContent(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           if (controller.rights.isEmpty) const Text('No rights requests.'),
           for (final r in controller.rights)
             Card(
@@ -123,6 +128,9 @@ class _RightsTab extends StatelessWidget {
                 isThreeLine: r.notes != null,
               ),
             ),
+              ],
+            ),
+          ),
         ],
       );
     });
@@ -142,6 +150,10 @@ class _AccessTab extends StatelessWidget {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          PageContent(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           Autocomplete<EngagementOut>(
             displayStringForOption: controller.contractorLabel,
             optionsBuilder: (textEditingValue) {
@@ -273,6 +285,9 @@ class _AccessTab extends StatelessWidget {
                   ),
                 ),
               ),
+              ],
+            ),
+          ),
         ],
       );
     });
@@ -290,6 +305,10 @@ class _IncidentsTab extends StatelessWidget {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          PageContent(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           const Text(
             'Dates below come from the API (including any assessment due). '
             'This screen does not provide legal advice.',
@@ -357,6 +376,9 @@ class _IncidentsTab extends StatelessWidget {
                 child: const Text('Mark closed'),
               ),
           ],
+              ],
+            ),
+          ),
         ],
       );
     });
@@ -373,6 +395,10 @@ class _AlertsTab extends StatelessWidget {
       return ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          PageContent(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
           const Text(
             'Recent notification events (credentials / visits / engagement).',
             style: TextStyle(fontSize: 13),
@@ -390,6 +416,9 @@ class _AlertsTab extends StatelessWidget {
           TextButton(
             onPressed: BillingGate.openBillingUrl,
             child: const Text('Open billing URL'),
+          ),
+              ],
+            ),
           ),
         ],
       );

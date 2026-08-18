@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
 import '../widgets/evidence_document_actions.dart';
@@ -31,11 +30,14 @@ class CredentialDetailView extends GetView<CredentialsController> {
       ),
       body: Obx(() {
         final err = controller.errorMessage.value;
-        return MaxWidthBox(
-          maxWidth: Breakpoints.narrowContent,
-          child: ListView(
+        return ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            PageContent(
+              width: PageContentWidth.narrow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             if (err != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
@@ -142,7 +144,9 @@ class CredentialDetailView extends GetView<CredentialsController> {
               ),
             ],
           ],
-        ),
+              ),
+            ),
+          ],
         );
       }),
     );

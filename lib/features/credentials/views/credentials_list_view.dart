@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../core/services/session_service.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/credentials_controller.dart';
@@ -39,6 +40,10 @@ class CredentialsListView extends GetView<CredentialsController> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            PageContent(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             if (err != null) ...[
               _Banner(message: err, error: true),
               const SizedBox(height: 12),
@@ -108,6 +113,9 @@ class CredentialsListView extends GetView<CredentialsController> {
                 child: Text('No credentials yet.'),
               ),
             for (final c in controller.items) _CredentialTile(credential: c),
+                ],
+              ),
+            ),
           ],
         ),
       );

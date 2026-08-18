@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/name_sort.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/jobs_controller.dart';
@@ -54,17 +55,24 @@ class JobsListView extends GetView<JobsController> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              if (err != null) ...[
-                _ErrorBox(err),
-                const SizedBox(height: 12),
-              ],
-              if (jobs.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Text('No jobs yet.'),
-                )
-              else
-                ..._groupedJobTiles(context, jobs),
+              PageContent(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (err != null) ...[
+                      _ErrorBox(err),
+                      const SizedBox(height: 12),
+                    ],
+                    if (jobs.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Text('No jobs yet.'),
+                      )
+                    else
+                      ..._groupedJobTiles(context, jobs),
+                  ],
+                ),
+              ),
             ],
           ),
         );

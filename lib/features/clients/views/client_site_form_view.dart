@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/clients_controller.dart';
 
@@ -35,11 +34,14 @@ class ClientSiteFormView extends GetView<ClientsController> {
         final stateValue = controller.siteState.value;
         final stateItems = {stateValue, ...auStates}.toList();
 
-        return MaxWidthBox(
-          maxWidth: Breakpoints.narrowContent,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            PageContent(
+              width: PageContentWidth.narrow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
               if (err != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -119,8 +121,10 @@ class ClientSiteFormView extends GetView<ClientsController> {
                 ),
                 child: Text(isEdit ? 'Save site' : 'Create site'),
               ),
-            ],
-          ),
+                ],
+              ),
+            ),
+          ],
         );
       }),
     );

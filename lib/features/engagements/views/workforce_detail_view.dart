@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
@@ -44,11 +43,13 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         appBar: AppBar(
           title: Text(current.displayName),
         ),
-        body: MaxWidthBox(
-          maxWidth: Breakpoints.workflowContent,
-          child: ListView(
+        body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            PageContent(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             if (err != null) ...[
               Material(
                 color: AppColors.errorBackground,
@@ -208,8 +209,10 @@ class WorkforceDetailView extends GetView<WorkforceController> {
               key: ValueKey(current.id),
               engagementId: current.id,
             ),
+                ],
+              ),
+            ),
           ],
-        ),
         ),
       );
     });

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/external_url.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/contractor_visits_controller.dart';
@@ -55,11 +54,14 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
             if (controller.isRefreshing.value)
               const LinearProgressIndicator(minHeight: 2),
             Expanded(
-              child: MaxWidthBox(
-                maxWidth: Breakpoints.narrowContent,
-                child: ListView(
+              child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  PageContent(
+                    width: PageContentWidth.narrow,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                   if (err != null) ...[
                     _ErrorBox(err),
                     const SizedBox(height: 12),
@@ -181,8 +183,10 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                       padding: EdgeInsets.only(top: 12),
                       child: Text('This visit was cancelled.'),
                     ),
+                      ],
+                    ),
+                  ),
                 ],
-              ),
               ),
             ),
           ],

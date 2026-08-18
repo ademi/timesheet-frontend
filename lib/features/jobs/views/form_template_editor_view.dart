@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/page_content.dart';
 import '../controllers/form_template_editor_controller.dart';
 import '../data/models/job_models.dart';
 
@@ -44,6 +45,11 @@ class _FormTemplateEditorViewState extends State<FormTemplateEditorView> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            PageContent(
+              width: PageContentWidth.narrow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             if (err != null) ...[
               Container(
                 width: double.infinity,
@@ -137,6 +143,9 @@ class _FormTemplateEditorViewState extends State<FormTemplateEditorView> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Text(c.isEditing ? 'Save template' : 'Create template'),
+            ),
+                ],
+              ),
             ),
           ],
         );

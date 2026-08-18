@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/recurrence_rule_form_controller.dart';
 import '../utils/recurrence_rrule_builder.dart';
@@ -17,12 +16,15 @@ class RecurrenceRuleFormView extends StatelessWidget {
     final c = Get.put(RecurrenceRuleFormController());
     return Scaffold(
       appBar: AppBar(title: const Text('Add weekly pattern')),
-      body: MaxWidthBox(
-        maxWidth: Breakpoints.narrowContent,
-        child: Obx(
+      body: Obx(
         () => ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            PageContent(
+              width: PageContentWidth.narrow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             if (c.error.value != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -218,9 +220,11 @@ class RecurrenceRuleFormView extends StatelessWidget {
               isLoading: c.jobs.isSaving.value,
               child: const Text('Save recurrence rule'),
             ),
+                ],
+              ),
+            ),
           ],
         ),
-      ),
       ),
     );
   }
