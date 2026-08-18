@@ -6,6 +6,19 @@ import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/staff_payments_controller.dart';
 
+String _fmtDateTime(DateTime dt) {
+  final local = dt.toLocal();
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${local.year}-${two(local.month)}-${two(local.day)} ${two(local.hour)}:${two(local.minute)}';
+}
+
+String _fmtHours(double hours) {
+  final rounded = hours.toStringAsFixed(2);
+  if (rounded.endsWith('00')) return hours.toStringAsFixed(0);
+  if (rounded.endsWith('0')) return hours.toStringAsFixed(1);
+  return rounded;
+}
+
 class StaffPaymentsView extends GetView<StaffPaymentsController> {
   const StaffPaymentsView({super.key});
 
@@ -156,7 +169,7 @@ class _CreateBatchTab extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
-            'Select completed unpaid visits, then create a draft batch.',
+            'Choose the pay period, then select the contractors to include. Each contractor will bring in all unpaid completed visits for that period.',
             style: TextStyle(fontSize: 13),
           ),
           const SizedBox(height: 12),
@@ -168,19 +181,88 @@ class _CreateBatchTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          if (controller.unpaidVisits.isEmpty)
-            const Text('No unpaid completed visits in the last 90 days.'),
-          for (final v in controller.unpaidVisits)
-            CheckboxListTile(
-              value: controller.selectedVisitIds.contains(v.id),
-              onChanged: controller.canManage
-                  ? (_) => controller.toggleVisit(v.id)
-                  : null,
-              title: Text(v.jobTitle ?? v.id),
-              subtitle: Text(
-                '${v.scheduledStart.toLocal()} · ${v.contractorName ?? v.contractorId}',
+          if (controller.contractorCandidates.isNotEmpty)
+            TextField(
+              controller: controller.contractorFilterCtrl,
+              decoration: InputDecoration(
+                labelText: 'Filter contractors',
+                hintText: 'Search by contractor name or ID',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: controller.contractorFilter.value.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Clear filter',
+                        onPressed: controller.contractorFilterCtrl.clear,
+                        icon: const Icon(Icons.clear),
+                      ),
               ),
             ),
+          if (controller.contractorCandidates.isNotEmpty) const SizedBox(height: 12),
+          if (controller.contractorCandidates.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${controller.selectedContractorIds.length} contractors · ${controller.selectedVisitCount} visits · ${_fmtHours(controller.selectedTotalHours)} hours selected',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (controller.contractorCandidates.isNotEmpty) const SizedBox(height: 12),
+          if (controller.contractorCandidates.isEmpty)
+            const Text('No unpaid completed visits in the last 90 days.'),
+          if (controller.contractorCandidates.isNotEmpty &&
+              controller.filteredContractorCandidates.isEmpty)
+            const Text('No contractors match this filter.'),
+          for (final contractor in controller.filteredContractorCandidates)
+            Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ExpansionTile(
+                tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                leading: Checkbox(
+                  value: controller.selectedContractorIds.contains(contractor.contractorId),
+                  onChanged: controller.canManage
+                      ? (_) => controller.toggleContractor(contractor.contractorId)
+                      : null,
+                ),
+                title: Text(contractor.contractorName),
+                subtitle: Text(
+                  '${contractor.visitCount} visits · ${_fmtHours(contractor.totalHours)} hours\n'
+                  '${_fmtDateTime(contractor.firstVisitAt)} to ${_fmtDateTime(contractor.lastVisitAt)}',
+                ),
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Visits in this contractor group',
+                      style: Get.textTheme.titleSmall,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final visit in contractor.visits)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      title: Text(visit.jobTitle ?? visit.tenantName ?? visit.id),
+                      subtitle: Text(
+                        '${_fmtDateTime(visit.scheduledStart)} · ${_fmtHours(visit.scheduledEnd.difference(visit.scheduledStart).inMinutes / 60)} hours',
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          if (controller.canManage)
+            const SizedBox(height: 8),
           if (controller.canManage)
             AsyncElevatedButton(
               onPressed: controller.createBatch,

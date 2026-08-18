@@ -10,6 +10,27 @@ import '../../visits/data/repositories/visits_repository.dart';
 import '../data/models/payroll_models.dart';
 import '../data/repositories/payroll_repository.dart';
 
+class ContractorBatchCandidate {
+  const ContractorBatchCandidate({
+    required this.contractorId,
+    required this.contractorName,
+    required this.visits,
+    required this.totalHours,
+    required this.firstVisitAt,
+    required this.lastVisitAt,
+  });
+
+  final String contractorId;
+  final String contractorName;
+  final List<VisitOut> visits;
+  final double totalHours;
+  final DateTime firstVisitAt;
+  final DateTime lastVisitAt;
+
+  int get visitCount => visits.length;
+  List<String> get visitIds => visits.map((visit) => visit.id).toList(growable: false);
+}
+
 class StaffPaymentsController extends GetxController {
   StaffPaymentsController({
     required PayrollRepository payroll,
@@ -33,9 +54,11 @@ class StaffPaymentsController extends GetxController {
   final batchStatusFilter = ''.obs;
 
   final unpaidVisits = <VisitOut>[].obs;
-  final selectedVisitIds = <String>{}.obs;
+  final selectedContractorIds = <String>{}.obs;
 
   final periodLabelCtrl = TextEditingController();
+  final contractorFilterCtrl = TextEditingController();
+  final contractorFilter = ''.obs;
 
   bool get canView =>
       _session.hasPermission(AppPermissions.paymentsView) ||
@@ -50,12 +73,16 @@ class StaffPaymentsController extends GetxController {
     final today =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     periodLabelCtrl.text = '$today..$today';
+    contractorFilterCtrl.addListener(() {
+      contractorFilter.value = contractorFilterCtrl.text.trim();
+    });
     loadAll();
   }
 
   @override
   void onClose() {
     periodLabelCtrl.dispose();
+    contractorFilterCtrl.dispose();
     super.onClose();
   }
 
@@ -98,6 +125,68 @@ class StaffPaymentsController extends GetxController {
     unpaidVisits.assignAll(list);
   }
 
+  List<ContractorBatchCandidate> get contractorCandidates {
+    final grouped = <String, List<VisitOut>>{};
+    for (final visit in unpaidVisits) {
+      grouped.putIfAbsent(visit.contractorId, () => <VisitOut>[]).add(visit);
+    }
+
+    final result = grouped.entries.map((entry) {
+      final visits = [...entry.value]
+        ..sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
+      final firstVisitAt = visits.first.scheduledStart;
+      final lastVisitAt = visits.last.scheduledEnd;
+      final totalHours = visits.fold<double>(0, (sum, visit) {
+        final hours = visit.scheduledEnd.difference(visit.scheduledStart).inMinutes / 60;
+        return sum + hours;
+      });
+
+      return ContractorBatchCandidate(
+        contractorId: entry.key,
+        contractorName: visits.first.contractorName?.trim().isNotEmpty == true
+            ? visits.first.contractorName!.trim()
+            : entry.key,
+        visits: visits,
+        totalHours: totalHours,
+        firstVisitAt: firstVisitAt,
+        lastVisitAt: lastVisitAt,
+      );
+    }).toList()
+      ..sort((a, b) => a.contractorName.toLowerCase().compareTo(b.contractorName.toLowerCase()));
+
+    return result;
+  }
+
+  List<ContractorBatchCandidate> get filteredContractorCandidates {
+    final query = contractorFilter.value.trim().toLowerCase();
+    if (query.isEmpty) return contractorCandidates;
+
+    return contractorCandidates.where((candidate) {
+      return candidate.contractorName.toLowerCase().contains(query) ||
+          candidate.contractorId.toLowerCase().contains(query);
+    }).toList(growable: false);
+  }
+
+  int get selectedVisitCount {
+    var count = 0;
+    for (final candidate in contractorCandidates) {
+      if (selectedContractorIds.contains(candidate.contractorId)) {
+        count += candidate.visitCount;
+      }
+    }
+    return count;
+  }
+
+  double get selectedTotalHours {
+    var total = 0.0;
+    for (final candidate in contractorCandidates) {
+      if (selectedContractorIds.contains(candidate.contractorId)) {
+        total += candidate.totalHours;
+      }
+    }
+    return total;
+  }
+
   Future<void> setBatchStatusFilter(String? status) async {
     batchStatusFilter.value = status ?? '';
     isLoading.value = true;
@@ -111,18 +200,25 @@ class StaffPaymentsController extends GetxController {
     }
   }
 
-  void toggleVisit(String id) {
-    if (selectedVisitIds.contains(id)) {
-      selectedVisitIds.remove(id);
+  void toggleContractor(String contractorId) {
+    if (selectedContractorIds.contains(contractorId)) {
+      selectedContractorIds.remove(contractorId);
     } else {
-      selectedVisitIds.add(id);
+      selectedContractorIds.add(contractorId);
     }
   }
 
   Future<void> createBatch() async {
     if (!canManage) return;
-    if (selectedVisitIds.isEmpty) {
-      errorMessage.value = 'Select at least one unpaid completed visit.';
+    final visitIds = <String>[];
+    for (final candidate in contractorCandidates) {
+      if (selectedContractorIds.contains(candidate.contractorId)) {
+        visitIds.addAll(candidate.visitIds);
+      }
+    }
+
+    if (visitIds.isEmpty) {
+      errorMessage.value = 'Select at least one contractor to include in the batch.';
       return;
     }
     isSaving.value = true;
@@ -132,13 +228,13 @@ class StaffPaymentsController extends GetxController {
           'fe-batch-${DateTime.now().toUtc().microsecondsSinceEpoch}';
       final created = await _payroll.createBatch(
         PaymentBatchCreateRequest(
-          visitIds: selectedVisitIds.toList(),
+          visitIds: visitIds,
           periodLabel: periodLabelCtrl.text.trim(),
         ),
         idempotencyKey: key,
       );
       selectedBatch.value = created;
-      selectedVisitIds.clear();
+      selectedContractorIds.clear();
       await _loadBatches();
       await _loadUnpaidVisits();
       Get.snackbar(
