@@ -44,6 +44,7 @@ class OngoingSupportController extends GetxController {
   final startTimeCtrl = TextEditingController(text: '09:00');
   final endTimeCtrl = TextEditingController(text: '12:00');
 
+  // Always use client site mode — the "Where" toggle has been removed from the UI.
   final locationMode = 'site'.obs;
   final selectedSiteId = RxnString();
   final selectedBranchId = RxnString();
@@ -82,6 +83,9 @@ class OngoingSupportController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    ever(requiredSlots, (slots) {
+      if (slots > 1) selectedContractorId.value = null;
+    });
     load();
   }
 
@@ -217,7 +221,6 @@ class OngoingSupportController extends GetxController {
 
   void _goToRoster({required String jobId, required String clientId}) {
     final arguments = {
-      'skipHorizonOnce': true,
       'job_id': jobId,
       'client_id': clientId,
     };

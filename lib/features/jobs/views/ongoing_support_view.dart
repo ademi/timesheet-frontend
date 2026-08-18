@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/ongoing_support_controller.dart';
-import '../utils/job_copy.dart';
 import '../utils/recurrence_rrule_builder.dart';
 
 class OngoingSupportView extends GetView<OngoingSupportController> {
@@ -17,9 +16,8 @@ class OngoingSupportView extends GetView<OngoingSupportController> {
       appBar: AppBar(title: const Text('Start ongoing support')),
       body: Obx(() {
         final err = controller.errorMessage.value;
-        final useSite = controller.isHomeMode;
         final blockHome = controller.blocksHomeWithoutSites;
-        final blockBranch = controller.blocksBranchWithoutBranches;
+        final multiSlot = controller.requiredSlots.value > 1;
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -45,40 +43,13 @@ class OngoingSupportView extends GetView<OngoingSupportController> {
               ),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: controller.locationMode.value,
-              items: [
-                DropdownMenuItem(
-                  value: 'site',
-                  child: Text(locationModeLabel('site')),
-                ),
-                DropdownMenuItem(
-                  value: 'branch',
-                  enabled: controller.branches.isNotEmpty,
-                  child: Text(locationModeLabel('branch')),
-                ),
-              ],
-              onChanged: (value) {
-                if (value != null) controller.locationMode.value = value;
-              },
-              decoration: const InputDecoration(
-                labelText: 'Where',
-                border: OutlineInputBorder(),
-              ),
-            ),
             if (blockHome) ...[
-              const SizedBox(height: 8),
               const _AmberNotice(
                 message:
                     'Add a site for this client before starting ongoing support.',
               ),
-            ],
-            if (blockBranch) ...[
-              const SizedBox(height: 8),
-              const _AmberNotice(message: 'No branches in this organisation.'),
-            ],
-            const SizedBox(height: 12),
-            if (useSite && !blockHome)
+              const SizedBox(height: 12),
+            ] else
               DropdownButtonFormField<String>(
                 value: controller.selectedSiteId.value,
                 items: [
@@ -91,22 +62,6 @@ class OngoingSupportView extends GetView<OngoingSupportController> {
                         : (value) => controller.selectedSiteId.value = value,
                 decoration: const InputDecoration(
                   labelText: 'Client site *',
-                  border: OutlineInputBorder(),
-                ),
-              )
-            else if (!useSite && !blockBranch)
-              DropdownButtonFormField<String>(
-                value: controller.selectedBranchId.value,
-                items: [
-                  for (final branch in controller.branches)
-                    DropdownMenuItem(
-                      value: branch.id,
-                      child: Text(branch.name),
-                    ),
-                ],
-                onChanged: (value) => controller.selectedBranchId.value = value,
-                decoration: const InputDecoration(
-                  labelText: 'Branch *',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -177,27 +132,35 @@ class OngoingSupportView extends GetView<OngoingSupportController> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: controller.selectedContractorId.value,
+              value: multiSlot ? null : controller.selectedContractorId.value,
               items: [
                 const DropdownMenuItem(value: null, child: Text('Unfilled')),
-                for (final engagement in controller.assignableEngagements)
-                  DropdownMenuItem(
-                    value: engagement.contractorId,
-                    child: Text(
-                      engagement.contractorName ?? engagement.contractorId,
+                if (!multiSlot)
+                  for (final engagement in controller.assignableEngagements)
+                    DropdownMenuItem(
+                      value: engagement.contractorId,
+                      child: Text(
+                        engagement.contractorName ?? engagement.contractorId,
+                      ),
                     ),
-                  ),
               ],
               onChanged:
-                  (value) => controller.selectedContractorId.value = value,
-              decoration: const InputDecoration(
+                  multiSlot
+                      ? null
+                      : (value) =>
+                          controller.selectedContractorId.value = value,
+              decoration: InputDecoration(
                 labelText: 'Worker (optional)',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                helperText:
+                    multiSlot
+                        ? 'Assign workers from the roster when multiple slots are needed'
+                        : null,
               ),
             ),
             const SizedBox(height: 24),
             AsyncElevatedButton(
-              onPressed: blockHome || blockBranch ? null : controller.submit,
+              onPressed: blockHome ? null : controller.submit,
               isLoading: controller.isSaving.value,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
