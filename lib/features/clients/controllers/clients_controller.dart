@@ -609,7 +609,7 @@ class ClientsController extends GetxController {
           } on AppFailure catch (e) {
             Get.back();
             await load();
-            openDetail(created, initialTab: ClientsController.tabTypes);
+            openDetail(created, initialTab: ClientsController.tabDetails);
             Get.snackbar(
               'Client saved',
               'Profile photo failed: ${e.message}',
@@ -622,7 +622,7 @@ class ClientsController extends GetxController {
         }
         Get.back();
         await load();
-        openDetail(created, initialTab: ClientsController.tabTypes);
+        openDetail(created, initialTab: ClientsController.tabDetails);
       } else {
         await _repository.patchClient(
           editing!.id,
@@ -682,8 +682,7 @@ class ClientsController extends GetxController {
           ? <String>[]
           : await _saveDynamicAnswers(client.id);
       await openDetailById(client.id);
-      // After Types / intake save, continue to Invites (admin note CL-8).
-      tabIndex.value = tabInvites;
+      tabIndex.value = tabDetails;
       if (profileErrors.isNotEmpty) {
         Get.snackbar(
           'Saved with warnings',
@@ -930,13 +929,17 @@ class ClientsController extends GetxController {
     }
   }
 
-  /// Tab indices on client detail: Sites=0, Contacts=1, Invites=2, Types=3.
-  static const tabSites = 0;
-  static const tabContacts = 1;
-  static const tabInvites = 2;
-  static const tabTypes = 3;
+  /// Tab indices on client detail.
+  static const tabDetails = 0;
+  static const tabSites = 1;
+  static const tabContacts = 2;
+  static const tabSupport = 3;
+  static const tabVisits = 4;
 
-  Future<void> openDetail(ClientOut client, {int initialTab = tabSites}) async {
+  Future<void> openDetail(
+    ClientOut client, {
+    int initialTab = tabDetails,
+  }) async {
     selected.value = client;
     lastInvite.value = null;
     invites.clear();

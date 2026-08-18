@@ -1,0 +1,105 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:rostiq/core/services/session_service.dart';
+import 'package:rostiq/features/clients/controllers/clients_controller.dart';
+import 'package:rostiq/features/clients/data/models/client_models.dart';
+import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
+import 'package:rostiq/features/clients/views/client_detail_view.dart';
+import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
+
+class _MockClientsRepository extends Mock implements ClientsRepository {}
+
+class _MockJobsRepository extends Mock implements JobsRepository {}
+
+class _MockSessionService extends Mock implements SessionService {}
+
+final _now = DateTime.utc(2026, 8, 18, 9);
+
+final _client = ClientOut(
+  id: 'client-1',
+  tenantId: 'tenant-1',
+  fullName: 'Demo Payments Client',
+  status: 'active',
+  email: 'payments.client@demotenant.example',
+  phone: '+61400000100',
+  metadata: const {},
+  createdAt: _now,
+  updatedAt: _now,
+);
+
+void main() {
+  late _MockClientsRepository clients;
+  late _MockJobsRepository jobs;
+  late _MockSessionService session;
+  late ClientsController controller;
+
+  setUp(() {
+    Get.testMode = true;
+    Get.reset();
+    clients = _MockClientsRepository();
+    jobs = _MockJobsRepository();
+    session = _MockSessionService();
+    when(() => session.hasPermission(any())).thenReturn(true);
+    when(() => clients.listClients()).thenAnswer((_) async => [_client]);
+    when(() => clients.listClientTypes()).thenAnswer((_) async => []);
+    controller = ClientsController(
+      repository: clients,
+      session: session,
+      jobsRepository: jobs,
+    );
+    controller.selected.value = _client;
+    Get.put(controller);
+  });
+
+  tearDown(Get.reset);
+
+  testWidgets('shows subject tabs and Details first', (tester) async {
+    await tester.pumpWidget(
+      const GetMaterialApp(home: ClientDetailView()),
+    );
+
+    expect(find.byKey(const ValueKey('client-detail-tab-0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('client-detail-tab-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('client-detail-tab-2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('client-detail-tab-3')), findsOneWidget);
+    expect(find.byKey(const ValueKey('client-detail-tab-4')), findsOneWidget);
+    expect(find.text('Overview'), findsOneWidget);
+    expect(
+      find.text('Select a type to show optional profile requirements and documents.'),
+      findsOneWidget,
+    );
+    expect(find.text('No sites yet.'), findsNothing);
+  });
+
+  testWidgets('Sites tab shows only sites content', (tester) async {
+    await tester.pumpWidget(
+      const GetMaterialApp(home: ClientDetailView()),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('client-detail-tab-1')));
+    await tester.pump();
+
+    expect(find.text('No sites yet.'), findsOneWidget);
+    expect(find.text('Overview'), findsNothing);
+    expect(find.text('No contacts yet.'), findsNothing);
+  });
+
+  testWidgets('Contacts and Visits tabs isolate their sections', (tester) async {
+    await tester.pumpWidget(
+      const GetMaterialApp(home: ClientDetailView()),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('client-detail-tab-2')));
+    await tester.pump();
+    expect(find.text('No contacts yet.'), findsOneWidget);
+    expect(find.text('No sites yet.'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('client-detail-tab-4')));
+    await tester.pump();
+    expect(find.text('Upcoming'), findsOneWidget);
+    expect(find.text('Past'), findsOneWidget);
+    expect(find.text('No contacts yet.'), findsNothing);
+  });
+}

@@ -14,6 +14,14 @@ import '../widgets/client_detail_visits_section.dart';
 class ClientDetailView extends GetView<ClientsController> {
   const ClientDetailView({super.key});
 
+  static const _tabLabels = [
+    'Details',
+    'Sites',
+    'Contacts',
+    'Support',
+    'Visits',
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Obx(() {
@@ -27,14 +35,7 @@ class ClientDetailView extends GetView<ClientsController> {
         );
       }
       final err = controller.errorMessage.value;
-      final quickFacts = controller.quickFacts;
-      final sites = controller.sites.toList();
-      final contacts = controller.contacts.toList();
-      final upcomingVisits = controller.upcomingVisits.toList();
-      final pastVisits = controller.pastVisits.toList();
-      final isLoadingVisits = controller.isLoadingVisits.value;
-      final visitsError = controller.visitsError.value;
-      final visitsTruncated = controller.visitsTruncated.value;
+      final tab = controller.tabIndex.value;
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
@@ -78,79 +79,115 @@ class ClientDetailView extends GetView<ClientsController> {
                   ),
                 ),
               ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  ProfilePhotoEditor(
+                    networkUrl: controller.detailPhoto.value?.downloadUrl,
+                    documentId: controller.detailPhoto.value?.documentId,
+                    isLoading: controller.isDetailPhotoLoading.value,
+                    readOnly: true,
+                    size: 72,
+                    showLabel: false,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      client.fullName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  for (var i = 0; i < _tabLabels.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        key: ValueKey('client-detail-tab-$i'),
+                        label: Text(_tabLabels[i]),
+                        selected: tab == i,
+                        onSelected: (_) => controller.tabIndex.value = i,
+                      ),
+                    ),
+                ],
+              ),
+            ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      ProfilePhotoEditor(
-                        networkUrl: controller.detailPhoto.value?.downloadUrl,
-                        documentId: controller.detailPhoto.value?.documentId,
-                        isLoading: controller.isDetailPhotoLoading.value,
-                        readOnly: true,
-                        size: 72,
-                        showLabel: false,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          client.fullName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  ClientDetailFactsSection(facts: quickFacts),
-                  const SizedBox(height: 24),
-                  ClientDetailSitesSection(
-                    sites: sites,
-                    canManage: controller.canManage,
-                    onAdd: () => controller.beginSiteForm(),
-                    onEdit: (s) => controller.beginSiteForm(site: s),
-                    onDelete: controller.deleteSite,
-                  ),
-                  const SizedBox(height: 24),
-                  ClientDetailContactsSection(
-                    contacts: contacts,
-                    canManage: controller.canManage,
-                    onAdd: () => controller.beginContactForm(),
-                    onEdit: (c) => controller.beginContactForm(contact: c),
-                    onDelete: controller.deleteContact,
-                  ),
-                  const SizedBox(height: 24),
-                  if (controller.canManageSupport || controller.hasOngoing) ...[
-                    ClientDetailSupportSection(
-                      hasOngoing: controller.hasOngoing,
-                      canManage: controller.canManageSupport,
-                      onStartOngoing: controller.startOngoingSupport,
-                      onBookOne: controller.bookOneSession,
-                      onOpenOngoing: controller.openOngoingSupport,
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                  ClientDetailVisitsSection(
-                    upcoming: upcomingVisits,
-                    past: pastVisits,
-                    isLoading: isLoadingVisits,
-                    error: visitsError,
-                    truncated: visitsTruncated,
-                    hasVisitsAccess: controller.canViewVisits,
-                    onOpen: controller.openVisitDetail,
-                  ),
-                  const SizedBox(height: 24),
-                  ClientDetailProfileSection(controller: controller),
-                ],
+                children: [_tabContent(tab)],
               ),
             ),
           ],
         ),
       );
     });
+  }
+
+  Widget _tabContent(int tab) {
+    switch (tab) {
+      case ClientsController.tabSites:
+        return ClientDetailSitesSection(
+          sites: controller.sites.toList(),
+          canManage: controller.canManage,
+          onAdd: () => controller.beginSiteForm(),
+          onEdit: (s) => controller.beginSiteForm(site: s),
+          onDelete: controller.deleteSite,
+        );
+      case ClientsController.tabContacts:
+        return ClientDetailContactsSection(
+          contacts: controller.contacts.toList(),
+          canManage: controller.canManage,
+          onAdd: () => controller.beginContactForm(),
+          onEdit: (c) => controller.beginContactForm(contact: c),
+          onDelete: controller.deleteContact,
+        );
+      case ClientsController.tabSupport:
+        if (!controller.canManageSupport && !controller.hasOngoing) {
+          return const Text(
+            'No support arrangement yet.',
+            style: TextStyle(color: AppColors.textMuted),
+          );
+        }
+        return ClientDetailSupportSection(
+          hasOngoing: controller.hasOngoing,
+          canManage: controller.canManageSupport,
+          onStartOngoing: controller.startOngoingSupport,
+          onBookOne: controller.bookOneSession,
+          onOpenOngoing: controller.openOngoingSupport,
+        );
+      case ClientsController.tabVisits:
+        return ClientDetailVisitsSection(
+          upcoming: controller.upcomingVisits.toList(),
+          past: controller.pastVisits.toList(),
+          isLoading: controller.isLoadingVisits.value,
+          error: controller.visitsError.value,
+          truncated: controller.visitsTruncated.value,
+          hasVisitsAccess: controller.canViewVisits,
+          onOpen: controller.openVisitDetail,
+        );
+      case ClientsController.tabDetails:
+      default:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClientDetailFactsSection(facts: controller.quickFacts),
+            const SizedBox(height: 24),
+            ClientDetailProfileSection(controller: controller),
+          ],
+        );
+    }
   }
 }
