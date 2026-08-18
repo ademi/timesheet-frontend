@@ -1,3 +1,4 @@
+import '../../../shared/utils/name_sort.dart';
 import '../../jobs/data/models/job_models.dart';
 
 /// Open jobs (ongoing support) belonging to a single client.
@@ -8,9 +9,10 @@ List<JobOut> jobsForClientFilter(
   List<JobOut> jobs, {
   required String clientId,
 }) =>
-    jobs
-        .where((j) => j.clientId == clientId && j.status == 'open')
-        .toList(growable: false);
+    sortedByName(
+      jobs.where((j) => j.clientId == clientId && j.status == 'open'),
+      (j) => j.title,
+    );
 
 /// Whether to surface the support/job sub-filter for the selected client.
 ///

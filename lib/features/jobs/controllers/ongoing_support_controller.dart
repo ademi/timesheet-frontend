@@ -5,6 +5,7 @@ import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/utils/name_sort.dart';
 import '../../clients/data/models/client_models.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../../engagements/data/models/engagement_models.dart';
@@ -73,9 +74,10 @@ class OngoingSupportController extends GetxController {
   bool get blocksBranchWithoutBranches =>
       locationMode.value == 'branch' && branches.isEmpty;
 
-  List<EngagementOut> get assignableEngagements => engagements
-      .where((e) => e.isActive || e.isApproved || e.isPendingDocs)
-      .toList(growable: false);
+  List<EngagementOut> get assignableEngagements => sortedByName(
+        engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs),
+        (e) => e.displayName,
+      );
 
   @override
   void onInit() {

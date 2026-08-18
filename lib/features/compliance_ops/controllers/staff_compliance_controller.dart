@@ -5,6 +5,7 @@ import '../../../app/constants/app_permissions.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/utils/name_sort.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
 import '../../engagements/data/models/engagement_models.dart';
@@ -125,7 +126,9 @@ class StaffComplianceController extends GetxController {
           () => engagement,
         );
       }
-      contractorOptions.assignAll(uniqueByContractorId.values);
+      contractorOptions.assignAll(
+        sortedByName(uniqueByContractorId.values, contractorLabel),
+      );
       _hasLoadedContractors = true;
     } on AppFailure catch (e) {
       accessHistoryError.value = e.message;

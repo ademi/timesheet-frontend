@@ -42,7 +42,7 @@ class CredentialCreateView extends GetView<CredentialsController> {
             DropdownButtonFormField<String>(
               value: type,
               items: [
-                for (final t in credentialTypesAllowlist)
+                for (final t in controller.credentialTypeChoices)
                   DropdownMenuItem(
                     value: t,
                     child: Text(credentialTypeLabel(t)),

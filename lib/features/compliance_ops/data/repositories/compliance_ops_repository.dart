@@ -1,4 +1,5 @@
 import '../../../../shared/models/profile_photo_models.dart';
+import '../../../../shared/utils/name_sort.dart';
 import '../datasources/compliance_ops_remote_datasource.dart';
 import '../models/compliance_ops_models.dart';
 
@@ -45,8 +46,11 @@ class ComplianceOpsRepository {
   Future<SubscriptionStatusOut> getSubscription() =>
       _remote.getSubscription();
 
-  Future<List<TenantMemberOut>> listTenantMembers() =>
-      _remote.listTenantMembers();
+  Future<List<TenantMemberOut>> listTenantMembers() async =>
+      sortedByName(
+        await _remote.listTenantMembers(),
+        (m) => m.fullName ?? m.email,
+      );
 
   Future<void> withdrawConsent({
     required String credentialType,

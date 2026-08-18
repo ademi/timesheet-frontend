@@ -1,3 +1,4 @@
+import '../../../../shared/utils/name_sort.dart';
 import '../datasources/jobs_remote_datasource.dart';
 import '../models/job_models.dart';
 
@@ -6,13 +7,24 @@ class JobsRepository {
 
   final JobsRemoteDataSource _remote;
 
-  Future<List<JobOut>> listJobs() => _remote.listJobs();
+  Future<List<JobOut>> listJobs() async {
+    final jobs = List<JobOut>.of(await _remote.listJobs());
+    jobs.sort((a, b) {
+      final byClient = compareNames(
+        a.clientName ?? 'No client',
+        b.clientName ?? 'No client',
+      );
+      if (byClient != 0) return byClient;
+      return compareNames(a.title, b.title);
+    });
+    return jobs;
+  }
   Future<JobOut> getJob(String jobId) => _remote.getJob(jobId);
   Future<JobOut> createJob(JobCreateRequest body) => _remote.createJob(body);
   Future<JobOut> updateJobStatus(String jobId, String status) =>
       _remote.updateJobStatus(jobId, status);
-  Future<List<JobFormCatalogOut>> listFormCatalog(String jobId) =>
-      _remote.listFormCatalog(jobId);
+  Future<List<JobFormCatalogOut>> listFormCatalog(String jobId) async =>
+      sortedByName(await _remote.listFormCatalog(jobId), (c) => c.name);
   Future<void> addFormCatalog(String jobId, String formTemplateId) =>
       _remote.addFormCatalog(jobId, formTemplateId);
 
@@ -54,8 +66,14 @@ class JobsRepository {
   Future<List<FormTemplateOut>> listFormTemplates({
     String? clientId,
     bool tenantLevel = false,
-  }) =>
-      _remote.listFormTemplates(clientId: clientId, tenantLevel: tenantLevel);
+  }) async =>
+      sortedByName(
+        await _remote.listFormTemplates(
+          clientId: clientId,
+          tenantLevel: tenantLevel,
+        ),
+        (t) => t.name,
+      );
   Future<FormTemplateOut> createFormTemplate(FormTemplateCreateRequest body) =>
       _remote.createFormTemplate(body);
   Future<FormTemplateOut> patchFormTemplate(
@@ -73,7 +91,8 @@ class JobsRepository {
   Future<void> deleteFormTemplate(String id) =>
       _remote.deleteFormTemplate(id);
 
-  Future<List<BranchOut>> listBranches() => _remote.listBranches();
+  Future<List<BranchOut>> listBranches() async =>
+      sortedByName(await _remote.listBranches(), (b) => b.name);
 
   Future<HorizonOut> ensureHorizon(HorizonRequest body) =>
       _remote.ensureHorizon(body);

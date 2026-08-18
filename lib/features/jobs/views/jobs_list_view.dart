@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/utils/name_sort.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/jobs_controller.dart';
 import '../data/models/job_models.dart';
@@ -41,11 +42,12 @@ class JobsListView extends GetView<JobsController> {
           return const Center(child: CircularProgressIndicator());
         }
         final jobs = [...controller.jobs]..sort((a, b) {
-          final ga = a.clientName ?? 'No client';
-          final gb = b.clientName ?? 'No client';
-          final byClient = ga.compareTo(gb);
+          final byClient = compareNames(
+            a.clientName ?? 'No client',
+            b.clientName ?? 'No client',
+          );
           if (byClient != 0) return byClient;
-          return a.title.compareTo(b.title);
+          return compareNames(a.title, b.title);
         });
         return RefreshIndicator(
           onRefresh: controller.loadAll,

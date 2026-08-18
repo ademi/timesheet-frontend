@@ -1,4 +1,5 @@
 import '../../../../shared/models/profile_photo_models.dart';
+import '../../../../shared/utils/name_sort.dart';
 import '../datasources/clients_remote_datasource.dart';
 import '../models/client_models.dart';
 import '../models/client_profile_models.dart';
@@ -8,7 +9,8 @@ class ClientsRepository {
 
   final ClientsRemoteDataSource _remote;
 
-  Future<List<ClientTypeOut>> listClientTypes() => _remote.listClientTypes();
+  Future<List<ClientTypeOut>> listClientTypes() async =>
+      sortedByName(await _remote.listClientTypes(), (t) => t.name);
   Future<List<ClientTypeRequirement>> listTypeRequirements(
     String clientTypeId,
   ) =>
@@ -40,7 +42,8 @@ class ClientsRepository {
   Future<Map<String, dynamic>?> getClientReadiness(String clientId) =>
       _remote.getClientReadiness(clientId);
 
-  Future<List<ClientOut>> listClients() => _remote.listClients();
+  Future<List<ClientOut>> listClients() async =>
+      sortedByName(await _remote.listClients(), (c) => c.fullName);
   Future<ClientOut> getClient(String id) => _remote.getClient(id);
   Future<ClientOut> createClient(ClientCreateRequest body) =>
       _remote.createClient(body);
@@ -58,8 +61,8 @@ class ClientsRepository {
   Future<ProfilePhotoOut> clearClientProfilePhoto(String clientId) =>
       _remote.clearClientProfilePhoto(clientId);
 
-  Future<List<ClientSiteOut>> listSites(String clientId) =>
-      _remote.listSites(clientId);
+  Future<List<ClientSiteOut>> listSites(String clientId) async =>
+      sortedByName(await _remote.listSites(clientId), (s) => s.name);
   Future<ClientSiteOut> createSite(
     String clientId,
     ClientSiteWriteRequest body,
@@ -74,8 +77,11 @@ class ClientsRepository {
   Future<void> deleteSite(String clientId, String siteId) =>
       _remote.deleteSite(clientId, siteId);
 
-  Future<List<ClientContactOut>> listContacts(String clientId) =>
-      _remote.listContacts(clientId);
+  Future<List<ClientContactOut>> listContacts(String clientId) async =>
+      sortedByName(
+        await _remote.listContacts(clientId),
+        (c) => c.name ?? c.email ?? '',
+      );
   Future<ClientContactOut> createContact(
     String clientId,
     ClientContactWriteRequest body,

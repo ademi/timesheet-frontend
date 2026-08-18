@@ -10,6 +10,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
+import '../../../shared/utils/name_sort.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
 import '../data/models/engagement_models.dart';
@@ -56,13 +57,17 @@ class WorkforceController extends GetxController {
 
   /// Invite multi-select options (catalog when loaded, else allowlist fallback).
   List<CredentialCategory> get inviteCategoryChoices {
-    if (catalogCategories.isNotEmpty) return catalogCategories.toList();
-    return credentialTypesAllowlist
-        .map(
-          (code) =>
-              CredentialCategory(code: code, label: credentialTypeLabel(code)),
-        )
-        .toList(growable: false);
+    final choices = catalogCategories.isNotEmpty
+        ? catalogCategories.toList()
+        : credentialTypesAllowlist
+            .map(
+              (code) => CredentialCategory(
+                code: code,
+                label: credentialTypeLabel(code),
+              ),
+            )
+            .toList();
+    return sortedByName(choices, (c) => c.label);
   }
 
   bool get canInvite =>
@@ -82,16 +87,7 @@ class WorkforceController extends GetxController {
     if (missingDocsFilter.value) {
       list = list.where(hasMissingRequiredDocs).toList();
     }
-    // Status order (engagementStatuses), then display name.
-    list.sort((a, b) {
-      final ai = engagementStatuses.indexOf(a.status);
-      final bi = engagementStatuses.indexOf(b.status);
-      final aOrder = ai < 0 ? engagementStatuses.length : ai;
-      final bOrder = bi < 0 ? engagementStatuses.length : bi;
-      final byStatus = aOrder.compareTo(bOrder);
-      if (byStatus != 0) return byStatus;
-      return a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
-    });
+    list.sort((a, b) => compareNames(a.displayName, b.displayName));
     return list;
   }
 

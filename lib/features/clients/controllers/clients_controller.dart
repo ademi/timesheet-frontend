@@ -11,6 +11,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
+import '../../../shared/utils/name_sort.dart';
 import '../../documents/data/document_pipeline.dart';
 import '../../jobs/controllers/jobs_controller.dart';
 import '../../jobs/data/models/job_models.dart';
@@ -305,8 +306,7 @@ class ClientsController extends GetxController {
     try {
       final types = await _repository.listClientTypes();
       clientTypes.assignAll(
-        types.where((t) => t.isActive).toList()
-          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)),
+        sortedByName(types.where((t) => t.isActive), (t) => t.name),
       );
     } on AppFailure catch (e) {
       errorMessage.value = e.message;

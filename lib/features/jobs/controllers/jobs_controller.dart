@@ -6,6 +6,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/utils/name_sort.dart';
 import '../../clients/data/models/client_models.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../../engagements/data/models/engagement_models.dart';
@@ -87,9 +88,10 @@ class JobsController extends GetxController {
   bool get canManageForms =>
       _session.hasPermission(AppPermissions.clientsManage);
 
-  List<EngagementOut> get assignableEngagements => engagements
-      .where((e) => e.isActive || e.isApproved || e.isPendingDocs)
-      .toList(growable: false);
+  List<EngagementOut> get assignableEngagements => sortedByName(
+        engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs),
+        (e) => e.displayName,
+      );
 
   @override
   void onInit() {
@@ -448,6 +450,7 @@ class JobsController extends GetxController {
           formTemplates.insert(0, saved);
         }
       }
+      formTemplates.sort((a, b) => compareNames(a.name, b.name));
       await refreshFormCatalog();
       Get.snackbar(
         id == null ? 'Created' : 'Updated',

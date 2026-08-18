@@ -1,3 +1,4 @@
+import '../../../../shared/utils/name_sort.dart';
 import '../datasources/credentials_remote_datasource.dart';
 import '../models/credential_models.dart';
 
@@ -10,10 +11,13 @@ class CredentialsRepository {
   Future<List<CredentialCategory>> listCredentialCategories() async {
     final categories = await _remote.listCredentialCategories();
     cacheCredentialCategoryLabels(categories);
-    return categories;
+    return sortedByName(categories, (c) => c.label);
   }
 
-  Future<List<CredentialOut>> listMine() => _remote.listMine();
+  Future<List<CredentialOut>> listMine() async => sortedByName(
+        await _remote.listMine(),
+        (c) => credentialTypeLabel(c.credentialType),
+      );
 
   Future<CredentialOut> create(CredentialCreateRequest body) =>
       _remote.create(body);
@@ -30,10 +34,13 @@ class CredentialsRepository {
   Future<List<CredentialOut>> listForTenantContractor(
     String contractorId, {
     required String engagementId,
-  }) =>
-      _remote.listForTenantContractor(
-        contractorId,
-        engagementId: engagementId,
+  }) async =>
+      sortedByName(
+        await _remote.listForTenantContractor(
+          contractorId,
+          engagementId: engagementId,
+        ),
+        (c) => credentialTypeLabel(c.credentialType),
       );
 
   Future<CredentialReviewOut> createReview({

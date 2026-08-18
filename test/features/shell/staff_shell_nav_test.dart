@@ -103,6 +103,27 @@ void main() {
     expect(labels, contains('Roster'));
   });
 
+  test('destinations hide Compliance even when compliance perms are present', () {
+    tokenStorage.claims = const JwtClaims(
+      sub: 'u1',
+      tenantId: 't1',
+      permissions: [
+        'auth.session',
+        'credentials.review',
+        'compliance.rights.manage',
+        'compliance.incidents.manage',
+        'compliance.audit.view',
+      ],
+      actorType: 'tenant_member',
+      iat: 1,
+      exp: 2,
+    );
+    final labels = StaffShellNav.destinations().map((d) => d.label).toList();
+    expect(labels, isNot(contains('Compliance')));
+    expect(labels, contains('Home'));
+    expect(labels, contains('Settings'));
+  });
+
   test('destinations fall back to Home+Settings when no claims', () {
     tokenStorage.claims = null;
     final labels = StaffShellNav.destinations().map((d) => d.label).toList();

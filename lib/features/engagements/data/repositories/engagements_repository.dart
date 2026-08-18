@@ -1,4 +1,5 @@
 import '../../../../shared/models/profile_photo_models.dart';
+import '../../../../shared/utils/name_sort.dart';
 import '../datasources/engagements_remote_datasource.dart';
 import '../models/engagement_models.dart';
 
@@ -8,8 +9,8 @@ class EngagementsRepository {
 
   final EngagementsRemoteDataSource _remote;
 
-  Future<List<EngagementOut>> listTenantEngagements() =>
-      _remote.listTenantEngagements();
+  Future<List<EngagementOut>> listTenantEngagements() async =>
+      sortedByName(await _remote.listTenantEngagements(), (e) => e.displayName);
 
   Future<EngagementInviteResponse> invite(EngagementInviteRequest body) =>
       _remote.invite(body);
@@ -18,8 +19,11 @@ class EngagementsRepository {
     EngagementInvitePreviewRequest body,
   ) => _remote.previewInvite(body);
 
-  Future<List<EngagementOut>> listMyEngagements() =>
-      _remote.listMyEngagements();
+  Future<List<EngagementOut>> listMyEngagements() async =>
+      sortedByName(
+        await _remote.listMyEngagements(),
+        (e) => e.tenantName ?? e.tenantId,
+      );
 
   Future<EngagementOut> accept({
     required String engagementId,

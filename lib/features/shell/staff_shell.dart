@@ -12,6 +12,9 @@ import '../compliance_ops/controllers/notifications_feed_controller.dart';
 abstract final class StaffShellNav {
   StaffShellNav._();
 
+  /// Compliance stays in routes for later; hide it from the staff menu for now.
+  static const showComplianceNav = false;
+
   static const _all = <_StaffDest>[
     _StaffDest(
       icon: Icons.home_outlined,
@@ -47,6 +50,7 @@ abstract final class StaffShellNav {
       icon: Icons.verified_user_outlined,
       label: 'Compliance',
       route: AppRoutes.staffCompliance,
+      showInNav: showComplianceNav,
       anyOf: [
         AppPermissions.credentialsReview,
         AppPermissions.complianceRightsManage,
@@ -65,14 +69,19 @@ abstract final class StaffShellNav {
   static List<_StaffDest> _visible() {
     final filtered = Get.isRegistered<SessionService>()
         ? _all
-            .where((d) => Get.find<SessionService>().hasAny(d.anyOf))
+            .where(
+              (d) => d.showInNav && Get.find<SessionService>().hasAny(d.anyOf),
+            )
             .toList(growable: false)
         : <_StaffDest>[];
 
     final hasHome = filtered.any((d) => d.route == AppRoutes.staffHome);
     if (filtered.isEmpty || !hasHome) {
       return _all
-          .where((d) => d.anyOf.contains(AppPermissions.authSession))
+          .where(
+            (d) =>
+                d.showInNav && d.anyOf.contains(AppPermissions.authSession),
+          )
           .toList(growable: false);
     }
     return filtered;
@@ -104,12 +113,14 @@ class _StaffDest {
     required this.label,
     required this.route,
     required this.anyOf,
+    this.showInNav = true,
   });
 
   final IconData icon;
   final String label;
   final String route;
   final List<String> anyOf;
+  final bool showInNav;
 }
 
 class StaffShell extends StatelessWidget {

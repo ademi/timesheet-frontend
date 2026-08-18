@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/utils/name_sort.dart';
 import '../../contractor_onboarding/bindings/onboarding_binding.dart';
 import '../../contractor_onboarding/data/models/compliance_models.dart';
 import '../../contractor_onboarding/data/repositories/compliance_repository.dart';
@@ -38,7 +39,7 @@ class ContractorEngagementsController extends GetxController {
   final authorisationRecorded = false.obs;
 
   List<EngagementOut> get invited =>
-      items.where((e) => e.isInvited).toList(growable: false);
+      sortedByName(items.where((e) => e.isInvited), (e) => e.tenantName ?? e.tenantId);
 
   @override
   void onInit() {

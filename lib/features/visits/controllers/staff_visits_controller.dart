@@ -9,6 +9,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/time/tenant_civil_time.dart';
+import '../../../shared/utils/name_sort.dart';
 import '../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../engagements/data/models/engagement_models.dart';
@@ -127,9 +128,10 @@ class StaffVisitsController extends GetxController {
       _session.hasPermission(AppPermissions.visitsManage) ||
       _session.hasPermission(AppPermissions.jobsManage);
 
-  List<EngagementOut> get assignableEngagements => engagements
-      .where((e) => e.isActive || e.isApproved || e.isPendingDocs)
-      .toList(growable: false);
+  List<EngagementOut> get assignableEngagements => sortedByName(
+        engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs),
+        (e) => e.displayName,
+      );
 
   /// Unique clients from jobs + loaded shifts for the board filter.
   List<({String id, String name})> get clientFilterOptions {

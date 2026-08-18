@@ -7,6 +7,7 @@ import '../../../app/data/models/document/document_models.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/utils/name_sort.dart';
 import '../../contractor_onboarding/data/models/compliance_models.dart'
     as compliance;
 import '../../contractor_onboarding/data/repositories/compliance_repository.dart';
@@ -64,6 +65,9 @@ class CredentialsController extends GetxController {
       _session.hasPermission(AppPermissions.credentialsManage);
 
   bool get canRead => _session.hasPermission(AppPermissions.credentialsRead);
+
+  List<String> get credentialTypeChoices =>
+      sortedByName(credentialTypesAllowlist, credentialTypeLabel);
 
   String? get contractorId =>
       _session.contractorId.value ?? _session.claims?.contractorId;
