@@ -14,6 +14,18 @@ class EvidenceDocumentOpener {
   final DocumentPipeline _pipeline;
 
   Future<void> open(DocumentOut document, {bool download = false}) async {
+    if (download) {
+      try {
+        final bytes = Uint8List.fromList(
+          await _pipeline.fetchContentBytes(document.id),
+        );
+        await _share(document, bytes);
+        return;
+      } catch (_) {
+        // Fall back to signed URL when /content is unavailable.
+      }
+    }
+
     final result = await _pipeline.openDocument(document.id);
     if (!result.usedProxy) return;
 
@@ -76,7 +88,13 @@ class EvidenceDocumentOpener {
     return SharePlus.instance.share(
       ShareParams(
         title: document.filename,
-        files: [XFile.fromData(bytes, mimeType: document.contentType)],
+        files: [
+          XFile.fromData(
+            bytes,
+            mimeType: document.contentType,
+            name: document.filename,
+          ),
+        ],
         fileNameOverrides: [document.filename],
       ),
     );

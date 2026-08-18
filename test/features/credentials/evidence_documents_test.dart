@@ -48,7 +48,7 @@ void main() {
     ]);
   });
 
-  test('excludes legacy unbound same-category documents', () {
+  test('excludes legacy unbound same-category documents when bound exists', () {
     const boundPoliceCheck = DocumentOut(
       id: 'bound-police-check-document',
       ownerType: 'contractor',
@@ -79,6 +79,29 @@ void main() {
 
     expect(evidence.map((document) => document.id), [
       'bound-police-check-document',
+    ]);
+  });
+
+  test('falls back to unbound same-category documents', () {
+    const legacyFirstAid = DocumentOut(
+      id: 'legacy-first-aid-document',
+      ownerType: 'contractor',
+      ownerId: 'contractor-id',
+      filename: 'first_aid.pdf',
+      contentType: 'application/pdf',
+      sizeBytes: 100,
+      scanStatus: 'clean',
+      category: 'first_aid',
+    );
+
+    final evidence = documentsForCredential(
+      documents: [legacyFirstAid],
+      credentialId: 'first-aid-credential',
+      credentialType: 'first_aid',
+    );
+
+    expect(evidence.map((document) => document.id), [
+      'legacy-first-aid-document',
     ]);
   });
 }

@@ -69,19 +69,38 @@ class DocumentPipeline {
     try {
       final url = await _remote.getDownloadUrl(documentId);
       final uri = Uri.parse(url.downloadUrl);
-      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ok) {
-        throw const AppFailure(
-          code: 'unknown',
-          message: 'Could not open download URL',
-          presentation: AppFailurePresentation.toast,
-        );
+      final ok = await _openInBrowser(uri);
+      if (ok) {
+        return DocumentOpenResult.signedUrl(url.downloadUrl);
       }
-      return DocumentOpenResult.signedUrl(url.downloadUrl);
+      final bytes = await _remote.getContentBytes(documentId);
+      return DocumentOpenResult.proxyBytes(bytes);
     } on AppFailure catch (e) {
       if (!e.isProxyRequired) rethrow;
       final bytes = await _remote.getContentBytes(documentId);
       return DocumentOpenResult.proxyBytes(bytes);
+    }
+  }
+
+  /// Authenticated file bytes for download / in-app preview.
+  Future<List<int>> fetchContentBytes(String documentId) {
+    return _remote.getContentBytes(documentId);
+  }
+
+  Future<bool> _openInBrowser(Uri uri) async {
+    try {
+      if (await launchUrl(
+        uri,
+        mode: LaunchMode.platformDefault,
+        webOnlyWindowName: '_blank',
+      )) {
+        return true;
+      }
+    } catch (_) {}
+    try {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
     }
   }
 

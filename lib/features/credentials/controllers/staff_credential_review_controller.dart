@@ -12,6 +12,8 @@ import '../../engagements/data/repositories/engagements_repository.dart';
 import '../data/evidence_documents.dart';
 import '../data/models/credential_models.dart';
 import '../data/repositories/credentials_repository.dart';
+import '../widgets/credential_review_actions.dart';
+import '../widgets/credential_status_chip.dart';
 
 /// Staff metadata list + review decisions (design §5.6 / §6.4).
 ///
@@ -80,13 +82,18 @@ class StaffCredentialReviewController extends GetxController {
 
   final items = <CredentialOut>[].obs;
   final isLoading = false.obs;
-  final isSaving = false.obs;
   final isRequestingShare = false.obs;
   final needsShareRequest = false.obs;
   final errorMessage = RxnString();
   final eligibilityReasons = <String>[].obs;
   final mfaRequired = false.obs;
   final evidenceByCredentialId = <String, List<DocumentOut>>{}.obs;
+  final reviewDecisionsByCredentialId = <String, String>{}.obs;
+  final reviewingCredentialId = RxnString();
+  final reviewingDecision = RxnString();
+  final openingEvidenceCredentialId = RxnString();
+  final reasonCredentialId = RxnString();
+  final pendingReasonDecision = RxnString();
 
   bool get canReview =>
       _session.hasPermission(AppPermissions.credentialsReview);
@@ -96,6 +103,76 @@ class StaffCredentialReviewController extends GetxController {
 
   List<DocumentOut> evidenceFor(CredentialOut credential) {
     return evidenceByCredentialId[credential.id] ?? const [];
+  }
+
+  String? reviewDecisionFor(String credentialId) {
+    return reviewDecisionsByCredentialId[credentialId];
+  }
+
+  CredentialReviewButtonState reviewActionsFor(String credentialId) {
+    return credentialReviewButtonState(reviewDecisionFor(credentialId));
+  }
+
+  bool isReviewActionLoading(String credentialId, String decision) {
+    return reviewingCredentialId.value == credentialId &&
+        reviewingDecision.value == decision;
+  }
+
+  bool isEvidenceBusy(String credentialId) {
+    return openingEvidenceCredentialId.value == credentialId;
+  }
+
+  static const _reviewStatuses = {
+    'accepted',
+    'rejected',
+    're_review_required',
+    'pending',
+  };
+
+  void _seedDecisionsFromStatus(List<CredentialOut> list) {
+    final updated = Map<String, String>.from(reviewDecisionsByCredentialId);
+    for (final credential in list) {
+      if (_reviewStatuses.contains(credential.status)) {
+        updated[credential.id] = credential.status;
+      }
+    }
+    reviewDecisionsByCredentialId.value = updated;
+  }
+
+  bool isReasonPickerOpenFor(String credentialId, String decision) {
+    return reasonCredentialId.value == credentialId &&
+        pendingReasonDecision.value == decision;
+  }
+
+  bool decisionRequiresReason(String decision) {
+    return decision == 'rejected' || decision == 're_review_required';
+  }
+
+  void prepareReview({
+    required CredentialOut credential,
+    required String decision,
+  }) {
+    errorMessage.value = null;
+    if (!decisionRequiresReason(decision)) {
+      clearPendingReason();
+      submitReview(credential: credential, decision: decision);
+      return;
+    }
+    reasonCredentialId.value = credential.id;
+    pendingReasonDecision.value = decision;
+    selectedReasonCode.value = null;
+  }
+
+  void clearPendingReason() {
+    reasonCredentialId.value = null;
+    pendingReasonDecision.value = null;
+    selectedReasonCode.value = null;
+  }
+
+  Future<void> confirmPendingReview(CredentialOut credential) async {
+    final decision = pendingReasonDecision.value;
+    if (reasonCredentialId.value != credential.id || decision == null) return;
+    await submitReview(credential: credential, decision: decision);
   }
 
   @override
@@ -141,15 +218,26 @@ class StaffCredentialReviewController extends GetxController {
         engagementId: engagementId,
       );
       items.assignAll(list);
-      final documents = await _pipeline.listEvidenceForContractor(contractorId);
-      evidenceByCredentialId.value = {
-        for (final credential in list)
-          credential.id: documentsForCredential(
-            documents: documents,
-            credentialId: credential.id,
-            credentialType: credential.credentialType,
-          ),
-      };
+      _seedDecisionsFromStatus(list);
+      try {
+        final documents = await _pipeline.listEvidenceForContractor(
+          contractorId,
+        );
+        evidenceByCredentialId.value = {
+          for (final credential in list)
+            credential.id: documentsForCredential(
+              documents: documents,
+              credentialId: credential.id,
+              credentialType: credential.credentialType,
+            ),
+        };
+      } catch (e) {
+        evidenceByCredentialId.clear();
+        errorMessage.value =
+            e is AppFailure
+                ? e.message
+                : 'Could not load evidence files. Retry to view or download.';
+      }
     } on AppFailure catch (e) {
       items.clear();
       evidenceByCredentialId.clear();
@@ -199,10 +287,11 @@ class StaffCredentialReviewController extends GetxController {
 
   Future<void> openEvidenceDocument(
     DocumentOut document, {
+    required String credentialId,
     bool download = false,
   }) async {
     errorMessage.value = null;
-    isSaving.value = true;
+    openingEvidenceCredentialId.value = credentialId;
     try {
       await _evidenceDocumentOpener.open(document, download: download);
     } on AppFailure catch (e) {
@@ -211,7 +300,7 @@ class StaffCredentialReviewController extends GetxController {
       errorMessage.value =
           'Could not download this file. Check your connection and retry.';
     } finally {
-      isSaving.value = false;
+      openingEvidenceCredentialId.value = null;
     }
   }
 
@@ -228,12 +317,13 @@ class StaffCredentialReviewController extends GetxController {
       errorMessage.value = 'Open credential review from Workforce.';
       return;
     }
-    isSaving.value = true;
+    reviewingCredentialId.value = credential.id;
+    reviewingDecision.value = decision;
     errorMessage.value = null;
     mfaRequired.value = false;
     eligibilityReasons.clear();
     try {
-      await _repository.createReview(
+      final review = await _repository.createReview(
         engagementId: engagementId,
         body: CredentialReviewCreateRequest(
           credentialId: credential.id,
@@ -241,7 +331,13 @@ class StaffCredentialReviewController extends GetxController {
           reasonCode: effectiveReasonCode,
         ),
       );
-      _showSnack('Review recorded', 'Decision: $decision');
+      reviewDecisionsByCredentialId[credential.id] = review.decision;
+      _showSnack(
+        'Review recorded',
+        '${credentialTypeLabel(credential.credentialType)}: '
+        '${credentialStatusLabel(review.decision)}',
+      );
+      clearPendingReason();
       await load();
     } on AppFailure catch (e) {
       if (e.code == 'mfa_required') {
@@ -257,7 +353,8 @@ class StaffCredentialReviewController extends GetxController {
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
-      isSaving.value = false;
+      reviewingCredentialId.value = null;
+      reviewingDecision.value = null;
     }
   }
 }
