@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/ongoing_support_controller.dart';
 import '../utils/recurrence_rrule_builder.dart';
@@ -18,7 +20,9 @@ class OngoingSupportView extends GetView<OngoingSupportController> {
         final err = controller.errorMessage.value;
         final blockHome = controller.blocksHomeWithoutSites;
         final multiSlot = controller.requiredSlots.value > 1;
-        return ListView(
+        return MaxWidthBox(
+          maxWidth: Breakpoints.narrowContent,
+          child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             if (err != null) ...[
@@ -170,6 +174,7 @@ class OngoingSupportView extends GetView<OngoingSupportController> {
               child: const Text('Save and fill roster'),
             ),
           ],
+        ),
         );
       }),
     );

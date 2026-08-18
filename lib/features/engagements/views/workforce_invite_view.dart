@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 import '../controllers/workforce_controller.dart';
 
 class WorkforceInviteView extends StatefulWidget {
@@ -29,7 +31,9 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
       appBar: AppBar(title: const Text('Invite contractor')),
       body: Obx(() {
         final err = controller.errorMessage.value;
-        return ListView(
+        return MaxWidthBox(
+          maxWidth: Breakpoints.narrowContent,
+          child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             const Text(
@@ -122,6 +126,7 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
                       : const Text('Send invite'),
             ),
           ],
+        ),
         );
       }),
     );

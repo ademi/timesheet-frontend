@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/jobs_controller.dart';
 import '../utils/job_copy.dart';
@@ -42,7 +44,9 @@ class _JobDetailViewState extends State<JobDetailView> {
           );
         }
         final err = controller.errorMessage.value;
-        return ListView(
+        return MaxWidthBox(
+          maxWidth: Breakpoints.workflowContent,
+          child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             if (err != null) ...[_ErrorBox(err), const SizedBox(height: 12)],
@@ -184,6 +188,7 @@ class _JobDetailViewState extends State<JobDetailView> {
                 ),
             ],
           ],
+        ),
         );
       }),
     );

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/engagement_rate_bands_controller.dart';
 
@@ -38,97 +40,100 @@ class _EngagementRateFormViewState extends State<EngagementRateFormView> {
       appBar: AppBar(title: const Text('New payment rate')),
       body: Obx(() {
         final err = _controller.errorMessage.value;
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            if (err != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.errorBackground,
-                  borderRadius: BorderRadius.circular(8),
+        return MaxWidthBox(
+          maxWidth: Breakpoints.narrowContent,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (err != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.errorBackground,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    err,
+                    style: const TextStyle(color: AppColors.error),
+                  ),
                 ),
-                child: Text(
-                  err,
-                  style: const TextStyle(color: AppColors.error),
+                const SizedBox(height: 12),
+              ],
+              const Text(
+                'Base rate is required. Evening, night, and weekend bands are '
+                'optional.',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _controller.effectiveFromCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Effective from (YYYY-MM-DD)',
+                  border: OutlineInputBorder(),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _controller.baseRateCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Base *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _bandField(_controller.eveningRateCtrl, 'Evening (optional)'),
+              _bandField(_controller.nightRateCtrl, 'Night (optional)'),
+              _bandField(_controller.saturdayRateCtrl, 'Saturday (optional)'),
+              _bandField(_controller.sundayRateCtrl, 'Sunday (optional)'),
+              _bandField(_controller.phRateCtrl, 'Public holiday (optional)'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _controller.eveningStartCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Evening start',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _controller.eveningEndCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Evening end',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _controller.nightStartCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Night start',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _controller.nightEndCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Night end',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 24),
+              AsyncElevatedButton(
+                onPressed: () async {
+                  await _controller.createRate(popOnSuccess: true);
+                },
+                isLoading: _controller.isSaving.value,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.onPrimary,
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                child: const Text('Save payment rate'),
+              ),
             ],
-            const Text(
-              'Base rate is required. Evening, night, and weekend bands are '
-              'optional.',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _controller.effectiveFromCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Effective from (YYYY-MM-DD)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _controller.baseRateCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Base *',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            _bandField(_controller.eveningRateCtrl, 'Evening (optional)'),
-            _bandField(_controller.nightRateCtrl, 'Night (optional)'),
-            _bandField(_controller.saturdayRateCtrl, 'Saturday (optional)'),
-            _bandField(_controller.sundayRateCtrl, 'Sunday (optional)'),
-            _bandField(_controller.phRateCtrl, 'Public holiday (optional)'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _controller.eveningStartCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Evening start',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _controller.eveningEndCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Evening end',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _controller.nightStartCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Night start',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _controller.nightEndCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Night end',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 24),
-            AsyncElevatedButton(
-              onPressed: () async {
-                await _controller.createRate(popOnSuccess: true);
-              },
-              isLoading: _controller.isSaving.value,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                minimumSize: const Size.fromHeight(48),
-              ),
-              child: const Text('Save payment rate'),
-            ),
-          ],
+          ),
         );
       }),
     );

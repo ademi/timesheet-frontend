@@ -14,6 +14,8 @@ class Breakpoints {
   static const double tablet = 1024;
   static const double maxContent = 1200;
   static const double formMaxWidth = 480;
+  static const double narrowContent = 760;
+  static const double workflowContent = 960;
 
   static DeviceClass classify(double width) {
     if (width < phone) return DeviceClass.phone;

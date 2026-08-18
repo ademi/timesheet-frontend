@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/staff_tenant_settings_controller.dart';
@@ -24,7 +26,9 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
           return const Center(child: CircularProgressIndicator());
         }
         final sub = controller.subscription.value;
-        return ListView(
+        return MaxWidthBox(
+          maxWidth: Breakpoints.narrowContent,
+          child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             if (err != null) ...[
@@ -124,6 +128,7 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                 ),
             ],
           ],
+        ),
         );
       }),
     );

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/contractor_schedule_controller.dart';
@@ -40,7 +42,9 @@ class ContractorScheduleView extends GetView<ContractorScheduleController> {
         title: const Text('Schedule'),
         actions: shellAppBarActions(),
       ),
-      body: Obx(() {
+      body: MaxWidthBox(
+        maxWidth: Breakpoints.workflowContent,
+        child: Obx(() {
         final err = controller.errorMessage.value;
         final tab = controller.tabIndex.value;
         return Column(
@@ -97,6 +101,7 @@ class ContractorScheduleView extends GetView<ContractorScheduleController> {
           ],
         );
       }),
+      ),
     );
   }
 }

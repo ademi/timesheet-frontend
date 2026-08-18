@@ -34,7 +34,11 @@ abstract final class VisitsPages {
             ),
           ],
           binding: StaffVisitsBinding(),
-          page: () => staffShellPage(const StaffVisitsBoardView()),
+          page:
+              () => staffShellPage(
+                const StaffVisitsBoardView(),
+                constrainContent: false,
+              ),
           transition: Transition.fadeIn,
         ),
         GetPage(

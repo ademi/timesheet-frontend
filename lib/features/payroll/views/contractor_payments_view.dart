@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 import '../controllers/contractor_payments_controller.dart';
 
 String _fmt(DateTime dt) {
@@ -29,7 +31,9 @@ class ContractorPaymentsView extends GetView<ContractorPaymentsController> {
             ),
         ],
       ),
-      body: Obx(() {
+      body: MaxWidthBox(
+        maxWidth: Breakpoints.narrowContent,
+        child: Obx(() {
         final err = controller.errorMessage.value;
         return Column(
           children: [
@@ -106,6 +110,7 @@ class ContractorPaymentsView extends GetView<ContractorPaymentsController> {
           ],
         );
       }),
+      ),
     );
   }
 }

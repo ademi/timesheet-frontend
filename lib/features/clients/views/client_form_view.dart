@@ -2,6 +2,8 @@
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../controllers/clients_controller.dart';
@@ -28,106 +30,116 @@ class ClientFormView extends GetView<ClientsController> {
           key: controller.clientFormKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           child: controller.isCreateFlow.value
-              ? Stepper(
-                  currentStep: controller.createStepIndex.value,
-                  onStepContinue: controller.isSaving.value
-                      ? null
-                      : () {
-                          if (controller.createStepIndex.value == 3) {
-                            controller.finishCreateFlow();
-                          } else {
-                            controller.continueCreateFlow();
-                          }
-                        },
-                  onStepCancel: controller.createStepIndex.value == 0 ||
-                          controller.isSaving.value
-                      ? null
-                      : controller.backCreateFlow,
-                  controlsBuilder: (context, details) {
-                    final isLast = controller.createStepIndex.value == 3;
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: AsyncElevatedButton(
-                              onPressed: details.onStepContinue,
-                              isLoading: controller.isSaving.value,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.onPrimary,
-                                minimumSize: const Size.fromHeight(48),
-                              ),
-                              child: Text(
-                                isLast ? 'Finish client setup' : 'Save & continue',
+              ? MaxWidthBox(
+                  maxWidth: Breakpoints.workflowContent,
+                  child: Stepper(
+                    currentStep: controller.createStepIndex.value,
+                    onStepContinue:
+                        controller.isSaving.value
+                            ? null
+                            : () {
+                              if (controller.createStepIndex.value == 3) {
+                                controller.finishCreateFlow();
+                              } else {
+                                controller.continueCreateFlow();
+                              }
+                            },
+                    onStepCancel:
+                        controller.createStepIndex.value == 0 ||
+                                controller.isSaving.value
+                            ? null
+                            : controller.backCreateFlow,
+                    controlsBuilder: (context, details) {
+                      final isLast = controller.createStepIndex.value == 3;
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: AsyncElevatedButton(
+                                onPressed: details.onStepContinue,
+                                isLoading: controller.isSaving.value,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: AppColors.onPrimary,
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
+                                child: Text(
+                                  isLast
+                                      ? 'Finish client setup'
+                                      : 'Save & continue',
+                                ),
                               ),
                             ),
-                          ),
-                          if (controller.createStepIndex.value > 0) ...[
-                            const SizedBox(width: 12),
-                            TextButton(
-                              onPressed: details.onStepCancel,
-                              child: const Text('Back'),
-                            ),
+                            if (controller.createStepIndex.value > 0) ...[
+                              const SizedBox(width: 12),
+                              TextButton(
+                                onPressed: details.onStepCancel,
+                                child: const Text('Back'),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
+                      );
+                    },
+                    steps: [
+                      Step(
+                        title: const Text('Client'),
+                        isActive: controller.createStepIndex.value >= 0,
+                        content: _CoreDetailsStep(
+                          controller: controller,
+                          emailPattern: _emailPattern,
+                          error: err,
+                          progress: progress,
+                        ),
                       ),
-                    );
-                  },
-                  steps: [
-                    Step(
-                      title: const Text('Client'),
-                      isActive: controller.createStepIndex.value >= 0,
-                      content: _CoreDetailsStep(
+                      Step(
+                        title: const Text('Sites'),
+                        isActive: controller.createStepIndex.value >= 1,
+                        content: _CreateSitesStep(controller: controller),
+                      ),
+                      Step(
+                        title: const Text('Contacts'),
+                        isActive: controller.createStepIndex.value >= 2,
+                        content: _CreateContactsStep(controller: controller),
+                      ),
+                      Step(
+                        title: const Text('Documents'),
+                        isActive: controller.createStepIndex.value >= 3,
+                        content: _CreateDetailsStep(
+                          controller: controller,
+                          progress: progress,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : MaxWidthBox(
+                  maxWidth: Breakpoints.narrowContent,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _CoreDetailsStep(
                         controller: controller,
                         emailPattern: _emailPattern,
                         error: err,
                         progress: progress,
+                        showHelperCopy: true,
+                        showServiceAgreement: true,
                       ),
-                    ),
-                    Step(
-                      title: const Text('Sites'),
-                      isActive: controller.createStepIndex.value >= 1,
-                      content: _CreateSitesStep(controller: controller),
-                    ),
-                    Step(
-                      title: const Text('Contacts'),
-                      isActive: controller.createStepIndex.value >= 2,
-                      content: _CreateContactsStep(controller: controller),
-                    ),
-                    Step(
-                      title: const Text('Documents'),
-                      isActive: controller.createStepIndex.value >= 3,
-                      content: _CreateDetailsStep(
-                        controller: controller,
-                        progress: progress,
+                      const SizedBox(height: 24),
+                      AsyncElevatedButton(
+                        onPressed: controller.saveClient,
+                        isLoading: controller.isSaving.value,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.onPrimary,
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                        child: const Text('Save client'),
                       ),
-                    ),
-                  ],
-                )
-              : ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    _CoreDetailsStep(
-                      controller: controller,
-                      emailPattern: _emailPattern,
-                      error: err,
-                      progress: progress,
-                      showHelperCopy: true,
-                      showServiceAgreement: true,
-                    ),
-                    const SizedBox(height: 24),
-                    AsyncElevatedButton(
-                      onPressed: controller.saveClient,
-                      isLoading: controller.isSaving.value,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.onPrimary,
-                        minimumSize: const Size.fromHeight(48),
-                      ),
-                      child: const Text('Save client'),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
         );
       }),

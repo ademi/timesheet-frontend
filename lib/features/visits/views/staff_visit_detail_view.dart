@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/staff_visits_controller.dart';
 
@@ -48,7 +50,9 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
             if (controller.isRefreshing.value)
               const LinearProgressIndicator(minHeight: 2),
             Expanded(
-              child: ListView(
+              child: MaxWidthBox(
+                maxWidth: Breakpoints.narrowContent,
+                child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   if (err != null) ...[
@@ -99,6 +103,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                     ),
                   ],
                 ],
+              ),
               ),
             ),
           ],

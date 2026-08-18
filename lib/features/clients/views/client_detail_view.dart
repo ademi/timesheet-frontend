@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../controllers/clients_controller.dart';
 import '../widgets/client_detail_contacts_section.dart';
@@ -125,9 +127,12 @@ class ClientDetailView extends GetView<ClientsController> {
               ),
             ),
             Expanded(
-              child: ListView(
+              child: MaxWidthBox(
+                maxWidth: Breakpoints.workflowContent,
+                child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 children: [_tabContent(tab)],
+              ),
               ),
             ),
           ],

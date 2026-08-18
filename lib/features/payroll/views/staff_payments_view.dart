@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/staff_payments_controller.dart';
@@ -30,7 +32,9 @@ class StaffPaymentsView extends GetView<StaffPaymentsController> {
         title: const Text('Payments'),
         actions: shellAppBarActions(),
       ),
-      body: Obx(() {
+      body: MaxWidthBox(
+        maxWidth: Breakpoints.workflowContent,
+        child: Obx(() {
         final tab = controller.tabIndex.value;
         final err = controller.errorMessage.value;
         final initialLoad = controller.isLoading.value &&
@@ -76,6 +80,7 @@ class StaffPaymentsView extends GetView<StaffPaymentsController> {
           ],
         );
       }),
+      ),
     );
   }
 }

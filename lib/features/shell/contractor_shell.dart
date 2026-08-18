@@ -5,6 +5,7 @@ import '../../app/routes/app_routes.dart';
 import '../../app/themes/app_colors.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
 import '../../core/responsive/breakpoints.dart';
+import '../../core/responsive/max_width_box.dart';
 import '../../shared/widgets/closed_beta_banner.dart';
 import '../compliance_ops/controllers/notifications_feed_controller.dart';
 
@@ -54,14 +55,19 @@ abstract final class ContractorShellNav {
 }
 
 class ContractorShell extends StatelessWidget {
-  const ContractorShell({super.key, required this.child});
+  const ContractorShell({
+    super.key,
+    required this.child,
+    this.constrainContent = true,
+  });
 
   final Widget child;
+  final bool constrainContent;
 
   @override
   Widget build(BuildContext context) {
     NotificationsFeedController.ensureRegistered();
-    final body = _shellBody(child);
+    final body = _shellBody(child, constrainContent: constrainContent);
     return LayoutBuilder(
       builder: (context, constraints) {
         final index = ContractorShellNav.selectedIndex(
@@ -96,12 +102,34 @@ class ContractorShell extends StatelessWidget {
   }
 }
 
-Widget _shellBody(Widget child) => Column(
+Widget _shellBody(Widget child, {required bool constrainContent}) => Column(
   crossAxisAlignment: CrossAxisAlignment.stretch,
-  children: [const ClosedBetaBanner(), Expanded(child: child)],
+  children: [
+    const ClosedBetaBanner(),
+    Expanded(
+      child:
+          constrainContent
+              ? LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth < Breakpoints.tablet) {
+                    return child;
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: MaxWidthBox(
+                      maxWidth: Breakpoints.maxContent,
+                      child: child,
+                    ),
+                  );
+                },
+              )
+              : child,
+    ),
+  ],
 );
 
-Widget contractorShellPage(Widget child) => ContractorShell(child: child);
+Widget contractorShellPage(Widget child, {bool constrainContent = true}) =>
+    ContractorShell(constrainContent: constrainContent, child: child);
 
 bool isContractorShellRoute(String? route) {
   if (route == null) return false;

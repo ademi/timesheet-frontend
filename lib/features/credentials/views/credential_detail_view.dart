@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/breakpoints.dart';
+import '../../../core/responsive/max_width_box.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
 import '../widgets/evidence_document_actions.dart';
@@ -29,7 +31,9 @@ class CredentialDetailView extends GetView<CredentialsController> {
       ),
       body: Obx(() {
         final err = controller.errorMessage.value;
-        return ListView(
+        return MaxWidthBox(
+          maxWidth: Breakpoints.narrowContent,
+          child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             if (err != null) ...[
@@ -138,6 +142,7 @@ class CredentialDetailView extends GetView<CredentialsController> {
               ),
             ],
           ],
+        ),
         );
       }),
     );
