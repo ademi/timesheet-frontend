@@ -39,7 +39,11 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
       ),
       body: Column(
         children: [
-          Obx(() => _ProgressHeader(stepIndex: controller.stepIndex.value)),
+          Obx(() => _ProgressHeader(
+            stepNumber: controller.funnelStepNumber,
+            totalSteps: controller.funnelTotalSteps,
+            currentStep: controller.currentStep,
+          )),
           Expanded(
             child: Obx(() {
               if (controller.isLoading.value &&
@@ -81,7 +85,7 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
               child: Obx(
                 () => Row(
                   children: [
-                    if (controller.stepIndex.value > 0)
+                    if (controller.funnelStepNumber > 1)
                       OutlinedButton(
                         onPressed: controller.back,
                         child: const Text('Back'),
@@ -115,20 +119,27 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
 }
 
 class _ProgressHeader extends StatelessWidget {
-  const _ProgressHeader({required this.stepIndex});
+  const _ProgressHeader({
+    required this.stepNumber,
+    required this.totalSteps,
+    required this.currentStep,
+  });
 
-  final int stepIndex;
+  final int stepNumber;
+  final int totalSteps;
+  final OnboardingStep currentStep;
 
-  static const labels = [
-    'Legal',
-    'Notices',
-    'Consents',
-    'Engagement',
-  ];
+  static String _labelFor(OnboardingStep step) => switch (step) {
+    OnboardingStep.legal => 'Legal',
+    OnboardingStep.notices => 'Notices',
+    OnboardingStep.consents => 'Consents',
+    OnboardingStep.engagement => 'Engagement',
+    OnboardingStep.credentials => 'Credentials',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final displayIndex = stepIndex.clamp(0, labels.length - 1);
+    final label = _labelFor(currentStep);
     return Material(
       color: AppColors.cardBackground,
       child: Padding(
@@ -137,8 +148,7 @@ class _ProgressHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Step ${displayIndex + 1} of ${labels.length}: '
-              '${labels[displayIndex]}',
+              'Step $stepNumber of $totalSteps: $label',
               style: const TextStyle(
                 fontWeight: FontWeight.w600,
                 color: AppColors.textDark,
@@ -148,7 +158,7 @@ class _ProgressHeader extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
-                value: (displayIndex + 1) / labels.length,
+                value: stepNumber / totalSteps,
                 minHeight: 8,
                 backgroundColor: AppColors.divider,
                 color: AppColors.primary,

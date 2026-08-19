@@ -60,6 +60,43 @@ class OnboardingController extends GetxController with PendingActionMixin {
         OnboardingStep.values.length - 1,
       )];
 
+  /// The ordered list of steps this contractor will actually go through.
+  ///
+  /// - Contractors who already accepted platform compliance (registered via
+  ///   the public form) skip legal/notices/consents and only see engagement.
+  /// - Contractors who need full compliance see all steps up to engagement.
+  /// - The legacy `credentials` step is never shown.
+  List<OnboardingStep> get funnelSteps {
+    final needsCompliance =
+        _sessionService?.needsPlatformCompliance.value ?? true;
+    final needsEngagement =
+        _sessionService?.needsEngagementWork.value ?? false;
+    if (needsCompliance) {
+      return [
+        OnboardingStep.legal,
+        OnboardingStep.notices,
+        OnboardingStep.consents,
+        if (needsEngagement) OnboardingStep.engagement,
+      ];
+    }
+    if (needsEngagement) return [OnboardingStep.engagement];
+    return [];
+  }
+
+  /// 1-based position of [currentStep] within [funnelSteps].
+  /// Returns 1 when the step isn't found (safety fallback).
+  int get funnelStepNumber {
+    final steps = funnelSteps;
+    final idx = steps.indexOf(currentStep);
+    return idx < 0 ? 1 : idx + 1;
+  }
+
+  /// Total number of steps this contractor needs to complete.
+  int get funnelTotalSteps {
+    final steps = funnelSteps;
+    return steps.isEmpty ? 1 : steps.length;
+  }
+
   bool get canAdvanceLegal =>
       requiredDocKeys.every((k) => acceptedDocKeys.contains(k));
 
@@ -461,18 +498,11 @@ class OnboardingController extends GetxController with PendingActionMixin {
   }
 
   void back() {
-    if (stepIndex.value <= 0) return;
-    // Skip credentials when walking backward (removed from funnel).
-    if (currentStep == OnboardingStep.engagement) {
-      goToStep(OnboardingStep.consents);
-      return;
-    }
-    stepIndex.value -= 1;
-    if (currentStep == OnboardingStep.credentials) {
-      goToStep(OnboardingStep.consents);
-      return;
-    }
-    _syncRoute();
+    final steps = funnelSteps;
+    final idx = steps.indexOf(currentStep);
+    // If not found in funnel or already at first funnel step, do nothing.
+    if (idx <= 0) return;
+    goToStep(steps[idx - 1]);
   }
 
   Future<void> completeFunnel() async {
