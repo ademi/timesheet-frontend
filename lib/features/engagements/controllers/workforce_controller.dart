@@ -13,6 +13,10 @@ import '../../../shared/models/profile_photo_models.dart';
 import '../../../shared/utils/name_sort.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
+import '../../visits/data/models/roster_overlay_models.dart';
+import '../../visits/data/models/visit_models.dart';
+import '../../visits/data/repositories/visits_repository.dart';
+import '../../visits/utils/visit_windows.dart';
 import '../data/models/engagement_models.dart';
 import '../data/repositories/engagements_repository.dart';
 import '../utils/missing_categories.dart';
@@ -22,13 +26,16 @@ class WorkforceController extends GetxController {
     required EngagementsRepository repository,
     required CredentialsRepository credentialsRepository,
     required SessionService session,
+    VisitsRepository? visits,
   }) : _repository = repository,
        _credentialsRepository = credentialsRepository,
-       _session = session;
+       _session = session,
+       _visits = visits;
 
   final EngagementsRepository _repository;
   final CredentialsRepository _credentialsRepository;
   final SessionService _session;
+  final VisitsRepository? _visits;
 
   final items = <EngagementOut>[].obs;
   final statusFilter = RxnString();
@@ -54,8 +61,18 @@ class WorkforceController extends GetxController {
   final isLoadingCatalog = false.obs;
   final detailSelectedCategories = <String>{}.obs;
   final tabIndex = 0.obs;
+  final upcomingVisits = <VisitOut>[].obs;
+  final pastVisits = <VisitOut>[].obs;
+  final isLoadingVisits = false.obs;
+  final visitsError = RxnString();
+  final visitsTruncated = false.obs;
+  final detailAvailability = <AvailabilityRuleOut>[].obs;
+  final isLoadingAvailability = false.obs;
+  final scheduleError = RxnString();
 
   EngagementOut? selected;
+
+  bool _detailExtrasLoaded = false;
 
   static const tabOverview = 0;
   static const tabCredentials = 1;
@@ -84,6 +101,10 @@ class WorkforceController extends GetxController {
   bool get canManage =>
       _session.hasPermission(AppPermissions.contractorsManage);
   bool get canRead => _session.hasPermission(AppPermissions.contractorsRead);
+  bool get canViewVisits =>
+      _session.hasPermission(AppPermissions.visitsRead) ||
+      _session.hasPermission(AppPermissions.visitsManage) ||
+      _session.hasPermission(AppPermissions.jobsManage);
 
   List<EngagementOut> get filtered {
     var list = items.toList();
@@ -115,6 +136,22 @@ class WorkforceController extends GetxController {
   void onInit() {
     super.onInit();
     load();
+    ever(tabIndex, _onTabChanged);
+  }
+
+  void _onTabChanged(int tab) {
+    if (tab == tabVisits || tab == tabSchedule) {
+      unawaited(_ensureDetailExtrasLoaded());
+    }
+  }
+
+  Future<void> _ensureDetailExtrasLoaded() async {
+    if (_detailExtrasLoaded || selected == null) return;
+    _detailExtrasLoaded = true;
+    await Future.wait([
+      loadDetailVisits(),
+      loadDetailAvailability(),
+    ]);
   }
 
   @override
@@ -176,6 +213,13 @@ class WorkforceController extends GetxController {
   void openDetail(EngagementOut e) {
     selected = e;
     tabIndex.value = tabOverview;
+    _detailExtrasLoaded = false;
+    upcomingVisits.clear();
+    pastVisits.clear();
+    visitsError.value = null;
+    visitsTruncated.value = false;
+    detailAvailability.clear();
+    scheduleError.value = null;
     clearError();
     detailPhoto.value = photosByContractor[e.contractorId];
     detailSelectedCategories
@@ -186,6 +230,72 @@ class WorkforceController extends GetxController {
     }
     Get.toNamed(AppRoutes.staffWorkforceDetail, arguments: e);
     loadDetailProfilePhoto(e.contractorId);
+  }
+
+  Future<void> loadDetailVisits() async {
+    final engagement = selected;
+    final visitsRepo = _visits;
+    upcomingVisits.clear();
+    pastVisits.clear();
+    if (engagement == null || visitsRepo == null) {
+      visitsTruncated.value = false;
+      return;
+    }
+    if (!canViewVisits) {
+      upcomingVisits.clear();
+      pastVisits.clear();
+      visitsError.value = null;
+      visitsTruncated.value = false;
+      return;
+    }
+    isLoadingVisits.value = true;
+    visitsError.value = null;
+    try {
+      final now = DateTime.now().toUtc();
+      final list = await visitsRepo.listVisits(
+        contractorId: engagement.contractorId,
+        from: now.subtract(clientVisitLookback),
+        to: now.add(clientVisitLookahead),
+        limit: clientVisitFetchLimit,
+      );
+      visitsTruncated.value = list.length >= clientVisitFetchLimit;
+      final parts = partitionClientVisits(list, now: now);
+      upcomingVisits.assignAll(parts.upcoming);
+      pastVisits.assignAll(parts.past);
+    } on AppFailure catch (e) {
+      visitsError.value = e.message;
+      upcomingVisits.clear();
+      pastVisits.clear();
+    } finally {
+      isLoadingVisits.value = false;
+    }
+  }
+
+  Future<void> loadDetailAvailability() async {
+    final engagement = selected;
+    detailAvailability.clear();
+    scheduleError.value = null;
+    if (engagement == null) return;
+    isLoadingAvailability.value = true;
+    try {
+      final rules = await _repository.listAvailability(engagement.id);
+      detailAvailability.assignAll(rules);
+    } on AppFailure catch (e) {
+      scheduleError.value = e.message;
+      detailAvailability.clear();
+    } finally {
+      isLoadingAvailability.value = false;
+    }
+  }
+
+  void openVisitDetail(VisitOut visit) {
+    Get.toNamed(
+      AppRoutes.staffVisitDetail,
+      arguments: <String, dynamic>{
+        'visit': visit,
+        'skipBoardLoad': true,
+      },
+    );
   }
 
   Future<void> loadDetailProfilePhoto(String contractorId) async {

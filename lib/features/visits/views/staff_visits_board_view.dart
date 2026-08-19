@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/equal_fill_row.dart';
+import '../../../core/responsive/page_content.dart';
 import '../../../core/time/tenant_civil_time.dart';
 import '../../clients/controllers/clients_controller.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
@@ -156,139 +157,157 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
         final clients = controller.clientFilterOptions;
         return Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => controller.shiftRange(-7),
-                        icon: const Icon(Icons.chevron_left),
-                      ),
-                      Expanded(
+            PageContent(
+              width: PageContentWidth.wide,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => controller.shiftRange(-7),
+                          icon: const Icon(Icons.chevron_left),
+                        ),
+                        Expanded(
+                          child: Text(
+                            '${_fmtDay(start)} – ${_fmtDay(end)}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => controller.shiftRange(7),
+                          icon: const Icon(Icons.chevron_right),
+                        ),
+                      ],
+                    ),
+                    if (controller.isFillingHorizon.value)
+                      const LinearProgressIndicator(minHeight: 2),
+                    if (!isTenantTimezoneConversionApplied(
+                      controller.tenantTimezone.value,
+                    ))
+                      const Padding(
+                        padding: EdgeInsets.only(top: 4, bottom: 8),
                         child: Text(
-                          '${_fmtDay(start)} – ${_fmtDay(end)}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          'Times use your device timezone while tenant timezone conversion is unavailable.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
                         ),
                       ),
-                      IconButton(
-                        onPressed: () => controller.shiftRange(7),
-                        icon: const Icon(Icons.chevron_right),
-                      ),
-                    ],
-                  ),
-                  if (controller.isFillingHorizon.value)
-                    const LinearProgressIndicator(minHeight: 2),
-                  if (!isTenantTimezoneConversionApplied(
-                    controller.tenantTimezone.value,
-                  ))
-                    const Padding(
-                      padding: EdgeInsets.only(top: 4, bottom: 8),
-                      child: Text(
-                        'Times use your device timezone while tenant timezone conversion is unavailable.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textMuted,
+                    EqualFillRow(
+                      children: [
+                        DropdownButtonFormField<String>(
+                          value: _clientDropdownValue(
+                            controller.clientIdFilter.value,
+                            clients,
+                          ),
+                          isExpanded: true,
+                          items: _clientDropdownItems(clients),
+                          onChanged: controller.setClientFilter,
+                          decoration: const InputDecoration(
+                            labelText: 'Client',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        DropdownButtonFormField<String>(
+                          value:
+                              controller.statusFilter.value.isEmpty
+                                  ? null
+                                  : controller.statusFilter.value,
+                          isExpanded: true,
+                          items: const [
+                            DropdownMenuItem(
+                              value: null,
+                              child: Text('All statuses'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'draft',
+                              child: Text('Unpublished'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'published',
+                              child: Text('Live'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'cancelled',
+                              child: Text('Cancelled'),
+                            ),
+                          ],
+                          onChanged: controller.setStatusFilter,
+                          decoration: const InputDecoration(
+                            labelText: 'Status',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Support sub-filter only when the selected client has >1 open
+                    // support (D3). Client dropdown stays primary otherwise.
+                    if (controller.showSupportFilter) ...[
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _jobDropdownValue(
+                          controller.jobIdFilter.value,
+                          controller.supportsForSelectedClient,
+                        ),
+                        isExpanded: true,
+                        items: _supportDropdownItems(
+                          controller.supportsForSelectedClient,
+                        ),
+                        onChanged: controller.setJobFilter,
+                        decoration: const InputDecoration(
+                          labelText: 'Support',
+                          border: OutlineInputBorder(),
                         ),
                       ),
-                    ),
-                  EqualFillRow(
-                    children: [
-                      DropdownButtonFormField<String>(
-                    value: _clientDropdownValue(
-                      controller.clientIdFilter.value,
-                      clients,
-                    ),
-                    isExpanded: true,
-                    items: _clientDropdownItems(clients),
-                    onChanged: controller.setClientFilter,
-                    decoration: const InputDecoration(
-                      labelText: 'Client',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                      DropdownButtonFormField<String>(
-                    value:
-                        controller.statusFilter.value.isEmpty
-                            ? null
-                            : controller.statusFilter.value,
-                    isExpanded: true,
-                    items: const [
-                      DropdownMenuItem(
-                        value: null,
-                        child: Text('All statuses'),
-                      ),
-                      DropdownMenuItem(value: 'draft', child: Text('Unpublished')),
-                      DropdownMenuItem(
-                        value: 'published',
-                        child: Text('Live'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'cancelled',
-                        child: Text('Cancelled'),
-                      ),
                     ],
-                    onChanged: controller.setStatusFilter,
-                    decoration: const InputDecoration(
-                      labelText: 'Status',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                    ],
-                  ),
-                  // Support sub-filter only when the selected client has >1 open
-                  // support (D3). Client dropdown stays primary otherwise.
-                  if (controller.showSupportFilter) ...[
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: _jobDropdownValue(
-                        controller.jobIdFilter.value,
-                        controller.supportsForSelectedClient,
-                      ),
-                      isExpanded: true,
-                      items: _supportDropdownItems(
-                        controller.supportsForSelectedClient,
-                      ),
-                      onChanged: controller.setJobFilter,
-                      decoration: const InputDecoration(
-                        labelText: 'Support',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
                   ],
-                ],
+                ),
               ),
             ),
             if (overlayWarn != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: _WarningBox(overlayWarn),
+              PageContent(
+                width: PageContentWidth.wide,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: _WarningBox(overlayWarn),
+                ),
               ),
             if (err != null)
-              Padding(padding: const EdgeInsets.all(16), child: _ErrorBox(err)),
+              PageContent(
+                width: PageContentWidth.wide,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: _ErrorBox(err),
+                ),
+              ),
             Expanded(
-              child:
-                  controller.isLoading.value &&
-                          controller.shifts.isEmpty &&
-                          controller.overlay.value == null
-                      ? const Center(child: CircularProgressIndicator())
-                      : RefreshIndicator(
-                        onRefresh: controller.load,
-                        child: RosterGridView(
-                          grid: controller.grid,
-                          onTileTap: controller.openShiftFromTile,
-                          onTileLongPress:
-                              controller.canManage
-                                  ? (tile) => _showTileActionSheet(
-                                    context,
-                                    controller,
-                                    tile,
-                                  )
-                                  : null,
+              child: PageContent(
+                width: PageContentWidth.wide,
+                child:
+                    controller.isLoading.value &&
+                            controller.shifts.isEmpty &&
+                            controller.overlay.value == null
+                        ? const Center(child: CircularProgressIndicator())
+                        : RefreshIndicator(
+                          onRefresh: controller.load,
+                          child: RosterGridView(
+                            grid: controller.grid,
+                            onTileTap: controller.openShiftFromTile,
+                            onTileLongPress:
+                                controller.canManage
+                                    ? (tile) => _showTileActionSheet(
+                                      context,
+                                      controller,
+                                      tile,
+                                    )
+                                    : null,
+                          ),
                         ),
-                      ),
+              ),
             ),
           ],
         );

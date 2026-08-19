@@ -1,5 +1,6 @@
 import '../../../../shared/models/profile_photo_models.dart';
 import '../../../../shared/utils/name_sort.dart';
+import '../../../visits/data/models/roster_overlay_models.dart';
 import '../datasources/engagements_remote_datasource.dart';
 import '../models/engagement_models.dart';
 
@@ -56,4 +57,7 @@ class EngagementsRepository {
 
   Future<ProfilePhotoOut> getContractorProfilePhoto(String contractorId) =>
       _remote.getContractorProfilePhoto(contractorId);
+
+  Future<List<AvailabilityRuleOut>> listAvailability(String engagementId) =>
+      _remote.listAvailability(engagementId);
 }

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
 import '../../../../shared/models/profile_photo_models.dart';
+import '../../../visits/data/models/roster_overlay_models.dart';
 import '../models/engagement_models.dart';
 
 class EngagementsRemoteDataSource {
@@ -151,6 +152,19 @@ class EngagementsRemoteDataSource {
     }
   }
 
+  Future<List<AvailabilityRuleOut>> listAvailability(
+    String engagementId,
+  ) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.engagementAvailability(engagementId),
+      );
+      return _mapAvailabilityList(response.data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<EngagementOut> _lifecycle(String path, String action) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(path);
@@ -165,6 +179,14 @@ class EngagementsRemoteDataSource {
     return list
         .whereType<Map>()
         .map((e) => EngagementOut.fromJson(Map<String, dynamic>.from(e)))
+        .toList(growable: false);
+  }
+
+  List<AvailabilityRuleOut> _mapAvailabilityList(List<dynamic>? data) {
+    if (data == null) return const [];
+    return data
+        .whereType<Map>()
+        .map((e) => AvailabilityRuleOut.fromJson(Map<String, dynamic>.from(e)))
         .toList(growable: false);
   }
 

@@ -4,9 +4,12 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/availability_rules_readout.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../../../shared/widgets/subject_tab_bar.dart';
+import '../../../shared/widgets/visit_day_agenda.dart';
+import '../../clients/widgets/client_detail_visits_section.dart';
 import '../../payroll/widgets/engagement_rate_bands_section.dart';
 import '../controllers/workforce_controller.dart';
 import '../data/models/engagement_models.dart';
@@ -135,12 +138,94 @@ class WorkforceDetailView extends GetView<WorkforceController> {
       case WorkforceController.tabCredentials:
         return _credentialsContent(current);
       case WorkforceController.tabVisits:
+        return ClientDetailVisitsSection(
+          upcoming: controller.upcomingVisits.toList(),
+          past: controller.pastVisits.toList(),
+          isLoading: controller.isLoadingVisits.value,
+          error: controller.visitsError.value,
+          truncated: controller.visitsTruncated.value,
+          hasVisitsAccess: controller.canViewVisits,
+          showPast: false,
+          onOpen: controller.openVisitDetail,
+        );
       case WorkforceController.tabSchedule:
-        return const SizedBox.shrink();
+        return _scheduleContent();
       case WorkforceController.tabOverview:
       default:
         return _overviewContent(current);
     }
+  }
+
+  Widget _scheduleContent() {
+    final availabilityErr = controller.scheduleError.value;
+    final visitsErr = controller.visitsError.value;
+    final loading = controller.isLoadingVisits.value ||
+        controller.isLoadingAvailability.value;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Availability',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        if (loading) const LinearProgressIndicator(minHeight: 2),
+        if (availabilityErr != null) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.errorBackground,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              availabilityErr,
+              style: const TextStyle(color: AppColors.error),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        AvailabilityRulesReadout(
+          rules: controller.detailAvailability.toList(),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'Timetable',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        if (visitsErr != null) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.errorBackground,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              visitsErr,
+              style: const TextStyle(color: AppColors.error),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        VisitDayAgenda(
+          visits: [
+            for (final v in [
+              ...controller.upcomingVisits,
+              ...controller.pastVisits,
+            ])
+              AgendaVisit(
+                start: v.scheduledStart,
+                end: v.scheduledEnd,
+                title: v.jobTitle ?? 'Visit',
+                status: v.status,
+                onOpen: () => controller.openVisitDetail(v),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 
   Widget _credentialsContent(EngagementOut current) {

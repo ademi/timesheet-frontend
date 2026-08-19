@@ -23,6 +23,7 @@ class ClientDetailVisitsSection extends StatelessWidget {
     required this.truncated,
     required this.onOpen,
     this.hasVisitsAccess = true,
+    this.showPast = true,
   });
 
   final List<VisitOut> upcoming;
@@ -32,6 +33,7 @@ class ClientDetailVisitsSection extends StatelessWidget {
   final bool truncated;
   final void Function(VisitOut visit) onOpen;
   final bool hasVisitsAccess;
+  final bool showPast;
 
   @override
   Widget build(BuildContext context) {
@@ -99,18 +101,20 @@ class ClientDetailVisitsSection extends StatelessWidget {
             style: TextStyle(color: AppColors.textMuted),
           ),
         for (final visit in upcoming) _VisitTile(visit: visit, onOpen: onOpen),
-        const SizedBox(height: 12),
-        const Text(
-          'Past',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        ),
-        const SizedBox(height: 4),
-        if (!isLoading && past.isEmpty)
+        if (showPast) ...[
+          const SizedBox(height: 12),
           const Text(
-            'No past visits in the last 30 days.',
-            style: TextStyle(color: AppColors.textMuted),
+            'Past',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
-        for (final visit in past) _VisitTile(visit: visit, onOpen: onOpen),
+          const SizedBox(height: 4),
+          if (!isLoading && past.isEmpty)
+            const Text(
+              'No past visits in the last 30 days.',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
+          for (final visit in past) _VisitTile(visit: visit, onOpen: onOpen),
+        ],
       ],
     );
   }

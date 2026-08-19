@@ -64,6 +64,8 @@ abstract final class ApiPaths {
       '${engagement(id)}/required-doc-categories';
   static String engagementCredentialReviews(String id) =>
       '${engagement(id)}/credential-reviews';
+  static String engagementAvailability(String id) =>
+      '${engagement(id)}/availability';
   static String engagementSharingAccessRequests(String engagementId) =>
       '$tenantEngagements/$engagementId/sharing-access-requests';
 

@@ -10,6 +10,8 @@ import '../../contractor_onboarding/data/repositories/compliance_repository.dart
 import '../../payroll/bindings/payroll_binding.dart';
 import '../../payroll/controllers/engagement_rate_bands_controller.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
+import '../../visits/bindings/visits_binding.dart';
+import '../../visits/data/repositories/visits_repository.dart';
 import '../controllers/contractor_engagements_controller.dart';
 import '../controllers/workforce_controller.dart';
 import '../data/datasources/engagements_remote_datasource.dart';
@@ -36,12 +38,14 @@ class EngagementsBinding extends Bindings {
           repository: Get.find<EngagementsRepository>(),
           credentialsRepository: Get.find<CredentialsRepository>(),
           session: Get.find<SessionService>(),
+          visits: Get.find<VisitsRepository>(),
         ),
       );
     }
   }
 
   static void ensureShared() {
+    VisitsBinding.ensureShared();
     if (!Get.isRegistered<TokenStorage>()) {
       Get.put<TokenStorage>(TokenStorage(), permanent: true);
     }

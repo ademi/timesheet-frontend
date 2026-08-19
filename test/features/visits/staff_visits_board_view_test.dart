@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:rostiq/core/responsive/page_content.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
@@ -164,4 +166,29 @@ void main() {
       expect(find.text('All supports'), findsOneWidget);
     },
   );
+
+  testWidgets('wide roster content is centered', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1600, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    putController();
+    await tester.pumpWidget(
+      const GetMaterialApp(home: StaffVisitsBoardView()),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final cap = find.descendant(
+      of: find.byType(PageContent).first,
+      matching: find.byType(ConstrainedBox),
+    );
+    final page = tester.getRect(cap.first);
+    expect(page.width, closeTo(1200, 1));
+    expect(page.center.dx, closeTo(800, 8));
+
+    final clientField = find.byType(DropdownButtonFormField<String>).first;
+    final clientCenter = tester.getCenter(clientField);
+    expect(clientCenter.dx, greaterThan(page.left));
+    expect(clientCenter.dx, lessThan(page.center.dx));
+  });
 }
