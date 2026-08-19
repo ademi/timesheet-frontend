@@ -6,12 +6,20 @@ import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
+import '../../../shared/widgets/subject_tab_bar.dart';
 import '../../payroll/widgets/engagement_rate_bands_section.dart';
 import '../controllers/workforce_controller.dart';
 import '../data/models/engagement_models.dart';
 
 class WorkforceDetailView extends GetView<WorkforceController> {
   const WorkforceDetailView({super.key});
+
+  static const _tabLabels = [
+    'Overview',
+    'Credentials',
+    'Visits',
+    'Schedule',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -37,210 +45,82 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         current = controller.selected!;
       }
       final err = controller.errorMessage.value;
+      final tab = controller.tabIndex.value;
 
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
           title: Text(current.displayName),
         ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
+        body: Column(
           children: [
-            PageContent(
+            if (err != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Material(
+                  color: AppColors.errorBackground,
+                  borderRadius: BorderRadius.circular(8),
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    title: Text(
+                      err,
+                      style: const TextStyle(color: AppColors.error),
+                    ),
+                    trailing: IconButton(
+                      tooltip: 'Dismiss',
+                      onPressed: controller.clearError,
+                      icon: const Icon(Icons.close, color: AppColors.error),
+                    ),
+                  ),
+                ),
+              ),
+            if (controller.eligibilityReasons.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: EligibilityIncompletePanel(
+                  reasons: controller.eligibilityReasons.toList(),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-            if (err != null) ...[
-              Material(
-                color: AppColors.errorBackground,
-                borderRadius: BorderRadius.circular(8),
-                child: ListTile(
-                  dense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                  title: Text(
-                    err,
-                    style: const TextStyle(color: AppColors.error),
+                  ProfilePhotoEditor(
+                    networkUrl: controller.detailPhoto.value?.downloadUrl,
+                    documentId: controller.detailPhoto.value?.documentId,
+                    isLoading: controller.isDetailPhotoLoading.value,
+                    readOnly: true,
+                    size: 72,
+                    showLabel: false,
                   ),
-                  trailing: IconButton(
-                    tooltip: 'Dismiss',
-                    onPressed: controller.clearError,
-                    icon: const Icon(Icons.close, color: AppColors.error),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (controller.eligibilityReasons.isNotEmpty) ...[
-              EligibilityIncompletePanel(
-                reasons: controller.eligibilityReasons.toList(),
-              ),
-              const SizedBox(height: 12),
-            ],
-            Row(
-              children: [
-                ProfilePhotoEditor(
-                  networkUrl: controller.detailPhoto.value?.downloadUrl,
-                  documentId: controller.detailPhoto.value?.documentId,
-                  isLoading: controller.isDetailPhotoLoading.value,
-                  readOnly: true,
-                  size: 72,
-                  showLabel: false,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
+                  const SizedBox(height: 12),
+                  Text(
                     current.displayName,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 18,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _row('Status', current.statusLabel),
-            const SizedBox(height: 8),
-            const Text(
-              'Required documents',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            if (controller.canManage && !current.isEnded)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final cat in controller.inviteCategoryChoices)
-                    FilterChip(
-                      label: Text(cat.label),
-                      selected: controller.detailSelectedCategories.contains(
-                        cat.code,
-                      ),
-                      onSelected: controller.isSaving.value
-                          ? null
-                          : (_) => controller.toggleDetailCategory(cat.code),
-                    ),
-                  OutlinedButton(
-                    onPressed: controller.isSaving.value
-                        ? null
-                        : () => controller.saveRequiredDocCategories(current),
-                    child: const Text('Save certificates'),
-                  ),
-                ],
-              )
-            else
-              Text(
-                current.requiredDocCategories.isEmpty
-                    ? '—'
-                    : current.requiredDocCategories
-                        .map((c) => c.displayLabel)
-                        .join(', '),
-              ),
-            const SizedBox(height: 16),
-            const Text(
-              'Lifecycle',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            if (!controller.canApprove && !controller.canManage)
-              const Text(
-                'No lifecycle actions available for your role.',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-              )
-            else if (current.isInvited)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Waiting for the contractor to accept the invite.',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-                  ),
-                  if (controller.canManage) ...[
-                    const SizedBox(height: 8),
-                    OutlinedButton(
-                      onPressed:
-                          controller.isSaving.value
-                              ? null
-                              : () => controller.runAction(
-                                'withdraw',
-                                current,
-                              ),
-                      child: const Text('Withdraw invite'),
-                    ),
-                  ],
-                ],
-              )
-            else
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (controller.canApprove && current.isPendingDocs) ...[
-                    _actionButton(
-                      label: 'Approve',
-                      onPressed: () => controller.runAction('approve', current),
-                    ),
-                    _actionButton(
-                      label: 'Approve & activate',
-                      onPressed:
-                          () => controller.runAction(
-                            'approve_and_activate',
-                            current,
-                          ),
-                    ),
-                  ],
-                  if (controller.canManage && current.isApproved)
-                    _actionButton(
-                      label: 'Activate',
-                      onPressed: () => controller.runAction('activate', current),
-                    ),
-                  if (controller.canManage && current.isActive)
-                    _actionButton(
-                      label: 'Suspend',
-                      onPressed: () => controller.runAction('suspend', current),
-                    ),
-                  if (controller.canManage && current.isSuspended)
-                    _actionButton(
-                      label: 'Resume',
-                      onPressed: () => controller.runAction('resume', current),
-                    ),
-                  if (controller.canManage &&
-                      !current.isEnded &&
-                      !current.isInvited)
-                    OutlinedButton(
-                      onPressed:
-                          controller.isSaving.value
-                              ? null
-                              : () => controller.runAction('end', current),
-                      child: const Text('End engagement'),
-                    ),
                 ],
               ),
-            const SizedBox(height: 24),
-            const Text(
-              'Credentials',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
-            if (!current.isEnded) ...[
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => controller.openCredentialReview(current),
-              icon: const Icon(Icons.badge_outlined),
-              label: const Text('Review credentials'),
+            const SizedBox(height: 16),
+            SubjectTabBar(
+              labels: _tabLabels,
+              index: tab,
+              keyPrefix: 'contractor-detail-tab',
+              onChanged: (i) => controller.tabIndex.value = i,
             ),
-            ],
-            const SizedBox(height: 24),
-            const Text(
-              'Payment rates',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            EngagementRateBandsSection(
-              key: ValueKey(current.id),
-              engagementId: current.id,
-              canEditRates: !current.isEnded,
-            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                children: [
+                  PageContent(
+                    width: PageContentWidth.wide,
+                    child: _tabContent(current, tab),
+                  ),
                 ],
               ),
             ),
@@ -248,6 +128,127 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         ),
       );
     });
+  }
+
+  Widget _tabContent(EngagementOut current, int tab) {
+    switch (tab) {
+      case WorkforceController.tabCredentials:
+      case WorkforceController.tabVisits:
+      case WorkforceController.tabSchedule:
+        return const SizedBox.shrink();
+      case WorkforceController.tabOverview:
+      default:
+        return _overviewContent(current);
+    }
+  }
+
+  Widget _overviewContent(EngagementOut current) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _row('Status', current.statusLabel),
+        const SizedBox(height: 16),
+        const Text(
+          'Lifecycle',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        _lifecycleSection(current),
+        const SizedBox(height: 24),
+        const Text(
+          'Payment rates',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        EngagementRateBandsSection(
+          key: ValueKey(current.id),
+          engagementId: current.id,
+          canEditRates: !current.isEnded,
+        ),
+      ],
+    );
+  }
+
+  Widget _lifecycleSection(EngagementOut current) {
+    if (!controller.canApprove && !controller.canManage) {
+      return const Text(
+        'No lifecycle actions available for your role.',
+        style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+      );
+    }
+
+    if (current.isInvited) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Waiting for the contractor to accept the invite.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+          if (controller.canManage) ...[
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: controller.isSaving.value
+                  ? null
+                  : () => controller.runAction('withdraw', current),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+              child: const Text('Withdraw invite'),
+            ),
+          ],
+        ],
+      );
+    }
+
+    final actions = <Widget>[
+      if (controller.canApprove && current.isPendingDocs) ...[
+        _actionButton(
+          label: 'Approve',
+          onPressed: () => controller.runAction('approve', current),
+        ),
+        _actionButton(
+          label: 'Approve & activate',
+          onPressed: () => controller.runAction('approve_and_activate', current),
+        ),
+      ],
+      if (controller.canManage && current.isApproved)
+        _actionButton(
+          label: 'Activate',
+          onPressed: () => controller.runAction('activate', current),
+        ),
+      if (controller.canManage && current.isActive)
+        _actionButton(
+          label: 'Suspend',
+          onPressed: () => controller.runAction('suspend', current),
+        ),
+      if (controller.canManage && current.isSuspended)
+        _actionButton(
+          label: 'Resume',
+          onPressed: () => controller.runAction('resume', current),
+        ),
+      if (controller.canManage && !current.isEnded && !current.isInvited)
+        OutlinedButton(
+          onPressed: controller.isSaving.value
+              ? null
+              : () => controller.runAction('end', current),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+          ),
+          child: const Text('End engagement'),
+        ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final child in actions)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: child,
+          ),
+      ],
+    );
   }
 
   Widget _actionButton({
@@ -260,6 +261,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
+        minimumSize: const Size.fromHeight(48),
       ),
       child: Text(label),
     );

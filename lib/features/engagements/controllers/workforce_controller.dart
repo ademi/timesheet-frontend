@@ -53,8 +53,14 @@ class WorkforceController extends GetxController {
   final catalogCategories = <CredentialCategory>[].obs;
   final isLoadingCatalog = false.obs;
   final detailSelectedCategories = <String>{}.obs;
+  final tabIndex = 0.obs;
 
   EngagementOut? selected;
+
+  static const tabOverview = 0;
+  static const tabCredentials = 1;
+  static const tabVisits = 2;
+  static const tabSchedule = 3;
 
   /// Invite multi-select options (catalog when loaded, else allowlist fallback).
   List<CredentialCategory> get inviteCategoryChoices {
@@ -169,6 +175,7 @@ class WorkforceController extends GetxController {
 
   void openDetail(EngagementOut e) {
     selected = e;
+    tabIndex.value = tabOverview;
     clearError();
     detailPhoto.value = photosByContractor[e.contractorId];
     detailSelectedCategories
