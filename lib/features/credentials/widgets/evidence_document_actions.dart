@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/data/models/document/document_models.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/equal_fill_row.dart';
 
 class EvidenceDocumentActions extends StatelessWidget {
   const EvidenceDocumentActions({
@@ -60,20 +61,27 @@ class EvidenceDocumentActions extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  EqualFillRow(
                     children: [
                       if (showView)
-                        OutlinedButton.icon(
-                          onPressed: isBusy ? null : () => onView(document),
-                          icon: const Icon(Icons.visibility_outlined, size: 18),
-                          label: const Text('View'),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: isBusy ? null : () => onView(document),
+                            icon: const Icon(
+                              Icons.visibility_outlined,
+                              size: 18,
+                            ),
+                            label: const Text('View'),
+                          ),
                         ),
-                      OutlinedButton.icon(
-                        onPressed: isBusy ? null : () => onDownload(document),
-                        icon: const Icon(Icons.download_outlined, size: 18),
-                        label: const Text('Download'),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: isBusy ? null : () => onDownload(document),
+                          icon: const Icon(Icons.download_outlined, size: 18),
+                          label: const Text('Download'),
+                        ),
                       ),
                     ],
                   ),

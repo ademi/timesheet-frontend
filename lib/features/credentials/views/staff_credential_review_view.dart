@@ -62,19 +62,17 @@ class StaffCredentialReviewView
                 'Open a person from Workforce to review their credentials.',
                 style: TextStyle(color: AppColors.textMuted),
               ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ElevatedButton(
-                onPressed:
-                    controller.isLoading.value || !controller.hasReviewContext
-                        ? null
-                        : controller.load,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                ),
-                child: const Text('Load credentials'),
+            ElevatedButton(
+              onPressed:
+                  controller.isLoading.value || !controller.hasReviewContext
+                      ? null
+                      : controller.load,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                minimumSize: const Size.fromHeight(48),
               ),
+              child: const Text('Load credentials'),
             ),
             if (err != null) ...[
               const SizedBox(height: 12),

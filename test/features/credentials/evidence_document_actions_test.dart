@@ -46,4 +46,28 @@ void main() {
     expect(find.text('View'), findsOneWidget);
     expect(find.text('Download'), findsOneWidget);
   });
+
+  testWidgets('View and Download share the row equally', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(400, 400));
+    addTearDown(tester.view.resetPhysicalSize);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 400,
+            child: EvidenceDocumentActions(
+              documents: [_doc()],
+              onView: (_) {},
+              onDownload: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    final view = tester.getSize(find.widgetWithText(OutlinedButton, 'View'));
+    final download =
+        tester.getSize(find.widgetWithText(OutlinedButton, 'Download'));
+    expect((view.width - download.width).abs() < 1, true);
+    expect(view.width > 140, true);
+  });
 }
