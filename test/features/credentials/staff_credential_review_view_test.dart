@@ -9,6 +9,7 @@ import 'package:rostiq/features/credentials/data/repositories/credentials_reposi
 import 'package:rostiq/features/credentials/views/staff_credential_review_view.dart';
 import 'package:rostiq/features/documents/data/document_pipeline.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
+import 'package:rostiq/features/engagements/widgets/required_doc_categories_editor.dart';
 
 class _MockCredentialsRepository extends Mock
     implements CredentialsRepository {}
@@ -60,6 +61,84 @@ void main() {
   });
 
   tearDown(Get.reset);
+
+  testWidgets(
+    'shows required doc editor when canEditRequiredDocs',
+    (tester) async {
+      when(() => credentials.listCredentialCategories()).thenAnswer(
+        (_) async => const [
+          CredentialCategory(code: 'first_aid', label: 'First aid'),
+          CredentialCategory(code: 'cpr', label: 'CPR'),
+        ],
+      );
+      when(
+        () => credentials.listForTenantContractor(
+          'contractor-1',
+          engagementId: 'engagement-1',
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => pipeline.listEvidenceForContractor('contractor-1'),
+      ).thenAnswer((_) async => const []);
+
+      Get.put(
+        StaffCredentialReviewController(
+          repository: credentials,
+          engagementsRepository: engagements,
+          session: session,
+          documentPipeline: pipeline,
+          contractorId: 'contractor-1',
+          engagementId: 'engagement-1',
+          initialRequiredCategories: const ['first_aid'],
+          canEditRequiredDocs: true,
+        ),
+      );
+
+      await tester.pumpWidget(
+        const GetMaterialApp(home: StaffCredentialReviewView()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(RequiredDocCategoriesEditor.helperText), findsOneWidget);
+      expect(find.text('Save certificates'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'shows read-only required doc labels when cannot edit',
+    (tester) async {
+      when(
+        () => credentials.listForTenantContractor(
+          'contractor-1',
+          engagementId: 'engagement-1',
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => pipeline.listEvidenceForContractor('contractor-1'),
+      ).thenAnswer((_) async => const []);
+
+      Get.put(
+        StaffCredentialReviewController(
+          repository: credentials,
+          engagementsRepository: engagements,
+          session: session,
+          documentPipeline: pipeline,
+          contractorId: 'contractor-1',
+          engagementId: 'engagement-1',
+          initialRequiredCategories: const ['first_aid'],
+          canEditRequiredDocs: false,
+        ),
+      );
+
+      await tester.pumpWidget(
+        const GetMaterialApp(home: StaffCredentialReviewView()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('First aid'), findsOneWidget);
+      expect(find.text('Save certificates'), findsNothing);
+    },
+  );
 
   testWidgets(
     'shows share-request empty state instead of raw 403 detail',

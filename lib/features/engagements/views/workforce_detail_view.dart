@@ -133,6 +133,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
   Widget _tabContent(EngagementOut current, int tab) {
     switch (tab) {
       case WorkforceController.tabCredentials:
+        return _credentialsContent(current);
       case WorkforceController.tabVisits:
       case WorkforceController.tabSchedule:
         return const SizedBox.shrink();
@@ -140,6 +141,31 @@ class WorkforceDetailView extends GetView<WorkforceController> {
       default:
         return _overviewContent(current);
     }
+  }
+
+  Widget _credentialsContent(EngagementOut current) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Review submitted certificates. Required document types are edited on the review screen.',
+        ),
+        if (!current.isEnded) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => controller.openCredentialReview(current),
+              icon: const Icon(Icons.badge_outlined),
+              label: const Text('Review credentials'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   Widget _overviewContent(EngagementOut current) {

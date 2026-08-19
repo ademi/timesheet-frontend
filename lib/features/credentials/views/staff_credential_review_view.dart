@@ -5,6 +5,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
+import '../../engagements/widgets/required_doc_categories_editor.dart';
 import '../controllers/staff_credential_review_controller.dart';
 import '../data/models/credential_models.dart';
 import '../widgets/evidence_document_actions.dart';
@@ -37,6 +38,19 @@ class StaffCredentialReviewView
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+            if (controller.hasReviewContext) ...[
+              RequiredDocCategoriesEditor(
+                choices: controller.categoryChoices,
+                selected: controller.requiredCategories.toSet(),
+                canEdit: controller.canEditRequiredDocs,
+                isEnded: controller.isEnded,
+                isSaving: controller.isSavingRequiredDocs.value,
+                isLoadingChoices: controller.isLoadingCatalog.value,
+                onToggle: controller.toggleRequiredCategory,
+                onSave: controller.saveRequiredDocCategories,
+              ),
+              const SizedBox(height: 16),
+            ],
             const Text(
               'Review each credential, then view or download its evidence '
               'file before you accept or reject it.',

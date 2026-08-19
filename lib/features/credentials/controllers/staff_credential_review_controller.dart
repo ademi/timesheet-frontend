@@ -6,8 +6,10 @@ import '../../../app/data/models/document/document_models.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/utils/name_sort.dart';
 import '../../documents/data/evidence_document_opener.dart';
 import '../../documents/data/document_pipeline.dart';
+import '../../engagements/controllers/workforce_controller.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../data/evidence_documents.dart';
 import '../data/models/credential_models.dart';
@@ -28,6 +30,9 @@ class StaffCredentialReviewController extends GetxController {
     EvidenceDocumentOpener? evidenceDocumentOpener,
     String? contractorId,
     String? engagementId,
+    List<String>? initialRequiredCategories,
+    bool canEditRequiredDocs = false,
+    bool isEnded = false,
     void Function(String title, String message)? showSnack,
   }) : _repository = repository,
        _engagementsRepository = engagementsRepository,
@@ -38,6 +43,9 @@ class StaffCredentialReviewController extends GetxController {
            EvidenceDocumentOpener(documentPipeline: documentPipeline),
        _contractorId = contractorId,
        _engagementId = engagementId,
+       _initialRequiredCategories = initialRequiredCategories,
+       _initialCanEditRequiredDocs = canEditRequiredDocs,
+       _initialIsEnded = isEnded,
        _showSnack = showSnack ?? _defaultSnack;
 
   final CredentialsRepository _repository;
@@ -62,6 +70,9 @@ class StaffCredentialReviewController extends GetxController {
   final selectedReasonCode = RxnString();
   String? _contractorId;
   String? _engagementId;
+  final List<String>? _initialRequiredCategories;
+  final bool _initialCanEditRequiredDocs;
+  final bool _initialIsEnded;
 
   /// Optional reason codes for credential review decisions (WF-4).
   static const reasonCodeOptions = <(String, String)>[
@@ -94,12 +105,38 @@ class StaffCredentialReviewController extends GetxController {
   final openingEvidenceCredentialId = RxnString();
   final reasonCredentialId = RxnString();
   final pendingReasonDecision = RxnString();
+  final requiredCategories = <String>{}.obs;
+  final catalogCategories = <CredentialCategory>[].obs;
+  final isLoadingCatalog = false.obs;
+  final isSavingRequiredDocs = false.obs;
+
+  bool _canEditRequiredDocs = false;
+  bool _isEnded = false;
 
   bool get canReview =>
       _session.hasPermission(AppPermissions.credentialsReview);
 
   bool get canRead => _session.hasPermission(AppPermissions.credentialsRead);
+  bool get canManage =>
+      _session.hasPermission(AppPermissions.contractorsManage);
+  bool get canEditRequiredDocs => _canEditRequiredDocs;
+  bool get isEnded => _isEnded;
   bool get hasReviewContext => _contractorId != null && _engagementId != null;
+
+  List<CredentialCategory> get categoryChoices {
+    final choices =
+        catalogCategories.isNotEmpty
+            ? catalogCategories.toList()
+            : credentialTypesAllowlist
+                .map(
+                  (code) => CredentialCategory(
+                    code: code,
+                    label: credentialTypeLabel(code),
+                  ),
+                )
+                .toList();
+    return sortedByName(choices, (c) => c.label);
+  }
 
   List<DocumentOut> evidenceFor(CredentialOut credential) {
     return evidenceByCredentialId[credential.id] ?? const [];
@@ -185,9 +222,90 @@ class StaffCredentialReviewController extends GetxController {
     if (args is Map) {
       _contractorId ??= args['contractorId']?.toString();
       _engagementId ??= args['engagementId']?.toString();
+      final cats = args['requiredCategories'];
+      if (cats is List) {
+        requiredCategories
+          ..clear()
+          ..addAll(cats.map((e) => e.toString()));
+      }
+      if (args.containsKey('canEditRequiredDocs')) {
+        _canEditRequiredDocs = args['canEditRequiredDocs'] == true;
+      }
+      if (args.containsKey('isEnded')) {
+        _isEnded = args['isEnded'] == true;
+      }
+    } else {
+      _canEditRequiredDocs = _initialCanEditRequiredDocs;
+      _isEnded = _initialIsEnded;
+      if (_initialRequiredCategories != null) {
+        requiredCategories.assignAll(_initialRequiredCategories);
+      }
+    }
+    if (_canEditRequiredDocs) {
+      loadCredentialCategories();
     }
     if (_contractorId != null) {
       load();
+    }
+  }
+
+  void toggleRequiredCategory(String category) {
+    if (requiredCategories.contains(category)) {
+      requiredCategories.remove(category);
+    } else {
+      requiredCategories.add(category);
+    }
+  }
+
+  Future<void> loadCredentialCategories() async {
+    isLoadingCatalog.value = true;
+    try {
+      final list = await _repository.listCredentialCategories();
+      catalogCategories.assignAll(list);
+    } on AppFailure {
+      // Keep allowlist fallback via [categoryChoices].
+    } catch (_) {
+      // Keep allowlist fallback via [categoryChoices].
+    } finally {
+      isLoadingCatalog.value = false;
+    }
+  }
+
+  Future<void> saveRequiredDocCategories() async {
+    if (!canManage || _engagementId == null) return;
+    if (requiredCategories.isEmpty) {
+      errorMessage.value =
+          'At least one required document category is required.';
+      return;
+    }
+    isSavingRequiredDocs.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _engagementsRepository.replaceRequiredDocCategories(
+        engagementId: _engagementId!,
+        categories: requiredCategories.toList(),
+      );
+      requiredCategories
+        ..clear()
+        ..addAll(updated.requiredDocCategories.map((c) => c.category));
+      if (Get.isRegistered<WorkforceController>()) {
+        final workforce = Get.find<WorkforceController>();
+        workforce.selected = updated;
+        final idx = workforce.items.indexWhere((e) => e.id == updated.id);
+        if (idx >= 0) {
+          workforce.items[idx] = updated;
+        }
+        workforce.detailSelectedCategories
+          ..clear()
+          ..addAll(updated.requiredDocCategories.map((c) => c.category));
+      }
+      _showSnack('Saved', 'Required certificates updated.');
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isSavingRequiredDocs.value = false;
     }
   }
 

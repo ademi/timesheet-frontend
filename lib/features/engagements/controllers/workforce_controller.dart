@@ -574,6 +574,10 @@ class WorkforceController extends GetxController {
       arguments: {
         'contractorId': engagement.contractorId,
         'engagementId': engagement.id,
+        'requiredCategories':
+            engagement.requiredDocCategories.map((c) => c.category).toList(),
+        'canEditRequiredDocs': canManage && !engagement.isEnded,
+        'isEnded': engagement.isEnded,
       },
       parameters: {
         'contractorId': engagement.contractorId,
