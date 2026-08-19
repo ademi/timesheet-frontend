@@ -187,15 +187,20 @@ class _CreateBatchTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
           const Text(
+            'Create Payment Batch',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          const Text(
             'Choose the pay period, then select the contractors to include. Each contractor will bring in all unpaid completed visits for that period.',
             style: TextStyle(fontSize: 13),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: controller.periodLabelCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Period label',
-              border: OutlineInputBorder(),
+          OutlinedButton.icon(
+            onPressed: () => controller.pickPeriod(context),
+            icon: const Icon(Icons.date_range_outlined),
+            label: Text(
+              '${controller.periodRange.value.start.toIso8601String().substring(0, 10)} → ${controller.periodRange.value.end.toIso8601String().substring(0, 10)}',
             ),
           ),
           const SizedBox(height: 12),
@@ -237,7 +242,7 @@ class _CreateBatchTab extends StatelessWidget {
             ),
           if (controller.contractorCandidates.isNotEmpty) const SizedBox(height: 12),
           if (controller.contractorCandidates.isEmpty)
-            const Text('No unpaid completed visits in the last 90 days.'),
+            const Text('No unpaid completed visits in this period.'),
           if (controller.contractorCandidates.isNotEmpty &&
               controller.filteredContractorCandidates.isEmpty)
             const Text('No contractors match this filter.'),
@@ -281,6 +286,10 @@ class _CreateBatchTab extends StatelessWidget {
             ),
           if (controller.canManage)
             const SizedBox(height: 8),
+          if (controller.errorMessage.value != null) ...[
+            _ErrorBox(controller.errorMessage.value!),
+            const SizedBox(height: 8),
+          ],
           if (controller.canManage)
             AsyncElevatedButton(
               onPressed: controller.createBatch,

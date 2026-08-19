@@ -4,7 +4,9 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/models/profile_photo_models.dart';
 import '../../../shared/utils/external_url.dart';
+import '../../../shared/widgets/profile_photo_editor.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/clients_controller.dart';
 import '../data/models/client_models.dart';
@@ -55,6 +57,7 @@ class ClientsListView extends GetView<ClientsController> {
                     for (final c in controller.items)
                       _ClientCard(
                         client: c,
+                        photo: controller.photosByClient[c.id],
                         onOpen: () => controller.openDetail(c),
                       ),
                   ],
@@ -69,10 +72,15 @@ class ClientsListView extends GetView<ClientsController> {
 }
 
 class _ClientCard extends StatelessWidget {
-  const _ClientCard({required this.client, required this.onOpen});
+  const _ClientCard({
+    required this.client,
+    required this.onOpen,
+    this.photo,
+  });
 
   final ClientOut client;
   final VoidCallback onOpen;
+  final ProfilePhotoOut? photo;
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +94,13 @@ class _ClientCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
+        leading: ProfilePhotoEditor(
+          networkUrl: photo?.downloadUrl,
+          documentId: photo?.documentId,
+          readOnly: true,
+          size: 48,
+          showLabel: false,
+        ),
         title: Text(client.fullName),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

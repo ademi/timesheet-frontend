@@ -236,6 +236,7 @@ class _StaffCredentialCard extends StatelessWidget {
                       credentialId: c.id,
                       download: true,
                     ),
+                showView: controller.canReview,
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -267,10 +268,17 @@ class _StaffCredentialCard extends StatelessWidget {
                       'rejected',
                     ),
                     onPressed:
-                        () => controller.prepareReview(
-                          credential: c,
-                          decision: 'rejected',
-                        ),
+                        () {
+                          if (c.evidencePresence != 'present') {
+                            controller.errorMessage.value =
+                                'No certificate has been submitted to reject.';
+                            return;
+                          }
+                          controller.prepareReview(
+                            credential: c,
+                            decision: 'rejected',
+                          );
+                        },
                   ),
                   _ReviewActionButton(
                     label: 'Re-review',

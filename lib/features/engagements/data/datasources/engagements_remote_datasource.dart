@@ -102,6 +102,21 @@ class EngagementsRemoteDataSource {
   Future<EngagementOut> end(String engagementId) =>
       _lifecycle(ApiPaths.engagementEnd(engagementId), 'end');
 
+  Future<EngagementOut> replaceRequiredDocCategories({
+    required String engagementId,
+    required List<String> categories,
+  }) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        ApiPaths.engagementRequiredDocCategories(engagementId),
+        data: {'categories': categories},
+      );
+      return _requireOut(response.data, 'required-doc-categories');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   /// Staff: request contractor credential share for an engagement.
   Future<void> createSharingAccessRequest({
     required String engagementId,

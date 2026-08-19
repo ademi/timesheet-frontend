@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/controllers/clients_controller.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
+import 'package:rostiq/shared/models/profile_photo_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
@@ -60,6 +61,9 @@ void main() {
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => clients.listClients()).thenAnswer((_) async => [_client]);
+    when(() => clients.getClientProfilePhoto(any())).thenAnswer(
+      (_) async => const ProfilePhotoOut(hasPhoto: false),
+    );
     controller = ClientsController(
       repository: clients,
       session: session,

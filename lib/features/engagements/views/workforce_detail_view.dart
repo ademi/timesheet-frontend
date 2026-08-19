@@ -100,14 +100,43 @@ class WorkforceDetailView extends GetView<WorkforceController> {
             ),
             const SizedBox(height: 16),
             _row('Status', current.statusLabel),
-            _row(
+            const SizedBox(height: 8),
+            const Text(
               'Required documents',
-              current.requiredDocCategories.isEmpty
-                  ? '—'
-                  : current.requiredDocCategories
-                      .map((c) => c.displayLabel)
-                      .join(', '),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
+            const SizedBox(height: 8),
+            if (controller.canManage && !current.isEnded)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final cat in controller.inviteCategoryChoices)
+                    FilterChip(
+                      label: Text(cat.label),
+                      selected: controller.detailSelectedCategories.contains(
+                        cat.code,
+                      ),
+                      onSelected: controller.isSaving.value
+                          ? null
+                          : (_) => controller.toggleDetailCategory(cat.code),
+                    ),
+                  OutlinedButton(
+                    onPressed: controller.isSaving.value
+                        ? null
+                        : () => controller.saveRequiredDocCategories(current),
+                    child: const Text('Save certificates'),
+                  ),
+                ],
+              )
+            else
+              Text(
+                current.requiredDocCategories.isEmpty
+                    ? '—'
+                    : current.requiredDocCategories
+                        .map((c) => c.displayLabel)
+                        .join(', '),
+              ),
             const SizedBox(height: 16),
             const Text(
               'Lifecycle',
@@ -193,12 +222,14 @@ class WorkforceDetailView extends GetView<WorkforceController> {
               'Credentials',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
+            if (!current.isEnded) ...[
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () => controller.openCredentialReview(current),
               icon: const Icon(Icons.badge_outlined),
               label: const Text('Review credentials'),
             ),
+            ],
             const SizedBox(height: 24),
             const Text(
               'Payment rates',
@@ -208,6 +239,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
             EngagementRateBandsSection(
               key: ValueKey(current.id),
               engagementId: current.id,
+              canEditRates: !current.isEnded,
             ),
                 ],
               ),

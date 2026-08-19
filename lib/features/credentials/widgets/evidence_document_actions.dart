@@ -12,6 +12,7 @@ class EvidenceDocumentActions extends StatelessWidget {
     this.isBusy = false,
     this.showWhenEmpty = false,
     this.emptyMessage = 'No evidence file attached.',
+    this.showView = true,
   });
 
   final List<DocumentOut> documents;
@@ -20,6 +21,7 @@ class EvidenceDocumentActions extends StatelessWidget {
   final bool isBusy;
   final bool showWhenEmpty;
   final String emptyMessage;
+  final bool showView;
 
   @override
   Widget build(BuildContext context) {
@@ -62,11 +64,12 @@ class EvidenceDocumentActions extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      OutlinedButton.icon(
-                        onPressed: isBusy ? null : () => onView(document),
-                        icon: const Icon(Icons.visibility_outlined, size: 18),
-                        label: const Text('View'),
-                      ),
+                      if (showView)
+                        OutlinedButton.icon(
+                          onPressed: isBusy ? null : () => onView(document),
+                          icon: const Icon(Icons.visibility_outlined, size: 18),
+                          label: const Text('View'),
+                        ),
                       OutlinedButton.icon(
                         onPressed: isBusy ? null : () => onDownload(document),
                         icon: const Icon(Icons.download_outlined, size: 18),

@@ -6,7 +6,7 @@ class MaxWidthBox extends StatelessWidget {
     super.key,
     required this.maxWidth,
     required this.child,
-    this.alignment = Alignment.topLeft,
+    this.alignment = Alignment.topCenter,
   });
 
   final double maxWidth;

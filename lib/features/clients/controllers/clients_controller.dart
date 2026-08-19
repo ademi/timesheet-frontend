@@ -72,6 +72,7 @@ class ClientsController extends GetxController {
   // Profile photo (detail page, read-only)
   final detailPhoto = Rxn<ProfilePhotoOut>();
   final isDetailPhotoLoading = false.obs;
+  final photosByClient = <String, ProfilePhotoOut>{}.obs;
 
   // Client types / dynamic requirements
   final clientTypes = <ClientTypeOut>[].obs;
@@ -194,6 +195,8 @@ class ClientsController extends GetxController {
     errorMessage.value = null;
     try {
       items.assignAll(await _repository.listClients());
+      photosByClient.clear();
+      _ensureListPhotosLoaded();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (e) {
@@ -258,6 +261,42 @@ class ClientsController extends GetxController {
     } catch (_) {
     } finally {
       isFormPhotoLoading.value = false;
+    }
+  }
+
+  Future<void> _ensureListPhotosLoaded() async {
+    if (!canRead) return;
+    final ids = items.map((c) => c.id).where((id) => id.isNotEmpty).toSet();
+    final pending = ids.where((id) => !photosByClient.containsKey(id)).toList();
+    if (pending.isEmpty) return;
+    final results = await Future.wait(
+      pending.map((id) async {
+        try {
+          return MapEntry(id, await _repository.getClientProfilePhoto(id));
+        } on AppFailure {
+          return MapEntry(id, null);
+        } catch (_) {
+          return MapEntry(id, null);
+        }
+      }),
+    );
+    for (final entry in results) {
+      final photo = entry.value;
+      if (photo != null) {
+        photosByClient[entry.key] = photo;
+      }
+    }
+  }
+
+  Future<void> openExistingRequirementDocument(RequirementDraft draft) async {
+    final id = draft.existingDocumentId.value;
+    if (id == null || _pipeline == null) return;
+    try {
+      await _pipeline!.openDocument(id);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
     }
   }
 
@@ -618,7 +657,7 @@ class ClientsController extends GetxController {
           } on AppFailure catch (e) {
             Get.back();
             await load();
-            openDetail(created, initialTab: ClientsController.tabDetails);
+            openDetail(created, initialTab: ClientsController.tabOverview);
             Get.snackbar(
               'Client saved',
               'Profile photo failed: ${e.message}',
@@ -1039,15 +1078,16 @@ class ClientsController extends GetxController {
   }
 
   /// Tab indices on client detail.
-  static const tabDetails = 0;
-  static const tabSites = 1;
-  static const tabContacts = 2;
-  static const tabSupport = 3;
-  static const tabVisits = 4;
+  static const tabOverview = 0;
+  static const tabSupport = 1;
+  static const tabLocations = 2;
+  static const tabSites = 2;
+  static const tabContacts = 3;
+  static const tabDetails = 4;
 
   Future<void> openDetail(
     ClientOut client, {
-    int initialTab = tabDetails,
+    int initialTab = tabOverview,
   }) async {
     selected.value = client;
     lastInvite.value = null;
@@ -1097,7 +1137,7 @@ class ClientsController extends GetxController {
     }
   }
 
-  /// Loads types list + requirements/profile for the Types tab.
+  /// Loads types list + requirements/profile for the Details tab.
   Future<void> loadTypeTabForSelected() async {
     final client = selected.value;
     if (client == null) return;
@@ -1105,8 +1145,12 @@ class ClientsController extends GetxController {
     selectedClientTypeId.value = client.clientTypeId;
     _disposeRequirementDrafts();
     requirementDrafts.clear();
-    final typeId = client.clientTypeId;
+    var typeId = client.clientTypeId;
+    if (typeId == null || typeId.isEmpty) {
+      typeId = await _resolveDefaultPatientTypeId();
+    }
     if (typeId != null && typeId.isNotEmpty) {
+      selectedClientTypeId.value = typeId;
       await _loadRequirementsForType(typeId);
     }
     await _prefillFromProfile(client.id);

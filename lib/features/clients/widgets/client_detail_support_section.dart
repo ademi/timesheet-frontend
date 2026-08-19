@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/equal_fill_row.dart';
 
 class ClientDetailSupportSection extends StatelessWidget {
   const ClientDetailSupportSection({
@@ -20,6 +21,40 @@ class ClientDetailSupportSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final start = canManage && !hasOngoing
+        ? ElevatedButton.icon(
+            onPressed: onStartOngoing,
+            icon: const Icon(Icons.event_repeat_outlined),
+            label: const Text('Start ongoing support'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+            ),
+          )
+        : null;
+    final book = canManage
+        ? ElevatedButton.icon(
+            onPressed: onBookOne,
+            icon: const Icon(Icons.event_outlined),
+            label: const Text('Book one session'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+            ),
+          )
+        : null;
+    final open = hasOngoing
+        ? OutlinedButton(
+            onPressed: onOpenOngoing,
+            child: const Text('Open support'),
+          )
+        : null;
+    final rowChildren = <Widget>[
+      if (start != null) start,
+      if (book != null) book,
+      if (open != null) open,
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -28,43 +63,7 @@ class ClientDetailSupportSection extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
         const SizedBox(height: 8),
-        if (canManage && !hasOngoing) ...[
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ElevatedButton.icon(
-              onPressed: onStartOngoing,
-              icon: const Icon(Icons.event_repeat_outlined),
-              label: const Text('Start ongoing support'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-        if (canManage || hasOngoing)
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (canManage)
-                ElevatedButton.icon(
-                  onPressed: onBookOne,
-                  icon: const Icon(Icons.event_outlined),
-                  label: const Text('Book one session'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.onPrimary,
-                  ),
-                ),
-              if (hasOngoing)
-                OutlinedButton(
-                  onPressed: onOpenOngoing,
-                  child: const Text('Open support'),
-                ),
-            ],
-          ),
+        if (rowChildren.isNotEmpty) EqualFillRow(children: rowChildren),
       ],
     );
   }

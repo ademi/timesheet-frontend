@@ -59,6 +59,7 @@ class StaffPaymentsController extends GetxController {
   final periodLabelCtrl = TextEditingController();
   final contractorFilterCtrl = TextEditingController();
   final contractorFilter = ''.obs;
+  late final Rx<DateTimeRange> periodRange;
 
   bool get canView =>
       _session.hasPermission(AppPermissions.paymentsView) ||
@@ -70,9 +71,9 @@ class StaffPaymentsController extends GetxController {
   void onInit() {
     super.onInit();
     final now = DateTime.now();
-    final today =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    periodLabelCtrl.text = '$today..$today';
+    final today = DateTime(now.year, now.month, now.day);
+    periodRange = DateTimeRange(start: today, end: today).obs;
+    periodLabelCtrl.text = _periodLabelFor(periodRange.value);
     contractorFilterCtrl.addListener(() {
       contractorFilter.value = contractorFilterCtrl.text.trim();
     });
@@ -113,12 +114,40 @@ class StaffPaymentsController extends GetxController {
     );
   }
 
+  String _ymd(DateTime d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${d.year}-${two(d.month)}-${two(d.day)}';
+  }
+
+  String _periodLabelFor(DateTimeRange range) =>
+      '${_ymd(range.start)}..${_ymd(range.end)}';
+
+  Future<void> pickPeriod(BuildContext context) async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+      initialDateRange: periodRange.value,
+    );
+    if (picked == null) return;
+    periodRange.value = picked;
+    periodLabelCtrl.text = _periodLabelFor(picked);
+    selectedContractorIds.clear();
+    try {
+      await _loadUnpaidVisits();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    }
+  }
+
   Future<void> _loadUnpaidVisits() async {
-    final now = DateTime.now().toUtc();
-    final from = now.subtract(const Duration(days: 90));
+    final range = periodRange.value;
+    final from = DateTime.utc(range.start.year, range.start.month, range.start.day);
+    final to = DateTime.utc(range.end.year, range.end.month, range.end.day)
+        .add(const Duration(days: 1));
     final list = await _visits.listVisits(
       from: from,
-      to: now.add(const Duration(days: 1)),
+      to: to,
       status: 'completed',
       paymentStatus: 'unpaid',
     );
@@ -218,7 +247,8 @@ class StaffPaymentsController extends GetxController {
     }
 
     if (visitIds.isEmpty) {
-      errorMessage.value = 'Select at least one contractor to include in the batch.';
+      errorMessage.value =
+          'Visit must be completed to add to payment batch.';
       return;
     }
     isSaving.value = true;

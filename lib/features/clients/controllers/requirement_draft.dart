@@ -25,6 +25,7 @@ class RequirementDraft {
   final multiSelect = <String>[].obs;
   final localFiles = <PickedClientFile>[].obs;
   final existingDocumentId = RxnString();
+  final existingDocumentFilename = RxnString();
 
   final formFieldCtrls = <String, TextEditingController>{};
 
@@ -117,6 +118,7 @@ class RequirementDraft {
   void applyFact(ClientProfileFactOut fact) {
     if (fact.documentId != null) {
       existingDocumentId.value = fact.documentId;
+      existingDocumentFilename.value = 'Document on file';
     }
     final value = fact.valueJson;
     if (value == null) return;

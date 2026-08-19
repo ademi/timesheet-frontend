@@ -131,4 +131,57 @@ void main() {
       expect(find.text('Confirm reject'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'reject without submitted certificate shows error',
+    (tester) async {
+      when(
+        () => credentials.listForTenantContractor(
+          'contractor-1',
+          engagementId: 'engagement-1',
+        ),
+      ).thenAnswer(
+        (_) async => [
+          CredentialOut(
+            id: 'credential-1',
+            contractorId: 'contractor-1',
+            credentialType: 'first_aid',
+            status: 'active',
+            provenanceState: 'contractor_asserted',
+            evidencePresence: 'none',
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+          ),
+        ],
+      );
+      when(
+        () => pipeline.listEvidenceForContractor('contractor-1'),
+      ).thenAnswer((_) async => const []);
+
+      final controller = StaffCredentialReviewController(
+        repository: credentials,
+        engagementsRepository: engagements,
+        session: session,
+        documentPipeline: pipeline,
+        contractorId: 'contractor-1',
+        engagementId: 'engagement-1',
+      );
+      Get.put(controller);
+      await controller.load();
+
+      await tester.pumpWidget(
+        const GetMaterialApp(home: StaffCredentialReviewView()),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Reject'));
+      await tester.pump();
+
+      expect(
+        find.text('No certificate has been submitted to reject.'),
+        findsOneWidget,
+      );
+      expect(find.text('Why are you rejecting this credential?'), findsNothing);
+    },
+  );
 }

@@ -60,6 +60,8 @@ abstract final class ApiPaths {
   static String engagementSuspend(String id) => '${engagement(id)}/suspend';
   static String engagementResume(String id) => '${engagement(id)}/resume';
   static String engagementEnd(String id) => '${engagement(id)}/end';
+  static String engagementRequiredDocCategories(String id) =>
+      '${engagement(id)}/required-doc-categories';
   static String engagementCredentialReviews(String id) =>
       '${engagement(id)}/credential-reviews';
   static String engagementSharingAccessRequests(String engagementId) =>

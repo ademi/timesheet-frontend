@@ -16,11 +16,11 @@ class ClientDetailView extends GetView<ClientsController> {
   const ClientDetailView({super.key});
 
   static const _tabLabels = [
-    'Details',
-    'Sites',
-    'Contacts',
+    'Overview',
     'Support',
-    'Visits',
+    'Locations',
+    'Contacts',
+    'Details',
   ];
 
   @override
@@ -82,8 +82,7 @@ class ClientDetailView extends GetView<ClientsController> {
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+              child: Column(
                 children: [
                   ProfilePhotoEditor(
                     networkUrl: controller.detailPhoto.value?.downloadUrl,
@@ -93,14 +92,13 @@ class ClientDetailView extends GetView<ClientsController> {
                     size: 72,
                     showLabel: false,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      client.fullName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
+                  const SizedBox(height: 12),
+                  Text(
+                    client.fullName,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
                     ),
                   ),
                 ],
@@ -143,7 +141,7 @@ class ClientDetailView extends GetView<ClientsController> {
 
   Widget _tabContent(int tab) {
     switch (tab) {
-      case ClientsController.tabSites:
+      case ClientsController.tabLocations:
         return ClientDetailSitesSection(
           sites: controller.sites.toList(),
           canManage: controller.canManage,
@@ -160,39 +158,39 @@ class ClientDetailView extends GetView<ClientsController> {
           onDelete: controller.deleteContact,
         );
       case ClientsController.tabSupport:
-        if (!controller.canManageSupport && !controller.hasOngoing) {
-          return const Text(
-            'No support arrangement yet.',
-            style: TextStyle(color: AppColors.textMuted),
-          );
-        }
-        return ClientDetailSupportSection(
-          hasOngoing: controller.hasOngoing,
-          canManage: controller.canManageSupport,
-          onStartOngoing: controller.startOngoingSupport,
-          onBookOne: controller.bookOneSession,
-          onOpenOngoing: controller.openOngoingSupport,
-        );
-      case ClientsController.tabVisits:
-        return ClientDetailVisitsSection(
-          upcoming: controller.upcomingVisits.toList(),
-          past: controller.pastVisits.toList(),
-          isLoading: controller.isLoadingVisits.value,
-          error: controller.visitsError.value,
-          truncated: controller.visitsTruncated.value,
-          hasVisitsAccess: controller.canViewVisits,
-          onOpen: controller.openVisitDetail,
-        );
-      case ClientsController.tabDetails:
-      default:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClientDetailFactsSection(facts: controller.quickFacts),
+            if (controller.canManageSupport || controller.hasOngoing)
+              ClientDetailSupportSection(
+                hasOngoing: controller.hasOngoing,
+                canManage: controller.canManageSupport,
+                onStartOngoing: controller.startOngoingSupport,
+                onBookOne: controller.bookOneSession,
+                onOpenOngoing: controller.openOngoingSupport,
+              )
+            else
+              const Text(
+                'No support arrangement yet.',
+                style: TextStyle(color: AppColors.textMuted),
+              ),
             const SizedBox(height: 24),
-            ClientDetailProfileSection(controller: controller),
+            ClientDetailVisitsSection(
+              upcoming: controller.upcomingVisits.toList(),
+              past: controller.pastVisits.toList(),
+              isLoading: controller.isLoadingVisits.value,
+              error: controller.visitsError.value,
+              truncated: controller.visitsTruncated.value,
+              hasVisitsAccess: controller.canViewVisits,
+              onOpen: controller.openVisitDetail,
+            ),
           ],
         );
+      case ClientsController.tabDetails:
+        return ClientDetailProfileSection(controller: controller);
+      case ClientsController.tabOverview:
+      default:
+        return ClientDetailFactsSection(facts: controller.quickFacts);
     }
   }
 }

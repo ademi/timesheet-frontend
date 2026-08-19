@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/controllers/clients_controller.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
+import 'package:rostiq/shared/models/profile_photo_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/views/client_detail_view.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
@@ -43,6 +44,9 @@ void main() {
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => clients.listClients()).thenAnswer((_) async => [_client]);
+    when(() => clients.getClientProfilePhoto(any())).thenAnswer(
+      (_) async => const ProfilePhotoOut(hasPhoto: false),
+    );
     when(() => clients.listClientTypes()).thenAnswer((_) async => []);
     controller = ClientsController(
       repository: clients,
@@ -55,7 +59,7 @@ void main() {
 
   tearDown(Get.reset);
 
-  testWidgets('shows subject tabs and Details first', (tester) async {
+  testWidgets('shows subject tabs and Overview first', (tester) async {
     await tester.pumpWidget(
       const GetMaterialApp(home: ClientDetailView()),
     );
@@ -65,38 +69,39 @@ void main() {
     expect(find.byKey(const ValueKey('client-detail-tab-2')), findsOneWidget);
     expect(find.byKey(const ValueKey('client-detail-tab-3')), findsOneWidget);
     expect(find.byKey(const ValueKey('client-detail-tab-4')), findsOneWidget);
-    expect(find.text('Overview'), findsOneWidget);
+    expect(find.text('Overview'), findsWidgets);
+    expect(find.text('Date of birth'), findsOneWidget);
     expect(
       find.text('Select a type to show optional profile requirements and documents.'),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(find.text('No sites yet.'), findsNothing);
+    expect(find.text('No locations yet.'), findsNothing);
   });
 
-  testWidgets('Sites tab shows only sites content', (tester) async {
-    await tester.pumpWidget(
-      const GetMaterialApp(home: ClientDetailView()),
-    );
-
-    await tester.tap(find.byKey(const ValueKey('client-detail-tab-1')));
-    await tester.pump();
-
-    expect(find.text('No sites yet.'), findsOneWidget);
-    expect(find.text('Overview'), findsNothing);
-    expect(find.text('No contacts yet.'), findsNothing);
-  });
-
-  testWidgets('Contacts and Visits tabs isolate their sections', (tester) async {
+  testWidgets('Locations tab shows only locations content', (tester) async {
     await tester.pumpWidget(
       const GetMaterialApp(home: ClientDetailView()),
     );
 
     await tester.tap(find.byKey(const ValueKey('client-detail-tab-2')));
     await tester.pump();
-    expect(find.text('No contacts yet.'), findsOneWidget);
-    expect(find.text('No sites yet.'), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('client-detail-tab-4')));
+    expect(find.text('No locations yet.'), findsOneWidget);
+    expect(find.text('Date of birth'), findsNothing);
+    expect(find.text('No contacts yet.'), findsNothing);
+  });
+
+  testWidgets('Contacts and Support tabs isolate their sections', (tester) async {
+    await tester.pumpWidget(
+      const GetMaterialApp(home: ClientDetailView()),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('client-detail-tab-3')));
+    await tester.pump();
+    expect(find.text('No contacts yet.'), findsOneWidget);
+    expect(find.text('No locations yet.'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('client-detail-tab-1')));
     await tester.pump();
     expect(find.text('Upcoming'), findsOneWidget);
     expect(find.text('Past'), findsOneWidget);

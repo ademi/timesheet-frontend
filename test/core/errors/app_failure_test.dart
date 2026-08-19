@@ -313,5 +313,35 @@ void main() {
         expect(failure.presentation, AppFailurePresentation.inline);
       }
     });
+    test('maps visit_not_completed and invalid_engagement_state', () {
+      expect(
+        AppFailure.fromDio(
+          DioException(
+            requestOptions: RequestOptions(path: '/payment-batches'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/payment-batches'),
+              statusCode: 400,
+              data: {'detail': 'visit_not_completed'},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        ).message,
+        'Visit must be completed to add to payment batch.',
+      );
+      expect(
+        AppFailure.fromDio(
+          DioException(
+            requestOptions: RequestOptions(path: '/payroll'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/payroll'),
+              statusCode: 409,
+              data: {'detail': 'invalid_engagement_state'},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        ).message,
+        'This worker is no longer in your workforce.',
+      );
+    });
   });
 }

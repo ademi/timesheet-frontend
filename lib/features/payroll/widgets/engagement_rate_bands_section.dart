@@ -11,9 +11,11 @@ class EngagementRateBandsSection extends StatefulWidget {
   const EngagementRateBandsSection({
     super.key,
     required this.engagementId,
+    this.canEditRates = true,
   });
 
   final String engagementId;
+  final bool canEditRates;
 
   @override
   State<EngagementRateBandsSection> createState() =>
@@ -86,7 +88,7 @@ class _EngagementRateBandsSectionState
                 ),
               ),
             ),
-          if (_controller.canManage) ...[
+          if (_controller.canManage && widget.canEditRates) ...[
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed:

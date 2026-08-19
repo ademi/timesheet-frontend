@@ -26,7 +26,7 @@ class ClientDetailSitesSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Sites',
+          'Locations',
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
         const SizedBox(height: 8),
@@ -41,7 +41,7 @@ class ClientDetailSitesSection extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: onAdd,
               icon: const Icon(Icons.add_location_alt_outlined),
-              label: const Text('Add site'),
+              label: const Text('Add location'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
@@ -51,7 +51,7 @@ class ClientDetailSitesSection extends StatelessWidget {
         if (canManage) const SizedBox(height: 12),
         if (sites.isEmpty)
           const Text(
-            'No sites yet.',
+            'No locations yet.',
             style: TextStyle(color: AppColors.textMuted),
           ),
         for (final site in sites)

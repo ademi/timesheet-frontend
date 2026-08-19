@@ -52,6 +52,7 @@ class WorkforceController extends GetxController {
   final selectedCategories = <String>{}.obs;
   final catalogCategories = <CredentialCategory>[].obs;
   final isLoadingCatalog = false.obs;
+  final detailSelectedCategories = <String>{}.obs;
 
   EngagementOut? selected;
 
@@ -170,6 +171,12 @@ class WorkforceController extends GetxController {
     selected = e;
     clearError();
     detailPhoto.value = photosByContractor[e.contractorId];
+    detailSelectedCategories
+      ..clear()
+      ..addAll(e.requiredDocCategories.map((c) => c.category));
+    if (canManage && !e.isEnded) {
+      loadCredentialCategories();
+    }
     Get.toNamed(AppRoutes.staffWorkforceDetail, arguments: e);
     loadDetailProfilePhoto(e.contractorId);
   }
@@ -194,6 +201,51 @@ class WorkforceController extends GetxController {
       selectedCategories.remove(category);
     } else {
       selectedCategories.add(category);
+    }
+  }
+
+  void toggleDetailCategory(String category) {
+    if (detailSelectedCategories.contains(category)) {
+      detailSelectedCategories.remove(category);
+    } else {
+      detailSelectedCategories.add(category);
+    }
+  }
+
+  Future<void> saveRequiredDocCategories(EngagementOut engagement) async {
+    if (!canManage) {
+      _setError('Missing contractors.manage permission.');
+      return;
+    }
+    if (engagement.isEnded) {
+      _setError('This worker is no longer in your workforce.');
+      return;
+    }
+    if (detailSelectedCategories.isEmpty) {
+      _setError('At least one required document category is required.');
+      return;
+    }
+    isSaving.value = true;
+    clearError();
+    try {
+      final updated = await _repository.replaceRequiredDocCategories(
+        engagementId: engagement.id,
+        categories: detailSelectedCategories.toList(),
+      );
+      selected = updated;
+      final idx = items.indexWhere((e) => e.id == updated.id);
+      if (idx >= 0) {
+        items[idx] = updated;
+      }
+      detailSelectedCategories
+        ..clear()
+        ..addAll(updated.requiredDocCategories.map((c) => c.category));
+    } on AppFailure catch (e) {
+      _setError(e.message);
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      isSaving.value = false;
     }
   }
 
@@ -506,6 +558,10 @@ class WorkforceController extends GetxController {
   }
 
   void openCredentialReview(EngagementOut engagement) {
+    if (engagement.isEnded) {
+      _setError('This worker is no longer in your workforce.');
+      return;
+    }
     Get.toNamed(
       AppRoutes.staffCredentialReview,
       arguments: {

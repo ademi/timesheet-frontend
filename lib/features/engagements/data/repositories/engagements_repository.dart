@@ -38,6 +38,14 @@ class EngagementsRepository {
   Future<EngagementOut> resume(String id) => _remote.resume(id);
   Future<EngagementOut> end(String id) => _remote.end(id);
 
+  Future<EngagementOut> replaceRequiredDocCategories({
+    required String engagementId,
+    required List<String> categories,
+  }) => _remote.replaceRequiredDocCategories(
+        engagementId: engagementId,
+        categories: categories,
+      );
+
   Future<void> createSharingAccessRequest({
     required String engagementId,
     bool allowSourceEvidence = true,

@@ -256,10 +256,21 @@ class _DocumentPicker extends StatelessWidget {
           if (existing != null) ...[
             const SizedBox(height: 6),
             Text(
-              'Current document on file',
+              draft.existingDocumentFilename.value ??
+                  'Current document on file',
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.textMuted,
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: controller.isSaving.value
+                    ? null
+                    : () => controller.openExistingRequirementDocument(draft),
+                icon: const Icon(Icons.download_outlined, size: 18),
+                label: const Text('Download'),
               ),
             ),
           ],

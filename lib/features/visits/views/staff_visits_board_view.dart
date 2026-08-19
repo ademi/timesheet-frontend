@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/equal_fill_row.dart';
 import '../../../core/time/tenant_civil_time.dart';
 import '../../clients/controllers/clients_controller.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
@@ -193,7 +194,9 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                         ),
                       ),
                     ),
-                  DropdownButtonFormField<String>(
+                  EqualFillRow(
+                    children: [
+                      DropdownButtonFormField<String>(
                     value: _clientDropdownValue(
                       controller.clientIdFilter.value,
                       clients,
@@ -206,32 +209,12 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  // Support sub-filter only when the selected client has >1 open
-                  // support (D3). Client dropdown stays primary otherwise.
-                  if (controller.showSupportFilter) ...[
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value: _jobDropdownValue(
-                        controller.jobIdFilter.value,
-                        controller.supportsForSelectedClient,
-                      ),
-                      isExpanded: true,
-                      items: _supportDropdownItems(
-                        controller.supportsForSelectedClient,
-                      ),
-                      onChanged: controller.setJobFilter,
-                      decoration: const InputDecoration(
-                        labelText: 'Support',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
+                      DropdownButtonFormField<String>(
                     value:
                         controller.statusFilter.value.isEmpty
                             ? null
                             : controller.statusFilter.value,
+                    isExpanded: true,
                     items: const [
                       DropdownMenuItem(
                         value: null,
@@ -253,6 +236,28 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                       border: OutlineInputBorder(),
                     ),
                   ),
+                    ],
+                  ),
+                  // Support sub-filter only when the selected client has >1 open
+                  // support (D3). Client dropdown stays primary otherwise.
+                  if (controller.showSupportFilter) ...[
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _jobDropdownValue(
+                        controller.jobIdFilter.value,
+                        controller.supportsForSelectedClient,
+                      ),
+                      isExpanded: true,
+                      items: _supportDropdownItems(
+                        controller.supportsForSelectedClient,
+                      ),
+                      onChanged: controller.setJobFilter,
+                      decoration: const InputDecoration(
+                        labelText: 'Support',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

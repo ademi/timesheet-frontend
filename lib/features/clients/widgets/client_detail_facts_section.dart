@@ -12,22 +12,22 @@ class ClientDetailFactsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (facts == null) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Overview',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _row('Status', facts!.status),
+            if (facts!.clientTypeName != null)
+              _row('Type', facts!.clientTypeName!),
+            _row('Date of birth', facts!.dob ?? '—'),
+            if (facts!.ndisNumber != null) _row('NDIS', facts!.ndisNumber!),
+            if (facts!.email != null) _row('Email', facts!.email!),
+            if (facts!.phone != null) _row('Phone', facts!.phone!),
+          ],
         ),
-        const SizedBox(height: 8),
-        _row('Status', facts!.status),
-        if (facts!.clientTypeName != null)
-          _row('Type', facts!.clientTypeName!),
-        if (facts!.dob != null) _row('Date of birth', facts!.dob!),
-        if (facts!.ndisNumber != null) _row('NDIS', facts!.ndisNumber!),
-        if (facts!.email != null) _row('Email', facts!.email!),
-        if (facts!.phone != null) _row('Phone', facts!.phone!),
-      ],
+      ),
     );
   }
 }

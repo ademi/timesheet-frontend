@@ -95,7 +95,7 @@ class ClientFormView extends GetView<ClientsController> {
                         ),
                       ),
                       Step(
-                        title: const Text('Sites'),
+                        title: const Text('Locations'),
                         isActive: controller.createStepIndex.value >= 1,
                         content: _CreateSitesStep(controller: controller),
                       ),
@@ -294,20 +294,21 @@ class _CoreDetailsStep extends StatelessWidget {
           },
         ),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          value: controller.status.value,
-          items: const [
-            DropdownMenuItem(value: 'active', child: Text('active')),
-            DropdownMenuItem(value: 'inactive', child: Text('inactive')),
-          ],
-          onChanged: (v) {
-            if (v != null) controller.status.value = v;
-          },
-          decoration: const InputDecoration(
-            labelText: 'Status',
-            border: OutlineInputBorder(),
+        if (!controller.isCreateFlow.value)
+          DropdownButtonFormField<String>(
+            value: controller.status.value,
+            items: const [
+              DropdownMenuItem(value: 'active', child: Text('active')),
+              DropdownMenuItem(value: 'inactive', child: Text('inactive')),
+            ],
+            onChanged: (v) {
+              if (v != null) controller.status.value = v;
+            },
+            decoration: const InputDecoration(
+              labelText: 'Status',
+              border: OutlineInputBorder(),
+            ),
           ),
-        ),
         if (showServiceAgreement) ...[
           const SizedBox(height: 12),
           TextFormField(

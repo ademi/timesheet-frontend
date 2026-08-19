@@ -147,6 +147,8 @@ class AppFailure implements Exception {
       'sharing_authorisation_forbidden',
       'sharing_grant_required',
       'invalid_transition',
+      'invalid_engagement_state',
+      'visit_not_completed',
       'hard_split_violation',
       'leave_in_past',
       'availability_windows_overlap',
@@ -265,6 +267,10 @@ class AppFailure implements Exception {
         return 'This action isn’t available for the engagement’s current '
             'status. If documents are still pending, review credentials '
             'first, then try again.';
+      case 'invalid_engagement_state':
+        return 'This worker is no longer in your workforce.';
+      case 'visit_not_completed':
+        return 'Visit must be completed to add to payment batch.';
       case 'counsel_pending':
       case 'counsel_pending_policy':
       case 'legal_document_unavailable':
