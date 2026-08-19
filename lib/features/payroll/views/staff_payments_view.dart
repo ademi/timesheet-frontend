@@ -58,7 +58,7 @@ class StaffPaymentsView extends GetView<StaffPaymentsController> {
                           onSelected: (_) => controller.tabIndex.value = 0,
                         ),
                         ChoiceChip(
-                          label: const Text('Create batch'),
+                          label: const Text('Create Batch'),
                           selected: tab == 1,
                           onSelected: (_) => controller.tabIndex.value = 1,
                         ),
