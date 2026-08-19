@@ -10,6 +10,9 @@ enum PageContentWidth {
 
   /// Lists with cards and mixed actions (~960px).
   workflow,
+
+  /// Roster / wide boards (~1200). Reuses [Breakpoints.maxContent].
+  wide,
 }
 
 /// Centers and caps width of inner page content: list cards, fields, buttons.
@@ -29,6 +32,7 @@ class PageContent extends StatelessWidget {
   double get _maxWidth => switch (width) {
     PageContentWidth.narrow => Breakpoints.narrowContent,
     PageContentWidth.workflow => Breakpoints.workflowContent,
+    PageContentWidth.wide => Breakpoints.maxContent,
   };
 
   @override

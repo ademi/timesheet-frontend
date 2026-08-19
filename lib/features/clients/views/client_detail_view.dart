@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
+import '../../../shared/widgets/subject_tab_bar.dart';
 import '../controllers/clients_controller.dart';
 import '../widgets/client_detail_contacts_section.dart';
 import '../widgets/client_detail_facts_section.dart';
@@ -105,23 +106,11 @@ class ClientDetailView extends GetView<ClientsController> {
               ),
             ),
             const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  for (var i = 0; i < _tabLabels.length; i++)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        key: ValueKey('client-detail-tab-$i'),
-                        label: Text(_tabLabels[i]),
-                        selected: tab == i,
-                        onSelected: (_) => controller.tabIndex.value = i,
-                      ),
-                    ),
-                ],
-              ),
+            SubjectTabBar(
+              labels: _tabLabels,
+              index: tab,
+              keyPrefix: 'client-detail-tab',
+              onChanged: (i) => controller.tabIndex.value = i,
             ),
             Expanded(
               child: ListView(
