@@ -10,6 +10,7 @@ class MeContextModel {
     this.contractorId,
     this.tenantMemberId,
     this.engagements = const [],
+    this.platformComplianceAccepted = false,
   });
 
   final String actorType;
@@ -17,6 +18,10 @@ class MeContextModel {
   final String? contractorId;
   final String? tenantMemberId;
   final List<EngagementSummaryModel> engagements;
+
+  /// True when the backend confirms the contractor has already accepted all
+  /// required platform compliance documents (platform_terms + privacy_policy).
+  final bool platformComplianceAccepted;
 
   factory MeContextModel.fromJson(Map<String, dynamic> json) {
     final rawEngagements = json['engagements'];
@@ -31,6 +36,8 @@ class MeContextModel {
               .map(EngagementSummaryModel.fromJson)
               .toList(growable: false)
           : const [],
+      platformComplianceAccepted:
+          json['platform_compliance_accepted'] as bool? ?? false,
     );
   }
 }

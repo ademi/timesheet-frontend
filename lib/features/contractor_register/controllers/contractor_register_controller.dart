@@ -6,6 +6,7 @@ import '../../../core/constants/feature_flags.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../features/contractor_onboarding/data/onboarding_progress_store.dart';
 import '../data/models/contractor_register_models.dart';
 import '../data/repositories/contractor_register_repository.dart';
 
@@ -123,7 +124,7 @@ class ContractorRegisterController extends GetxController {
     try {
       final phone = phoneController.text.trim();
       final dob = dobController.text.trim();
-      await _repository.register(
+      final response = await _repository.register(
         ContractorRegisterRequest(
           fullName: fullNameController.text.trim(),
           email: emailController.text.trim(),
@@ -135,6 +136,10 @@ class ContractorRegisterController extends GetxController {
           privacyVersion: privacyVersion,
         ),
       );
+      // The contractor just accepted Terms & Privacy during registration.
+      // Mark platform compliance complete locally so the onboarding funnel
+      // is not shown again when they log in on this device.
+      await OnboardingProgressStore().markPlatformComplete(response.contractorId);
       Get.snackbar(
         'Account created',
         'Sign in with your new contractor account.',

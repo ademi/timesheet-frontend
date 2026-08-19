@@ -43,6 +43,12 @@ class SessionService extends GetxController {
   Future<void>? _hydratingMeContext;
   int _meContextGeneration = 0;
 
+  /// Tracks whether the backend confirmed that this contractor has already
+  /// accepted all required platform compliance documents. Set by
+  /// [applyMeContext] and used by [_recomputeOnboarding] to avoid forcing
+  /// a self-registered contractor through the legal/terms funnel again.
+  bool _backendConfirmedPlatformCompliance = false;
+
   JwtClaims? get claims => _tokenStorage.jwtClaims;
 
   bool get isStaff =>
@@ -193,6 +199,7 @@ class SessionService extends GetxController {
     } else if (engagements.isNotEmpty && selectedEngagementId.value == null) {
       selectedEngagementId.value = engagements.first.id;
     }
+    _backendConfirmedPlatformCompliance = ctx.platformComplianceAccepted;
     _recomputeOnboarding();
   }
 
@@ -220,11 +227,17 @@ class SessionService extends GetxController {
     final id = contractorId.value;
     final localComplete = _onboardingProgressStore.isPlatformComplete(id);
     final progressed = hasPostInviteEngagement;
-    if (!localComplete && progressed && id != null && id.isNotEmpty) {
-      // Persist so later logins on this device do not re-run the funnel.
+    // Backend confirms the contractor already accepted platform docs during
+    // registration or a previous onboarding session.
+    final backendConfirmed = _backendConfirmedPlatformCompliance;
+
+    final alreadyCompliant = localComplete || progressed || backendConfirmed;
+    if (!localComplete && alreadyCompliant && id != null && id.isNotEmpty) {
+      // Persist so later logins on this device skip the funnel without
+      // needing the backend check again.
       _onboardingProgressStore.markPlatformComplete(id);
     }
-    needsPlatformCompliance.value = !localComplete && !progressed;
+    needsPlatformCompliance.value = !alreadyCompliant;
     needsEngagementWork.value = engagements.any((e) => e.status == 'invited');
     needsOnboarding.value =
         needsPlatformCompliance.value || needsEngagementWork.value;
@@ -255,6 +268,7 @@ class SessionService extends GetxController {
     needsOnboarding.value = false;
     needsPlatformCompliance.value = false;
     needsEngagementWork.value = false;
+    _backendConfirmedPlatformCompliance = false;
   }
 
   /// Design §4.2 post-login / restore landing route.

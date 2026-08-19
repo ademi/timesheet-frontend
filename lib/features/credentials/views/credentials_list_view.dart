@@ -35,6 +35,22 @@ class CredentialsListView extends GetView<CredentialsController> {
         return const Center(child: CircularProgressIndicator());
       }
       final err = controller.errorMessage.value;
+
+      // Determine whether the contractor has any engagement requesting docs.
+      final engagementList = engagements?.items ?? [];
+      final hasEngagements = engagementList.isNotEmpty;
+      final pendingDocsEngagements = engagementList
+          .where((e) => e.isPendingDocs)
+          .toList(growable: false);
+      final hasRequestedDocs = pendingDocsEngagements.isNotEmpty ||
+          (Get.isRegistered<SessionService>() &&
+              Get.find<SessionService>().needsDocsAttention);
+      // Allow adding if there's a doc request, or the contractor already has
+      // credentials that may need updating (attach evidence / supersede).
+      final canAdd =
+          controller.canManage &&
+          (hasRequestedDocs || controller.items.isNotEmpty);
+
       return RefreshIndicator(
         onRefresh: controller.load,
         child: ListView(
@@ -64,9 +80,7 @@ class CredentialsListView extends GetView<CredentialsController> {
               style: const TextStyle(color: AppColors.textMuted),
             ),
             const SizedBox(height: 12),
-            if (engagements != null &&
-                (Get.find<SessionService>().needsDocsAttention ||
-                    engagements.items.any((e) => e.isPendingDocs))) ...[
+            if (engagements != null && hasRequestedDocs) ...[
               const Text(
                 'Engagement document checklist',
                 style: TextStyle(
@@ -76,9 +90,7 @@ class CredentialsListView extends GetView<CredentialsController> {
                 ),
               ),
               const SizedBox(height: 8),
-              for (final engagement in engagements.items.where(
-                (engagement) => engagement.isPendingDocs,
-              ))
+              for (final engagement in pendingDocsEngagements)
                 EngagementDocsChecklist(
                   engagement: engagement,
                   credentials: controller.items,
@@ -92,7 +104,7 @@ class CredentialsListView extends GetView<CredentialsController> {
                 ),
               const SizedBox(height: 4),
             ],
-            if (controller.canManage)
+            if (canAdd)
               Align(
                 alignment: Alignment.centerLeft,
                 child: ElevatedButton.icon(
@@ -107,11 +119,23 @@ class CredentialsListView extends GetView<CredentialsController> {
                 ),
               ),
             const SizedBox(height: 12),
-            if (controller.items.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Text('No credentials yet.'),
-              ),
+            if (controller.items.isEmpty) ...[
+              if (!hasEngagements)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: _NoEngagementNotice(),
+                )
+              else if (!hasRequestedDocs)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: _NoDocRequestNotice(),
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Text('No credentials yet.'),
+                ),
+            ],
             for (final c in controller.items) _CredentialTile(credential: c),
                 ],
               ),
@@ -153,6 +177,63 @@ class _Banner extends StatelessWidget {
         message,
         style: TextStyle(color: error ? AppColors.error : AppColors.textDark),
       ),
+    );
+  }
+}
+
+class _NoEngagementNotice extends StatelessWidget {
+  const _NoEngagementNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        Icon(Icons.info_outline, color: AppColors.textMuted, size: 32),
+        SizedBox(height: 8),
+        Text(
+          'No credentials requested yet.',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          'Credentials are added when an employer invites you and requests '
+          'specific documents. Once you accept an engagement, any required '
+          'credentials will appear here.',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
+      ],
+    );
+  }
+}
+
+class _NoDocRequestNotice extends StatelessWidget {
+  const _NoDocRequestNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        Icon(Icons.check_circle_outline, color: AppColors.textMuted, size: 32),
+        SizedBox(height: 8),
+        Text(
+          'No documents requested.',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          'Your employer hasn\'t requested any credentials yet. '
+          'You\'ll be notified when documents are required.',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
+      ],
     );
   }
 }

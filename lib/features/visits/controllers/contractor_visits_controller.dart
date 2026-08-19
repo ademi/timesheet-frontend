@@ -102,7 +102,13 @@ class ContractorVisitsController extends GetxController {
       list.sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
       visits.assignAll(list);
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      // A contractor with no tenant engagement gets a "tenant_id claim missing"
+      // error from the API. Treat it as an empty list rather than an error.
+      if (_isTenantMissingError(e)) {
+        visits.clear();
+      } else {
+        errorMessage.value = e.message;
+      }
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
@@ -122,7 +128,11 @@ class ContractorVisitsController extends GetxController {
       list.sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
       openShifts.assignAll(list);
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      if (_isTenantMissingError(e)) {
+        openShifts.clear();
+      } else {
+        errorMessage.value = e.message;
+      }
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
@@ -335,4 +345,16 @@ String? _visitIdFromArgs(Object? arg) {
   if (arg is VisitOut) return arg.id;
   if (arg is String && arg.isNotEmpty) return arg;
   return null;
+}
+
+/// Returns true when the API error indicates the contractor has no tenant
+/// engagement yet (not a real error for a newly registered contractor).
+bool _isTenantMissingError(AppFailure e) {
+  final msg = e.message.toLowerCase();
+  final code = e.code.toLowerCase();
+  return msg.contains('tenant_id') ||
+      msg.contains('tenant id') ||
+      code.contains('tenant') ||
+      msg.contains('not engaged') ||
+      msg.contains('no engagement');
 }

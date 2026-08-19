@@ -50,7 +50,11 @@ class ContractorPaymentsController extends GetxController {
       list.sort((a, b) => b.scheduledStart.compareTo(a.scheduledStart));
       visits.assignAll(list);
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      if (_isTenantMissingError(e)) {
+        visits.clear();
+      } else {
+        errorMessage.value = e.message;
+      }
     } finally {
       isLoading.value = false;
     }
@@ -60,4 +64,14 @@ class ContractorPaymentsController extends GetxController {
     paymentFilter.value = status;
     load();
   }
+}
+
+bool _isTenantMissingError(AppFailure e) {
+  final msg = e.message.toLowerCase();
+  final code = e.code.toLowerCase();
+  return msg.contains('tenant_id') ||
+      msg.contains('tenant id') ||
+      code.contains('tenant') ||
+      msg.contains('not engaged') ||
+      msg.contains('no engagement');
 }
