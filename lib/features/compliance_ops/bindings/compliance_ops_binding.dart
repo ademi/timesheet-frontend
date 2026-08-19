@@ -101,6 +101,7 @@ class HomeAlertsBinding extends Bindings {
     EngagementsBinding.ensureShared();
     JobsBinding.ensureShared();
     VisitsBinding.ensureShared();
+    CredentialsBinding.ensureDependencies();
     NotificationsFeedController.ensureRegistered();
     if (!Get.isRegistered<SessionService>()) return;
     // Keep across shell Get.offNamed tab switches to avoid refetch storms.
@@ -113,6 +114,7 @@ class HomeAlertsBinding extends Bindings {
           engagementsRepository: Get.find<EngagementsRepository>(),
           jobsRepository: Get.find<JobsRepository>(),
           visitsRepository: Get.find<VisitsRepository>(),
+          credentialsRepository: Get.find<CredentialsRepository>(),
           notificationsFeed: Get.find<NotificationsFeedController>(),
         ),
         permanent: true,

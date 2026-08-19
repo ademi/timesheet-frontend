@@ -9,12 +9,17 @@ import '../../../core/errors/app_failure.dart';
 import '../../../core/responsive/breakpoints.dart';
 import '../../../core/services/session_service.dart';
 import '../../clients/data/repositories/clients_repository.dart';
+import '../../engagements/data/models/engagement_models.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../subscription/billing_gate.dart';
+import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
+import '../../credentials/data/models/credential_models.dart';
+import '../../credentials/data/repositories/credentials_repository.dart';
 import '../controllers/notifications_feed_controller.dart';
 import '../data/models/compliance_ops_models.dart';
+import '../data/models/contractor_home_stats.dart';
 import '../data/models/staff_home_stats.dart';
 import '../data/repositories/compliance_ops_repository.dart';
 import '../widgets/notification_bell_button.dart';
@@ -28,6 +33,7 @@ class HomeAlertsController extends GetxController {
     EngagementsRepository? engagementsRepository,
     JobsRepository? jobsRepository,
     VisitsRepository? visitsRepository,
+    CredentialsRepository? credentialsRepository,
     NotificationsFeedController? notificationsFeed,
     void Function(String title, String message)? showSnack,
   }) : _repository = repository,
@@ -36,6 +42,7 @@ class HomeAlertsController extends GetxController {
        _engagementsRepository = engagementsRepository,
        _jobsRepository = jobsRepository,
        _visitsRepository = visitsRepository,
+       _credentialsRepository = credentialsRepository,
        _notificationsFeed = notificationsFeed,
        _showSnack = showSnack ?? _defaultSnack;
 
@@ -45,6 +52,7 @@ class HomeAlertsController extends GetxController {
   final EngagementsRepository? _engagementsRepository;
   final JobsRepository? _jobsRepository;
   final VisitsRepository? _visitsRepository;
+  final CredentialsRepository? _credentialsRepository;
   final NotificationsFeedController? _notificationsFeed;
   final void Function(String title, String message) _showSnack;
 
@@ -66,6 +74,7 @@ class HomeAlertsController extends GetxController {
   final pendingSharingRequests = <SharingAccessRequestOut>[].obs;
   final approvingRequestId = RxnString();
   final stats = Rxn<StaffHomeStats>();
+  final contractorStats = Rxn<ContractorHomeStats>();
 
   bool get isStaff => _session.isStaff;
   bool get isContractor => _session.isContractor;
@@ -159,6 +168,11 @@ class HomeAlertsController extends GetxController {
     } else {
       stats.value = null;
     }
+    if (isContractor) {
+      await _loadContractorStats();
+    } else {
+      contractorStats.value = null;
+    }
     _lastLoadedAt = DateTime.now();
   }
 
@@ -191,6 +205,102 @@ class HomeAlertsController extends GetxController {
       visitsThisWeek: visits.$4,
     );
     isLoadingStats.value = false;
+  }
+
+  Future<void> _loadContractorStats() async {
+    isLoadingStats.value = true;
+    try {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      // ── visits: upcoming 14 days ───────────────────────────────────────────
+      List<VisitOut> upcoming = [];
+      List<VisitOut> pastVisits = [];
+      final visitsRepo = _visitsRepository;
+      if (visitsRepo != null) {
+        try {
+          upcoming = await visitsRepo.listVisits(
+            from: today.toUtc(),
+            to: today.add(const Duration(days: 14)).toUtc(),
+          );
+        } on AppFailure catch (e) {
+          if (!_isTenantMissingError(e)) rethrow;
+        }
+        try {
+          pastVisits = await visitsRepo.listVisits(
+            from: today.subtract(const Duration(days: 180)).toUtc(),
+            to: today.toUtc(),
+            status: 'completed',
+          );
+        } on AppFailure catch (e) {
+          if (!_isTenantMissingError(e)) rethrow;
+        }
+      }
+
+      final todayEnd = today.add(const Duration(days: 1));
+      final visitsToday = upcoming
+          .where((v) {
+            final s = v.scheduledStart.toLocal();
+            return !v.isCancelled && !s.isBefore(today) && s.isBefore(todayEnd);
+          })
+          .length;
+      final visitsUpcoming = upcoming.where((v) => !v.isCancelled).length;
+      final allCompleted = [...upcoming, ...pastVisits]
+          .where((v) => v.isCompleted)
+          .toList(growable: false);
+      final visitsPaid =
+          allCompleted.where((v) => v.paymentStatus == 'paid').length;
+      final visitsUnpaid =
+          allCompleted.where((v) => v.paymentStatus != 'paid').length;
+
+      // ── engagements ───────────────────────────────────────────────────────
+      List<EngagementOut> engagements = [];
+      final engRepo = _engagementsRepository;
+      if (engRepo != null) {
+        try {
+          engagements = await engRepo.listMyEngagements();
+        } on AppFailure catch (_) {}
+      }
+      final engActive = engagements.where((e) => e.isActive).length;
+
+      // ── credentials ───────────────────────────────────────────────────────
+      List<CredentialOut> credentials = [];
+      final credRepo = _credentialsRepository;
+      if (credRepo != null) {
+        try {
+          credentials = await credRepo.listMine();
+        } on AppFailure catch (_) {}
+      }
+      final credApproved =
+          credentials.where((c) => c.status == 'approved').length;
+      final credMissing =
+          credentials.where((c) => c.evidencePresence == 'absent').length;
+      final credPending =
+          credentials.where((c) => c.status == 'pending_review').length;
+
+      contractorStats.value = ContractorHomeStats(
+        visitsUpcoming: visitsUpcoming,
+        visitsToday: visitsToday,
+        visitsCompletedTotal: allCompleted.length,
+        visitsPaidTotal: visitsPaid,
+        visitsUnpaidCompleted: visitsUnpaid,
+        engagementsActive: engActive,
+        engagementsTotal: engagements.length,
+        credentialsTotal: credentials.length,
+        credentialsApproved: credApproved,
+        credentialsMissingEvidence: credMissing,
+        credentialsPendingReview: credPending,
+      );
+    } on AppFailure catch (e) {
+      if (!_isTenantMissingError(e)) {
+        errorMessage.value = e.message;
+      }
+      contractorStats.value = ContractorHomeStats.empty;
+    } catch (_) {
+      contractorStats.value = ContractorHomeStats.empty;
+    } finally {
+      isLoadingStats.value = false;
+    }
   }
 
   Future<(int, int)> _loadClientCounts() async {
@@ -262,6 +372,16 @@ class HomeAlertsController extends GetxController {
     } on AppFailure catch (_) {
       return (0, 0, 0, 0);
     }
+  }
+
+  bool _isTenantMissingError(AppFailure e) {
+    final msg = e.message.toLowerCase();
+    final code = e.code.toLowerCase();
+    return msg.contains('tenant_id') ||
+        msg.contains('tenant id') ||
+        code.contains('tenant') ||
+        msg.contains('not engaged') ||
+        msg.contains('no engagement');
   }
 
   void openRoute(String route) {
@@ -439,14 +559,21 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                   )
                 else if (stats != null)
                   _StaffDashboardGrid(stats: stats, controller: controller),
-              ] else
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Text(
-                    'Use the notification icon above for alerts and updates.',
-                    style: TextStyle(color: AppColors.textMuted),
+              ] else if (controller.isContractor) ...[
+                if (controller.isLoadingStats.value &&
+                    controller.contractorStats.value == null)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 48),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else
+                  _ContractorDashboard(
+                    stats:
+                        controller.contractorStats.value ??
+                        ContractorHomeStats.empty,
+                    controller: controller,
                   ),
-                ),
+              ],
                   ],
                 ),
               ),
@@ -563,6 +690,155 @@ class _StaffDashboardGrid extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Contractor home dashboard
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ContractorDashboard extends StatelessWidget {
+  const _ContractorDashboard({
+    required this.stats,
+    required this.controller,
+  });
+
+  final ContractorHomeStats stats;
+  final HomeAlertsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final columns = switch (Breakpoints.classify(width)) {
+          DeviceClass.phone => 2,
+          DeviceClass.tablet => 3,
+          DeviceClass.desktop => 4,
+        };
+        final childRatio = columns >= 3 ? 1.45 : 1.35;
+
+        // ── Visits section ───────────────────────────────────────────────────
+        final visitTiles = [
+          _StatTile(
+            icon: Icons.event_available_outlined,
+            label: 'Upcoming visits',
+            value: '${stats.visitsUpcoming}',
+            detail: stats.visitsToday > 0
+                ? '${stats.visitsToday} today'
+                : 'Next 14 days',
+            accent: stats.visitsToday > 0 ? AppColors.primary : null,
+            onTap: () => controller.openRoute(AppRoutes.contractorVisits),
+          ),
+          _StatTile(
+            icon: Icons.check_circle_outline,
+            label: 'Completed',
+            value: '${stats.visitsCompletedTotal}',
+            detail: 'All time',
+            onTap: () => controller.openRoute(AppRoutes.contractorVisits),
+          ),
+        ];
+
+        // ── Payments section ─────────────────────────────────────────────────
+        final paymentTiles = [
+          _StatTile(
+            icon: Icons.payments_outlined,
+            label: 'Paid visits',
+            value: '${stats.visitsPaidTotal}',
+            detail: 'Completed & paid',
+            onTap: () => controller.openRoute(AppRoutes.contractorPayments),
+          ),
+          _StatTile(
+            icon: Icons.hourglass_top_outlined,
+            label: 'Awaiting payment',
+            value: '${stats.visitsUnpaidCompleted}',
+            detail: 'Completed, unpaid',
+            accent: stats.visitsUnpaidCompleted > 0 ? AppColors.openSlot : null,
+            onTap: () => controller.openRoute(AppRoutes.contractorPayments),
+          ),
+        ];
+
+        // ── Engagements section ──────────────────────────────────────────────
+        final engagementTile = _StatTile(
+          icon: Icons.handshake_outlined,
+          label: 'Engagements',
+          value: '${stats.engagementsActive}',
+          detail: '${stats.engagementsTotal} total',
+          onTap: () {},
+        );
+
+        // ── Credentials section ──────────────────────────────────────────────
+        final credTiles = [
+          _StatTile(
+            icon: Icons.verified_outlined,
+            label: 'Credentials',
+            value: '${stats.credentialsApproved}/${stats.credentialsTotal}',
+            detail: 'Approved',
+            accent: stats.credentialsApproved == stats.credentialsTotal &&
+                    stats.credentialsTotal > 0
+                ? AppColors.success
+                : null,
+            onTap: () => controller.openRoute(AppRoutes.contractorCredentials),
+          ),
+          if (stats.credentialsMissingEvidence > 0)
+            _StatTile(
+              icon: Icons.upload_file_outlined,
+              label: 'Missing evidence',
+              value: '${stats.credentialsMissingEvidence}',
+              detail: 'Needs upload',
+              accent: AppColors.error,
+              onTap: () =>
+                  controller.openRoute(AppRoutes.contractorCredentials),
+            ),
+          if (stats.credentialsPendingReview > 0)
+            _StatTile(
+              icon: Icons.pending_outlined,
+              label: 'Pending review',
+              value: '${stats.credentialsPendingReview}',
+              detail: 'Awaiting staff check',
+              onTap: () =>
+                  controller.openRoute(AppRoutes.contractorCredentials),
+            ),
+        ];
+
+        Widget section(String title, List<Widget> tiles) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textMuted,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            GridView.count(
+              crossAxisCount: columns,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: childRatio,
+              children: tiles,
+            ),
+            const SizedBox(height: 20),
+          ],
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            section('VISITS', visitTiles),
+            section('PAYMENTS', paymentTiles),
+            section('ENGAGEMENTS', [engagementTile]),
+            if (stats.credentialsTotal > 0)
+              section('CREDENTIALS', credTiles),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _StatTile extends StatelessWidget {
   const _StatTile({
     required this.icon,
@@ -570,6 +846,7 @@ class _StatTile extends StatelessWidget {
     required this.value,
     required this.detail,
     required this.onTap,
+    this.accent,
   });
 
   final IconData icon;
@@ -578,11 +855,18 @@ class _StatTile extends StatelessWidget {
   final String detail;
   final VoidCallback onTap;
 
+  /// When set, tints the icon and value text with this colour.
+  final Color? accent;
+
   @override
   Widget build(BuildContext context) {
+    final iconColor = accent ?? AppColors.slate600;
+    final valueColor = accent ?? AppColors.textDark;
     return Material(
-      color: AppColors.cardBackground,
-      elevation: 1,
+      color: accent != null
+          ? accent!.withValues(alpha: 0.07)
+          : AppColors.cardBackground,
+      elevation: accent != null ? 0 : 1,
       shadowColor: AppColors.primary.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
@@ -595,7 +879,7 @@ class _StatTile extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(icon, size: 20, color: AppColors.slate600),
+                  Icon(icon, size: 20, color: iconColor),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -614,10 +898,10 @@ class _StatTile extends StatelessWidget {
               const Spacer(),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textDark,
+                  color: valueColor,
                   height: 1.1,
                 ),
               ),
