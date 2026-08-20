@@ -508,8 +508,7 @@ class WorkforceController extends GetxController {
           children: [
             Text(
               emailRequested
-                  ? 'An invitation email was requested (delivery depends on '
-                      'server email configuration). Copy and share this link '
+                  ? 'An invitation email was requested (In case of an issue, copy and share this link '
                       'as a backup.'
                   : 'No invitation email was sent. Copy and share this link '
                       'with the contractor.',

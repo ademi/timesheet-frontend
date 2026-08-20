@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../app/constants/app_permissions.dart';
 import '../../app/routes/app_routes.dart';
+import '../../app/views/shell/adaptive_navigation_shell.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
 import '../../core/services/session_service.dart';
 import '../../shared/widgets/closed_beta_banner.dart';
@@ -158,8 +159,7 @@ class StaffShell extends StatelessWidget {
             );
           }
 
-          // Always left-side nav (rail). Compact labels on narrow widths.
-          return ResponsiveScaffold(
+          return AdaptiveNavigationShell(
             destinations: destinations,
             selectedIndex: index,
             onDestinationSelected: StaffShellNav.navigateTo,

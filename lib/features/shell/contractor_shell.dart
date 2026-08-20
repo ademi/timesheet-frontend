@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../app/routes/app_routes.dart';
-import '../../app/themes/app_colors.dart';
+import '../../app/views/shell/adaptive_navigation_shell.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
-import '../../core/responsive/breakpoints.dart';
 import '../../shared/widgets/closed_beta_banner.dart';
 import '../compliance_ops/controllers/notifications_feed_controller.dart';
 
@@ -67,29 +66,12 @@ class ContractorShell extends StatelessWidget {
         final index = ContractorShellNav.selectedIndex(
           Get.currentRoute,
         ).clamp(0, 4);
-        final wide = constraints.maxWidth >= Breakpoints.tablet;
 
-        if (wide) {
-          return ResponsiveScaffold(
-            destinations: ContractorShellNav.destinations,
-            selectedIndex: index,
-            onDestinationSelected: ContractorShellNav.navigateTo,
-            child: body,
-          );
-        }
-
-        return Scaffold(
-          body: body,
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: index,
-            onDestinationSelected: ContractorShellNav.navigateTo,
-            backgroundColor: AppColors.cardBackground,
-            indicatorColor: AppColors.primary.withValues(alpha: 0.18),
-            destinations: [
-              for (final d in ContractorShellNav.destinations)
-                NavigationDestination(icon: Icon(d.icon), label: d.label),
-            ],
-          ),
+        return AdaptiveNavigationShell(
+          destinations: ContractorShellNav.destinations,
+          selectedIndex: index,
+          onDestinationSelected: ContractorShellNav.navigateTo,
+          child: body,
         );
       },
     );

@@ -31,6 +31,7 @@ Goal: split feedback into discrete, doable tasks. Do not start implementation fr
 | ID | Task | Details |
 |----|------|---------|
 | AD-1 | [x] Move crowded admin **menu to the left side** | Done — left `NavigationRail` on all widths (compact labels on phone) |
+| AD-3 | [x] **Responsive staff nav** — bottom bar below 1024px, left rail at/above 1024px, More overflow | Done — `AdaptiveNavigationShell` + `NavOverflowSplit` |
 | AD-2 | [x] Home: stop **multiple duplicate server requests**; add **caching** | Done on `refactor/client_info_update` — permanent controller + 45s TTL / single-flight; refresh forces reload |
 
 ---

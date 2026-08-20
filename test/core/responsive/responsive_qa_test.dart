@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rostiq/app/views/shell/adaptive_navigation_shell.dart';
 import 'package:rostiq/app/views/shell/responsive_scaffold.dart';
 import 'package:rostiq/app/views/shell/two_pane.dart';
 import 'package:rostiq/core/responsive/adaptive_grid.dart';
@@ -113,7 +114,7 @@ void main() {
       expect(find.text('Content'), findsOneWidget);
     });
 
-    testWidgets('ResponsiveScaffold hides rail below tablet bp (7.4)', (tester) async {
+    testWidgets('ResponsiveScaffold always shows rail (adaptive shell handles narrow)', (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       addTearDown(tester.view.resetPhysicalSize);
 
@@ -123,11 +124,31 @@ void main() {
             selectedIndex: 0,
             onDestinationSelected: (_) {},
             destinations: sampleDestinations,
+            child: const Text('Content'),
+          ),
+        ),
+      );
+
+      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.text('Content'), findsOneWidget);
+    });
+
+    testWidgets('AdaptiveNavigationShell uses bottom bar below tablet bp (7.4)', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AdaptiveNavigationShell(
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            destinations: sampleDestinations,
             child: const Text('PhoneContent'),
           ),
         ),
       );
 
+      expect(find.byType(NavigationBar), findsOneWidget);
       expect(find.byType(NavigationRail), findsNothing);
       expect(find.text('PhoneContent'), findsOneWidget);
     });
