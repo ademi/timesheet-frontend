@@ -49,6 +49,10 @@
 	<string>Rostiq uses your location to verify clock-in and clock-out at your assigned work site.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Rostiq uses your location to verify clock-in and clock-out at your assigned work site.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Rostiq needs access to your photo library so you can choose profile photos for contractors and clients.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Rostiq needs access to your camera so you can take profile photos for contractors and clients.</string>
 
 </dict>
 </plist>
