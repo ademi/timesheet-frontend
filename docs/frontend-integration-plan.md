@@ -201,31 +201,35 @@ See backend runbook: `timesheet/docs/phase-0-local-setup.md` (backend repo).
 > **Depends on:** Phases 1, 3, 4  
 > **Estimated effort:** L
 
-### Task 5.1 — Billing feature shell
+### Task 5.1 — Billing feature shell ✅
 
-- [ ] Routes: e.g. `/staff/billing/exports`, `/staff/billing/exports/:id`
-- [ ] Nav entry gated on `billing.view`
-- [ ] List exports (`GET /billing/invoice-exports`)
+- [x] Routes: e.g. `/staff/billing/exports`, `/staff/billing/exports/:id`
+- [x] Nav entry gated on `billing.view`
+- [x] List exports (`GET /billing/invoice-exports`)
 
----
-
-### Task 5.2 — Create export flow
-
-- [ ] Select completed visits (filter: `status == completed`; exclude known-exported via 409 feedback)
-- [ ] Pre-flight checklist UI: support item set, tasks have minutes if coded, postcode or tier override
-- [ ] `POST /billing/invoice-exports` with `visit_ids`
-- [ ] Surface per-visit errors from batch response / failed state clearly
+**Files:** `billing_routes.dart`, `invoice_exports_list_view.dart`, `invoice_export_detail_view.dart`, `invoice_exports_controller.dart`, `invoice_export_detail_controller.dart`, `billing_binding.dart`, `staff_shell.dart`, `app_routes.dart`, tests
 
 ---
 
-### Task 5.3 — Export detail, CSV, void
+### Task 5.2 — Create export flow ✅
 
-- [ ] Detail screen: lines with `price_tier`, `participant_ndis_number`, amounts
-- [ ] Download/share CSV from `GET .../csv`
-- [ ] Void with confirmation (`billing.manage`) → `POST .../void`
-- [ ] Note: `invoice_status` not on `VisitOut` — track state via export history + 409 handling
+- [x] Select completed visits (filter: `status == completed`; exclude known-exported via 409 feedback)
+- [x] Pre-flight checklist UI: support item set, tasks have minutes if coded, postcode or tier override
+- [x] `POST /billing/invoice-exports` with `visit_ids`
+- [x] Surface per-visit errors from batch response / failed state clearly
 
-**Files:** New `lib/features/billing/` views + controllers
+**Files:** `visit_export_preflight.dart`, `invoice_export_errors.dart`, `invoice_exports_controller.dart`, `invoice_exports_list_view.dart`, `billing_binding.dart`, `app_failure.dart`, tests
+
+---
+
+### Task 5.3 — Export detail, CSV, void ✅
+
+- [x] Detail screen: lines with `price_tier`, `participant_ndis_number`, amounts
+- [x] Download/share CSV from `GET .../csv`
+- [x] Void with confirmation (`billing.manage`) → `POST .../void`
+- [x] Note: `invoice_status` not on `VisitOut` — track state via export history + 409 handling
+
+**Files:** `invoice_export_detail_controller.dart`, `invoice_export_detail_view.dart`, tests
 
 ---
 

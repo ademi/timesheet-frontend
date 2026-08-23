@@ -13,6 +13,7 @@ class AppFailure implements Exception {
     required this.presentation,
     this.statusCode,
     this.eligibilityReasons = const [],
+    this.visitErrors = const [],
   });
 
   final String code;
@@ -22,6 +23,9 @@ class AppFailure implements Exception {
 
   /// Parsed from `eligibility_incomplete` payloads when present.
   final List<String> eligibilityReasons;
+
+  /// Per-visit issues from batch billing/export responses (`visit_errors`).
+  final List<Map<String, String>> visitErrors;
 
   bool get isBillingGate =>
       presentation == AppFailurePresentation.billingGate ||
@@ -44,6 +48,7 @@ class AppFailure implements Exception {
     final detail = authErr?.detail ?? e.message ?? 'Something went wrong';
     final code = _normalizeCode(authErr?.code, detail, status);
     final reasons = _parseEligibilityReasons(e.response?.data);
+    final visitErrors = _parseVisitErrors(e.response?.data);
 
     return AppFailure(
       code: code,
@@ -51,7 +56,52 @@ class AppFailure implements Exception {
       presentation: _presentationFor(code, status),
       statusCode: status,
       eligibilityReasons: reasons,
+      visitErrors: visitErrors,
     );
+  }
+
+  static List<Map<String, String>> _parseVisitErrors(Object? data) {
+    if (data is! Map) return const [];
+    final map = Map<String, dynamic>.from(data);
+    final detail = map['detail'];
+    final results = <Map<String, String>>[];
+
+    void addRow(String visitId, String code, {String? message}) {
+      if (visitId.isEmpty) return;
+      results.add({
+        'visit_id': visitId,
+        'code': code,
+        if (message != null && message.isNotEmpty) 'message': message,
+      });
+    }
+
+    if (detail is Map) {
+      final detailMap = Map<String, dynamic>.from(detail);
+      final raw = detailMap['visit_errors'] ?? detailMap['errors'];
+      if (raw is List) {
+        for (final item in raw) {
+          if (item is! Map) continue;
+          final row = Map<String, dynamic>.from(item);
+          addRow(
+            row['visit_id']?.toString() ?? row['visitId']?.toString() ?? '',
+            row['code']?.toString() ?? row['detail']?.toString() ?? 'unknown',
+            message: row['message']?.toString(),
+          );
+        }
+        return results;
+      }
+      addRow(
+        detailMap['visit_id']?.toString() ?? '',
+        detailMap['code']?.toString() ?? 'unknown',
+        message: detailMap['message']?.toString(),
+      );
+      return results;
+    }
+
+    if (detail is String) {
+      addRow(map['visit_id']?.toString() ?? '', detail);
+    }
+    return results;
   }
 
   static AuthErrorModel? _tryAuthError(DioException e) {

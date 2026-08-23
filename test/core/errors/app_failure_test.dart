@@ -373,6 +373,35 @@ void main() {
       }
     });
 
+    test('parses visit_errors from batch export responses', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(path: '/billing/invoice-exports'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/billing/invoice-exports'),
+            statusCode: 422,
+            data: {
+              'detail': {
+                'code': 'batch_export_failed',
+                'visit_errors': [
+                  {
+                    'visit_id': 'visit-1',
+                    'code': 'visit_already_exported',
+                    'message': 'Already exported.',
+                  },
+                ],
+              },
+            },
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      expect(failure.visitErrors, hasLength(1));
+      expect(failure.visitErrors.single['visit_id'], 'visit-1');
+      expect(failure.visitErrors.single['code'], 'visit_already_exported');
+    });
+
     test('maps invoice export error codes', () {
       const expectedMessages = {
         'visit_already_exported':

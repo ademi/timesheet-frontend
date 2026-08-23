@@ -149,6 +149,18 @@ class InvoiceExportCreateRequest {
       };
 }
 
+class InvoiceExportVisitError {
+  const InvoiceExportVisitError({
+    required this.visitId,
+    required this.code,
+    required this.message,
+  });
+
+  final String visitId;
+  final String code;
+  final String message;
+}
+
 class InvoiceExportLineOut {
   const InvoiceExportLineOut({
     required this.id,
