@@ -165,11 +165,11 @@ void main() {
 
       expect(
         controller.lastReleaseSnack,
-        'Already checked in — cancel visit first.',
+        'Already checked in — cancel the shift first.',
       );
       expect(
         controller.errorMessage.value,
-        'Already checked in — cancel visit first.',
+        'Already checked in — cancel the shift first.',
       );
     },
   );

@@ -415,7 +415,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
           (ctx) => AlertDialog(
             title: const Text('Cancel this one?'),
             content: const Text(
-              'This shift will be cancelled. Assigned visits must be handled separately.',
+              'This shift will be cancelled. Assigned shifts must be handled separately.',
             ),
             actions: [
               TextButton(
@@ -458,7 +458,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'New visit times apply from this day onward. Past days stay as they are.',
+                      'New shift times apply from this day onward. Past days stay as they are.',
                     ),
                     const SizedBox(height: 12),
                     if (dialogError != null) ...[

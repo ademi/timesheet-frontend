@@ -104,6 +104,17 @@ class OngoingSupportView extends GetView<OngoingSupportController> {
               ),
             ],
             const SizedBox(height: 12),
+            _DateTile(
+              label: 'Start date',
+              value: controller.startDate.value,
+              onSelected: (date) => controller.startDate.value = date,
+            ),
+            _DateTile(
+              label: 'Ends on',
+              value: controller.endDate.value,
+              onSelected: (date) => controller.endDate.value = date,
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: controller.startTimeCtrl,
               decoration: const InputDecoration(
@@ -206,4 +217,33 @@ class _AmberNotice extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DateTile extends StatelessWidget {
+  const _DateTile({
+    required this.label,
+    required this.value,
+    required this.onSelected,
+  });
+
+  final String label;
+  final DateTime value;
+  final ValueChanged<DateTime> onSelected;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    title: Text(label),
+    subtitle: Text(MaterialLocalizations.of(context).formatMediumDate(value)),
+    trailing: const Icon(Icons.calendar_today),
+    onTap: () async {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: value,
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2100),
+      );
+      if (picked != null) onSelected(picked);
+    },
+  );
 }

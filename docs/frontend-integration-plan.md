@@ -98,47 +98,35 @@ See backend runbook: `timesheet/docs/phase-0-local-setup.md` (backend repo).
 > **Depends on:** Phase 1 optional (can run in parallel with 1.2 if no billing fields on roster)  
 > **Estimated effort:** M
 
-### Task 2.1 — Tenant timezone for horizon window (TODOS P2)
+### Task 2.1 — Tenant timezone for horizon window (TODOS P2) ✅
 
-- [ ] Prefer tenant `timezone` from session/me payload when backend exposes it; until then keep payroll/settings fetch
-- [ ] Add IANA timezone package (`timezone` or equivalent) — replace device-local fallback in `tenant_civil_time.dart`
-- [ ] Fix `_horizonFromUtc` / `_horizonToUtc` in `StaffVisitsController` → tenant civil start-of-today + 14d
-- [ ] Same horizon source in `OngoingSupportController` and split-recurrence calls
-- [ ] Week chevrons: reload list only; do **not** re-trigger horizon with a different window
+- [x] Prefer tenant `timezone` from settings/payroll fetch (session/me when backend adds it)
+- [x] IANA `timezone` package — civil day + horizon helpers in `tenant_civil_time.dart`
+- [x] `_horizonFromUtc` / `_horizonToUtc` → tenant civil start-of-today + 14d
+- [x] Same horizon source in `OngoingSupportController` and split-recurrence
+- [x] Week chevrons reload list only (no horizon re-POST)
 
-**Files:**
-
-- `lib/core/time/tenant_civil_time.dart`
-- `lib/features/visits/controllers/staff_visits_controller.dart`
-- `lib/features/jobs/controllers/ongoing_support_controller.dart`
-- `pubspec.yaml` (timezone dependency)
-
-**Tests:** `staff_roster_horizon_test.dart`, extend `tenant_civil_time` tests
+**Files:** `tenant_civil_time.dart`, `staff_visits_controller.dart`, `ongoing_support_controller.dart`, `pubspec.yaml`, tests
 
 ---
 
-### Task 2.2 — Recurrence defaults & validation (TODOS.yaml)
+### Task 2.2 — Recurrence defaults & validation (TODOS.yaml) ✅
 
-- [ ] Default `until` / end date to **start + 1 year** (ongoing support + recurrence rule form) — not open-ended null
-- [ ] Client-side **overnight block**: `end_time` must be same civil day and after `start_time` (V018 mirror)
-- [ ] Handle **one open standing job per client** — friendly error when second ongoing-support create fails
-- [ ] Normalize **invite email to lowercase** before submit (V026)
+- [x] Default `until` / end date to start + 1 year (ongoing support + recurrence rule form)
+- [x] Client-side overnight block (V018 mirror)
+- [x] Friendly `standing_job_exists` error on duplicate ongoing support
+- [x] Normalize invite email to lowercase before submit (V026)
 
-**Files:**
-
-- `ongoing_support_controller.dart`, `ongoing_support_view.dart`
-- `recurrence_rule_form_controller.dart`
-- `lib/features/jobs/utils/time_window_utils.dart`
-- `workforce_invite_view.dart` / invite datasource
+**Files:** `time_window_utils.dart`, ongoing/recurrence controllers & views, `workforce_controller.dart`, tests
 
 ---
 
-### Task 2.3 — Terminology pass (light)
+### Task 2.3 — Terminology pass (light) ✅
 
-- [ ] Staff roster surfaces: prefer **“Participant shift”** / **“Shift”** over “Visit” where user-facing (board, release dialog, snackbars)
-- [ ] Keep internal model names (`VisitOut`) unchanged
+- [x] Staff roster surfaces: **Shift** over **Visit** (board dialogs, release copy, pattern errors)
+- [x] Internal model names unchanged (`VisitOut`, `visitStatus`, etc.)
 
-**Files:** `staff_visits_board_view.dart`, `roster_grid_view.dart`, `staff_visits_controller.dart` strings only
+**Files:** `staff_visits_board_view.dart`, `roster_grid_view.dart`, `staff_visits_controller.dart`
 
 ---
 
@@ -322,6 +310,9 @@ Phase 8 as backend ships
 | 1.1 | ✅ | 2026-08-23 | API paths, billing.manage, session gates |
 | 1.2 | ✅ | 2026-08-23 | DTO models for NDIS billing + engagement |
 | 1.4 | ✅ | 2026-08-23 | NDIS support item + export error codes |
+| 2.1 | ✅ | 2026-08-23 | Tenant TZ horizon + week chevron fix |
+| 2.2 | ✅ | 2026-08-23 | Recurrence defaults, overnight block, invite email |
+| 2.3 | ✅ | 2026-08-23 | Roster terminology Visit → Shift |
 | … | | | |
 
 *(Fill in dates when user approves each task.)*

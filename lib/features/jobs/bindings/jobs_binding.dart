@@ -6,6 +6,8 @@ import '../../../core/services/token_storage.dart';
 import '../../clients/bindings/clients_binding.dart';
 import '../../engagements/bindings/engagements_binding.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
+import '../../payroll/bindings/payroll_binding.dart';
+import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../controllers/jobs_controller.dart';
 import '../controllers/ongoing_support_controller.dart';
@@ -57,6 +59,7 @@ class OngoingSupportBinding extends Bindings {
   @override
   void dependencies() {
     JobsBinding.ensureShared();
+    PayrollBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     Get.put(
       OngoingSupportController(
@@ -64,6 +67,9 @@ class OngoingSupportBinding extends Bindings {
         clientsRepository: Get.find<ClientsRepository>(),
         engagementsRepository: Get.find<EngagementsRepository>(),
         session: Get.find<SessionService>(),
+        payroll: Get.isRegistered<PayrollRepository>()
+            ? Get.find<PayrollRepository>()
+            : null,
       ),
     );
   }

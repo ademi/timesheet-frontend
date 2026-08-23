@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/app/constants/app_permissions.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
+import 'package:rostiq/core/time/tenant_civil_time.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
@@ -83,6 +84,7 @@ void main() {
   setUp(() {
     Get.reset();
     Get.testMode = true;
+    tenantUtcOffsetOverride = null;
     visits = _MockVisitsRepository();
     shifts = _MockShiftsRepository();
     jobs = _MockJobsRepository();
@@ -110,7 +112,10 @@ void main() {
     );
   });
 
-  tearDown(Get.reset);
+  tearDown(() {
+    tenantUtcOffsetOverride = null;
+    Get.reset();
+  });
 
   Future<void> _flushHorizon() => Future<void>.delayed(Duration.zero);
 
@@ -279,11 +284,13 @@ void main() {
   });
 
   test(
-    'horizon window is fourteen days from start of today not visible week',
+    'horizon window uses tenant civil start of today when timezone set',
     () async {
+      tenantUtcOffsetOverride = (_, __) => const Duration(hours: 10);
       when(
         () => jobs.ensureHorizon(any()),
       ).thenAnswer((_) async => HorizonOut.empty);
+      controller.tenantTimezone.value = 'Australia/Sydney';
       controller.rangeStart.value = DateTime(2020, 1, 15);
 
       await controller.ensureBoardLoaded();
@@ -293,8 +300,12 @@ void main() {
           verify(() => jobs.ensureHorizon(captureAny())).captured.single
               as HorizonRequest;
       expect(req.to.difference(req.from), const Duration(days: 14));
-      final now = DateTime.now();
-      expect(req.from, DateTime(now.year, now.month, now.day).toUtc());
+      final expected = tenantHorizonWindowUtc(
+        DateTime.now().toUtc(),
+        'Australia/Sydney',
+      );
+      expect(req.from, expected.from);
+      expect(req.to, expected.to);
       expect(req.ruleIds, isNull);
     },
   );
@@ -311,13 +322,18 @@ void main() {
     expect(controller.jobIdFilter.value, 'job-1');
   });
 
-  test('shiftRange reloads list then fills horizon', () async {
+  test('shiftRange reloads list only without horizon POST', () async {
     when(
       () => jobs.ensureHorizon(any()),
     ).thenAnswer((_) async => HorizonOut.empty);
 
-    controller.shiftRange(7);
+    await controller.ensureBoardLoaded();
     await _flushHorizon();
+    clearInteractions(jobs);
+    reset(shifts);
+    _stubListShifts(shifts);
+
+    controller.shiftRange(7);
     await _flushHorizon();
 
     verify(
@@ -327,7 +343,7 @@ void main() {
         jobId: any(named: 'jobId'),
       ),
     ).called(1);
-    verify(() => jobs.ensureHorizon(any())).called(1);
+    verifyNever(() => jobs.ensureHorizon(any()));
   });
 
   test('setJobFilter does not POST horizon', () async {

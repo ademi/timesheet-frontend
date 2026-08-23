@@ -385,7 +385,7 @@ class WorkforceController extends GetxController {
       _setError('Missing contractors.invite permission.');
       return;
     }
-    final email = emailCtrl.text.trim();
+    final email = emailCtrl.text.trim().toLowerCase();
     final phone = phoneCtrl.text.trim();
     if (email.isEmpty && phone.isEmpty) {
       _setError('Provide an email and/or phone.');

@@ -12,7 +12,9 @@ class RecurrenceRuleFormController extends GetxController {
   final frequency = RecurrenceFrequency.weekly.obs;
   final weekdays = <int>{DateTime.monday}.obs;
   final startDate = DateTime.now().obs;
-  final endDate = Rxn<DateTime>();
+  final endDate = Rx<DateTime>(
+    defaultRecurrenceEndDate(DateTime.now()),
+  );
   final selectedContractorId = RxnString();
   final windows =
       <TimeWindow>[const TimeWindow(startTime: '09:00', endTime: '12:00')].obs;
@@ -22,6 +24,16 @@ class RecurrenceRuleFormController extends GetxController {
   final selectedFormTemplateIds = <String>{}.obs;
   final requiredSlots = 1.obs;
   final error = RxnString();
+
+  @override
+  void onInit() {
+    super.onInit();
+    ever(startDate, (DateTime start) {
+      if (endDate.value.isBefore(start)) {
+        endDate.value = defaultRecurrenceEndDate(start);
+      }
+    });
+  }
 
   bool get requiresWeekdays =>
       frequency.value == RecurrenceFrequency.weekly ||
@@ -78,26 +90,27 @@ class RecurrenceRuleFormController extends GetxController {
     final window = windows[index];
     windows[index] = TimeWindow(
       startTime: startTime,
-      endTime: coerceEndTime(window.endTime),
+      endTime: window.endTime,
     );
     _syncWindowError(index);
   }
 
   void setWindowEndTime(int index, String endTime) {
     final window = windows[index];
-    final coercedEnd = coerceEndTime(endTime);
     windows[index] = TimeWindow(
       startTime: window.startTime,
-      endTime: coercedEnd,
+      endTime: endTime,
     );
     _syncWindowError(index);
   }
 
   void _syncWindowError(int index) {
     final window = windows[index];
-    if (window.endTime.compareTo(window.startTime) <= 0) {
-      error.value = endBeforeStartError;
-    } else if (error.value == endBeforeStartError) {
+    final errorMessage = validateVisitWindows([window]);
+    if (errorMessage != null) {
+      error.value = errorMessage;
+    } else if (error.value == endBeforeStartError ||
+        error.value == windowsOverlapError) {
       error.value = null;
     }
   }
@@ -138,19 +151,17 @@ class RecurrenceRuleFormController extends GetxController {
       error.value = 'Select at least one weekday.';
       return false;
     }
-    if (endDate.value != null && endDate.value!.isBefore(startDate.value)) {
+    if (endDate.value.isBefore(startDate.value)) {
       error.value = 'End date must not be before the start date.';
       return false;
     }
-    final coerced = coerceWindowEndTimes(windows);
-    windows.assignAll(coerced);
-    final windowError = validateVisitWindows(coerced);
+    final windowError = validateVisitWindows(windows);
     if (windowError != null) {
       error.value = windowError;
       return false;
     }
-    final sorted =
-        coerced.toList()..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final sorted = windows.toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
     if (preview.isEmpty) {
       error.value = 'This rule has no occurrences in the next 90 days.';
       return false;
@@ -162,7 +173,7 @@ class RecurrenceRuleFormController extends GetxController {
         requiredSlots: requiredSlots.value,
         rrule: rrule,
         dtstart: startDate.value,
-        until: endDate.value?.add(const Duration(days: 1, microseconds: -1)),
+        until: recurrenceUntilInstant(endDate.value),
         timeWindows: sorted,
         taskTitles: taskTitles,
         formTemplateIds: selectedFormTemplateIds.toList(),

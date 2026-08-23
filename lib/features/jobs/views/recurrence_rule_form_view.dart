@@ -115,7 +115,7 @@ class RecurrenceRuleFormView extends StatelessWidget {
               onSelected: (date) => c.startDate.value = date,
             ),
             _DateTile(
-              label: 'Ends on (optional)',
+              label: 'Ends on',
               value: c.endDate.value,
               onSelected: (date) => c.endDate.value = date,
             ),
@@ -237,23 +237,19 @@ class _DateTile extends StatelessWidget {
     required this.onSelected,
   });
   final String label;
-  final DateTime? value;
+  final DateTime value;
   final ValueChanged<DateTime> onSelected;
 
   @override
   Widget build(BuildContext context) => ListTile(
     contentPadding: EdgeInsets.zero,
     title: Text(label),
-    subtitle: Text(
-      value == null
-          ? 'Never'
-          : MaterialLocalizations.of(context).formatMediumDate(value!),
-    ),
+    subtitle: Text(MaterialLocalizations.of(context).formatMediumDate(value)),
     trailing: const Icon(Icons.calendar_today),
     onTap: () async {
       final picked = await showDatePicker(
         context: context,
-        initialDate: value ?? DateTime.now(),
+        initialDate: value,
         firstDate: DateTime(2020),
         lastDate: DateTime(2100),
       );

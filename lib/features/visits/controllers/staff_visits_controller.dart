@@ -189,20 +189,29 @@ class StaffVisitsController extends GetxController {
     );
   }
 
-  DateTime get _fromUtc {
-    final d = rangeStart.value;
-    return DateTime(d.year, d.month, d.day).toUtc();
+  DateTime get _fromUtc =>
+      tenantCivilDateStartUtc(rangeStart.value, _effectiveTenantTimezone);
+
+  DateTime get _toUtc => tenantCivilDateStartUtc(
+        rangeStart.value.add(const Duration(days: 7)),
+        _effectiveTenantTimezone,
+      );
+
+  String? get _effectiveTenantTimezone {
+    final tz = tenantTimezone.value.trim();
+    return tz.isEmpty ? null : tz;
   }
 
-  DateTime get _toUtc => _fromUtc.add(const Duration(days: 7));
+  /// Rolling 14-day fill window from tenant civil start of today (D15).
+  DateTime get _horizonFromUtc => tenantHorizonWindowUtc(
+        DateTime.now().toUtc(),
+        _effectiveTenantTimezone,
+      ).from;
 
-  /// Rolling 14-day fill window from local start of today (D15). Not the visible week.
-  DateTime get _horizonFromUtc {
-    final n = DateTime.now();
-    return DateTime(n.year, n.month, n.day).toUtc();
-  }
-
-  DateTime get _horizonToUtc => _horizonFromUtc.add(const Duration(days: 14));
+  DateTime get _horizonToUtc => tenantHorizonWindowUtc(
+        DateTime.now().toUtc(),
+        _effectiveTenantTimezone,
+      ).to;
 
   @override
   void onInit() {
@@ -427,12 +436,7 @@ class StaffVisitsController extends GetxController {
 
   void shiftRange(int days) {
     rangeStart.value = rangeStart.value.add(Duration(days: days));
-    unawaited(_reloadThenFill());
-  }
-
-  Future<void> _reloadThenFill() async {
-    await load();
-    unawaited(_fillHorizon());
+    unawaited(load());
   }
 
   void setStatusFilter(String? status) {
@@ -648,7 +652,7 @@ class StaffVisitsController extends GetxController {
       }
     } on AppFailure catch (e) {
       final msg = e.code == 'invalid_visit_status'
-          ? 'Already checked in — cancel visit first.'
+          ? 'Already checked in — cancel the shift first.'
           : e.message;
       errorMessage.value = msg;
       lastReleaseSnack = msg;
@@ -716,17 +720,17 @@ class StaffVisitsController extends GetxController {
     if (!canManage) return;
     final ruleId = tile.recurrenceRuleId;
     if (ruleId == null || ruleId.isEmpty) {
-      errorMessage.value = 'This visit is not part of a pattern.';
+      errorMessage.value = 'This shift is not part of a pattern.';
       return;
     }
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      final localStart = tile.scheduledStart.toLocal();
-      final fromDate = DateTime(
-        localStart.year,
-        localStart.month,
-        localStart.day,
+      final civil = tenantCivilFromUtc(tile.scheduledStart.toUtc(), _effectiveTenantTimezone);
+      final fromDate = DateTime(civil.year, civil.month, civil.day);
+      final horizon = tenantHorizonWindowFromCivilDate(
+        fromDate,
+        _effectiveTenantTimezone,
       );
       await _jobsRepository.splitRecurrenceFrom(
         jobId: tile.jobId,
@@ -736,8 +740,8 @@ class StaffVisitsController extends GetxController {
           timeWindows: windows,
           contractorId: contractorId,
           requiredSlots: tile.requiredSlots,
-          horizonFrom: fromDate.toUtc(),
-          horizonTo: fromDate.add(const Duration(days: 14)).toUtc(),
+          horizonFrom: horizon.from,
+          horizonTo: horizon.to,
         ),
       );
       await load();
