@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/ongoing_support_controller.dart';
 import '../utils/recurrence_rrule_builder.dart';
 
@@ -131,6 +132,27 @@ class OngoingSupportView extends GetView<OngoingSupportController> {
                 hintText: '12:00',
                 border: OutlineInputBorder(),
               ),
+            ),
+            const SizedBox(height: 12),
+            NdisSupportItemPicker(
+              supportItemCode: controller.supportItemCode.value,
+              supportItemName: controller.supportItemName.value,
+              enabled: !controller.isSaving.value,
+              labelText: 'Default NDIS support item (optional)',
+              onChanged: ({
+                required String? supportItemCode,
+                required String? supportItemName,
+              }) {
+                controller.setSupportItem(
+                  supportItemCode: supportItemCode,
+                  supportItemName: supportItemName,
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Applies as the job default for generated visits.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<int>(

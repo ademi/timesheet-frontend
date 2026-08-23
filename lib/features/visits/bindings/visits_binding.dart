@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
+import '../../billing/bindings/billing_binding.dart';
 import '../../engagements/bindings/engagements_binding.dart';
 import '../../payroll/bindings/payroll_binding.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
@@ -24,6 +25,7 @@ class VisitsBinding extends Bindings {
   }
 
   static void ensureShared() {
+    BillingBinding.ensureShared();
     if (!Get.isRegistered<TokenStorage>()) {
       Get.put<TokenStorage>(TokenStorage(), permanent: true);
     }

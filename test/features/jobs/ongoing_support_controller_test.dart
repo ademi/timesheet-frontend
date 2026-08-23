@@ -234,4 +234,20 @@ void main() {
     expect(captured.until!.month, 6);
     expect(captured.until!.day, 1);
   });
+
+  test('submit includes optional support item pair', () async {
+    controller.setSupportItem(
+      supportItemCode: '01_011_0107_1_1',
+      supportItemName: 'Self care',
+    );
+    when(
+      () => jobs.createOngoingSupport(any()),
+    ).thenAnswer((_) async => _fakeOut);
+    await controller.submit();
+    final captured =
+        verify(() => jobs.createOngoingSupport(captureAny())).captured.single
+            as OngoingSupportCreateRequest;
+    expect(captured.supportItemCode, '01_011_0107_1_1');
+    expect(captured.supportItemName, 'Self care');
+  });
 }

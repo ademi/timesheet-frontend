@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/recurrence_rule_form_controller.dart';
 import '../utils/recurrence_rrule_builder.dart';
 import '../utils/task_title_presets.dart';
@@ -181,6 +182,42 @@ class RecurrenceRuleFormView extends StatelessWidget {
                 border: OutlineInputBorder(),
               ),
             ),
+            if (c.taskSupportSlots.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Task NDIS items (optional)',
+                style: Get.textTheme.titleSmall,
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'When set, invoice export can use one line per coded task.',
+                style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+              ),
+              for (var i = 0; i < c.taskSupportSlots.length; i++) ...[
+                const SizedBox(height: 12),
+                Text(
+                  c.taskTitles.length > i ? c.taskTitles[i] : 'Task ${i + 1}',
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                NdisSupportItemPicker(
+                  supportItemCode: c.taskSupportSlots[i].supportItemCode,
+                  supportItemName: c.taskSupportSlots[i].supportItemName,
+                  enabled: !c.jobs.isSaving.value,
+                  labelText: 'NDIS item',
+                  onChanged: ({
+                    required String? supportItemCode,
+                    required String? supportItemName,
+                  }) {
+                    c.setTaskSupportItem(
+                      index: i,
+                      supportItemCode: supportItemCode,
+                      supportItemName: supportItemName,
+                    );
+                  },
+                ),
+              ],
+            ],
             const SizedBox(height: 12),
             if (c.jobs.formCatalog.isNotEmpty) ...[
               const Text('Required forms'),

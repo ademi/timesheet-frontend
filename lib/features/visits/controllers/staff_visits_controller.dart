@@ -16,6 +16,7 @@ import '../../engagements/data/models/engagement_models.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
+import '../../billing/data/models/billing_models.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
 import '../data/models/roster_overlay_models.dart';
@@ -102,6 +103,11 @@ class StaffVisitsController extends GetxController {
   final overlay = Rxn<RosterOverlayOut>();
   final overlayWarning = RxnString();
 
+  final editingVisitSupportItemCode = RxnString();
+  final editingVisitSupportItemName = RxnString();
+  final editingTaskSupportCodes = <String, String?>{}.obs;
+  final editingTaskSupportNames = <String, String?>{}.obs;
+
   /// Board range: aligned to tenant civil week when timezone is available.
   final rangeStart = DateTime.now().obs;
   final tenantTimezone = ''.obs;
@@ -121,6 +127,13 @@ class StaffVisitsController extends GetxController {
   int horizonSnackCount = 0;
 
   bool get canManage => _session.hasPermission(AppPermissions.shiftsManage);
+  bool get canEditVisitSupportItem {
+    final visit = selected.value;
+    return visit != null &&
+        canManage &&
+        visit.isScheduled &&
+        visit.paymentStatus == 'unpaid';
+  }
   bool get canRead =>
       _session.hasPermission(AppPermissions.shiftsRead) ||
       _session.hasPermission(AppPermissions.shiftsManage) ||
@@ -223,7 +236,10 @@ class StaffVisitsController extends GetxController {
     final args = Get.arguments;
     if (args is Map) {
       final v = args['visit'];
-      if (v is VisitOut) selected.value = v;
+      if (v is VisitOut) {
+        selected.value = v;
+        _syncSupportItemEditors(v);
+      }
       final shift = args['shift'];
       if (shift is ShiftOut) selectedShift.value = shift;
       if (args['job_id'] != null) {
@@ -236,7 +252,10 @@ class StaffVisitsController extends GetxController {
       pendingCreateShift = args['create'] == true;
       return;
     }
-    if (args is VisitOut) selected.value = args;
+    if (args is VisitOut) {
+      selected.value = args;
+      _syncSupportItemEditors(args);
+    }
     if (args is ShiftOut) selectedShift.value = args;
   }
 
@@ -833,6 +852,7 @@ class StaffVisitsController extends GetxController {
 
   Future<void> openDetail(VisitOut visit) async {
     selected.value = visit;
+    _syncSupportItemEditors(visit);
     Get.toNamed(AppRoutes.staffVisitDetail, arguments: visit);
     await refreshSelected();
   }
@@ -844,7 +864,9 @@ class StaffVisitsController extends GetxController {
     if (id == null) return;
     isRefreshing.value = true;
     try {
-      selected.value = await _repository.getVisit(id);
+      final visit = await _repository.getVisit(id);
+      selected.value = visit;
+      _syncSupportItemEditors(visit);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -856,11 +878,142 @@ class StaffVisitsController extends GetxController {
     final arg = Get.arguments;
     if (arg is VisitOut) {
       selected.value = arg;
+      _syncSupportItemEditors(arg);
       return;
     }
     if (arg is Map && arg['visit'] is VisitOut) {
-      selected.value = arg['visit'] as VisitOut;
+      final visit = arg['visit'] as VisitOut;
+      selected.value = visit;
+      _syncSupportItemEditors(visit);
     }
+  }
+
+  Future<void> updateVisitSupportItem({
+    required String? supportItemCode,
+    required String? supportItemName,
+  }) async {
+    final visit = selected.value;
+    if (visit == null || !canEditVisitSupportItem) return;
+    if (supportItemCode == visit.supportItemCode &&
+        supportItemName == visit.supportItemName) {
+      return;
+    }
+    final previousCode = editingVisitSupportItemCode.value;
+    final previousName = editingVisitSupportItemName.value;
+    editingVisitSupportItemCode.value = supportItemCode;
+    editingVisitSupportItemName.value = supportItemName;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _repository.patchVisitSupportItem(
+        visit.id,
+        SupportItemPatch(
+          supportItemCode: supportItemCode,
+          supportItemName: supportItemName,
+        ),
+      );
+      selected.value = updated;
+      _syncVisitSupportItemEditor(updated);
+    } on AppFailure catch (e) {
+      editingVisitSupportItemCode.value = previousCode;
+      editingVisitSupportItemName.value = previousName;
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> updateVisitTaskSupportItem({
+    required VisitTaskOut task,
+    required String? supportItemCode,
+    required String? supportItemName,
+  }) async {
+    final visit = selected.value;
+    if (visit == null || !canEditVisitSupportItem) return;
+    final code = _pairedSupportItemCode(supportItemCode, supportItemName);
+    if (code == task.supportItemCode) return;
+
+    final previousCode = editingTaskSupportCodes[task.id];
+    final previousName = editingTaskSupportNames[task.id];
+    editingTaskSupportCodes[task.id] = code;
+    editingTaskSupportNames[task.id] = supportItemName;
+    editingTaskSupportCodes.refresh();
+    editingTaskSupportNames.refresh();
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updatedTask = await _repository.patchVisitTaskSupportItem(
+        visitId: visit.id,
+        taskId: task.id,
+        body: VisitTaskSupportItemPatch(supportItemCode: code),
+      );
+      selected.value = _replaceTaskInVisit(visit, updatedTask);
+      editingTaskSupportCodes[task.id] = updatedTask.supportItemCode;
+      if (updatedTask.supportItemCode == null) {
+        editingTaskSupportNames.remove(task.id);
+      }
+      editingTaskSupportCodes.refresh();
+      editingTaskSupportNames.refresh();
+    } on AppFailure catch (e) {
+      editingTaskSupportCodes[task.id] = previousCode;
+      if (previousName == null) {
+        editingTaskSupportNames.remove(task.id);
+      } else {
+        editingTaskSupportNames[task.id] = previousName;
+      }
+      editingTaskSupportCodes.refresh();
+      editingTaskSupportNames.refresh();
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  String? taskSupportPickerCode(VisitTaskOut task) =>
+      editingTaskSupportCodes[task.id] ?? task.supportItemCode;
+
+  String? taskSupportPickerName(VisitTaskOut task) =>
+      editingTaskSupportNames[task.id];
+
+  void _syncSupportItemEditors(VisitOut visit) {
+    _syncVisitSupportItemEditor(visit);
+    _syncTaskSupportEditors(visit);
+  }
+
+  void _syncVisitSupportItemEditor(VisitOut visit) {
+    editingVisitSupportItemCode.value = visit.supportItemCode;
+    editingVisitSupportItemName.value = visit.supportItemName;
+  }
+
+  void _syncTaskSupportEditors(VisitOut visit) {
+    final preservedNames = Map<String, String?>.from(editingTaskSupportNames);
+    editingTaskSupportCodes.clear();
+    editingTaskSupportNames.clear();
+    for (final task in visit.tasks) {
+      editingTaskSupportCodes[task.id] = task.supportItemCode;
+      final name = preservedNames[task.id];
+      if (name != null && task.supportItemCode != null) {
+        editingTaskSupportNames[task.id] = name;
+      }
+    }
+    editingTaskSupportCodes.refresh();
+    editingTaskSupportNames.refresh();
+  }
+
+  VisitOut _replaceTaskInVisit(VisitOut visit, VisitTaskOut task) {
+    return visit.copyWith(
+      tasks: [
+        for (final existing in visit.tasks)
+          if (existing.id == task.id) task else existing,
+      ],
+    );
+  }
+
+  String? _pairedSupportItemCode(String? code, String? name) {
+    final c = code?.trim();
+    final n = name?.trim();
+    if (c == null || c.isEmpty || n == null || n.isEmpty) return null;
+    return c;
   }
 
   Future<void> cancelSelected() async {

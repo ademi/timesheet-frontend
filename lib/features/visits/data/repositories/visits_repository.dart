@@ -65,6 +65,17 @@ class VisitsRepository {
   }) =>
       _remote.patchTask(visitId: visitId, taskId: taskId, isDone: isDone);
 
+  Future<VisitTaskOut> patchVisitTaskSupportItem({
+    required String visitId,
+    required String taskId,
+    required VisitTaskSupportItemPatch body,
+  }) =>
+      _remote.patchVisitTaskSupportItem(
+        visitId: visitId,
+        taskId: taskId,
+        body: body,
+      );
+
   Future<VisitOut> patchVisitSupportItem(
     String visitId,
     SupportItemPatch body,

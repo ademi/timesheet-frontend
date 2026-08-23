@@ -7,6 +7,13 @@ import '../utils/task_title_presets.dart';
 import '../utils/time_window_utils.dart';
 import 'jobs_controller.dart';
 
+class TaskSupportSlot {
+  TaskSupportSlot({this.supportItemCode, this.supportItemName});
+
+  String? supportItemCode;
+  String? supportItemName;
+}
+
 class RecurrenceRuleFormController extends GetxController {
   final jobs = Get.find<JobsController>();
   final frequency = RecurrenceFrequency.weekly.obs;
@@ -19,6 +26,7 @@ class RecurrenceRuleFormController extends GetxController {
   final windows =
       <TimeWindow>[const TimeWindow(startTime: '09:00', endTime: '12:00')].obs;
   final taskTitlesCtrl = TextEditingController();
+  final taskSupportSlots = <TaskSupportSlot>[].obs;
   final otherTitleCtrl = TextEditingController();
   final showOtherTitleField = false.obs;
   final selectedFormTemplateIds = <String>{}.obs;
@@ -28,11 +36,46 @@ class RecurrenceRuleFormController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    taskTitlesCtrl.addListener(_syncTaskSupportSlots);
+    _syncTaskSupportSlots();
     ever(startDate, (DateTime start) {
       if (endDate.value.isBefore(start)) {
         endDate.value = defaultRecurrenceEndDate(start);
       }
     });
+  }
+
+  void _syncTaskSupportSlots() {
+    final count = taskTitles.length;
+    while (taskSupportSlots.length < count) {
+      taskSupportSlots.add(TaskSupportSlot());
+    }
+    while (taskSupportSlots.length > count) {
+      taskSupportSlots.removeLast();
+    }
+    taskSupportSlots.refresh();
+  }
+
+  String? _pairedTaskSupportCode(int index) {
+    if (index < 0 || index >= taskSupportSlots.length) return null;
+    final slot = taskSupportSlots[index];
+    final code = slot.supportItemCode?.trim();
+    final name = slot.supportItemName?.trim();
+    if (code == null || code.isEmpty || name == null || name.isEmpty) {
+      return null;
+    }
+    return code;
+  }
+
+  void setTaskSupportItem({
+    required int index,
+    required String? supportItemCode,
+    required String? supportItemName,
+  }) {
+    if (index < 0 || index >= taskSupportSlots.length) return;
+    taskSupportSlots[index].supportItemCode = supportItemCode;
+    taskSupportSlots[index].supportItemName = supportItemName;
+    taskSupportSlots.refresh();
   }
 
   bool get requiresWeekdays =>
@@ -138,6 +181,7 @@ class RecurrenceRuleFormController extends GetxController {
 
   void appendTaskTitle(String title) {
     taskTitlesCtrl.text = appendTaskTitleLine(taskTitlesCtrl.text, title);
+    _syncTaskSupportSlots();
   }
 
   void appendOtherTitle() {
@@ -167,6 +211,15 @@ class RecurrenceRuleFormController extends GetxController {
       return false;
     }
     error.value = null;
+    final titles = taskTitles;
+    final template = [
+      for (var i = 0; i < titles.length; i++)
+        TaskTemplateItem(
+          title: titles[i],
+          sortOrder: i,
+          supportItemCode: _pairedTaskSupportCode(i),
+        ),
+    ];
     return jobs.createRecurrenceRule(
       RecurrenceRuleCreateRequest(
         contractorId: selectedContractorId.value,
@@ -175,7 +228,7 @@ class RecurrenceRuleFormController extends GetxController {
         dtstart: startDate.value,
         until: recurrenceUntilInstant(endDate.value),
         timeWindows: sorted,
-        taskTitles: taskTitles,
+        taskTemplate: template,
         formTemplateIds: selectedFormTemplateIds.toList(),
       ),
     );

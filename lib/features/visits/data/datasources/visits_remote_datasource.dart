@@ -131,6 +131,26 @@ class VisitsRemoteDataSource {
     }
   }
 
+  Future<VisitTaskOut> patchVisitTaskSupportItem({
+    required String visitId,
+    required String taskId,
+    required VisitTaskSupportItemPatch body,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.visitTask(visitId, taskId),
+        data: body.toJson(),
+      );
+      return _require(
+        response.data,
+        VisitTaskOut.fromJson,
+        'patch visit task support item',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<VisitOut> patchVisitSupportItem(
     String visitId,
     SupportItemPatch body,

@@ -11,6 +11,10 @@ import '../data/repositories/ndis_catalogue_repository.dart';
 class BillingBinding extends Bindings {
   @override
   void dependencies() {
+    ensureShared();
+  }
+
+  static void ensureShared() {
     if (!Get.isRegistered<TokenStorage>()) {
       Get.put<TokenStorage>(TokenStorage(), permanent: true);
     }

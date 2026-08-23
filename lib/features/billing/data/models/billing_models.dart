@@ -47,6 +47,17 @@ class VisitTaskBillingPatch {
       };
 }
 
+/// PATCH body for visit task NDIS code (`null` clears).
+class VisitTaskSupportItemPatch {
+  const VisitTaskSupportItemPatch({this.supportItemCode});
+
+  final String? supportItemCode;
+
+  Map<String, dynamic> toJson() => {
+        'support_item_code': supportItemCode,
+      };
+}
+
 class NdisCatalogueItemOut {
   const NdisCatalogueItemOut({
     required this.supportItemNumber,

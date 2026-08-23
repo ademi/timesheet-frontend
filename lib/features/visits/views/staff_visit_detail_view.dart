@@ -4,7 +4,9 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/staff_visits_controller.dart';
+import '../data/models/visit_models.dart';
 
 String _fmt(DateTime dt) {
   final l = dt.toLocal();
@@ -57,53 +59,100 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                  if (err != null) ...[
-                    _ErrorBox(err),
-                    const SizedBox(height: 12),
-                  ],
-                  Text(v.jobTitle ?? 'Visit', style: Get.textTheme.titleMedium),
-                  const SizedBox(height: 4),
-                  Text('Status: ${v.status} · payment: ${v.paymentStatus}'),
-                  Text('Start: ${_fmt(v.scheduledStart)}'),
-                  Text('End: ${_fmt(v.scheduledEnd)}'),
-                  if (v.locationLabel?.isNotEmpty == true)
-                    Text('Location: ${v.locationLabel}'),
-                  Text(
-                    'Geofence: ${v.geofenceMode} / ${v.geofenceRadiusM}m'
-                    '${v.latitude != null ? ' @ ${v.latitude}, ${v.longitude}' : ''}',
-                  ),
-                  if (v.contractorName?.isNotEmpty == true)
-                    Text('Contractor: ${v.contractorName}'),
-                  const Divider(height: 32),
-                  Text('Tasks', style: Get.textTheme.titleMedium),
-                  if (v.tasks.isEmpty) const Text('No tasks.'),
-                  for (final t in v.tasks)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(
-                        t.isDone
-                            ? Icons.check_circle
-                            : Icons.radio_button_unchecked,
-                        color: t.isDone ? AppColors.primary : null,
-                      ),
-                      title: Text(t.title),
-                    ),
-                  if (controller.canManage &&
-                      !v.isCancelled &&
-                      !v.isCompleted) ...[
-                    const Divider(height: 32),
-                    AsyncElevatedButton(
-                      onPressed: () => _reschedule(context, controller),
-                      isLoading: controller.isSaving.value,
-                      child: const Text('Reschedule…'),
-                    ),
-                    const SizedBox(height: 8),
-                    AsyncOutlinedButton(
-                      onPressed: controller.cancelSelected,
-                      isLoading: controller.isSaving.value,
-                      child: const Text('Cancel visit'),
-                    ),
-                  ],
+                        if (err != null) ...[
+                          _ErrorBox(err),
+                          const SizedBox(height: 12),
+                        ],
+                        Text(v.jobTitle ?? 'Visit', style: Get.textTheme.titleMedium),
+                        const SizedBox(height: 4),
+                        Text('Status: ${v.status} · payment: ${v.paymentStatus}'),
+                        Text('Start: ${_fmt(v.scheduledStart)}'),
+                        Text('End: ${_fmt(v.scheduledEnd)}'),
+                        if (v.locationLabel?.isNotEmpty == true)
+                          Text('Location: ${v.locationLabel}'),
+                        Text(
+                          'Geofence: ${v.geofenceMode} / ${v.geofenceRadiusM}m'
+                          '${v.latitude != null ? ' @ ${v.latitude}, ${v.longitude}' : ''}',
+                        ),
+                        if (v.contractorName?.isNotEmpty == true)
+                          Text('Contractor: ${v.contractorName}'),
+                        const Divider(height: 32),
+                        Text('NDIS support item', style: Get.textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        if (controller.canEditVisitSupportItem)
+                          NdisSupportItemPicker(
+                            supportItemCode:
+                                controller.editingVisitSupportItemCode.value,
+                            supportItemName:
+                                controller.editingVisitSupportItemName.value,
+                            enabled: !controller.isSaving.value,
+                            labelText: 'Visit-level NDIS item',
+                            onChanged: ({
+                              required String? supportItemCode,
+                              required String? supportItemName,
+                            }) {
+                              controller.updateVisitSupportItem(
+                                supportItemCode: supportItemCode,
+                                supportItemName: supportItemName,
+                              );
+                            },
+                          )
+                        else if (v.supportItemCode != null &&
+                            v.supportItemName != null)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(v.supportItemName!),
+                              Text(
+                                v.supportItemCode!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          )
+                        else if (v.supportItemCode != null)
+                          Text(
+                            v.supportItemCode!,
+                            style: const TextStyle(color: AppColors.textMuted),
+                          )
+                        else
+                          const Text(
+                            'None set.',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                        const SizedBox(height: 4),
+                        Text(
+                          controller.canEditVisitSupportItem
+                              ? 'Editable while scheduled and unpaid.'
+                              : 'Locked after check-in or payment.',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        const Divider(height: 32),
+                        Text('Tasks', style: Get.textTheme.titleMedium),
+                        if (v.tasks.isEmpty) const Text('No tasks.'),
+                        for (final t in v.tasks)
+                          _VisitTaskRow(controller: controller, task: t),
+                        if (controller.canManage &&
+                            !v.isCancelled &&
+                            !v.isCompleted) ...[
+                          const Divider(height: 32),
+                          AsyncElevatedButton(
+                            onPressed: () => _reschedule(context, controller),
+                            isLoading: controller.isSaving.value,
+                            child: const Text('Reschedule…'),
+                          ),
+                          const SizedBox(height: 8),
+                          AsyncOutlinedButton(
+                            onPressed: controller.cancelSelected,
+                            isLoading: controller.isSaving.value,
+                            child: const Text('Cancel visit'),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -150,6 +199,58 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
     final newEnd = newStart.add(duration);
 
     await controller.rescheduleSelected(start: newStart, end: newEnd);
+  }
+}
+
+class _VisitTaskRow extends StatelessWidget {
+  const _VisitTaskRow({required this.controller, required this.task});
+
+  final StaffVisitsController controller;
+  final VisitTaskOut task;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(
+            task.isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: task.isDone ? AppColors.primary : null,
+          ),
+          title: Text(task.title),
+        ),
+        if (controller.canEditVisitSupportItem)
+          Padding(
+            padding: const EdgeInsets.only(left: 40, bottom: 12),
+            child: NdisSupportItemPicker(
+              supportItemCode: controller.taskSupportPickerCode(task),
+              supportItemName: controller.taskSupportPickerName(task),
+              enabled: !controller.isSaving.value,
+              labelText: 'Task NDIS item (optional)',
+              onChanged: ({
+                required String? supportItemCode,
+                required String? supportItemName,
+              }) {
+                controller.updateVisitTaskSupportItem(
+                  task: task,
+                  supportItemCode: supportItemCode,
+                  supportItemName: supportItemName,
+                );
+              },
+            ),
+          )
+        else if (task.supportItemCode != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 40, bottom: 12),
+            child: Text(
+              task.supportItemCode!,
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          ),
+      ],
+    );
   }
 }
 

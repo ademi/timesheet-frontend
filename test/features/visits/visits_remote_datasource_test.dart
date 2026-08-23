@@ -123,4 +123,38 @@ void main() {
 
     expect(task.billableMinutes, 90);
   });
+
+  test('patchVisitTaskSupportItem patches task support item path', () async {
+    when(
+      () => dio.patch<Map<String, dynamic>>(
+        ApiPaths.visitTask(visitId, taskId),
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: ApiPaths.visitTask(visitId, taskId)),
+        data: {
+          'id': taskId,
+          'tenant_id': 'tenant-1',
+          'visit_id': visitId,
+          'title': 'Shower',
+          'sort_order': 0,
+          'is_done': false,
+          'support_item_code': '01_011_0107_1_1',
+          'created_at': '2026-07-30T09:00:00Z',
+          'updated_at': '2026-07-30T09:00:00Z',
+        },
+      ),
+    );
+
+    final task = await dataSource.patchVisitTaskSupportItem(
+      visitId: visitId,
+      taskId: taskId,
+      body: const VisitTaskSupportItemPatch(
+        supportItemCode: '01_011_0107_1_1',
+      ),
+    );
+
+    expect(task.supportItemCode, '01_011_0107_1_1');
+  });
 }

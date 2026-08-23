@@ -6,6 +6,7 @@ import '../../../core/services/token_storage.dart';
 import '../../clients/bindings/clients_binding.dart';
 import '../../engagements/bindings/engagements_binding.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
+import '../../billing/bindings/billing_binding.dart';
 import '../../payroll/bindings/payroll_binding.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../clients/data/repositories/clients_repository.dart';
@@ -34,6 +35,7 @@ class JobsBinding extends Bindings {
   static void ensureShared() {
     ClientsBinding.ensureShared();
     EngagementsBinding.ensureShared();
+    BillingBinding.ensureShared();
     if (!Get.isRegistered<TokenStorage>()) {
       Get.put<TokenStorage>(TokenStorage(), permanent: true);
     }
@@ -59,6 +61,7 @@ class OngoingSupportBinding extends Bindings {
   @override
   void dependencies() {
     JobsBinding.ensureShared();
+    BillingBinding.ensureShared();
     PayrollBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     Get.put(

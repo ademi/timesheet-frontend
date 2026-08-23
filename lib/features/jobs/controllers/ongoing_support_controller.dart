@@ -62,6 +62,8 @@ class OngoingSupportController extends GetxController {
   );
   final requiredSlots = 1.obs;
   final selectedContractorId = RxnString();
+  final supportItemCode = RxnString();
+  final supportItemName = RxnString();
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
@@ -148,6 +150,28 @@ class OngoingSupportController extends GetxController {
     }
   }
 
+  void setSupportItem({
+    required String? supportItemCode,
+    required String? supportItemName,
+  }) {
+    this.supportItemCode.value = supportItemCode;
+    this.supportItemName.value = supportItemName;
+  }
+
+  String? _pairedSupportItemCode(String? code, String? name) {
+    final c = code?.trim();
+    final n = name?.trim();
+    if (c == null || c.isEmpty || n == null || n.isEmpty) return null;
+    return c;
+  }
+
+  String? _pairedSupportItemName(String? code, String? name) {
+    final c = code?.trim();
+    final n = name?.trim();
+    if (c == null || c.isEmpty || n == null || n.isEmpty) return null;
+    return n;
+  }
+
   void toggleWeekday(int day) {
     weekdays.contains(day) ? weekdays.remove(day) : weekdays.add(day);
   }
@@ -224,6 +248,14 @@ class OngoingSupportController extends GetxController {
           timeWindows: windows,
           horizonFrom: horizon.from,
           horizonTo: horizon.to,
+          supportItemCode: _pairedSupportItemCode(
+            supportItemCode.value,
+            supportItemName.value,
+          ),
+          supportItemName: _pairedSupportItemName(
+            supportItemCode.value,
+            supportItemName.value,
+          ),
         ),
       );
       _goToRoster(jobId: created.job.id, clientId: client.id);

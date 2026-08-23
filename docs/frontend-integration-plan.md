@@ -136,34 +136,34 @@ See backend runbook: `timesheet/docs/phase-0-local-setup.md` (backend repo).
 > **Depends on:** Phase 1 complete  
 > **Estimated effort:** M
 
-### Task 3.1 — Shared NDIS catalogue picker widget
+### Task 3.1 — Shared NDIS catalogue picker widget ✅
 
-- [ ] Debounced typeahead against `GET /ndis-catalogue/items`
-- [ ] Display canonical name; store `support_item_number` as code
-- [ ] Client-side format check: `^\d{2}_\d{3}_\d{4}_\d_\d$`
-- [ ] Clear action sends both code + name null
+- [x] Debounced typeahead against `GET /ndis-catalogue/items`
+- [x] Display canonical name; store `support_item_number` as code
+- [x] Client-side format check: `^\d{2}_\d{3}_\d{4}_\d_\d$`
+- [x] Clear action sends both code + name null
 
-**Files:** `lib/shared/widgets/ndis_support_item_picker.dart` (new)
-
----
-
-### Task 3.2 — Job & ongoing support
-
-- [ ] Optional support item on **ongoing support** form (fields now persist on backend)
-- [ ] Optional default on **job create/edit** (if staff job form exists)
-- [ ] `PATCH /jobs/{id}/support-item` on job detail when default changes
-
-**Files:** `ongoing_support_view.dart`, `ongoing_support_controller.dart`, job detail views
+**Files:** `lib/shared/widgets/ndis_support_item_picker.dart`, `ndis_support_item_picker_test.dart`, `billing_binding.dart` (`ensureShared`)
 
 ---
 
-### Task 3.3 — Visit & task level (staff)
+### Task 3.2 — Job & ongoing support ✅
 
-- [ ] Visit detail: edit support item while `status == scheduled` && `paymentStatus == unpaid`
-- [ ] Task rows: optional per-task `supportItemCode` on templates and live visit tasks
-- [ ] Handle 409 `invalid_visit_status`, 422 catalogue errors via `AppFailure`
+- [x] Optional support item on **ongoing support** form (fields now persist on backend)
+- [x] Optional default on **job create/edit** (if staff job form exists)
+- [x] `PATCH /jobs/{id}/support-item` on job detail when default changes
 
-**Files:** Staff visit detail view/controller, recurrence task template UI
+**Files:** `ongoing_support_view.dart`, `ongoing_support_controller.dart`, `job_form_view.dart`, `job_detail_view.dart`, `jobs_controller.dart`, `jobs_binding.dart`, `jobs_support_item_controller_test.dart`, `ongoing_support_controller_test.dart`
+
+---
+
+### Task 3.3 — Visit & task level (staff) ✅
+
+- [x] Visit detail: edit support item while `status == scheduled` && `paymentStatus == unpaid`
+- [x] Task rows: optional per-task `supportItemCode` on templates and live visit tasks
+- [x] Handle 409 `invalid_visit_status`, 422 catalogue errors via `AppFailure`
+
+**Files:** `staff_visit_detail_view.dart`, `staff_visits_controller.dart`, `visits_remote_datasource.dart`, `visits_repository.dart`, `visits_binding.dart`, `recurrence_rule_form_view.dart`, `recurrence_rule_form_controller.dart`, `billing_models.dart`, tests
 
 ---
 
@@ -313,6 +313,7 @@ Phase 8 as backend ships
 | 2.1 | ✅ | 2026-08-23 | Tenant TZ horizon + week chevron fix |
 | 2.2 | ✅ | 2026-08-23 | Recurrence defaults, overnight block, invite email |
 | 2.3 | ✅ | 2026-08-23 | Roster terminology Visit → Shift |
+| 3.1 | ✅ | 2026-08-23 | Shared NDIS catalogue picker widget |
 | … | | | |
 
 *(Fill in dates when user approves each task.)*
