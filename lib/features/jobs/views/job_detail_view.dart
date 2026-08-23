@@ -9,6 +9,7 @@ import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/jobs_controller.dart';
 import '../utils/job_copy.dart';
 import '../utils/recurrence_label.dart';
+import '../utils/unified_support_args.dart';
 
 class JobDetailView extends StatefulWidget {
   const JobDetailView({super.key});
@@ -125,11 +126,11 @@ class _JobDetailViewState extends State<JobDetailView> {
                     onPressed: controller.isSaving.value
                         ? null
                         : () => Get.toNamed(
-                              AppRoutes.staffVisits,
-                              arguments: <String, dynamic>{
-                                'job_id': job.id,
-                                'create': true,
-                              },
+                              AppRoutes.staffUnifiedSupport,
+                              arguments: UnifiedSupportArgs(
+                                clientId: job.clientId,
+                                initialMode: UnifiedSupportMode.oneSession,
+                              ),
                             ),
                     icon: const Icon(Icons.event_outlined),
                     label: const Text('Book one session'),

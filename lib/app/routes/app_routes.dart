@@ -22,6 +22,8 @@ abstract class AppRoutes {
   static const staffJobs = '/staff/jobs';
   static const staffJobForm = '/staff/jobs/form';
   static const staffOngoingSupport = '/staff/jobs/ongoing-support';
+  /// Unified one-session / ongoing support stepped composer (Phase 6.1).
+  static const staffUnifiedSupport = '/staff/support/compose';
   static const staffJobDetail = '/staff/jobs/detail';
   static const staffRecurrenceRuleForm = '/staff/jobs/recurrence-rule-form';
   static const staffFormTemplates = '/staff/jobs/form-templates';

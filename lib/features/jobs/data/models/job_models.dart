@@ -439,6 +439,7 @@ class OngoingSupportCreateRequest {
     required this.horizonTo,
     this.supportItemCode,
     this.supportItemName,
+    this.taskTemplate = const [],
   });
 
   final String clientId;
@@ -455,6 +456,7 @@ class OngoingSupportCreateRequest {
   final DateTime horizonTo;
   final String? supportItemCode;
   final String? supportItemName;
+  final List<TaskTemplateItem> taskTemplate;
 
   Map<String, dynamic> toJson() => {
     'client_id': clientId,
@@ -471,6 +473,8 @@ class OngoingSupportCreateRequest {
     'horizon_to': horizonTo.toUtc().toIso8601String(),
     if (supportItemCode != null) 'support_item_code': supportItemCode,
     if (supportItemName != null) 'support_item_name': supportItemName,
+    if (taskTemplate.isNotEmpty)
+      'task_template': [for (final task in taskTemplate) task.toJson()],
   };
 }
 

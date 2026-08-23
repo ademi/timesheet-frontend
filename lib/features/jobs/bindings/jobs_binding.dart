@@ -12,8 +12,11 @@ import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../controllers/jobs_controller.dart';
 import '../controllers/ongoing_support_controller.dart';
+import '../controllers/unified_support_controller.dart';
 import '../data/datasources/jobs_remote_datasource.dart';
 import '../data/repositories/jobs_repository.dart';
+import '../../shifts/data/repositories/shifts_repository.dart';
+import '../../visits/bindings/visits_binding.dart';
 
 class JobsBinding extends Bindings {
   @override
@@ -63,12 +66,38 @@ class OngoingSupportBinding extends Bindings {
     JobsBinding.ensureShared();
     BillingBinding.ensureShared();
     PayrollBinding.ensureShared();
+    VisitsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     Get.put(
       OngoingSupportController(
         jobsRepository: Get.find<JobsRepository>(),
         clientsRepository: Get.find<ClientsRepository>(),
         engagementsRepository: Get.find<EngagementsRepository>(),
+        session: Get.find<SessionService>(),
+        payroll: Get.isRegistered<PayrollRepository>()
+            ? Get.find<PayrollRepository>()
+            : null,
+      ),
+    );
+  }
+}
+
+class UnifiedSupportBinding extends Bindings {
+  @override
+  void dependencies() {
+    JobsBinding.ensureShared();
+    BillingBinding.ensureShared();
+    PayrollBinding.ensureShared();
+    VisitsBinding.ensureShared();
+    ClientsBinding().dependencies();
+    if (!Get.isRegistered<SessionService>()) return;
+    if (!Get.isRegistered<ShiftsRepository>()) return;
+    Get.put(
+      UnifiedSupportController(
+        jobsRepository: Get.find<JobsRepository>(),
+        clientsRepository: Get.find<ClientsRepository>(),
+        engagementsRepository: Get.find<EngagementsRepository>(),
+        shiftsRepository: Get.find<ShiftsRepository>(),
         session: Get.find<SessionService>(),
         payroll: Get.isRegistered<PayrollRepository>()
             ? Get.find<PayrollRepository>()

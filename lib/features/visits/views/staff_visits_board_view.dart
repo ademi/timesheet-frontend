@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/equal_fill_row.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../core/time/tenant_civil_time.dart';
-import '../../clients/controllers/clients_controller.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
+import '../../jobs/utils/unified_support_args.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../controllers/staff_visits_controller.dart';
 import '../roster/roster_grid_model.dart';
@@ -20,33 +21,6 @@ String? _jobDropdownValue(String? filter, Iterable<JobOut> jobs) {
     if (job.id == filter) return filter;
   }
   return null;
-}
-
-/// Clients for book-one: board options plus any pending/selected client not yet
-/// on the board (so ensure-create from client detail works — D9).
-List<({String id, String name})> _bookOneClientOptions(
-  StaffVisitsController controller,
-) {
-  final byId = <String, String>{
-    for (final c in controller.clientFilterOptions) c.id: c.name,
-  };
-  final pending = controller.clientIdFilter.value.trim();
-  if (pending.isNotEmpty && !byId.containsKey(pending)) {
-    var name = pending;
-    if (Get.isRegistered<ClientsController>()) {
-      final selected = Get.find<ClientsController>().selected.value;
-      if (selected != null && selected.id == pending) {
-        final n = selected.fullName.trim();
-        if (n.isNotEmpty) name = n;
-      }
-    }
-    byId[pending] = name;
-  }
-  final list = byId.entries
-      .map((e) => (id: e.key, name: e.value))
-      .toList(growable: false)
-    ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-  return list;
 }
 
 List<DropdownMenuItem<String>> _supportDropdownItems(Iterable<JobOut> jobs) {
@@ -86,19 +60,6 @@ List<DropdownMenuItem<String>> _clientDropdownItems(
   ];
 }
 
-/// Client picker for the book-one sheet (required, no "All" entry).
-List<DropdownMenuItem<String>> _clientPickerItems(
-  Iterable<({String id, String name})> clients,
-) {
-  return [
-    for (final c in clients)
-      DropdownMenuItem(
-        value: c.id,
-        child: Text(c.name, overflow: TextOverflow.ellipsis),
-      ),
-  ];
-}
-
 String _fmt(DateTime dt) {
   final l = dt.toLocal();
   String two(int n) => n.toString().padLeft(2, '0');
@@ -128,9 +89,27 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
       await c.ensureBoardLoaded();
       if (!mounted) return;
       if (c.consumePendingCreateShift()) {
-        await _showBookOneDialog(context, c);
+        _openUnifiedSupport(
+          clientId: c.clientIdFilter.value.trim().isEmpty
+              ? null
+              : c.clientIdFilter.value.trim(),
+          mode: UnifiedSupportMode.oneSession,
+        );
       }
     });
+  }
+
+  void _openUnifiedSupport({
+    String? clientId,
+    UnifiedSupportMode? mode,
+  }) {
+    Get.toNamed(
+      AppRoutes.staffUnifiedSupport,
+      arguments: UnifiedSupportArgs(
+        clientId: clientId,
+        initialMode: mode,
+      ),
+    );
   }
 
   @override
@@ -145,7 +124,11 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
       floatingActionButton:
           controller.canManage
               ? FloatingActionButton(
-                onPressed: () => _showBookOneDialog(context, controller),
+                onPressed: () => _openUnifiedSupport(
+                  clientId: controller.clientIdFilter.value.trim().isEmpty
+                      ? null
+                      : controller.clientIdFilter.value.trim(),
+                ),
                 child: const Icon(Icons.add),
               )
               : null,
@@ -732,203 +715,6 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
       shiftId: tile.shiftId,
       contractorId: contractorId,
       workerName: workerName,
-    );
-  }
-
-  Future<void> _showBookOneDialog(
-    BuildContext context,
-    StaffVisitsController controller,
-  ) async {
-    final clients = _bookOneClientOptions(controller);
-    String? clientId = _clientDropdownValue(
-      controller.clientIdFilter.value,
-      clients,
-    );
-    var start = DateTime.now().add(const Duration(hours: 1));
-    var end = start.add(const Duration(hours: 2));
-    var slots = 1;
-    var publish = true;
-    String? dialogError;
-    var isSubmitting = false;
-
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setState) {
-            return AlertDialog(
-              title: const Text('Book one session'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (dialogError != null) ...[
-                      Text(
-                        dialogError!,
-                        style: const TextStyle(color: AppColors.error),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    if (clients.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: 12),
-                        child: Text(
-                          'No clients yet. Open a client and book from there, '
-                          'or start ongoing support first.',
-                          style: TextStyle(color: AppColors.textMuted),
-                        ),
-                      ),
-                    DropdownButtonFormField<String>(
-                      value: clientId,
-                      isExpanded: true,
-                      items: _clientPickerItems(clients),
-                      onChanged: (v) => setState(() => clientId = v),
-                      decoration: const InputDecoration(
-                        labelText: 'Client',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Start'),
-                      subtitle: Text(_fmt(start)),
-                      onTap: () async {
-                        final date = await showDatePicker(
-                          context: ctx,
-                          initialDate: start,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (date == null) return;
-                        if (!ctx.mounted) return;
-                        final time = await showTimePicker(
-                          context: ctx,
-                          initialTime: TimeOfDay.fromDateTime(start),
-                        );
-                        if (time == null) return;
-                        setState(() {
-                          start = DateTime(
-                            date.year,
-                            date.month,
-                            date.day,
-                            time.hour,
-                            time.minute,
-                          );
-                          if (!end.isAfter(start)) {
-                            end = start.add(const Duration(hours: 1));
-                          }
-                        });
-                      },
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('End'),
-                      subtitle: Text(_fmt(end)),
-                      onTap: () async {
-                        final date = await showDatePicker(
-                          context: ctx,
-                          initialDate: end,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (date == null) return;
-                        if (!ctx.mounted) return;
-                        final time = await showTimePicker(
-                          context: ctx,
-                          initialTime: TimeOfDay.fromDateTime(end),
-                        );
-                        if (time == null) return;
-                        setState(() {
-                          end = DateTime(
-                            date.year,
-                            date.month,
-                            date.day,
-                            time.hour,
-                            time.minute,
-                          );
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
-                      value: slots,
-                      items: [
-                        for (var n = 1; n <= 8; n++)
-                          DropdownMenuItem(value: n, child: Text('$n')),
-                      ],
-                      onChanged: (v) => setState(() => slots = v ?? 1),
-                      decoration: const InputDecoration(
-                        labelText: 'Required workers',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Publish immediately'),
-                      value: publish,
-                      onChanged: (v) => setState(() => publish = v),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed:
-                      isSubmitting
-                          ? null
-                          : () async {
-                            if (clientId == null) {
-                              setState(() => dialogError = 'Select a client.');
-                              return;
-                            }
-                            if (!end.isAfter(start)) {
-                              setState(
-                                () => dialogError = 'End must be after start.',
-                              );
-                              return;
-                            }
-                            setState(() {
-                              isSubmitting = true;
-                              dialogError = null;
-                            });
-                            final ok = await controller.bookOneForClient(
-                              clientId: clientId!,
-                              start: start,
-                              end: end,
-                              requiredSlots: slots,
-                              publish: publish,
-                            );
-                            if (!ctx.mounted) return;
-                            if (ok) {
-                              Navigator.pop(ctx);
-                              return;
-                            }
-                            setState(() {
-                              isSubmitting = false;
-                              dialogError =
-                                  controller.errorMessage.value ??
-                                  'Could not book session.';
-                            });
-                          },
-                  child:
-                      isSubmitting
-                          ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Text('Book'),
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 }

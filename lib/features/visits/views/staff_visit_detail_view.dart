@@ -77,6 +77,37 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                         ),
                         if (v.contractorName?.isNotEmpty == true)
                           Text('Contractor: ${v.contractorName}'),
+                        Obx(() {
+                          final ndis = controller.participantNdisNumber.value;
+                          if (ndis == null && !controller.isLoadingParticipantNdis.value) {
+                            return const SizedBox.shrink();
+                          }
+                          if (controller.isLoadingParticipantNdis.value &&
+                              ndis == null) {
+                            return const Padding(
+                              padding: EdgeInsets.only(top: 4),
+                              child: Text(
+                                'Loading participant NDIS…',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            );
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              ndis != null && ndis.isNotEmpty
+                                  ? 'NDIS $ndis'
+                                  : 'NDIS —',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          );
+                        }),
                         const Divider(height: 32),
                         Text('NDIS support item', style: Get.textTheme.titleMedium),
                         const SizedBox(height: 8),
@@ -185,7 +216,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                           ),
                         ),
                         const Divider(height: 32),
-                        Text('Tasks', style: Get.textTheme.titleMedium),
+                        Text('Shift tasks', style: Get.textTheme.titleMedium),
                         if (controller.hasCodedTasks) ...[
                           const SizedBox(height: 4),
                           const Text(

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
+import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
@@ -20,6 +21,8 @@ class _MockJobsRepository extends Mock implements JobsRepository {}
 
 class _MockEngagementsRepository extends Mock
     implements EngagementsRepository {}
+
+class _MockClientsRepository extends Mock implements ClientsRepository {}
 
 class _MockSessionService extends Mock implements SessionService {}
 
@@ -54,6 +57,7 @@ void main() {
   late _MockShiftsRepository shifts;
   late _MockJobsRepository jobs;
   late _MockEngagementsRepository engagements;
+  late _MockClientsRepository clients;
   late _MockSessionService session;
   late StaffVisitsController controller;
 
@@ -70,6 +74,7 @@ void main() {
     shifts = _MockShiftsRepository();
     jobs = _MockJobsRepository();
     engagements = _MockEngagementsRepository();
+    clients = _MockClientsRepository();
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
     when(
@@ -95,6 +100,7 @@ void main() {
       shiftsRepository: shifts,
       jobsRepository: jobs,
       engagementsRepository: engagements,
+      clientsRepository: clients,
       session: session,
     );
   });

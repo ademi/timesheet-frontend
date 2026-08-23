@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/app/constants/app_permissions.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
+import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/core/time/tenant_civil_time.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
@@ -25,6 +26,8 @@ class _MockJobsRepository extends Mock implements JobsRepository {}
 class _MockEngagementsRepository extends Mock
     implements EngagementsRepository {}
 
+class _MockClientsRepository extends Mock implements ClientsRepository {}
+
 class _MockSessionService extends Mock implements SessionService {}
 
 class _FakeHorizonRequest extends Fake implements HorizonRequest {}
@@ -34,6 +37,7 @@ StaffVisitsController _controller({
   required _MockShiftsRepository shifts,
   required _MockJobsRepository jobs,
   required _MockEngagementsRepository engagements,
+  required _MockClientsRepository clients,
   required _MockSessionService session,
 }) {
   return StaffVisitsController(
@@ -41,6 +45,7 @@ StaffVisitsController _controller({
     shiftsRepository: shifts,
     jobsRepository: jobs,
     engagementsRepository: engagements,
+    clientsRepository: clients,
     session: session,
   );
 }
@@ -73,6 +78,7 @@ void main() {
   late _MockShiftsRepository shifts;
   late _MockJobsRepository jobs;
   late _MockEngagementsRepository engagements;
+  late _MockClientsRepository clients;
   late _MockSessionService session;
   late StaffVisitsController controller;
 
@@ -89,6 +95,7 @@ void main() {
     shifts = _MockShiftsRepository();
     jobs = _MockJobsRepository();
     engagements = _MockEngagementsRepository();
+    clients = _MockClientsRepository();
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => session.tenantId).thenReturn(RxnString());
@@ -108,6 +115,7 @@ void main() {
       shifts: shifts,
       jobs: jobs,
       engagements: engagements,
+      clients: clients,
       session: session,
     );
   });

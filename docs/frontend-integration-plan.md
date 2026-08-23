@@ -239,23 +239,27 @@ See backend runbook: `timesheet/docs/phase-0-local-setup.md` (backend repo).
 > **Depends on:** Phases 2–3 recommended  
 > **Estimated effort:** L
 
-### Task 6.1 — Unified step form
+### Task 6.1 — Unified step form ✅
 
-- [ ] Step 1: One session vs ongoing
-- [ ] Step 2: Location (client sites; link to add site if empty)
-- [ ] Step 3: Pattern / date-time (**time pickers**, required workers +/-)
-- [ ] Step 4: Templates + optional NDIS line (Phase 3 picker)
-- [ ] Roster **+** button routes to same form
-- [ ] After save → roster with `client_id` filter (existing pattern)
+- [x] Step 1: One session vs ongoing
+- [x] Step 2: Location (client sites; link to add site if empty)
+- [x] Step 3: Pattern / date-time (**time pickers**, required workers +/-)
+- [x] Step 4: Templates + optional NDIS line (Phase 3 picker)
+- [x] Roster **+** button routes to same form
+- [x] After save → roster with `client_id` filter (existing pattern)
+
+**Files:** `unified_support_view.dart`, `unified_support_controller.dart`, `unified_support_args.dart`, `jobs_routes.dart`, `jobs_binding.dart`, `staff_visits_board_view.dart`, `clients_controller.dart`, `job_detail_view.dart`, `app_routes.dart`, tests
 
 ---
 
-### Task 6.2 — Care plan demo parity (T20)
+### Task 6.2 — Care plan demo parity (T20) ✅
 
-- [ ] **NDIS number** on client header / visit detail (from `client_profile_facts`, key `ndis`)
-- [ ] **Shift tasks** on ongoing support + book-one: task titles before check-in
-- [ ] Label: “Care plan tasks” / “Shift tasks”
-- [ ] Soft prompt when Patient type has no NDIS number
+- [x] **NDIS number** on client header / visit detail (from `client_profile_facts`, key `ndis`)
+- [x] **Shift tasks** on ongoing support + book-one: task titles before check-in
+- [x] Label: “Care plan tasks” / “Shift tasks”
+- [x] Soft prompt when Patient type has no NDIS number
+
+**Files:** `client_quick_facts.dart`, `ndis_capture_prompt.dart`, `care_plan_tasks_field.dart`, `client_detail_view.dart`, `client_detail_facts_section.dart`, `clients_controller.dart`, `unified_support_view.dart`, `unified_support_controller.dart`, `job_models.dart`, `staff_visit_detail_view.dart`, `staff_visits_controller.dart`, `visits_binding.dart`, tests
 
 **Out of scope:** plan budgets, goal tracking, PRODA
 

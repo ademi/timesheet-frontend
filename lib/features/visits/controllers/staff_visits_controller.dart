@@ -12,6 +12,8 @@ import '../../../core/time/tenant_civil_time.dart';
 import '../../../shared/utils/name_sort.dart';
 import '../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
+import '../../clients/data/repositories/clients_repository.dart';
+import '../../clients/utils/client_quick_facts.dart';
 import '../../engagements/data/models/engagement_models.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/data/models/job_models.dart';
@@ -75,12 +77,14 @@ class StaffVisitsController extends GetxController {
     required ShiftsRepository shiftsRepository,
     required JobsRepository jobsRepository,
     required EngagementsRepository engagementsRepository,
+    required ClientsRepository clientsRepository,
     required SessionService session,
     PayrollRepository? payroll,
   }) : _repository = repository,
        _shiftsRepository = shiftsRepository,
        _jobsRepository = jobsRepository,
        _engagementsRepository = engagementsRepository,
+       _clientsRepository = clientsRepository,
        _session = session,
        _payroll = payroll;
 
@@ -88,6 +92,7 @@ class StaffVisitsController extends GetxController {
   final ShiftsRepository _shiftsRepository;
   final JobsRepository _jobsRepository;
   final EngagementsRepository _engagementsRepository;
+  final ClientsRepository _clientsRepository;
   final SessionService _session;
   final PayrollRepository? _payroll;
 
@@ -111,6 +116,8 @@ class StaffVisitsController extends GetxController {
   final editingPriceTierOverride = RxnString();
   final priceTierEditBlocked = false.obs;
   final editingTaskBillableMinutes = <String, int?>{}.obs;
+  final participantNdisNumber = RxnString();
+  final isLoadingParticipantNdis = false.obs;
 
   /// Board range: aligned to tenant civil week when timezone is available.
   final rangeStart = DateTime.now().obs;
@@ -895,6 +902,35 @@ class StaffVisitsController extends GetxController {
     await refreshSelected();
   }
 
+  String? _clientIdForVisit(VisitOut visit) {
+    for (final job in jobs) {
+      if (job.id == visit.jobId) return job.clientId;
+    }
+    for (final shift in shifts) {
+      if (shift.jobId == visit.jobId && shift.clientId != null) {
+        return shift.clientId;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _loadParticipantNdis(VisitOut visit) async {
+    final clientId = _clientIdForVisit(visit);
+    if (clientId == null || clientId.isEmpty) {
+      participantNdisNumber.value = null;
+      return;
+    }
+    isLoadingParticipantNdis.value = true;
+    try {
+      final bundle = await _clientsRepository.getClientProfile(clientId);
+      participantNdisNumber.value = ndisFromFacts(bundle.facts);
+    } catch (_) {
+      participantNdisNumber.value = null;
+    } finally {
+      isLoadingParticipantNdis.value = false;
+    }
+  }
+
   Future<void> refreshSelected() async {
     final id =
         selected.value?.id ??
@@ -905,6 +941,7 @@ class StaffVisitsController extends GetxController {
       final visit = await _repository.getVisit(id);
       selected.value = visit;
       _syncSupportItemEditors(visit);
+      await _loadParticipantNdis(visit);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -917,12 +954,14 @@ class StaffVisitsController extends GetxController {
     if (arg is VisitOut) {
       selected.value = arg;
       _syncSupportItemEditors(arg);
+      _loadParticipantNdis(arg);
       return;
     }
     if (arg is Map && arg['visit'] is VisitOut) {
       final visit = arg['visit'] as VisitOut;
       selected.value = visit;
       _syncSupportItemEditors(visit);
+      _loadParticipantNdis(visit);
     }
   }
 

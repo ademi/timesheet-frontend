@@ -44,6 +44,13 @@ String? ndisFromFacts(List<ClientProfileFactOut> facts) {
   return null;
 }
 
+/// True when the client type label or code is Patient (demo NDIS prompt).
+bool isPatientClientType({String? typeName, String? typeCode}) {
+  final name = typeName?.trim().toLowerCase();
+  final code = typeCode?.trim().toLowerCase();
+  return name == 'patient' || code == 'patient';
+}
+
 ClientQuickFacts buildQuickFacts({
   required ClientOut client,
   String? ndisNumber,
