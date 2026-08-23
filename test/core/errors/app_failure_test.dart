@@ -326,7 +326,7 @@ void main() {
             type: DioExceptionType.badResponse,
           ),
         ).message,
-        'Visit must be completed to add to payment batch.',
+        'Complete the visit before exporting or adding to a payment batch.',
       );
       expect(
         AppFailure.fromDio(
@@ -342,6 +342,78 @@ void main() {
         ).message,
         'This worker is no longer in your workforce.',
       );
+    });
+
+    test('maps NDIS support item validation errors', () {
+      const expectedMessages = {
+        'support_item_pair': 'Enter both NDIS code and name, or clear both.',
+        'support_item_code': 'Invalid NDIS item number format.',
+        'support_item_not_in_catalogue':
+            'Item not in the current NDIS catalogue.',
+        'support_item_name_mismatch':
+            'Name does not match the catalogue — pick from search.',
+      };
+
+      for (final entry in expectedMessages.entries) {
+        final failure = AppFailure.fromDio(
+          DioException(
+            requestOptions: RequestOptions(path: '/visits/v1/support-item'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/visits/v1/support-item'),
+              statusCode: 422,
+              data: {'detail': entry.key},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        expect(failure.code, entry.key);
+        expect(failure.message, entry.value);
+        expect(failure.presentation, AppFailurePresentation.inline);
+      }
+    });
+
+    test('maps invoice export error codes', () {
+      const expectedMessages = {
+        'visit_already_exported':
+            'Already included in an export — void that export to rebill.',
+        'time_entry_not_closed':
+            'Close the time entry before exporting this visit.',
+        'support_item_required':
+            'Set a support item on the visit before exporting.',
+        'support_item_not_hourly':
+            'Only hourly (H) support items can be exported.',
+        'quote_required_not_exportable':
+            'Quote-required items cannot be auto-exported.',
+        'task_billable_minutes_required':
+            'Set billable minutes on each billed task.',
+        'task_minutes_exceed_visit_hours':
+            'Task minutes exceed the visit duration.',
+        'delivery_postcode_required':
+            'Job location needs a postcode for pricing, or set a price tier override.',
+        'price_limit_missing_for_tier':
+            'The catalogue has no price for this pricing tier.',
+        'export_already_void': 'This export was already voided.',
+        'export_not_voidable': 'Only finalized exports can be voided.',
+      };
+
+      for (final entry in expectedMessages.entries) {
+        final failure = AppFailure.fromDio(
+          DioException(
+            requestOptions: RequestOptions(path: '/billing/invoice-exports'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/billing/invoice-exports'),
+              statusCode: entry.key == 'export_already_void' ? 409 : 422,
+              data: {'detail': entry.key},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        expect(failure.code, entry.key);
+        expect(failure.message, entry.value);
+        expect(failure.presentation, AppFailurePresentation.inline);
+      }
     });
   });
 }

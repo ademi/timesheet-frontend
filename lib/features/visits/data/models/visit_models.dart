@@ -33,6 +33,8 @@ class VisitTaskOut {
     required this.isDone,
     this.doneAt,
     this.tenantId,
+    this.supportItemCode,
+    this.billableMinutes,
   });
 
   final String id;
@@ -42,6 +44,8 @@ class VisitTaskOut {
   final int sortOrder;
   final bool isDone;
   final DateTime? doneAt;
+  final String? supportItemCode;
+  final int? billableMinutes;
 
   factory VisitTaskOut.fromJson(Map<String, dynamic> json) {
     return VisitTaskOut(
@@ -54,10 +58,17 @@ class VisitTaskOut {
       doneAt: json['done_at'] != null
           ? DateTime.tryParse(json['done_at'].toString())
           : null,
+      supportItemCode: json['support_item_code'] as String?,
+      billableMinutes: json['billable_minutes'] as int?,
     );
   }
 
-  VisitTaskOut copyWith({bool? isDone, DateTime? doneAt}) {
+  VisitTaskOut copyWith({
+    bool? isDone,
+    DateTime? doneAt,
+    String? supportItemCode,
+    int? billableMinutes,
+  }) {
     return VisitTaskOut(
       id: id,
       tenantId: tenantId,
@@ -66,6 +77,8 @@ class VisitTaskOut {
       sortOrder: sortOrder,
       isDone: isDone ?? this.isDone,
       doneAt: doneAt ?? this.doneAt,
+      supportItemCode: supportItemCode ?? this.supportItemCode,
+      billableMinutes: billableMinutes ?? this.billableMinutes,
     );
   }
 }
@@ -203,12 +216,19 @@ class VisitOut {
     this.tasks = const [],
     this.formRequirements = const [],
     this.formSubmissions = const [],
+    this.engagementId,
+    this.shiftId,
+    this.supportItemCode,
+    this.supportItemName,
+    this.priceTierOverride,
   });
 
   final String id;
   final String tenantId;
   final String jobId;
   final String contractorId;
+  final String? engagementId;
+  final String? shiftId;
   final DateTime scheduledStart;
   final DateTime scheduledEnd;
   final String status; // scheduled | checked_in | completed | cancelled
@@ -224,6 +244,9 @@ class VisitOut {
   final String? tenantName;
   final String? contractorName;
   final String? locationLabel;
+  final String? supportItemCode;
+  final String? supportItemName;
+  final String? priceTierOverride;
   final List<VisitTaskOut> tasks;
   final List<VisitFormRequirement> formRequirements;
   final List<VisitFormSubmissionOut> formSubmissions;
@@ -252,6 +275,8 @@ class VisitOut {
       tenantId: json['tenant_id'].toString(),
       jobId: json['job_id'].toString(),
       contractorId: json['contractor_id'].toString(),
+      engagementId: json['engagement_id']?.toString(),
+      shiftId: json['shift_id']?.toString(),
       scheduledStart: DateTime.parse(json['scheduled_start'] as String),
       scheduledEnd: DateTime.parse(json['scheduled_end'] as String),
       status: json['status'] as String? ?? 'scheduled',
@@ -269,6 +294,9 @@ class VisitOut {
       tenantName: json['tenant_name'] as String?,
       contractorName: json['contractor_name'] as String?,
       locationLabel: json['location_label'] as String?,
+      supportItemCode: json['support_item_code'] as String?,
+      supportItemName: json['support_item_name'] as String?,
+      priceTierOverride: json['price_tier_override'] as String?,
       tasks: mapList(json['tasks'], VisitTaskOut.fromJson),
       formRequirements: mapList(
         json['form_requirements'] ?? json['required_forms'],
@@ -297,6 +325,8 @@ class VisitOut {
       tenantId: tenantId,
       jobId: jobId,
       contractorId: contractorId,
+      engagementId: engagementId,
+      shiftId: shiftId,
       scheduledStart: scheduledStart ?? this.scheduledStart,
       scheduledEnd: scheduledEnd ?? this.scheduledEnd,
       status: status ?? this.status,
@@ -312,6 +342,9 @@ class VisitOut {
       tenantName: tenantName,
       contractorName: contractorName,
       locationLabel: locationLabel,
+      supportItemCode: supportItemCode,
+      supportItemName: supportItemName,
+      priceTierOverride: priceTierOverride,
       tasks: tasks ?? this.tasks,
       formRequirements: formRequirements ?? this.formRequirements,
       formSubmissions: formSubmissions ?? this.formSubmissions,

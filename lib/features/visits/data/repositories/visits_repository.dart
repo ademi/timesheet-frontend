@@ -1,3 +1,4 @@
+import '../../../billing/data/models/billing_models.dart';
 import '../datasources/visits_remote_datasource.dart';
 import '../models/roster_overlay_models.dart';
 import '../models/visit_models.dart';
@@ -63,6 +64,29 @@ class VisitsRepository {
     required bool isDone,
   }) =>
       _remote.patchTask(visitId: visitId, taskId: taskId, isDone: isDone);
+
+  Future<VisitOut> patchVisitSupportItem(
+    String visitId,
+    SupportItemPatch body,
+  ) =>
+      _remote.patchVisitSupportItem(visitId, body);
+
+  Future<VisitOut> patchVisitPriceTier(
+    String visitId,
+    VisitPriceTierPatch body,
+  ) =>
+      _remote.patchVisitPriceTier(visitId, body);
+
+  Future<VisitTaskOut> patchVisitTaskBilling({
+    required String visitId,
+    required String taskId,
+    required VisitTaskBillingPatch body,
+  }) =>
+      _remote.patchVisitTaskBilling(
+        visitId: visitId,
+        taskId: taskId,
+        body: body,
+      );
 
   Future<void> submitForm({
     required String visitId,

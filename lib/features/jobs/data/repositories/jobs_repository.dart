@@ -1,4 +1,5 @@
 import '../../../../shared/utils/name_sort.dart';
+import '../../../billing/data/models/billing_models.dart';
 import '../datasources/jobs_remote_datasource.dart';
 import '../models/job_models.dart';
 
@@ -23,6 +24,8 @@ class JobsRepository {
   Future<JobOut> createJob(JobCreateRequest body) => _remote.createJob(body);
   Future<JobOut> updateJobStatus(String jobId, String status) =>
       _remote.updateJobStatus(jobId, status);
+  Future<JobOut> patchJobSupportItem(String jobId, SupportItemPatch body) =>
+      _remote.patchJobSupportItem(jobId, body);
   Future<List<JobFormCatalogOut>> listFormCatalog(String jobId) async =>
       sortedByName(await _remote.listFormCatalog(jobId), (c) => c.name);
   Future<void> addFormCatalog(String jobId, String formTemplateId) =>

@@ -159,6 +159,21 @@ class AppFailure implements Exception {
       'contractor_on_leave',
       'shift_not_found',
       'shift_overlap',
+      'support_item_pair',
+      'support_item_not_in_catalogue',
+      'support_item_name_mismatch',
+      'support_item_code',
+      'support_item_not_hourly',
+      'support_item_required',
+      'quote_required_not_exportable',
+      'visit_already_exported',
+      'time_entry_not_closed',
+      'task_billable_minutes_required',
+      'task_minutes_exceed_visit_hours',
+      'delivery_postcode_required',
+      'price_limit_missing_for_tier',
+      'export_already_void',
+      'export_not_voidable',
     ];
     for (final k in known) {
       if (d == k || d.contains(k)) return k;
@@ -206,6 +221,21 @@ class AppFailure implements Exception {
       case 'invalid_shift_status':
       case 'contractor_on_leave':
       case 'shift_not_found':
+      case 'support_item_pair':
+      case 'support_item_code':
+      case 'support_item_not_in_catalogue':
+      case 'support_item_name_mismatch':
+      case 'support_item_required':
+      case 'support_item_not_hourly':
+      case 'quote_required_not_exportable':
+      case 'visit_already_exported':
+      case 'time_entry_not_closed':
+      case 'task_billable_minutes_required':
+      case 'task_minutes_exceed_visit_hours':
+      case 'delivery_postcode_required':
+      case 'price_limit_missing_for_tier':
+      case 'export_already_void':
+      case 'export_not_voidable':
         return AppFailurePresentation.inline;
       case 'proxy_required':
         return AppFailurePresentation.inline;
@@ -270,7 +300,7 @@ class AppFailure implements Exception {
       case 'invalid_engagement_state':
         return 'This worker is no longer in your workforce.';
       case 'visit_not_completed':
-        return 'Visit must be completed to add to payment batch.';
+        return 'Complete the visit before exporting or adding to a payment batch.';
       case 'counsel_pending':
       case 'counsel_pending_policy':
       case 'legal_document_unavailable':
@@ -278,7 +308,7 @@ class AppFailure implements Exception {
       case 'engagement_not_active':
         return 'Engagement isn’t active. Contact your admin.';
       case 'invalid_visit_status':
-        return 'Visit status changed. Refresh and try again.';
+        return 'Cannot change this visit in its current status. Refresh and try again.';
       case 'visit_overlap':
         return 'Overlapping visit — adjust the window or use partial generate.';
       case 'shift_overlap':
@@ -329,6 +359,36 @@ class AppFailure implements Exception {
         return 'You’re on leave for this day.';
       case 'shift_not_found':
         return 'Shift not found.';
+      case 'support_item_pair':
+        return 'Enter both NDIS code and name, or clear both.';
+      case 'support_item_code':
+        return 'Invalid NDIS item number format.';
+      case 'support_item_not_in_catalogue':
+        return 'Item not in the current NDIS catalogue.';
+      case 'support_item_name_mismatch':
+        return 'Name does not match the catalogue — pick from search.';
+      case 'support_item_required':
+        return 'Set a support item on the visit before exporting.';
+      case 'support_item_not_hourly':
+        return 'Only hourly (H) support items can be exported.';
+      case 'quote_required_not_exportable':
+        return 'Quote-required items cannot be auto-exported.';
+      case 'visit_already_exported':
+        return 'Already included in an export — void that export to rebill.';
+      case 'time_entry_not_closed':
+        return 'Close the time entry before exporting this visit.';
+      case 'task_billable_minutes_required':
+        return 'Set billable minutes on each billed task.';
+      case 'task_minutes_exceed_visit_hours':
+        return 'Task minutes exceed the visit duration.';
+      case 'delivery_postcode_required':
+        return 'Job location needs a postcode for pricing, or set a price tier override.';
+      case 'price_limit_missing_for_tier':
+        return 'The catalogue has no price for this pricing tier.';
+      case 'export_already_void':
+        return 'This export was already voided.';
+      case 'export_not_voidable':
+        return 'Only finalized exports can be voided.';
       default:
         return fallback;
     }

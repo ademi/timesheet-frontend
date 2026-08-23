@@ -146,13 +146,18 @@ abstract final class ApiPaths {
   static String jobRecurrenceSplitFrom(String id, String ruleId) =>
       '${jobRecurrenceRule(id, ruleId)}/split-from';
   static String jobVisits(String id) => '${job(id)}/visits';
+  static String jobSupportItem(String id) => '${job(id)}/support-item';
   static const visits = '$_v1/visits';
   static String visit(String id) => '$visits/$id';
   static String visitCancel(String id) => '${visit(id)}/cancel';
   static String visitCheckIn(String id) => '${visit(id)}/check-in';
   static String visitComplete(String id) => '${visit(id)}/complete';
+  static String visitSupportItem(String id) => '${visit(id)}/support-item';
+  static String visitPriceTier(String id) => '${visit(id)}/price-tier';
   static String visitTask(String id, String taskId) =>
       '${visit(id)}/tasks/$taskId';
+  static String visitTaskBilling(String id, String taskId) =>
+      '${visitTask(id, taskId)}/billing';
   static String visitFormSubmissions(String id) =>
       '${visit(id)}/form-submissions';
 
@@ -169,6 +174,17 @@ abstract final class ApiPaths {
 
   // Workforce / roster overlay
   static const workforceRosterOverlay = '$_v1/workforce/roster-overlay';
+
+  // NDIS Support Catalogue (staff search; import is platform.admin)
+  static const ndisCatalogueItems = '$_v1/ndis-catalogue/items';
+  static const platformNdisCatalogueImport =
+      '$_v1/platform/ndis-catalogue/import';
+
+  // NDIS invoice export / billing (plan-manager CSV)
+  static const invoiceExports = '$_v1/billing/invoice-exports';
+  static String invoiceExport(String id) => '$invoiceExports/$id';
+  static String invoiceExportCsv(String id) => '${invoiceExport(id)}/csv';
+  static String invoiceExportVoid(String id) => '${invoiceExport(id)}/void';
 
   // Payroll / payments
   static String engagementRates(String engagementId) =>

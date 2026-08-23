@@ -7,6 +7,7 @@ import '../../app/data/repositories/auth_repository.dart';
 import '../../app/routes/app_routes.dart';
 import '../../features/contractor_onboarding/data/onboarding_progress_store.dart';
 import '../../features/contractor_onboarding/onboarding_routing.dart';
+import '../../app/constants/app_permissions.dart';
 import '../auth/jwt_claims.dart';
 import 'token_storage.dart';
 
@@ -103,6 +104,20 @@ class SessionService extends GetxController {
     }
     return true;
   }
+
+  /// List/get invoice exports and download CSV (`billing.view`).
+  bool get canViewBilling =>
+      hasPermission(AppPermissions.billingView) ||
+      hasPermission(AppPermissions.billingManage);
+
+  /// Create and void NDIS invoice exports (`billing.manage`).
+  bool get canManageBilling => hasPermission(AppPermissions.billingManage);
+
+  /// NDIS catalogue typeahead (`jobs.manage` or `billing.view` on backend).
+  bool get canSearchNdisCatalogue =>
+      hasPermission(AppPermissions.jobsManage) ||
+      hasPermission(AppPermissions.billingView) ||
+      hasPermission(AppPermissions.billingManage);
 
   /// Apply login / refresh / switch-tenant body into session + storage.
   Future<void> applyAuthTokens(AuthTokenModel tokens) async {

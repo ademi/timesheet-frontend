@@ -19,6 +19,8 @@ class JobOut {
     this.locationLabel,
     this.latitude,
     this.longitude,
+    this.supportItemCode,
+    this.supportItemName,
   });
 
   final String id;
@@ -35,6 +37,8 @@ class JobOut {
   final String? locationLabel;
   final double? latitude;
   final double? longitude;
+  final String? supportItemCode;
+  final String? supportItemName;
   final int geofenceRadiusM;
   final String geofenceMode;
   final DateTime createdAt;
@@ -59,6 +63,8 @@ class JobOut {
       locationLabel: json['location_label'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
+      supportItemCode: json['support_item_code'] as String?,
+      supportItemName: json['support_item_name'] as String?,
       geofenceRadiusM: json['geofence_radius_m'] as int? ?? 100,
       geofenceMode: json['geofence_mode'] as String? ?? 'informational',
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -100,6 +106,8 @@ class JobCreateRequest {
     this.clientSiteId,
     this.geofenceMode,
     this.geofenceRadiusM,
+    this.supportItemCode,
+    this.supportItemName,
   });
 
   final String kind;
@@ -109,6 +117,8 @@ class JobCreateRequest {
   final String? clientSiteId;
   final String? geofenceMode;
   final int? geofenceRadiusM;
+  final String? supportItemCode;
+  final String? supportItemName;
 
   Map<String, dynamic> toJson() => {
     'kind': kind,
@@ -118,7 +128,35 @@ class JobCreateRequest {
     if (clientSiteId != null) 'client_site_id': clientSiteId,
     if (geofenceMode != null) 'geofence_mode': geofenceMode,
     if (geofenceRadiusM != null) 'geofence_radius_m': geofenceRadiusM,
+    if (supportItemCode != null) 'support_item_code': supportItemCode,
+    if (supportItemName != null) 'support_item_name': supportItemName,
   };
+}
+
+class TaskTemplateItem {
+  const TaskTemplateItem({
+    required this.title,
+    this.sortOrder = 0,
+    this.supportItemCode,
+  });
+
+  final String title;
+  final int sortOrder;
+  final String? supportItemCode;
+
+  factory TaskTemplateItem.fromJson(Map<String, dynamic> json) {
+    return TaskTemplateItem(
+      title: json['title'] as String? ?? '',
+      sortOrder: json['sort_order'] as int? ?? 0,
+      supportItemCode: json['support_item_code'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'sort_order': sortOrder,
+        if (supportItemCode != null) 'support_item_code': supportItemCode,
+      };
 }
 
 class RecurrenceRuleOut {
@@ -209,6 +247,7 @@ class RecurrenceRuleCreateRequest {
     required this.timeWindows,
     this.until,
     this.taskTitles = const [],
+    this.taskTemplate = const [],
     this.formTemplateIds = const [],
   });
 
@@ -219,7 +258,16 @@ class RecurrenceRuleCreateRequest {
   final DateTime? until;
   final List<TimeWindow> timeWindows;
   final List<String> taskTitles;
+  final List<TaskTemplateItem> taskTemplate;
   final List<String> formTemplateIds;
+
+  List<TaskTemplateItem> get _resolvedTaskTemplate {
+    if (taskTemplate.isNotEmpty) return taskTemplate;
+    return [
+      for (var i = 0; i < taskTitles.length; i++)
+        TaskTemplateItem(title: taskTitles[i], sortOrder: i),
+    ];
+  }
 
   Map<String, dynamic> toJson() => {
     if (contractorId != null) 'contractor_id': contractorId,
@@ -229,8 +277,7 @@ class RecurrenceRuleCreateRequest {
     if (until != null) 'until': until!.toUtc().toIso8601String(),
     'time_windows': [for (final window in timeWindows) window.toJson()],
     'task_template': [
-      for (var i = 0; i < taskTitles.length; i++)
-        {'title': taskTitles[i], 'sort_order': i},
+      for (final task in _resolvedTaskTemplate) task.toJson(),
     ],
     'form_requirements': [
       for (final id in formTemplateIds)
@@ -390,6 +437,8 @@ class OngoingSupportCreateRequest {
     required this.timeWindows,
     required this.horizonFrom,
     required this.horizonTo,
+    this.supportItemCode,
+    this.supportItemName,
   });
 
   final String clientId;
@@ -404,6 +453,8 @@ class OngoingSupportCreateRequest {
   final List<TimeWindow> timeWindows;
   final DateTime horizonFrom;
   final DateTime horizonTo;
+  final String? supportItemCode;
+  final String? supportItemName;
 
   Map<String, dynamic> toJson() => {
     'client_id': clientId,
@@ -418,6 +469,8 @@ class OngoingSupportCreateRequest {
     'time_windows': [for (final window in timeWindows) window.toJson()],
     'horizon_from': horizonFrom.toUtc().toIso8601String(),
     'horizon_to': horizonTo.toUtc().toIso8601String(),
+    if (supportItemCode != null) 'support_item_code': supportItemCode,
+    if (supportItemName != null) 'support_item_name': supportItemName,
   };
 }
 
@@ -524,28 +577,62 @@ class ManualVisitCreateRequest {
     required this.scheduledStart,
     required this.scheduledEnd,
     this.taskTitles = const [],
+    this.tasks = const [],
     this.formTemplateIds = const [],
+    this.supportItemCode,
+    this.supportItemName,
   });
 
   final String contractorId;
   final DateTime scheduledStart;
   final DateTime scheduledEnd;
   final List<String> taskTitles;
+  final List<VisitTaskCreateItem> tasks;
   final List<String> formTemplateIds;
+  final String? supportItemCode;
+  final String? supportItemName;
+
+  List<Map<String, dynamic>> get _taskJson {
+    if (tasks.isNotEmpty) {
+      return [for (final t in tasks) t.toJson()];
+    }
+    return [
+      for (var i = 0; i < taskTitles.length; i++)
+        {'title': taskTitles[i], 'sort_order': i},
+    ];
+  }
 
   Map<String, dynamic> toJson() => {
     'contractor_id': contractorId,
     'scheduled_start': scheduledStart.toUtc().toIso8601String(),
     'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
-    'tasks': [
-      for (var i = 0; i < taskTitles.length; i++)
-        {'title': taskTitles[i], 'sort_order': i},
-    ],
+    'tasks': _taskJson,
     'form_requirements': [
       for (final id in formTemplateIds)
         {'form_template_id': id, 'is_required': true},
     ],
+    if (supportItemCode != null) 'support_item_code': supportItemCode,
+    if (supportItemName != null) 'support_item_name': supportItemName,
   };
+}
+
+/// Task row on manual visit create (`POST /v1/jobs/{id}/visits`).
+class VisitTaskCreateItem {
+  const VisitTaskCreateItem({
+    required this.title,
+    this.sortOrder = 0,
+    this.supportItemCode,
+  });
+
+  final String title;
+  final int sortOrder;
+  final String? supportItemCode;
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'sort_order': sortOrder,
+        if (supportItemCode != null) 'support_item_code': supportItemCode,
+      };
 }
 
 class FormTemplateOut {

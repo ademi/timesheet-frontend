@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/constants/api_paths.dart';
+import 'package:rostiq/features/billing/data/models/billing_models.dart';
 import 'package:rostiq/features/jobs/data/datasources/jobs_remote_datasource.dart';
 
 class MockDio extends Mock implements Dio {}
@@ -110,5 +111,33 @@ void main() {
         data: const <String, dynamic>{},
       ),
     ).called(1);
+  });
+
+  test('patchJobSupportItem patches job support item path', () async {
+    when(
+      () => dio.patch<Map<String, dynamic>>(
+        ApiPaths.jobSupportItem('job-1'),
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: ApiPaths.jobSupportItem('job-1')),
+        data: {
+          ...jobJson,
+          'support_item_code': '01_011_0107_1_1',
+          'support_item_name': 'Self care',
+        },
+      ),
+    );
+
+    final job = await dataSource.patchJobSupportItem(
+      'job-1',
+      const SupportItemPatch(
+        supportItemCode: '01_011_0107_1_1',
+        supportItemName: 'Self care',
+      ),
+    );
+
+    expect(job.supportItemCode, '01_011_0107_1_1');
   });
 }
