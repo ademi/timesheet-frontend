@@ -55,7 +55,7 @@ VisitOut _visit({
   );
 }
 
-VisitTaskOut _task({String? supportItemCode}) {
+VisitTaskOut _task({String? supportItemCode, int? billableMinutes}) {
   return VisitTaskOut(
     id: 'task-1',
     visitId: 'visit-1',
@@ -63,6 +63,7 @@ VisitTaskOut _task({String? supportItemCode}) {
     sortOrder: 0,
     isDone: false,
     supportItemCode: supportItemCode,
+    billableMinutes: billableMinutes,
   );
 }
 
@@ -83,6 +84,12 @@ void main() {
     );
     registerFallbackValue(
       const VisitTaskSupportItemPatch(supportItemCode: '01_011_0107_1_1'),
+    );
+    registerFallbackValue(
+      const VisitPriceTierPatch(priceTierOverride: PriceTier.remote),
+    );
+    registerFallbackValue(
+      const VisitTaskBillingPatch(billableMinutes: 90),
     );
   });
 
@@ -217,5 +224,116 @@ void main() {
         body: any(named: 'body'),
       ),
     ).called(1);
+  });
+
+  test('updateVisitPriceTier patches and syncs editor', () async {
+    final updated = _visit();
+    final withTier = VisitOut(
+      id: 'visit-1',
+      tenantId: 'tenant-1',
+      jobId: 'job-1',
+      contractorId: 'contractor-1',
+      scheduledStart: _now,
+      scheduledEnd: _now.add(const Duration(hours: 1)),
+      status: 'scheduled',
+      source: 'manual',
+      latitude: 0,
+      longitude: 0,
+      geofenceRadiusM: 100,
+      geofenceMode: 'informational',
+      paymentStatus: 'unpaid',
+      createdAt: _now,
+      updatedAt: _now,
+      priceTierOverride: PriceTier.remote,
+    );
+    controller.selected.value = updated;
+    controller.editingPriceTierOverride.value = null;
+
+    when(
+      () => visits.patchVisitPriceTier('visit-1', any()),
+    ).thenAnswer((_) async => withTier);
+
+    await controller.updateVisitPriceTier(PriceTier.remote);
+
+    expect(controller.selected.value?.priceTierOverride, PriceTier.remote);
+    expect(controller.editingPriceTierOverride.value, PriceTier.remote);
+  });
+
+  test('updateVisitPriceTier blocks further edits after visit_already_exported', () async {
+    controller.selected.value = _visit();
+    controller.editingPriceTierOverride.value = null;
+
+    when(() => visits.patchVisitPriceTier(any(), any())).thenThrow(
+      const AppFailure(
+        code: 'visit_already_exported',
+        message: 'Already included in an export — void that export to rebill.',
+        presentation: AppFailurePresentation.inline,
+      ),
+    );
+
+    await controller.updateVisitPriceTier(PriceTier.national);
+
+    expect(controller.priceTierEditBlocked.value, isTrue);
+    expect(controller.canEditVisitPriceTier, isFalse);
+    expect(controller.errorMessage.value, contains('export'));
+  });
+
+  test('updateVisitTaskBillableMinutes patches task billing', () async {
+    final task = _task(supportItemCode: '01_011_0107_1_1');
+    final visit = _visit(tasks: [task]);
+    final updatedTask = VisitTaskOut(
+      id: 'task-1',
+      visitId: 'visit-1',
+      title: 'Personal care',
+      sortOrder: 0,
+      isDone: false,
+      supportItemCode: '01_011_0107_1_1',
+      billableMinutes: 90,
+    );
+    controller.selected.value = visit;
+
+    when(
+      () => visits.patchVisitTaskBilling(
+        visitId: 'visit-1',
+        taskId: 'task-1',
+        body: any(named: 'body'),
+      ),
+    ).thenAnswer((_) async => updatedTask);
+
+    await controller.updateVisitTaskBillableMinutes(
+      task: task,
+      rawMinutes: '90',
+    );
+
+    expect(
+      controller.selected.value?.tasks.single.billableMinutes,
+      90,
+    );
+    verify(
+      () => visits.patchVisitTaskBilling(
+        visitId: 'visit-1',
+        taskId: 'task-1',
+        body: any(named: 'body'),
+      ),
+    ).called(1);
+  });
+
+  test('updateVisitTaskBillableMinutes rejects out of range values', () async {
+    final task = _task(supportItemCode: '01_011_0107_1_1');
+    controller.selected.value = _visit(tasks: [task]);
+
+    await controller.updateVisitTaskBillableMinutes(
+      task: task,
+      rawMinutes: '2000',
+    );
+
+    expect(controller.errorMessage.value, contains('1440'));
+    verifyNever(
+      () => visits.patchVisitTaskBilling(
+        visitId: any(named: 'visitId'),
+        taskId: any(named: 'taskId'),
+        body: any(named: 'body'),
+      ),
+    );
   });
 }

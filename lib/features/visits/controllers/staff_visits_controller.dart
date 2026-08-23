@@ -19,6 +19,7 @@ import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../billing/data/models/billing_models.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
+import '../utils/visit_billing_utils.dart';
 import '../data/models/roster_overlay_models.dart';
 import '../data/models/visit_models.dart';
 import '../data/repositories/visits_repository.dart';
@@ -107,6 +108,9 @@ class StaffVisitsController extends GetxController {
   final editingVisitSupportItemName = RxnString();
   final editingTaskSupportCodes = <String, String?>{}.obs;
   final editingTaskSupportNames = <String, String?>{}.obs;
+  final editingPriceTierOverride = RxnString();
+  final priceTierEditBlocked = false.obs;
+  final editingTaskBillableMinutes = <String, int?>{}.obs;
 
   /// Board range: aligned to tenant civil week when timezone is available.
   final rangeStart = DateTime.now().obs;
@@ -133,6 +137,40 @@ class StaffVisitsController extends GetxController {
         canManage &&
         visit.isScheduled &&
         visit.paymentStatus == 'unpaid';
+  }
+
+  bool get canEditVisitPriceTier {
+    final visit = selected.value;
+    return visit != null &&
+        canManage &&
+        !visit.isCancelled &&
+        !priceTierEditBlocked.value;
+  }
+
+  bool get canEditVisitTaskBilling => canEditVisitPriceTier;
+
+  bool get taskMinutesExceedVisitWarning {
+    final visit = selected.value;
+    if (visit == null) return false;
+    return taskMinutesExceedVisitDuration(visit);
+  }
+
+  int get visitScheduledMinutes {
+    final visit = selected.value;
+    if (visit == null) return 0;
+    return visitScheduledDurationMinutes(visit);
+  }
+
+  int get codedTaskMinutesTotal {
+    final visit = selected.value;
+    if (visit == null) return 0;
+    return codedTaskBillableMinutesTotal(visit);
+  }
+
+  bool get hasCodedTasks {
+    final visit = selected.value;
+    if (visit == null) return false;
+    return visitHasCodedTasks(visit);
   }
   bool get canRead =>
       _session.hasPermission(AppPermissions.shiftsRead) ||
@@ -923,6 +961,84 @@ class StaffVisitsController extends GetxController {
     }
   }
 
+  Future<void> updateVisitPriceTier(String? priceTierOverride) async {
+    final visit = selected.value;
+    if (visit == null || !canEditVisitPriceTier) return;
+    if (priceTierOverride == visit.priceTierOverride) return;
+
+    final previous = editingPriceTierOverride.value;
+    editingPriceTierOverride.value = priceTierOverride;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _repository.patchVisitPriceTier(
+        visit.id,
+        VisitPriceTierPatch(priceTierOverride: priceTierOverride),
+      );
+      selected.value = updated;
+      _syncPriceTierEditor(updated);
+    } on AppFailure catch (e) {
+      editingPriceTierOverride.value = previous;
+      errorMessage.value = e.message;
+      if (e.code == 'visit_already_exported') {
+        priceTierEditBlocked.value = true;
+      }
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> updateVisitTaskBillableMinutes({
+    required VisitTaskOut task,
+    required String rawMinutes,
+  }) async {
+    final visit = selected.value;
+    if (visit == null || !canEditVisitTaskBilling) return;
+
+    final code = taskSupportPickerCode(task) ?? task.supportItemCode;
+    if (code == null || code.trim().isEmpty) return;
+
+    final trimmed = rawMinutes.trim();
+    if (trimmed.isEmpty) {
+      errorMessage.value = 'Enter billable minutes (0–1440).';
+      return;
+    }
+    final parsed = int.tryParse(trimmed);
+    if (parsed == null || parsed < 0 || parsed > maxTaskBillableMinutes) {
+      errorMessage.value = 'Billable minutes must be a whole number from 0 to 1440.';
+      return;
+    }
+    if (parsed == task.billableMinutes) return;
+
+    final previous = editingTaskBillableMinutes[task.id];
+    editingTaskBillableMinutes[task.id] = parsed;
+    editingTaskBillableMinutes.refresh();
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updatedTask = await _repository.patchVisitTaskBilling(
+        visitId: visit.id,
+        taskId: task.id,
+        body: VisitTaskBillingPatch(billableMinutes: parsed),
+      );
+      selected.value = _replaceTaskInVisit(visit, updatedTask);
+      editingTaskBillableMinutes[task.id] = updatedTask.billableMinutes;
+      editingTaskBillableMinutes.refresh();
+    } on AppFailure catch (e) {
+      editingTaskBillableMinutes[task.id] = previous;
+      editingTaskBillableMinutes.refresh();
+      errorMessage.value = e.message;
+      if (e.code == 'visit_already_exported') {
+        priceTierEditBlocked.value = true;
+      }
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  int? taskBillableMinutesDisplay(VisitTaskOut task) =>
+      editingTaskBillableMinutes[task.id] ?? task.billableMinutes;
+
   Future<void> updateVisitTaskSupportItem({
     required VisitTaskOut task,
     required String? supportItemCode,
@@ -949,11 +1065,14 @@ class StaffVisitsController extends GetxController {
       );
       selected.value = _replaceTaskInVisit(visit, updatedTask);
       editingTaskSupportCodes[task.id] = updatedTask.supportItemCode;
+      editingTaskBillableMinutes[task.id] = updatedTask.billableMinutes;
       if (updatedTask.supportItemCode == null) {
         editingTaskSupportNames.remove(task.id);
+        editingTaskBillableMinutes.remove(task.id);
       }
       editingTaskSupportCodes.refresh();
       editingTaskSupportNames.refresh();
+      editingTaskBillableMinutes.refresh();
     } on AppFailure catch (e) {
       editingTaskSupportCodes[task.id] = previousCode;
       if (previousName == null) {
@@ -978,6 +1097,20 @@ class StaffVisitsController extends GetxController {
   void _syncSupportItemEditors(VisitOut visit) {
     _syncVisitSupportItemEditor(visit);
     _syncTaskSupportEditors(visit);
+    _syncPriceTierEditor(visit);
+    _syncTaskBillableEditors(visit);
+  }
+
+  void _syncTaskBillableEditors(VisitOut visit) {
+    editingTaskBillableMinutes.clear();
+    for (final task in visit.tasks) {
+      editingTaskBillableMinutes[task.id] = task.billableMinutes;
+    }
+    editingTaskBillableMinutes.refresh();
+  }
+
+  void _syncPriceTierEditor(VisitOut visit) {
+    editingPriceTierOverride.value = visit.priceTierOverride;
   }
 
   void _syncVisitSupportItemEditor(VisitOut visit) {

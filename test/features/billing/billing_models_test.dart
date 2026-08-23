@@ -42,6 +42,10 @@ void main() {
       {'price_tier_override': 'remote'},
     );
     expect(
+      const VisitPriceTierPatch().toJson(),
+      {'price_tier_override': null},
+    );
+    expect(
       const VisitTaskBillingPatch(billableMinutes: 90).toJson(),
       {'billable_minutes': 90},
     );
@@ -83,5 +87,12 @@ void main() {
     expect(export.isFinalized, isTrue);
     expect(export.lines.single.participantNdisNumber, '430000000');
     expect(export.lines.single.priceTier, PriceTier.national);
+  });
+
+  test('PriceTier.labelForOverride formats tier labels', () {
+    expect(PriceTier.labelForOverride(null), 'Auto (MMM postcode)');
+    expect(PriceTier.labelForOverride(PriceTier.national), 'National');
+    expect(PriceTier.labelForOverride(PriceTier.remote), 'Remote');
+    expect(PriceTier.labelForOverride(PriceTier.veryRemote), 'Very remote');
   });
 }

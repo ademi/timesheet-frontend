@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../billing/data/models/billing_models.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/staff_visits_controller.dart';
@@ -133,7 +134,86 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                           ),
                         ),
                         const Divider(height: 32),
+                        Text('Price tier', style: Get.textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        if (controller.canEditVisitPriceTier)
+                          DropdownButtonFormField<String?>(
+                            value: controller.editingPriceTierOverride.value,
+                            decoration: const InputDecoration(
+                              labelText: 'Price tier override',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: const [
+                              DropdownMenuItem<String?>(
+                                value: null,
+                                child: Text('Auto (MMM postcode)'),
+                              ),
+                              DropdownMenuItem<String?>(
+                                value: PriceTier.national,
+                                child: Text('National'),
+                              ),
+                              DropdownMenuItem<String?>(
+                                value: PriceTier.remote,
+                                child: Text('Remote'),
+                              ),
+                              DropdownMenuItem<String?>(
+                                value: PriceTier.veryRemote,
+                                child: Text('Very remote'),
+                              ),
+                            ],
+                            onChanged: controller.isSaving.value
+                                ? null
+                                : controller.updateVisitPriceTier,
+                          )
+                        else
+                          Text(
+                            PriceTier.labelForOverride(v.priceTierOverride),
+                            style: TextStyle(
+                              color: controller.priceTierEditBlocked.value
+                                  ? AppColors.textMuted
+                                  : null,
+                            ),
+                          ),
+                        const SizedBox(height: 4),
+                        Text(
+                          controller.priceTierEditBlocked.value
+                              ? 'Locked — already included in an export.'
+                              : 'Staff override wins over MMM postcode. Without an override, export still needs a job location postcode.',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        const Divider(height: 32),
                         Text('Tasks', style: Get.textTheme.titleMedium),
+                        if (controller.hasCodedTasks) ...[
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Tasks with NDIS codes export as separate invoice lines (multi-line mode).',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ],
+                        if (controller.taskMinutesExceedVisitWarning) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.errorBackground,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Task minutes total (${controller.codedTaskMinutesTotal}) '
+                              'exceeds visit duration (${controller.visitScheduledMinutes} min). '
+                              'Export will fail until adjusted.',
+                              style: const TextStyle(color: AppColors.error),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
                         if (v.tasks.isEmpty) const Text('No tasks.'),
                         for (final t in v.tasks)
                           _VisitTaskRow(controller: controller, task: t),
@@ -203,10 +283,18 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
 }
 
 class _VisitTaskRow extends StatelessWidget {
-  const _VisitTaskRow({required this.controller, required this.task});
+  const _VisitTaskRow({
+    required this.controller,
+    required this.task,
+  });
 
   final StaffVisitsController controller;
   final VisitTaskOut task;
+
+  bool get _hasSupportItemCode {
+    final code = controller.taskSupportPickerCode(task) ?? task.supportItemCode;
+    return code?.trim().isNotEmpty == true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -249,7 +337,88 @@ class _VisitTaskRow extends StatelessWidget {
               style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
           ),
+        if (_hasSupportItemCode &&
+            controller.canEditVisitTaskBilling)
+          Padding(
+            padding: const EdgeInsets.only(left: 40, bottom: 12),
+            child: _BillableMinutesField(
+              key: ValueKey(
+                '${task.id}-${controller.taskBillableMinutesDisplay(task)}',
+              ),
+              initialMinutes: controller.taskBillableMinutesDisplay(task),
+              enabled: !controller.isSaving.value,
+              onSubmitted: (value) => controller.updateVisitTaskBillableMinutes(
+                task: task,
+                rawMinutes: value,
+              ),
+            ),
+          )
+        else if (_hasSupportItemCode && task.billableMinutes != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 40, bottom: 12),
+            child: Text(
+              '${task.billableMinutes} billable min',
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          ),
       ],
+    );
+  }
+}
+
+class _BillableMinutesField extends StatefulWidget {
+  const _BillableMinutesField({
+    super.key,
+    required this.initialMinutes,
+    required this.enabled,
+    required this.onSubmitted,
+  });
+
+  final int? initialMinutes;
+  final bool enabled;
+  final ValueChanged<String> onSubmitted;
+
+  @override
+  State<_BillableMinutesField> createState() => _BillableMinutesFieldState();
+}
+
+class _BillableMinutesFieldState extends State<_BillableMinutesField> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(
+      text: widget.initialMinutes?.toString() ?? '',
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _BillableMinutesField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialMinutes != widget.initialMinutes) {
+      _ctrl.text = widget.initialMinutes?.toString() ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _ctrl,
+      enabled: widget.enabled,
+      keyboardType: TextInputType.number,
+      decoration: const InputDecoration(
+        labelText: 'Billable minutes',
+        helperText: '0–1440 · press Enter to save',
+        border: OutlineInputBorder(),
+      ),
+      onFieldSubmitted: widget.onSubmitted,
     );
   }
 }

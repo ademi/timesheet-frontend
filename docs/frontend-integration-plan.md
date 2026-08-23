@@ -173,23 +173,25 @@ See backend runbook: `timesheet/docs/phase-0-local-setup.md` (backend repo).
 > **Depends on:** Phase 3 (task codes) recommended  
 > **Estimated effort:** M
 
-### Task 4.1 — Price tier override on visit detail
+### Task 4.1 — Price tier override on visit detail ✅
 
-- [ ] Selector: `national` | `remote` | `very_remote` | clear (auto)
-- [ ] `PATCH /visits/{id}/price-tier`
-- [ ] Show hint: override wins over MMM postcode; postcode still needed if no override
-- [ ] Block edits on 409 `visit_already_exported`
+- [x] Selector: `national` | `remote` | `very_remote` | clear (auto)
+- [x] `PATCH /visits/{id}/price-tier`
+- [x] Show hint: override wins over MMM postcode; postcode still needed if no override
+- [x] Block edits on 409 `visit_already_exported`
+
+**Files:** `staff_visit_detail_view.dart`, `staff_visits_controller.dart`, `billing_models.dart`, tests
 
 ---
 
-### Task 4.2 — Task billable minutes
+### Task 4.2 — Task billable minutes ✅
 
-- [ ] When task has `supportItemCode`, show minutes editor (0–1440)
-- [ ] `PATCH /visits/{id}/tasks/{task_id}/billing`
-- [ ] Validate sum of task minutes ≤ visit billable duration (client-side warning; server enforces)
-- [ ] Copy explaining multi-line export mode (tasks with codes → one CSV line each)
+- [x] When task has `supportItemCode`, show minutes editor (0–1440)
+- [x] `PATCH /visits/{id}/tasks/{task_id}/billing`
+- [x] Validate sum of task minutes ≤ visit billable duration (client-side warning; server enforces)
+- [x] Copy explaining multi-line export mode (tasks with codes → one CSV line each)
 
-**Files:** Staff visit detail, `visit_models.dart` (already in Phase 1)
+**Files:** `staff_visit_detail_view.dart`, `staff_visits_controller.dart`, `visit_billing_utils.dart`, tests
 
 ---
 

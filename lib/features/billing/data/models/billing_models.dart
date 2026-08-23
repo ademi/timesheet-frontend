@@ -9,6 +9,20 @@ abstract final class PriceTier {
   static const veryRemote = 'very_remote';
 
   static const values = {national, remote, veryRemote};
+
+  static String labelForOverride(String? tier) {
+    if (tier == null) return 'Auto (MMM postcode)';
+    switch (tier) {
+      case national:
+        return 'National';
+      case remote:
+        return 'Remote';
+      case veryRemote:
+        return 'Very remote';
+      default:
+        return tier;
+    }
+  }
 }
 
 /// PATCH body for job or visit support item (both null clears).
