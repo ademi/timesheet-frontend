@@ -4,7 +4,7 @@ abstract final class AppConstants {
 
   /// API origin (no trailing slash). Override at compile time, e.g.
   /// `--dart-define=API_BASE_URL=http://localhost:8000`.
-  /// Prefer [AppEnv.apiBaseUrl] for new code (also exposes billing/terms defines).
+  /// [AppEnv.apiBaseUrl] aliases this value — do not add a second default.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://11.0.0.98:8000',

@@ -1,11 +1,11 @@
+import 'package:rostiq/core/constants/app_constants.dart';
+
 /// Compile-time environment / feature defines for the contractor platform.
 abstract final class AppEnv {
   AppEnv._();
 
-  static const String apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://api.rostiq.co',
-  );
+  /// Same compile-time origin as [AppConstants.baseUrl] (single dart-define).
+  static const String apiBaseUrl = AppConstants.baseUrl;
 
   /// Landing GoCardless / billing page (subscription CTA).
   static const String billingUrl = String.fromEnvironment(
