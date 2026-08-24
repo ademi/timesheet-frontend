@@ -33,6 +33,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.7.0"
+  asn1lib:
+    dependency: transitive
+    description:
+      name: asn1lib
+      sha256: "9a8f69025044eb466b9b60ef3bc3ac99b4dc6c158ae9c56d25eeccf5bc56d024"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.6.5"
   async:
     dependency: transitive
     description:
@@ -480,6 +488,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  http_security_pinning:
+    dependency: "direct main"
+    description:
+      name: http_security_pinning
+      sha256: f74783b09c3c0afc001a5fd9ad454a1cb680fe06a4d67b9b23fde2510b9ab325
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   image:
     dependency: transitive
     description:
@@ -704,6 +720,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.0"
+  pem:
+    dependency: transitive
+    description:
+      name: pem
+      sha256: e66b389cbb007fa5860d511f08ea604ea68e78afc4e1b543dc227a0f0ef4faf9
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.6"
   permission_handler:
     dependency: "direct main"
     description:
