@@ -12,6 +12,7 @@ import '../widgets/client_detail_profile_section.dart';
 import '../widgets/client_detail_sites_section.dart';
 import '../widgets/client_detail_support_section.dart';
 import '../widgets/client_detail_visits_section.dart';
+import '../widgets/ndis_capture_prompt.dart';
 
 class ClientDetailView extends GetView<ClientsController> {
   const ClientDetailView({super.key});
@@ -102,6 +103,24 @@ class ClientDetailView extends GetView<ClientsController> {
                       fontSize: 18,
                     ),
                   ),
+                  if (controller.ndisNumber != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'NDIS ${controller.ndisNumber}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                  if (controller.showNdisCapturePrompt) ...[
+                    const SizedBox(height: 12),
+                    NdisCapturePrompt(
+                      onAddDetails: () =>
+                          controller.tabIndex.value = ClientsController.tabDetails,
+                    ),
+                  ],
                 ],
               ),
             ),

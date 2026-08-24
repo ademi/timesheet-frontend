@@ -48,6 +48,12 @@ abstract final class StaffShellNav {
       anyOf: [AppPermissions.paymentsView],
     ),
     _StaffDest(
+      icon: Icons.receipt_long_outlined,
+      label: 'Billing',
+      route: AppRoutes.staffBillingExports,
+      anyOf: [AppPermissions.billingView, AppPermissions.billingManage],
+    ),
+    _StaffDest(
       icon: Icons.verified_user_outlined,
       label: 'Compliance',
       route: AppRoutes.staffCompliance,

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/app/routes/app_routes.dart';
+import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
@@ -10,6 +11,7 @@ import 'package:rostiq/features/jobs/controllers/ongoing_support_controller.dart
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/features/jobs/utils/job_copy.dart';
+import 'package:rostiq/features/jobs/utils/time_window_utils.dart';
 
 class _MockJobsRepository extends Mock implements JobsRepository {}
 
@@ -96,6 +98,7 @@ void main() {
     clients = _MockClientsRepository();
     engagements = _MockEngagementsRepository();
     session = _MockSessionService();
+    when(() => session.tenantId).thenReturn(RxnString());
     navigations = [];
     when(() => clients.listSites(any())).thenAnswer((_) async => [_site]);
     when(() => jobs.listBranches()).thenAnswer((_) async => [_branch]);
@@ -190,5 +193,61 @@ void main() {
     when(() => jobs.listBranches()).thenThrow(Exception('offline'));
     await controller.load();
     expect(controller.branches, isEmpty);
+  });
+
+  test('submit blocked for overnight end time', () async {
+    controller.endTimeCtrl.text = '00:00';
+    await controller.submit();
+    expect(controller.errorMessage.value, contains('Overnight'));
+    verifyNever(() => jobs.createOngoingSupport(any()));
+  });
+
+  test('submit surfaces friendly message when standing job exists', () async {
+    when(() => jobs.createOngoingSupport(any())).thenThrow(
+      const AppFailure(
+        code: 'standing_job_exists',
+        message:
+            'This client already has ongoing support. Open it, or book one extra session.',
+        presentation: AppFailurePresentation.inline,
+      ),
+    );
+    await controller.submit();
+    expect(
+      controller.errorMessage.value,
+      contains('already has ongoing support'),
+    );
+  });
+
+  test('defaults end date one year after start', () async {
+    when(
+      () => jobs.createOngoingSupport(any()),
+    ).thenAnswer((_) async => _fakeOut);
+    final start = DateTime(2026, 6, 1);
+    controller.startDate.value = start;
+    controller.endDate.value = defaultRecurrenceEndDate(start);
+    await controller.submit();
+    final captured =
+        verify(() => jobs.createOngoingSupport(captureAny())).captured.single
+            as OngoingSupportCreateRequest;
+    expect(captured.until, isNotNull);
+    expect(captured.until!.year, 2027);
+    expect(captured.until!.month, 6);
+    expect(captured.until!.day, 1);
+  });
+
+  test('submit includes optional support item pair', () async {
+    controller.setSupportItem(
+      supportItemCode: '01_011_0107_1_1',
+      supportItemName: 'Self care',
+    );
+    when(
+      () => jobs.createOngoingSupport(any()),
+    ).thenAnswer((_) async => _fakeOut);
+    await controller.submit();
+    final captured =
+        verify(() => jobs.createOngoingSupport(captureAny())).captured.single
+            as OngoingSupportCreateRequest;
+    expect(captured.supportItemCode, '01_011_0107_1_1');
+    expect(captured.supportItemName, 'Self care');
   });
 }

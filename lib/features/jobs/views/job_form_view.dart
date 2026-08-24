@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/jobs_controller.dart';
 import '../utils/job_copy.dart';
 
@@ -209,6 +210,27 @@ class JobFormView extends GetView<JobsController> {
                   labelText: 'Geofence radius (m)',
                   border: OutlineInputBorder(),
                 ),
+              ),
+              const SizedBox(height: 12),
+              NdisSupportItemPicker(
+                supportItemCode: controller.supportItemCode.value,
+                supportItemName: controller.supportItemName.value,
+                enabled: !controller.isSaving.value,
+                labelText: 'Default NDIS support item (optional)',
+                onChanged: ({
+                  required String? supportItemCode,
+                  required String? supportItemName,
+                }) {
+                  controller.setCreateSupportItem(
+                    supportItemCode: supportItemCode,
+                    supportItemName: supportItemName,
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Optional default for visits on this job.',
+                style: TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
               const SizedBox(height: 24),
               AsyncElevatedButton(

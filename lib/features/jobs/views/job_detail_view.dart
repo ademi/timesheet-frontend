@@ -5,9 +5,11 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/jobs_controller.dart';
 import '../utils/job_copy.dart';
 import '../utils/recurrence_label.dart';
+import '../utils/unified_support_args.dart';
 
 class JobDetailView extends StatefulWidget {
   const JobDetailView({super.key});
@@ -60,6 +62,50 @@ class _JobDetailViewState extends State<JobDetailView> {
               'Location: ${job.locationLabel ?? job.clientSiteName ?? job.branchName ?? 'Location not set'}',
             ),
             Text('Geofence: ${job.geofenceMode} / ${job.geofenceRadiusM}m'),
+            const SizedBox(height: 16),
+            Text('Default NDIS support item', style: Get.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            if (controller.canManage && job.isOpen)
+              NdisSupportItemPicker(
+                supportItemCode: controller.editingSupportItemCode.value,
+                supportItemName: controller.editingSupportItemName.value,
+                enabled: !controller.isSaving.value,
+                labelText: 'NDIS support item',
+                onChanged: ({
+                  required String? supportItemCode,
+                  required String? supportItemName,
+                }) {
+                  controller.updateJobSupportItem(
+                    supportItemCode: supportItemCode,
+                    supportItemName: supportItemName,
+                  );
+                },
+              )
+            else if (job.supportItemCode != null &&
+                job.supportItemName != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(job.supportItemName!),
+                  Text(
+                    job.supportItemCode!,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              )
+            else
+              const Text(
+                'None set.',
+                style: TextStyle(color: AppColors.textMuted),
+              ),
+            const SizedBox(height: 4),
+            const Text(
+              'Updates propagate to visits that still use the previous default.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
             if (controller.canManage && job.isOpen) ...[
               const SizedBox(height: 12),
               Wrap(
@@ -80,11 +126,11 @@ class _JobDetailViewState extends State<JobDetailView> {
                     onPressed: controller.isSaving.value
                         ? null
                         : () => Get.toNamed(
-                              AppRoutes.staffVisits,
-                              arguments: <String, dynamic>{
-                                'job_id': job.id,
-                                'create': true,
-                              },
+                              AppRoutes.staffUnifiedSupport,
+                              arguments: UnifiedSupportArgs(
+                                clientId: job.clientId,
+                                initialMode: UnifiedSupportMode.oneSession,
+                              ),
                             ),
                     icon: const Icon(Icons.event_outlined),
                     label: const Text('Book one session'),

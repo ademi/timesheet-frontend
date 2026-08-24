@@ -3,9 +3,12 @@ import 'package:get/get.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
-import '../../engagements/bindings/engagements_binding.dart';
+import '../../billing/bindings/billing_binding.dart';
+import '../../clients/bindings/clients_binding.dart';
+import '../../clients/data/repositories/clients_repository.dart';
 import '../../payroll/bindings/payroll_binding.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
+import '../../engagements/bindings/engagements_binding.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/bindings/jobs_binding.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
@@ -24,6 +27,7 @@ class VisitsBinding extends Bindings {
   }
 
   static void ensureShared() {
+    BillingBinding.ensureShared();
     if (!Get.isRegistered<TokenStorage>()) {
       Get.put<TokenStorage>(TokenStorage(), permanent: true);
     }
@@ -69,6 +73,7 @@ class StaffVisitsBinding extends Bindings {
     JobsBinding.ensureShared();
     EngagementsBinding.ensureShared();
     PayrollBinding.ensureShared();
+    ClientsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<StaffVisitsController>()) {
       Get.put(
@@ -77,6 +82,7 @@ class StaffVisitsBinding extends Bindings {
           shiftsRepository: Get.find<ShiftsRepository>(),
           jobsRepository: Get.find<JobsRepository>(),
           engagementsRepository: Get.find<EngagementsRepository>(),
+          clientsRepository: Get.find<ClientsRepository>(),
           session: Get.find<SessionService>(),
           payroll: Get.isRegistered<PayrollRepository>()
               ? Get.find<PayrollRepository>()

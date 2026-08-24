@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
+import '../../../billing/data/models/billing_models.dart';
 import '../models/job_models.dart';
 
 class JobsRemoteDataSource {
@@ -51,6 +52,21 @@ class JobsRemoteDataSource {
         data: {'status': status},
       );
       return _require(response.data, JobOut.fromJson, 'update job');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<JobOut> patchJobSupportItem(
+    String jobId,
+    SupportItemPatch body,
+  ) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.jobSupportItem(jobId),
+        data: body.toJson(),
+      );
+      return _require(response.data, JobOut.fromJson, 'patch job support item');
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

@@ -22,7 +22,10 @@ class ClientDetailFactsSection extends StatelessWidget {
             if (facts!.clientTypeName != null)
               _row('Type', facts!.clientTypeName!),
             _row('Date of birth', facts!.dob ?? '—'),
-            if (facts!.ndisNumber != null) _row('NDIS', facts!.ndisNumber!),
+            _row(
+              'NDIS number',
+              facts!.ndisNumber?.isNotEmpty == true ? facts!.ndisNumber! : '—',
+            ),
             if (facts!.email != null) _row('Email', facts!.email!),
             if (facts!.phone != null) _row('Phone', facts!.phone!),
           ],

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:rostiq/app/constants/app_permissions.dart';
 import 'package:rostiq/app/data/models/auth/auth_token_model.dart';
 import 'package:rostiq/app/data/models/auth/engagement_summary_model.dart';
 import 'package:rostiq/app/data/models/auth/me_context_model.dart';
@@ -356,6 +357,48 @@ void main() {
         exp: 2,
       );
       expect(session.hasAll(['clients.read', 'jobs.read']), isTrue);
+    });
+
+    test('billing view gates', () {
+      tokenStorage.claims = const JwtClaims(
+        sub: 'u1',
+        tenantId: 't1',
+        permissions: [AppPermissions.billingView],
+        actorType: 'tenant_member',
+        iat: 1,
+        exp: 2,
+      );
+      expect(session.canViewBilling, isTrue);
+      expect(session.canManageBilling, isFalse);
+      expect(session.canSearchNdisCatalogue, isTrue);
+    });
+
+    test('billing manage implies view', () {
+      tokenStorage.claims = const JwtClaims(
+        sub: 'u1',
+        tenantId: 't1',
+        permissions: [AppPermissions.billingManage],
+        actorType: 'tenant_member',
+        iat: 1,
+        exp: 2,
+      );
+      expect(session.canViewBilling, isTrue);
+      expect(session.canManageBilling, isTrue);
+      expect(session.canSearchNdisCatalogue, isTrue);
+    });
+
+    test('jobs.manage can search catalogue without billing.view', () {
+      tokenStorage.claims = const JwtClaims(
+        sub: 'u1',
+        tenantId: 't1',
+        permissions: [AppPermissions.jobsManage],
+        actorType: 'tenant_member',
+        iat: 1,
+        exp: 2,
+      );
+      expect(session.canViewBilling, isFalse);
+      expect(session.canManageBilling, isFalse);
+      expect(session.canSearchNdisCatalogue, isTrue);
     });
   });
 

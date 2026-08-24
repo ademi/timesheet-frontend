@@ -13,9 +13,11 @@ import 'app/themes/app_colors.dart';
 import 'core/network/api_client.dart';
 import 'core/services/session_service.dart';
 import 'core/services/token_storage.dart';
+import 'core/time/tenant_civil_time.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ensureTimezoneDatabaseInitialized();
   // Web-only: use clean path URLs (no `#`) so browser history, refresh, and the
   // back/forward buttons reconcile with GetX routing predictably.
   if (kIsWeb) {

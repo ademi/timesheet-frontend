@@ -22,6 +22,8 @@ abstract class AppRoutes {
   static const staffJobs = '/staff/jobs';
   static const staffJobForm = '/staff/jobs/form';
   static const staffOngoingSupport = '/staff/jobs/ongoing-support';
+  /// Unified one-session / ongoing support stepped composer (Phase 6.1).
+  static const staffUnifiedSupport = '/staff/support/compose';
   static const staffJobDetail = '/staff/jobs/detail';
   static const staffRecurrenceRuleForm = '/staff/jobs/recurrence-rule-form';
   static const staffFormTemplates = '/staff/jobs/form-templates';
@@ -31,6 +33,8 @@ abstract class AppRoutes {
   static const staffVisitDetail = '/staff/visits/detail';
   static const staffShiftDetail = '/staff/visits/shift-detail';
   static const staffPayments = '/staff/payments';
+  static const staffBillingExports = '/staff/billing/exports';
+  static const staffBillingExportDetail = '/staff/billing/exports/detail';
   static const staffCompliance = '/staff/compliance';
   static const staffSettings = '/staff/settings';
   static const staffCredentialReview = '/staff/credentials-review';
@@ -72,6 +76,7 @@ abstract final class StaffRoutes {
   static const jobs = AppRoutes.staffJobs;
   static const visits = AppRoutes.staffVisits;
   static const payments = AppRoutes.staffPayments;
+  static const billing = AppRoutes.staffBillingExports;
   static const compliance = AppRoutes.staffCompliance;
   static const settings = AppRoutes.staffSettings;
 
@@ -82,6 +87,7 @@ abstract final class StaffRoutes {
     jobs,
     visits,
     payments,
+    billing,
     compliance,
     settings,
   ];

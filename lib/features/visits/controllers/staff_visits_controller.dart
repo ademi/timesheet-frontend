@@ -12,12 +12,16 @@ import '../../../core/time/tenant_civil_time.dart';
 import '../../../shared/utils/name_sort.dart';
 import '../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
+import '../../clients/data/repositories/clients_repository.dart';
+import '../../clients/utils/client_quick_facts.dart';
 import '../../engagements/data/models/engagement_models.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
+import '../../billing/data/models/billing_models.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
+import '../utils/visit_billing_utils.dart';
 import '../data/models/roster_overlay_models.dart';
 import '../data/models/visit_models.dart';
 import '../data/repositories/visits_repository.dart';
@@ -73,12 +77,14 @@ class StaffVisitsController extends GetxController {
     required ShiftsRepository shiftsRepository,
     required JobsRepository jobsRepository,
     required EngagementsRepository engagementsRepository,
+    required ClientsRepository clientsRepository,
     required SessionService session,
     PayrollRepository? payroll,
   }) : _repository = repository,
        _shiftsRepository = shiftsRepository,
        _jobsRepository = jobsRepository,
        _engagementsRepository = engagementsRepository,
+       _clientsRepository = clientsRepository,
        _session = session,
        _payroll = payroll;
 
@@ -86,6 +92,7 @@ class StaffVisitsController extends GetxController {
   final ShiftsRepository _shiftsRepository;
   final JobsRepository _jobsRepository;
   final EngagementsRepository _engagementsRepository;
+  final ClientsRepository _clientsRepository;
   final SessionService _session;
   final PayrollRepository? _payroll;
 
@@ -101,6 +108,16 @@ class StaffVisitsController extends GetxController {
   final errorMessage = RxnString();
   final overlay = Rxn<RosterOverlayOut>();
   final overlayWarning = RxnString();
+
+  final editingVisitSupportItemCode = RxnString();
+  final editingVisitSupportItemName = RxnString();
+  final editingTaskSupportCodes = <String, String?>{}.obs;
+  final editingTaskSupportNames = <String, String?>{}.obs;
+  final editingPriceTierOverride = RxnString();
+  final priceTierEditBlocked = false.obs;
+  final editingTaskBillableMinutes = <String, int?>{}.obs;
+  final participantNdisNumber = RxnString();
+  final isLoadingParticipantNdis = false.obs;
 
   /// Board range: aligned to tenant civil week when timezone is available.
   final rangeStart = DateTime.now().obs;
@@ -121,6 +138,47 @@ class StaffVisitsController extends GetxController {
   int horizonSnackCount = 0;
 
   bool get canManage => _session.hasPermission(AppPermissions.shiftsManage);
+  bool get canEditVisitSupportItem {
+    final visit = selected.value;
+    return visit != null &&
+        canManage &&
+        visit.isScheduled &&
+        visit.paymentStatus == 'unpaid';
+  }
+
+  bool get canEditVisitPriceTier {
+    final visit = selected.value;
+    return visit != null &&
+        canManage &&
+        !visit.isCancelled &&
+        !priceTierEditBlocked.value;
+  }
+
+  bool get canEditVisitTaskBilling => canEditVisitPriceTier;
+
+  bool get taskMinutesExceedVisitWarning {
+    final visit = selected.value;
+    if (visit == null) return false;
+    return taskMinutesExceedVisitDuration(visit);
+  }
+
+  int get visitScheduledMinutes {
+    final visit = selected.value;
+    if (visit == null) return 0;
+    return visitScheduledDurationMinutes(visit);
+  }
+
+  int get codedTaskMinutesTotal {
+    final visit = selected.value;
+    if (visit == null) return 0;
+    return codedTaskBillableMinutesTotal(visit);
+  }
+
+  bool get hasCodedTasks {
+    final visit = selected.value;
+    if (visit == null) return false;
+    return visitHasCodedTasks(visit);
+  }
   bool get canRead =>
       _session.hasPermission(AppPermissions.shiftsRead) ||
       _session.hasPermission(AppPermissions.shiftsManage) ||
@@ -189,20 +247,29 @@ class StaffVisitsController extends GetxController {
     );
   }
 
-  DateTime get _fromUtc {
-    final d = rangeStart.value;
-    return DateTime(d.year, d.month, d.day).toUtc();
+  DateTime get _fromUtc =>
+      tenantCivilDateStartUtc(rangeStart.value, _effectiveTenantTimezone);
+
+  DateTime get _toUtc => tenantCivilDateStartUtc(
+        rangeStart.value.add(const Duration(days: 7)),
+        _effectiveTenantTimezone,
+      );
+
+  String? get _effectiveTenantTimezone {
+    final tz = tenantTimezone.value.trim();
+    return tz.isEmpty ? null : tz;
   }
 
-  DateTime get _toUtc => _fromUtc.add(const Duration(days: 7));
+  /// Rolling 14-day fill window from tenant civil start of today (D15).
+  DateTime get _horizonFromUtc => tenantHorizonWindowUtc(
+        DateTime.now().toUtc(),
+        _effectiveTenantTimezone,
+      ).from;
 
-  /// Rolling 14-day fill window from local start of today (D15). Not the visible week.
-  DateTime get _horizonFromUtc {
-    final n = DateTime.now();
-    return DateTime(n.year, n.month, n.day).toUtc();
-  }
-
-  DateTime get _horizonToUtc => _horizonFromUtc.add(const Duration(days: 14));
+  DateTime get _horizonToUtc => tenantHorizonWindowUtc(
+        DateTime.now().toUtc(),
+        _effectiveTenantTimezone,
+      ).to;
 
   @override
   void onInit() {
@@ -214,7 +281,10 @@ class StaffVisitsController extends GetxController {
     final args = Get.arguments;
     if (args is Map) {
       final v = args['visit'];
-      if (v is VisitOut) selected.value = v;
+      if (v is VisitOut) {
+        selected.value = v;
+        _syncSupportItemEditors(v);
+      }
       final shift = args['shift'];
       if (shift is ShiftOut) selectedShift.value = shift;
       if (args['job_id'] != null) {
@@ -227,7 +297,10 @@ class StaffVisitsController extends GetxController {
       pendingCreateShift = args['create'] == true;
       return;
     }
-    if (args is VisitOut) selected.value = args;
+    if (args is VisitOut) {
+      selected.value = args;
+      _syncSupportItemEditors(args);
+    }
     if (args is ShiftOut) selectedShift.value = args;
   }
 
@@ -427,12 +500,7 @@ class StaffVisitsController extends GetxController {
 
   void shiftRange(int days) {
     rangeStart.value = rangeStart.value.add(Duration(days: days));
-    unawaited(_reloadThenFill());
-  }
-
-  Future<void> _reloadThenFill() async {
-    await load();
-    unawaited(_fillHorizon());
+    unawaited(load());
   }
 
   void setStatusFilter(String? status) {
@@ -648,7 +716,7 @@ class StaffVisitsController extends GetxController {
       }
     } on AppFailure catch (e) {
       final msg = e.code == 'invalid_visit_status'
-          ? 'Already checked in — cancel visit first.'
+          ? 'Already checked in — cancel the shift first.'
           : e.message;
       errorMessage.value = msg;
       lastReleaseSnack = msg;
@@ -716,17 +784,17 @@ class StaffVisitsController extends GetxController {
     if (!canManage) return;
     final ruleId = tile.recurrenceRuleId;
     if (ruleId == null || ruleId.isEmpty) {
-      errorMessage.value = 'This visit is not part of a pattern.';
+      errorMessage.value = 'This shift is not part of a pattern.';
       return;
     }
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      final localStart = tile.scheduledStart.toLocal();
-      final fromDate = DateTime(
-        localStart.year,
-        localStart.month,
-        localStart.day,
+      final civil = tenantCivilFromUtc(tile.scheduledStart.toUtc(), _effectiveTenantTimezone);
+      final fromDate = DateTime(civil.year, civil.month, civil.day);
+      final horizon = tenantHorizonWindowFromCivilDate(
+        fromDate,
+        _effectiveTenantTimezone,
       );
       await _jobsRepository.splitRecurrenceFrom(
         jobId: tile.jobId,
@@ -736,8 +804,8 @@ class StaffVisitsController extends GetxController {
           timeWindows: windows,
           contractorId: contractorId,
           requiredSlots: tile.requiredSlots,
-          horizonFrom: fromDate.toUtc(),
-          horizonTo: fromDate.add(const Duration(days: 14)).toUtc(),
+          horizonFrom: horizon.from,
+          horizonTo: horizon.to,
         ),
       );
       await load();
@@ -829,8 +897,38 @@ class StaffVisitsController extends GetxController {
 
   Future<void> openDetail(VisitOut visit) async {
     selected.value = visit;
+    _syncSupportItemEditors(visit);
     Get.toNamed(AppRoutes.staffVisitDetail, arguments: visit);
     await refreshSelected();
+  }
+
+  String? _clientIdForVisit(VisitOut visit) {
+    for (final job in jobs) {
+      if (job.id == visit.jobId) return job.clientId;
+    }
+    for (final shift in shifts) {
+      if (shift.jobId == visit.jobId && shift.clientId != null) {
+        return shift.clientId;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _loadParticipantNdis(VisitOut visit) async {
+    final clientId = _clientIdForVisit(visit);
+    if (clientId == null || clientId.isEmpty) {
+      participantNdisNumber.value = null;
+      return;
+    }
+    isLoadingParticipantNdis.value = true;
+    try {
+      final bundle = await _clientsRepository.getClientProfile(clientId);
+      participantNdisNumber.value = ndisFromFacts(bundle.facts);
+    } catch (_) {
+      participantNdisNumber.value = null;
+    } finally {
+      isLoadingParticipantNdis.value = false;
+    }
   }
 
   Future<void> refreshSelected() async {
@@ -840,7 +938,10 @@ class StaffVisitsController extends GetxController {
     if (id == null) return;
     isRefreshing.value = true;
     try {
-      selected.value = await _repository.getVisit(id);
+      final visit = await _repository.getVisit(id);
+      selected.value = visit;
+      _syncSupportItemEditors(visit);
+      await _loadParticipantNdis(visit);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -852,11 +953,261 @@ class StaffVisitsController extends GetxController {
     final arg = Get.arguments;
     if (arg is VisitOut) {
       selected.value = arg;
+      _syncSupportItemEditors(arg);
+      _loadParticipantNdis(arg);
       return;
     }
     if (arg is Map && arg['visit'] is VisitOut) {
-      selected.value = arg['visit'] as VisitOut;
+      final visit = arg['visit'] as VisitOut;
+      selected.value = visit;
+      _syncSupportItemEditors(visit);
+      _loadParticipantNdis(visit);
     }
+  }
+
+  Future<void> updateVisitSupportItem({
+    required String? supportItemCode,
+    required String? supportItemName,
+  }) async {
+    final visit = selected.value;
+    if (visit == null || !canEditVisitSupportItem) return;
+    if (supportItemCode == visit.supportItemCode &&
+        supportItemName == visit.supportItemName) {
+      return;
+    }
+    final previousCode = editingVisitSupportItemCode.value;
+    final previousName = editingVisitSupportItemName.value;
+    editingVisitSupportItemCode.value = supportItemCode;
+    editingVisitSupportItemName.value = supportItemName;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _repository.patchVisitSupportItem(
+        visit.id,
+        SupportItemPatch(
+          supportItemCode: supportItemCode,
+          supportItemName: supportItemName,
+        ),
+      );
+      selected.value = updated;
+      _syncVisitSupportItemEditor(updated);
+    } on AppFailure catch (e) {
+      editingVisitSupportItemCode.value = previousCode;
+      editingVisitSupportItemName.value = previousName;
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> updateVisitPriceTier(String? priceTierOverride) async {
+    final visit = selected.value;
+    if (visit == null || !canEditVisitPriceTier) return;
+    if (priceTierOverride == visit.priceTierOverride) return;
+
+    final previous = editingPriceTierOverride.value;
+    editingPriceTierOverride.value = priceTierOverride;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _repository.patchVisitPriceTier(
+        visit.id,
+        VisitPriceTierPatch(priceTierOverride: priceTierOverride),
+      );
+      selected.value = updated;
+      _syncPriceTierEditor(updated);
+    } on AppFailure catch (e) {
+      editingPriceTierOverride.value = previous;
+      errorMessage.value = e.message;
+      if (e.code == 'visit_already_exported') {
+        priceTierEditBlocked.value = true;
+      }
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> updateVisitTaskBillableMinutes({
+    required VisitTaskOut task,
+    required String rawMinutes,
+  }) async {
+    final visit = selected.value;
+    if (visit == null || !canEditVisitTaskBilling) return;
+
+    final code = taskSupportPickerCode(task) ?? task.supportItemCode;
+    if (code == null || code.trim().isEmpty) return;
+
+    final trimmed = rawMinutes.trim();
+    if (trimmed.isEmpty) {
+      errorMessage.value = 'Enter billable minutes (0–1440).';
+      return;
+    }
+    final parsed = int.tryParse(trimmed);
+    if (parsed == null || parsed < 0 || parsed > maxTaskBillableMinutes) {
+      errorMessage.value = 'Billable minutes must be a whole number from 0 to 1440.';
+      return;
+    }
+    if (parsed == task.billableMinutes) return;
+
+    final previous = editingTaskBillableMinutes[task.id];
+    editingTaskBillableMinutes[task.id] = parsed;
+    editingTaskBillableMinutes.refresh();
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updatedTask = await _repository.patchVisitTaskBilling(
+        visitId: visit.id,
+        taskId: task.id,
+        body: VisitTaskBillingPatch(billableMinutes: parsed),
+      );
+      selected.value = _replaceTaskInVisit(visit, updatedTask);
+      editingTaskBillableMinutes[task.id] = updatedTask.billableMinutes;
+      editingTaskBillableMinutes.refresh();
+    } on AppFailure catch (e) {
+      editingTaskBillableMinutes[task.id] = previous;
+      editingTaskBillableMinutes.refresh();
+      errorMessage.value = e.message;
+      if (e.code == 'visit_already_exported') {
+        priceTierEditBlocked.value = true;
+      }
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  int? taskBillableMinutesDisplay(VisitTaskOut task) =>
+      editingTaskBillableMinutes[task.id] ?? task.billableMinutes;
+
+  Future<void> updateVisitTaskSupportItem({
+    required VisitTaskOut task,
+    required String? supportItemCode,
+    required String? supportItemName,
+  }) async {
+    final visit = selected.value;
+    if (visit == null || !canEditVisitSupportItem) return;
+
+    final clearing = supportItemCode == null && supportItemName == null;
+    final code = clearing
+        ? null
+        : _pairedSupportItemCode(supportItemCode, supportItemName);
+
+    // Incomplete pair (code without name) — ignore until catalogue row is picked.
+    if (!clearing && code == null) return;
+
+    // Code already on the task: still bind the catalogue name so the picker can
+    // show the selected tile (VisitTaskOut only stores the code).
+    if (!clearing && code == task.supportItemCode) {
+      editingTaskSupportCodes[task.id] = code;
+      editingTaskSupportNames[task.id] = supportItemName?.trim();
+      editingTaskSupportCodes.refresh();
+      editingTaskSupportNames.refresh();
+      return;
+    }
+
+    final previousCode = editingTaskSupportCodes[task.id];
+    final previousName = editingTaskSupportNames[task.id];
+    editingTaskSupportCodes[task.id] = code;
+    if (clearing) {
+      editingTaskSupportNames.remove(task.id);
+    } else {
+      editingTaskSupportNames[task.id] = supportItemName?.trim();
+    }
+    editingTaskSupportCodes.refresh();
+    editingTaskSupportNames.refresh();
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updatedTask = await _repository.patchVisitTaskSupportItem(
+        visitId: visit.id,
+        taskId: task.id,
+        body: VisitTaskSupportItemPatch(supportItemCode: code),
+      );
+      selected.value = _replaceTaskInVisit(visit, updatedTask);
+      editingTaskSupportCodes[task.id] = updatedTask.supportItemCode;
+      editingTaskBillableMinutes[task.id] = updatedTask.billableMinutes;
+      if (updatedTask.supportItemCode == null) {
+        editingTaskSupportNames.remove(task.id);
+        editingTaskBillableMinutes.remove(task.id);
+      } else if (supportItemName != null && supportItemName.trim().isNotEmpty) {
+        editingTaskSupportNames[task.id] = supportItemName.trim();
+      }
+      editingTaskSupportCodes.refresh();
+      editingTaskSupportNames.refresh();
+      editingTaskBillableMinutes.refresh();
+    } on AppFailure catch (e) {
+      editingTaskSupportCodes[task.id] = previousCode;
+      if (previousName == null) {
+        editingTaskSupportNames.remove(task.id);
+      } else {
+        editingTaskSupportNames[task.id] = previousName;
+      }
+      editingTaskSupportCodes.refresh();
+      editingTaskSupportNames.refresh();
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  String? taskSupportPickerCode(VisitTaskOut task) =>
+      editingTaskSupportCodes[task.id] ?? task.supportItemCode;
+
+  String? taskSupportPickerName(VisitTaskOut task) =>
+      editingTaskSupportNames[task.id];
+
+  void _syncSupportItemEditors(VisitOut visit) {
+    _syncVisitSupportItemEditor(visit);
+    _syncTaskSupportEditors(visit);
+    _syncPriceTierEditor(visit);
+    _syncTaskBillableEditors(visit);
+  }
+
+  void _syncTaskBillableEditors(VisitOut visit) {
+    editingTaskBillableMinutes.clear();
+    for (final task in visit.tasks) {
+      editingTaskBillableMinutes[task.id] = task.billableMinutes;
+    }
+    editingTaskBillableMinutes.refresh();
+  }
+
+  void _syncPriceTierEditor(VisitOut visit) {
+    editingPriceTierOverride.value = visit.priceTierOverride;
+  }
+
+  void _syncVisitSupportItemEditor(VisitOut visit) {
+    editingVisitSupportItemCode.value = visit.supportItemCode;
+    editingVisitSupportItemName.value = visit.supportItemName;
+  }
+
+  void _syncTaskSupportEditors(VisitOut visit) {
+    final preservedNames = Map<String, String?>.from(editingTaskSupportNames);
+    editingTaskSupportCodes.clear();
+    editingTaskSupportNames.clear();
+    for (final task in visit.tasks) {
+      editingTaskSupportCodes[task.id] = task.supportItemCode;
+      final name = preservedNames[task.id];
+      if (name != null && task.supportItemCode != null) {
+        editingTaskSupportNames[task.id] = name;
+      }
+    }
+    editingTaskSupportCodes.refresh();
+    editingTaskSupportNames.refresh();
+  }
+
+  VisitOut _replaceTaskInVisit(VisitOut visit, VisitTaskOut task) {
+    return visit.copyWith(
+      tasks: [
+        for (final existing in visit.tasks)
+          if (existing.id == task.id) task else existing,
+      ],
+    );
+  }
+
+  String? _pairedSupportItemCode(String? code, String? name) {
+    final c = code?.trim();
+    final n = name?.trim();
+    if (c == null || c.isEmpty || n == null || n.isEmpty) return null;
+    return c;
   }
 
   Future<void> cancelSelected() async {

@@ -9,6 +9,7 @@ class ShiftAssignmentOut {
     required this.source,
     required this.status,
     this.visitStatus,
+    this.engagementId,
   });
 
   final String id;
@@ -18,6 +19,7 @@ class ShiftAssignmentOut {
   final String source;
   final String status;
   final String? visitStatus;
+  final String? engagementId;
 
   factory ShiftAssignmentOut.fromJson(Map<String, dynamic> json) {
     return ShiftAssignmentOut(
@@ -28,6 +30,7 @@ class ShiftAssignmentOut {
       source: json['source'] as String? ?? 'staff_assign',
       status: json['status'] as String? ?? 'active',
       visitStatus: json['visit_status'] as String?,
+      engagementId: json['engagement_id']?.toString(),
     );
   }
 }

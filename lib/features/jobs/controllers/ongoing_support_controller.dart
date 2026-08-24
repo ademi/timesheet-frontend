@@ -5,11 +5,14 @@ import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../core/time/tenant_civil_time.dart';
 import '../../../shared/utils/name_sort.dart';
 import '../../clients/data/models/client_models.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../../engagements/data/models/engagement_models.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
+import '../../payroll/controllers/staff_tenant_settings_controller.dart';
+import '../../payroll/data/repositories/payroll_repository.dart';
 import '../data/models/job_models.dart';
 import '../data/repositories/jobs_repository.dart';
 import '../utils/job_copy.dart';
@@ -22,12 +25,14 @@ class OngoingSupportController extends GetxController {
     required ClientsRepository clientsRepository,
     required EngagementsRepository engagementsRepository,
     required SessionService session,
+    PayrollRepository? payroll,
     ClientOut? client,
     void Function(String route, dynamic arguments)? onNavigate,
   }) : _jobs = jobsRepository,
        _clients = clientsRepository,
        _engagements = engagementsRepository,
        _session = session,
+       _payroll = payroll,
        _initialClient = client,
        _onNavigate = onNavigate;
 
@@ -35,6 +40,7 @@ class OngoingSupportController extends GetxController {
   final ClientsRepository _clients;
   final EngagementsRepository _engagements;
   final SessionService _session;
+  final PayrollRepository? _payroll;
   final ClientOut? _initialClient;
   final void Function(String route, dynamic arguments)? _onNavigate;
 
@@ -51,9 +57,13 @@ class OngoingSupportController extends GetxController {
   final frequency = RecurrenceFrequency.weekly.obs;
   final weekdays = <int>{DateTime.monday}.obs;
   final startDate = DateTime.now().obs;
-  final endDate = Rxn<DateTime>();
+  final endDate = Rx<DateTime>(
+    defaultRecurrenceEndDate(DateTime.now()),
+  );
   final requiredSlots = 1.obs;
   final selectedContractorId = RxnString();
+  final supportItemCode = RxnString();
+  final supportItemName = RxnString();
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
@@ -83,6 +93,11 @@ class OngoingSupportController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    ever(startDate, (DateTime start) {
+      if (endDate.value.isBefore(start)) {
+        endDate.value = defaultRecurrenceEndDate(start);
+      }
+    });
     ever(requiredSlots, (slots) {
       if (slots > 1) selectedContractorId.value = null;
     });
@@ -135,6 +150,28 @@ class OngoingSupportController extends GetxController {
     }
   }
 
+  void setSupportItem({
+    required String? supportItemCode,
+    required String? supportItemName,
+  }) {
+    this.supportItemCode.value = supportItemCode;
+    this.supportItemName.value = supportItemName;
+  }
+
+  String? _pairedSupportItemCode(String? code, String? name) {
+    final c = code?.trim();
+    final n = name?.trim();
+    if (c == null || c.isEmpty || n == null || n.isEmpty) return null;
+    return c;
+  }
+
+  String? _pairedSupportItemName(String? code, String? name) {
+    final c = code?.trim();
+    final n = name?.trim();
+    if (c == null || c.isEmpty || n == null || n.isEmpty) return null;
+    return n;
+  }
+
   void toggleWeekday(int day) {
     weekdays.contains(day) ? weekdays.remove(day) : weekdays.add(day);
   }
@@ -168,15 +205,19 @@ class OngoingSupportController extends GetxController {
       errorMessage.value = 'Select at least one weekday.';
       return;
     }
-    final windows = coerceWindowEndTimes([
+    final windows = [
       TimeWindow(
         startTime: startTimeCtrl.text.trim(),
         endTime: endTimeCtrl.text.trim(),
       ),
-    ]);
+    ];
     final windowError = validateVisitWindows(windows);
     if (windowError != null) {
       errorMessage.value = windowError;
+      return;
+    }
+    if (endDate.value.isBefore(startDate.value)) {
+      errorMessage.value = 'End date must not be before the start date.';
       return;
     }
     final String rrule;
@@ -189,8 +230,8 @@ class OngoingSupportController extends GetxController {
       errorMessage.value = 'Select at least one weekday.';
       return;
     }
-    final horizonFrom = DateTime.now().toUtc();
-    final horizonTo = horizonFrom.add(const Duration(days: 14));
+    final tz = await _resolveTenantTimezone();
+    final horizon = tenantHorizonWindowUtc(DateTime.now().toUtc(), tz);
     isSaving.value = true;
     try {
       final created = await _jobs.createOngoingSupport(
@@ -202,11 +243,19 @@ class OngoingSupportController extends GetxController {
           contractorId: selectedContractorId.value,
           rrule: rrule,
           dtstart: startDate.value,
-          until: endDate.value,
+          until: recurrenceUntilInstant(endDate.value),
           requiredSlots: requiredSlots.value,
           timeWindows: windows,
-          horizonFrom: horizonFrom,
-          horizonTo: horizonTo,
+          horizonFrom: horizon.from,
+          horizonTo: horizon.to,
+          supportItemCode: _pairedSupportItemCode(
+            supportItemCode.value,
+            supportItemName.value,
+          ),
+          supportItemName: _pairedSupportItemName(
+            supportItemCode.value,
+            supportItemName.value,
+          ),
         ),
       );
       _goToRoster(jobId: created.job.id, clientId: client.id);
@@ -221,6 +270,7 @@ class OngoingSupportController extends GetxController {
 
   void _goToRoster({required String jobId, required String clientId}) {
     final arguments = {
+      'skipHorizonOnce': true,
       'job_id': jobId,
       'client_id': clientId,
     };
@@ -229,5 +279,21 @@ class OngoingSupportController extends GetxController {
       return;
     }
     Get.offNamed(AppRoutes.staffVisits, arguments: arguments);
+  }
+
+  Future<String?> _resolveTenantTimezone() async {
+    if (Get.isRegistered<StaffTenantSettingsController>()) {
+      final tz =
+          Get.find<StaffTenantSettingsController>().tenant.value?.timezone;
+      if (tz != null && tz.trim().isNotEmpty) return tz.trim();
+    }
+    final id = _session.tenantId.value;
+    if (id == null || id.isEmpty || _payroll == null) return null;
+    try {
+      final t = await _payroll.getTenant(id);
+      return t.timezone?.trim();
+    } catch (_) {
+      return null;
+    }
   }
 }

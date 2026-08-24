@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
+import '../../../billing/data/models/billing_models.dart';
 import '../models/roster_overlay_models.dart';
 import '../models/visit_models.dart';
 
@@ -125,6 +126,76 @@ class VisitsRemoteDataSource {
         data: {'is_done': isDone},
       );
       return _require(response.data, VisitTaskOut.fromJson, 'patch task');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<VisitTaskOut> patchVisitTaskSupportItem({
+    required String visitId,
+    required String taskId,
+    required VisitTaskSupportItemPatch body,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.visitTaskSupportItem(visitId, taskId),
+        data: body.toJson(),
+      );
+      return _require(
+        response.data,
+        VisitTaskOut.fromJson,
+        'patch visit task support item',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<VisitOut> patchVisitSupportItem(
+    String visitId,
+    SupportItemPatch body,
+  ) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.visitSupportItem(visitId),
+        data: body.toJson(),
+      );
+      return _require(response.data, VisitOut.fromJson, 'patch visit support item');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<VisitOut> patchVisitPriceTier(
+    String visitId,
+    VisitPriceTierPatch body,
+  ) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.visitPriceTier(visitId),
+        data: body.toJson(),
+      );
+      return _require(response.data, VisitOut.fromJson, 'patch visit price tier');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<VisitTaskOut> patchVisitTaskBilling({
+    required String visitId,
+    required String taskId,
+    required VisitTaskBillingPatch body,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.visitTaskBilling(visitId, taskId),
+        data: body.toJson(),
+      );
+      return _require(
+        response.data,
+        VisitTaskOut.fromJson,
+        'patch visit task billing',
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

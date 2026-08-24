@@ -16,6 +16,7 @@ import '../../documents/data/document_pipeline.dart';
 import '../../jobs/controllers/jobs_controller.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
+import '../../jobs/utils/unified_support_args.dart';
 import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../data/models/client_models.dart';
@@ -99,6 +100,19 @@ class ClientsController extends GetxController {
 
   String? get ndisNumber =>
       ndisFromFacts(profileFacts) ?? ndisFromDrafts(requirementDrafts);
+
+  bool get isPatientType {
+    final typeId = selectedClientTypeId.value ?? selected.value?.clientTypeId;
+    for (final type in clientTypes) {
+      if (type.id == typeId) {
+        return isPatientClientType(typeName: type.name, typeCode: type.code);
+      }
+    }
+    return isPatientClientType(typeName: quickFacts?.clientTypeName);
+  }
+
+  bool get showNdisCapturePrompt =>
+      isPatientType && (ndisNumber == null || ndisNumber!.trim().isEmpty);
 
   ClientQuickFacts? get quickFacts {
     final c = selected.value;
@@ -1206,7 +1220,13 @@ class ClientsController extends GetxController {
   void startOngoingSupport() {
     final client = selected.value;
     if (client == null) return;
-    Get.toNamed(AppRoutes.staffOngoingSupport, arguments: client);
+    Get.toNamed(
+      AppRoutes.staffUnifiedSupport,
+      arguments: UnifiedSupportArgs.forClient(
+        client,
+        mode: UnifiedSupportMode.ongoing,
+      ),
+    );
   }
 
   /// Opens the client's ongoing support detail. Prefers the already-loaded
@@ -1238,17 +1258,16 @@ class ClientsController extends GetxController {
     );
   }
 
-  /// Client-first book-one: route to the roster book sheet by client so support
-  /// is ensured on submit (D9). No "job" is chosen by the user.
+  /// Client-first book-one: open the unified support composer in one-session mode.
   void bookOneSession() {
     final client = selected.value;
     if (client == null) return;
     Get.toNamed(
-      AppRoutes.staffVisits,
-      arguments: <String, dynamic>{
-        'client_id': client.id,
-        'create': true,
-      },
+      AppRoutes.staffUnifiedSupport,
+      arguments: UnifiedSupportArgs.forClient(
+        client,
+        mode: UnifiedSupportMode.oneSession,
+      ),
     );
   }
 

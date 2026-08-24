@@ -11,6 +11,7 @@ import '../../clients/data/models/client_models.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../../engagements/data/models/engagement_models.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
+import '../../billing/data/models/billing_models.dart';
 import '../data/models/job_models.dart';
 import '../data/repositories/jobs_repository.dart';
 
@@ -62,6 +63,12 @@ class JobsController extends GetxController {
   final selectedBranchId = RxnString();
   final geofenceMode = 'informational'.obs;
   final geofenceRadiusCtrl = TextEditingController(text: '100');
+  final supportItemCode = RxnString();
+  final supportItemName = RxnString();
+
+  /// Job detail NDIS default (synced from [selected]; drives picker display).
+  final editingSupportItemCode = RxnString();
+  final editingSupportItemName = RxnString();
 
   // Recurrence / manual visit
   final selectedContractorId = RxnString();
@@ -164,6 +171,7 @@ class JobsController extends GetxController {
     try {
       final job = await _repository.getJob(jobId);
       selected.value = job;
+      _syncSupportItemEditor(job);
       final idx = jobs.indexWhere((j) => j.id == job.id);
       if (idx >= 0) {
         jobs[idx] = job;
@@ -282,6 +290,8 @@ class JobsController extends GetxController {
     sites.clear();
     geofenceMode.value = 'informational';
     geofenceRadiusCtrl.text = '100';
+    supportItemCode.value = null;
+    supportItemName.value = null;
     errorMessage.value = null;
     clientSiteWarning.value = null;
     Get.toNamed(AppRoutes.staffJobForm);
@@ -325,6 +335,14 @@ class JobsController extends GetxController {
           branchId: useSite ? null : selectedBranchId.value,
           geofenceMode: geofenceMode.value,
           geofenceRadiusM: int.tryParse(geofenceRadiusCtrl.text.trim()),
+          supportItemCode: _pairedSupportItemCode(
+            supportItemCode.value,
+            supportItemName.value,
+          ),
+          supportItemName: _pairedSupportItemName(
+            supportItemCode.value,
+            supportItemName.value,
+          ),
         ),
       );
       Get.back();
@@ -341,6 +359,7 @@ class JobsController extends GetxController {
 
   Future<void> openDetail(JobOut job) async {
     selected.value = job;
+    _syncSupportItemEditor(job);
     formCatalog.clear();
     lastGenerate.value = null;
     tabIndex.value = 0;
@@ -362,6 +381,70 @@ class JobsController extends GetxController {
     }
   }
 
+  Future<void> updateJobSupportItem({
+    required String? supportItemCode,
+    required String? supportItemName,
+  }) async {
+    final job = selected.value;
+    if (job == null || !canManage) return;
+    if (supportItemCode == job.supportItemCode &&
+        supportItemName == job.supportItemName) {
+      return;
+    }
+    final previousCode = editingSupportItemCode.value;
+    final previousName = editingSupportItemName.value;
+    editingSupportItemCode.value = supportItemCode;
+    editingSupportItemName.value = supportItemName;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _repository.patchJobSupportItem(
+        job.id,
+        SupportItemPatch(
+          supportItemCode: supportItemCode,
+          supportItemName: supportItemName,
+        ),
+      );
+      selected.value = updated;
+      _syncSupportItemEditor(updated);
+      final idx = jobs.indexWhere((j) => j.id == updated.id);
+      if (idx >= 0) jobs[idx] = updated;
+    } on AppFailure catch (e) {
+      editingSupportItemCode.value = previousCode;
+      editingSupportItemName.value = previousName;
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  void setCreateSupportItem({
+    required String? supportItemCode,
+    required String? supportItemName,
+  }) {
+    this.supportItemCode.value = supportItemCode;
+    this.supportItemName.value = supportItemName;
+  }
+
+  void _syncSupportItemEditor(JobOut job) {
+    editingSupportItemCode.value = job.supportItemCode;
+    editingSupportItemName.value = job.supportItemName;
+  }
+
+  String? _pairedSupportItemCode(String? code, String? name) {
+    final c = code?.trim();
+    final n = name?.trim();
+    if (c == null || c.isEmpty || n == null || n.isEmpty) return null;
+    return c;
+  }
+
+  String? _pairedSupportItemName(String? code, String? name) {
+    final c = code?.trim();
+    final n = name?.trim();
+    if (c == null || c.isEmpty || n == null || n.isEmpty) return null;
+    return n;
+  }
+
   Future<void> setStatus(String status) async {
     final job = selected.value;
     if (job == null) return;
@@ -370,6 +453,7 @@ class JobsController extends GetxController {
     try {
       final updated = await _repository.updateJobStatus(job.id, status);
       selected.value = updated;
+      _syncSupportItemEditor(updated);
       final idx = jobs.indexWhere((j) => j.id == updated.id);
       if (idx >= 0) jobs[idx] = updated;
     } on AppFailure catch (e) {

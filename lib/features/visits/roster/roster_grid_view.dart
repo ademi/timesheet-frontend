@@ -453,7 +453,7 @@ class _ShiftTile extends StatelessWidget {
                 ),
                 if (chip != null) ...[
                   const SizedBox(height: 4),
-                  _VisitChip(label: chip),
+                  _ShiftStatusChip(label: chip),
                 ],
               ],
             ),
@@ -464,8 +464,8 @@ class _ShiftTile extends StatelessWidget {
   }
 }
 
-class _VisitChip extends StatelessWidget {
-  const _VisitChip({required this.label});
+class _ShiftStatusChip extends StatelessWidget {
+  const _ShiftStatusChip({required this.label});
 
   final String label;
 

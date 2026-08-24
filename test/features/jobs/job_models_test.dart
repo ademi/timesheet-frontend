@@ -144,14 +144,31 @@ void main() {
       'tenant_id': 'tenant-1',
       'job_id': 'job-1',
       'contractor_id': 'contractor-1',
+      'engagement_id': 'engagement-1',
+      'shift_id': 'shift-1',
       'scheduled_start': '2026-07-30T09:00:00Z',
       'scheduled_end': '2026-07-30T10:00:00Z',
       'status': 'scheduled',
       'source': 'manual',
       'location_label': '123 Example Street, Sydney, NSW, 2000, Australia',
+      'support_item_code': '01_011_0107_1_1',
+      'support_item_name': 'Self care',
+      'price_tier_override': 'remote',
       'geofence_radius_m': 100,
       'geofence_mode': 'informational',
       'payment_status': 'unpaid',
+      'tasks': [
+        {
+          'id': 'task-1',
+          'tenant_id': 'tenant-1',
+          'visit_id': 'visit-1',
+          'title': 'Shower',
+          'sort_order': 0,
+          'is_done': false,
+          'support_item_code': '01_011_0107_1_1',
+          'billable_minutes': 45,
+        },
+      ],
       'created_at': '2026-07-30T09:00:00Z',
       'updated_at': '2026-07-30T09:00:00Z',
     });
@@ -160,5 +177,48 @@ void main() {
       visit.locationLabel,
       '123 Example Street, Sydney, NSW, 2000, Australia',
     );
+    expect(visit.engagementId, 'engagement-1');
+    expect(visit.shiftId, 'shift-1');
+    expect(visit.supportItemCode, '01_011_0107_1_1');
+    expect(visit.priceTierOverride, 'remote');
+    expect(visit.tasks.single.billableMinutes, 45);
+  });
+
+  test('parses job support item fields and task template items', () {
+    final job = JobOut.fromJson({
+      'id': 'job-1',
+      'tenant_id': 'tenant-1',
+      'kind': 'standing',
+      'status': 'open',
+      'title': 'Morning support',
+      'support_item_code': '01_011_0107_1_1',
+      'support_item_name': 'Self care',
+      'geofence_radius_m': 100,
+      'geofence_mode': 'informational',
+      'created_at': '2026-07-30T09:00:00Z',
+      'updated_at': '2026-07-30T09:00:00Z',
+    });
+    expect(job.supportItemCode, '01_011_0107_1_1');
+
+    final template = TaskTemplateItem.fromJson({
+      'title': 'Shower',
+      'sort_order': 1,
+      'support_item_code': '01_011_0107_1_1',
+    });
+    expect(template.toJson()['support_item_code'], '01_011_0107_1_1');
+
+    final ongoingReq = OngoingSupportCreateRequest(
+      clientId: 'client-1',
+      title: 'Support',
+      clientSiteId: 'site-1',
+      rrule: 'FREQ=WEEKLY',
+      dtstart: DateTime.utc(2026, 7, 30, 9),
+      timeWindows: const [TimeWindow(startTime: '09:00', endTime: '12:00')],
+      horizonFrom: DateTime.utc(2026, 8, 3),
+      horizonTo: DateTime.utc(2026, 8, 17),
+      supportItemCode: '01_011_0107_1_1',
+      supportItemName: 'Self care',
+    );
+    expect(ongoingReq.toJson()['support_item_code'], '01_011_0107_1_1');
   });
 }
