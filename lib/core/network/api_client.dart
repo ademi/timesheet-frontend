@@ -1,8 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode, visibleForTesting;
 
 import '../constants/app_constants.dart';
 import '../services/token_storage.dart';
+import 'api_client_networking.dart';
 import 'auth_interceptor.dart';
+import 'cert_pins.dart';
 
 /// Single Dio client for the contractor domain (design §3.2).
 ///
@@ -10,11 +13,12 @@ import 'auth_interceptor.dart';
 ///
 /// [plainDio] — unauthenticated auth (`/v1/auth/login`, `/v1/auth/refresh`);
 /// [dio] — authenticated calls (Bearer via [AuthInterceptor]).
+///
+/// Certificate pinning (F-fe-001): SPKI pins applied on IO platforms when
+/// [AppConstants.baseUrl] is HTTPS. Web uses browser TLS only.
+/// Release builds refuse non-HTTPS base URLs ([assertReleaseHttps]).
 class ApiClient {
-  // Certificate pinning (FE-8): set [_spkiPin] from production cert SPKI hash.
-  // dio_pinning_interceptor is unavailable on pub.dev; add interceptor when wired.
-  // ignore: unused_field
-  static const _spkiPin = 'PASTE_BASE64_SPKI_PIN_HERE';
+  // Pins live in [CertPins] (eng-review D4).
 
   ApiClient._(TokenStorage tokenStorage)
       : plainDio = Dio(
@@ -39,6 +43,13 @@ class ApiClient {
             },
           ),
         ) {
+    configureApiClientNetworking(
+      plainDio: plainDio,
+      dio: dio,
+      baseUrl: AppConstants.baseUrl,
+      pins: CertPins.all,
+      isRelease: kReleaseMode,
+    );
     dio.interceptors.add(
       AuthInterceptor(
         storage: tokenStorage,
@@ -53,6 +64,10 @@ class ApiClient {
   factory ApiClient(TokenStorage tokenStorage) {
     return _instance ??= ApiClient._(tokenStorage);
   }
+
+  /// Test-only: clear singleton between tests.
+  @visibleForTesting
+  static void resetForTest() => _instance = null;
 
   final Dio plainDio;
   final Dio dio;

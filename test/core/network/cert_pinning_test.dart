@@ -6,8 +6,20 @@ import 'package:rostiq/core/network/cert_pins.dart';
 
 void main() {
   test('shouldApplyCertPinning is false for HTTP URLs', () {
-    expect(shouldApplyCertPinning('http://11.0.0.98:8000'), isFalse);
-    expect(shouldApplyCertPinning('http://localhost:8000'), isFalse);
+    expect(
+      shouldApplyCertPinning(
+        'http://11.0.0.98:8000',
+        isMobileOverride: true,
+      ),
+      isFalse,
+    );
+    expect(
+      shouldApplyCertPinning(
+        'http://localhost:8000',
+        isMobileOverride: true,
+      ),
+      isFalse,
+    );
   });
 
   test('shouldApplyCertPinning is true for HTTPS URLs when pins present', () {
@@ -37,11 +49,16 @@ void main() {
       shouldApplyCertPinning(
         'https://api.rostiq.co',
         pins: const ['PASTE_BASE64_SPKI_PIN_HERE'],
+        isMobileOverride: true,
       ),
       isFalse,
     );
     expect(
-      shouldApplyCertPinning('https://api.rostiq.co', pins: const []),
+      shouldApplyCertPinning(
+        'https://api.rostiq.co',
+        pins: const [],
+        isMobileOverride: true,
+      ),
       isFalse,
     );
   });
@@ -53,7 +70,22 @@ void main() {
       dio,
       baseUrl: 'http://localhost:8000',
       pins: CertPins.all,
+      isMobileOverride: true,
     );
     expect(identical(dio.httpClientAdapter, before), isTrue);
+  });
+
+  test('applyCertPinning replaces adapter for HTTPS + real pins', () {
+    final dio = Dio(BaseOptions(baseUrl: 'https://api.rostiq.co'));
+    applyCertPinning(
+      dio,
+      baseUrl: 'https://api.rostiq.co',
+      pins: CertPins.all,
+      isMobileOverride: true,
+    );
+    // Adapter instance may be same object if we mutate createHttpClient;
+    // assert the callback is wired by making a type check + non-null createHttpClient.
+    final adapter = dio.httpClientAdapter as IOHttpClientAdapter;
+    expect(adapter.createHttpClient, isNotNull);
   });
 }
