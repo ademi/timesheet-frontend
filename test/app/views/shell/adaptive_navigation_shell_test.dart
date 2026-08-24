@@ -10,6 +10,7 @@ void main() {
     ResponsiveDestination(icon: Icons.people_outline, label: 'Clients'),
     ResponsiveDestination(icon: Icons.event_available_outlined, label: 'Roster'),
     ResponsiveDestination(icon: Icons.payments_outlined, label: 'Payments'),
+    ResponsiveDestination(icon: Icons.receipt_long_outlined, label: 'Billing'),
     ResponsiveDestination(icon: Icons.settings_outlined, label: 'Settings'),
   ];
 
@@ -52,7 +53,7 @@ void main() {
     expect(find.byType(NavigationBar), findsNothing);
   });
 
-  testWidgets('narrow width shows More when destinations exceed primary limit', (tester) async {
+  testWidgets('narrow width shows every destination without More', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(tester.view.resetPhysicalSize);
 
@@ -67,21 +68,20 @@ void main() {
       ),
     );
 
-    expect(find.text('More'), findsOneWidget);
+    expect(find.text('More'), findsNothing);
+    for (final destination in destinations) {
+      expect(find.text(destination.label), findsOneWidget);
+    }
   });
 
-  testWidgets('wide width shows More on rail when destinations exceed rail primary limit', (tester) async {
-    final many = List.generate(
-      8,
-      (i) => ResponsiveDestination(icon: Icons.circle, label: 'Item $i'),
-    );
+  testWidgets('wide width shows every destination without More', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1280, 900));
     addTearDown(tester.view.resetPhysicalSize);
 
     await tester.pumpWidget(
       MaterialApp(
         home: AdaptiveNavigationShell(
-          destinations: many,
+          destinations: destinations,
           selectedIndex: 0,
           onDestinationSelected: (_) {},
           child: const SizedBox(),
@@ -89,6 +89,9 @@ void main() {
       ),
     );
 
-    expect(find.text('More'), findsOneWidget);
+    expect(find.text('More'), findsNothing);
+    for (final destination in destinations) {
+      expect(find.text(destination.label), findsOneWidget);
+    }
   });
 }

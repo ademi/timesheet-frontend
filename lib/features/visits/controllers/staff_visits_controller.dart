@@ -1085,13 +1085,33 @@ class StaffVisitsController extends GetxController {
   }) async {
     final visit = selected.value;
     if (visit == null || !canEditVisitSupportItem) return;
-    final code = _pairedSupportItemCode(supportItemCode, supportItemName);
-    if (code == task.supportItemCode) return;
+
+    final clearing = supportItemCode == null && supportItemName == null;
+    final code = clearing
+        ? null
+        : _pairedSupportItemCode(supportItemCode, supportItemName);
+
+    // Incomplete pair (code without name) — ignore until catalogue row is picked.
+    if (!clearing && code == null) return;
+
+    // Code already on the task: still bind the catalogue name so the picker can
+    // show the selected tile (VisitTaskOut only stores the code).
+    if (!clearing && code == task.supportItemCode) {
+      editingTaskSupportCodes[task.id] = code;
+      editingTaskSupportNames[task.id] = supportItemName?.trim();
+      editingTaskSupportCodes.refresh();
+      editingTaskSupportNames.refresh();
+      return;
+    }
 
     final previousCode = editingTaskSupportCodes[task.id];
     final previousName = editingTaskSupportNames[task.id];
     editingTaskSupportCodes[task.id] = code;
-    editingTaskSupportNames[task.id] = supportItemName;
+    if (clearing) {
+      editingTaskSupportNames.remove(task.id);
+    } else {
+      editingTaskSupportNames[task.id] = supportItemName?.trim();
+    }
     editingTaskSupportCodes.refresh();
     editingTaskSupportNames.refresh();
     isSaving.value = true;
@@ -1108,6 +1128,8 @@ class StaffVisitsController extends GetxController {
       if (updatedTask.supportItemCode == null) {
         editingTaskSupportNames.remove(task.id);
         editingTaskBillableMinutes.remove(task.id);
+      } else if (supportItemName != null && supportItemName.trim().isNotEmpty) {
+        editingTaskSupportNames[task.id] = supportItemName.trim();
       }
       editingTaskSupportCodes.refresh();
       editingTaskSupportNames.refresh();

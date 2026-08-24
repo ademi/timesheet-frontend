@@ -7,7 +7,7 @@ abstract final class AppConstants {
   /// Prefer [AppEnv.apiBaseUrl] for new code (also exposes billing/terms defines).
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://11.0.0.98:8000',
+    defaultValue: 'http://192.168.43.199:8000',
   );
 
   static const String apiV1 = '/v1';

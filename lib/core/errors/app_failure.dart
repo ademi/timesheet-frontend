@@ -44,6 +44,24 @@ class AppFailure implements Exception {
 
   static AppFailure fromDio(DioException e) {
     final status = e.response?.statusCode;
+    if (e.response == null &&
+        (e.type == DioExceptionType.connectionError ||
+            e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.unknown)) {
+      final raw = (e.message ?? '').toLowerCase();
+      final looksLikeCors = raw.contains('xmlhttprequest') ||
+          raw.contains('cors') ||
+          raw.contains('failed to fetch') ||
+          raw.contains('network error');
+      return AppFailure(
+        code: looksLikeCors ? 'cors_or_network' : 'network_error',
+        message: looksLikeCors
+            ? 'Could not reach the API (network/CORS). Confirm the backend is running and restart it after CORS config changes.'
+            : 'Could not reach the API. Confirm it is running at ${e.requestOptions.uri.origin}.',
+        presentation: AppFailurePresentation.inline,
+        statusCode: status,
+      );
+    }
     final authErr = _tryAuthError(e);
     final detail = authErr?.detail ?? e.message ?? 'Something went wrong';
     final code = _normalizeCode(authErr?.code, detail, status);

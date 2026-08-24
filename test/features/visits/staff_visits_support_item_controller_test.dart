@@ -223,6 +223,7 @@ void main() {
       controller.selected.value?.tasks.single.supportItemCode,
       '01_011_0107_1_1',
     );
+    expect(controller.editingTaskSupportNames[task.id], 'Self care');
     verify(
       () => visits.patchVisitTaskSupportItem(
         visitId: 'visit-1',
@@ -230,6 +231,30 @@ void main() {
         body: any(named: 'body'),
       ),
     ).called(1);
+  });
+
+  test('updateVisitTaskSupportItem keeps name when code already saved', () async {
+    final task = _task(supportItemCode: '01_011_0107_1_1');
+    controller.selected.value = _visit(tasks: [task]);
+
+    await controller.updateVisitTaskSupportItem(
+      task: task,
+      supportItemCode: '01_011_0107_1_1',
+      supportItemName: 'Assistance With Self-Care Activities',
+    );
+
+    expect(controller.editingTaskSupportCodes[task.id], '01_011_0107_1_1');
+    expect(
+      controller.editingTaskSupportNames[task.id],
+      'Assistance With Self-Care Activities',
+    );
+    verifyNever(
+      () => visits.patchVisitTaskSupportItem(
+        visitId: any(named: 'visitId'),
+        taskId: any(named: 'taskId'),
+        body: any(named: 'body'),
+      ),
+    );
   });
 
   test('updateVisitPriceTier patches and syncs editor', () async {

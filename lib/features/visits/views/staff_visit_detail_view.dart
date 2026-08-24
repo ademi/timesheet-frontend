@@ -322,78 +322,80 @@ class _VisitTaskRow extends StatelessWidget {
   final StaffVisitsController controller;
   final VisitTaskOut task;
 
-  bool get _hasSupportItemCode {
-    final code = controller.taskSupportPickerCode(task) ?? task.supportItemCode;
-    return code?.trim().isNotEmpty == true;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(
-            task.isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: task.isDone ? AppColors.primary : null,
+    return Obx(() {
+      final code =
+          controller.taskSupportPickerCode(task) ?? task.supportItemCode;
+      final name = controller.taskSupportPickerName(task);
+      final hasSupportItemCode = code?.trim().isNotEmpty == true;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              task.isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+              color: task.isDone ? AppColors.primary : null,
+            ),
+            title: Text(task.title),
           ),
-          title: Text(task.title),
-        ),
-        if (controller.canEditVisitSupportItem)
-          Padding(
-            padding: const EdgeInsets.only(left: 40, bottom: 12),
-            child: NdisSupportItemPicker(
-              supportItemCode: controller.taskSupportPickerCode(task),
-              supportItemName: controller.taskSupportPickerName(task),
-              enabled: !controller.isSaving.value,
-              labelText: 'Task NDIS item (optional)',
-              onChanged: ({
-                required String? supportItemCode,
-                required String? supportItemName,
-              }) {
-                controller.updateVisitTaskSupportItem(
+          if (controller.canEditVisitSupportItem)
+            Padding(
+              padding: const EdgeInsets.only(left: 40, bottom: 12),
+              child: NdisSupportItemPicker(
+                supportItemCode: code,
+                supportItemName: name,
+                enabled: !controller.isSaving.value,
+                labelText: 'Task NDIS item (optional)',
+                onChanged: ({
+                  required String? supportItemCode,
+                  required String? supportItemName,
+                }) {
+                  controller.updateVisitTaskSupportItem(
+                    task: task,
+                    supportItemCode: supportItemCode,
+                    supportItemName: supportItemName,
+                  );
+                },
+              ),
+            )
+          else if (task.supportItemCode != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 40, bottom: 12),
+              child: Text(
+                task.supportItemCode!,
+                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+              ),
+            ),
+          if (hasSupportItemCode && controller.canEditVisitTaskBilling)
+            Padding(
+              padding: const EdgeInsets.only(left: 40, bottom: 12),
+              child: _BillableMinutesField(
+                key: ValueKey(
+                  '${task.id}-${controller.taskBillableMinutesDisplay(task)}',
+                ),
+                initialMinutes: controller.taskBillableMinutesDisplay(task),
+                enabled: !controller.isSaving.value,
+                onSubmitted: (value) =>
+                    controller.updateVisitTaskBillableMinutes(
                   task: task,
-                  supportItemCode: supportItemCode,
-                  supportItemName: supportItemName,
-                );
-              },
-            ),
-          )
-        else if (task.supportItemCode != null)
-          Padding(
-            padding: const EdgeInsets.only(left: 40, bottom: 12),
-            child: Text(
-              task.supportItemCode!,
-              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
-          ),
-        if (_hasSupportItemCode &&
-            controller.canEditVisitTaskBilling)
-          Padding(
-            padding: const EdgeInsets.only(left: 40, bottom: 12),
-            child: _BillableMinutesField(
-              key: ValueKey(
-                '${task.id}-${controller.taskBillableMinutesDisplay(task)}',
+                  rawMinutes: value,
+                ),
               ),
-              initialMinutes: controller.taskBillableMinutesDisplay(task),
-              enabled: !controller.isSaving.value,
-              onSubmitted: (value) => controller.updateVisitTaskBillableMinutes(
-                task: task,
-                rawMinutes: value,
+            )
+          else if (hasSupportItemCode && task.billableMinutes != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 40, bottom: 12),
+              child: Text(
+                '${task.billableMinutes} billable min',
+                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
             ),
-          )
-        else if (_hasSupportItemCode && task.billableMinutes != null)
-          Padding(
-            padding: const EdgeInsets.only(left: 40, bottom: 12),
-            child: Text(
-              '${task.billableMinutes} billable min',
-              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
-          ),
-      ],
-    );
+        ],
+      );
+    });
   }
 }
 

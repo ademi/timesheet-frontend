@@ -158,6 +158,8 @@ abstract final class ApiPaths {
       '${visit(id)}/tasks/$taskId';
   static String visitTaskBilling(String id, String taskId) =>
       '${visitTask(id, taskId)}/billing';
+  static String visitTaskSupportItem(String id, String taskId) =>
+      '${visitTask(id, taskId)}/support-item';
   static String visitFormSubmissions(String id) =>
       '${visit(id)}/form-submissions';
 

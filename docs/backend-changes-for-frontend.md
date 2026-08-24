@@ -152,6 +152,7 @@ Same fields plus:
 | `PATCH` | `/v1/jobs/{job_id}/support-item` | `{ support_item_code, support_item_name }` | Updates job default; propagates to visits that still match the old default |
 | `PATCH` | `/v1/visits/{visit_id}/support-item` | `{ support_item_code, support_item_name }` | Only when visit `status === "scheduled"` and `payment_status === "unpaid"`; else `409 invalid_visit_status` |
 | `PATCH` | `/v1/visits/{visit_id}/price-tier` | `{ price_tier_override }` | Blocked after export (`409 visit_already_exported`) |
+| `PATCH` | `/v1/visits/{visit_id}/tasks/{task_id}/support-item` | `{ support_item_code }` | Staff only; scheduled + unpaid; `null` clears (also clears billable minutes) |
 | `PATCH` | `/v1/visits/{visit_id}/tasks/{task_id}/billing` | `{ billable_minutes }` | Staff only; `0–1440`; blocked after export |
 
 **Existing create flows** that now accept support items:

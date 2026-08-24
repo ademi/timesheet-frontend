@@ -147,9 +147,56 @@ void main() {
 
     expect(pickedCode, _item.supportItemNumber);
     expect(pickedName, _item.supportItemName);
+    expect(find.text(_item.supportItemName), findsOneWidget);
+    expect(find.byTooltip('Clear support item'), findsOneWidget);
     verify(
       () => repository.searchItems(q: 'self care', limit: 20),
     ).called(1);
+  });
+
+  testWidgets('select survives field blur before tap (web gesture order)', (
+    tester,
+  ) async {
+    when(
+      () => repository.searchItems(q: any(named: 'q'), limit: any(named: 'limit')),
+    ).thenAnswer(
+      (_) async => const NdisCatalogueSearchResponse(
+        q: '01_011',
+        limit: 20,
+        items: [_item],
+      ),
+    );
+
+    String? pickedCode;
+    String? pickedName;
+
+    await tester.pumpWidget(
+      _Harness(
+        repository: repository,
+        onChanged: (code, name) {
+          pickedCode = code;
+          pickedName = name;
+        },
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField), '01_011');
+    await tester.pump();
+    await tester.pump();
+    expect(find.text(_item.supportItemNumber), findsWidgets);
+
+    // Simulate web: TextField blurs before the list row receives the tap.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    expect(find.text(_item.supportItemNumber), findsWidgets);
+
+    await tester.tap(find.text(_item.supportItemNumber).last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(pickedCode, _item.supportItemNumber);
+    expect(pickedName, _item.supportItemName);
+    expect(find.byTooltip('Clear support item'), findsOneWidget);
   });
 
   testWidgets('clear in search mode sends null pair', (tester) async {
@@ -185,11 +232,35 @@ void main() {
       ),
     );
 
-    await tester.enterText(find.byType(TextField), 'not-a-code');
+    // Digits/underscores only but not a full NDIS item number.
+    await tester.enterText(find.byType(TextField), '01_011');
     await tester.pump();
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Invalid NDIS item number format.'), findsOneWidget);
+  });
+
+  testWidgets('shows pick-row hint for name-like typed text on blur', (tester) async {
+    await tester.pumpWidget(
+      _Harness(
+        repository: repository,
+      ),
+    );
+
+    await tester.enterText(
+      find.byType(TextField),
+      'Assistance With Self-Care Activities',
+    );
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(
+      find.text('Pick a catalogue row so the name matches.'),
+      findsOneWidget,
+    );
   });
 }

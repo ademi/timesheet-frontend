@@ -1,12 +1,13 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/utils/download_bytes.dart';
 import '../data/models/billing_models.dart';
 import '../data/repositories/billing_repository.dart';
 
@@ -87,17 +88,10 @@ class InvoiceExportDetailController extends GetxController {
     try {
       final csv = await _repository.downloadInvoiceExportCsv(id);
       if (!Get.testMode) {
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [
-              XFile.fromData(
-                utf8.encode(csv),
-                mimeType: 'text/csv',
-                name: invoiceExportCsvFilename(id),
-              ),
-            ],
-            fileNameOverrides: [invoiceExportCsvFilename(id)],
-          ),
+        await downloadBytesAsFile(
+          bytes: Uint8List.fromList(utf8.encode(csv)),
+          filename: invoiceExportCsvFilename(id),
+          mimeType: 'text/csv',
         );
       }
     } on AppFailure catch (e) {

@@ -57,11 +57,15 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
   final _focusNode = FocusNode();
 
   Timer? _debounce;
+  Timer? _blurClearTimer;
   List<NdisCatalogueItemOut> _options = const [];
   bool _loading = false;
   String? _searchError;
   String? _formatError;
   int _searchGeneration = 0;
+
+  /// True while applying a catalogue pick so blur/query side-effects are ignored.
+  bool _applyingSelection = false;
 
   bool get _hasSelection {
     final code = widget.supportItemCode?.trim();
@@ -97,6 +101,7 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _blurClearTimer?.cancel();
     _focusNode.removeListener(_onFocusChange);
     _queryCtrl.dispose();
     _focusNode.dispose();
@@ -105,19 +110,32 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
 
   void _syncQueryFromSelection() {
     if (_hasSelection) {
-      _queryCtrl.text = widget.supportItemName!.trim();
+      _queryCtrl.value = TextEditingValue(
+        text: widget.supportItemName!.trim(),
+        selection: TextSelection.collapsed(
+          offset: widget.supportItemName!.trim().length,
+        ),
+      );
     }
   }
 
   void _onFocusChange() {
-    if (!_focusNode.hasFocus) {
+    if (_focusNode.hasFocus) {
+      _blurClearTimer?.cancel();
+      return;
+    }
+    // Web: pointer-down on a result blurs the field before onTap. Delay clearing
+    // options so onTapDown / onTap can still select the row.
+    _blurClearTimer?.cancel();
+    _blurClearTimer = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted || _focusNode.hasFocus || _applyingSelection) return;
       setState(() => _options = const []);
       _validateTypedCode();
-    }
+    });
   }
 
   void _validateTypedCode() {
-    if (_hasSelection || !widget.enabled) {
+    if (_hasSelection || !widget.enabled || _applyingSelection) {
       setState(() => _formatError = null);
       return;
     }
@@ -126,7 +144,11 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
       setState(() => _formatError = null);
       return;
     }
-    if (isValidNdisSupportItemCode(query)) {
+    // Name-like leftover text (e.g. after a pick that didn't stick) — same guidance
+    // as a typed item number that still needs a catalogue row.
+    if (isValidNdisSupportItemCode(query) ||
+        query.contains(' ') ||
+        !RegExp(r'^[\d_]+$').hasMatch(query)) {
       setState(
         () => _formatError = 'Pick a catalogue row so the name matches.',
       );
@@ -139,6 +161,7 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
 
   void _clear() {
     _debounce?.cancel();
+    _blurClearTimer?.cancel();
     _queryCtrl.clear();
     setState(() {
       _options = const [];
@@ -151,21 +174,33 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
 
   void _select(NdisCatalogueItemOut item) {
     _debounce?.cancel();
-    _focusNode.unfocus();
+    _blurClearTimer?.cancel();
+    _applyingSelection = true;
     setState(() {
       _options = const [];
       _searchError = null;
       _formatError = null;
       _loading = false;
-      _queryCtrl.text = item.supportItemName;
+      _queryCtrl.value = TextEditingValue(
+        text: item.supportItemName,
+        selection: TextSelection.collapsed(
+          offset: item.supportItemName.length,
+        ),
+      );
     });
     widget.onChanged(
       supportItemCode: item.supportItemNumber,
       supportItemName: item.supportItemName,
     );
+    _focusNode.unfocus();
+    // Parent Obx may rebuild after the PATCH; allow blur handlers again next frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyingSelection = false;
+    });
   }
 
   void _onQueryChanged(String value) {
+    if (_applyingSelection) return;
     if (_hasSelection) {
       widget.onChanged(supportItemCode: null, supportItemName: null);
     }
@@ -232,7 +267,9 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
       );
     }
 
-    final showOptions = _focusNode.hasFocus && _options.isNotEmpty;
+    // Keep results visible briefly after blur so web taps can land (see _onFocusChange).
+    final showOptions = _options.isNotEmpty &&
+        (_focusNode.hasFocus || _blurClearTimer?.isActive == true);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -290,11 +327,17 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
                 separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final item = _options[index];
-                  return ListTile(
-                    dense: true,
-                    title: Text(item.supportItemName),
-                    subtitle: Text(item.supportItemNumber),
-                    onTap: widget.enabled ? () => _select(item) : null,
+                  return Listener(
+                    behavior: HitTestBehavior.opaque,
+                    // Pointer down fires before TextField blur removes the list on web.
+                    onPointerDown: widget.enabled
+                        ? (_) => _select(item)
+                        : null,
+                    child: ListTile(
+                      dense: true,
+                      title: Text(item.supportItemName),
+                      subtitle: Text(item.supportItemNumber),
+                    ),
                   );
                 },
               ),

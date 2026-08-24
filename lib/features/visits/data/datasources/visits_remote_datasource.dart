@@ -138,7 +138,7 @@ class VisitsRemoteDataSource {
   }) async {
     try {
       final response = await _dio.patch<Map<String, dynamic>>(
-        ApiPaths.visitTask(visitId, taskId),
+        ApiPaths.visitTaskSupportItem(visitId, taskId),
         data: body.toJson(),
       );
       return _require(
