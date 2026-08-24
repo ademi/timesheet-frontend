@@ -1,5 +1,7 @@
 # Local API — Android emulator
 
+**Release builds deny cleartext HTTP** (manifest + `assertReleaseHttps`); use a **debug** or **profile** run for local HTTP below.
+
 Run the backend on the host (`uvicorn` on port 8000), then wire the emulator:
 
 ```bash
