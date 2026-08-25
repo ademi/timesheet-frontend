@@ -223,7 +223,7 @@ class RecurrenceRuleFormController extends GetxController
     ];
     return jobs.createRecurrenceRule(
       RecurrenceRuleCreateRequest(
-        contractorIds: selectedContractorIds.toList(growable: false),
+        contractorIds: filledContractorIds,
         requiredSlots: requiredSlots.value,
         rrule: rrule,
         dtstart: startDate.value,

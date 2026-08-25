@@ -6,6 +6,7 @@ import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
+import 'package:rostiq/features/engagements/data/models/engagement_models.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/controllers/unified_support_controller.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
@@ -180,5 +181,45 @@ void main() {
       tester.widget<FilterChip>(find.widgetWithText(FilterChip, 'WE')).selected,
       isTrue,
     );
+  });
+
+  testWidgets('workers step shows one dropdown per required slot', (
+    tester,
+  ) async {
+    await controller.load();
+    controller.requiredSlots.value = 2;
+    controller.syncAssignSlots();
+    controller.engagements.assignAll([
+      EngagementOut(
+        id: 'eng-1',
+        tenantId: 'tenant-1',
+        contractorId: 'contractor-1',
+        contractorName: 'Alex Worker',
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+      ),
+      EngagementOut(
+        id: 'eng-2',
+        tenantId: 'tenant-1',
+        contractorId: 'contractor-2',
+        contractorName: 'Blair Worker',
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ]);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: UnifiedSupportView()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Worker 1 (optional)'), findsOneWidget);
+    expect(find.text('Worker 2 (optional)'), findsOneWidget);
+    expect(find.text('Unfilled'), findsNWidgets(2));
+    expect(find.text('Worker assignment will be available in the next update.'),
+        findsNothing);
   });
 }

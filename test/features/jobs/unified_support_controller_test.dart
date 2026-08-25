@@ -11,6 +11,7 @@ import 'package:rostiq/features/clients/data/repositories/clients_repository.dar
 import 'package:rostiq/features/engagements/data/models/engagement_models.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/controllers/unified_support_controller.dart';
+import 'package:rostiq/features/billing/data/models/billing_models.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/core/time/tenant_civil_time.dart';
@@ -38,6 +39,8 @@ class _FakeShiftCreateRequest extends Fake implements ShiftCreateRequest {}
 
 class _FakeManualVisitCreateRequest extends Fake
     implements ManualVisitCreateRequest {}
+
+class _FakeSupportItemPatch extends Fake implements SupportItemPatch {}
 
 final _now = DateTime.utc(2026, 8, 13, 9);
 
@@ -114,6 +117,7 @@ void main() {
     registerFallbackValue(_FakeOngoingSupportCreateRequest());
     registerFallbackValue(_FakeShiftCreateRequest());
     registerFallbackValue(_FakeManualVisitCreateRequest());
+    registerFallbackValue(_FakeSupportItemPatch());
   });
 
   setUp(() {
@@ -462,4 +466,240 @@ void main() {
     );
     expect(navigations, isEmpty);
   });
+
+  test('assign step exposes requiredSlots contractor slots', () {
+    final c = build();
+    c.requiredSlots.value = 3;
+    c.syncAssignSlots();
+    expect(c.selectedContractorIds.length, 3);
+    expect(c.selectedContractorIds, everyElement(isNull));
+  });
+
+  test('syncAssignSlots keeps existing picks when growing and truncates', () {
+    final c = build();
+    c.requiredSlots.value = 1;
+    c.syncAssignSlots();
+    c.selectContractorForSlot(0, 'contractor-1');
+    c.requiredSlots.value = 3;
+    c.syncAssignSlots();
+    expect(c.selectedContractorIds, ['contractor-1', null, null]);
+    c.requiredSlots.value = 1;
+    c.syncAssignSlots();
+    expect(c.selectedContractorIds, ['contractor-1']);
+  });
+
+  test('rejects duplicate contractor across slots', () {
+    final c = build();
+    c.requiredSlots.value = 2;
+    c.syncAssignSlots();
+    expect(c.selectContractorForSlot(0, 'contractor-1'), isTrue);
+    expect(c.selectContractorForSlot(1, 'contractor-1'), isFalse);
+    expect(c.selectedContractorIds[1], isNull);
+    expect(c.errorMessage.value, contains('already'));
+  });
+
+  test('submit ongoing sends all selected contractor_ids', () async {
+    when(() => jobs.createOngoingSupport(any()))
+        .thenAnswer((_) async => _ongoingOut);
+
+    final controller = build();
+    await controller.load();
+    controller.requiredSlots.value = 2;
+    controller.syncAssignSlots();
+    controller.selectContractorForSlot(0, 'contractor-1');
+    controller.selectContractorForSlot(1, 'contractor-2');
+    controller.step.value = UnifiedSupportController.assignStep;
+    await controller.submit();
+
+    final captured = verify(
+      () => jobs.createOngoingSupport(captureAny()),
+    ).captured.single as OngoingSupportCreateRequest;
+    expect(captured.requiredSlots, 2);
+    expect(captured.contractorIds, ['contractor-1', 'contractor-2']);
+    expect(navigations, hasLength(1));
+  });
+
+  test('submit ongoing omits unfilled slots from contractor_ids', () async {
+    when(() => jobs.createOngoingSupport(any()))
+        .thenAnswer((_) async => _ongoingOut);
+
+    final controller = build();
+    await controller.load();
+    controller.requiredSlots.value = 2;
+    controller.syncAssignSlots();
+    controller.selectContractorForSlot(0, 'contractor-1');
+    controller.step.value = UnifiedSupportController.assignStep;
+    await controller.submit();
+
+    final captured = verify(
+      () => jobs.createOngoingSupport(captureAny()),
+    ).captured.single as OngoingSupportCreateRequest;
+    expect(captured.requiredSlots, 2);
+    expect(captured.contractorIds, ['contractor-1']);
+  });
+
+  test('one session always createShift then N assignShift, never manual visit',
+      () async {
+    when(() => jobs.ensureOngoingSupport('client-1'))
+        .thenAnswer((_) async => _job);
+    when(() => shifts.createShift(any())).thenAnswer((_) async => _publishedShift());
+    when(
+      () => shifts.assignShift(
+        shiftId: any(named: 'shiftId'),
+        contractorId: any(named: 'contractorId'),
+      ),
+    ).thenAnswer(
+      (invocation) async => _publishedShift(
+        assignments: [
+          ShiftAssignmentOut(
+            id: 'asg-1',
+            contractorId: invocation.namedArguments[#contractorId] as String,
+            contractorName: 'Worker',
+            visitId: 'visit-1',
+            source: 'staff_assign',
+            status: 'active',
+          ),
+        ],
+        openSlots: 0,
+      ),
+    );
+
+    final controller = build(
+      args: UnifiedSupportArgs.forClient(
+        _client,
+        mode: UnifiedSupportMode.oneSession,
+      ),
+    );
+    await controller.load();
+    controller.requiredSlots.value = 2;
+    controller.syncAssignSlots();
+    controller.selectContractorForSlot(0, 'contractor-1');
+    controller.selectContractorForSlot(1, 'contractor-2');
+    controller.taskTitlesCtrl.text = 'Personal care';
+    controller.step.value = UnifiedSupportController.assignStep;
+    await controller.submit();
+
+    verify(() => jobs.ensureOngoingSupport('client-1')).called(1);
+    final shiftReq = verify(() => shifts.createShift(captureAny()))
+        .captured
+        .single as ShiftCreateRequest;
+    expect(shiftReq.requiredSlots, 2);
+    expect(shiftReq.status, 'published');
+    verify(
+      () => shifts.assignShift(
+        shiftId: 'shift-1',
+        contractorId: 'contractor-1',
+      ),
+    ).called(1);
+    verify(
+      () => shifts.assignShift(
+        shiftId: 'shift-1',
+        contractorId: 'contractor-2',
+      ),
+    ).called(1);
+    verifyNever(() => jobs.createManualVisit(any(), any()));
+    expect(navigations, hasLength(1));
+  });
+
+  test('one session with one worker still uses createShift plus assignShift',
+      () async {
+    when(() => jobs.ensureOngoingSupport('client-1'))
+        .thenAnswer((_) async => _job);
+    when(() => shifts.createShift(any())).thenAnswer((_) async => _publishedShift());
+    when(
+      () => shifts.assignShift(
+        shiftId: any(named: 'shiftId'),
+        contractorId: any(named: 'contractorId'),
+      ),
+    ).thenAnswer((_) async => _publishedShift(openSlots: 0));
+
+    final controller = build(
+      args: UnifiedSupportArgs.forClient(
+        _client,
+        mode: UnifiedSupportMode.oneSession,
+      ),
+    );
+    await controller.load();
+    controller.syncAssignSlots();
+    controller.selectContractorForSlot(0, 'contractor-1');
+    controller.taskTitlesCtrl.text = 'Meal prep';
+    controller.step.value = UnifiedSupportController.assignStep;
+    await controller.submit();
+
+    verify(() => shifts.createShift(any())).called(1);
+    verify(
+      () => shifts.assignShift(
+        shiftId: 'shift-1',
+        contractorId: 'contractor-1',
+      ),
+    ).called(1);
+    verifyNever(() => jobs.createManualVisit(any(), any()));
+  });
+
+  test('support item stamp failure blocks navigate and skip roster', () async {
+    when(() => jobs.ensureOngoingSupport('client-1'))
+        .thenAnswer((_) async => _job);
+    when(() => jobs.patchJobSupportItem(any(), any())).thenThrow(
+      const AppFailure(
+        code: 'support_item_not_in_catalogue',
+        message: 'Could not save the NDIS support item.',
+        presentation: AppFailurePresentation.inline,
+      ),
+    );
+
+    final controller = build(
+      args: UnifiedSupportArgs.forClient(
+        _client,
+        mode: UnifiedSupportMode.oneSession,
+      ),
+    );
+    await controller.load();
+    controller.setSupportItem(
+      supportItemCode: '01_011_0107_1_1',
+      supportItemName: 'Self care',
+    );
+    controller.step.value = UnifiedSupportController.assignStep;
+    await controller.submit();
+
+    expect(
+      controller.errorMessage.value,
+      'Could not save the NDIS support item.',
+    );
+    expect(navigations, isEmpty);
+    verifyNever(() => shifts.createShift(any()));
+    verifyNever(() => jobs.createManualVisit(any(), any()));
+  });
+
+  test('nextStep syncs assign slots when entering workers step', () async {
+    final controller = build();
+    await controller.load();
+    controller.requiredSlots.value = 2;
+    controller.step.value = UnifiedSupportController.detailsStep;
+
+    controller.nextStep();
+
+    expect(controller.step.value, UnifiedSupportController.assignStep);
+    expect(controller.selectedContractorIds.length, 2);
+  });
+}
+
+ShiftOut _publishedShift({
+  List<ShiftAssignmentOut> assignments = const [],
+  int requiredSlots = 1,
+  int openSlots = 1,
+}) {
+  return ShiftOut(
+    id: 'shift-1',
+    tenantId: 'tenant-1',
+    jobId: 'job-1',
+    jobTitle: 'Sam Lee support',
+    scheduledStart: _now,
+    scheduledEnd: _now.add(const Duration(hours: 2)),
+    requiredSlots: requiredSlots,
+    openSlots: openSlots,
+    status: 'published',
+    assignments: assignments,
+    createdAt: _now,
+    updatedAt: _now,
+  );
 }

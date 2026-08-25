@@ -781,21 +781,59 @@ class _WorkersStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final slots = controller.requiredSlots.value;
+      final slots = controller.selectedContractorIds;
+      final seen = <String>{};
+      final workers = [
+        for (final e in controller.assignableEngagements)
+          if (seen.add(e.contractorId)) e,
+      ];
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            slots == 1
+            slots.length <= 1
                 ? 'Assign a worker for this support (optional).'
-                : 'Assign up to $slots workers for this support (optional).',
+                : 'Assign up to ${slots.length} workers for this support (optional).',
             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           const Text(
-            'Worker assignment will be available in the next update.',
-            style: TextStyle(color: AppColors.textMuted),
+            'Leave a slot Unfilled to keep it open to claim.',
+            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
+          const SizedBox(height: 12),
+          for (var i = 0; i < slots.length; i++) ...[
+            DropdownButtonFormField<String?>(
+              key: ValueKey('assign-slot-$i'),
+              value: slots[i],
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('Unfilled'),
+                ),
+                for (final engagement in workers)
+                  DropdownMenuItem<String?>(
+                    value: engagement.contractorId,
+                    child: Text(engagement.displayName),
+                  ),
+                if (slots[i] != null &&
+                    !seen.contains(slots[i]))
+                  DropdownMenuItem<String?>(
+                    value: slots[i],
+                    child: Text(slots[i]!),
+                  ),
+              ],
+              onChanged: (value) =>
+                  controller.selectContractorForSlot(i, value),
+              decoration: InputDecoration(
+                labelText: slots.length == 1
+                    ? 'Worker (optional)'
+                    : 'Worker ${i + 1} (optional)',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
         ],
       );
     });

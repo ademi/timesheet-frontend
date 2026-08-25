@@ -241,7 +241,7 @@ class OngoingSupportController extends GetxController
           title: title,
           clientSiteId: isHomeMode ? selectedSiteId.value : null,
           branchId: isHomeMode ? null : selectedBranchId.value,
-          contractorIds: selectedContractorIds.toList(growable: false),
+          contractorIds: filledContractorIds,
           rrule: rrule,
           dtstart: startDate.value,
           until: recurrenceUntilInstant(endDate.value),

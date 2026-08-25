@@ -2,17 +2,27 @@ import 'package:get/get.dart';
 
 /// Workers pre-filled on a recurrence pattern (D2: at most one id per slot).
 ///
-/// The composer still offers a single-worker dropdown; the assign step layers
-/// multi-select on top of the same list.
+/// Null entries are Unfilled holes. Submit paths send [filledContractorIds]
+/// (nulls dropped) so length can be less than `required_slots`.
 mixin RecurrenceWorkersSelection {
-  final selectedContractorIds = <String>[].obs;
+  final selectedContractorIds = <String?>[].obs;
 
-  String? get soleContractorId =>
-      selectedContractorIds.isEmpty ? null : selectedContractorIds.first;
+  List<String> get filledContractorIds => [
+        for (final id in selectedContractorIds)
+          if (id != null && id.isNotEmpty) id,
+      ];
+
+  String? get soleContractorId {
+    for (final id in selectedContractorIds) {
+      if (id != null && id.isNotEmpty) return id;
+    }
+    return null;
+  }
 
   void selectSoleContractor(String? contractorId) {
+    final id = contractorId?.trim();
     selectedContractorIds.assignAll(
-      contractorId == null ? const <String>[] : <String>[contractorId],
+      id == null || id.isEmpty ? const <String?>[] : <String?>[id],
     );
   }
 

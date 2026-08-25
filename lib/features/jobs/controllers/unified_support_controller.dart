@@ -152,9 +152,8 @@ class UnifiedSupportController extends GetxController
         endDate.value = defaultRecurrenceEndDate(start);
       }
     });
-    ever(requiredSlots, (slots) {
-      if (slots > 1) clearSelectedContractors();
-    });
+    ever(requiredSlots, (_) => syncAssignSlots());
+    syncAssignSlots();
     ever(oneSessionStart, (DateTime start) {
       if (!oneSessionEnd.value.isAfter(start)) {
         oneSessionEnd.value = start.add(const Duration(hours: 1));
@@ -392,6 +391,42 @@ class UnifiedSupportController extends GetxController
     if (requiredSlots.value > 1) requiredSlots.value--;
   }
 
+  /// Pads or truncates [selectedContractorIds] to [requiredSlots] (null = Unfilled).
+  void syncAssignSlots() {
+    final n = requiredSlots.value;
+    if (n < 1) return;
+    final current = List<String?>.from(selectedContractorIds);
+    if (current.length == n) return;
+    if (current.length < n) {
+      selectedContractorIds.assignAll([
+        ...current,
+        ...List<String?>.filled(n - current.length, null),
+      ]);
+      return;
+    }
+    selectedContractorIds.assignAll(current.sublist(0, n));
+  }
+
+  /// Sets one assign-step slot. Rejects the same contractor in two slots (D8).
+  bool selectContractorForSlot(int index, String? contractorId) {
+    syncAssignSlots();
+    if (index < 0 || index >= selectedContractorIds.length) return false;
+    final trimmed = contractorId?.trim();
+    final value = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+    if (value != null) {
+      for (var i = 0; i < selectedContractorIds.length; i++) {
+        if (i != index && selectedContractorIds[i] == value) {
+          errorMessage.value =
+              'That worker is already assigned to another slot.';
+          return false;
+        }
+      }
+    }
+    errorMessage.value = null;
+    selectedContractorIds[index] = value;
+    return true;
+  }
+
   bool canGoNext() {
     errorMessage.value = null;
     switch (step.value) {
@@ -434,6 +469,7 @@ class UnifiedSupportController extends GetxController
     if (step.value < maxStep) {
       step.value++;
       if (step.value == assignStep) {
+        syncAssignSlots();
         ensureEngagementsLoaded();
       }
     }
@@ -543,6 +579,8 @@ class UnifiedSupportController extends GetxController
       return;
     }
 
+    syncAssignSlots();
+
     isSaving.value = true;
     try {
       if (isOneSession) {
@@ -571,41 +609,30 @@ class UnifiedSupportController extends GetxController
       supportItemName.value,
     );
     if (code != null && name != null) {
-      try {
-        await _jobs.patchJobSupportItem(
-          support.id,
-          SupportItemPatch(supportItemCode: code, supportItemName: name),
-        );
-      } catch (_) {}
+      await _jobs.patchJobSupportItem(
+        support.id,
+        SupportItemPatch(supportItemCode: code, supportItemName: name),
+      );
     }
     await _attachSelectedTemplates(support.id);
-    final tasks = carePlanTaskTitles;
-    final contractorId = soleContractorId;
-    if (contractorId != null && tasks.isNotEmpty) {
-      await _jobs.createManualVisit(
-        support.id,
-        ManualVisitCreateRequest(
-          contractorId: contractorId,
-          scheduledStart: oneSessionStart.value,
-          scheduledEnd: oneSessionEnd.value,
-          taskTitles: tasks,
-          formTemplateIds: selectedFormTemplateIds.toList(growable: false),
-          supportItemCode: code,
-          supportItemName: name,
-        ),
-      );
-      _goToRoster(jobId: support.id, clientId: c.id);
-      return;
-    }
-    await _shifts.createShift(
+    final ids = filledContractorIds;
+    final created = await _shifts.createShift(
       ShiftCreateRequest(
         jobId: support.id,
         scheduledStart: oneSessionStart.value,
         scheduledEnd: oneSessionEnd.value,
         requiredSlots: requiredSlots.value,
-        status: publishImmediately.value ? 'published' : 'draft',
+        status: (publishImmediately.value || ids.isNotEmpty)
+            ? 'published'
+            : 'draft',
       ),
     );
+    for (final contractorId in ids) {
+      await _shifts.assignShift(
+        shiftId: created.id,
+        contractorId: contractorId,
+      );
+    }
     _goToRoster(jobId: support.id, clientId: c.id);
   }
 
@@ -629,7 +656,7 @@ class UnifiedSupportController extends GetxController
         clientId: c.id,
         title: titleCtrl.text.trim(),
         clientSiteId: selectedSiteId.value,
-        contractorIds: selectedContractorIds.toList(growable: false),
+        contractorIds: filledContractorIds,
         rrule: rrule,
         dtstart: startDate.value,
         until: recurrenceUntilInstant(endDate.value),
