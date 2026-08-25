@@ -14,6 +14,7 @@ import 'package:rostiq/features/jobs/utils/recurrence_rrule_builder.dart';
 import 'package:rostiq/features/jobs/utils/schedule_hours_warn.dart';
 import 'package:rostiq/features/jobs/utils/unified_support_args.dart';
 import 'package:rostiq/features/jobs/views/unified_support_view.dart';
+import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
 import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
@@ -274,5 +275,74 @@ void main() {
 
     expect(find.text('Alex Worker'), findsOneWidget);
     expect(find.text('Free'), findsOneWidget);
+  });
+
+  testWidgets('assign step dropdown shows Busy beside worker with overlapping shift', (
+    tester,
+  ) async {
+    final shiftStart = DateTime(2026, 8, 13, 9);
+    final shiftEnd = DateTime(2026, 8, 13, 12);
+    final engagement = EngagementOut(
+      id: 'eng-1',
+      tenantId: 'tenant-1',
+      contractorId: 'contractor-busy',
+      contractorName: 'Busy Worker',
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    );
+    when(() => engagements.listTenantEngagements())
+        .thenAnswer((_) async => [engagement]);
+    when(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        ShiftOut(
+          id: 'shift-busy',
+          tenantId: 'tenant-1',
+          jobId: 'job-2',
+          jobTitle: 'Other',
+          clientId: 'client-2',
+          clientName: 'Other',
+          scheduledStart: shiftStart,
+          scheduledEnd: shiftEnd,
+          requiredSlots: 1,
+          openSlots: 0,
+          status: 'published',
+          assignments: [
+            ShiftAssignmentOut(
+              id: 'a-1',
+              contractorId: 'contractor-busy',
+              contractorName: 'Busy Worker',
+              visitId: 'visit-1',
+              source: 'staff_assign',
+              status: 'active',
+            ),
+          ],
+          createdAt: shiftStart,
+          updatedAt: shiftStart,
+        ),
+      ],
+    );
+    await controller.load();
+    controller.setMode(UnifiedSupportMode.oneSession);
+    controller.oneSessionStart.value = shiftStart;
+    controller.oneSessionEnd.value = shiftEnd;
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: UnifiedSupportView()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const ValueKey('assign-slot-0')));
+    await tester.tap(find.byKey(const ValueKey('assign-slot-0')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Busy Worker'), findsOneWidget);
+    expect(find.text('Busy'), findsOneWidget);
   });
 }

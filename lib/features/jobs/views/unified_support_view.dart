@@ -803,6 +803,10 @@ class _WorkersStepState extends State<_WorkersStep> {
     final controller = widget.controller;
     return Obx(() {
       final slots = controller.selectedContractorIds;
+      // Subscribe to availability data so dropdown labels rebuild after async load.
+      controller.isAssignAvailabilityLoading.value;
+      controller.assignOverlay.value;
+      controller.assignShifts.length;
       final seen = <String>{};
       final workers = [
         for (final e in controller.assignableEngagements)

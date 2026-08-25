@@ -125,6 +125,8 @@ class UnifiedSupportController extends GetxController
   bool engagementsLoaded = false;
   bool assignAvailabilityLoaded = false;
   String? _assignAvailabilityKey;
+  Future<void>? _engagementsLoadFuture;
+  Future<void>? _assignAvailabilityLoadFuture;
 
   bool get canManage => _session.hasPermission(AppPermissions.jobsManage);
 
@@ -263,6 +265,19 @@ class UnifiedSupportController extends GetxController
 
   Future<void> ensureEngagementsLoaded() async {
     if (engagementsLoaded) return;
+    if (_engagementsLoadFuture != null) {
+      await _engagementsLoadFuture;
+      return;
+    }
+    _engagementsLoadFuture = _loadEngagements();
+    try {
+      await _engagementsLoadFuture;
+    } finally {
+      _engagementsLoadFuture = null;
+    }
+  }
+
+  Future<void> _loadEngagements() async {
     try {
       engagements.assignAll(await _engagements.listTenantEngagements());
     } catch (_) {
@@ -292,7 +307,29 @@ class UnifiedSupportController extends GetxController
     final key =
         '${query.from.toIso8601String()}|${query.to.toIso8601String()}|${query.shiftStart.toIso8601String()}|${query.shiftEnd.toIso8601String()}';
     if (assignAvailabilityLoaded && _assignAvailabilityKey == key) return;
+    if (_assignAvailabilityLoadFuture != null) {
+      await _assignAvailabilityLoadFuture;
+      if (assignAvailabilityLoaded && _assignAvailabilityKey == key) return;
+    }
 
+    _assignAvailabilityLoadFuture = _loadAssignAvailability(query, key);
+    try {
+      await _assignAvailabilityLoadFuture;
+    } finally {
+      _assignAvailabilityLoadFuture = null;
+    }
+  }
+
+  Future<void> _loadAssignAvailability(
+    ({
+      DateTime from,
+      DateTime to,
+      DateTime shiftStart,
+      DateTime shiftEnd,
+      DateTime day,
+    }) query,
+    String key,
+  ) async {
     isAssignAvailabilityLoading.value = true;
     assignOverlayWarning.value = null;
     try {

@@ -201,4 +201,37 @@ void main() {
       () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
     ).called(1);
   });
+
+  test('concurrent ensureAssignAvailabilityLoaded coalesces to one fetch', () async {
+    final controller = build();
+    await controller.load();
+    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await Future.wait([
+      controller.ensureAssignAvailabilityLoaded(),
+      controller.ensureAssignAvailabilityLoaded(),
+    ]);
+
+    verify(
+      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
+    ).called(1);
+    verify(
+      () => shifts.listShifts(from: any(named: 'from'), to: any(named: 'to')),
+    ).called(1);
+  });
+
+  test('concurrent ensureEngagementsLoaded coalesces to one fetch', () async {
+    when(() => engagements.listTenantEngagements())
+        .thenAnswer((_) async => []);
+    final controller = build();
+
+    await Future.wait([
+      controller.ensureEngagementsLoaded(),
+      controller.ensureEngagementsLoaded(),
+    ]);
+
+    verify(() => engagements.listTenantEngagements()).called(1);
+  });
 }
