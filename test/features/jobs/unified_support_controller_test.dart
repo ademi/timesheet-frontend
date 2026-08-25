@@ -8,6 +8,7 @@ import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
+import 'package:rostiq/features/engagements/data/models/engagement_models.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/controllers/unified_support_controller.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
@@ -72,6 +73,16 @@ final _job = JobOut(
   createdAt: _now,
   updatedAt: _now,
   clientId: 'client-1',
+);
+
+final _eng = EngagementOut(
+  id: 'eng-1',
+  tenantId: 'tenant-1',
+  contractorId: 'contractor-1',
+  contractorName: 'Alex Worker',
+  status: 'active',
+  createdAt: _now,
+  updatedAt: _now,
 );
 
 final _ongoingOut = OngoingSupportOut(
@@ -158,6 +169,18 @@ void main() {
       },
     );
   }
+
+  test('bootstrap does not load engagements until assign step', () async {
+    when(() => engagements.listTenantEngagements())
+        .thenAnswer((_) async => [_eng]);
+    final c = build();
+    await c.load();
+    verifyNever(() => engagements.listTenantEngagements());
+    c.step.value = UnifiedSupportController.assignStep;
+    await c.ensureEngagementsLoaded();
+    verify(() => engagements.listTenantEngagements()).called(1);
+    expect(c.engagements, [_eng]);
+  });
 
   test('formatSupportTimeOfDay pads hours and minutes', () {
     expect(formatSupportTimeOfDay(const TimeOfDay(hour: 9, minute: 5)), '09:05');

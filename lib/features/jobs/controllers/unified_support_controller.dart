@@ -67,6 +67,7 @@ class UnifiedSupportController extends GetxController
   final void Function(String route, dynamic arguments)? _onNavigate;
 
   static const int maxStep = 3;
+  static const int assignStep = 3;
 
   final step = 0.obs;
   final mode = Rxn<UnifiedSupportMode>();
@@ -105,6 +106,8 @@ class UnifiedSupportController extends GetxController
   final isSaving = false.obs;
   final errorMessage = RxnString();
   final scheduleWarnTimezone = RxnString();
+
+  bool engagementsLoaded = false;
 
   bool get canManage => _session.hasPermission(AppPermissions.jobsManage);
 
@@ -186,7 +189,7 @@ class UnifiedSupportController extends GetxController
     );
   }
 
-  /// Loads client, sites, templates, and engagements for the composer.
+  /// Loads client, sites, and templates for the composer.
   Future<void> load() => _bootstrap();
 
   @override
@@ -230,14 +233,19 @@ class UnifiedSupportController extends GetxController
       } catch (_) {
         formTemplates.clear();
       }
-      try {
-        engagements.assignAll(await _engagements.listTenantEngagements());
-      } catch (_) {
-        engagements.clear();
-      }
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> ensureEngagementsLoaded() async {
+    if (engagementsLoaded) return;
+    try {
+      engagements.assignAll(await _engagements.listTenantEngagements());
+    } catch (_) {
+      engagements.clear();
+    }
+    engagementsLoaded = true;
   }
 
   UnifiedSupportArgs? _parseRouteArgs() {
@@ -413,7 +421,12 @@ class UnifiedSupportController extends GetxController
 
   void nextStep() {
     if (!canGoNext()) return;
-    if (step.value < maxStep) step.value++;
+    if (step.value < maxStep) {
+      step.value++;
+      if (step.value == assignStep) {
+        ensureEngagementsLoaded();
+      }
+    }
   }
 
   void previousStep() {
