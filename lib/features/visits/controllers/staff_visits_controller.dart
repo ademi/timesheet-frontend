@@ -340,10 +340,9 @@ class StaffVisitsController extends GetxController {
 
   /// Sets [rangeStart] to Monday 00:00 of the tenant civil week containing [utcNow].
   void alignRangeToTenantWeek(DateTime utcNow) {
-    final tz = tenantTimezone.value.trim();
     rangeStart.value = startOfTenantWeekMonday(
       utcNow,
-      tz.isEmpty ? null : tz,
+      _effectiveTenantTimezone,
     );
   }
 

@@ -98,6 +98,18 @@ void main() {
     expect(controller.rangeStart.value.day, 10);
   });
 
+  test('alignRangeToTenantWeek prefers session tenantTimezone', () {
+    tenantUtcOffsetOverride = (tz, _) {
+      if (tz == 'Australia/Sydney') return const Duration(hours: 10);
+      return Duration.zero;
+    };
+    when(() => session.tenantTimezone).thenReturn(RxnString('Australia/Sydney'));
+    // Sun 16:00Z = Mon 02:00 AEST — session TZ only (cached obs empty).
+    controller.alignRangeToTenantWeek(DateTime.utc(2026, 8, 9, 16));
+    expect(controller.rangeStart.value.weekday, DateTime.monday);
+    expect(controller.rangeStart.value.day, 10);
+  });
+
   test('loadTenantTimezone fetches once from payroll repository', () async {
     when(() => payroll.getTenant('tenant-1')).thenAnswer(
       (_) async => TenantSettingsOut(
