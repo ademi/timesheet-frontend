@@ -17,6 +17,7 @@ class VisitsRepository {
     String? status,
     String? paymentStatus,
     int limit = 100,
+    bool includeNested = true,
   }) =>
       _remote.listVisits(
         from: from,
@@ -27,6 +28,7 @@ class VisitsRepository {
         status: status,
         paymentStatus: paymentStatus,
         limit: limit,
+        includeNested: includeNested,
       );
 
   Future<VisitOut> getVisit(String id) => _remote.getVisit(id);

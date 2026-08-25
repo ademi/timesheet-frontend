@@ -21,6 +21,7 @@ import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
 import '../../visits/data/models/roster_overlay_models.dart';
+import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../../visits/utils/assign_availability.dart';
 import '../../visits/utils/assign_schedule_window.dart';
@@ -29,6 +30,7 @@ import '../data/repositories/jobs_repository.dart';
 import '../utils/job_copy.dart';
 import '../utils/recurrence_rrule_builder.dart';
 import '../utils/required_slots_input.dart';
+import '../utils/schedule_conflict.dart';
 import '../utils/schedule_hours_warn.dart';
 import '../utils/time_window_utils.dart';
 import '../utils/unified_support_args.dart';
@@ -119,14 +121,23 @@ class UnifiedSupportController extends GetxController
   final scheduleWarnTimezone = RxnString();
   final assignOverlay = Rxn<RosterOverlayOut>();
   final assignShifts = <ShiftOut>[].obs;
+  final assignVisits = <VisitOut>[].obs;
   final assignOverlayWarning = RxnString();
   final isAssignAvailabilityLoading = false.obs;
+  final conflictVisits = <VisitOut>[].obs;
+  final conflictShifts = <ShiftOut>[].obs;
+  final isConflictsLoading = false.obs;
 
   bool engagementsLoaded = false;
   bool assignAvailabilityLoaded = false;
+  bool clientConflictsLoaded = false;
   String? _assignAvailabilityKey;
+  String? _clientConflictsKey;
+  String? _standingJobId;
+  String? _standingJobClientId;
   Future<void>? _engagementsLoadFuture;
   Future<void>? _assignAvailabilityLoadFuture;
+  Future<void>? _clientConflictsLoadFuture;
 
   bool get canManage => _session.hasPermission(AppPermissions.jobsManage);
 
@@ -334,14 +345,30 @@ class UnifiedSupportController extends GetxController
     assignOverlayWarning.value = null;
     try {
       final shiftsFuture = _shifts.listShifts(from: query.from, to: query.to);
-      final overlayFuture = _visits
-          .fetchRosterOverlay(from: query.from, to: query.to)
-          .then<RosterOverlayOut?>((v) => v)
-          .catchError((_) {
-            assignOverlayWarning.value = 'Leave/availability unavailable';
-            return null;
-          });
+      final visitsFuture = () async {
+        try {
+          return await _visits.listVisits(
+            from: query.from,
+            to: query.to,
+            includeNested: false,
+          );
+        } catch (_) {
+          return const <VisitOut>[];
+        }
+      }();
+      final overlayFuture = () async {
+        try {
+          return await _visits.fetchRosterOverlay(
+            from: query.from,
+            to: query.to,
+          );
+        } catch (_) {
+          assignOverlayWarning.value = 'Leave/availability unavailable';
+          return null;
+        }
+      }();
       assignShifts.assignAll(await shiftsFuture);
+      assignVisits.assignAll(await visitsFuture);
       assignOverlay.value =
           await overlayFuture ?? const RosterOverlayOut(contractors: []);
       _assignAvailabilityWindow = query;
@@ -349,6 +376,7 @@ class UnifiedSupportController extends GetxController
       assignAvailabilityLoaded = true;
     } catch (_) {
       assignShifts.clear();
+      assignVisits.clear();
       assignOverlay.value = const RosterOverlayOut(contractors: []);
       assignOverlayWarning.value = 'Leave/availability unavailable';
       _assignAvailabilityWindow = query;
@@ -356,6 +384,116 @@ class UnifiedSupportController extends GetxController
       assignAvailabilityLoaded = true;
     } finally {
       isAssignAvailabilityLoading.value = false;
+    }
+  }
+
+  /// Loads lite client visits + standing-job shifts for the schedule strip (D19).
+  Future<void> ensureClientConflictsLoaded() async {
+    if (step.value != scheduleStep && step.value != assignStep) return;
+    if (client.value == null) return;
+    if (!_validateSchedule(showError: false)) return;
+    final window = computeAssignScheduleWindow(
+      isOneSession: isOneSession,
+      oneSessionStart: oneSessionStart.value,
+      oneSessionEnd: oneSessionEnd.value,
+      startDate: startDate.value,
+      frequency: frequency.value,
+      weekdays: weekdays.toSet(),
+      startTime: startTime.value,
+      endTime: endTime.value,
+    );
+    final tz = _tenantTimezoneForScheduleWarn ?? await _resolveTenantTimezone();
+    final query = assignAvailabilityQueryWindow(
+      window: window,
+      tenantTimezone: tz,
+    );
+    final clientId = client.value!.id;
+    final key =
+        '$clientId|${query.from.toIso8601String()}|${query.to.toIso8601String()}|${query.shiftStart.toIso8601String()}|${query.shiftEnd.toIso8601String()}';
+    if (clientConflictsLoaded && _clientConflictsKey == key) return;
+    if (_clientConflictsLoadFuture != null) {
+      await _clientConflictsLoadFuture;
+      if (clientConflictsLoaded && _clientConflictsKey == key) return;
+    }
+
+    _clientConflictsLoadFuture = _loadClientConflicts(query, key, clientId);
+    try {
+      await _clientConflictsLoadFuture;
+    } finally {
+      _clientConflictsLoadFuture = null;
+    }
+  }
+
+  Future<void> _loadClientConflicts(
+    ({
+      DateTime from,
+      DateTime to,
+      DateTime shiftStart,
+      DateTime shiftEnd,
+      DateTime day,
+    }) query,
+    String key,
+    String clientId,
+  ) async {
+    isConflictsLoading.value = true;
+    try {
+      final standingJobId = await _resolveStandingJobId(clientId);
+      final visitsFuture = () async {
+        try {
+          return await _visits.listVisits(
+            clientId: clientId,
+            from: query.from,
+            to: query.to,
+            includeNested: false,
+          );
+        } catch (_) {
+          return const <VisitOut>[];
+        }
+      }();
+      final shiftsFuture = () async {
+        try {
+          return await _shifts.listShifts(
+            from: query.from,
+            to: query.to,
+            jobId: standingJobId,
+          );
+        } catch (_) {
+          return const <ShiftOut>[];
+        }
+      }();
+      conflictVisits.assignAll(await visitsFuture);
+      var shifts = await shiftsFuture;
+      if (standingJobId == null) {
+        shifts = shifts.where((s) => s.clientId == clientId).toList();
+      }
+      conflictShifts.assignAll(shifts);
+      _conflictsWindow = query;
+      _clientConflictsKey = key;
+      clientConflictsLoaded = true;
+    } catch (_) {
+      conflictVisits.clear();
+      conflictShifts.clear();
+      _conflictsWindow = query;
+      _clientConflictsKey = key;
+      clientConflictsLoaded = true;
+    } finally {
+      isConflictsLoading.value = false;
+    }
+  }
+
+  Future<String?> _resolveStandingJobId(String clientId) async {
+    if (_standingJobClientId == clientId) {
+      return _standingJobId;
+    }
+    try {
+      final job = await _jobs.getOngoingSupport(clientId);
+      _standingJobId = job.id;
+      _standingJobClientId = clientId;
+      return job.id;
+    } catch (_) {
+      _standingJobId = null;
+      _standingJobClientId = clientId;
+      return null;
     }
   }
 
@@ -368,6 +506,15 @@ class UnifiedSupportController extends GetxController
   })?
   _assignAvailabilityWindow;
 
+  ({
+    DateTime from,
+    DateTime to,
+    DateTime shiftStart,
+    DateTime shiftEnd,
+    DateTime day,
+  })?
+  _conflictsWindow;
+
   String availabilityLabelForContractor(String contractorId) {
     final query = _assignAvailabilityWindow;
     if (query == null) return 'Free';
@@ -378,6 +525,18 @@ class UnifiedSupportController extends GetxController
       shiftEnd: query.shiftEnd,
       overlay: assignOverlay.value ?? const RosterOverlayOut(contractors: []),
       shifts: assignShifts.toList(growable: false),
+      visits: assignVisits.toList(growable: false),
+    );
+  }
+
+  List<ClientConflict> get clientConflicts {
+    final query = _conflictsWindow ?? _assignAvailabilityWindow;
+    if (query == null) return const [];
+    return buildClientConflicts(
+      windowStart: query.shiftStart,
+      windowEnd: query.shiftEnd,
+      visits: conflictVisits.toList(growable: false),
+      shifts: conflictShifts.toList(growable: false),
     );
   }
 
@@ -387,7 +546,23 @@ class UnifiedSupportController extends GetxController
     _assignAvailabilityWindow = null;
     assignOverlay.value = null;
     assignShifts.clear();
+    assignVisits.clear();
     assignOverlayWarning.value = null;
+    _invalidateClientConflicts();
+    if (step.value == scheduleStep || step.value == assignStep) {
+      ensureClientConflictsLoaded();
+    }
+    if (step.value == assignStep) {
+      ensureAssignAvailabilityLoaded();
+    }
+  }
+
+  void _invalidateClientConflicts() {
+    clientConflictsLoaded = false;
+    _clientConflictsKey = null;
+    _conflictsWindow = null;
+    conflictVisits.clear();
+    conflictShifts.clear();
   }
 
   UnifiedSupportArgs? _parseRouteArgs() {
@@ -419,6 +594,11 @@ class UnifiedSupportController extends GetxController
   }
 
   Future<void> selectClient(ClientOut value) async {
+    if (_standingJobClientId != value.id) {
+      _standingJobId = null;
+      _standingJobClientId = null;
+      _invalidateClientConflicts();
+    }
     client.value = value;
     if (titleCtrl.text.trim().isEmpty) {
       titleCtrl.text = defaultOngoingTitle(value.fullName);
@@ -607,10 +787,14 @@ class UnifiedSupportController extends GetxController
     if (!canGoNext()) return;
     if (step.value < maxStep) {
       step.value++;
+      if (step.value == scheduleStep) {
+        ensureClientConflictsLoaded();
+      }
       if (step.value == assignStep) {
         syncAssignSlots();
         ensureEngagementsLoaded();
         ensureAssignAvailabilityLoaded();
+        ensureClientConflictsLoaded();
       }
     }
   }

@@ -17,6 +17,7 @@ import 'package:rostiq/features/jobs/views/unified_support_view.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
+import 'package:rostiq/features/visits/data/models/visit_models.dart';
 import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
 
 class _MockJobsRepository extends Mock implements JobsRepository {}
@@ -103,6 +104,13 @@ void main() {
       () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => visits.listVisits(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        includeNested: any(named: 'includeNested'),
       ),
     ).thenAnswer((_) async => []);
 
@@ -344,5 +352,49 @@ void main() {
 
     expect(find.text('Busy Worker'), findsOneWidget);
     expect(find.text('Busy'), findsOneWidget);
+  });
+
+  testWidgets('schedule step shows overlapping visit chip', (tester) async {
+    final start = DateTime(2026, 8, 13, 9);
+    final end = DateTime(2026, 8, 13, 12);
+    when(
+      () => visits.listVisits(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        clientId: any(named: 'clientId'),
+        includeNested: any(named: 'includeNested'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        VisitOut(
+          id: 'v-overlap',
+          tenantId: 'tenant-1',
+          jobId: 'job-1',
+          contractorId: 'contractor-1',
+          scheduledStart: start,
+          scheduledEnd: end,
+          status: 'scheduled',
+          source: 'manual',
+          geofenceRadiusM: 100,
+          geofenceMode: 'informational',
+          paymentStatus: 'unpaid',
+          createdAt: start,
+          updatedAt: start,
+        ),
+      ],
+    );
+    await controller.load();
+    controller.setMode(UnifiedSupportMode.oneSession);
+    controller.oneSessionStart.value = start;
+    controller.oneSessionEnd.value = end;
+    controller.step.value = UnifiedSupportController.scheduleStep;
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: UnifiedSupportView()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Overlapping visit…'), findsOneWidget);
+    expect(find.text('Next'), findsOneWidget);
   });
 }

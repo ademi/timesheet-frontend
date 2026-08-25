@@ -164,6 +164,13 @@ void main() {
         to: any(named: 'to'),
       ),
     ).thenAnswer((_) async => []);
+    when(
+      () => visits.listVisits(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        includeNested: any(named: 'includeNested'),
+      ),
+    ).thenAnswer((_) async => []);
   });
 
   tearDown(() {

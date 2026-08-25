@@ -20,6 +20,7 @@ class VisitsRemoteDataSource {
     String? status,
     String? paymentStatus,
     int limit = 100,
+    bool includeNested = true,
   }) async {
     try {
       final response = await _dio.get<List<dynamic>>(
@@ -35,6 +36,7 @@ class VisitsRemoteDataSource {
           if (paymentStatus != null && paymentStatus.isNotEmpty)
             'payment_status': paymentStatus,
           'limit': limit,
+          'include_nested': includeNested,
         },
       );
       return _mapList(response.data, VisitOut.fromJson);

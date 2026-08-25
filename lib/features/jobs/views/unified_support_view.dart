@@ -426,16 +426,27 @@ class _LocationStep extends StatelessWidget {
   }
 }
 
-class _ScheduleStep extends StatelessWidget {
+class _ScheduleStep extends StatefulWidget {
   const _ScheduleStep({required this.controller});
   final UnifiedSupportController controller;
 
   @override
+  State<_ScheduleStep> createState() => _ScheduleStepState();
+}
+
+class _ScheduleStepState extends State<_ScheduleStep> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.ensureClientConflictsLoaded();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (controller.isOneSession) {
-      return _OneSessionSchedule(controller: controller);
+    if (widget.controller.isOneSession) {
+      return _OneSessionSchedule(controller: widget.controller);
     }
-    return _OngoingSchedule(controller: controller);
+    return _OngoingSchedule(controller: widget.controller);
   }
 }
 
@@ -451,6 +462,7 @@ class _OneSessionSchedule extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _ConflictStrip(controller: controller),
           if (controller.showScheduleHoursWarn) ...[
             const _AmberNotice(message: kAtypicalScheduleHoursMessage),
             const SizedBox(height: 12),
@@ -532,6 +544,7 @@ class _OngoingSchedule extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _ConflictStrip(controller: controller),
           if (controller.showScheduleHoursWarn) ...[
             const _AmberNotice(message: kAtypicalScheduleHoursMessage),
             const SizedBox(height: 12),
@@ -788,6 +801,7 @@ class _WorkersStepState extends State<_WorkersStep> {
     super.initState();
     widget.controller.ensureEngagementsLoaded();
     widget.controller.ensureAssignAvailabilityLoaded();
+    widget.controller.ensureClientConflictsLoaded();
   }
 
   Color _availabilityColor(String label) {
@@ -807,6 +821,9 @@ class _WorkersStepState extends State<_WorkersStep> {
       controller.isAssignAvailabilityLoading.value;
       controller.assignOverlay.value;
       controller.assignShifts.length;
+      controller.assignVisits.length;
+      controller.conflictVisits.length;
+      controller.conflictShifts.length;
       final seen = <String>{};
       final workers = [
         for (final e in controller.assignableEngagements)
@@ -815,6 +832,7 @@ class _WorkersStepState extends State<_WorkersStep> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _ConflictStrip(controller: controller),
           Text(
             slots.length <= 1
                 ? 'Assign a worker for this support (optional).'
@@ -906,6 +924,43 @@ class _ErrorBox extends StatelessWidget {
       ),
       child: Text(message, style: const TextStyle(color: AppColors.error)),
     );
+  }
+}
+
+class _ConflictStrip extends StatelessWidget {
+  const _ConflictStrip({required this.controller});
+  final UnifiedSupportController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      controller.conflictVisits.length;
+      controller.conflictShifts.length;
+      controller.isConflictsLoading.value;
+      final labels = {
+        for (final c in controller.clientConflicts) c.chipLabel,
+      };
+      if (labels.isEmpty) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final label in labels)
+              Chip(
+                label: Text(label),
+                backgroundColor: AppColors.openSlotBackground,
+                side: const BorderSide(color: AppColors.openSlot),
+                labelStyle: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.openSlot,
+                ),
+              ),
+          ],
+        ),
+      );
+    });
   }
 }
 

@@ -66,6 +66,7 @@ class StaffVisitsController extends GetxController {
   final errorMessage = RxnString();
   final overlay = Rxn<RosterOverlayOut>();
   final overlayWarning = RxnString();
+  final boardVisits = <VisitOut>[].obs;
 
   final editingVisitSupportItemCode = RxnString();
   final editingVisitSupportItemName = RxnString();
@@ -369,6 +370,7 @@ class StaffVisitsController extends GetxController {
     errorMessage.value = null;
     overlayWarning.value = null;
     Future<RosterOverlayOut?>? overlayFuture;
+    Future<List<VisitOut>>? visitsFuture;
     try {
       final from = _fromUtc;
       final to = _toUtc;
@@ -387,6 +389,17 @@ class StaffVisitsController extends GetxController {
           return null;
         }
       }();
+      visitsFuture = () async {
+        try {
+          return await _repository.listVisits(
+            from: from,
+            to: to,
+            includeNested: false,
+          );
+        } catch (_) {
+          return const <VisitOut>[];
+        }
+      }();
       final listRaw = await shiftsFuture;
       final status = statusFilter.value.trim();
       final list =
@@ -399,8 +412,10 @@ class StaffVisitsController extends GetxController {
       shifts.assignAll(list);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+      boardVisits.clear();
     } catch (e) {
       errorMessage.value = e.toString();
+      boardVisits.clear();
     } finally {
       // Paint shifts before waiting on overlay (D20 / paint-first).
       isLoading.value = false;
@@ -408,6 +423,9 @@ class StaffVisitsController extends GetxController {
     if (overlayFuture != null) {
       overlay.value =
           await overlayFuture ?? const RosterOverlayOut(contractors: []);
+    }
+    if (visitsFuture != null) {
+      boardVisits.assignAll(await visitsFuture);
     }
   }
 
@@ -574,6 +592,7 @@ class StaffVisitsController extends GetxController {
       shiftEnd: shift.scheduledEnd,
       overlay: overlay.value ?? const RosterOverlayOut(contractors: []),
       shifts: shifts.toList(growable: false),
+      visits: boardVisits.toList(growable: false),
     );
   }
 

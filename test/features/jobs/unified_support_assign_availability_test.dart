@@ -7,11 +7,13 @@ import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/controllers/unified_support_controller.dart';
+import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/features/jobs/utils/unified_support_args.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
+import 'package:rostiq/features/visits/data/models/visit_models.dart';
 import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
 
 class _MockJobsRepository extends Mock implements JobsRepository {}
@@ -76,6 +78,13 @@ void main() {
       () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => visits.listVisits(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        includeNested: any(named: 'includeNested'),
       ),
     ).thenAnswer((_) async => []);
   });
@@ -233,5 +242,126 @@ void main() {
     ]);
 
     verify(() => engagements.listTenantEngagements()).called(1);
+  });
+
+  test('ensureAssignAvailabilityLoaded fetches lite visits', () async {
+    final controller = build();
+    await controller.load();
+    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await controller.ensureAssignAvailabilityLoaded();
+
+    verify(
+      () => visits.listVisits(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        includeNested: false,
+      ),
+    ).called(1);
+  });
+
+  test('availabilityLabelForContractor returns Busy for overlapping visit',
+      () async {
+    final start = DateTime(2026, 8, 13, 9);
+    final end = DateTime(2026, 8, 13, 12);
+    when(
+      () => visits.listVisits(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        includeNested: any(named: 'includeNested'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        VisitOut(
+          id: 'v-busy',
+          tenantId: 'tenant-1',
+          jobId: 'job-other',
+          contractorId: 'contractor-busy',
+          scheduledStart: start,
+          scheduledEnd: end,
+          status: 'scheduled',
+          source: 'manual',
+          geofenceRadiusM: 100,
+          geofenceMode: 'informational',
+          paymentStatus: 'unpaid',
+          createdAt: start,
+          updatedAt: start,
+        ),
+      ],
+    );
+
+    final controller = build();
+    await controller.load();
+    controller.oneSessionStart.value = start;
+    controller.oneSessionEnd.value = end;
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await controller.ensureAssignAvailabilityLoaded();
+
+    expect(
+      controller.availabilityLabelForContractor('contractor-busy'),
+      'Busy',
+    );
+    expect(
+      controller.availabilityLabelForContractor('contractor-free'),
+      'Free',
+    );
+  });
+
+  test('clientConflicts includes unfilled shift overlapping window', () async {
+    final start = DateTime(2026, 8, 13, 9);
+    final end = DateTime(2026, 8, 13, 12);
+    when(() => jobs.getOngoingSupport('client-1')).thenAnswer(
+      (_) async => JobOut(
+        id: 'standing-job',
+        tenantId: 'tenant-1',
+        kind: 'standing',
+        status: 'open',
+        title: 'Sam Lee support',
+        geofenceRadiusM: 100,
+        geofenceMode: 'informational',
+        createdAt: start,
+        updatedAt: start,
+        clientId: 'client-1',
+      ),
+    );
+    when(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        jobId: any(named: 'jobId'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        ShiftOut(
+          id: 'hole-1',
+          tenantId: 'tenant-1',
+          jobId: 'standing-job',
+          jobTitle: 'Sam Lee support',
+          clientId: 'client-1',
+          clientName: 'Sam Lee',
+          scheduledStart: start,
+          scheduledEnd: end,
+          requiredSlots: 2,
+          openSlots: 1,
+          status: 'published',
+          createdAt: start,
+          updatedAt: start,
+        ),
+      ],
+    );
+
+    final controller = build();
+    await controller.load();
+    controller.oneSessionStart.value = start;
+    controller.oneSessionEnd.value = end;
+    controller.step.value = UnifiedSupportController.scheduleStep;
+
+    await controller.ensureClientConflictsLoaded();
+
+    expect(controller.clientConflicts.map((c) => c.id), ['hole-1']);
+    expect(controller.canGoNext(), isTrue);
   });
 }
