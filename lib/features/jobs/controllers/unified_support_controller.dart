@@ -627,10 +627,12 @@ class UnifiedSupportController extends GetxController
             : 'draft',
       ),
     );
+    final taskTemplate = taskTemplateFromTitles(taskTitlesCtrl.text);
     for (final contractorId in ids) {
       await _shifts.assignShift(
         shiftId: created.id,
         contractorId: contractorId,
+        taskTemplate: taskTemplate.isEmpty ? null : taskTemplate,
       );
     }
     _goToRoster(jobId: support.id, clientId: c.id);

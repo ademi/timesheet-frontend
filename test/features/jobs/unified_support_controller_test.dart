@@ -118,6 +118,7 @@ void main() {
     registerFallbackValue(_FakeShiftCreateRequest());
     registerFallbackValue(_FakeManualVisitCreateRequest());
     registerFallbackValue(_FakeSupportItemPatch());
+    registerFallbackValue(<TaskTemplateItem>[]);
   });
 
   setUp(() {
@@ -547,6 +548,7 @@ void main() {
       () => shifts.assignShift(
         shiftId: any(named: 'shiftId'),
         contractorId: any(named: 'contractorId'),
+        taskTemplate: any(named: 'taskTemplate'),
       ),
     ).thenAnswer(
       (invocation) async => _publishedShift(
@@ -589,16 +591,54 @@ void main() {
       () => shifts.assignShift(
         shiftId: 'shift-1',
         contractorId: 'contractor-1',
+        taskTemplate: any(named: 'taskTemplate'),
       ),
     ).called(1);
     verify(
       () => shifts.assignShift(
         shiftId: 'shift-1',
         contractorId: 'contractor-2',
+        taskTemplate: any(named: 'taskTemplate'),
       ),
     ).called(1);
     verifyNever(() => jobs.createManualVisit(any(), any()));
     expect(navigations, hasLength(1));
+  });
+
+  test('one session assignShift sends task_template from titles', () async {
+    when(() => jobs.ensureOngoingSupport('client-1'))
+        .thenAnswer((_) async => _job);
+    when(() => shifts.createShift(any())).thenAnswer((_) async => _publishedShift());
+    when(
+      () => shifts.assignShift(
+        shiftId: any(named: 'shiftId'),
+        contractorId: any(named: 'contractorId'),
+        taskTemplate: any(named: 'taskTemplate'),
+      ),
+    ).thenAnswer((_) async => _publishedShift(openSlots: 0));
+
+    final controller = build(
+      args: UnifiedSupportArgs.forClient(
+        _client,
+        mode: UnifiedSupportMode.oneSession,
+      ),
+    );
+    await controller.load();
+    controller.syncAssignSlots();
+    controller.selectContractorForSlot(0, 'contractor-1');
+    controller.taskTitlesCtrl.text = 'Personal care\nMeal prep';
+    controller.step.value = UnifiedSupportController.assignStep;
+    await controller.submit();
+
+    final captured = verify(
+      () => shifts.assignShift(
+        shiftId: 'shift-1',
+        contractorId: 'contractor-1',
+        taskTemplate: captureAny(named: 'taskTemplate'),
+      ),
+    ).captured.single as List<TaskTemplateItem>;
+    expect(captured.map((t) => t.title), ['Personal care', 'Meal prep']);
+    expect(captured.map((t) => t.sortOrder), [0, 1]);
   });
 
   test('one session with one worker still uses createShift plus assignShift',
@@ -610,6 +650,7 @@ void main() {
       () => shifts.assignShift(
         shiftId: any(named: 'shiftId'),
         contractorId: any(named: 'contractorId'),
+        taskTemplate: any(named: 'taskTemplate'),
       ),
     ).thenAnswer((_) async => _publishedShift(openSlots: 0));
 
@@ -631,6 +672,7 @@ void main() {
       () => shifts.assignShift(
         shiftId: 'shift-1',
         contractorId: 'contractor-1',
+        taskTemplate: any(named: 'taskTemplate'),
       ),
     ).called(1);
     verifyNever(() => jobs.createManualVisit(any(), any()));

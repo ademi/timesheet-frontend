@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
+import '../../../jobs/data/models/job_models.dart';
 import '../models/shift_models.dart';
 
 class ShiftsRemoteDataSource {
@@ -86,11 +87,16 @@ class ShiftsRemoteDataSource {
   Future<ShiftOut> assignShift({
     required String shiftId,
     required String contractorId,
+    List<TaskTemplateItem>? taskTemplate,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         ApiPaths.shiftAssign(shiftId),
-        data: {'contractor_id': contractorId},
+        data: {
+          'contractor_id': contractorId,
+          if (taskTemplate != null && taskTemplate.isNotEmpty)
+            'task_template': [for (final task in taskTemplate) task.toJson()],
+        },
       );
       return ShiftOut.fromJson(response.data!);
     } on DioException catch (e) {

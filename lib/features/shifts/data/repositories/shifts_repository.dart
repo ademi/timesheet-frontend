@@ -1,3 +1,4 @@
+import '../../../jobs/data/models/job_models.dart';
 import '../datasources/shifts_remote_datasource.dart';
 import '../models/shift_models.dart';
 
@@ -29,8 +30,13 @@ class ShiftsRepository {
   Future<ShiftOut> assignShift({
     required String shiftId,
     required String contractorId,
+    List<TaskTemplateItem>? taskTemplate,
   }) =>
-      _remote.assignShift(shiftId: shiftId, contractorId: contractorId);
+      _remote.assignShift(
+        shiftId: shiftId,
+        contractorId: contractorId,
+        taskTemplate: taskTemplate,
+      );
 
   Future<ShiftOut> unassignShift(String shiftId, String contractorId) =>
       _remote.unassignShift(shiftId, contractorId);
