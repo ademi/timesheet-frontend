@@ -82,6 +82,21 @@ final _job = JobOut(
   clientId: 'client-1',
 );
 
+final _jobWithSupport = JobOut(
+  id: 'job-1',
+  tenantId: 'tenant-1',
+  kind: 'standing',
+  status: 'open',
+  title: 'Sam Lee support',
+  geofenceRadiusM: 100,
+  geofenceMode: 'informational',
+  createdAt: _now,
+  updatedAt: _now,
+  clientId: 'client-1',
+  supportItemCode: '01_011_0107_1_1',
+  supportItemName: 'Self care',
+);
+
 final _eng = EngagementOut(
   id: 'eng-1',
   tenantId: 'tenant-1',
@@ -783,6 +798,49 @@ void main() {
 
     expect(controller.step.value, UnifiedSupportController.assignStep);
     expect(controller.selectedContractorIds.length, 2);
+  });
+
+  test('selectClient prefills support item from standing job', () async {
+    when(() => jobs.getOngoingSupport('client-1')).thenAnswer(
+      (_) async => _jobWithSupport,
+    );
+    final c = build();
+    await c.selectClient(_client);
+    expect(c.supportItemCode.value, '01_011_0107_1_1');
+    expect(c.supportItemName.value, isNotEmpty);
+    expect(c.supportItemPrefilledFromStanding, isTrue);
+  });
+
+  test('selectClient leaves support item empty when no standing job', () async {
+    when(() => jobs.getOngoingSupport('client-1')).thenThrow(
+      const AppFailure(
+        code: 'not_found',
+        message: 'No ongoing support.',
+        presentation: AppFailurePresentation.inline,
+        statusCode: 404,
+      ),
+    );
+    final c = build();
+    await c.selectClient(_client);
+    expect(c.supportItemCode.value, isNull);
+    expect(c.supportItemName.value, isNull);
+    expect(c.supportItemPrefilledFromStanding, isFalse);
+  });
+
+  test('selectClient does not overwrite user-changed support item', () async {
+    when(() => jobs.getOngoingSupport('client-1')).thenAnswer(
+      (_) async => _jobWithSupport,
+    );
+    final c = build();
+    c.setSupportItem(
+      supportItemCode: 'user-code',
+      supportItemName: 'User choice',
+      userInitiated: true,
+    );
+    await c.selectClient(_client);
+    expect(c.supportItemCode.value, 'user-code');
+    expect(c.supportItemName.value, 'User choice');
+    expect(c.supportItemPrefilledFromStanding, isFalse);
   });
 }
 

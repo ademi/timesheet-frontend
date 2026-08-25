@@ -745,13 +745,16 @@ class _DetailsStep extends StatelessWidget {
               controller.setSupportItem(
                 supportItemCode: supportItemCode,
                 supportItemName: supportItemName,
+                userInitiated: true,
               );
             },
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Optional default for generated or booked visits.',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          Text(
+            controller.supportItemPrefilledFromStanding
+                ? 'From this client\u2019s ongoing support'
+                : 'Optional default for generated or booked visits.',
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
           const SizedBox(height: 16),
           const Text(

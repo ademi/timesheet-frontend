@@ -173,6 +173,8 @@ class ClientDetailView extends GetView<ClientsController> {
               ClientDetailSupportSection(
                 hasOngoing: controller.hasOngoing,
                 canManage: controller.canManageSupport,
+                supportItemCode: controller.standingJob.value?.supportItemCode,
+                supportItemName: controller.standingJob.value?.supportItemName,
                 onStartOngoing: controller.startOngoingSupport,
                 onBookOne: controller.bookOneSession,
                 onOpenOngoing: controller.openOngoingSupport,

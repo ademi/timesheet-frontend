@@ -134,6 +134,8 @@ class UnifiedSupportController extends GetxController
   String? _clientConflictsKey;
   String? _standingJobId;
   String? _standingJobClientId;
+  bool _supportItemUserChanged = false;
+  bool _supportItemPrefilledFromStanding = false;
   Future<void>? _engagementsLoadFuture;
   Future<void>? _assignAvailabilityLoadFuture;
   Future<void>? _clientConflictsLoadFuture;
@@ -164,6 +166,8 @@ class UnifiedSupportController extends GetxController
 
   List<String> get carePlanTaskTitles =>
       [for (final task in taskTemplate) task.title];
+
+  bool get supportItemPrefilledFromStanding => _supportItemPrefilledFromStanding;
 
   List<EngagementOut> get assignableEngagements => sortedByName(
         engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs),
@@ -593,16 +597,46 @@ class UnifiedSupportController extends GetxController
   }
 
   Future<void> selectClient(ClientOut value) async {
+    final previousClientId = client.value?.id;
+    final clientChanged = previousClientId != value.id;
     if (_standingJobClientId != value.id) {
       _standingJobId = null;
       _standingJobClientId = null;
       _invalidateClientConflicts();
+    }
+    if (clientChanged && previousClientId != null) {
+      _supportItemUserChanged = false;
+      _supportItemPrefilledFromStanding = false;
+      supportItemCode.value = null;
+      supportItemName.value = null;
     }
     client.value = value;
     if (titleCtrl.text.trim().isEmpty) {
       titleCtrl.text = defaultOngoingTitle(value.fullName);
     }
     await Future.wait([reloadSites(), _loadClientProfile(value.id)]);
+    await _prefillSupportItemFromStandingJob(value.id);
+  }
+
+  Future<void> _prefillSupportItemFromStandingJob(String clientId) async {
+    if (_supportItemUserChanged) return;
+    try {
+      final job = await _jobs.getOngoingSupport(clientId);
+      _standingJobId = job.id;
+      _standingJobClientId = clientId;
+      final code = job.supportItemCode?.trim();
+      final name = job.supportItemName?.trim();
+      if (code != null &&
+          code.isNotEmpty &&
+          name != null &&
+          name.isNotEmpty) {
+        supportItemCode.value = code;
+        supportItemName.value = name;
+        _supportItemPrefilledFromStanding = true;
+      }
+    } catch (_) {
+      // Soft-fail when the client has no standing support job yet.
+    }
   }
 
   Future<void> _loadClientProfile(String clientId) async {
@@ -661,7 +695,12 @@ class UnifiedSupportController extends GetxController
   void setSupportItem({
     required String? supportItemCode,
     required String? supportItemName,
+    bool userInitiated = false,
   }) {
+    if (userInitiated) {
+      _supportItemUserChanged = true;
+      _supportItemPrefilledFromStanding = false;
+    }
     this.supportItemCode.value = supportItemCode;
     this.supportItemName.value = supportItemName;
   }

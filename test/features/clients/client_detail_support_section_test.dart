@@ -8,6 +8,8 @@ void main() {
       home: ClientDetailSupportSection(
         hasOngoing: false,
         canManage: true,
+        supportItemCode: null,
+        supportItemName: null,
         onStartOngoing: () {},
         onBookOne: () {},
         onOpenOngoing: () {},
@@ -22,6 +24,8 @@ void main() {
       home: ClientDetailSupportSection(
         hasOngoing: true,
         canManage: true,
+        supportItemCode: null,
+        supportItemName: null,
         onStartOngoing: () {},
         onBookOne: () {},
         onOpenOngoing: () {},
@@ -38,6 +42,8 @@ void main() {
       home: ClientDetailSupportSection(
         hasOngoing: false,
         canManage: true,
+        supportItemCode: null,
+        supportItemName: null,
         onStartOngoing: () {},
         onBookOne: () {},
         onOpenOngoing: () {},
@@ -53,6 +59,8 @@ void main() {
       home: ClientDetailSupportSection(
         hasOngoing: false,
         canManage: true,
+        supportItemCode: null,
+        supportItemName: null,
         onStartOngoing: () {},
         onBookOne: () {},
         onOpenOngoing: () {},
@@ -74,6 +82,8 @@ void main() {
       home: ClientDetailSupportSection(
         hasOngoing: false,
         canManage: true,
+        supportItemCode: null,
+        supportItemName: null,
         onStartOngoing: () => started = true,
         onBookOne: () {},
         onOpenOngoing: () {},
@@ -90,6 +100,8 @@ void main() {
       home: ClientDetailSupportSection(
         hasOngoing: true,
         canManage: true,
+        supportItemCode: null,
+        supportItemName: null,
         onStartOngoing: () {},
         onBookOne: () => booked = true,
         onOpenOngoing: () => opened = true,
@@ -99,5 +111,40 @@ void main() {
     await tester.tap(find.text('Open support'));
     expect(booked, isTrue);
     expect(opened, isTrue);
+  });
+
+  testWidgets('client detail shows standing support item', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ClientDetailSupportSection(
+          hasOngoing: true,
+          canManage: true,
+          supportItemCode: '01_011_0107_1_1',
+          supportItemName: 'Self care',
+          onStartOngoing: () {},
+          onBookOne: () {},
+          onOpenOngoing: () {},
+        ),
+      ),
+    );
+    expect(find.textContaining('Self care'), findsOneWidget);
+    expect(find.textContaining('01_011_0107_1_1'), findsOneWidget);
+  });
+
+  testWidgets('omits support item line when code or name missing', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ClientDetailSupportSection(
+          hasOngoing: true,
+          canManage: true,
+          supportItemCode: '01_011_0107_1_1',
+          supportItemName: null,
+          onStartOngoing: () {},
+          onBookOne: () {},
+          onOpenOngoing: () {},
+        ),
+      ),
+    );
+    expect(find.textContaining('01_011_0107_1_1'), findsNothing);
   });
 }
