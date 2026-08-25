@@ -164,7 +164,7 @@ class RecurrenceRuleOut {
     required this.id,
     required this.tenantId,
     required this.jobId,
-    this.contractorId,
+    this.contractorIds = const [],
     required this.requiredSlots,
     required this.rrule,
     required this.dtstart,
@@ -173,7 +173,7 @@ class RecurrenceRuleOut {
     required this.createdAt,
     required this.updatedAt,
     this.until,
-    this.contractorName,
+    this.contractorNames = const [],
     this.taskTemplateJson = const [],
     this.formRequirementsJson = const [],
     this.latitude,
@@ -184,9 +184,9 @@ class RecurrenceRuleOut {
   final String id;
   final String tenantId;
   final String jobId;
-  final String? contractorId;
+  final List<String> contractorIds;
   final int requiredSlots;
-  final String? contractorName;
+  final List<String> contractorNames;
   final String rrule;
   final DateTime dtstart;
   final DateTime? until;
@@ -209,13 +209,18 @@ class RecurrenceRuleOut {
           .toList(growable: false);
     }
 
+    List<String> stringList(Object? raw) {
+      if (raw is! List) return const [];
+      return raw.map((e) => e.toString()).toList(growable: false);
+    }
+
     return RecurrenceRuleOut(
       id: json['id'].toString(),
       tenantId: json['tenant_id'].toString(),
       jobId: json['job_id'].toString(),
-      contractorId: json['contractor_id']?.toString(),
+      contractorIds: stringList(json['contractor_ids']),
       requiredSlots: json['required_slots'] as int? ?? 1,
-      contractorName: json['contractor_name'] as String?,
+      contractorNames: stringList(json['contractor_names']),
       rrule: json['rrule'] as String,
       dtstart: DateTime.parse(json['dtstart'] as String),
       until:
@@ -240,7 +245,7 @@ class RecurrenceRuleOut {
 
 class RecurrenceRuleCreateRequest {
   const RecurrenceRuleCreateRequest({
-    this.contractorId,
+    this.contractorIds = const [],
     this.requiredSlots = 1,
     required this.rrule,
     required this.dtstart,
@@ -251,7 +256,7 @@ class RecurrenceRuleCreateRequest {
     this.formTemplateIds = const [],
   });
 
-  final String? contractorId;
+  final List<String> contractorIds;
   final int requiredSlots;
   final String rrule;
   final DateTime dtstart;
@@ -270,7 +275,7 @@ class RecurrenceRuleCreateRequest {
   }
 
   Map<String, dynamic> toJson() => {
-    if (contractorId != null) 'contractor_id': contractorId,
+    'contractor_ids': contractorIds,
     'required_slots': requiredSlots,
     'rrule': rrule,
     'dtstart': dtstart.toUtc().toIso8601String(),
@@ -429,7 +434,7 @@ class OngoingSupportCreateRequest {
     required this.title,
     this.clientSiteId,
     this.branchId,
-    this.contractorId,
+    this.contractorIds = const [],
     required this.rrule,
     required this.dtstart,
     this.until,
@@ -446,7 +451,7 @@ class OngoingSupportCreateRequest {
   final String title;
   final String? clientSiteId;
   final String? branchId;
-  final String? contractorId;
+  final List<String> contractorIds;
   final String rrule;
   final DateTime dtstart;
   final DateTime? until;
@@ -463,7 +468,7 @@ class OngoingSupportCreateRequest {
     'title': title,
     'client_site_id': clientSiteId,
     'branch_id': branchId,
-    'contractor_id': contractorId,
+    'contractor_ids': contractorIds,
     'rrule': rrule,
     'dtstart': dtstart.toUtc().toIso8601String(),
     if (until != null) 'until': until!.toUtc().toIso8601String(),
@@ -506,7 +511,7 @@ class SplitRecurrenceRequest {
   const SplitRecurrenceRequest({
     required this.fromDate,
     required this.timeWindows,
-    this.contractorId,
+    this.contractorIds = const [],
     this.requiredSlots = 1,
     required this.horizonFrom,
     required this.horizonTo,
@@ -514,7 +519,7 @@ class SplitRecurrenceRequest {
 
   final DateTime fromDate;
   final List<TimeWindow> timeWindows;
-  final String? contractorId;
+  final List<String> contractorIds;
   final int requiredSlots;
   final DateTime horizonFrom;
   final DateTime horizonTo;
@@ -525,7 +530,7 @@ class SplitRecurrenceRequest {
         '${fromDate.month.toString().padLeft(2, '0')}-'
         '${fromDate.day.toString().padLeft(2, '0')}',
     'time_windows': [for (final window in timeWindows) window.toJson()],
-    'contractor_id': contractorId,
+    'contractor_ids': contractorIds,
     'required_slots': requiredSlots,
     'horizon_from': horizonFrom.toUtc().toIso8601String(),
     'horizon_to': horizonTo.toUtc().toIso8601String(),

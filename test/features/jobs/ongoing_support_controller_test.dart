@@ -167,7 +167,7 @@ void main() {
       final captured =
           verify(() => jobs.createOngoingSupport(captureAny())).captured.single
               as OngoingSupportCreateRequest;
-      expect(captured.contractorId, isNull);
+      expect(captured.contractorIds, isEmpty);
       expect(captured.title, defaultOngoingTitle('Sam Lee'));
       expect(captured.clientSiteId, 'site-1');
       expect(captured.branchId, isNull);

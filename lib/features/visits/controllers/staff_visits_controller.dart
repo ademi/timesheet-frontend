@@ -785,7 +785,7 @@ class StaffVisitsController extends GetxController {
   Future<void> editThisAndFuture({
     required ShiftOut tile,
     required List<TimeWindow> windows,
-    String? contractorId,
+    List<String> contractorIds = const [],
   }) async {
     if (!canManage) return;
     final ruleId = tile.recurrenceRuleId;
@@ -808,7 +808,7 @@ class StaffVisitsController extends GetxController {
         body: SplitRecurrenceRequest(
           fromDate: fromDate,
           timeWindows: windows,
-          contractorId: contractorId,
+          contractorIds: contractorIds,
           requiredSlots: tile.requiredSlots,
           horizonFrom: horizon.from,
           horizonTo: horizon.to,

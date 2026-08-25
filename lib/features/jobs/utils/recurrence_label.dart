@@ -26,6 +26,17 @@ String recurrenceLabel(RecurrenceRuleOut rule) {
   return '$pattern · $windows · from $from$until';
 }
 
+/// Pre-filled workers plus any slots still open, e.g. "Jane, Ali · 1 open".
+String recurrenceWorkersLabel(RecurrenceRuleOut rule) {
+  final names = rule.contractorNames.isNotEmpty
+      ? rule.contractorNames
+      : rule.contractorIds;
+  final open = rule.requiredSlots - rule.contractorIds.length;
+  if (names.isEmpty) return 'Unfilled';
+  if (open <= 0) return names.join(', ');
+  return '${names.join(', ')} · $open open';
+}
+
 String _weekdayLabel(String code) =>
     const {
       'MO': 'Mon',

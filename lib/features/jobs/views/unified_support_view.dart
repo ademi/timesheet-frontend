@@ -466,7 +466,7 @@ class _OneSessionSchedule extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: controller.selectedContractorId.value,
+            value: controller.soleContractorId,
             items: [
               const DropdownMenuItem(value: null, child: Text('Unfilled')),
               for (final engagement in controller.assignableEngagements)
@@ -477,7 +477,7 @@ class _OneSessionSchedule extends StatelessWidget {
                   ),
                 ),
             ],
-            onChanged: (value) => controller.selectedContractorId.value = value,
+            onChanged: controller.selectSoleContractor,
             decoration: const InputDecoration(
               labelText: 'Worker (optional)',
               border: OutlineInputBorder(),
@@ -563,7 +563,7 @@ class _OngoingSchedule extends StatelessWidget {
           _SlotsStepper(controller: controller),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: multiSlot ? null : controller.selectedContractorId.value,
+            value: multiSlot ? null : controller.soleContractorId,
             items: [
               const DropdownMenuItem(value: null, child: Text('Unfilled')),
               if (!multiSlot)
@@ -575,9 +575,7 @@ class _OngoingSchedule extends StatelessWidget {
                     ),
                   ),
             ],
-            onChanged: multiSlot
-                ? null
-                : (value) => controller.selectedContractorId.value = value,
+            onChanged: multiSlot ? null : controller.selectSoleContractor,
             decoration: InputDecoration(
               labelText: 'Worker (optional)',
               border: const OutlineInputBorder(),

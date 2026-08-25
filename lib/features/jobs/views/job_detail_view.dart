@@ -212,7 +212,7 @@ class _JobDetailViewState extends State<JobDetailView> {
                         ),
                         Text(
                           '${rule.isActive ? 'Active' : 'Paused'} · '
-                          '${rule.contractorName ?? 'Unfilled'}',
+                          '${recurrenceWorkersLabel(rule)}',
                         ),
                         const SizedBox(height: 8),
                         Wrap(

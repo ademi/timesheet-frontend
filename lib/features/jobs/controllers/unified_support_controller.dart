@@ -30,13 +30,15 @@ import '../utils/time_window_utils.dart';
 import '../utils/unified_support_args.dart';
 import '../utils/task_title_presets.dart';
 import '../widgets/care_plan_tasks_field.dart';
+import 'recurrence_workers_selection.dart';
 
 String formatSupportTimeOfDay(TimeOfDay time) {
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(time.hour)}:${two(time.minute)}';
 }
 
-class UnifiedSupportController extends GetxController {
+class UnifiedSupportController extends GetxController
+    with RecurrenceWorkersSelection {
   UnifiedSupportController({
     required JobsRepository jobsRepository,
     required ClientsRepository clientsRepository,
@@ -87,7 +89,6 @@ class UnifiedSupportController extends GetxController {
   final startDate = DateTime.now().obs;
   final endDate = Rx<DateTime>(defaultRecurrenceEndDate(DateTime.now()));
   final requiredSlots = 1.obs;
-  final selectedContractorId = RxnString();
   final supportItemCode = RxnString();
   final supportItemName = RxnString();
   final selectedFormTemplateIds = <String>{}.obs;
@@ -145,7 +146,7 @@ class UnifiedSupportController extends GetxController {
       }
     });
     ever(requiredSlots, (slots) {
-      if (slots > 1) selectedContractorId.value = null;
+      if (slots > 1) clearSelectedContractors();
     });
     ever(oneSessionStart, (DateTime start) {
       if (!oneSessionEnd.value.isAfter(start)) {
@@ -556,7 +557,7 @@ class UnifiedSupportController extends GetxController {
     }
     await _attachSelectedTemplates(support.id);
     final tasks = carePlanTaskTitles;
-    final contractorId = selectedContractorId.value;
+    final contractorId = soleContractorId;
     if (contractorId != null && tasks.isNotEmpty) {
       await _jobs.createManualVisit(
         support.id,
@@ -605,7 +606,7 @@ class UnifiedSupportController extends GetxController {
         clientId: c.id,
         title: titleCtrl.text.trim(),
         clientSiteId: selectedSiteId.value,
-        contractorId: selectedContractorId.value,
+        contractorIds: selectedContractorIds.toList(growable: false),
         rrule: rrule,
         dtstart: startDate.value,
         until: recurrenceUntilInstant(endDate.value),

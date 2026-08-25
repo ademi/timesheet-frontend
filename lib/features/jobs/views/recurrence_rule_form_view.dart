@@ -35,7 +35,7 @@ class RecurrenceRuleFormView extends StatelessWidget {
                 ),
               ),
             DropdownButtonFormField<String>(
-              value: c.selectedContractorId.value,
+              value: c.soleContractorId,
               items: [
                 const DropdownMenuItem(
                   value: null,
@@ -49,7 +49,7 @@ class RecurrenceRuleFormView extends StatelessWidget {
                     ),
                   ),
               ],
-              onChanged: (value) => c.selectedContractorId.value = value,
+              onChanged: c.selectSoleContractor,
               decoration: const InputDecoration(
                 labelText: 'Worker (optional)',
                 border: OutlineInputBorder(),
