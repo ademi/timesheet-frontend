@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/keyboard_time_field.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../../clients/widgets/ndis_capture_prompt.dart';
 import '../widgets/care_plan_tasks_field.dart';
@@ -397,24 +398,57 @@ class _OneSessionSchedule extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Start'),
-            subtitle: Text(_fmtDateTime(start)),
-            trailing: const Icon(Icons.schedule),
-            onTap: () async {
-              final next = await _pickDateTime(context, start);
-              if (next != null) controller.oneSessionStart.value = next;
+          _DateTile(
+            label: 'Start date',
+            value: start,
+            onSelected: (d) {
+              controller.oneSessionStart.value = DateTime(
+                d.year,
+                d.month,
+                d.day,
+                start.hour,
+                start.minute,
+              );
             },
           ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('End'),
-            subtitle: Text(_fmtDateTime(end)),
-            trailing: const Icon(Icons.schedule),
-            onTap: () async {
-              final next = await _pickDateTime(context, end);
-              if (next != null) controller.oneSessionEnd.value = next;
+          KeyboardTimeField(
+            label: 'Start time',
+            value: TimeOfDay(hour: start.hour, minute: start.minute),
+            onChanged: (time) {
+              controller.oneSessionStart.value = DateTime(
+                start.year,
+                start.month,
+                start.day,
+                time.hour,
+                time.minute,
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          _DateTile(
+            label: 'End date',
+            value: end,
+            onSelected: (d) {
+              controller.oneSessionEnd.value = DateTime(
+                d.year,
+                d.month,
+                d.day,
+                end.hour,
+                end.minute,
+              );
+            },
+          ),
+          KeyboardTimeField(
+            label: 'End time',
+            value: TimeOfDay(hour: end.hour, minute: end.minute),
+            onChanged: (time) {
+              controller.oneSessionEnd.value = DateTime(
+                end.year,
+                end.month,
+                end.day,
+                time.hour,
+                time.minute,
+              );
             },
           ),
           const SizedBox(height: 8),
@@ -505,31 +539,16 @@ class _OngoingSchedule extends StatelessWidget {
             value: controller.endDate.value,
             onSelected: (d) => controller.endDate.value = d,
           ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Start time'),
-            subtitle: Text(formatSupportTimeOfDay(controller.startTime.value)),
-            trailing: const Icon(Icons.access_time),
-            onTap: () async {
-              final picked = await showTimePicker(
-                context: context,
-                initialTime: controller.startTime.value,
-              );
-              if (picked != null) controller.startTime.value = picked;
-            },
+          KeyboardTimeField(
+            label: 'Start time',
+            value: controller.startTime.value,
+            onChanged: (time) => controller.startTime.value = time,
           ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('End time'),
-            subtitle: Text(formatSupportTimeOfDay(controller.endTime.value)),
-            trailing: const Icon(Icons.access_time),
-            onTap: () async {
-              final picked = await showTimePicker(
-                context: context,
-                initialTime: controller.endTime.value,
-              );
-              if (picked != null) controller.endTime.value = picked;
-            },
+          const SizedBox(height: 8),
+          KeyboardTimeField(
+            label: 'End time',
+            value: controller.endTime.value,
+            onChanged: (time) => controller.endTime.value = time,
           ),
           const SizedBox(height: 8),
           _SlotsStepper(controller: controller),
@@ -815,25 +834,3 @@ class _DateTile extends StatelessWidget {
       );
 }
 
-String _fmtDateTime(DateTime dt) {
-  final local = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${local.year}-${two(local.month)}-${two(local.day)} '
-      '${two(local.hour)}:${two(local.minute)}';
-}
-
-Future<DateTime?> _pickDateTime(BuildContext context, DateTime initial) async {
-  final date = await showDatePicker(
-    context: context,
-    initialDate: initial,
-    firstDate: DateTime(2020),
-    lastDate: DateTime(2100),
-  );
-  if (date == null || !context.mounted) return null;
-  final time = await showTimePicker(
-    context: context,
-    initialTime: TimeOfDay.fromDateTime(initial),
-  );
-  if (time == null) return null;
-  return DateTime(date.year, date.month, date.day, time.hour, time.minute);
-}
