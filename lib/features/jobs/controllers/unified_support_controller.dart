@@ -25,6 +25,7 @@ import '../data/repositories/jobs_repository.dart';
 import '../utils/job_copy.dart';
 import '../utils/recurrence_rrule_builder.dart';
 import '../utils/required_slots_input.dart';
+import '../utils/schedule_hours_warn.dart';
 import '../utils/time_window_utils.dart';
 import '../utils/unified_support_args.dart';
 import '../utils/task_title_presets.dart';
@@ -102,6 +103,7 @@ class UnifiedSupportController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+  final scheduleWarnTimezone = RxnString();
 
   bool get canManage => _session.hasPermission(AppPermissions.jobsManage);
 
@@ -151,6 +153,32 @@ class UnifiedSupportController extends GetxController {
       }
     });
     _bootstrap();
+    _cacheTenantTimezone();
+  }
+
+  Future<void> _cacheTenantTimezone() async {
+    scheduleWarnTimezone.value = await _resolveTenantTimezone();
+  }
+
+  String? get _tenantTimezoneForScheduleWarn => scheduleWarnTimezone.value;
+
+  bool get showScheduleHoursWarn {
+    final tz = _tenantTimezoneForScheduleWarn;
+    if (isOneSession) {
+      return shouldWarnAtypicalHours(
+        start: oneSessionStart.value,
+        end: oneSessionEnd.value,
+        tenantTimezone: tz,
+      );
+    }
+    return shouldWarnAtypicalOngoingSchedule(
+      frequency: frequency.value,
+      weekdays: weekdays.toSet(),
+      startTime: startTime.value,
+      endTime: endTime.value,
+      startDate: startDate.value,
+      tenantTimezone: tz,
+    );
   }
 
   /// Loads client, sites, templates, and engagements for the composer.

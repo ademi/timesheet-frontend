@@ -9,6 +9,8 @@ import 'package:rostiq/features/clients/data/repositories/clients_repository.dar
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/controllers/unified_support_controller.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
+import 'package:rostiq/features/jobs/utils/recurrence_rrule_builder.dart';
+import 'package:rostiq/features/jobs/utils/schedule_hours_warn.dart';
 import 'package:rostiq/features/jobs/utils/unified_support_args.dart';
 import 'package:rostiq/features/jobs/views/unified_support_view.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
@@ -63,6 +65,7 @@ void main() {
     session = _MockSessionService();
 
     when(() => session.hasPermission(any())).thenReturn(true);
+    when(() => session.tenantId).thenReturn(RxnString());
     when(() => clients.getClient(any())).thenAnswer((_) async => client);
     when(() => clients.listSites(any())).thenAnswer((_) async => [site]);
     when(() => clients.getClientProfile(any())).thenAnswer(
@@ -96,6 +99,21 @@ void main() {
   });
 
   tearDown(Get.reset);
+
+  testWidgets('shows amber warn on schedule step for atypical hours', (
+    tester,
+  ) async {
+    await controller.load();
+    controller.step.value = 2;
+    controller.frequency.value = RecurrenceFrequency.daily;
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: UnifiedSupportView()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(kAtypicalScheduleHoursMessage), findsOneWidget);
+  });
 
   testWidgets('schedule step rebuilds when start time and weekdays change', (
     tester,

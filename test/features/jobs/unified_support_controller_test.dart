@@ -13,6 +13,7 @@ import 'package:rostiq/features/jobs/controllers/unified_support_controller.dart
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/features/jobs/utils/job_copy.dart';
+import 'package:rostiq/features/jobs/utils/schedule_hours_warn.dart';
 import 'package:rostiq/features/jobs/utils/unified_support_args.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
@@ -283,6 +284,36 @@ void main() {
     expect(captured.taskTemplate, hasLength(2));
     expect(captured.taskTemplate[0].title, 'Personal care');
     expect(captured.taskTemplate[1].title, 'Meal prep');
+  });
+
+  test('showScheduleHoursWarn true for Saturday one session', () async {
+    final controller = build(
+      args: UnifiedSupportArgs.forClient(
+        _client,
+        mode: UnifiedSupportMode.oneSession,
+      ),
+    );
+    await controller.load();
+    controller.oneSessionStart.value = DateTime(2026, 8, 22, 9);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 22, 12);
+
+    expect(controller.showScheduleHoursWarn, isTrue);
+  });
+
+  test('canGoNext still true with atypical schedule hours', () async {
+    final controller = build(
+      args: UnifiedSupportArgs.forClient(
+        _client,
+        mode: UnifiedSupportMode.oneSession,
+      ),
+    );
+    await controller.load();
+    controller.step.value = 2;
+    controller.oneSessionStart.value = DateTime(2026, 8, 22, 9);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 22, 12);
+
+    expect(controller.showScheduleHoursWarn, isTrue);
+    expect(controller.canGoNext(), isTrue);
   });
 
   test('showNdisCapturePrompt when Patient has no NDIS number', () async {

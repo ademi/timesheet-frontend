@@ -12,6 +12,7 @@ import '../widgets/care_plan_tasks_field.dart';
 import '../controllers/unified_support_controller.dart';
 import '../utils/recurrence_rrule_builder.dart';
 import '../utils/required_slots_input.dart';
+import '../utils/schedule_hours_warn.dart';
 import '../utils/unified_support_args.dart';
 
 class UnifiedSupportView extends GetView<UnifiedSupportController> {
@@ -398,6 +399,10 @@ class _OneSessionSchedule extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (controller.showScheduleHoursWarn) ...[
+            const _AmberNotice(message: kAtypicalScheduleHoursMessage),
+            const SizedBox(height: 12),
+          ],
           _DateTile(
             label: 'Start date',
             value: start,
@@ -497,6 +502,10 @@ class _OngoingSchedule extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (controller.showScheduleHoursWarn) ...[
+            const _AmberNotice(message: kAtypicalScheduleHoursMessage),
+            const SizedBox(height: 12),
+          ],
           DropdownButtonFormField<RecurrenceFrequency>(
             value: controller.frequency.value,
             items: [
