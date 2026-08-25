@@ -24,6 +24,7 @@ import '../data/models/job_models.dart';
 import '../data/repositories/jobs_repository.dart';
 import '../utils/job_copy.dart';
 import '../utils/recurrence_rrule_builder.dart';
+import '../utils/required_slots_input.dart';
 import '../utils/time_window_utils.dart';
 import '../utils/unified_support_args.dart';
 import '../utils/task_title_presets.dart';
@@ -334,8 +335,12 @@ class UnifiedSupportController extends GetxController {
     weekdays.contains(day) ? weekdays.remove(day) : weekdays.add(day);
   }
 
+  void setRequiredSlots(String raw) {
+    requiredSlots.value = parseRequiredSlots(raw);
+  }
+
   void incrementSlots() {
-    if (requiredSlots.value < 8) requiredSlots.value++;
+    if (requiredSlots.value < kRequiredSlotsUiMax) requiredSlots.value++;
   }
 
   void decrementSlots() {

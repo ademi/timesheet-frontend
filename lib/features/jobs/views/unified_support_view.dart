@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
@@ -9,6 +10,7 @@ import '../../clients/widgets/ndis_capture_prompt.dart';
 import '../widgets/care_plan_tasks_field.dart';
 import '../controllers/unified_support_controller.dart';
 import '../utils/recurrence_rrule_builder.dart';
+import '../utils/required_slots_input.dart';
 import '../utils/unified_support_args.dart';
 
 class UnifiedSupportView extends GetView<UnifiedSupportController> {
@@ -562,9 +564,41 @@ class _OngoingSchedule extends StatelessWidget {
   }
 }
 
-class _SlotsStepper extends StatelessWidget {
+class _SlotsStepper extends StatefulWidget {
   const _SlotsStepper({required this.controller});
   final UnifiedSupportController controller;
+
+  @override
+  State<_SlotsStepper> createState() => _SlotsStepperState();
+}
+
+class _SlotsStepperState extends State<_SlotsStepper> {
+  late final TextEditingController _textController;
+  Worker? _slotsWorker;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(
+      text: '${widget.controller.requiredSlots.value}',
+    );
+    _slotsWorker = ever(widget.controller.requiredSlots, (int value) {
+      final text = '$value';
+      if (_textController.text != text) {
+        _textController.value = _textController.value.copyWith(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _slotsWorker?.dispose();
+    _textController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -577,24 +611,33 @@ class _SlotsStepper extends StatelessWidget {
         child: Row(
           children: [
             IconButton(
-              onPressed: controller.requiredSlots.value > 1
-                  ? controller.decrementSlots
+              onPressed: widget.controller.requiredSlots.value > 1
+                  ? widget.controller.decrementSlots
                   : null,
               icon: const Icon(Icons.remove_circle_outline),
             ),
-            Expanded(
-              child: Text(
-                '${controller.requiredSlots.value}',
+            SizedBox(
+              width: 48,
+              child: TextField(
+                controller: _textController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: widget.controller.setRequiredSlots,
               ),
             ),
             IconButton(
-              onPressed: controller.requiredSlots.value < 8
-                  ? controller.incrementSlots
+              onPressed: widget.controller.requiredSlots.value < kRequiredSlotsUiMax
+                  ? widget.controller.incrementSlots
                   : null,
               icon: const Icon(Icons.add_circle_outline),
             ),

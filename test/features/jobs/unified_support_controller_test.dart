@@ -248,14 +248,24 @@ void main() {
     expect(controller.errorMessage.value, contains('location'));
   });
 
-  test('required slots steppers clamp between 1 and 8', () {
+  test('required slots steppers clamp between 1 and 20', () {
     final controller = build();
     controller.requiredSlots.value = 1;
     controller.decrementSlots();
     expect(controller.requiredSlots.value, 1);
-    controller.requiredSlots.value = 8;
+    controller.requiredSlots.value = 20;
     controller.incrementSlots();
-    expect(controller.requiredSlots.value, 8);
+    expect(controller.requiredSlots.value, 20);
+  });
+
+  test('setRequiredSlots parses digits and clamps', () {
+    final controller = build();
+    controller.setRequiredSlots('15');
+    expect(controller.requiredSlots.value, 15);
+    controller.setRequiredSlots('99');
+    expect(controller.requiredSlots.value, 20);
+    controller.setRequiredSlots('');
+    expect(controller.requiredSlots.value, 1);
   });
 
   test('ongoing submit includes care plan task template', () async {
