@@ -36,6 +36,7 @@ class SessionService extends GetxController {
   final engagements = <EngagementSummaryModel>[].obs;
   final selectedTenantId = RxnString();
   final selectedEngagementId = RxnString();
+  final tenantTimezone = RxnString();
   final mustChangePassword = false.obs;
   final isHydrating = false.obs;
   final needsOnboarding = false.obs;
@@ -149,6 +150,7 @@ class SessionService extends GetxController {
     }
     match ??= tokens.engagements.isNotEmpty ? tokens.engagements.first : null;
     selectedEngagementId.value = match?.id;
+    tenantTimezone.value = null;
     _recomputeOnboarding();
 
     if (tenantFromJwt != null) {
@@ -204,6 +206,8 @@ class SessionService extends GetxController {
     contractorId.value = ctx.contractorId;
     tenantMemberId.value = ctx.tenantMemberId;
     selectedTenantId.value = ctx.tenantId ?? selectedTenantId.value;
+    final tz = ctx.timezone?.trim();
+    tenantTimezone.value = (tz == null || tz.isEmpty) ? null : tz;
     if (ctx.tenantId != null) {
       for (final e in ctx.engagements) {
         if (e.tenantId == ctx.tenantId) {
@@ -279,6 +283,7 @@ class SessionService extends GetxController {
     engagements.clear();
     selectedTenantId.value = null;
     selectedEngagementId.value = null;
+    tenantTimezone.value = null;
     mustChangePassword.value = false;
     needsOnboarding.value = false;
     needsPlatformCompliance.value = false;

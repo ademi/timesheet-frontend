@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/keyboard_time_field.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../../clients/widgets/ndis_capture_prompt.dart';
 import '../widgets/care_plan_tasks_field.dart';
 import '../controllers/unified_support_controller.dart';
 import '../utils/recurrence_rrule_builder.dart';
+import '../utils/required_slots_input.dart';
+import '../utils/schedule_hours_warn.dart';
 import '../utils/unified_support_args.dart';
 
 class UnifiedSupportView extends GetView<UnifiedSupportController> {
@@ -29,8 +33,10 @@ class UnifiedSupportView extends GetView<UnifiedSupportController> {
               return Text(
                 controller.isOneSession ? 'Date & time' : 'Pattern & time',
               );
+            case 3:
+              return const Text('Details');
             default:
-              return const Text('Templates & NDIS');
+              return const Text('Workers');
           }
         }),
       ),
@@ -45,6 +51,11 @@ class UnifiedSupportView extends GetView<UnifiedSupportController> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: _StepIndicator(step: controller.step.value),
             ),
+            if (controller.client.value != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: _ClientBanner(controller: controller),
+              ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(16),
@@ -62,7 +73,8 @@ class UnifiedSupportView extends GetView<UnifiedSupportController> {
                           0 => _TypeStep(controller: controller),
                           1 => _LocationStep(controller: controller),
                           2 => _ScheduleStep(controller: controller),
-                          _ => _TemplatesStep(controller: controller),
+                          3 => _DetailsStep(controller: controller),
+                          _ => _WorkersStep(controller: controller),
                         },
                       ],
                     ),
@@ -128,7 +140,7 @@ class _StepIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['Type', 'Location', 'Schedule', 'Details'];
+    const labels = ['Type', 'Location', 'Schedule', 'Details', 'Workers'];
     return Row(
       children: [
         for (var i = 0; i < labels.length; i++) ...[
@@ -159,6 +171,50 @@ class _StepIndicator extends StatelessWidget {
         ],
       ],
     );
+  }
+}
+
+class _ClientBanner extends StatelessWidget {
+  const _ClientBanner({required this.controller});
+  final UnifiedSupportController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final client = controller.client.value;
+      if (client == null) return const SizedBox.shrink();
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              client.fullName,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
+            ),
+            if (controller.clientNdisNumber != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                'NDIS ${controller.clientNdisNumber}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    });
   }
 }
 
@@ -370,16 +426,27 @@ class _LocationStep extends StatelessWidget {
   }
 }
 
-class _ScheduleStep extends StatelessWidget {
+class _ScheduleStep extends StatefulWidget {
   const _ScheduleStep({required this.controller});
   final UnifiedSupportController controller;
 
   @override
+  State<_ScheduleStep> createState() => _ScheduleStepState();
+}
+
+class _ScheduleStepState extends State<_ScheduleStep> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.ensureClientConflictsLoaded();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (controller.isOneSession) {
-      return _OneSessionSchedule(controller: controller);
+    if (widget.controller.isOneSession) {
+      return _OneSessionSchedule(controller: widget.controller);
     }
-    return _OngoingSchedule(controller: controller);
+    return _OngoingSchedule(controller: widget.controller);
   }
 }
 
@@ -395,24 +462,62 @@ class _OneSessionSchedule extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Start'),
-            subtitle: Text(_fmtDateTime(start)),
-            trailing: const Icon(Icons.schedule),
-            onTap: () async {
-              final next = await _pickDateTime(context, start);
-              if (next != null) controller.oneSessionStart.value = next;
+          _ConflictStrip(controller: controller),
+          if (controller.showScheduleHoursWarn) ...[
+            const _AmberNotice(message: kAtypicalScheduleHoursMessage),
+            const SizedBox(height: 12),
+          ],
+          _DateTile(
+            label: 'Start date',
+            value: start,
+            onSelected: (d) {
+              controller.oneSessionStart.value = DateTime(
+                d.year,
+                d.month,
+                d.day,
+                start.hour,
+                start.minute,
+              );
             },
           ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('End'),
-            subtitle: Text(_fmtDateTime(end)),
-            trailing: const Icon(Icons.schedule),
-            onTap: () async {
-              final next = await _pickDateTime(context, end);
-              if (next != null) controller.oneSessionEnd.value = next;
+          KeyboardTimeField(
+            label: 'Start time',
+            value: TimeOfDay(hour: start.hour, minute: start.minute),
+            onChanged: (time) {
+              controller.oneSessionStart.value = DateTime(
+                start.year,
+                start.month,
+                start.day,
+                time.hour,
+                time.minute,
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          _DateTile(
+            label: 'End date',
+            value: end,
+            onSelected: (d) {
+              controller.oneSessionEnd.value = DateTime(
+                d.year,
+                d.month,
+                d.day,
+                end.hour,
+                end.minute,
+              );
+            },
+          ),
+          KeyboardTimeField(
+            label: 'End time',
+            value: TimeOfDay(hour: end.hour, minute: end.minute),
+            onChanged: (time) {
+              controller.oneSessionEnd.value = DateTime(
+                end.year,
+                end.month,
+                end.day,
+                time.hour,
+                time.minute,
+              );
             },
           ),
           const SizedBox(height: 8),
@@ -422,27 +527,6 @@ class _OneSessionSchedule extends StatelessWidget {
             title: const Text('Publish immediately'),
             value: controller.publishImmediately.value,
             onChanged: (v) => controller.publishImmediately.value = v,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: controller.selectedContractorId.value,
-            items: [
-              const DropdownMenuItem(value: null, child: Text('Unfilled')),
-              for (final engagement in controller.assignableEngagements)
-                DropdownMenuItem(
-                  value: engagement.contractorId,
-                  child: Text(
-                    engagement.contractorName ?? engagement.contractorId,
-                  ),
-                ),
-            ],
-            onChanged: (value) => controller.selectedContractorId.value = value,
-            decoration: const InputDecoration(
-              labelText: 'Worker (optional)',
-              border: OutlineInputBorder(),
-              helperText:
-                  'Assign a worker to book a visit with shift tasks immediately.',
-            ),
           ),
         ],
       );
@@ -457,10 +541,14 @@ class _OngoingSchedule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final multiSlot = controller.requiredSlots.value > 1;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _ConflictStrip(controller: controller),
+          if (controller.showScheduleHoursWarn) ...[
+            const _AmberNotice(message: kAtypicalScheduleHoursMessage),
+            const SizedBox(height: 12),
+          ],
           DropdownButtonFormField<RecurrenceFrequency>(
             value: controller.frequency.value,
             items: [
@@ -503,68 +591,60 @@ class _OngoingSchedule extends StatelessWidget {
             value: controller.endDate.value,
             onSelected: (d) => controller.endDate.value = d,
           ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Start time'),
-            subtitle: Text(formatSupportTimeOfDay(controller.startTime.value)),
-            trailing: const Icon(Icons.access_time),
-            onTap: () async {
-              final picked = await showTimePicker(
-                context: context,
-                initialTime: controller.startTime.value,
-              );
-              if (picked != null) controller.startTime.value = picked;
-            },
+          KeyboardTimeField(
+            label: 'Start time',
+            value: controller.startTime.value,
+            onChanged: (time) => controller.startTime.value = time,
           ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('End time'),
-            subtitle: Text(formatSupportTimeOfDay(controller.endTime.value)),
-            trailing: const Icon(Icons.access_time),
-            onTap: () async {
-              final picked = await showTimePicker(
-                context: context,
-                initialTime: controller.endTime.value,
-              );
-              if (picked != null) controller.endTime.value = picked;
-            },
+          const SizedBox(height: 8),
+          KeyboardTimeField(
+            label: 'End time',
+            value: controller.endTime.value,
+            onChanged: (time) => controller.endTime.value = time,
           ),
           const SizedBox(height: 8),
           _SlotsStepper(controller: controller),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: multiSlot ? null : controller.selectedContractorId.value,
-            items: [
-              const DropdownMenuItem(value: null, child: Text('Unfilled')),
-              if (!multiSlot)
-                for (final engagement in controller.assignableEngagements)
-                  DropdownMenuItem(
-                    value: engagement.contractorId,
-                    child: Text(
-                      engagement.contractorName ?? engagement.contractorId,
-                    ),
-                  ),
-            ],
-            onChanged: multiSlot
-                ? null
-                : (value) => controller.selectedContractorId.value = value,
-            decoration: InputDecoration(
-              labelText: 'Worker (optional)',
-              border: const OutlineInputBorder(),
-              helperText: multiSlot
-                  ? 'Assign workers from the roster when multiple slots are needed'
-                  : null,
-            ),
-          ),
         ],
       );
     });
   }
 }
 
-class _SlotsStepper extends StatelessWidget {
+class _SlotsStepper extends StatefulWidget {
   const _SlotsStepper({required this.controller});
   final UnifiedSupportController controller;
+
+  @override
+  State<_SlotsStepper> createState() => _SlotsStepperState();
+}
+
+class _SlotsStepperState extends State<_SlotsStepper> {
+  late final TextEditingController _textController;
+  Worker? _slotsWorker;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(
+      text: '${widget.controller.requiredSlots.value}',
+    );
+    _slotsWorker = ever(widget.controller.requiredSlots, (int value) {
+      final text = '$value';
+      if (_textController.text != text) {
+        _textController.value = _textController.value.copyWith(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _slotsWorker?.dispose();
+    _textController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -577,24 +657,33 @@ class _SlotsStepper extends StatelessWidget {
         child: Row(
           children: [
             IconButton(
-              onPressed: controller.requiredSlots.value > 1
-                  ? controller.decrementSlots
+              onPressed: widget.controller.requiredSlots.value > 1
+                  ? widget.controller.decrementSlots
                   : null,
               icon: const Icon(Icons.remove_circle_outline),
             ),
-            Expanded(
-              child: Text(
-                '${controller.requiredSlots.value}',
+            SizedBox(
+              width: 48,
+              child: TextField(
+                controller: _textController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: widget.controller.setRequiredSlots,
               ),
             ),
             IconButton(
-              onPressed: controller.requiredSlots.value < 8
-                  ? controller.incrementSlots
+              onPressed: widget.controller.requiredSlots.value < kRequiredSlotsUiMax
+                  ? widget.controller.incrementSlots
                   : null,
               icon: const Icon(Icons.add_circle_outline),
             ),
@@ -605,8 +694,8 @@ class _SlotsStepper extends StatelessWidget {
   }
 }
 
-class _TemplatesStep extends StatelessWidget {
-  const _TemplatesStep({required this.controller});
+class _DetailsStep extends StatelessWidget {
+  const _DetailsStep({required this.controller});
   final UnifiedSupportController controller;
 
   @override
@@ -628,24 +717,20 @@ class _TemplatesStep extends StatelessWidget {
           if (controller.showNdisCapturePrompt) ...[
             NdisCapturePrompt(onAddDetails: controller.openClientDetailsForNdis),
             const SizedBox(height: 12),
-          ] else if (controller.clientNdisNumber != null) ...[
-            Text(
-              'NDIS ${controller.clientNdisNumber}',
-              style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-            ),
-            const SizedBox(height: 12),
           ],
           CarePlanTasksField(
-            taskTitlesCtrl: controller.taskTitlesCtrl,
+            tasks: controller.taskTemplate,
             otherTitleCtrl: controller.otherTitleCtrl,
             showOtherTitleField: controller.showOtherTitleField,
             onPresetSelected: controller.onTaskPresetSelected,
             onAppendOtherTitle: controller.appendOtherCarePlanTask,
+            onRemoveTask: controller.removeTaskAt,
+            onCataloguePicked: controller.appendCatalogueTask,
             sectionTitle:
                 controller.isOngoing ? 'Care plan tasks' : 'Shift tasks',
             helperText: controller.isOngoing
-                ? 'Optional task titles copied onto generated visits.'
-                : 'Optional task titles for this booked visit (requires a worker).',
+                ? 'Optional tasks copied onto generated visits. Catalogue items keep their NDIS item number.'
+                : 'Optional tasks for this booked visit (requires a worker). Catalogue items keep their NDIS item number.',
           ),
           const SizedBox(height: 16),
           NdisSupportItemPicker(
@@ -660,13 +745,16 @@ class _TemplatesStep extends StatelessWidget {
               controller.setSupportItem(
                 supportItemCode: supportItemCode,
                 supportItemName: supportItemName,
+                userInitiated: true,
               );
             },
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Optional default for generated or booked visits.',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          Text(
+            controller.supportItemPrefilledFromStanding
+                ? 'From this client\u2019s ongoing support'
+                : 'Optional default for generated or booked visits.',
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -704,6 +792,150 @@ class _TemplatesStep extends StatelessWidget {
   }
 }
 
+class _WorkersStep extends StatefulWidget {
+  const _WorkersStep({required this.controller});
+  final UnifiedSupportController controller;
+
+  @override
+  State<_WorkersStep> createState() => _WorkersStepState();
+}
+
+class _WorkersStepState extends State<_WorkersStep> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.ensureEngagementsLoaded();
+    widget.controller.ensureAssignAvailabilityLoaded();
+    widget.controller.ensureClientConflictsLoaded();
+  }
+
+  Color _availabilityColor(String label) {
+    return switch (label) {
+      'Leave' => AppColors.error,
+      'Busy' => AppColors.openSlot,
+      _ => AppColors.success,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = widget.controller;
+    return Obx(() {
+      final slots = List<String?>.from(controller.selectedContractorIds);
+      // Subscribe so labels rebuild after async load / duplicate-reject refresh.
+      controller.isAssignAvailabilityLoading.value;
+      controller.assignOverlay.value;
+      controller.assignShifts.length;
+      controller.assignVisits.length;
+      controller.conflictVisits.length;
+      controller.conflictShifts.length;
+      controller.errorMessage.value;
+      final seen = <String>{};
+      final workers = [
+        for (final e in controller.assignableEngagements)
+          if (seen.add(e.contractorId)) e,
+      ];
+      final nameById = {
+        for (final e in workers) e.contractorId: e.displayName,
+      };
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _ConflictStrip(controller: controller),
+          Text(
+            slots.length <= 1
+                ? 'Assign a worker for this support (optional).'
+                : 'Assign up to ${slots.length} workers for this support (optional).',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Leave a slot Unfilled to keep it open to claim.',
+            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+          const SizedBox(height: 12),
+          if (controller.assignOverlayWarning.value != null) ...[
+            Text(
+              controller.assignOverlayWarning.value!,
+              style: const TextStyle(fontSize: 12, color: AppColors.openSlot),
+            ),
+            const SizedBox(height: 8),
+          ],
+          for (var i = 0; i < slots.length; i++) ...[
+            // Controlled DropdownButton (not FormField): FormField keeps internal
+            // selection when Obx rebuilds after availability load / rejected duplicate,
+            // which desynced UI from selectedContractorIds and dropped workers on submit.
+            InputDecorator(
+              key: ValueKey('assign-slot-$i-${slots[i]}'),
+              decoration: InputDecoration(
+                labelText: slots.length == 1
+                    ? 'Worker (optional)'
+                    : 'Worker ${i + 1} (optional)',
+                border: const OutlineInputBorder(),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String?>(
+                  key: ValueKey('assign-slot-$i'),
+                  value: slots[i],
+                  isExpanded: true,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Unfilled'),
+                    ),
+                    for (final engagement in workers)
+                      DropdownMenuItem<String?>(
+                        value: engagement.contractorId,
+                        // Single-line only: selected-item slot is ~24px tall.
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(text: engagement.displayName),
+                              TextSpan(
+                                text:
+                                    ' · ${controller.availabilityLabelForContractor(engagement.contractorId)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: _availabilityColor(
+                                    controller.availabilityLabelForContractor(
+                                      engagement.contractorId,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    if (slots[i] != null && !seen.contains(slots[i]))
+                      DropdownMenuItem<String?>(
+                        value: slots[i],
+                        child: Text(slots[i]!),
+                      ),
+                  ],
+                  onChanged: (value) =>
+                      controller.selectContractorForSlot(i, value),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (slots.any((id) => id != null && id.isNotEmpty))
+            Text(
+              'Selected: ${[
+                for (final id in slots)
+                  if (id != null && id.isNotEmpty) (nameById[id] ?? id),
+              ].join(', ')}',
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+        ],
+      );
+    });
+  }
+}
+
 class _ErrorBox extends StatelessWidget {
   const _ErrorBox(this.message);
   final String message;
@@ -718,6 +950,43 @@ class _ErrorBox extends StatelessWidget {
       ),
       child: Text(message, style: const TextStyle(color: AppColors.error)),
     );
+  }
+}
+
+class _ConflictStrip extends StatelessWidget {
+  const _ConflictStrip({required this.controller});
+  final UnifiedSupportController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      controller.conflictVisits.length;
+      controller.conflictShifts.length;
+      controller.isConflictsLoading.value;
+      final labels = {
+        for (final c in controller.clientConflicts) c.chipLabel,
+      };
+      if (labels.isEmpty) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final label in labels)
+              Chip(
+                label: Text(label),
+                backgroundColor: AppColors.openSlotBackground,
+                side: const BorderSide(color: AppColors.openSlot),
+                labelStyle: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.openSlot,
+                ),
+              ),
+          ],
+        ),
+      );
+    });
   }
 }
 
@@ -772,25 +1041,3 @@ class _DateTile extends StatelessWidget {
       );
 }
 
-String _fmtDateTime(DateTime dt) {
-  final local = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${local.year}-${two(local.month)}-${two(local.day)} '
-      '${two(local.hour)}:${two(local.minute)}';
-}
-
-Future<DateTime?> _pickDateTime(BuildContext context, DateTime initial) async {
-  final date = await showDatePicker(
-    context: context,
-    initialDate: initial,
-    firstDate: DateTime(2020),
-    lastDate: DateTime(2100),
-  );
-  if (date == null || !context.mounted) return null;
-  final time = await showTimePicker(
-    context: context,
-    initialTime: TimeOfDay.fromDateTime(initial),
-  );
-  if (time == null) return null;
-  return DateTime(date.year, date.month, date.day, time.hour, time.minute);
-}

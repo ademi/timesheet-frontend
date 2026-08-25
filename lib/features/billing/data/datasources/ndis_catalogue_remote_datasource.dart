@@ -6,9 +6,17 @@ import '../models/billing_models.dart';
 
 class NdisCatalogueRemoteDataSource {
   NdisCatalogueRemoteDataSource({required Dio authenticatedDio})
-      : _dio = authenticatedDio;
+    : _dio = authenticatedDio;
 
   final Dio _dio;
+
+  /// Full active catalogue in one request (`q` empty, default [limit] 1000).
+  Future<List<NdisCatalogueItemOut>> fetchAllActiveItems({
+    int limit = 1000,
+  }) async {
+    final response = await searchItems(q: '', limit: limit);
+    return response.items;
+  }
 
   Future<NdisCatalogueSearchResponse> searchItems({
     required String q,
@@ -17,10 +25,7 @@ class NdisCatalogueRemoteDataSource {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         ApiPaths.ndisCatalogueItems,
-        queryParameters: {
-          'q': q.trim(),
-          'limit': limit,
-        },
+        queryParameters: {'q': q.trim(), 'limit': limit},
       );
       final data = response.data;
       if (data == null) {

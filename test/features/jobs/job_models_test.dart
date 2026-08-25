@@ -37,8 +37,8 @@ void main() {
       'id': 'rule-1',
       'tenant_id': 'tenant-1',
       'job_id': 'job-1',
-      'contractor_id': 'contractor-1',
-      'contractor_name': 'Sam Worker',
+      'contractor_ids': ['contractor-1'],
+      'contractor_names': ['Sam Worker'],
       'rrule': 'FREQ=WEEKLY',
       'dtstart': '2026-07-30T09:00:00Z',
       'time_windows_json': [],
@@ -53,7 +53,8 @@ void main() {
       job.locationLabel,
       '123 Example Street, Sydney, NSW, 2000, Australia',
     );
-    expect(rule.contractorName, 'Sam Worker');
+    expect(rule.contractorIds, ['contractor-1']);
+    expect(rule.contractorNames, ['Sam Worker']);
   });
 
   test('parses horizon and ongoing-support payloads', () {

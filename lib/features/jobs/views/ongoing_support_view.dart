@@ -171,7 +171,7 @@ class OngoingSupportView extends GetView<OngoingSupportController> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: multiSlot ? null : controller.selectedContractorId.value,
+              value: multiSlot ? null : controller.soleContractorId,
               items: [
                 const DropdownMenuItem(value: null, child: Text('Unfilled')),
                 if (!multiSlot)
@@ -183,11 +183,7 @@ class OngoingSupportView extends GetView<OngoingSupportController> {
                       ),
                     ),
               ],
-              onChanged:
-                  multiSlot
-                      ? null
-                      : (value) =>
-                          controller.selectedContractorId.value = value,
+              onChanged: multiSlot ? null : controller.selectSoleContractor,
               decoration: InputDecoration(
                 labelText: 'Worker (optional)',
                 border: const OutlineInputBorder(),

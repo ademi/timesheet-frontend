@@ -7,6 +7,8 @@ import '../../app/themes/app_colors.dart';
 import '../../core/errors/app_failure.dart';
 import '../../features/billing/bindings/billing_binding.dart';
 import '../../features/billing/data/models/billing_models.dart';
+import '../../features/billing/data/ndis_catalogue_filter_prefs.dart';
+import '../../features/billing/data/ndis_catalogue_local_filter.dart';
 import '../../features/billing/data/repositories/ndis_catalogue_repository.dart';
 
 /// NDIS support item number shape: `NN_NNN_NNNN_N_N`.
@@ -20,10 +22,21 @@ typedef NdisSupportItemChanged = void Function({
   required String? supportItemName,
 });
 
-/// Debounced catalogue typeahead for NDIS support items.
+String ndisCatalogueFacetLabel(NdisCatalogueFacet facet) {
+  final name = facet.name?.trim();
+  if (name == null || name.isEmpty) return facet.number;
+  return '${facet.number} · $name';
+}
+
+Key ndisCategoryChipKey(String number) => ValueKey('ndis-category-$number');
+
+const Key ndisRegistrationGroupKey = ValueKey('ndis-reg-group');
+
+/// Catalogue typeahead with frontend-only category / registration / text filters.
 ///
-/// Picking a row stores [NdisCatalogueItemOut.supportItemNumber] as the code and
-/// the canonical [supportItemName]. Clear sends both null.
+/// Loads the active catalogue once via [NdisCatalogueRepository.fetchAllActiveItems]
+/// (D20). Facet chips, registration-group cascade, and the debounced text box
+/// filter the session cache in memory — no per-keystroke [NdisCatalogueRepository.searchItems].
 class NdisSupportItemPicker extends StatefulWidget {
   const NdisSupportItemPicker({
     super.key,
@@ -32,6 +45,7 @@ class NdisSupportItemPicker extends StatefulWidget {
     required this.onChanged,
     this.enabled = true,
     this.repository,
+    this.filterPrefs,
     this.debounceDuration = const Duration(milliseconds: 300),
     this.searchLimit = 20,
     this.labelText = 'NDIS support item',
@@ -43,7 +57,10 @@ class NdisSupportItemPicker extends StatefulWidget {
   final NdisSupportItemChanged onChanged;
   final bool enabled;
   final NdisCatalogueRepository? repository;
+  final NdisCatalogueFilterPrefs? filterPrefs;
   final Duration debounceDuration;
+
+  /// Unused by the local-filter path; kept so existing call sites compile.
   final int searchLimit;
   final String labelText;
   final String searchHintText;
@@ -58,11 +75,18 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
 
   Timer? _debounce;
   Timer? _blurClearTimer;
+  List<NdisCatalogueItemOut> _allItems = const [];
   List<NdisCatalogueItemOut> _options = const [];
-  bool _loading = false;
-  String? _searchError;
+  bool _loading = true;
+  bool _fetchStarted = false;
+  bool _catalogueLoaded = false;
+  String? _loadError;
   String? _formatError;
-  int _searchGeneration = 0;
+  String? _categoryNumber;
+  String? _registrationGroupNumber;
+
+  late final NdisCatalogueFilterPrefs _filterPrefs =
+      widget.filterPrefs ?? NdisCatalogueFilterPrefs();
 
   /// True while applying a catalogue pick so blur/query side-effects are ignored.
   bool _applyingSelection = false;
@@ -82,11 +106,26 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
     return Get.find<NdisCatalogueRepository>();
   }
 
+  List<NdisCatalogueFacet> get _categoryFacets =>
+      NdisCatalogueLocalFilter.facets(_allItems).supportCategories;
+
+  List<NdisCatalogueFacet> get _regGroupFacets =>
+      NdisCatalogueLocalFilter.registrationGroupsFor(
+        NdisCatalogueLocalFilter.apply(
+          _allItems,
+          categoryNumber: _categoryNumber,
+        ),
+      );
+
   @override
   void initState() {
     super.initState();
+    final saved = _filterPrefs.load();
+    _categoryNumber = saved.categoryNumber;
+    _registrationGroupNumber = saved.registrationGroupNumber;
     _syncQueryFromSelection();
     _focusNode.addListener(_onFocusChange);
+    _loadCatalogue();
   }
 
   @override
@@ -122,16 +161,83 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
   void _onFocusChange() {
     if (_focusNode.hasFocus) {
       _blurClearTimer?.cancel();
+      _loadCatalogue();
       return;
     }
-    // Web: pointer-down on a result blurs the field before onTap. Delay clearing
-    // options so onTapDown / onTap can still select the row.
+    // Web: pointer-down on a result blurs the field before onTap. Delay
+    // format validation so onTapDown / onTap can still select the row.
     _blurClearTimer?.cancel();
     _blurClearTimer = Timer(const Duration(milliseconds: 250), () {
       if (!mounted || _focusNode.hasFocus || _applyingSelection) return;
-      setState(() => _options = const []);
       _validateTypedCode();
     });
+  }
+
+  Future<void> _loadCatalogue() async {
+    if (_fetchStarted) return;
+    _fetchStarted = true;
+    _loading = true;
+    try {
+      final items = await _repository.fetchAllActiveItems();
+      if (!mounted) return;
+      setState(() {
+        _allItems = List<NdisCatalogueItemOut>.of(items);
+        _catalogueLoaded = true;
+        _loadError = null;
+        _loading = false;
+        _recomputeOptions();
+      });
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _catalogueLoaded = false;
+        _loadError = e.message;
+        _options = const [];
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _catalogueLoaded = false;
+        _loadError = 'Could not load the catalogue.';
+        _options = const [];
+      });
+    }
+  }
+
+  void _recomputeOptions() {
+    _options = NdisCatalogueLocalFilter.apply(
+      _allItems,
+      categoryNumber: _categoryNumber,
+      registrationGroupNumber: _registrationGroupNumber,
+      query: _queryCtrl.text,
+    );
+  }
+
+  void _clearRegIfInvalid() {
+    final selected = _registrationGroupNumber;
+    if (selected == null || selected.isEmpty) return;
+    final valid = _regGroupFacets.map((g) => g.number).toSet();
+    if (!valid.contains(selected)) {
+      _registrationGroupNumber = null;
+    }
+  }
+
+  void _persistFilters() {
+    _filterPrefs.save(
+      categoryNumber: _categoryNumber,
+      registrationGroupNumber: _registrationGroupNumber,
+    );
+  }
+
+  void _onCategorySelected(String? number) {
+    setState(() {
+      _categoryNumber = number;
+      _clearRegIfInvalid();
+      _recomputeOptions();
+    });
+    _persistFilters();
   }
 
   void _validateTypedCode() {
@@ -164,10 +270,9 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
     _blurClearTimer?.cancel();
     _queryCtrl.clear();
     setState(() {
-      _options = const [];
-      _searchError = null;
       _formatError = null;
       _loading = false;
+      _recomputeOptions();
     });
     widget.onChanged(supportItemCode: null, supportItemName: null);
   }
@@ -178,7 +283,6 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
     _applyingSelection = true;
     setState(() {
       _options = const [];
-      _searchError = null;
       _formatError = null;
       _loading = false;
       _queryCtrl.value = TextEditingValue(
@@ -205,54 +309,12 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
       widget.onChanged(supportItemCode: null, supportItemName: null);
     }
     _debounce?.cancel();
-    setState(() {
-      _searchError = null;
-      _formatError = null;
+    setState(() => _formatError = null);
+
+    _debounce = Timer(widget.debounceDuration, () {
+      if (!mounted) return;
+      setState(_recomputeOptions);
     });
-
-    final query = value.trim();
-    if (query.length < 2) {
-      setState(() {
-        _options = const [];
-        _loading = false;
-      });
-      return;
-    }
-
-    _debounce = Timer(widget.debounceDuration, () => _runSearch(query));
-  }
-
-  Future<void> _runSearch(String query) async {
-    final generation = ++_searchGeneration;
-    setState(() {
-      _loading = true;
-      _searchError = null;
-    });
-    try {
-      final response = await _repository.searchItems(
-        q: query,
-        limit: widget.searchLimit,
-      );
-      if (!mounted || generation != _searchGeneration) return;
-      setState(() {
-        _options = response.items;
-        _loading = false;
-      });
-    } on AppFailure catch (e) {
-      if (!mounted || generation != _searchGeneration) return;
-      setState(() {
-        _options = const [];
-        _loading = false;
-        _searchError = e.message;
-      });
-    } catch (_) {
-      if (!mounted || generation != _searchGeneration) return;
-      setState(() {
-        _options = const [];
-        _loading = false;
-        _searchError = 'Could not search the catalogue.';
-      });
-    }
   }
 
   @override
@@ -267,9 +329,8 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
       );
     }
 
-    // Keep results visible briefly after blur so web taps can land (see _onFocusChange).
-    final showOptions = _options.isNotEmpty &&
-        (_focusNode.hasFocus || _blurClearTimer?.isActive == true);
+    final showOptions = _catalogueLoaded && _options.isNotEmpty;
+    final query = _queryCtrl.text.trim();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -283,20 +344,20 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
             labelText: widget.labelText,
             hintText: widget.searchHintText,
             border: const OutlineInputBorder(),
-            suffixIcon: _loading
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
+            suffixIcon: (query.isNotEmpty && widget.enabled)
+                ? IconButton(
+                    tooltip: 'Clear',
+                    onPressed: _clear,
+                    icon: const Icon(Icons.clear),
                   )
-                : (_queryCtrl.text.trim().isNotEmpty && widget.enabled)
-                    ? IconButton(
-                        tooltip: 'Clear',
-                        onPressed: _clear,
-                        icon: const Icon(Icons.clear),
+                : _loading
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       )
                     : null,
           ),
@@ -307,11 +368,74 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
             _formatError!,
             style: const TextStyle(color: AppColors.error, fontSize: 12),
           ),
-        ] else if (_searchError != null) ...[
+        ] else if (_loadError != null) ...[
           const SizedBox(height: 6),
           Text(
-            _searchError!,
-            style: const TextStyle(color: AppColors.error, fontSize: 12),
+            _loadError!,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+        ],
+        if (_catalogueLoaded) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Filtered locally (${_options.length} of ${_allItems.length})',
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+        ],
+        if (_categoryFacets.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final facet in _categoryFacets)
+                FilterChip(
+                  key: ndisCategoryChipKey(facet.number),
+                  label: Text(ndisCatalogueFacetLabel(facet)),
+                  selected: _categoryNumber == facet.number,
+                  onSelected: widget.enabled
+                      ? (selected) =>
+                          _onCategorySelected(selected ? facet.number : null)
+                      : null,
+                ),
+            ],
+          ),
+        ],
+        if (_catalogueLoaded) ...[
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            key: ndisRegistrationGroupKey,
+            isExpanded: true,
+            value: _registrationGroupNumber ?? '',
+            decoration: const InputDecoration(
+              labelText: 'Registration group',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: [
+              const DropdownMenuItem<String>(
+                value: '',
+                child: Text('All groups'),
+              ),
+              for (final group in _regGroupFacets)
+                DropdownMenuItem<String>(
+                  value: group.number,
+                  child: Text(
+                    ndisCatalogueFacetLabel(group),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+            onChanged: widget.enabled
+                ? (value) {
+                    setState(() {
+                      _registrationGroupNumber =
+                          (value == null || value.isEmpty) ? null : value;
+                      _recomputeOptions();
+                    });
+                    _persistFilters();
+                  }
+                : null,
           ),
         ],
         if (showOptions)

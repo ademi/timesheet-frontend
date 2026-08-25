@@ -417,11 +417,13 @@ void main() {
           actorType: 'tenant_member',
           tenantId: 't1',
           tenantMemberId: 'tm1',
+          timezone: 'Australia/Sydney',
         ),
       );
       await session.hydrateFromMeContext();
       expect(session.actorType.value, 'tenant_member');
       expect(session.tenantMemberId.value, 'tm1');
+      expect(session.tenantTimezone.value, 'Australia/Sydney');
       verify(() => authRepository.getMeContext()).called(1);
     });
 

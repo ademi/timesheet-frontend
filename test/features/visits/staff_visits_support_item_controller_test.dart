@@ -108,6 +108,7 @@ void main() {
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => session.hasPermission(AppPermissions.shiftsManage)).thenReturn(true);
     when(() => session.hasPermission(AppPermissions.shiftsRead)).thenReturn(true);
+    when(() => session.tenantTimezone).thenReturn(RxnString());
     when(() => shifts.listShifts(from: any(named: 'from'), to: any(named: 'to')))
         .thenAnswer((_) async => []);
     when(() => jobs.listJobs()).thenAnswer((_) async => []);

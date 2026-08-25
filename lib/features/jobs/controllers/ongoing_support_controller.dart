@@ -18,8 +18,10 @@ import '../data/repositories/jobs_repository.dart';
 import '../utils/job_copy.dart';
 import '../utils/recurrence_rrule_builder.dart';
 import '../utils/time_window_utils.dart';
+import 'recurrence_workers_selection.dart';
 
-class OngoingSupportController extends GetxController {
+class OngoingSupportController extends GetxController
+    with RecurrenceWorkersSelection {
   OngoingSupportController({
     required JobsRepository jobsRepository,
     required ClientsRepository clientsRepository,
@@ -61,7 +63,6 @@ class OngoingSupportController extends GetxController {
     defaultRecurrenceEndDate(DateTime.now()),
   );
   final requiredSlots = 1.obs;
-  final selectedContractorId = RxnString();
   final supportItemCode = RxnString();
   final supportItemName = RxnString();
   final isLoading = false.obs;
@@ -99,7 +100,7 @@ class OngoingSupportController extends GetxController {
       }
     });
     ever(requiredSlots, (slots) {
-      if (slots > 1) selectedContractorId.value = null;
+      if (slots > 1) clearSelectedContractors();
     });
     load();
   }
@@ -240,7 +241,7 @@ class OngoingSupportController extends GetxController {
           title: title,
           clientSiteId: isHomeMode ? selectedSiteId.value : null,
           branchId: isHomeMode ? null : selectedBranchId.value,
-          contractorId: selectedContractorId.value,
+          contractorIds: filledContractorIds,
           rrule: rrule,
           dtstart: startDate.value,
           until: recurrenceUntilInstant(endDate.value),

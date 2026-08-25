@@ -6,6 +6,7 @@ import '../utils/recurrence_rrule_builder.dart';
 import '../utils/task_title_presets.dart';
 import '../utils/time_window_utils.dart';
 import 'jobs_controller.dart';
+import 'recurrence_workers_selection.dart';
 
 class TaskSupportSlot {
   TaskSupportSlot({this.supportItemCode, this.supportItemName});
@@ -14,7 +15,8 @@ class TaskSupportSlot {
   String? supportItemName;
 }
 
-class RecurrenceRuleFormController extends GetxController {
+class RecurrenceRuleFormController extends GetxController
+    with RecurrenceWorkersSelection {
   final jobs = Get.find<JobsController>();
   final frequency = RecurrenceFrequency.weekly.obs;
   final weekdays = <int>{DateTime.monday}.obs;
@@ -22,7 +24,6 @@ class RecurrenceRuleFormController extends GetxController {
   final endDate = Rx<DateTime>(
     defaultRecurrenceEndDate(DateTime.now()),
   );
-  final selectedContractorId = RxnString();
   final windows =
       <TimeWindow>[const TimeWindow(startTime: '09:00', endTime: '12:00')].obs;
   final taskTitlesCtrl = TextEditingController();
@@ -222,7 +223,7 @@ class RecurrenceRuleFormController extends GetxController {
     ];
     return jobs.createRecurrenceRule(
       RecurrenceRuleCreateRequest(
-        contractorId: selectedContractorId.value,
+        contractorIds: filledContractorIds,
         requiredSlots: requiredSlots.value,
         rrule: rrule,
         dtstart: startDate.value,

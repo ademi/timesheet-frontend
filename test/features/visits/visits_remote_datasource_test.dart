@@ -157,4 +157,28 @@ void main() {
 
     expect(task.supportItemCode, '01_011_0107_1_1');
   });
+
+  test('listVisits sends include_nested query', () async {
+    when(
+      () => dio.get<List<dynamic>>(
+        ApiPaths.visits,
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<List<dynamic>>(
+        requestOptions: RequestOptions(path: ApiPaths.visits),
+        data: [visitJson],
+      ),
+    );
+
+    await dataSource.listVisits(includeNested: false, limit: 5);
+
+    final captured = verify(
+      () => dio.get<List<dynamic>>(
+        ApiPaths.visits,
+        queryParameters: captureAny(named: 'queryParameters'),
+      ),
+    ).captured.single as Map;
+    expect(captured['include_nested'], isFalse);
+  });
 }

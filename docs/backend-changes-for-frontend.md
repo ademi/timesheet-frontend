@@ -174,11 +174,17 @@ Visits have an internal `invoice_status` (`pending` | `exported`) used by billin
 
 ## NDIS Support Catalogue (reference data + search)
 
-### Staff search (tenant-authenticated)
+### Staff list / search (tenant-authenticated)
+
+**Full active catalogue (preferred for pickers — D20):** one DB query; filter category / registration group / text **on the client**.
 
 ```
-GET /v1/ndis-catalogue/items?q={search}&limit=20
+GET /v1/ndis-catalogue/items?q=&limit=1000
 ```
+
+Empty `q` returns all active non-legacy items for the active release (service cap ≤ 2000). There is **no** `/facets` endpoint and **no** server-side category/registration filter params for the picker.
+
+**Prefix search (optional callers):** nonempty `q` still does ILIKE prefix/contains within the same endpoint (`limit` default 20).
 
 **Permissions:** `jobs.manage` or `billing.view`
 
@@ -186,13 +192,13 @@ GET /v1/ndis-catalogue/items?q={search}&limit=20
 
 ```json
 {
-  "q": "self care",
-  "limit": 20,
+  "q": "",
+  "limit": 1000,
   "items": [
     {
       "support_item_number": "01_011_0107_1_1",
       "support_item_name": "Assistance With Self-Care Activities - Standard - Weekday Daytime",
-      "support_category_number": "01",
+      "support_category_number": "1",
       "support_category_name": "Assistance with Daily Life",
       "registration_group_number": "0107",
       "registration_group_name": "Daily Personal Activities",
@@ -206,7 +212,7 @@ GET /v1/ndis-catalogue/items?q={search}&limit=20
 }
 ```
 
-**Frontend UX:** Use this for autocomplete when picking support items on jobs, visits, or tasks. Store both `support_item_number` (as `support_item_code` in job/visit APIs) and the canonical `support_item_name`.
+**Frontend UX:** Session-cache the full list once; derive category/registration chips and text filter locally (“Filtered locally (N of M)”). Store both `support_item_number` (as `support_item_code` in job/visit APIs) and the canonical `support_item_name`.
 
 ### Platform import (admin only — not a tenant/mobile feature)
 
@@ -498,7 +504,7 @@ PATCH  /visits/{visit_id}/tasks/{task_id}/billing
 - [ ] Extend job, visit, and task models with support item fields
 - [ ] Add `engagement_id` to visit and shift assignment models
 - [ ] Add `price_tier_override` and `billable_minutes` where applicable
-- [ ] Implement NDIS item autocomplete via `GET /ndis-catalogue/items`
+- [x] NDIS picker: full-list fetch `GET /ndis-catalogue/items?q=&limit=1000` + FE filters (D20)
 - [ ] Validate code format client-side before submit
 
 ### Phase 2 — Job & visit UX

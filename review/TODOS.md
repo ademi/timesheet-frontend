@@ -1,18 +1,19 @@
 # TODOS
 
+> **Canonical backlog:** [`/TODOS.md`](../../TODOS.md) and [`/TODOS.yaml`](../../TODOS.yaml) at the repo workspace root (updated **2026-08-25**). Prefer those for priorities. This file is a historical Flutter-review scratchpad and may lag.
+
+## Priority snapshot (2026-08-25)
+
+| Priority | Item | Notes |
+|----------|------|-------|
+| **P0** | T15 export/void UI + T21 tier/minutes | Catalogue picker for booking **done** (New Roster) |
+| **P2** | T14 remainder; T20 remainder | Visit-detail support item; NDIS number prominence |
+| **P3** | T16; New Roster follow-ups | Catalogue cron; suggest prior workers; copy last pattern |
+| **Done** | New Roster A→C; tenant TZ; T17–T19 backend | See root TODOS.md |
+
 ## Roster / horizon
 
-### Expose tenant timezone to Flutter
-
-**What:** Put tenant TZ on the session/me payload (or a tiny GET) and use it for roster `startOfToday+14d` instead of device local / UTC.
-
-**Why:** `ensure_horizon` expands rrules in `_tenant_timezone`. An AU tenant opened from a UTC laptop POSTs a window that does not match the server. Holes near midnight get skipped or land on the wrong civil day.
-
-**Context:** Locked as D15 interim (“device local is acceptable if tenant TZ is not on the client yet”). Start at `SessionService` / tenant settings DTO, then `_horizonFromUtc` in `staff_visits_controller.dart`. Composer already sends explicit `horizon_from`/`horizon_to` (D12) — same TZ source should feed those. Steal 4 date chips will want the same field.
-
-**Effort:** M
-**Priority:** P2
-**Depends on:** Steal 1–3 (`ensure_horizon` + roster `_fillHorizon`) shipping first.
+### ~~Expose tenant timezone to Flutter~~ **SHIPPED** — see root TODOS.md
 
 ### Horizon cron / worker
 
@@ -91,13 +92,15 @@ Plan: `docs/superpowers/plans/2026-08-22-ndis-catalogue-get-paid-loop.md` (Phase
 | D6 | Void: only `finalized` exports; no PRODA submission guard yet. |
 | D7 | No Flutter in Phase C — glass deferred to T15 + T21. |
 
-### Revisioned priorities (2026-08-23)
+### Revisioned priorities (2026-08-23) — **superseded 2026-08-25**
 
-| Priority | Item | Rationale |
+See root [`TODOS.md`](../../TODOS.md) for current P0 = T15 export/void + T21. Catalogue picker and New Roster shipped 2026-08-25.
+
+| Priority | Item | Rationale (historical 2026-08-23) |
 |----------|------|-----------|
-| **P2 (now)** | T15 + T21 + T14 | Backend get-paid loop is complete through export void/tier/multi-line; **Flutter is the revenue-story blocker** for coordinators and demos. |
-| **P2** | T20 | Demo parity (care-plan tasks + NDIS number) still wins mid-market RFP vocabulary. |
-| **P3** | T16 | Catalogue refresh automation — ops can CLI-import until volume justifies cron. |
+| ~~**P2 (now)**~~ | ~~T15 + T21 + T14~~ | Superseded — picker done; export UI is P0 |
+| **P2** | T20 remainder | NDIS number prominence |
+| **P3** | T16 | Catalogue refresh automation |
 | **Done** | T17, T18, T19 backend | See shipped section below. |
 
 ### T15 — Flutter NDIS catalogue picker + invoice export UI

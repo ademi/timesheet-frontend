@@ -69,6 +69,7 @@ void main() {
     session = _MockSessionService();
     payroll = _MockPayrollRepository();
     when(() => session.tenantId).thenReturn(RxnString('tenant-1'));
+    when(() => session.tenantTimezone).thenReturn(RxnString());
     controller = _controller(
       visits: visits,
       shifts: shifts,
@@ -97,6 +98,18 @@ void main() {
     expect(controller.rangeStart.value.day, 10);
   });
 
+  test('alignRangeToTenantWeek prefers session tenantTimezone', () {
+    tenantUtcOffsetOverride = (tz, _) {
+      if (tz == 'Australia/Sydney') return const Duration(hours: 10);
+      return Duration.zero;
+    };
+    when(() => session.tenantTimezone).thenReturn(RxnString('Australia/Sydney'));
+    // Sun 16:00Z = Mon 02:00 AEST — session TZ only (cached obs empty).
+    controller.alignRangeToTenantWeek(DateTime.utc(2026, 8, 9, 16));
+    expect(controller.rangeStart.value.weekday, DateTime.monday);
+    expect(controller.rangeStart.value.day, 10);
+  });
+
   test('loadTenantTimezone fetches once from payroll repository', () async {
     when(() => payroll.getTenant('tenant-1')).thenAnswer(
       (_) async => TenantSettingsOut(
@@ -109,5 +122,19 @@ void main() {
     await controller.loadTenantTimezone();
     verify(() => payroll.getTenant('tenant-1')).called(1);
     expect(controller.tenantTimezone.value, 'Australia/Sydney');
+  });
+
+  test('loadTenantTimezone prefers session over payroll', () async {
+    when(() => session.tenantTimezone).thenReturn(RxnString('Australia/Sydney'));
+    when(() => payroll.getTenant('tenant-1')).thenAnswer(
+      (_) async => TenantSettingsOut(
+        id: 'tenant-1',
+        name: 'Demo',
+        timezone: 'Pacific/Auckland',
+      ),
+    );
+    await controller.loadTenantTimezone();
+    expect(controller.tenantTimezone.value, 'Australia/Sydney');
+    verifyNever(() => payroll.getTenant(any()));
   });
 }

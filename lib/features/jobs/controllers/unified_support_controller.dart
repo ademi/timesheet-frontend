@@ -20,26 +20,36 @@ import '../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
+import '../../visits/data/models/roster_overlay_models.dart';
+import '../../visits/data/models/visit_models.dart';
+import '../../visits/data/repositories/visits_repository.dart';
+import '../../visits/utils/assign_availability.dart';
+import '../../visits/utils/assign_schedule_window.dart';
 import '../data/models/job_models.dart';
 import '../data/repositories/jobs_repository.dart';
 import '../utils/job_copy.dart';
 import '../utils/recurrence_rrule_builder.dart';
+import '../utils/required_slots_input.dart';
+import '../utils/schedule_conflict.dart';
+import '../utils/schedule_hours_warn.dart';
 import '../utils/time_window_utils.dart';
 import '../utils/unified_support_args.dart';
 import '../utils/task_title_presets.dart';
-import '../widgets/care_plan_tasks_field.dart';
+import 'recurrence_workers_selection.dart';
 
 String formatSupportTimeOfDay(TimeOfDay time) {
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(time.hour)}:${two(time.minute)}';
 }
 
-class UnifiedSupportController extends GetxController {
+class UnifiedSupportController extends GetxController
+    with RecurrenceWorkersSelection {
   UnifiedSupportController({
     required JobsRepository jobsRepository,
     required ClientsRepository clientsRepository,
     required EngagementsRepository engagementsRepository,
     required ShiftsRepository shiftsRepository,
+    required VisitsRepository visitsRepository,
     required SessionService session,
     PayrollRepository? payroll,
     UnifiedSupportArgs? args,
@@ -48,6 +58,7 @@ class UnifiedSupportController extends GetxController {
        _clients = clientsRepository,
        _engagements = engagementsRepository,
        _shifts = shiftsRepository,
+       _visits = visitsRepository,
        _session = session,
        _payroll = payroll,
        _args = args,
@@ -57,19 +68,25 @@ class UnifiedSupportController extends GetxController {
   final ClientsRepository _clients;
   final EngagementsRepository _engagements;
   final ShiftsRepository _shifts;
+  final VisitsRepository _visits;
   final SessionService _session;
   final PayrollRepository? _payroll;
   final UnifiedSupportArgs? _args;
   final void Function(String route, dynamic arguments)? _onNavigate;
 
-  static const int maxStep = 3;
+  static const int typeStep = 0;
+  static const int locationStep = 1;
+  static const int scheduleStep = 2;
+  static const int detailsStep = 3;
+  static const int assignStep = 4;
+  static const int maxStep = assignStep;
 
   final step = 0.obs;
   final mode = Rxn<UnifiedSupportMode>();
   final client = Rxn<ClientOut>();
 
   final titleCtrl = TextEditingController();
-  final taskTitlesCtrl = TextEditingController();
+  final taskTemplate = <TaskTemplateItem>[].obs;
   final otherTitleCtrl = TextEditingController();
   final showOtherTitleField = false.obs;
   final startTime = const TimeOfDay(hour: 9, minute: 0).obs;
@@ -85,7 +102,6 @@ class UnifiedSupportController extends GetxController {
   final startDate = DateTime.now().obs;
   final endDate = Rx<DateTime>(defaultRecurrenceEndDate(DateTime.now()));
   final requiredSlots = 1.obs;
-  final selectedContractorId = RxnString();
   final supportItemCode = RxnString();
   final supportItemName = RxnString();
   final selectedFormTemplateIds = <String>{}.obs;
@@ -101,6 +117,28 @@ class UnifiedSupportController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+  final scheduleWarnTimezone = RxnString();
+  final assignOverlay = Rxn<RosterOverlayOut>();
+  final assignShifts = <ShiftOut>[].obs;
+  final assignVisits = <VisitOut>[].obs;
+  final assignOverlayWarning = RxnString();
+  final isAssignAvailabilityLoading = false.obs;
+  final conflictVisits = <VisitOut>[].obs;
+  final conflictShifts = <ShiftOut>[].obs;
+  final isConflictsLoading = false.obs;
+
+  bool engagementsLoaded = false;
+  bool assignAvailabilityLoaded = false;
+  bool clientConflictsLoaded = false;
+  String? _assignAvailabilityKey;
+  String? _clientConflictsKey;
+  String? _standingJobId;
+  String? _standingJobClientId;
+  bool _supportItemUserChanged = false;
+  bool _supportItemPrefilledFromStanding = false;
+  Future<void>? _engagementsLoadFuture;
+  Future<void>? _assignAvailabilityLoadFuture;
+  Future<void>? _clientConflictsLoadFuture;
 
   bool get canManage => _session.hasPermission(AppPermissions.jobsManage);
 
@@ -126,7 +164,10 @@ class UnifiedSupportController extends GetxController {
     );
   }
 
-  List<String> get carePlanTaskTitles => parseTaskTitles(taskTitlesCtrl.text);
+  List<String> get carePlanTaskTitles =>
+      [for (final task in taskTemplate) task.title];
+
+  bool get supportItemPrefilledFromStanding => _supportItemPrefilledFromStanding;
 
   List<EngagementOut> get assignableEngagements => sortedByName(
         engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs),
@@ -141,24 +182,59 @@ class UnifiedSupportController extends GetxController {
         endDate.value = defaultRecurrenceEndDate(start);
       }
     });
-    ever(requiredSlots, (slots) {
-      if (slots > 1) selectedContractorId.value = null;
-    });
+    ever(requiredSlots, (_) => syncAssignSlots());
+    syncAssignSlots();
     ever(oneSessionStart, (DateTime start) {
       if (!oneSessionEnd.value.isAfter(start)) {
         oneSessionEnd.value = start.add(const Duration(hours: 1));
       }
+      _invalidateAssignAvailability();
     });
+    ever(oneSessionEnd, (_) => _invalidateAssignAvailability());
+    ever(startDate, (_) => _invalidateAssignAvailability());
+    ever(startTime, (_) => _invalidateAssignAvailability());
+    ever(endTime, (_) => _invalidateAssignAvailability());
+    ever(frequency, (_) => _invalidateAssignAvailability());
+    ever(weekdays, (_) => _invalidateAssignAvailability());
     _bootstrap();
+    _cacheTenantTimezone();
   }
 
-  /// Loads client, sites, templates, and engagements for the composer.
+  Future<void> _cacheTenantTimezone() async {
+    scheduleWarnTimezone.value = await _resolveTenantTimezone();
+  }
+
+  String? get _tenantTimezoneForScheduleWarn {
+    final sessionTz = _session.tenantTimezone.value?.trim();
+    if (sessionTz != null && sessionTz.isNotEmpty) return sessionTz;
+    return scheduleWarnTimezone.value;
+  }
+
+  bool get showScheduleHoursWarn {
+    final tz = _tenantTimezoneForScheduleWarn;
+    if (isOneSession) {
+      return shouldWarnAtypicalHours(
+        start: oneSessionStart.value,
+        end: oneSessionEnd.value,
+        tenantTimezone: tz,
+      );
+    }
+    return shouldWarnAtypicalOngoingSchedule(
+      frequency: frequency.value,
+      weekdays: weekdays.toSet(),
+      startTime: startTime.value,
+      endTime: endTime.value,
+      startDate: startDate.value,
+      tenantTimezone: tz,
+    );
+  }
+
+  /// Loads client, sites, and templates for the composer.
   Future<void> load() => _bootstrap();
 
   @override
   void onClose() {
     titleCtrl.dispose();
-    taskTitlesCtrl.dispose();
     otherTitleCtrl.dispose();
     super.onClose();
   }
@@ -196,14 +272,300 @@ class UnifiedSupportController extends GetxController {
       } catch (_) {
         formTemplates.clear();
       }
-      try {
-        engagements.assignAll(await _engagements.listTenantEngagements());
-      } catch (_) {
-        engagements.clear();
-      }
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> ensureEngagementsLoaded() async {
+    if (engagementsLoaded) return;
+    if (_engagementsLoadFuture != null) {
+      await _engagementsLoadFuture;
+      return;
+    }
+    _engagementsLoadFuture = _loadEngagements();
+    try {
+      await _engagementsLoadFuture;
+    } finally {
+      _engagementsLoadFuture = null;
+    }
+  }
+
+  Future<void> _loadEngagements() async {
+    try {
+      engagements.assignAll(await _engagements.listTenantEngagements());
+    } catch (_) {
+      engagements.clear();
+    }
+    engagementsLoaded = true;
+  }
+
+  /// Loads roster overlay + shifts for the proposed schedule window (assign step).
+  Future<void> ensureAssignAvailabilityLoaded() async {
+    if (step.value != assignStep) return;
+    final window = computeAssignScheduleWindow(
+      isOneSession: isOneSession,
+      oneSessionStart: oneSessionStart.value,
+      oneSessionEnd: oneSessionEnd.value,
+      startDate: startDate.value,
+      frequency: frequency.value,
+      weekdays: weekdays.toSet(),
+      startTime: startTime.value,
+      endTime: endTime.value,
+    );
+    final tz = _tenantTimezoneForScheduleWarn ?? await _resolveTenantTimezone();
+    final query = assignAvailabilityQueryWindow(
+      window: window,
+      tenantTimezone: tz,
+    );
+    final key =
+        '${query.from.toIso8601String()}|${query.to.toIso8601String()}|${query.shiftStart.toIso8601String()}|${query.shiftEnd.toIso8601String()}';
+    if (assignAvailabilityLoaded && _assignAvailabilityKey == key) return;
+    if (_assignAvailabilityLoadFuture != null) {
+      await _assignAvailabilityLoadFuture;
+      if (assignAvailabilityLoaded && _assignAvailabilityKey == key) return;
+    }
+
+    _assignAvailabilityLoadFuture = _loadAssignAvailability(query, key);
+    try {
+      await _assignAvailabilityLoadFuture;
+    } finally {
+      _assignAvailabilityLoadFuture = null;
+    }
+  }
+
+  Future<void> _loadAssignAvailability(
+    ({
+      DateTime from,
+      DateTime to,
+      DateTime shiftStart,
+      DateTime shiftEnd,
+      DateTime day,
+    }) query,
+    String key,
+  ) async {
+    isAssignAvailabilityLoading.value = true;
+    assignOverlayWarning.value = null;
+    try {
+      final shiftsFuture = _shifts.listShifts(from: query.from, to: query.to);
+      final visitsFuture = () async {
+        try {
+          return await _visits.listVisits(
+            from: query.from,
+            to: query.to,
+            includeNested: false,
+          );
+        } catch (_) {
+          return const <VisitOut>[];
+        }
+      }();
+      final overlayFuture = () async {
+        try {
+          return await _visits.fetchRosterOverlay(
+            from: query.from,
+            to: query.to,
+          );
+        } catch (_) {
+          assignOverlayWarning.value = 'Leave/availability unavailable';
+          return null;
+        }
+      }();
+      assignShifts.assignAll(await shiftsFuture);
+      assignVisits.assignAll(await visitsFuture);
+      assignOverlay.value =
+          await overlayFuture ?? const RosterOverlayOut(contractors: []);
+      _assignAvailabilityWindow = query;
+      _assignAvailabilityKey = key;
+      assignAvailabilityLoaded = true;
+    } catch (_) {
+      assignShifts.clear();
+      assignVisits.clear();
+      assignOverlay.value = const RosterOverlayOut(contractors: []);
+      assignOverlayWarning.value = 'Leave/availability unavailable';
+      _assignAvailabilityWindow = query;
+      _assignAvailabilityKey = key;
+      assignAvailabilityLoaded = true;
+    } finally {
+      isAssignAvailabilityLoading.value = false;
+    }
+  }
+
+  /// Loads lite client visits + standing-job shifts for the schedule strip (D19).
+  Future<void> ensureClientConflictsLoaded() async {
+    if (step.value != scheduleStep && step.value != assignStep) return;
+    if (client.value == null) return;
+    if (!_validateSchedule(showError: false)) return;
+    final window = computeAssignScheduleWindow(
+      isOneSession: isOneSession,
+      oneSessionStart: oneSessionStart.value,
+      oneSessionEnd: oneSessionEnd.value,
+      startDate: startDate.value,
+      frequency: frequency.value,
+      weekdays: weekdays.toSet(),
+      startTime: startTime.value,
+      endTime: endTime.value,
+    );
+    final tz = _tenantTimezoneForScheduleWarn ?? await _resolveTenantTimezone();
+    final query = assignAvailabilityQueryWindow(
+      window: window,
+      tenantTimezone: tz,
+    );
+    final clientId = client.value!.id;
+    final key =
+        '$clientId|${query.from.toIso8601String()}|${query.to.toIso8601String()}|${query.shiftStart.toIso8601String()}|${query.shiftEnd.toIso8601String()}';
+    if (clientConflictsLoaded && _clientConflictsKey == key) return;
+    if (_clientConflictsLoadFuture != null) {
+      await _clientConflictsLoadFuture;
+      if (clientConflictsLoaded && _clientConflictsKey == key) return;
+    }
+
+    _clientConflictsLoadFuture = _loadClientConflicts(query, key, clientId);
+    try {
+      await _clientConflictsLoadFuture;
+    } finally {
+      _clientConflictsLoadFuture = null;
+    }
+  }
+
+  Future<void> _loadClientConflicts(
+    ({
+      DateTime from,
+      DateTime to,
+      DateTime shiftStart,
+      DateTime shiftEnd,
+      DateTime day,
+    }) query,
+    String key,
+    String clientId,
+  ) async {
+    isConflictsLoading.value = true;
+    try {
+      final standingJobId = await _resolveStandingJobId(clientId);
+      final visitsFuture = () async {
+        try {
+          return await _visits.listVisits(
+            clientId: clientId,
+            from: query.from,
+            to: query.to,
+            includeNested: false,
+          );
+        } catch (_) {
+          return const <VisitOut>[];
+        }
+      }();
+      final shiftsFuture = () async {
+        try {
+          return await _shifts.listShifts(
+            from: query.from,
+            to: query.to,
+            jobId: standingJobId,
+          );
+        } catch (_) {
+          return const <ShiftOut>[];
+        }
+      }();
+      conflictVisits.assignAll(await visitsFuture);
+      var shifts = await shiftsFuture;
+      if (standingJobId == null) {
+        shifts = shifts.where((s) => s.clientId == clientId).toList();
+      }
+      conflictShifts.assignAll(shifts);
+      _conflictsWindow = query;
+      _clientConflictsKey = key;
+      clientConflictsLoaded = true;
+    } catch (_) {
+      conflictVisits.clear();
+      conflictShifts.clear();
+      _conflictsWindow = query;
+      _clientConflictsKey = key;
+      clientConflictsLoaded = true;
+    } finally {
+      isConflictsLoading.value = false;
+    }
+  }
+
+  Future<String?> _resolveStandingJobId(String clientId) async {
+    if (_standingJobClientId == clientId) {
+      return _standingJobId;
+    }
+    try {
+      final job = await _jobs.getOngoingSupport(clientId);
+      _standingJobId = job.id;
+      _standingJobClientId = clientId;
+      return job.id;
+    } catch (_) {
+      _standingJobId = null;
+      _standingJobClientId = clientId;
+      return null;
+    }
+  }
+
+  ({
+    DateTime from,
+    DateTime to,
+    DateTime shiftStart,
+    DateTime shiftEnd,
+    DateTime day,
+  })?
+  _assignAvailabilityWindow;
+
+  ({
+    DateTime from,
+    DateTime to,
+    DateTime shiftStart,
+    DateTime shiftEnd,
+    DateTime day,
+  })?
+  _conflictsWindow;
+
+  String availabilityLabelForContractor(String contractorId) {
+    final query = _assignAvailabilityWindow;
+    if (query == null) return 'Free';
+    return assignAvailabilityLabel(
+      contractorId: contractorId,
+      day: query.day,
+      shiftStart: query.shiftStart,
+      shiftEnd: query.shiftEnd,
+      overlay: assignOverlay.value ?? const RosterOverlayOut(contractors: []),
+      shifts: assignShifts.toList(growable: false),
+      visits: assignVisits.toList(growable: false),
+    );
+  }
+
+  List<ClientConflict> get clientConflicts {
+    final query = _conflictsWindow ?? _assignAvailabilityWindow;
+    if (query == null) return const [];
+    return buildClientConflicts(
+      windowStart: query.shiftStart,
+      windowEnd: query.shiftEnd,
+      visits: conflictVisits.toList(growable: false),
+      shifts: conflictShifts.toList(growable: false),
+    );
+  }
+
+  void _invalidateAssignAvailability() {
+    assignAvailabilityLoaded = false;
+    _assignAvailabilityKey = null;
+    _assignAvailabilityWindow = null;
+    assignOverlay.value = null;
+    assignShifts.clear();
+    assignVisits.clear();
+    assignOverlayWarning.value = null;
+    _invalidateClientConflicts();
+    if (step.value == scheduleStep || step.value == assignStep) {
+      ensureClientConflictsLoaded();
+    }
+    if (step.value == assignStep) {
+      ensureAssignAvailabilityLoaded();
+    }
+  }
+
+  void _invalidateClientConflicts() {
+    clientConflictsLoaded = false;
+    _clientConflictsKey = null;
+    _conflictsWindow = null;
+    conflictVisits.clear();
+    conflictShifts.clear();
   }
 
   UnifiedSupportArgs? _parseRouteArgs() {
@@ -235,11 +597,46 @@ class UnifiedSupportController extends GetxController {
   }
 
   Future<void> selectClient(ClientOut value) async {
+    final previousClientId = client.value?.id;
+    final clientChanged = previousClientId != value.id;
+    if (_standingJobClientId != value.id) {
+      _standingJobId = null;
+      _standingJobClientId = null;
+      _invalidateClientConflicts();
+    }
+    if (clientChanged && previousClientId != null) {
+      _supportItemUserChanged = false;
+      _supportItemPrefilledFromStanding = false;
+      supportItemCode.value = null;
+      supportItemName.value = null;
+    }
     client.value = value;
     if (titleCtrl.text.trim().isEmpty) {
       titleCtrl.text = defaultOngoingTitle(value.fullName);
     }
     await Future.wait([reloadSites(), _loadClientProfile(value.id)]);
+    await _prefillSupportItemFromStandingJob(value.id);
+  }
+
+  Future<void> _prefillSupportItemFromStandingJob(String clientId) async {
+    if (_supportItemUserChanged) return;
+    try {
+      final job = await _jobs.getOngoingSupport(clientId);
+      _standingJobId = job.id;
+      _standingJobClientId = clientId;
+      final code = job.supportItemCode?.trim();
+      final name = job.supportItemName?.trim();
+      if (code != null &&
+          code.isNotEmpty &&
+          name != null &&
+          name.isNotEmpty) {
+        supportItemCode.value = code;
+        supportItemName.value = name;
+        _supportItemPrefilledFromStanding = true;
+      }
+    } catch (_) {
+      // Soft-fail when the client has no standing support job yet.
+    }
   }
 
   Future<void> _loadClientProfile(String clientId) async {
@@ -298,7 +695,12 @@ class UnifiedSupportController extends GetxController {
   void setSupportItem({
     required String? supportItemCode,
     required String? supportItemName,
+    bool userInitiated = false,
   }) {
+    if (userInitiated) {
+      _supportItemUserChanged = true;
+      _supportItemPrefilledFromStanding = false;
+    }
     this.supportItemCode.value = supportItemCode;
     this.supportItemName.value = supportItemName;
   }
@@ -317,29 +719,116 @@ class UnifiedSupportController extends GetxController {
       showOtherTitleField.value = true;
       return;
     }
-    appendCarePlanTask(preset);
+    appendCustomTask(preset);
   }
 
-  void appendCarePlanTask(String title) {
-    taskTitlesCtrl.text = appendTaskTitleLine(taskTitlesCtrl.text, title);
+  void appendCatalogueTask({required String code, required String name}) {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) return;
+    final trimmedCode = code.trim();
+    _pushTask(
+      TaskTemplateItem(
+        title: trimmedName,
+        supportItemCode: trimmedCode.isEmpty ? null : trimmedCode,
+        sortOrder: taskTemplate.length,
+      ),
+    );
+  }
+
+  void appendCustomTask(String title) {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) return;
+    _pushTask(
+      TaskTemplateItem(
+        title: trimmed,
+        sortOrder: taskTemplate.length,
+      ),
+    );
+  }
+
+  void removeTaskAt(int index) {
+    if (index < 0 || index >= taskTemplate.length) return;
+    taskTemplate.removeAt(index);
+    _reindexTasks();
   }
 
   void appendOtherCarePlanTask() {
-    appendCarePlanTask(otherTitleCtrl.text);
+    appendCustomTask(otherTitleCtrl.text);
     otherTitleCtrl.clear();
     showOtherTitleField.value = false;
+  }
+
+  void _pushTask(TaskTemplateItem item) {
+    taskTemplate.add(item);
+  }
+
+  void _reindexTasks() {
+    for (var i = 0; i < taskTemplate.length; i++) {
+      final task = taskTemplate[i];
+      if (task.sortOrder == i) continue;
+      taskTemplate[i] = TaskTemplateItem(
+        title: task.title,
+        sortOrder: i,
+        supportItemCode: task.supportItemCode,
+      );
+    }
   }
 
   void toggleWeekday(int day) {
     weekdays.contains(day) ? weekdays.remove(day) : weekdays.add(day);
   }
 
+  void setRequiredSlots(String raw) {
+    requiredSlots.value = parseRequiredSlots(raw);
+  }
+
   void incrementSlots() {
-    if (requiredSlots.value < 8) requiredSlots.value++;
+    if (requiredSlots.value < kRequiredSlotsUiMax) requiredSlots.value++;
   }
 
   void decrementSlots() {
     if (requiredSlots.value > 1) requiredSlots.value--;
+  }
+
+  /// Pads or truncates [selectedContractorIds] to [requiredSlots] (null = Unfilled).
+  void syncAssignSlots() {
+    final n = requiredSlots.value;
+    if (n < 1) return;
+    final current = List<String?>.from(selectedContractorIds);
+    if (current.length == n) return;
+    if (current.length < n) {
+      selectedContractorIds.assignAll([
+        ...current,
+        ...List<String?>.filled(n - current.length, null),
+      ]);
+      return;
+    }
+    selectedContractorIds.assignAll(current.sublist(0, n));
+  }
+
+  /// Sets one assign-step slot. Rejects the same contractor in two slots (D8).
+  bool selectContractorForSlot(int index, String? contractorId) {
+    syncAssignSlots();
+    if (index < 0 || index >= selectedContractorIds.length) return false;
+    final trimmed = contractorId?.trim();
+    final value = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+    if (value != null) {
+      for (var i = 0; i < selectedContractorIds.length; i++) {
+        if (i != index && selectedContractorIds[i] == value) {
+          errorMessage.value =
+              'That worker is already assigned to another slot.';
+          // Force dropdown rebuild so FormField/Menu display matches controller.
+          selectedContractorIds.refresh();
+          return false;
+        }
+      }
+    }
+    errorMessage.value = null;
+    // assignAll so GetX always notifies even when replacing a single index.
+    final next = List<String?>.from(selectedContractorIds);
+    next[index] = value;
+    selectedContractorIds.assignAll(next);
+    return true;
   }
 
   bool canGoNext() {
@@ -368,6 +857,12 @@ class UnifiedSupportController extends GetxController {
         return true;
       case 2:
         return _validateSchedule(showError: true);
+      case 3:
+        if (isOngoing && titleCtrl.text.trim().isEmpty) {
+          errorMessage.value = 'Title is required.';
+          return false;
+        }
+        return true;
       default:
         return true;
     }
@@ -375,7 +870,18 @@ class UnifiedSupportController extends GetxController {
 
   void nextStep() {
     if (!canGoNext()) return;
-    if (step.value < maxStep) step.value++;
+    if (step.value < maxStep) {
+      step.value++;
+      if (step.value == scheduleStep) {
+        ensureClientConflictsLoaded();
+      }
+      if (step.value == assignStep) {
+        syncAssignSlots();
+        ensureEngagementsLoaded();
+        ensureAssignAvailabilityLoaded();
+        ensureClientConflictsLoaded();
+      }
+    }
   }
 
   void previousStep() {
@@ -469,18 +975,20 @@ class UnifiedSupportController extends GetxController {
     }
     if (blocksWithoutSites || selectedSiteId.value == null) {
       errorMessage.value = 'Select a client location.';
-      step.value = 1;
+      step.value = locationStep;
       return;
     }
     if (!_validateSchedule(showError: true)) {
-      step.value = 2;
+      step.value = scheduleStep;
       return;
     }
     if (isOngoing && titleCtrl.text.trim().isEmpty) {
       errorMessage.value = 'Title is required.';
-      step.value = 3;
+      step.value = detailsStep;
       return;
     }
+
+    syncAssignSlots();
 
     isSaving.value = true;
     try {
@@ -510,41 +1018,32 @@ class UnifiedSupportController extends GetxController {
       supportItemName.value,
     );
     if (code != null && name != null) {
-      try {
-        await _jobs.patchJobSupportItem(
-          support.id,
-          SupportItemPatch(supportItemCode: code, supportItemName: name),
-        );
-      } catch (_) {}
+      await _jobs.patchJobSupportItem(
+        support.id,
+        SupportItemPatch(supportItemCode: code, supportItemName: name),
+      );
     }
     await _attachSelectedTemplates(support.id);
-    final tasks = carePlanTaskTitles;
-    final contractorId = selectedContractorId.value;
-    if (contractorId != null && tasks.isNotEmpty) {
-      await _jobs.createManualVisit(
-        support.id,
-        ManualVisitCreateRequest(
-          contractorId: contractorId,
-          scheduledStart: oneSessionStart.value,
-          scheduledEnd: oneSessionEnd.value,
-          taskTitles: tasks,
-          formTemplateIds: selectedFormTemplateIds.toList(growable: false),
-          supportItemCode: code,
-          supportItemName: name,
-        ),
-      );
-      _goToRoster(jobId: support.id, clientId: c.id);
-      return;
-    }
-    await _shifts.createShift(
+    final ids = filledContractorIds;
+    final created = await _shifts.createShift(
       ShiftCreateRequest(
         jobId: support.id,
         scheduledStart: oneSessionStart.value,
         scheduledEnd: oneSessionEnd.value,
         requiredSlots: requiredSlots.value,
-        status: publishImmediately.value ? 'published' : 'draft',
+        status: (publishImmediately.value || ids.isNotEmpty)
+            ? 'published'
+            : 'draft',
       ),
     );
+    final tasks = List<TaskTemplateItem>.from(taskTemplate);
+    for (final contractorId in ids) {
+      await _shifts.assignShift(
+        shiftId: created.id,
+        contractorId: contractorId,
+        taskTemplate: tasks.isEmpty ? null : tasks,
+      );
+    }
     _goToRoster(jobId: support.id, clientId: c.id);
   }
 
@@ -558,7 +1057,7 @@ class UnifiedSupportController extends GetxController {
       );
     } on ArgumentError {
       errorMessage.value = 'Select at least one weekday.';
-      step.value = 2;
+      step.value = scheduleStep;
       return;
     }
     final tz = await _resolveTenantTimezone();
@@ -568,7 +1067,7 @@ class UnifiedSupportController extends GetxController {
         clientId: c.id,
         title: titleCtrl.text.trim(),
         clientSiteId: selectedSiteId.value,
-        contractorId: selectedContractorId.value,
+        contractorIds: filledContractorIds,
         rrule: rrule,
         dtstart: startDate.value,
         until: recurrenceUntilInstant(endDate.value),
@@ -589,7 +1088,7 @@ class UnifiedSupportController extends GetxController {
           supportItemCode.value,
           supportItemName.value,
         ),
-        taskTemplate: taskTemplateFromTitles(taskTitlesCtrl.text),
+        taskTemplate: List<TaskTemplateItem>.from(taskTemplate),
       ),
     );
     await _attachSelectedTemplates(created.job.id);
@@ -634,6 +1133,8 @@ class UnifiedSupportController extends GetxController {
   }
 
   Future<String?> _resolveTenantTimezone() async {
+    final sessionTz = _session.tenantTimezone.value?.trim();
+    if (sessionTz != null && sessionTz.isNotEmpty) return sessionTz;
     if (Get.isRegistered<StaffTenantSettingsController>()) {
       final tz =
           Get.find<StaffTenantSettingsController>().tenant.value?.timezone;
