@@ -30,6 +30,7 @@ String ndisCatalogueFacetLabel(NdisCatalogueFacet facet) {
 
 Key ndisCategoryChipKey(String number) => ValueKey('ndis-category-$number');
 
+const Key ndisCategoryKey = ValueKey('ndis-category');
 const Key ndisRegistrationGroupKey = ValueKey('ndis-reg-group');
 
 /// Catalogue typeahead with frontend-only category / registration / text filters.
@@ -383,26 +384,39 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
           ),
         ],
         if (_categoryFacets.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: [
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            key: ndisCategoryKey,
+            isExpanded: true,
+            value: _categoryNumber ?? '',
+            decoration: const InputDecoration(
+              labelText: 'Support category',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: [
+              const DropdownMenuItem<String>(
+                value: '',
+                child: Text('All categories'),
+              ),
               for (final facet in _categoryFacets)
-                FilterChip(
-                  key: ndisCategoryChipKey(facet.number),
-                  label: Text(ndisCatalogueFacetLabel(facet)),
-                  selected: _categoryNumber == facet.number,
-                  onSelected: widget.enabled
-                      ? (selected) =>
-                          _onCategorySelected(selected ? facet.number : null)
-                      : null,
+                DropdownMenuItem<String>(
+                  value: facet.number,
+                  child: Text(
+                    ndisCatalogueFacetLabel(facet),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
             ],
+            onChanged: widget.enabled
+                ? (value) => _onCategorySelected(
+                      (value == null || value.isEmpty) ? null : value,
+                    )
+                : null,
           ),
         ],
         if (_catalogueLoaded) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             key: ndisRegistrationGroupKey,
             isExpanded: true,

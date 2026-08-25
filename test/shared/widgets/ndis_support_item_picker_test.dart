@@ -343,8 +343,11 @@ void main() {
         findsOneWidget,
       );
 
-      final categoryOne = _categoryFacet('1');
-      await tester.tap(find.byKey(ndisCategoryChipKey(categoryOne.number)));
+      await tester.tap(find.byKey(ndisCategoryKey));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.textContaining('Assistance with Daily Life').last,
+      );
       await tester.pump();
 
       expect(fetches, 1);
@@ -392,8 +395,11 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      final categoryOne = _categoryFacet('1');
-      await tester.tap(find.byKey(ndisCategoryChipKey(categoryOne.number)));
+      await tester.tap(find.byKey(ndisCategoryKey));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.textContaining('Assistance with Daily Life').last,
+      );
       await tester.pump();
 
       await tester.tap(find.byKey(ndisRegistrationGroupKey));
@@ -406,8 +412,11 @@ void main() {
       await tester.tap(find.textContaining('0107').last);
       await tester.pumpAndSettle();
 
-      final categoryFour = _categoryFacet('4');
-      await tester.tap(find.byKey(ndisCategoryChipKey(categoryFour.number)));
+      await tester.tap(find.byKey(ndisCategoryKey));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.textContaining('Community Participation').last,
+      );
       await tester.pump();
 
       expect(find.textContaining('0107'), findsNothing);
@@ -430,8 +439,11 @@ void main() {
 
     expect(find.text('Filtered locally (3 of 3)'), findsOneWidget);
 
-    final categoryOne = _categoryFacet('1');
-    await tester.tap(find.byKey(ndisCategoryChipKey(categoryOne.number)));
+    await tester.tap(find.byKey(ndisCategoryKey));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.textContaining('Assistance with Daily Life').last,
+    );
     await tester.pump();
 
     expect(find.text('Filtered locally (2 of 3)'), findsOneWidget);

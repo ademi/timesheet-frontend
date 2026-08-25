@@ -28,6 +28,7 @@ import '../../visits/utils/assign_schedule_window.dart';
 import '../data/models/job_models.dart';
 import '../data/repositories/jobs_repository.dart';
 import '../utils/job_copy.dart';
+import '../utils/partial_assign_preview.dart' as partial_preview;
 import '../utils/recurrence_rrule_builder.dart';
 import '../utils/required_slots_input.dart';
 import '../utils/schedule_conflict.dart';
@@ -87,8 +88,7 @@ class UnifiedSupportController extends GetxController
 
   final titleCtrl = TextEditingController();
   final taskTemplate = <TaskTemplateItem>[].obs;
-  final otherTitleCtrl = TextEditingController();
-  final showOtherTitleField = false.obs;
+  final instructionsCtrl = TextEditingController();
   final startTime = const TimeOfDay(hour: 9, minute: 0).obs;
   final endTime = const TimeOfDay(hour: 12, minute: 0).obs;
   final oneSessionStart = DateTime.now().add(const Duration(hours: 1)).obs;
@@ -235,7 +235,7 @@ class UnifiedSupportController extends GetxController
   @override
   void onClose() {
     titleCtrl.dispose();
-    otherTitleCtrl.dispose();
+    instructionsCtrl.dispose();
     super.onClose();
   }
 
@@ -318,15 +318,27 @@ class UnifiedSupportController extends GetxController
       window: window,
       tenantTimezone: tz,
     );
+    var fetchFrom = query.from;
+    var fetchTo = query.to;
+    if (isOngoing) {
+      final horizon = tenantHorizonWindowUtc(DateTime.now().toUtc(), tz);
+      fetchFrom = horizon.from;
+      fetchTo = horizon.to;
+    }
     final key =
-        '${query.from.toIso8601String()}|${query.to.toIso8601String()}|${query.shiftStart.toIso8601String()}|${query.shiftEnd.toIso8601String()}';
+        '${query.from.toIso8601String()}|${query.to.toIso8601String()}|${query.shiftStart.toIso8601String()}|${query.shiftEnd.toIso8601String()}|${fetchFrom.toIso8601String()}|${fetchTo.toIso8601String()}';
     if (assignAvailabilityLoaded && _assignAvailabilityKey == key) return;
     if (_assignAvailabilityLoadFuture != null) {
       await _assignAvailabilityLoadFuture;
       if (assignAvailabilityLoaded && _assignAvailabilityKey == key) return;
     }
 
-    _assignAvailabilityLoadFuture = _loadAssignAvailability(query, key);
+    _assignAvailabilityLoadFuture = _loadAssignAvailability(
+      query,
+      key,
+      fetchFrom: fetchFrom,
+      fetchTo: fetchTo,
+    );
     try {
       await _assignAvailabilityLoadFuture;
     } finally {
@@ -342,17 +354,19 @@ class UnifiedSupportController extends GetxController
       DateTime shiftEnd,
       DateTime day,
     }) query,
-    String key,
-  ) async {
+    String key, {
+    required DateTime fetchFrom,
+    required DateTime fetchTo,
+  }) async {
     isAssignAvailabilityLoading.value = true;
     assignOverlayWarning.value = null;
     try {
-      final shiftsFuture = _shifts.listShifts(from: query.from, to: query.to);
+      final shiftsFuture = _shifts.listShifts(from: fetchFrom, to: fetchTo);
       final visitsFuture = () async {
         try {
           return await _visits.listVisits(
-            from: query.from,
-            to: query.to,
+            from: fetchFrom,
+            to: fetchTo,
             includeNested: false,
           );
         } catch (_) {
@@ -362,8 +376,8 @@ class UnifiedSupportController extends GetxController
       final overlayFuture = () async {
         try {
           return await _visits.fetchRosterOverlay(
-            from: query.from,
-            to: query.to,
+            from: fetchFrom,
+            to: fetchTo,
           );
         } catch (_) {
           assignOverlayWarning.value = 'Leave/availability unavailable';
@@ -526,6 +540,75 @@ class UnifiedSupportController extends GetxController
       day: query.day,
       shiftStart: query.shiftStart,
       shiftEnd: query.shiftEnd,
+      overlay: assignOverlay.value ?? const RosterOverlayOut(contractors: []),
+      shifts: assignShifts.toList(growable: false),
+      visits: assignVisits.toList(growable: false),
+    );
+  }
+
+  /// Filled assign slots where the worker already has an overlapping visit/shift.
+  List<({String contractorId, String displayName})> get busyAssignedWorkers {
+    final results = <({String contractorId, String displayName})>[];
+    final seen = <String>{};
+    for (final id in filledContractorIds) {
+      if (seen.add(id) && availabilityLabelForContractor(id) == 'Busy') {
+        final name = assignableEngagements
+            .where((e) => e.contractorId == id)
+            .map((e) => e.displayName)
+            .firstOrNull;
+        results.add((contractorId: id, displayName: name ?? id));
+      }
+    }
+    return results;
+  }
+
+  void syncTaskTemplateFromInstructions() {
+    final titles = parseTaskTitles(instructionsCtrl.text);
+    taskTemplate.assignAll([
+      for (var i = 0; i < titles.length; i++)
+        TaskTemplateItem(title: titles[i], sortOrder: i),
+    ]);
+  }
+
+  void loadInstructionsFromTaskTemplate() {
+    if (taskTemplate.isEmpty) {
+      instructionsCtrl.clear();
+      return;
+    }
+    instructionsCtrl.text = taskTemplate.map((t) => t.title).join('\n');
+  }
+
+  /// Dates in the fill horizon where a selected worker would be skipped (overlap).
+  Future<List<partial_preview.PartialAssignWorkerPreview>>
+      buildPartialAssignPreview() async {
+    if (filledContractorIds.isEmpty || !assignAvailabilityLoaded) {
+      return const [];
+    }
+    final tz = await _resolveTenantTimezone();
+    final horizon = tenantHorizonWindowUtc(DateTime.now().toUtc(), tz);
+    final occurrences = partial_preview.expandUnifiedSupportOccurrences(
+      isOneSession: isOneSession,
+      oneSessionStart: oneSessionStart.value,
+      oneSessionEnd: oneSessionEnd.value,
+      startDate: startDate.value,
+      endDate: endDate.value,
+      frequency: frequency.value,
+      weekdays: weekdays.toSet(),
+      startTime: startTime.value,
+      endTime: endTime.value,
+      horizonFromUtc: horizon.from,
+      horizonToUtc: horizon.to,
+      tenantTimezone: tz,
+    );
+    return partial_preview.buildPartialAssignPreview(
+      contractorIds: filledContractorIds,
+      displayNameFor: (id) {
+        for (final e in assignableEngagements) {
+          if (e.contractorId == id) return e.displayName;
+        }
+        return null;
+      },
+      occurrences: occurrences,
       overlay: assignOverlay.value ?? const RosterOverlayOut(contractors: []),
       shifts: assignShifts.toList(growable: false),
       visits: assignVisits.toList(growable: false),
@@ -710,67 +793,6 @@ class UnifiedSupportController extends GetxController
       selectedFormTemplateIds.remove(id);
     } else {
       selectedFormTemplateIds.add(id);
-    }
-  }
-
-  void onTaskPresetSelected(String? preset) {
-    if (preset == null) return;
-    if (preset == taskTitlePresetOther) {
-      showOtherTitleField.value = true;
-      return;
-    }
-    appendCustomTask(preset);
-  }
-
-  void appendCatalogueTask({required String code, required String name}) {
-    final trimmedName = name.trim();
-    if (trimmedName.isEmpty) return;
-    final trimmedCode = code.trim();
-    _pushTask(
-      TaskTemplateItem(
-        title: trimmedName,
-        supportItemCode: trimmedCode.isEmpty ? null : trimmedCode,
-        sortOrder: taskTemplate.length,
-      ),
-    );
-  }
-
-  void appendCustomTask(String title) {
-    final trimmed = title.trim();
-    if (trimmed.isEmpty) return;
-    _pushTask(
-      TaskTemplateItem(
-        title: trimmed,
-        sortOrder: taskTemplate.length,
-      ),
-    );
-  }
-
-  void removeTaskAt(int index) {
-    if (index < 0 || index >= taskTemplate.length) return;
-    taskTemplate.removeAt(index);
-    _reindexTasks();
-  }
-
-  void appendOtherCarePlanTask() {
-    appendCustomTask(otherTitleCtrl.text);
-    otherTitleCtrl.clear();
-    showOtherTitleField.value = false;
-  }
-
-  void _pushTask(TaskTemplateItem item) {
-    taskTemplate.add(item);
-  }
-
-  void _reindexTasks() {
-    for (var i = 0; i < taskTemplate.length; i++) {
-      final task = taskTemplate[i];
-      if (task.sortOrder == i) continue;
-      taskTemplate[i] = TaskTemplateItem(
-        title: task.title,
-        sortOrder: i,
-        supportItemCode: task.supportItemCode,
-      );
     }
   }
 
@@ -989,6 +1011,7 @@ class UnifiedSupportController extends GetxController
     }
 
     syncAssignSlots();
+    syncTaskTemplateFromInstructions();
 
     isSaving.value = true;
     try {

@@ -264,37 +264,18 @@ void main() {
     expect(controller.requiredSlots.value, 2);
     await tapNext(tester);
 
-    // Step 3 — Details (presets + catalogue-backed care plan task)
-    expect(find.text('Care plan tasks'), findsOneWidget);
-    await tester.tap(find.widgetWithText(DropdownButtonFormField<String>, 'Add preset task'));
+    // Step 3 — Details (support item + instructions textarea)
+    expect(find.text('Instructions for workers'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('visit-instructions-field')),
+      'Personal care\nCommunity access',
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Personal care').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(DropdownButtonFormField<String>, 'Add preset task'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Community access').last);
-    await tester.pumpAndSettle();
+    controller.syncTaskTemplateFromInstructions();
     expect(
       controller.taskTemplate.map((t) => t.title),
       ['Personal care', 'Community access'],
     );
-    expect(
-      controller.taskTemplate.every((t) => t.supportItemCode == null),
-      isTrue,
-    );
-
-    await tester.ensureVisible(find.byKey(const Key('add-from-catalogue')));
-    await tester.tap(find.byKey(const Key('add-from-catalogue')));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(
-        of: find.byKey(const Key('catalogue-task-picker-dialog')),
-        matching: find.textContaining('Self-Care'),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(controller.taskTemplate, hasLength(3));
-    expect(controller.taskTemplate.last.supportItemCode, '01_011_0107_1_1');
     await tapNext(tester);
 
     // Step 4 — Workers (assign two contractors, then submit)
@@ -318,15 +299,12 @@ void main() {
     expect(captured.clientId, 'client-1');
     expect(captured.clientSiteId, 'site-1');
 
-    expect(captured.taskTemplate, hasLength(3));
+    expect(captured.taskTemplate, hasLength(2));
     expect(captured.taskTemplate.map((t) => t.title), [
       'Personal care',
       'Community access',
-      'Assistance With Self-Care Activities - Standard - Weekday Daytime',
     ]);
-    expect(captured.taskTemplate[0].supportItemCode, isNull);
-    expect(captured.taskTemplate[1].supportItemCode, isNull);
-    expect(captured.taskTemplate[2].supportItemCode, '01_011_0107_1_1');
+    expect(captured.taskTemplate.every((t) => t.supportItemCode == null), isTrue);
 
     expect(navigations, hasLength(1));
   });

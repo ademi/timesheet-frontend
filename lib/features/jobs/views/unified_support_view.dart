@@ -8,8 +8,9 @@ import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/keyboard_time_field.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../../clients/widgets/ndis_capture_prompt.dart';
-import '../widgets/care_plan_tasks_field.dart';
+import '../widgets/visit_instructions_field.dart';
 import '../controllers/unified_support_controller.dart';
+import '../utils/partial_assign_preview.dart';
 import '../utils/recurrence_rrule_builder.dart';
 import '../utils/required_slots_input.dart';
 import '../utils/schedule_hours_warn.dart';
@@ -87,43 +88,31 @@ class UnifiedSupportView extends GetView<UnifiedSupportController> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: PageContent(
                   width: PageContentWidth.narrow,
-                  child: Row(
-                    children: [
-                      if (controller.step.value > 0)
-                        OutlinedButton(
-                          onPressed: controller.isSaving.value
-                              ? null
-                              : controller.previousStep,
-                          child: const Text('Back'),
+                  child: controller.step.value ==
+                          UnifiedSupportController.maxStep
+                      ? _AssignStepActions(controller: controller)
+                      : Row(
+                          children: [
+                            if (controller.step.value > 0)
+                              OutlinedButton(
+                                onPressed: controller.isSaving.value
+                                    ? null
+                                    : controller.previousStep,
+                                child: const Text('Back'),
+                              ),
+                            const Spacer(),
+                            ElevatedButton(
+                              onPressed: controller.isSaving.value
+                                  ? null
+                                  : controller.nextStep,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.onPrimary,
+                              ),
+                              child: const Text('Next'),
+                            ),
+                          ],
                         ),
-                      const Spacer(),
-                      if (controller.step.value < UnifiedSupportController.maxStep)
-                        ElevatedButton(
-                          onPressed: controller.isSaving.value
-                              ? null
-                              : controller.nextStep,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.onPrimary,
-                          ),
-                          child: const Text('Next'),
-                        )
-                      else
-                        AsyncElevatedButton(
-                          onPressed: controller.submit,
-                          isLoading: controller.isSaving.value,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.onPrimary,
-                          ),
-                          child: Text(
-                            controller.isOneSession
-                                ? 'Book session'
-                                : 'Save and fill roster',
-                          ),
-                        ),
-                    ],
-                  ),
                 ),
               ),
             ),
@@ -131,6 +120,98 @@ class UnifiedSupportView extends GetView<UnifiedSupportController> {
         );
       }),
     );
+  }
+}
+
+class _AssignStepActions extends StatelessWidget {
+  const _AssignStepActions({required this.controller});
+  final UnifiedSupportController controller;
+
+  Future<void> _submit(BuildContext context) async {
+    final partial = await controller.buildPartialAssignPreview();
+    if (partial.isNotEmpty) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Partial assignment'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  controller.isOneSession
+                      ? 'Some selected workers already have a visit at this time. '
+                          'The shift may be created with open slots.'
+                      : 'Some selected workers already have visits on dates below. '
+                          'Those occurrences may be partially filled in the roster horizon.',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+                for (final worker in partial) ...[
+                  Text(
+                    worker.displayName,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  for (final date in worker.skipDates)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8, bottom: 2),
+                      child: Text('• ${formatPartialAssignDate(date)}'),
+                    ),
+                  const SizedBox(height: 8),
+                ],
+                const Text(
+                  'Continue anyway?',
+                  style: TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Go back'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+    }
+    await controller.submit();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final label = controller.isOneSession
+          ? 'Book session'
+          : 'Save and fill roster';
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OutlinedButton(
+            onPressed: controller.isSaving.value ? null : () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          const SizedBox(height: 8),
+          AsyncElevatedButton(
+            onPressed: () => _submit(context),
+            isLoading: controller.isSaving.value,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              minimumSize: const Size.fromHeight(48),
+            ),
+            child: Text(label),
+          ),
+        ],
+      );
+    });
   }
 }
 
@@ -716,28 +797,23 @@ class _DetailsStep extends StatelessWidget {
           ],
           if (controller.showNdisCapturePrompt) ...[
             NdisCapturePrompt(onAddDetails: controller.openClientDetailsForNdis),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
           ],
-          CarePlanTasksField(
-            tasks: controller.taskTemplate,
-            otherTitleCtrl: controller.otherTitleCtrl,
-            showOtherTitleField: controller.showOtherTitleField,
-            onPresetSelected: controller.onTaskPresetSelected,
-            onAppendOtherTitle: controller.appendOtherCarePlanTask,
-            onRemoveTask: controller.removeTaskAt,
-            onCataloguePicked: controller.appendCatalogueTask,
-            sectionTitle:
-                controller.isOngoing ? 'Care plan tasks' : 'Shift tasks',
-            helperText: controller.isOngoing
-                ? 'Optional tasks copied onto generated visits. Catalogue items keep their NDIS item number.'
-                : 'Optional tasks for this booked visit (requires a worker). Catalogue items keep their NDIS item number.',
+          Text(
+            'NDIS support item',
+            style: Get.textTheme.titleSmall,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
+          const Text(
+            'Optional default billing line for this support.',
+            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+          const SizedBox(height: 12),
           NdisSupportItemPicker(
             supportItemCode: controller.supportItemCode.value,
             supportItemName: controller.supportItemName.value,
             enabled: !controller.isSaving.value,
-            labelText: 'NDIS support item (optional)',
+            labelText: 'Support item (optional)',
             onChanged: ({
               required String? supportItemCode,
               required String? supportItemName,
@@ -749,14 +825,21 @@ class _DetailsStep extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 8),
-          Text(
-            controller.supportItemPrefilledFromStanding
-                ? 'From this client\u2019s ongoing support'
-                : 'Optional default for generated or booked visits.',
-            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          if (controller.supportItemPrefilledFromStanding) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'From this client\u2019s ongoing support',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          ],
+          const SizedBox(height: 20),
+          VisitInstructionsField(
+            controller: controller.instructionsCtrl,
+            helperText: controller.isOngoing
+                ? 'One task per line. Copied onto generated visits.'
+                : 'One task per line. Copied onto the booked visit.',
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           const Text(
             'Form templates',
             style: TextStyle(fontWeight: FontWeight.w600),
@@ -838,97 +921,119 @@ class _WorkersStepState extends State<_WorkersStep> {
       final nameById = {
         for (final e in workers) e.contractorId: e.displayName,
       };
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      final loading = controller.isAssignAvailabilityLoading.value;
+      return Stack(
         children: [
-          _ConflictStrip(controller: controller),
-          Text(
-            slots.length <= 1
-                ? 'Assign a worker for this support (optional).'
-                : 'Assign up to ${slots.length} workers for this support (optional).',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Leave a slot Unfilled to keep it open to claim.',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 12),
-          if (controller.assignOverlayWarning.value != null) ...[
-            Text(
-              controller.assignOverlayWarning.value!,
-              style: const TextStyle(fontSize: 12, color: AppColors.openSlot),
-            ),
-            const SizedBox(height: 8),
-          ],
-          for (var i = 0; i < slots.length; i++) ...[
-            // Controlled DropdownButton (not FormField): FormField keeps internal
-            // selection when Obx rebuilds after availability load / rejected duplicate,
-            // which desynced UI from selectedContractorIds and dropped workers on submit.
-            InputDecorator(
-              key: ValueKey('assign-slot-$i-${slots[i]}'),
-              decoration: InputDecoration(
-                labelText: slots.length == 1
-                    ? 'Worker (optional)'
-                    : 'Worker ${i + 1} (optional)',
-                border: const OutlineInputBorder(),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String?>(
-                  key: ValueKey('assign-slot-$i'),
-                  value: slots[i],
-                  isExpanded: true,
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Unfilled'),
+          Opacity(
+            opacity: loading ? 0.45 : 1,
+            child: AbsorbPointer(
+              absorbing: loading,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _ConflictStrip(controller: controller),
+                  Text(
+                    slots.length <= 1
+                        ? 'Assign a worker for this support (optional).'
+                        : 'Assign up to ${slots.length} workers for this support (optional).',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
                     ),
-                    for (final engagement in workers)
-                      DropdownMenuItem<String?>(
-                        value: engagement.contractorId,
-                        // Single-line only: selected-item slot is ~24px tall.
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(text: engagement.displayName),
-                              TextSpan(
-                                text:
-                                    ' · ${controller.availabilityLabelForContractor(engagement.contractorId)}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: _availabilityColor(
-                                    controller.availabilityLabelForContractor(
-                                      engagement.contractorId,
-                                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Leave a slot Unfilled to keep it open to claim.',
+                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  ),
+                  const SizedBox(height: 12),
+                  if (controller.assignOverlayWarning.value != null) ...[
+                    Text(
+                      controller.assignOverlayWarning.value!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.openSlot,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  for (var i = 0; i < slots.length; i++) ...[
+                    InputDecorator(
+                      key: ValueKey('assign-slot-$i-${slots[i]}'),
+                      decoration: InputDecoration(
+                        labelText: slots.length == 1
+                            ? 'Worker (optional)'
+                            : 'Worker ${i + 1} (optional)',
+                        border: const OutlineInputBorder(),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String?>(
+                          key: ValueKey('assign-slot-$i'),
+                          value: slots[i],
+                          isExpanded: true,
+                          items: [
+                            const DropdownMenuItem<String?>(
+                              value: null,
+                              child: Text('Unfilled'),
+                            ),
+                            for (final engagement in workers)
+                              DropdownMenuItem<String?>(
+                                value: engagement.contractorId,
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(text: engagement.displayName),
+                                      TextSpan(
+                                        text:
+                                            ' · ${controller.availabilityLabelForContractor(engagement.contractorId)}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: _availabilityColor(
+                                            controller
+                                                .availabilityLabelForContractor(
+                                              engagement.contractorId,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                            ],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                            if (slots[i] != null && !seen.contains(slots[i]))
+                              DropdownMenuItem<String?>(
+                                value: slots[i],
+                                child: Text(slots[i]!),
+                              ),
+                          ],
+                          onChanged: (value) =>
+                              controller.selectContractorForSlot(i, value),
                         ),
                       ),
-                    if (slots[i] != null && !seen.contains(slots[i]))
-                      DropdownMenuItem<String?>(
-                        value: slots[i],
-                        child: Text(slots[i]!),
-                      ),
+                    ),
+                    const SizedBox(height: 12),
                   ],
-                  onChanged: (value) =>
-                      controller.selectContractorForSlot(i, value),
-                ),
+                  if (slots.any((id) => id != null && id.isNotEmpty))
+                    Text(
+                      'Selected: ${[
+                        for (final id in slots)
+                          if (id != null && id.isNotEmpty)
+                            (nameById[id] ?? id),
+                      ].join(', ')}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-          ],
-          if (slots.any((id) => id != null && id.isNotEmpty))
-            Text(
-              'Selected: ${[
-                for (final id in slots)
-                  if (id != null && id.isNotEmpty) (nameById[id] ?? id),
-              ].join(', ')}',
-              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+          if (loading)
+            const Positioned.fill(
+              child: Center(child: CircularProgressIndicator()),
             ),
         ],
       );

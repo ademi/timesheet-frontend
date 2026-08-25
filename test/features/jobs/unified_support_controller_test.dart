@@ -17,10 +17,12 @@ import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/core/time/tenant_civil_time.dart';
 import 'package:rostiq/features/jobs/utils/job_copy.dart';
 import 'package:rostiq/features/jobs/utils/schedule_hours_warn.dart';
+import 'package:rostiq/features/jobs/utils/recurrence_rrule_builder.dart';
 import 'package:rostiq/features/jobs/utils/unified_support_args.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
+import 'package:rostiq/features/visits/data/models/visit_models.dart';
 import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
 
 class _MockJobsRepository extends Mock implements JobsRepository {}
@@ -341,35 +343,20 @@ void main() {
     expect(controller.requiredSlots.value, 1);
   });
 
-  test('appendCatalogueTask stamps support item code on template', () {
+  test('syncTaskTemplateFromInstructions parses textarea lines', () {
     final c = build();
-    c.appendCatalogueTask(
-      code: '01_011_0107_1_1',
-      name: 'Assistance With Self-Care Activities - Standard - Weekday Daytime',
-    );
-    expect(c.taskTemplate.first.supportItemCode, '01_011_0107_1_1');
-    expect(c.taskTemplate.first.title, contains('Self-Care'));
+    c.instructionsCtrl.text = 'Personal care\n  \nMeal prep';
+    c.syncTaskTemplateFromInstructions();
+    expect(c.taskTemplate.map((t) => t.title), ['Personal care', 'Meal prep']);
+    expect(c.taskTemplate.every((t) => t.supportItemCode == null), isTrue);
   });
 
-  test('removeTaskAt drops item so codes cannot desync', () {
-    final c = build();
-    c.appendCatalogueTask(code: '01_011_0107_1_1', name: 'Self care');
-    c.appendCustomTask('Meal prep');
-    c.removeTaskAt(0);
-    expect(c.taskTemplate.single.title, 'Meal prep');
-    expect(c.taskTemplate.single.supportItemCode, isNull);
-  });
-
-  test('ongoing submit includes care plan task template', () async {
+  test('ongoing submit includes instructions as task template', () async {
     when(() => jobs.createOngoingSupport(any())).thenAnswer((_) async => _ongoingOut);
 
     final controller = build();
     await controller.load();
-    controller.appendCatalogueTask(
-      code: '01_011_0107_1_1',
-      name: 'Personal care',
-    );
-    controller.appendCustomTask('Meal prep');
+    controller.instructionsCtrl.text = 'Personal care\nMeal prep';
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
@@ -378,20 +365,8 @@ void main() {
     ).captured.single as OngoingSupportCreateRequest;
     expect(captured.taskTemplate, hasLength(2));
     expect(captured.taskTemplate[0].title, 'Personal care');
-    expect(captured.taskTemplate[0].supportItemCode, '01_011_0107_1_1');
     expect(captured.taskTemplate[1].title, 'Meal prep');
-    expect(captured.taskTemplate[1].supportItemCode, isNull);
-    expect(captured.toJson()['task_template'], [
-      {
-        'title': 'Personal care',
-        'sort_order': 0,
-        'support_item_code': '01_011_0107_1_1',
-      },
-      {
-        'title': 'Meal prep',
-        'sort_order': 1,
-      },
-    ]);
+    expect(captured.taskTemplate.every((t) => t.supportItemCode == null), isTrue);
   });
 
   test('schedule warn prefers session tenantTimezone', () async {
@@ -652,7 +627,7 @@ void main() {
     controller.syncAssignSlots();
     controller.selectContractorForSlot(0, 'contractor-1');
     controller.selectContractorForSlot(1, 'contractor-2');
-    controller.appendCustomTask('Personal care');
+    controller.instructionsCtrl.text = 'Personal care';
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
@@ -701,8 +676,7 @@ void main() {
     await controller.load();
     controller.syncAssignSlots();
     controller.selectContractorForSlot(0, 'contractor-1');
-    controller.appendCustomTask('Personal care');
-    controller.appendCustomTask('Meal prep');
+    controller.instructionsCtrl.text = 'Personal care\nMeal prep';
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
@@ -739,7 +713,7 @@ void main() {
     await controller.load();
     controller.syncAssignSlots();
     controller.selectContractorForSlot(0, 'contractor-1');
-    controller.appendCustomTask('Meal prep');
+    controller.instructionsCtrl.text = 'Meal prep';
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
@@ -841,6 +815,62 @@ void main() {
     expect(c.supportItemCode.value, 'user-code');
     expect(c.supportItemName.value, 'User choice');
     expect(c.supportItemPrefilledFromStanding, isFalse);
+  });
+
+  test('buildPartialAssignPreview lists horizon dates with overlaps', () async {
+    tenantUtcOffsetOverride = (_, __) => Duration.zero;
+    when(() => session.tenantTimezone).thenReturn(RxnString('UTC'));
+    when(() => engagements.listTenantEngagements())
+        .thenAnswer((_) async => [_eng]);
+
+    final monStart = DateTime.utc(2026, 8, 31, 9);
+    final monEnd = DateTime.utc(2026, 8, 31, 12);
+    when(
+      () => visits.listVisits(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        includeNested: any(named: 'includeNested'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        VisitOut(
+          id: 'visit-busy',
+          tenantId: 'tenant-1',
+          jobId: 'job-2',
+          contractorId: 'contractor-1',
+          scheduledStart: monStart,
+          scheduledEnd: monEnd,
+          status: 'scheduled',
+          source: 'manual',
+          geofenceRadiusM: 100,
+          geofenceMode: 'informational',
+          paymentStatus: 'unpaid',
+          createdAt: monStart,
+          updatedAt: monStart,
+        ),
+      ],
+    );
+
+    final controller = build();
+    await controller.load();
+    controller.setMode(UnifiedSupportMode.ongoing);
+    controller.startDate.value = DateTime(2026, 8, 31);
+    controller.endDate.value = DateTime(2026, 12, 31);
+    controller.frequency.value = RecurrenceFrequency.weekly;
+    controller.weekdays
+      ..clear()
+      ..add(DateTime.monday);
+    controller.startTime.value = const TimeOfDay(hour: 9, minute: 0);
+    controller.endTime.value = const TimeOfDay(hour: 12, minute: 0);
+    controller.selectContractorForSlot(0, 'contractor-1');
+    controller.step.value = UnifiedSupportController.assignStep;
+    await controller.ensureEngagementsLoaded();
+    await controller.ensureAssignAvailabilityLoaded();
+
+    final preview = await controller.buildPartialAssignPreview();
+    expect(preview, hasLength(1));
+    expect(preview.single.displayName, 'Alex Worker');
+    expect(preview.single.skipDates, [DateTime(2026, 8, 31)]);
   });
 }
 
