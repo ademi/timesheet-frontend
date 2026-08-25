@@ -821,19 +821,23 @@ class _WorkersStepState extends State<_WorkersStep> {
   Widget build(BuildContext context) {
     final controller = widget.controller;
     return Obx(() {
-      final slots = controller.selectedContractorIds;
-      // Subscribe to availability data so dropdown labels rebuild after async load.
+      final slots = List<String?>.from(controller.selectedContractorIds);
+      // Subscribe so labels rebuild after async load / duplicate-reject refresh.
       controller.isAssignAvailabilityLoading.value;
       controller.assignOverlay.value;
       controller.assignShifts.length;
       controller.assignVisits.length;
       controller.conflictVisits.length;
       controller.conflictShifts.length;
+      controller.errorMessage.value;
       final seen = <String>{};
       final workers = [
         for (final e in controller.assignableEngagements)
           if (seen.add(e.contractorId)) e,
       ];
+      final nameById = {
+        for (final e in workers) e.contractorId: e.displayName,
+      };
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -858,57 +862,74 @@ class _WorkersStepState extends State<_WorkersStep> {
             const SizedBox(height: 8),
           ],
           for (var i = 0; i < slots.length; i++) ...[
-            DropdownButtonFormField<String?>(
-              key: ValueKey('assign-slot-$i'),
-              value: slots[i],
-              items: [
-                const DropdownMenuItem<String?>(
-                  value: null,
-                  child: Text('Unfilled'),
-                ),
-                for (final engagement in workers)
-                  DropdownMenuItem<String?>(
-                    value: engagement.contractorId,
-                    child: Builder(
-                      builder: (context) {
-                        final label = controller.availabilityLabelForContractor(
-                          engagement.contractorId,
-                        );
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(engagement.displayName),
-                            Text(
-                              label,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: _availabilityColor(label),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                if (slots[i] != null &&
-                    !seen.contains(slots[i]))
-                  DropdownMenuItem<String?>(
-                    value: slots[i],
-                    child: Text(slots[i]!),
-                  ),
-              ],
-              onChanged: (value) =>
-                  controller.selectContractorForSlot(i, value),
+            // Controlled DropdownButton (not FormField): FormField keeps internal
+            // selection when Obx rebuilds after availability load / rejected duplicate,
+            // which desynced UI from selectedContractorIds and dropped workers on submit.
+            InputDecorator(
+              key: ValueKey('assign-slot-$i-${slots[i]}'),
               decoration: InputDecoration(
                 labelText: slots.length == 1
                     ? 'Worker (optional)'
                     : 'Worker ${i + 1} (optional)',
                 border: const OutlineInputBorder(),
               ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String?>(
+                  key: ValueKey('assign-slot-$i'),
+                  value: slots[i],
+                  isExpanded: true,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Unfilled'),
+                    ),
+                    for (final engagement in workers)
+                      DropdownMenuItem<String?>(
+                        value: engagement.contractorId,
+                        // Single-line only: selected-item slot is ~24px tall.
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(text: engagement.displayName),
+                              TextSpan(
+                                text:
+                                    ' · ${controller.availabilityLabelForContractor(engagement.contractorId)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: _availabilityColor(
+                                    controller.availabilityLabelForContractor(
+                                      engagement.contractorId,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    if (slots[i] != null && !seen.contains(slots[i]))
+                      DropdownMenuItem<String?>(
+                        value: slots[i],
+                        child: Text(slots[i]!),
+                      ),
+                  ],
+                  onChanged: (value) =>
+                      controller.selectContractorForSlot(i, value),
+                ),
+              ),
             ),
             const SizedBox(height: 12),
           ],
+          if (slots.any((id) => id != null && id.isNotEmpty))
+            Text(
+              'Selected: ${[
+                for (final id in slots)
+                  if (id != null && id.isNotEmpty) (nameById[id] ?? id),
+              ].join(', ')}',
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
         ],
       );
     });

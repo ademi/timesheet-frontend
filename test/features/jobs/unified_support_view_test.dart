@@ -281,8 +281,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('assign-slot-0')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Alex Worker'), findsOneWidget);
-    expect(find.text('Free'), findsOneWidget);
+    expect(find.textContaining('Alex Worker'), findsWidgets);
+    expect(find.textContaining('Free'), findsOneWidget);
   });
 
   testWidgets('assign step dropdown shows Busy beside worker with overlapping shift', (
@@ -350,8 +350,85 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('assign-slot-0')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Busy Worker'), findsOneWidget);
-    expect(find.text('Busy'), findsOneWidget);
+    expect(find.textContaining('Busy Worker'), findsWidgets);
+    expect(find.textContaining('Busy'), findsOneWidget);
+  });
+
+  testWidgets('two slot picks survive availability rebuild and stay in controller', (
+    tester,
+  ) async {
+    when(() => engagements.listTenantEngagements()).thenAnswer(
+      (_) async => [
+        EngagementOut(
+          id: 'eng-1',
+          tenantId: 'tenant-1',
+          contractorId: 'contractor-1',
+          contractorName: 'Alex Worker',
+          status: 'active',
+          createdAt: now,
+          updatedAt: now,
+        ),
+        EngagementOut(
+          id: 'eng-2',
+          tenantId: 'tenant-1',
+          contractorId: 'contractor-2',
+          contractorName: 'Blair Worker',
+          status: 'active',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ],
+    );
+    await controller.load();
+    controller.setMode(UnifiedSupportMode.oneSession);
+    controller.requiredSlots.value = 2;
+    controller.syncAssignSlots();
+    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: UnifiedSupportView()),
+    );
+    await tester.pumpAndSettle();
+
+    Future<void> pick(int slot, String name) async {
+      await tester.ensureVisible(find.byKey(ValueKey('assign-slot-$slot')));
+      await tester.tap(find.byKey(ValueKey('assign-slot-$slot')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining(name).last);
+      await tester.pumpAndSettle();
+    }
+
+    await pick(0, 'Alex Worker');
+    await pick(1, 'Blair Worker');
+    expect(controller.selectedContractorIds, ['contractor-1', 'contractor-2']);
+    expect(find.textContaining('Selected: Alex Worker, Blair Worker'), findsOneWidget);
+
+    // Simulate late availability reload that used to desync FormField display.
+    controller.assignShifts.add(
+      ShiftOut(
+        id: 'shift-noise',
+        tenantId: 'tenant-1',
+        jobId: 'job-2',
+        jobTitle: 'Other',
+        clientId: 'client-2',
+        clientName: 'Other',
+        scheduledStart: DateTime(2026, 8, 13, 9),
+        scheduledEnd: DateTime(2026, 8, 13, 12),
+        requiredSlots: 1,
+        openSlots: 1,
+        status: 'published',
+        assignments: const [],
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.selectedContractorIds, ['contractor-1', 'contractor-2']);
+    expect(controller.filledContractorIds, ['contractor-1', 'contractor-2']);
+    expect(find.textContaining('Selected: Alex Worker, Blair Worker'), findsOneWidget);
   });
 
   testWidgets('schedule step shows overlapping visit chip', (tester) async {

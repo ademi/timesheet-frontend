@@ -227,10 +227,9 @@ void main() {
     await tester.ensureVisible(find.byKey(ValueKey('assign-slot-$slot')));
     await tester.tap(find.byKey(ValueKey('assign-slot-$slot')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(workerName).last);
+    // Items are "Name · Free/Busy/Leave" (single-line to avoid dropdown overflow).
+    await tester.tap(find.textContaining(workerName).last);
     await tester.pumpAndSettle();
-    // Worker dropdown rows show name + availability badge (may overflow in test viewport).
-    tester.takeException();
   }
 
   testWidgets('walks five-step flow and submits ongoing with two workers', (

@@ -817,12 +817,17 @@ class UnifiedSupportController extends GetxController
         if (i != index && selectedContractorIds[i] == value) {
           errorMessage.value =
               'That worker is already assigned to another slot.';
+          // Force dropdown rebuild so FormField/Menu display matches controller.
+          selectedContractorIds.refresh();
           return false;
         }
       }
     }
     errorMessage.value = null;
-    selectedContractorIds[index] = value;
+    // assignAll so GetX always notifies even when replacing a single index.
+    final next = List<String?>.from(selectedContractorIds);
+    next[index] = value;
+    selectedContractorIds.assignAll(next);
     return true;
   }
 
