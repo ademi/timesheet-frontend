@@ -69,6 +69,7 @@ void main() {
     session = _MockSessionService();
     payroll = _MockPayrollRepository();
     when(() => session.tenantId).thenReturn(RxnString('tenant-1'));
+    when(() => session.tenantTimezone).thenReturn(RxnString());
     controller = _controller(
       visits: visits,
       shifts: shifts,
@@ -109,5 +110,19 @@ void main() {
     await controller.loadTenantTimezone();
     verify(() => payroll.getTenant('tenant-1')).called(1);
     expect(controller.tenantTimezone.value, 'Australia/Sydney');
+  });
+
+  test('loadTenantTimezone prefers session over payroll', () async {
+    when(() => session.tenantTimezone).thenReturn(RxnString('Australia/Sydney'));
+    when(() => payroll.getTenant('tenant-1')).thenAnswer(
+      (_) async => TenantSettingsOut(
+        id: 'tenant-1',
+        name: 'Demo',
+        timezone: 'Pacific/Auckland',
+      ),
+    );
+    await controller.loadTenantTimezone();
+    expect(controller.tenantTimezone.value, 'Australia/Sydney');
+    verifyNever(() => payroll.getTenant(any()));
   });
 }

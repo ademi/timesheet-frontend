@@ -12,6 +12,7 @@ import 'package:rostiq/features/engagements/data/repositories/engagements_reposi
 import 'package:rostiq/features/jobs/controllers/unified_support_controller.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
+import 'package:rostiq/core/time/tenant_civil_time.dart';
 import 'package:rostiq/features/jobs/utils/job_copy.dart';
 import 'package:rostiq/features/jobs/utils/schedule_hours_warn.dart';
 import 'package:rostiq/features/jobs/utils/unified_support_args.dart';
@@ -114,6 +115,7 @@ void main() {
     navigations = [];
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => session.tenantId).thenReturn(RxnString());
+    when(() => session.tenantTimezone).thenReturn(RxnString());
     when(() => clients.listSites('client-1')).thenAnswer((_) async => [_site]);
     when(() => clients.getClientProfile(any())).thenAnswer(
       (_) async => const ClientProfileBundle(
@@ -132,7 +134,10 @@ void main() {
     ).thenAnswer((_) async => []);
   });
 
-  tearDown(Get.reset);
+  tearDown(() {
+    tenantUtcOffsetOverride = null;
+    Get.reset();
+  });
 
   UnifiedSupportController build({
     UnifiedSupportArgs? args,
@@ -284,6 +289,47 @@ void main() {
     expect(captured.taskTemplate, hasLength(2));
     expect(captured.taskTemplate[0].title, 'Personal care');
     expect(captured.taskTemplate[1].title, 'Meal prep');
+  });
+
+  test('schedule warn prefers session tenantTimezone', () async {
+    when(() => session.tenantTimezone).thenReturn(RxnString('Australia/Sydney'));
+    final controller = build(
+      args: UnifiedSupportArgs.forClient(
+        _client,
+        mode: UnifiedSupportMode.oneSession,
+      ),
+    );
+    Get.put(controller);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(controller.scheduleWarnTimezone.value, 'Australia/Sydney');
+    controller.oneSessionStart.value = DateTime(2026, 8, 22, 9);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 22, 12);
+    expect(controller.showScheduleHoursWarn, isTrue);
+  });
+
+  test('ongoing submit horizon uses session tenantTimezone', () async {
+    tenantUtcOffsetOverride = (tz, _) {
+      if (tz == 'Pacific/Honolulu') return const Duration(hours: -10);
+      return Duration.zero;
+    };
+    when(() => session.tenantTimezone).thenReturn(RxnString('Pacific/Honolulu'));
+    when(() => jobs.createOngoingSupport(any())).thenAnswer((_) async => _ongoingOut);
+
+    final controller = build();
+    await controller.load();
+    controller.step.value = 3;
+    await controller.submit();
+
+    final captured = verify(
+      () => jobs.createOngoingSupport(captureAny()),
+    ).captured.single as OngoingSupportCreateRequest;
+    final now = DateTime.now().toUtc();
+    final expected = tenantHorizonWindowUtc(now, 'Pacific/Honolulu');
+    final deviceLocal = tenantHorizonWindowUtc(now, null);
+    expect(captured.horizonFrom, expected.from);
+    expect(captured.horizonTo, expected.to);
+    expect(captured.horizonFrom, isNot(deviceLocal.from));
   });
 
   test('showScheduleHoursWarn true for Saturday one session', () async {

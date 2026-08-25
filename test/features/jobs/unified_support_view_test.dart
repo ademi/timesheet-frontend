@@ -66,6 +66,7 @@ void main() {
 
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => session.tenantId).thenReturn(RxnString());
+    when(() => session.tenantTimezone).thenReturn(RxnString());
     when(() => clients.getClient(any())).thenAnswer((_) async => client);
     when(() => clients.listSites(any())).thenAnswer((_) async => [site]);
     when(() => clients.getClientProfile(any())).thenAnswer(

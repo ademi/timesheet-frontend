@@ -9,6 +9,7 @@ class MeContextModel {
     this.tenantId,
     this.contractorId,
     this.tenantMemberId,
+    this.timezone,
     this.engagements = const [],
     this.platformComplianceAccepted = false,
   });
@@ -17,6 +18,9 @@ class MeContextModel {
   final String? tenantId;
   final String? contractorId;
   final String? tenantMemberId;
+
+  /// IANA timezone of the JWT tenant (`org.tenants.timezone`), if any.
+  final String? timezone;
   final List<EngagementSummaryModel> engagements;
 
   /// True when the backend confirms the contractor has already accepted all
@@ -30,6 +34,7 @@ class MeContextModel {
       tenantId: json['tenant_id'] as String?,
       contractorId: json['contractor_id'] as String?,
       tenantMemberId: json['tenant_member_id'] as String?,
+      timezone: json['timezone'] as String?,
       engagements: rawEngagements is List
           ? rawEngagements
               .whereType<Map<String, dynamic>>()

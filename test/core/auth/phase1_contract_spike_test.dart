@@ -93,6 +93,7 @@ void main() {
         'tenant_id': '22222222-2222-2222-2222-222222222222',
         'contractor_id': '33333333-3333-3333-3333-333333333333',
         'tenant_member_id': null,
+        'timezone': 'Australia/Sydney',
         'engagements': [
           {
             'id': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -104,6 +105,7 @@ void main() {
       });
 
       expect(model.actorType, 'contractor');
+      expect(model.timezone, 'Australia/Sydney');
       expect(model.engagements.single.status, 'pending_docs');
       // Permissions are JWT-only — me/context does not carry them.
       expect(jsonEncode(model.engagements.first.toJson()), contains('tenant_name'));

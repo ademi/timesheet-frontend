@@ -160,7 +160,11 @@ class UnifiedSupportController extends GetxController {
     scheduleWarnTimezone.value = await _resolveTenantTimezone();
   }
 
-  String? get _tenantTimezoneForScheduleWarn => scheduleWarnTimezone.value;
+  String? get _tenantTimezoneForScheduleWarn {
+    final sessionTz = _session.tenantTimezone.value?.trim();
+    if (sessionTz != null && sessionTz.isNotEmpty) return sessionTz;
+    return scheduleWarnTimezone.value;
+  }
 
   bool get showScheduleHoursWarn {
     final tz = _tenantTimezoneForScheduleWarn;
@@ -667,6 +671,8 @@ class UnifiedSupportController extends GetxController {
   }
 
   Future<String?> _resolveTenantTimezone() async {
+    final sessionTz = _session.tenantTimezone.value?.trim();
+    if (sessionTz != null && sessionTz.isNotEmpty) return sessionTz;
     if (Get.isRegistered<StaffTenantSettingsController>()) {
       final tz =
           Get.find<StaffTenantSettingsController>().tenant.value?.timezone;

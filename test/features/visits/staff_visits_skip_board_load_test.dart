@@ -89,6 +89,7 @@ void main() {
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => session.tenantId).thenReturn(RxnString());
+    when(() => session.tenantTimezone).thenReturn(RxnString());
     when(
       () => shifts.listShifts(
         from: any(named: 'from'),

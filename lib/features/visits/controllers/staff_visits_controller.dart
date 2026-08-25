@@ -256,6 +256,8 @@ class StaffVisitsController extends GetxController {
       );
 
   String? get _effectiveTenantTimezone {
+    final sessionTz = _session.tenantTimezone.value?.trim();
+    if (sessionTz != null && sessionTz.isNotEmpty) return sessionTz;
     final tz = tenantTimezone.value.trim();
     return tz.isEmpty ? null : tz;
   }
@@ -310,10 +312,15 @@ class StaffVisitsController extends GetxController {
     return true;
   }
 
-  /// Loads tenant IANA timezone once (settings controller or payroll API).
+  /// Loads tenant IANA timezone once (session, then settings, then payroll).
   Future<void> loadTenantTimezone() async {
     if (_tenantTimezoneLoaded) return;
     _tenantTimezoneLoaded = true;
+    final sessionTz = _session.tenantTimezone.value?.trim();
+    if (sessionTz != null && sessionTz.isNotEmpty) {
+      tenantTimezone.value = sessionTz;
+      return;
+    }
     if (Get.isRegistered<StaffTenantSettingsController>()) {
       final tz = Get.find<StaffTenantSettingsController>().tenant.value?.timezone;
       if (tz != null && tz.trim().isNotEmpty) {

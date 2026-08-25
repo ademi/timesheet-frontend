@@ -74,6 +74,7 @@ void main() {
           'tenant_id': '22222222-2222-2222-2222-222222222222',
           'contractor_id': null,
           'tenant_member_id': '44444444-4444-4444-4444-444444444444',
+          'timezone': 'Australia/Sydney',
           'engagements': <Map<String, dynamic>>[],
         },
       ),
@@ -83,6 +84,7 @@ void main() {
 
     expect(result.actorType, 'tenant_member');
     expect(result.tenantMemberId, isNotNull);
+    expect(result.timezone, 'Australia/Sydney');
     expect(result.engagements, isEmpty);
   });
 }

@@ -99,6 +99,7 @@ void main() {
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => session.tenantId).thenReturn(RxnString());
+    when(() => session.tenantTimezone).thenReturn(RxnString());
     _stubListShifts(shifts);
     when(
       () => visits.fetchRosterOverlay(
@@ -289,6 +290,31 @@ void main() {
     await _flushHorizon();
 
     expect(controller.errorMessage.value, isNull);
+  });
+
+  test('horizon window uses session tenantTimezone', () async {
+    tenantUtcOffsetOverride = (tz, _) {
+      if (tz == 'Pacific/Honolulu') return const Duration(hours: -10);
+      return Duration.zero;
+    };
+    when(() => session.tenantTimezone).thenReturn(RxnString('Pacific/Honolulu'));
+    when(
+      () => jobs.ensureHorizon(any()),
+    ).thenAnswer((_) async => HorizonOut.empty);
+
+    await controller.ensureBoardLoaded();
+    await _flushHorizon();
+
+    expect(controller.tenantTimezone.value, 'Pacific/Honolulu');
+    final req =
+        verify(() => jobs.ensureHorizon(captureAny())).captured.single
+            as HorizonRequest;
+    final now = DateTime.now().toUtc();
+    final expected = tenantHorizonWindowUtc(now, 'Pacific/Honolulu');
+    final deviceLocal = tenantHorizonWindowUtc(now, null);
+    expect(req.from, expected.from);
+    expect(req.to, expected.to);
+    expect(req.from, isNot(deviceLocal.from));
   });
 
   test(
