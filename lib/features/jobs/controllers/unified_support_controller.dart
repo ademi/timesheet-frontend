@@ -35,7 +35,6 @@ import '../utils/schedule_hours_warn.dart';
 import '../utils/time_window_utils.dart';
 import '../utils/unified_support_args.dart';
 import '../utils/task_title_presets.dart';
-import '../widgets/care_plan_tasks_field.dart';
 import 'recurrence_workers_selection.dart';
 
 String formatSupportTimeOfDay(TimeOfDay time) {
@@ -87,7 +86,7 @@ class UnifiedSupportController extends GetxController
   final client = Rxn<ClientOut>();
 
   final titleCtrl = TextEditingController();
-  final taskTitlesCtrl = TextEditingController();
+  final taskTemplate = <TaskTemplateItem>[].obs;
   final otherTitleCtrl = TextEditingController();
   final showOtherTitleField = false.obs;
   final startTime = const TimeOfDay(hour: 9, minute: 0).obs;
@@ -163,7 +162,8 @@ class UnifiedSupportController extends GetxController
     );
   }
 
-  List<String> get carePlanTaskTitles => parseTaskTitles(taskTitlesCtrl.text);
+  List<String> get carePlanTaskTitles =>
+      [for (final task in taskTemplate) task.title];
 
   List<EngagementOut> get assignableEngagements => sortedByName(
         engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs),
@@ -231,7 +231,6 @@ class UnifiedSupportController extends GetxController
   @override
   void onClose() {
     titleCtrl.dispose();
-    taskTitlesCtrl.dispose();
     otherTitleCtrl.dispose();
     super.onClose();
   }
@@ -681,17 +680,59 @@ class UnifiedSupportController extends GetxController
       showOtherTitleField.value = true;
       return;
     }
-    appendCarePlanTask(preset);
+    appendCustomTask(preset);
   }
 
-  void appendCarePlanTask(String title) {
-    taskTitlesCtrl.text = appendTaskTitleLine(taskTitlesCtrl.text, title);
+  void appendCatalogueTask({required String code, required String name}) {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) return;
+    final trimmedCode = code.trim();
+    _pushTask(
+      TaskTemplateItem(
+        title: trimmedName,
+        supportItemCode: trimmedCode.isEmpty ? null : trimmedCode,
+        sortOrder: taskTemplate.length,
+      ),
+    );
+  }
+
+  void appendCustomTask(String title) {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) return;
+    _pushTask(
+      TaskTemplateItem(
+        title: trimmed,
+        sortOrder: taskTemplate.length,
+      ),
+    );
+  }
+
+  void removeTaskAt(int index) {
+    if (index < 0 || index >= taskTemplate.length) return;
+    taskTemplate.removeAt(index);
+    _reindexTasks();
   }
 
   void appendOtherCarePlanTask() {
-    appendCarePlanTask(otherTitleCtrl.text);
+    appendCustomTask(otherTitleCtrl.text);
     otherTitleCtrl.clear();
     showOtherTitleField.value = false;
+  }
+
+  void _pushTask(TaskTemplateItem item) {
+    taskTemplate.add(item);
+  }
+
+  void _reindexTasks() {
+    for (var i = 0; i < taskTemplate.length; i++) {
+      final task = taskTemplate[i];
+      if (task.sortOrder == i) continue;
+      taskTemplate[i] = TaskTemplateItem(
+        title: task.title,
+        sortOrder: i,
+        supportItemCode: task.supportItemCode,
+      );
+    }
   }
 
   void toggleWeekday(int day) {
@@ -951,12 +992,12 @@ class UnifiedSupportController extends GetxController
             : 'draft',
       ),
     );
-    final taskTemplate = taskTemplateFromTitles(taskTitlesCtrl.text);
+    final tasks = List<TaskTemplateItem>.from(taskTemplate);
     for (final contractorId in ids) {
       await _shifts.assignShift(
         shiftId: created.id,
         contractorId: contractorId,
-        taskTemplate: taskTemplate.isEmpty ? null : taskTemplate,
+        taskTemplate: tasks.isEmpty ? null : tasks,
       );
     }
     _goToRoster(jobId: support.id, clientId: c.id);
@@ -1003,7 +1044,7 @@ class UnifiedSupportController extends GetxController
           supportItemCode.value,
           supportItemName.value,
         ),
-        taskTemplate: taskTemplateFromTitles(taskTitlesCtrl.text),
+        taskTemplate: List<TaskTemplateItem>.from(taskTemplate),
       ),
     );
     await _attachSelectedTemplates(created.job.id);

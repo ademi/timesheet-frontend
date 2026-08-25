@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/services/session_service.dart';
+import 'package:rostiq/features/billing/data/models/billing_models.dart';
 import 'package:rostiq/features/billing/data/repositories/ndis_catalogue_repository.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
@@ -134,8 +135,16 @@ void main() {
         .thenAnswer((_) async => []);
     when(() => jobs.createOngoingSupport(any()))
         .thenAnswer((_) async => ongoingOut);
-    when(() => ndisCatalogue.fetchAllActiveItems())
-        .thenAnswer((_) async => []);
+    when(() => ndisCatalogue.fetchAllActiveItems()).thenAnswer(
+      (_) async => const [
+        NdisCatalogueItemOut(
+          supportItemNumber: '01_011_0107_1_1',
+          supportItemName:
+              'Assistance With Self-Care Activities - Standard - Weekday Daytime',
+          unit: 'H',
+        ),
+      ],
+    );
     when(() => engagements.listTenantEngagements()).thenAnswer(
       (_) async => [
         EngagementOut(
@@ -256,7 +265,7 @@ void main() {
     expect(controller.requiredSlots.value, 2);
     await tapNext(tester);
 
-    // Step 3 — Details (care plan task titles via preset picker)
+    // Step 3 — Details (presets + catalogue-backed care plan task)
     expect(find.text('Care plan tasks'), findsOneWidget);
     await tester.tap(find.widgetWithText(DropdownButtonFormField<String>, 'Add preset task'));
     await tester.pumpAndSettle();
@@ -266,8 +275,27 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Community access').last);
     await tester.pumpAndSettle();
-    expect(controller.taskTitlesCtrl.text, contains('Personal care'));
-    expect(controller.taskTitlesCtrl.text, contains('Community access'));
+    expect(
+      controller.taskTemplate.map((t) => t.title),
+      ['Personal care', 'Community access'],
+    );
+    expect(
+      controller.taskTemplate.every((t) => t.supportItemCode == null),
+      isTrue,
+    );
+
+    await tester.ensureVisible(find.byKey(const Key('add-from-catalogue')));
+    await tester.tap(find.byKey(const Key('add-from-catalogue')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('catalogue-task-picker-dialog')),
+        matching: find.textContaining('Self-Care'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(controller.taskTemplate, hasLength(3));
+    expect(controller.taskTemplate.last.supportItemCode, '01_011_0107_1_1');
     await tapNext(tester);
 
     // Step 4 — Workers (assign two contractors, then submit)
@@ -291,12 +319,15 @@ void main() {
     expect(captured.clientId, 'client-1');
     expect(captured.clientSiteId, 'site-1');
 
-    expect(captured.taskTemplate, hasLength(2));
+    expect(captured.taskTemplate, hasLength(3));
     expect(captured.taskTemplate.map((t) => t.title), [
       'Personal care',
       'Community access',
+      'Assistance With Self-Care Activities - Standard - Weekday Daytime',
     ]);
-    // TODO(Task 11): assert per-task supportItemCode once CarePlanTasksField exposes codes.
+    expect(captured.taskTemplate[0].supportItemCode, isNull);
+    expect(captured.taskTemplate[1].supportItemCode, isNull);
+    expect(captured.taskTemplate[2].supportItemCode, '01_011_0107_1_1');
 
     expect(navigations, hasLength(1));
   });

@@ -719,16 +719,18 @@ class _DetailsStep extends StatelessWidget {
             const SizedBox(height: 12),
           ],
           CarePlanTasksField(
-            taskTitlesCtrl: controller.taskTitlesCtrl,
+            tasks: controller.taskTemplate,
             otherTitleCtrl: controller.otherTitleCtrl,
             showOtherTitleField: controller.showOtherTitleField,
             onPresetSelected: controller.onTaskPresetSelected,
             onAppendOtherTitle: controller.appendOtherCarePlanTask,
+            onRemoveTask: controller.removeTaskAt,
+            onCataloguePicked: controller.appendCatalogueTask,
             sectionTitle:
                 controller.isOngoing ? 'Care plan tasks' : 'Shift tasks',
             helperText: controller.isOngoing
-                ? 'Optional task titles copied onto generated visits.'
-                : 'Optional task titles for this booked visit (requires a worker).',
+                ? 'Optional tasks copied onto generated visits. Catalogue items keep their NDIS item number.'
+                : 'Optional tasks for this booked visit (requires a worker). Catalogue items keep their NDIS item number.',
           ),
           const SizedBox(height: 16),
           NdisSupportItemPicker(

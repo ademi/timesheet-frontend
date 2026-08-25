@@ -326,12 +326,35 @@ void main() {
     expect(controller.requiredSlots.value, 1);
   });
 
+  test('appendCatalogueTask stamps support item code on template', () {
+    final c = build();
+    c.appendCatalogueTask(
+      code: '01_011_0107_1_1',
+      name: 'Assistance With Self-Care Activities - Standard - Weekday Daytime',
+    );
+    expect(c.taskTemplate.first.supportItemCode, '01_011_0107_1_1');
+    expect(c.taskTemplate.first.title, contains('Self-Care'));
+  });
+
+  test('removeTaskAt drops item so codes cannot desync', () {
+    final c = build();
+    c.appendCatalogueTask(code: '01_011_0107_1_1', name: 'Self care');
+    c.appendCustomTask('Meal prep');
+    c.removeTaskAt(0);
+    expect(c.taskTemplate.single.title, 'Meal prep');
+    expect(c.taskTemplate.single.supportItemCode, isNull);
+  });
+
   test('ongoing submit includes care plan task template', () async {
     when(() => jobs.createOngoingSupport(any())).thenAnswer((_) async => _ongoingOut);
 
     final controller = build();
     await controller.load();
-    controller.taskTitlesCtrl.text = 'Personal care\nMeal prep';
+    controller.appendCatalogueTask(
+      code: '01_011_0107_1_1',
+      name: 'Personal care',
+    );
+    controller.appendCustomTask('Meal prep');
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
@@ -340,7 +363,20 @@ void main() {
     ).captured.single as OngoingSupportCreateRequest;
     expect(captured.taskTemplate, hasLength(2));
     expect(captured.taskTemplate[0].title, 'Personal care');
+    expect(captured.taskTemplate[0].supportItemCode, '01_011_0107_1_1');
     expect(captured.taskTemplate[1].title, 'Meal prep');
+    expect(captured.taskTemplate[1].supportItemCode, isNull);
+    expect(captured.toJson()['task_template'], [
+      {
+        'title': 'Personal care',
+        'sort_order': 0,
+        'support_item_code': '01_011_0107_1_1',
+      },
+      {
+        'title': 'Meal prep',
+        'sort_order': 1,
+      },
+    ]);
   });
 
   test('schedule warn prefers session tenantTimezone', () async {
@@ -601,7 +637,7 @@ void main() {
     controller.syncAssignSlots();
     controller.selectContractorForSlot(0, 'contractor-1');
     controller.selectContractorForSlot(1, 'contractor-2');
-    controller.taskTitlesCtrl.text = 'Personal care';
+    controller.appendCustomTask('Personal care');
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
@@ -629,7 +665,7 @@ void main() {
     expect(navigations, hasLength(1));
   });
 
-  test('one session assignShift sends task_template from titles', () async {
+  test('one session assignShift sends task_template from task list', () async {
     when(() => jobs.ensureOngoingSupport('client-1'))
         .thenAnswer((_) async => _job);
     when(() => shifts.createShift(any())).thenAnswer((_) async => _publishedShift());
@@ -650,7 +686,8 @@ void main() {
     await controller.load();
     controller.syncAssignSlots();
     controller.selectContractorForSlot(0, 'contractor-1');
-    controller.taskTitlesCtrl.text = 'Personal care\nMeal prep';
+    controller.appendCustomTask('Personal care');
+    controller.appendCustomTask('Meal prep');
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
@@ -687,7 +724,7 @@ void main() {
     await controller.load();
     controller.syncAssignSlots();
     controller.selectContractorForSlot(0, 'contractor-1');
-    controller.taskTitlesCtrl.text = 'Meal prep';
+    controller.appendCustomTask('Meal prep');
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
