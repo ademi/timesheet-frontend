@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
-import 'package:rostiq/features/visits/controllers/staff_visits_controller.dart';
+import 'package:rostiq/features/visits/utils/assign_availability.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
 
 void main() {

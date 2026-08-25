@@ -21,55 +21,13 @@ import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../billing/data/models/billing_models.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
+import '../utils/assign_availability.dart';
 import '../utils/visit_billing_utils.dart';
 import '../data/models/roster_overlay_models.dart';
 import '../data/models/visit_models.dart';
 import '../data/repositories/visits_repository.dart';
 import '../roster/roster_grid_model.dart';
 import '../roster/support_filter.dart';
-
-String assignAvailabilityLabel({
-  required String contractorId,
-  required DateTime day,
-  required DateTime shiftStart,
-  required DateTime shiftEnd,
-  required RosterOverlayOut overlay,
-  required List<ShiftOut> shifts,
-}) {
-  final dayLocal = day.toLocal();
-  final civil = DateTime(dayLocal.year, dayLocal.month, dayLocal.day);
-  for (final c in overlay.contractors) {
-    if (c.contractorId != contractorId) continue;
-    for (final leave in c.leave) {
-      final leaveStart = leave.startDate.toLocal();
-      final leaveEnd = leave.endDate.toLocal();
-      final start = DateTime(
-        leaveStart.year,
-        leaveStart.month,
-        leaveStart.day,
-      );
-      final end = DateTime(
-        leaveEnd.year,
-        leaveEnd.month,
-        leaveEnd.day,
-      );
-      if (!civil.isBefore(start) && !civil.isAfter(end)) return 'Leave';
-    }
-  }
-  for (final s in shifts) {
-    if (s.status == 'cancelled') continue;
-    final overlaps =
-        s.scheduledStart.isBefore(shiftEnd) &&
-        s.scheduledEnd.isAfter(shiftStart);
-    if (!overlaps) continue;
-    for (final a in s.assignments) {
-      if (a.status == 'active' && a.contractorId == contractorId) {
-        return 'Busy';
-      }
-    }
-  }
-  return 'Free';
-}
 
 class StaffVisitsController extends GetxController {
   StaffVisitsController({

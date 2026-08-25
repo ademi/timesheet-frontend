@@ -20,6 +20,8 @@ import 'package:rostiq/features/jobs/utils/schedule_hours_warn.dart';
 import 'package:rostiq/features/jobs/utils/unified_support_args.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
+import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
+import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
 
 class _MockJobsRepository extends Mock implements JobsRepository {}
 
@@ -29,6 +31,8 @@ class _MockEngagementsRepository extends Mock
     implements EngagementsRepository {}
 
 class _MockShiftsRepository extends Mock implements ShiftsRepository {}
+
+class _MockVisitsRepository extends Mock implements VisitsRepository {}
 
 class _MockSessionService extends Mock implements SessionService {}
 
@@ -110,6 +114,7 @@ void main() {
   late _MockClientsRepository clients;
   late _MockEngagementsRepository engagements;
   late _MockShiftsRepository shifts;
+  late _MockVisitsRepository visits;
   late _MockSessionService session;
   late List<({String route, dynamic arguments})> navigations;
 
@@ -119,6 +124,7 @@ void main() {
     registerFallbackValue(_FakeManualVisitCreateRequest());
     registerFallbackValue(_FakeSupportItemPatch());
     registerFallbackValue(<TaskTemplateItem>[]);
+    registerFallbackValue(_now);
   });
 
   setUp(() {
@@ -127,6 +133,7 @@ void main() {
     clients = _MockClientsRepository();
     engagements = _MockEngagementsRepository();
     shifts = _MockShiftsRepository();
+    visits = _MockVisitsRepository();
     session = _MockSessionService();
     navigations = [];
     when(() => session.hasPermission(any())).thenReturn(true);
@@ -148,6 +155,15 @@ void main() {
     when(
       () => jobs.listFormTemplates(tenantLevel: true),
     ).thenAnswer((_) async => []);
+    when(
+      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
+    ).thenAnswer((_) async => const RosterOverlayOut(contractors: []));
+    when(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async => []);
   });
 
   tearDown(() {
@@ -163,6 +179,7 @@ void main() {
       clientsRepository: clients,
       engagementsRepository: engagements,
       shiftsRepository: shifts,
+      visitsRepository: visits,
       session: session,
       args: args ??
           UnifiedSupportArgs.forClient(

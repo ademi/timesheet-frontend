@@ -20,6 +20,10 @@ import '../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
+import '../../visits/data/models/roster_overlay_models.dart';
+import '../../visits/data/repositories/visits_repository.dart';
+import '../../visits/utils/assign_availability.dart';
+import '../../visits/utils/assign_schedule_window.dart';
 import '../data/models/job_models.dart';
 import '../data/repositories/jobs_repository.dart';
 import '../utils/job_copy.dart';
@@ -44,6 +48,7 @@ class UnifiedSupportController extends GetxController
     required ClientsRepository clientsRepository,
     required EngagementsRepository engagementsRepository,
     required ShiftsRepository shiftsRepository,
+    required VisitsRepository visitsRepository,
     required SessionService session,
     PayrollRepository? payroll,
     UnifiedSupportArgs? args,
@@ -52,6 +57,7 @@ class UnifiedSupportController extends GetxController
        _clients = clientsRepository,
        _engagements = engagementsRepository,
        _shifts = shiftsRepository,
+       _visits = visitsRepository,
        _session = session,
        _payroll = payroll,
        _args = args,
@@ -61,6 +67,7 @@ class UnifiedSupportController extends GetxController
   final ClientsRepository _clients;
   final EngagementsRepository _engagements;
   final ShiftsRepository _shifts;
+  final VisitsRepository _visits;
   final SessionService _session;
   final PayrollRepository? _payroll;
   final UnifiedSupportArgs? _args;
@@ -110,8 +117,14 @@ class UnifiedSupportController extends GetxController
   final isSaving = false.obs;
   final errorMessage = RxnString();
   final scheduleWarnTimezone = RxnString();
+  final assignOverlay = Rxn<RosterOverlayOut>();
+  final assignShifts = <ShiftOut>[].obs;
+  final assignOverlayWarning = RxnString();
+  final isAssignAvailabilityLoading = false.obs;
 
   bool engagementsLoaded = false;
+  bool assignAvailabilityLoaded = false;
+  String? _assignAvailabilityKey;
 
   bool get canManage => _session.hasPermission(AppPermissions.jobsManage);
 
@@ -158,7 +171,14 @@ class UnifiedSupportController extends GetxController
       if (!oneSessionEnd.value.isAfter(start)) {
         oneSessionEnd.value = start.add(const Duration(hours: 1));
       }
+      _invalidateAssignAvailability();
     });
+    ever(oneSessionEnd, (_) => _invalidateAssignAvailability());
+    ever(startDate, (_) => _invalidateAssignAvailability());
+    ever(startTime, (_) => _invalidateAssignAvailability());
+    ever(endTime, (_) => _invalidateAssignAvailability());
+    ever(frequency, (_) => _invalidateAssignAvailability());
+    ever(weekdays, (_) => _invalidateAssignAvailability());
     _bootstrap();
     _cacheTenantTimezone();
   }
@@ -249,6 +269,88 @@ class UnifiedSupportController extends GetxController
       engagements.clear();
     }
     engagementsLoaded = true;
+  }
+
+  /// Loads roster overlay + shifts for the proposed schedule window (assign step).
+  Future<void> ensureAssignAvailabilityLoaded() async {
+    if (step.value != assignStep) return;
+    final window = computeAssignScheduleWindow(
+      isOneSession: isOneSession,
+      oneSessionStart: oneSessionStart.value,
+      oneSessionEnd: oneSessionEnd.value,
+      startDate: startDate.value,
+      frequency: frequency.value,
+      weekdays: weekdays.toSet(),
+      startTime: startTime.value,
+      endTime: endTime.value,
+    );
+    final tz = _tenantTimezoneForScheduleWarn ?? await _resolveTenantTimezone();
+    final query = assignAvailabilityQueryWindow(
+      window: window,
+      tenantTimezone: tz,
+    );
+    final key =
+        '${query.from.toIso8601String()}|${query.to.toIso8601String()}|${query.shiftStart.toIso8601String()}|${query.shiftEnd.toIso8601String()}';
+    if (assignAvailabilityLoaded && _assignAvailabilityKey == key) return;
+
+    isAssignAvailabilityLoading.value = true;
+    assignOverlayWarning.value = null;
+    try {
+      final shiftsFuture = _shifts.listShifts(from: query.from, to: query.to);
+      final overlayFuture = _visits
+          .fetchRosterOverlay(from: query.from, to: query.to)
+          .then<RosterOverlayOut?>((v) => v)
+          .catchError((_) {
+            assignOverlayWarning.value = 'Leave/availability unavailable';
+            return null;
+          });
+      assignShifts.assignAll(await shiftsFuture);
+      assignOverlay.value =
+          await overlayFuture ?? const RosterOverlayOut(contractors: []);
+      _assignAvailabilityWindow = query;
+      _assignAvailabilityKey = key;
+      assignAvailabilityLoaded = true;
+    } catch (_) {
+      assignShifts.clear();
+      assignOverlay.value = const RosterOverlayOut(contractors: []);
+      assignOverlayWarning.value = 'Leave/availability unavailable';
+      _assignAvailabilityWindow = query;
+      _assignAvailabilityKey = key;
+      assignAvailabilityLoaded = true;
+    } finally {
+      isAssignAvailabilityLoading.value = false;
+    }
+  }
+
+  ({
+    DateTime from,
+    DateTime to,
+    DateTime shiftStart,
+    DateTime shiftEnd,
+    DateTime day,
+  })?
+  _assignAvailabilityWindow;
+
+  String availabilityLabelForContractor(String contractorId) {
+    final query = _assignAvailabilityWindow;
+    if (query == null) return 'Free';
+    return assignAvailabilityLabel(
+      contractorId: contractorId,
+      day: query.day,
+      shiftStart: query.shiftStart,
+      shiftEnd: query.shiftEnd,
+      overlay: assignOverlay.value ?? const RosterOverlayOut(contractors: []),
+      shifts: assignShifts.toList(growable: false),
+    );
+  }
+
+  void _invalidateAssignAvailability() {
+    assignAvailabilityLoaded = false;
+    _assignAvailabilityKey = null;
+    _assignAvailabilityWindow = null;
+    assignOverlay.value = null;
+    assignShifts.clear();
+    assignOverlayWarning.value = null;
   }
 
   UnifiedSupportArgs? _parseRouteArgs() {
@@ -471,6 +573,7 @@ class UnifiedSupportController extends GetxController
       if (step.value == assignStep) {
         syncAssignSlots();
         ensureEngagementsLoaded();
+        ensureAssignAvailabilityLoaded();
       }
     }
   }

@@ -17,6 +17,7 @@ import '../data/datasources/jobs_remote_datasource.dart';
 import '../data/repositories/jobs_repository.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
 import '../../visits/bindings/visits_binding.dart';
+import '../../visits/data/repositories/visits_repository.dart';
 
 class JobsBinding extends Bindings {
   @override
@@ -98,6 +99,7 @@ class UnifiedSupportBinding extends Bindings {
         clientsRepository: Get.find<ClientsRepository>(),
         engagementsRepository: Get.find<EngagementsRepository>(),
         shiftsRepository: Get.find<ShiftsRepository>(),
+        visitsRepository: Get.find<VisitsRepository>(),
         session: Get.find<SessionService>(),
         payroll: Get.isRegistered<PayrollRepository>()
             ? Get.find<PayrollRepository>()

@@ -15,6 +15,8 @@ import 'package:rostiq/features/jobs/utils/schedule_hours_warn.dart';
 import 'package:rostiq/features/jobs/utils/unified_support_args.dart';
 import 'package:rostiq/features/jobs/views/unified_support_view.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
+import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
+import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
 
 class _MockJobsRepository extends Mock implements JobsRepository {}
 
@@ -25,6 +27,8 @@ class _MockEngagementsRepository extends Mock
 
 class _MockShiftsRepository extends Mock implements ShiftsRepository {}
 
+class _MockVisitsRepository extends Mock implements VisitsRepository {}
+
 class _MockSessionService extends Mock implements SessionService {}
 
 void main() {
@@ -33,6 +37,7 @@ void main() {
   late _MockClientsRepository clients;
   late _MockEngagementsRepository engagements;
   late _MockShiftsRepository shifts;
+  late _MockVisitsRepository visits;
   late _MockSessionService session;
 
   final now = DateTime.utc(2026, 8, 13, 9);
@@ -56,6 +61,10 @@ void main() {
     updatedAt: now,
   );
 
+  setUpAll(() {
+    registerFallbackValue(now);
+  });
+
   setUp(() {
     Get.reset();
     Get.testMode = true;
@@ -63,6 +72,7 @@ void main() {
     clients = _MockClientsRepository();
     engagements = _MockEngagementsRepository();
     shifts = _MockShiftsRepository();
+    visits = _MockVisitsRepository();
     session = _MockSessionService();
 
     when(() => session.hasPermission(any())).thenReturn(true);
@@ -85,12 +95,22 @@ void main() {
         .thenAnswer((_) async => []);
     when(() => engagements.listTenantEngagements())
         .thenAnswer((_) async => []);
+    when(
+      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
+    ).thenAnswer((_) async => const RosterOverlayOut(contractors: []));
+    when(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async => []);
 
     controller = UnifiedSupportController(
       jobsRepository: jobs,
       clientsRepository: clients,
       engagementsRepository: engagements,
       shiftsRepository: shifts,
+      visitsRepository: visits,
       session: session,
       args: UnifiedSupportArgs.forClient(
         client,
@@ -221,5 +241,38 @@ void main() {
     expect(find.text('Unfilled'), findsNWidgets(2));
     expect(find.text('Worker assignment will be available in the next update.'),
         findsNothing);
+  });
+
+  testWidgets('assign step dropdown shows Free beside worker name', (
+    tester,
+  ) async {
+    final engagement = EngagementOut(
+      id: 'eng-1',
+      tenantId: 'tenant-1',
+      contractorId: 'contractor-1',
+      contractorName: 'Alex Worker',
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    );
+    when(() => engagements.listTenantEngagements())
+        .thenAnswer((_) async => [engagement]);
+    await controller.load();
+    controller.setMode(UnifiedSupportMode.oneSession);
+    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: UnifiedSupportView()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const ValueKey('assign-slot-0')));
+    await tester.tap(find.byKey(const ValueKey('assign-slot-0')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Alex Worker'), findsOneWidget);
+    expect(find.text('Free'), findsOneWidget);
   });
 }

@@ -774,12 +774,33 @@ class _DetailsStep extends StatelessWidget {
   }
 }
 
-class _WorkersStep extends StatelessWidget {
+class _WorkersStep extends StatefulWidget {
   const _WorkersStep({required this.controller});
   final UnifiedSupportController controller;
 
   @override
+  State<_WorkersStep> createState() => _WorkersStepState();
+}
+
+class _WorkersStepState extends State<_WorkersStep> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.ensureEngagementsLoaded();
+    widget.controller.ensureAssignAvailabilityLoaded();
+  }
+
+  Color _availabilityColor(String label) {
+    return switch (label) {
+      'Leave' => AppColors.error,
+      'Busy' => AppColors.openSlot,
+      _ => AppColors.success,
+    };
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     return Obx(() {
       final slots = controller.selectedContractorIds;
       final seen = <String>{};
@@ -802,6 +823,13 @@ class _WorkersStep extends StatelessWidget {
             style: TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
           const SizedBox(height: 12),
+          if (controller.assignOverlayWarning.value != null) ...[
+            Text(
+              controller.assignOverlayWarning.value!,
+              style: const TextStyle(fontSize: 12, color: AppColors.openSlot),
+            ),
+            const SizedBox(height: 8),
+          ],
           for (var i = 0; i < slots.length; i++) ...[
             DropdownButtonFormField<String?>(
               key: ValueKey('assign-slot-$i'),
@@ -814,7 +842,27 @@ class _WorkersStep extends StatelessWidget {
                 for (final engagement in workers)
                   DropdownMenuItem<String?>(
                     value: engagement.contractorId,
-                    child: Text(engagement.displayName),
+                    child: Builder(
+                      builder: (context) {
+                        final label = controller.availabilityLabelForContractor(
+                          engagement.contractorId,
+                        );
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(engagement.displayName),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _availabilityColor(label),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 if (slots[i] != null &&
                     !seen.contains(slots[i]))

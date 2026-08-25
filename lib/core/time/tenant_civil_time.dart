@@ -95,6 +95,43 @@ DateTime tenantCivilDateStartUtc(DateTime civilDate, String? tenantTimezone) {
   return tz.TZDateTime(location, d.year, d.month, d.day).toUtc();
 }
 
+/// UTC instant for a tenant civil wall-clock [civil] (date + time of day).
+DateTime tenantCivilInstantUtc(DateTime civil, String? tenantTimezone) {
+  final tzId = tenantTimezone?.trim();
+  if (tzId == null || tzId.isEmpty) {
+    return civil.toUtc();
+  }
+  final override = tenantUtcOffsetOverride;
+  if (override != null) {
+    final ref = DateTime.utc(
+      civil.year,
+      civil.month,
+      civil.day,
+      civil.hour,
+      civil.minute,
+      civil.second,
+      civil.millisecond,
+      civil.microsecond,
+    );
+    return ref.subtract(override(tzId, ref));
+  }
+  final location = _locationFor(tzId);
+  if (location == null) {
+    return civil.toUtc();
+  }
+  return tz.TZDateTime(
+    location,
+    civil.year,
+    civil.month,
+    civil.day,
+    civil.hour,
+    civil.minute,
+    civil.second,
+    civil.millisecond,
+    civil.microsecond,
+  ).toUtc();
+}
+
 /// UTC instant for 00:00 on the tenant civil day containing [utc].
 DateTime startOfTenantCivilDayUtc(DateTime utc, String? tenantTimezone) {
   final civil = tenantCivilFromUtc(utc, tenantTimezone);
