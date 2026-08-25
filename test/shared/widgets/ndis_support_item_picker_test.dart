@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/app/themes/app_colors.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/features/billing/data/models/billing_models.dart';
+import 'package:rostiq/features/billing/data/ndis_catalogue_filter_prefs.dart';
 import 'package:rostiq/features/billing/data/ndis_catalogue_local_filter.dart';
 import 'package:rostiq/features/billing/data/repositories/ndis_catalogue_repository.dart';
 import 'package:rostiq/shared/widgets/ndis_support_item_picker.dart';
@@ -61,12 +62,14 @@ class _Harness extends StatefulWidget {
     this.initialCode,
     this.initialName,
     this.onChanged,
+    this.filterPrefs,
   });
 
   final NdisCatalogueRepository repository;
   final String? initialCode;
   final String? initialName;
   final void Function(String? code, String? name)? onChanged;
+  final NdisCatalogueFilterPrefs? filterPrefs;
 
   @override
   State<_Harness> createState() => _HarnessState();
@@ -91,6 +94,7 @@ class _HarnessState extends State<_Harness> {
           supportItemCode: code,
           supportItemName: name,
           repository: widget.repository,
+          filterPrefs: widget.filterPrefs,
           debounceDuration: Duration.zero,
           onChanged: ({
             required String? supportItemCode,
@@ -110,13 +114,35 @@ class _HarnessState extends State<_Harness> {
 
 void main() {
   late _MockNdisCatalogueRepository repository;
+  late Map<String, dynamic> filterBox;
 
   setUp(() {
     repository = _MockNdisCatalogueRepository();
+    filterBox = <String, dynamic>{};
     when(
       () => repository.fetchAllActiveItems(),
     ).thenAnswer((_) async => const <NdisCatalogueItemOut>[]);
   });
+
+  NdisCatalogueFilterPrefs isolatedFilterPrefs() => NdisCatalogueFilterPrefs(
+        read: (key) => filterBox[key],
+        write: (key, value) => filterBox[key] = value,
+        remove: (key) => filterBox.remove(key),
+      );
+
+  Widget isolatedHarness({
+    String? initialCode,
+    String? initialName,
+    void Function(String? code, String? name)? onChanged,
+  }) {
+    return _Harness(
+      repository: repository,
+      initialCode: initialCode,
+      initialName: initialName,
+      onChanged: onChanged,
+      filterPrefs: isolatedFilterPrefs(),
+    );
+  }
 
   group('isValidNdisSupportItemCode', () {
     test('accepts canonical NDIS item numbers', () {
@@ -135,8 +161,7 @@ void main() {
     String? clearedName;
 
     await tester.pumpWidget(
-      _Harness(
-        repository: repository,
+      isolatedHarness(
         initialCode: _item.supportItemNumber,
         initialName: _item.supportItemName,
         onChanged: (code, name) {
@@ -166,8 +191,7 @@ void main() {
     String? pickedName;
 
     await tester.pumpWidget(
-      _Harness(
-        repository: repository,
+      isolatedHarness(
         onChanged: (code, name) {
           pickedCode = code;
           pickedName = name;
@@ -206,8 +230,7 @@ void main() {
     String? pickedName;
 
     await tester.pumpWidget(
-      _Harness(
-        repository: repository,
+      isolatedHarness(
         onChanged: (code, name) {
           pickedCode = code;
           pickedName = name;
@@ -244,8 +267,7 @@ void main() {
     String? clearedName = 'keep';
 
     await tester.pumpWidget(
-      _Harness(
-        repository: repository,
+      isolatedHarness(
         onChanged: (code, name) {
           clearedCode = code;
           clearedName = name;
@@ -267,8 +289,7 @@ void main() {
 
   testWidgets('shows format error for invalid typed code on blur', (tester) async {
     await tester.pumpWidget(
-      _Harness(
-        repository: repository,
+      isolatedHarness(
       ),
     );
 
@@ -284,8 +305,7 @@ void main() {
 
   testWidgets('shows pick-row hint for name-like typed text on blur', (tester) async {
     await tester.pumpWidget(
-      _Harness(
-        repository: repository,
+      isolatedHarness(
       ),
     );
 
@@ -313,7 +333,7 @@ void main() {
         return _liveCatalogue;
       });
 
-      await tester.pumpWidget(_Harness(repository: repository));
+      await tester.pumpWidget(isolatedHarness());
       await tester.pump();
       await tester.pump();
 
@@ -368,7 +388,7 @@ void main() {
         () => repository.fetchAllActiveItems(),
       ).thenAnswer((_) async => _liveCatalogue);
 
-      await tester.pumpWidget(_Harness(repository: repository));
+      await tester.pumpWidget(isolatedHarness());
       await tester.pump();
       await tester.pump();
 
@@ -404,7 +424,7 @@ void main() {
       () => repository.fetchAllActiveItems(),
     ).thenAnswer((_) async => _liveCatalogue);
 
-    await tester.pumpWidget(_Harness(repository: repository));
+    await tester.pumpWidget(isolatedHarness());
     await tester.pump();
     await tester.pump();
 
@@ -429,7 +449,7 @@ void main() {
         () => repository.fetchAllActiveItems(),
       ).thenAnswer((_) async => throw failure);
 
-      await tester.pumpWidget(_Harness(repository: repository));
+      await tester.pumpWidget(isolatedHarness());
       await tester.pump();
       await tester.pump();
 

@@ -7,6 +7,7 @@ import '../../app/themes/app_colors.dart';
 import '../../core/errors/app_failure.dart';
 import '../../features/billing/bindings/billing_binding.dart';
 import '../../features/billing/data/models/billing_models.dart';
+import '../../features/billing/data/ndis_catalogue_filter_prefs.dart';
 import '../../features/billing/data/ndis_catalogue_local_filter.dart';
 import '../../features/billing/data/repositories/ndis_catalogue_repository.dart';
 
@@ -44,6 +45,7 @@ class NdisSupportItemPicker extends StatefulWidget {
     required this.onChanged,
     this.enabled = true,
     this.repository,
+    this.filterPrefs,
     this.debounceDuration = const Duration(milliseconds: 300),
     this.searchLimit = 20,
     this.labelText = 'NDIS support item',
@@ -55,6 +57,7 @@ class NdisSupportItemPicker extends StatefulWidget {
   final NdisSupportItemChanged onChanged;
   final bool enabled;
   final NdisCatalogueRepository? repository;
+  final NdisCatalogueFilterPrefs? filterPrefs;
   final Duration debounceDuration;
 
   /// Unused by the local-filter path; kept so existing call sites compile.
@@ -81,6 +84,9 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
   String? _formatError;
   String? _categoryNumber;
   String? _registrationGroupNumber;
+
+  late final NdisCatalogueFilterPrefs _filterPrefs =
+      widget.filterPrefs ?? NdisCatalogueFilterPrefs();
 
   /// True while applying a catalogue pick so blur/query side-effects are ignored.
   bool _applyingSelection = false;
@@ -114,6 +120,9 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
   @override
   void initState() {
     super.initState();
+    final saved = _filterPrefs.load();
+    _categoryNumber = saved.categoryNumber;
+    _registrationGroupNumber = saved.registrationGroupNumber;
     _syncQueryFromSelection();
     _focusNode.addListener(_onFocusChange);
     _loadCatalogue();
@@ -215,12 +224,20 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
     }
   }
 
+  void _persistFilters() {
+    _filterPrefs.save(
+      categoryNumber: _categoryNumber,
+      registrationGroupNumber: _registrationGroupNumber,
+    );
+  }
+
   void _onCategorySelected(String? number) {
     setState(() {
       _categoryNumber = number;
       _clearRegIfInvalid();
       _recomputeOptions();
     });
+    _persistFilters();
   }
 
   void _validateTypedCode() {
@@ -416,6 +433,7 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
                           (value == null || value.isEmpty) ? null : value;
                       _recomputeOptions();
                     });
+                    _persistFilters();
                   }
                 : null,
           ),
