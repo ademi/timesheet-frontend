@@ -210,7 +210,7 @@ void main() {
     expect(controller.selectedSiteId.value, 'site-1');
     expect(controller.titleCtrl.text, defaultOngoingTitle('Sam Lee'));
 
-    controller.step.value = 3;
+    controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
     final captured = verify(
@@ -253,7 +253,7 @@ void main() {
     );
     await controller.load();
 
-    controller.step.value = 3;
+    controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
     verify(() => jobs.ensureOngoingSupport('client-1')).called(1);
@@ -303,7 +303,7 @@ void main() {
     final controller = build();
     await controller.load();
     controller.taskTitlesCtrl.text = 'Personal care\nMeal prep';
-    controller.step.value = 3;
+    controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
     final captured = verify(
@@ -341,7 +341,7 @@ void main() {
 
     final controller = build();
     await controller.load();
-    controller.step.value = 3;
+    controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
     final captured = verify(
@@ -416,6 +416,32 @@ void main() {
     expect(controller.clientNdisNumber, '430000000');
   });
 
+  test('canGoNext requires title on details step for ongoing', () async {
+    final controller = build();
+    await controller.load();
+    controller.step.value = UnifiedSupportController.detailsStep;
+    controller.titleCtrl.clear();
+
+    expect(controller.canGoNext(), isFalse);
+    expect(controller.errorMessage.value, contains('Title'));
+
+    controller.titleCtrl.text = 'Sam Lee support';
+    expect(controller.canGoNext(), isTrue);
+  });
+
+  test('nextStep loads engagements when entering assign step', () async {
+    when(() => engagements.listTenantEngagements())
+        .thenAnswer((_) async => [_eng]);
+    final controller = build();
+    await controller.load();
+    controller.step.value = UnifiedSupportController.detailsStep;
+
+    controller.nextStep();
+
+    expect(controller.step.value, UnifiedSupportController.assignStep);
+    verify(() => engagements.listTenantEngagements()).called(1);
+  });
+
   test('surfaces AppFailure from ongoing create', () async {
     when(() => jobs.createOngoingSupport(any())).thenThrow(
       const AppFailure(
@@ -427,7 +453,7 @@ void main() {
 
     final controller = build();
     await controller.load();
-    controller.step.value = 3;
+    controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
     expect(

@@ -33,8 +33,10 @@ class UnifiedSupportView extends GetView<UnifiedSupportController> {
               return Text(
                 controller.isOneSession ? 'Date & time' : 'Pattern & time',
               );
+            case 3:
+              return const Text('Details');
             default:
-              return const Text('Templates & NDIS');
+              return const Text('Workers');
           }
         }),
       ),
@@ -49,6 +51,11 @@ class UnifiedSupportView extends GetView<UnifiedSupportController> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: _StepIndicator(step: controller.step.value),
             ),
+            if (controller.client.value != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: _ClientBanner(controller: controller),
+              ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(16),
@@ -66,7 +73,8 @@ class UnifiedSupportView extends GetView<UnifiedSupportController> {
                           0 => _TypeStep(controller: controller),
                           1 => _LocationStep(controller: controller),
                           2 => _ScheduleStep(controller: controller),
-                          _ => _TemplatesStep(controller: controller),
+                          3 => _DetailsStep(controller: controller),
+                          _ => _WorkersStep(controller: controller),
                         },
                       ],
                     ),
@@ -132,7 +140,7 @@ class _StepIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['Type', 'Location', 'Schedule', 'Details'];
+    const labels = ['Type', 'Location', 'Schedule', 'Details', 'Workers'];
     return Row(
       children: [
         for (var i = 0; i < labels.length; i++) ...[
@@ -163,6 +171,50 @@ class _StepIndicator extends StatelessWidget {
         ],
       ],
     );
+  }
+}
+
+class _ClientBanner extends StatelessWidget {
+  const _ClientBanner({required this.controller});
+  final UnifiedSupportController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final client = controller.client.value;
+      if (client == null) return const SizedBox.shrink();
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              client.fullName,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
+            ),
+            if (controller.clientNdisNumber != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                'NDIS ${controller.clientNdisNumber}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    });
   }
 }
 
@@ -464,27 +516,6 @@ class _OneSessionSchedule extends StatelessWidget {
             value: controller.publishImmediately.value,
             onChanged: (v) => controller.publishImmediately.value = v,
           ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: controller.soleContractorId,
-            items: [
-              const DropdownMenuItem(value: null, child: Text('Unfilled')),
-              for (final engagement in controller.assignableEngagements)
-                DropdownMenuItem(
-                  value: engagement.contractorId,
-                  child: Text(
-                    engagement.contractorName ?? engagement.contractorId,
-                  ),
-                ),
-            ],
-            onChanged: controller.selectSoleContractor,
-            decoration: const InputDecoration(
-              labelText: 'Worker (optional)',
-              border: OutlineInputBorder(),
-              helperText:
-                  'Assign a worker to book a visit with shift tasks immediately.',
-            ),
-          ),
         ],
       );
     });
@@ -498,7 +529,6 @@ class _OngoingSchedule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final multiSlot = controller.requiredSlots.value > 1;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -561,29 +591,6 @@ class _OngoingSchedule extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           _SlotsStepper(controller: controller),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: multiSlot ? null : controller.soleContractorId,
-            items: [
-              const DropdownMenuItem(value: null, child: Text('Unfilled')),
-              if (!multiSlot)
-                for (final engagement in controller.assignableEngagements)
-                  DropdownMenuItem(
-                    value: engagement.contractorId,
-                    child: Text(
-                      engagement.contractorName ?? engagement.contractorId,
-                    ),
-                  ),
-            ],
-            onChanged: multiSlot ? null : controller.selectSoleContractor,
-            decoration: InputDecoration(
-              labelText: 'Worker (optional)',
-              border: const OutlineInputBorder(),
-              helperText: multiSlot
-                  ? 'Assign workers from the roster when multiple slots are needed'
-                  : null,
-            ),
-          ),
         ],
       );
     });
@@ -674,8 +681,8 @@ class _SlotsStepperState extends State<_SlotsStepper> {
   }
 }
 
-class _TemplatesStep extends StatelessWidget {
-  const _TemplatesStep({required this.controller});
+class _DetailsStep extends StatelessWidget {
+  const _DetailsStep({required this.controller});
   final UnifiedSupportController controller;
 
   @override
@@ -696,12 +703,6 @@ class _TemplatesStep extends StatelessWidget {
           ],
           if (controller.showNdisCapturePrompt) ...[
             NdisCapturePrompt(onAddDetails: controller.openClientDetailsForNdis),
-            const SizedBox(height: 12),
-          ] else if (controller.clientNdisNumber != null) ...[
-            Text(
-              'NDIS ${controller.clientNdisNumber}',
-              style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-            ),
             const SizedBox(height: 12),
           ],
           CarePlanTasksField(
@@ -767,6 +768,34 @@ class _TemplatesStep extends StatelessWidget {
                   ),
               ],
             ),
+        ],
+      );
+    });
+  }
+}
+
+class _WorkersStep extends StatelessWidget {
+  const _WorkersStep({required this.controller});
+  final UnifiedSupportController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final slots = controller.requiredSlots.value;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            slots == 1
+                ? 'Assign a worker for this support (optional).'
+                : 'Assign up to $slots workers for this support (optional).',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Worker assignment will be available in the next update.',
+            style: TextStyle(color: AppColors.textMuted),
+          ),
         ],
       );
     });

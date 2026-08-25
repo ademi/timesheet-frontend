@@ -101,6 +101,22 @@ void main() {
 
   tearDown(Get.reset);
 
+  testWidgets('shows client name at top when client selected', (
+    tester,
+  ) async {
+    await controller.load();
+    controller.step.value = 2;
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: UnifiedSupportView()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sam Lee'), findsOneWidget);
+    expect(find.text('Workers'), findsOneWidget);
+    expect(find.text('Worker (optional)'), findsNothing);
+  });
+
   testWidgets('shows amber warn on schedule step for atypical hours', (
     tester,
   ) async {

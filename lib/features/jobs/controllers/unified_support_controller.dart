@@ -66,8 +66,12 @@ class UnifiedSupportController extends GetxController
   final UnifiedSupportArgs? _args;
   final void Function(String route, dynamic arguments)? _onNavigate;
 
-  static const int maxStep = 3;
-  static const int assignStep = 3;
+  static const int typeStep = 0;
+  static const int locationStep = 1;
+  static const int scheduleStep = 2;
+  static const int detailsStep = 3;
+  static const int assignStep = 4;
+  static const int maxStep = assignStep;
 
   final step = 0.obs;
   final mode = Rxn<UnifiedSupportMode>();
@@ -414,6 +418,12 @@ class UnifiedSupportController extends GetxController
         return true;
       case 2:
         return _validateSchedule(showError: true);
+      case 3:
+        if (isOngoing && titleCtrl.text.trim().isEmpty) {
+          errorMessage.value = 'Title is required.';
+          return false;
+        }
+        return true;
       default:
         return true;
     }
@@ -520,16 +530,16 @@ class UnifiedSupportController extends GetxController
     }
     if (blocksWithoutSites || selectedSiteId.value == null) {
       errorMessage.value = 'Select a client location.';
-      step.value = 1;
+      step.value = locationStep;
       return;
     }
     if (!_validateSchedule(showError: true)) {
-      step.value = 2;
+      step.value = scheduleStep;
       return;
     }
     if (isOngoing && titleCtrl.text.trim().isEmpty) {
       errorMessage.value = 'Title is required.';
-      step.value = 3;
+      step.value = detailsStep;
       return;
     }
 
@@ -609,7 +619,7 @@ class UnifiedSupportController extends GetxController
       );
     } on ArgumentError {
       errorMessage.value = 'Select at least one weekday.';
-      step.value = 2;
+      step.value = scheduleStep;
       return;
     }
     final tz = await _resolveTenantTimezone();
