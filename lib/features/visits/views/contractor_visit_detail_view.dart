@@ -31,8 +31,11 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
     super.initState();
     final c = Get.find<ContractorVisitsController>();
     c.hydrateFromArgs();
-    c.refreshSelected();
-    final visitId = c.selected.value?.id;
+    _loadShiftBrief(c.resolvedVisitId);
+    c.refreshSelected().then((_) => _loadShiftBrief(c.resolvedVisitId));
+  }
+
+  void _loadShiftBrief(String? visitId) {
     if (visitId != null && Get.isRegistered<VisitShiftBriefController>()) {
       Get.find<VisitShiftBriefController>().load(visitId);
     }

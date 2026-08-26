@@ -177,8 +177,12 @@ class ContractorVisitsController extends GetxController {
     if (arg is VisitOut) selected.value = arg;
   }
 
+  /// Visit id from hydrated selection or route args (VisitOut or String).
+  String? get resolvedVisitId =>
+      selected.value?.id ?? _visitIdFromArgs(Get.arguments);
+
   Future<void> refreshSelected() async {
-    final id = selected.value?.id ?? _visitIdFromArgs(Get.arguments);
+    final id = resolvedVisitId;
     if (id == null) return;
     isRefreshing.value = true;
     try {
