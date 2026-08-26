@@ -91,7 +91,15 @@ AssignScheduleWindow computeAssignScheduleWindow({
 }
 
 /// UTC query window for roster overlay + shift overlap on the assign step.
-({DateTime from, DateTime to, DateTime shiftStart, DateTime shiftEnd, DateTime day})
+({
+  DateTime from,
+  DateTime to,
+  DateTime shiftStart,
+  DateTime shiftEnd,
+  DateTime day,
+  DateTime startCivil,
+  DateTime endCivil,
+})
 assignAvailabilityQueryWindow({
   required AssignScheduleWindow window,
   String? tenantTimezone,
@@ -120,5 +128,7 @@ assignAvailabilityQueryWindow({
     shiftStart: shiftStart,
     shiftEnd: shiftEnd,
     day: window.dayCivil,
+    startCivil: window.startCivil,
+    endCivil: window.endCivil,
   );
 }

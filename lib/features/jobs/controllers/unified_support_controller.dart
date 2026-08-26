@@ -617,7 +617,7 @@ class UnifiedSupportController extends GetxController
     if (filledContractorIds.isEmpty || !assignAvailabilityLoaded) {
       return const [];
     }
-    final tz = await _resolveTenantTimezone();
+    final tz = _tenantTimezoneForScheduleWarn ?? await _resolveTenantTimezone();
     final horizon = tenantHorizonWindowUtc(DateTime.now().toUtc(), tz);
     final occurrences = partial_preview.expandUnifiedSupportOccurrences(
       isOneSession: isOneSession,
