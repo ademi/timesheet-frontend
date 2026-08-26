@@ -24,6 +24,7 @@ import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../utils/client_quick_facts.dart';
 import '../utils/client_visit_windows.dart';
+import '../utils/onboarding_keys.dart';
 import 'requirement_draft.dart';
 
 class ClientsController extends GetxController {
@@ -151,8 +152,12 @@ class ClientsController extends GetxController {
   final contactNameCtrl = TextEditingController();
   final contactEmailCtrl = TextEditingController();
   final contactPhoneCtrl = TextEditingController();
+  final contactRelationshipOtherCtrl = TextEditingController();
+  /// Preset key (`emergency`/`carer`/…) or `_other` for free-text.
+  final contactRelationshipPreset = RxnString();
   final contactIsPrimary = false.obs;
-  final contactNotify = true.obs;
+  /// Kept for API; UI toggle removed (D15). Defaults false on create.
+  final contactNotify = false.obs;
   ClientContactOut? editingContact;
 
   bool get canManage =>
@@ -197,6 +202,7 @@ class ClientsController extends GetxController {
     contactNameCtrl.dispose();
     contactEmailCtrl.dispose();
     contactPhoneCtrl.dispose();
+    contactRelationshipOtherCtrl.dispose();
     super.onClose();
   }
 
@@ -1476,13 +1482,42 @@ class ClientsController extends GetxController {
     }
   }
 
+  static const relationshipOtherKey = '_other';
+
+  static const relationshipPresets = <String, String>{
+    OnboardingKeys.relEmergency: 'Emergency',
+    OnboardingKeys.relCarer: 'Carer',
+    OnboardingKeys.relChildRepresentative: 'Child representative',
+    OnboardingKeys.relNominee: 'Nominee',
+  };
+
+  String? get resolvedContactRelationship {
+    final preset = contactRelationshipPreset.value;
+    if (preset == null || preset.isEmpty) return null;
+    if (preset == relationshipOtherKey) {
+      return contactRelationshipOtherCtrl.text.trim().nullIfEmpty;
+    }
+    return preset;
+  }
+
   void beginContactForm({ClientContactOut? contact}) {
     editingContact = contact;
     contactNameCtrl.text = contact?.name ?? '';
     contactEmailCtrl.text = contact?.email ?? '';
     contactPhoneCtrl.text = contact?.phone ?? '';
     contactIsPrimary.value = contact?.isPrimary ?? false;
-    contactNotify.value = contact?.notifyVisitComplete ?? true;
+    contactNotify.value = contact?.notifyVisitComplete ?? false;
+    final rel = contact?.relationship?.trim();
+    if (rel == null || rel.isEmpty) {
+      contactRelationshipPreset.value = null;
+      contactRelationshipOtherCtrl.clear();
+    } else if (relationshipPresets.containsKey(rel)) {
+      contactRelationshipPreset.value = rel;
+      contactRelationshipOtherCtrl.clear();
+    } else {
+      contactRelationshipPreset.value = relationshipOtherKey;
+      contactRelationshipOtherCtrl.text = rel;
+    }
     errorMessage.value = null;
     Get.toNamed(AppRoutes.staffClientContactForm);
   }
@@ -1504,6 +1539,7 @@ class ClientsController extends GetxController {
         name: name.nullIfEmpty,
         email: email.nullIfEmpty,
         phone: phone.nullIfEmpty,
+        relationship: resolvedContactRelationship,
         isPrimary: contactIsPrimary.value,
         notifyVisitComplete: contactNotify.value,
       );

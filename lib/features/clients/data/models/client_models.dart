@@ -192,6 +192,7 @@ class ClientSiteOut {
     this.postalCode,
     this.latitude,
     this.longitude,
+    this.accessNotes,
   });
 
   final String id;
@@ -207,6 +208,7 @@ class ClientSiteOut {
   final double? longitude;
   final int geofenceRadiusM;
   final bool isPrimary;
+  final String? accessNotes;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -245,6 +247,7 @@ class ClientSiteOut {
       longitude: (json['longitude'] as num?)?.toDouble(),
       geofenceRadiusM: json['geofence_radius_m'] as int? ?? 100,
       isPrimary: json['is_primary'] as bool? ?? false,
+      accessNotes: json['access_notes'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -308,6 +311,7 @@ class ClientSiteWriteRequest {
     this.postalCode,
     this.geofenceRadiusM = 100,
     this.isPrimary = false,
+    this.accessNotes,
   });
 
   final String name;
@@ -320,6 +324,7 @@ class ClientSiteWriteRequest {
   final double longitude;
   final int geofenceRadiusM;
   final bool isPrimary;
+  final String? accessNotes;
 
   Map<String, dynamic> toJson() => {
         'name': name,
@@ -332,6 +337,7 @@ class ClientSiteWriteRequest {
         'longitude': longitude,
         'geofence_radius_m': geofenceRadiusM,
         'is_primary': isPrimary,
+        if (accessNotes != null) 'access_notes': accessNotes,
       };
 }
 
@@ -345,6 +351,7 @@ class ClientContactOut {
     this.name,
     this.email,
     this.phone,
+    this.relationship,
   });
 
   final String id;
@@ -353,6 +360,7 @@ class ClientContactOut {
   final String? name;
   final String? email;
   final String? phone;
+  final String? relationship;
   final bool isPrimary;
   final bool notifyVisitComplete;
 
@@ -364,6 +372,7 @@ class ClientContactOut {
       name: json['name'] as String?,
       email: json['email'] as String?,
       phone: json['phone'] as String?,
+      relationship: json['relationship'] as String?,
       isPrimary: json['is_primary'] as bool? ?? false,
       notifyVisitComplete: json['notify_visit_complete'] as bool? ?? true,
     );
@@ -375,13 +384,15 @@ class ClientContactWriteRequest {
     this.name,
     this.email,
     this.phone,
+    this.relationship,
     this.isPrimary = false,
-    this.notifyVisitComplete = true,
+    this.notifyVisitComplete = false,
   });
 
   final String? name;
   final String? email;
   final String? phone;
+  final String? relationship;
   final bool isPrimary;
   final bool notifyVisitComplete;
 
@@ -389,6 +400,7 @@ class ClientContactWriteRequest {
         if (name != null) 'name': name,
         if (email != null) 'email': email,
         if (phone != null) 'phone': phone,
+        if (relationship != null) 'relationship': relationship,
         'is_primary': isPrimary,
         'notify_visit_complete': notifyVisitComplete,
       };

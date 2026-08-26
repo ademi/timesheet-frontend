@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../controllers/clients_controller.dart';
 import '../data/models/client_models.dart';
 
 class ClientDetailContactsSection extends StatelessWidget {
@@ -18,6 +19,12 @@ class ClientDetailContactsSection extends StatelessWidget {
   final VoidCallback onAdd;
   final void Function(ClientContactOut contact) onEdit;
   final void Function(ClientContactOut contact) onDelete;
+
+  static String? _relationshipLabel(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final key = raw.trim();
+    return ClientsController.relationshipPresets[key] ?? key;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,13 +65,30 @@ class ClientDetailContactsSection extends StatelessWidget {
                     ? contact.name!
                     : (contact.email ?? contact.phone ?? 'Contact'),
               ),
-              subtitle: Text(
-                [
-                  if (contact.email != null) contact.email!,
-                  if (contact.phone != null) contact.phone!,
-                  if (contact.isPrimary) 'primary',
-                  if (contact.notifyVisitComplete) 'notify on visit complete',
-                ].join(' · '),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    [
+                      if (_relationshipLabel(contact.relationship) != null)
+                        _relationshipLabel(contact.relationship)!,
+                      if (contact.email != null) contact.email!,
+                      if (contact.phone != null) contact.phone!,
+                      if (contact.isPrimary) 'primary',
+                    ].join(' · '),
+                  ),
+                  if (contact.notifyVisitComplete)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text(
+                        'notify on visit complete',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               trailing: canManage
                   ? PopupMenuButton<String>(
