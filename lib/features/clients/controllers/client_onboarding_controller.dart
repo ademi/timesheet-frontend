@@ -13,6 +13,7 @@ import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../utils/onboarding_age.dart';
 import '../utils/onboarding_keys.dart';
+import '../utils/site_geocode_apply.dart';
 import '../widgets/contact_form_host.dart';
 import '../widgets/site_form_host.dart';
 import 'clients_controller.dart';
@@ -403,10 +404,18 @@ class ClientOnboardingController extends GetxController
           state: siteState.value.trim().isEmpty ? null : siteState.value.trim(),
         ),
       );
-      siteLatCtrl.text = result.latitude.toString();
-      siteLngCtrl.text = result.longitude.toString();
-      geocodeFormattedAddress.value =
-          result.formattedAddress ?? '$address, $city';
+      final outcome = applyGeocodeResponse(
+        result: result,
+        latCtrl: siteLatCtrl,
+        lngCtrl: siteLngCtrl,
+        formattedAddress: geocodeFormattedAddress,
+        addressConfirmed: addressConfirmed,
+        addressFallback: '$address, $city',
+      );
+      if (!outcome.accepted) {
+        errorMessage.value = outcome.errorMessage;
+        return;
+      }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
       geocodeFormattedAddress.value = null;

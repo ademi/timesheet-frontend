@@ -24,6 +24,7 @@ import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../utils/client_quick_facts.dart';
 import '../utils/client_visit_windows.dart';
+import '../utils/site_geocode_apply.dart';
 import '../widgets/contact_form_host.dart';
 import '../widgets/site_form_host.dart';
 import 'requirement_draft.dart';
@@ -1447,26 +1448,19 @@ class ClientsController extends GetxController
           country: country,
         ),
       );
-      final confidence = result.confidence?.toLowerCase();
-      if (confidence == 'low') {
-        siteLatCtrl.clear();
-        siteLngCtrl.clear();
-        geocodeFormattedAddress.value = null;
-        addressConfirmed.value = false;
-        errorMessage.value =
-            'Address lookup has low confidence. Check the street and city, '
-            'then try again.';
+      final outcome = applyGeocodeResponse(
+        result: result,
+        latCtrl: siteLatCtrl,
+        lngCtrl: siteLngCtrl,
+        formattedAddress: geocodeFormattedAddress,
+        addressConfirmed: addressConfirmed,
+        addressFallback:
+            '${siteAddressCtrl.text.trim()}, ${siteCityCtrl.text.trim()}',
+      );
+      if (!outcome.accepted) {
+        errorMessage.value = outcome.errorMessage;
         return null;
       }
-      siteLatCtrl.text = result.latitude.toString();
-      siteLngCtrl.text = result.longitude.toString();
-      geocodeFormattedAddress.value =
-          (result.formattedAddress != null &&
-                  result.formattedAddress!.isNotEmpty)
-              ? result.formattedAddress
-              : '${siteAddressCtrl.text.trim()}, '
-                  '${siteCityCtrl.text.trim()}';
-      addressConfirmed.value = false;
       if (showSuccessHint) {
         final parts = <String>[
           if (result.formattedAddress != null &&

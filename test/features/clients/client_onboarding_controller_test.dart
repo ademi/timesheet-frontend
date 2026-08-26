@@ -21,6 +21,8 @@ class _FakeClientSiteWriteRequest extends Fake
 class _FakeClientContactWriteRequest extends Fake
     implements ClientContactWriteRequest {}
 
+class _FakeGeocodeRequest extends Fake implements GeocodeRequest {}
+
 final _now = DateTime.utc(2026, 8, 26, 9);
 
 final _fakeClient = ClientOut(
@@ -55,6 +57,7 @@ void main() {
     registerFallbackValue(_FakeProfileFactUpsert());
     registerFallbackValue(_FakeClientSiteWriteRequest());
     registerFallbackValue(_FakeClientContactWriteRequest());
+    registerFallbackValue(_FakeGeocodeRequest());
   });
 
   setUp(() {
@@ -274,6 +277,28 @@ void main() {
     expect(await c.finishOnboarding(), isFalse);
     expect(c.errorMessage.value, 'Failed to load client');
     verifyNever(() => mock.patchClient(any(), any()));
+  });
+
+  test('lookupSiteAddress rejects low confidence like ClientsController',
+      () async {
+    when(() => mock.geocode(any())).thenAnswer(
+      (_) async => const GeocodeResponse(
+        latitude: -33.86,
+        longitude: 151.2,
+        formattedAddress: 'Somewhere vague',
+        confidence: 'low',
+      ),
+    );
+    c.siteAddressCtrl.text = '1 Test St';
+    c.siteCityCtrl.text = 'Sydney';
+
+    await c.lookupSiteAddress();
+
+    expect(c.siteLatCtrl.text, isEmpty);
+    expect(c.siteLngCtrl.text, isEmpty);
+    expect(c.geocodeFormattedAddress.value, isNull);
+    expect(c.addressConfirmed.value, isFalse);
+    expect(c.errorMessage.value, contains('low confidence'));
   });
 
   test('submitContacts requires emergency contact', () async {
