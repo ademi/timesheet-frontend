@@ -5,6 +5,7 @@ import '../../../../core/errors/app_failure.dart';
 import '../../../../shared/models/profile_photo_models.dart';
 import '../models/client_models.dart';
 import '../models/client_profile_models.dart';
+import '../models/support_plan_models.dart';
 
 class ClientsRemoteDataSource {
   ClientsRemoteDataSource({
@@ -334,6 +335,71 @@ class ClientsRemoteDataSource {
   Future<void> deleteContact(String clientId, String contactId) async {
     try {
       await _dio.delete<void>(ApiPaths.clientContact(clientId, contactId));
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<SupportPlanDto>> listSupportPlans(String clientId) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.clientSupportPlans(clientId),
+      );
+      return _mapList(response.data, SupportPlanDto.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<SupportPlanDto> createSupportPlan(
+    String clientId,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.clientSupportPlans(clientId),
+        data: body,
+      );
+      return _require(
+        response.data,
+        SupportPlanDto.fromJson,
+        'create support plan',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<SupportPlanDto> getSupportPlan(String clientId, String planId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.clientSupportPlan(clientId, planId),
+      );
+      return _require(
+        response.data,
+        SupportPlanDto.fromJson,
+        'get support plan',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<SupportPlanDto> patchSupportPlan(
+    String clientId,
+    String planId,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.clientSupportPlan(clientId, planId),
+        data: body,
+      );
+      return _require(
+        response.data,
+        SupportPlanDto.fromJson,
+        'patch support plan',
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

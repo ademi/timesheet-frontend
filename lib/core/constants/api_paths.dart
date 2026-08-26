@@ -123,6 +123,10 @@ abstract final class ApiPaths {
       '${client(clientId)}/ongoing-support';
   static String clientOngoingSupportEnsure(String clientId) =>
       '${clientOngoingSupport(clientId)}/ensure';
+  static String clientSupportPlans(String clientId) =>
+      '${client(clientId)}/support-plans';
+  static String clientSupportPlan(String clientId, String planId) =>
+      '${clientSupportPlans(clientId)}/$planId';
   static String publicClientInvite(String token) =>
       '$_v1/public/client-invites/$token';
   static String publicClientInviteAcknowledge(String token) =>
@@ -162,6 +166,7 @@ abstract final class ApiPaths {
       '${visitTask(id, taskId)}/support-item';
   static String visitFormSubmissions(String id) =>
       '${visit(id)}/form-submissions';
+  static String visitShiftBrief(String id) => '${visit(id)}/shift-brief';
 
   // Shifts / roster
   static const shifts = '$_v1/shifts';

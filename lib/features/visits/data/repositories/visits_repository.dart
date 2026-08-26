@@ -1,4 +1,5 @@
 import '../../../billing/data/models/billing_models.dart';
+import '../../../clients/data/models/support_plan_models.dart';
 import '../datasources/visits_remote_datasource.dart';
 import '../models/roster_overlay_models.dart';
 import '../models/visit_models.dart';
@@ -109,6 +110,9 @@ class VisitsRepository {
 
   Future<List<JobFormCatalogItem>> listJobFormCatalog(String jobId) =>
       _remote.listJobFormCatalog(jobId);
+
+  Future<ShiftBriefDto> getVisitShiftBrief(String visitId) =>
+      _remote.getVisitShiftBrief(visitId);
 
   Future<RosterOverlayOut> fetchRosterOverlay({
     required DateTime from,

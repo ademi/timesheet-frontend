@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
 import '../../../billing/data/models/billing_models.dart';
+import '../../../clients/data/models/support_plan_models.dart';
 import '../models/roster_overlay_models.dart';
 import '../models/visit_models.dart';
 
@@ -224,6 +225,21 @@ class VisitsRemoteDataSource {
         ApiPaths.jobFormCatalog(jobId),
       );
       return _mapList(response.data, JobFormCatalogItem.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ShiftBriefDto> getVisitShiftBrief(String visitId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.visitShiftBrief(visitId),
+      );
+      return _require(
+        response.data,
+        ShiftBriefDto.fromJson,
+        'visit shift brief',
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

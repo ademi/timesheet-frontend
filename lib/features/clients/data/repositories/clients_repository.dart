@@ -3,6 +3,7 @@ import '../../../../shared/utils/name_sort.dart';
 import '../datasources/clients_remote_datasource.dart';
 import '../models/client_models.dart';
 import '../models/client_profile_models.dart';
+import '../models/support_plan_models.dart';
 
 class ClientsRepository {
   ClientsRepository({required ClientsRemoteDataSource remote}) : _remote = remote;
@@ -101,6 +102,22 @@ class ClientsRepository {
       _remote.patchContact(clientId, contactId, body);
   Future<void> deleteContact(String clientId, String contactId) =>
       _remote.deleteContact(clientId, contactId);
+
+  Future<List<SupportPlanDto>> listSupportPlans(String clientId) =>
+      _remote.listSupportPlans(clientId);
+  Future<SupportPlanDto> createSupportPlan(
+    String clientId,
+    Map<String, dynamic> body,
+  ) =>
+      _remote.createSupportPlan(clientId, body);
+  Future<SupportPlanDto> getSupportPlan(String clientId, String planId) =>
+      _remote.getSupportPlan(clientId, planId);
+  Future<SupportPlanDto> patchSupportPlan(
+    String clientId,
+    String planId,
+    Map<String, dynamic> body,
+  ) =>
+      _remote.patchSupportPlan(clientId, planId, body);
 
   Future<ClientInviteCreateResponse> createInvite(String clientId) =>
       _remote.createInvite(clientId);
