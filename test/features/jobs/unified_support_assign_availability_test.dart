@@ -511,6 +511,28 @@ void main() {
     );
   });
 
+  test('changing endDate invalidates assign availability cache', () async {
+    final controller = build(mode: UnifiedSupportMode.ongoing);
+    Get.put(controller);
+    await controller.load();
+    controller.startDate.value = DateTime(2026, 8, 13);
+    controller.weekdays
+      ..clear()
+      ..add(DateTime.thursday);
+    controller.startTime.value = const TimeOfDay(hour: 9, minute: 0);
+    controller.endTime.value = const TimeOfDay(hour: 12, minute: 0);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await controller.ensureAssignAvailabilityLoaded();
+
+    expect(controller.assignAvailabilityLoaded, isTrue);
+
+    controller.step.value = UnifiedSupportController.scheduleStep;
+    controller.endDate.value = DateTime(2028, 1, 15);
+
+    expect(controller.assignAvailabilityLoaded, isFalse);
+  });
+
   test('one-session display label has no suffix', () async {
     final controller = build();
     await controller.load();

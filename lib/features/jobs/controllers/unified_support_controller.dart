@@ -196,6 +196,7 @@ class UnifiedSupportController extends GetxController
     ever(endTime, (_) => _invalidateAssignAvailability());
     ever(frequency, (_) => _invalidateAssignAvailability());
     ever(weekdays, (_) => _invalidateAssignAvailability());
+    ever(endDate, (_) => _invalidateAssignAvailability());
     _bootstrap();
     _cacheTenantTimezone();
   }
