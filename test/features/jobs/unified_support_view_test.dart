@@ -252,6 +252,40 @@ void main() {
         findsNothing);
   });
 
+  testWidgets('ongoing assign dropdown shows Free on first date', (
+    tester,
+  ) async {
+    final engagement = EngagementOut(
+      id: 'eng-1',
+      tenantId: 'tenant-1',
+      contractorId: 'contractor-1',
+      contractorName: 'Alex Worker',
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    );
+    when(() => engagements.listTenantEngagements())
+        .thenAnswer((_) async => [engagement]);
+    await controller.load();
+    controller.startDate.value = DateTime(2026, 8, 13);
+    controller.weekdays
+      ..clear()
+      ..add(DateTime.thursday);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: UnifiedSupportView()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const ValueKey('assign-slot-0')));
+    await tester.tap(find.byKey(const ValueKey('assign-slot-0')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Alex Worker'), findsWidgets);
+    expect(find.textContaining('Free on first date'), findsOneWidget);
+  });
+
   testWidgets('assign step dropdown shows Free beside worker name', (
     tester,
   ) async {

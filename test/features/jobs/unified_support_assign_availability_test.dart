@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
@@ -91,7 +92,9 @@ void main() {
 
   tearDown(Get.reset);
 
-  UnifiedSupportController build() {
+  UnifiedSupportController build({
+    UnifiedSupportMode mode = UnifiedSupportMode.oneSession,
+  }) {
     return UnifiedSupportController(
       jobsRepository: jobs,
       clientsRepository: clients,
@@ -101,7 +104,7 @@ void main() {
       session: session,
       args: UnifiedSupportArgs.forClient(
         client,
-        mode: UnifiedSupportMode.oneSession,
+        mode: mode,
       ),
     );
   }
@@ -363,5 +366,160 @@ void main() {
 
     expect(controller.clientConflicts.map((c) => c.id), ['hole-1']);
     expect(controller.canGoNext(), isTrue);
+  });
+
+  test('availabilityLabelForContractor returns Outside hours for preferred mismatch',
+      () async {
+    when(
+      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
+    ).thenAnswer(
+      (_) async => RosterOverlayOut(
+        contractors: [
+          ContractorRosterOverlay(
+            contractorId: 'contractor-1',
+            displayName: 'Alex',
+            availability: [
+              AvailabilityRuleOut(
+                dayOfWeek: DateTime(2026, 8, 13).weekday - DateTime.monday,
+                startTime: '09:00:00',
+                endTime: '12:00:00',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    final controller = build();
+    await controller.load();
+    controller.oneSessionStart.value = DateTime(2026, 8, 13, 18);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 20);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await controller.ensureAssignAvailabilityLoaded();
+
+    expect(
+      controller.availabilityLabelForContractor('contractor-1'),
+      'Outside hours',
+    );
+    expect(controller.assignOverlayWarning.value, isNull);
+  });
+
+  test('overlay failure sets leave warning; shift failure does not', () async {
+    when(
+      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
+    ).thenThrow(Exception('overlay down'));
+    when(
+      () => shifts.listShifts(from: any(named: 'from'), to: any(named: 'to')),
+    ).thenThrow(Exception('shifts down'));
+
+    final controller = build();
+    await controller.load();
+    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await controller.ensureAssignAvailabilityLoaded();
+
+    expect(
+      controller.assignOverlayWarning.value,
+      'Could not load leave and preferred hours',
+    );
+  });
+
+  test('shift-only failure does not show leave unavailable banner', () async {
+    when(
+      () => shifts.listShifts(from: any(named: 'from'), to: any(named: 'to')),
+    ).thenThrow(Exception('shifts down'));
+
+    final controller = build();
+    await controller.load();
+    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await controller.ensureAssignAvailabilityLoaded();
+
+    expect(controller.assignOverlayWarning.value, isNull);
+    expect(controller.assignAvailabilityLoaded, isTrue);
+  });
+
+  test(
+      'ongoing display label appends on first date; base status stays Busy',
+      () async {
+    final shiftStart = DateTime(2026, 8, 13, 9);
+    final shiftEnd = DateTime(2026, 8, 13, 12);
+    when(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        ShiftOut(
+          id: 'shift-busy',
+          tenantId: 'tenant-1',
+          jobId: 'job-2',
+          jobTitle: 'Other',
+          clientId: 'client-2',
+          clientName: 'Other',
+          scheduledStart: shiftStart,
+          scheduledEnd: shiftEnd,
+          requiredSlots: 1,
+          openSlots: 0,
+          status: 'published',
+          assignments: [
+            ShiftAssignmentOut(
+              id: 'a-1',
+              contractorId: 'contractor-busy',
+              contractorName: 'Busy Worker',
+              visitId: 'visit-1',
+              source: 'staff_assign',
+              status: 'active',
+            ),
+          ],
+          createdAt: shiftStart,
+          updatedAt: shiftStart,
+        ),
+      ],
+    );
+
+    final controller = build(mode: UnifiedSupportMode.ongoing);
+    await controller.load();
+    controller.startDate.value = DateTime(2026, 8, 13);
+    controller.weekdays
+      ..clear()
+      ..add(DateTime.thursday);
+    controller.startTime.value = const TimeOfDay(hour: 9, minute: 0);
+    controller.endTime.value = const TimeOfDay(hour: 12, minute: 0);
+    controller.selectContractorForSlot(0, 'contractor-busy');
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await controller.ensureAssignAvailabilityLoaded();
+
+    expect(
+      controller.availabilityStatusForContractor('contractor-busy'),
+      'Busy',
+    );
+    expect(
+      controller.availabilityDisplayLabelForContractor('contractor-busy'),
+      'Busy on first date',
+    );
+    expect(
+      controller.busyAssignedWorkers.map((e) => e.contractorId),
+      contains('contractor-busy'),
+    );
+  });
+
+  test('one-session display label has no suffix', () async {
+    final controller = build();
+    await controller.load();
+    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await controller.ensureAssignAvailabilityLoaded();
+
+    expect(controller.availabilityDisplayLabelForContractor('x'), 'Free');
   });
 }

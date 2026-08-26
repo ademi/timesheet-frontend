@@ -813,7 +813,7 @@ class _DetailsStep extends StatelessWidget {
             supportItemCode: controller.supportItemCode.value,
             supportItemName: controller.supportItemName.value,
             enabled: !controller.isSaving.value,
-            labelText: 'Support item (optional)',
+            labelText: null,
             onChanged: ({
               required String? supportItemCode,
               required String? supportItemName,
@@ -896,6 +896,7 @@ class _WorkersStepState extends State<_WorkersStep> {
     return switch (label) {
       'Leave' => AppColors.error,
       'Busy' => AppColors.openSlot,
+      'Outside hours' => AppColors.openSlot,
       _ => AppColors.success,
     };
   }
@@ -985,12 +986,12 @@ class _WorkersStepState extends State<_WorkersStep> {
                                       TextSpan(text: engagement.displayName),
                                       TextSpan(
                                         text:
-                                            ' · ${controller.availabilityLabelForContractor(engagement.contractorId)}',
+                                            ' · ${controller.availabilityDisplayLabelForContractor(engagement.contractorId)}',
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: _availabilityColor(
                                             controller
-                                                .availabilityLabelForContractor(
+                                                .availabilityStatusForContractor(
                                               engagement.contractorId,
                                             ),
                                           ),

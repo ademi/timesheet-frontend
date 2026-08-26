@@ -353,6 +353,8 @@ class UnifiedSupportController extends GetxController
       DateTime shiftStart,
       DateTime shiftEnd,
       DateTime day,
+      DateTime startCivil,
+      DateTime endCivil,
     }) query,
     String key, {
     required DateTime fetchFrom,
@@ -361,7 +363,13 @@ class UnifiedSupportController extends GetxController
     isAssignAvailabilityLoading.value = true;
     assignOverlayWarning.value = null;
     try {
-      final shiftsFuture = _shifts.listShifts(from: fetchFrom, to: fetchTo);
+      final shiftsFuture = () async {
+        try {
+          return await _shifts.listShifts(from: fetchFrom, to: fetchTo);
+        } catch (_) {
+          return const <ShiftOut>[];
+        }
+      }();
       final visitsFuture = () async {
         try {
           return await _visits.listVisits(
@@ -380,7 +388,9 @@ class UnifiedSupportController extends GetxController
             to: fetchTo,
           );
         } catch (_) {
-          assignOverlayWarning.value = 'Leave/availability unavailable';
+          // Only this failure means leave / preferred hours are unknown.
+          assignOverlayWarning.value =
+              'Could not load leave and preferred hours';
           return null;
         }
       }();
@@ -395,7 +405,10 @@ class UnifiedSupportController extends GetxController
       assignShifts.clear();
       assignVisits.clear();
       assignOverlay.value = const RosterOverlayOut(contractors: []);
-      assignOverlayWarning.value = 'Leave/availability unavailable';
+      // Unexpected failure after individual fetches — do not claim leave
+      // specifically failed unless the overlay path already set a warning.
+      assignOverlayWarning.value ??=
+          'Could not load worker availability';
       _assignAvailabilityWindow = query;
       _assignAvailabilityKey = key;
       assignAvailabilityLoaded = true;
@@ -448,6 +461,8 @@ class UnifiedSupportController extends GetxController
       DateTime shiftStart,
       DateTime shiftEnd,
       DateTime day,
+      DateTime startCivil,
+      DateTime endCivil,
     }) query,
     String key,
     String clientId,
@@ -520,6 +535,8 @@ class UnifiedSupportController extends GetxController
     DateTime shiftStart,
     DateTime shiftEnd,
     DateTime day,
+    DateTime startCivil,
+    DateTime endCivil,
   })?
   _assignAvailabilityWindow;
 
@@ -529,10 +546,12 @@ class UnifiedSupportController extends GetxController
     DateTime shiftStart,
     DateTime shiftEnd,
     DateTime day,
+    DateTime startCivil,
+    DateTime endCivil,
   })?
   _conflictsWindow;
 
-  String availabilityLabelForContractor(String contractorId) {
+  String availabilityStatusForContractor(String contractorId) {
     final query = _assignAvailabilityWindow;
     if (query == null) return 'Free';
     return assignAvailabilityLabel(
@@ -540,18 +559,31 @@ class UnifiedSupportController extends GetxController
       day: query.day,
       shiftStart: query.shiftStart,
       shiftEnd: query.shiftEnd,
+      windowStart: query.startCivil,
+      windowEnd: query.endCivil,
       overlay: assignOverlay.value ?? const RosterOverlayOut(contractors: []),
       shifts: assignShifts.toList(growable: false),
       visits: assignVisits.toList(growable: false),
     );
   }
 
+  /// UI copy. Ongoing: "$status on first date". One-session: base status.
+  String availabilityDisplayLabelForContractor(String contractorId) {
+    final status = availabilityStatusForContractor(contractorId);
+    if (!isOngoing) return status;
+    return '$status on first date';
+  }
+
+  /// Base availability token; prefer [availabilityDisplayLabelForContractor] in UI.
+  String availabilityLabelForContractor(String contractorId) =>
+      availabilityStatusForContractor(contractorId);
+
   /// Filled assign slots where the worker already has an overlapping visit/shift.
   List<({String contractorId, String displayName})> get busyAssignedWorkers {
     final results = <({String contractorId, String displayName})>[];
     final seen = <String>{};
     for (final id in filledContractorIds) {
-      if (seen.add(id) && availabilityLabelForContractor(id) == 'Busy') {
+      if (seen.add(id) && availabilityStatusForContractor(id) == 'Busy') {
         final name = assignableEngagements
             .where((e) => e.contractorId == id)
             .map((e) => e.displayName)
@@ -1055,6 +1087,7 @@ class UnifiedSupportController extends GetxController
         scheduledStart: oneSessionStart.value,
         scheduledEnd: oneSessionEnd.value,
         requiredSlots: requiredSlots.value,
+        // D6 intentional: assigned workers ⇒ published even if toggle off.
         status: (publishImmediately.value || ids.isNotEmpty)
             ? 'published'
             : 'draft',
