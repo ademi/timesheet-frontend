@@ -172,6 +172,7 @@ List<PartialAssignWorkerPreview> buildPartialAssignPreview({
   required RosterOverlayOut overlay,
   required List<ShiftOut> shifts,
   required List<VisitOut> visits,
+  String? tenantTimezone,
 }) {
   if (contractorIds.isEmpty || occurrences.isEmpty) return const [];
 
@@ -187,6 +188,7 @@ List<PartialAssignWorkerPreview> buildPartialAssignPreview({
             overlay: overlay,
             shifts: shifts,
             visits: visits,
+            tenantTimezone: tenantTimezone,
           ) ==
           'Busy') {
         skipDates.add(occ.civilDay);

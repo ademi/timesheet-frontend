@@ -86,6 +86,7 @@ void main() {
         _visit(contractorId: 'worker-a', start: mon, end: monEnd),
         _visit(contractorId: 'worker-b', start: wed, end: wedEnd),
       ],
+      tenantTimezone: 'UTC',
     );
     expect(preview, hasLength(2));
     expect(preview[0].displayName, 'Alex');

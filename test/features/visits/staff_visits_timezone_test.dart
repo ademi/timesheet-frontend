@@ -8,8 +8,10 @@ import 'package:rostiq/features/engagements/data/repositories/engagements_reposi
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/features/payroll/data/models/payroll_models.dart';
 import 'package:rostiq/features/payroll/data/repositories/payroll_repository.dart';
+import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/controllers/staff_visits_controller.dart';
+import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
 import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
 
 class _MockVisitsRepository extends Mock implements VisitsRepository {}
@@ -136,5 +138,57 @@ void main() {
     await controller.loadTenantTimezone();
     expect(controller.tenantTimezone.value, 'Australia/Sydney');
     verifyNever(() => payroll.getTenant(any()));
+  });
+
+  test('staff roster availabilityLabelForAssign passes tenant timezone', () {
+    tenantUtcOffsetOverride = (tz, _) {
+      if (tz == 'Australia/Sydney') return const Duration(hours: 10);
+      return Duration.zero;
+    };
+    when(() => session.tenantTimezone).thenReturn(RxnString('Australia/Sydney'));
+
+    final day = DateTime(2026, 8, 13);
+    final leaveStartUtc = tenantCivilDateStartUtc(day, 'Australia/Sydney');
+    controller.overlay.value = RosterOverlayOut(
+      contractors: [
+        ContractorRosterOverlay(
+          contractorId: 'jane',
+          displayName: 'Jane',
+          leave: [
+            LeaveIntervalOut(
+              startDate: leaveStartUtc,
+              endDate: leaveStartUtc,
+              leaveType: 'annual',
+            ),
+          ],
+          availability: const [],
+        ),
+      ],
+    );
+    final shift = ShiftOut(
+      id: 's1',
+      tenantId: 'tenant-1',
+      jobId: 'j1',
+      jobTitle: 'Support',
+      clientId: 'c1',
+      clientName: 'Sam',
+      scheduledStart: DateTime(2026, 8, 13, 9),
+      scheduledEnd: DateTime(2026, 8, 13, 12),
+      requiredSlots: 1,
+      openSlots: 1,
+      status: 'published',
+      assignments: const [],
+      createdAt: day,
+      updatedAt: day,
+    );
+    controller.selectedShift.value = shift;
+
+    expect(
+      controller.availabilityLabelForAssign(
+        contractorId: 'jane',
+        shift: shift,
+      ),
+      'Leave',
+    );
   });
 }

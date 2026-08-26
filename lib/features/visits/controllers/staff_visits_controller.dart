@@ -593,6 +593,7 @@ class StaffVisitsController extends GetxController {
       overlay: overlay.value ?? const RosterOverlayOut(contractors: []),
       shifts: shifts.toList(growable: false),
       visits: boardVisits.toList(growable: false),
+      tenantTimezone: _effectiveTenantTimezone,
     );
   }
 

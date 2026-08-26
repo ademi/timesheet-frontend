@@ -564,6 +564,7 @@ class UnifiedSupportController extends GetxController
       overlay: assignOverlay.value ?? const RosterOverlayOut(contractors: []),
       shifts: assignShifts.toList(growable: false),
       visits: assignVisits.toList(growable: false),
+      tenantTimezone: _tenantTimezoneForScheduleWarn,
     );
   }
 
@@ -644,6 +645,7 @@ class UnifiedSupportController extends GetxController
       overlay: assignOverlay.value ?? const RosterOverlayOut(contractors: []),
       shifts: assignShifts.toList(growable: false),
       visits: assignVisits.toList(growable: false),
+      tenantTimezone: tz,
     );
   }
 
