@@ -353,7 +353,7 @@ class SupportPlanController extends GetxController {
       errorMessage.value = 'Set a next review date before activating.';
       return;
     }
-    status.value = SupportPlanKeys.statusActive;
+    // Status becomes active only after create/PATCH succeeds (via applyLoadedPlan).
     await _persist(activate: true);
   }
 
@@ -363,14 +363,9 @@ class SupportPlanController extends GetxController {
     errorMessage.value = null;
     try {
       final body = buildBody();
+      // Snapshot prior status for PATCH payload decisions; do not mutate
+      // status.value until the network call succeeds (applyLoadedPlan).
       final currentStatus = status.value;
-      final targetStatus =
-          activate ? SupportPlanKeys.statusActive : SupportPlanKeys.statusDraft;
-      // Save draft must not demote active/archived plans — only update local
-      // status when activating or the plan is already draft (or new).
-      if (activate || currentStatus == SupportPlanKeys.statusDraft) {
-        status.value = targetStatus;
-      }
 
       var id = planId.value;
       if (id == null || id.isEmpty) {

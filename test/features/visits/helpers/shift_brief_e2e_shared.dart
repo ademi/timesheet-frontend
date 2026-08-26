@@ -3,6 +3,8 @@
 /// Used by:
 /// - `test/features/visits/shift_brief_e2e_test.dart` (VM / CI)
 /// - `integration_test/shift_brief_e2e_test.dart` (device when desktop deps present)
+///
+/// Lives under `helpers/` so it is not matched by `shift_brief_*.dart` globs.
 library;
 
 import 'package:flutter/material.dart';

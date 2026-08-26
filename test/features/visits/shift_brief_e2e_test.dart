@@ -8,7 +8,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'shift_brief_e2e_shared.dart';
+import 'helpers/shift_brief_e2e_shared.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

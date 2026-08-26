@@ -14,7 +14,7 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import '../test/features/visits/shift_brief_e2e_shared.dart';
+import '../test/features/visits/helpers/shift_brief_e2e_shared.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

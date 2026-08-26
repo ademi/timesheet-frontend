@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/features/clients/controllers/support_plan_controller.dart';
 import 'package:rostiq/features/clients/data/models/support_plan_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
@@ -159,5 +160,52 @@ void main() {
     expect(c.status.value, SupportPlanKeys.statusActive);
 
     verify(() => mock.patchSupportPlan('client-1', 'plan-1', any())).called(1);
+  });
+
+  test('activate failure leaves prior status; success applies DTO status',
+      () async {
+    c.applyLoadedPlan(
+      _plan(
+        body: const SupportPlanBody(
+          disabilityHealth: DisabilityHealthSection(
+            primaryDisability: 'ASD',
+          ),
+        ),
+        status: SupportPlanKeys.statusDraft,
+        nextReviewAt: '2026-09-01',
+        id: 'plan-1',
+      ),
+    );
+
+    when(() => mock.patchSupportPlan(any(), any(), any())).thenThrow(
+      const AppFailure(
+        code: 'server_error',
+        message: 'persist failed',
+        presentation: AppFailurePresentation.toast,
+      ),
+    );
+
+    await c.activate();
+
+    expect(c.status.value, SupportPlanKeys.statusDraft);
+    expect(c.errorMessage.value, 'persist failed');
+
+    when(() => mock.patchSupportPlan(any(), any(), any())).thenAnswer(
+      (_) async => _plan(
+        id: 'plan-1',
+        status: SupportPlanKeys.statusActive,
+        nextReviewAt: '2026-09-01',
+        body: const SupportPlanBody(
+          disabilityHealth: DisabilityHealthSection(
+            primaryDisability: 'ASD',
+          ),
+        ),
+      ),
+    );
+
+    await c.activate();
+
+    expect(c.status.value, SupportPlanKeys.statusActive);
+    expect(c.errorMessage.value, isNull);
   });
 }
