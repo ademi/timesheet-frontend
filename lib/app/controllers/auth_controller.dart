@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../core/network/must_change_password.dart';
 import '../../core/services/session_service.dart';
+import '../../features/billing/data/repositories/ndis_catalogue_repository.dart';
 import '../../features/compliance_ops/bindings/compliance_ops_binding.dart';
 import '../../features/contractor_onboarding/bindings/onboarding_binding.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
@@ -11,6 +12,12 @@ import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
 import '../services/push_notification_service.dart';
 import '../themes/app_colors.dart';
+
+void _clearNdisCatalogueCacheIfRegistered() {
+  if (Get.isRegistered<NdisCatalogueRepository>()) {
+    Get.find<NdisCatalogueRepository>().clearCache();
+  }
+}
 
 class AuthController extends GetxController {
   AuthController({required AuthRepository authRepository})
@@ -92,6 +99,7 @@ class AuthController extends GetxController {
     if (Get.isRegistered<SessionService>()) {
       await Get.find<SessionService>().clear();
     }
+    _clearNdisCatalogueCacheIfRegistered();
     await _authRepository.logout();
     emailController.clear();
     passwordController.clear();

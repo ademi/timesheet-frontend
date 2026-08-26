@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -14,9 +15,13 @@ import 'package:rostiq/app/routes/app_routes.dart';
 import 'package:rostiq/core/auth/jwt_claims.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/core/services/token_storage.dart';
+import 'package:rostiq/features/billing/data/repositories/ndis_catalogue_repository.dart';
 import 'package:rostiq/features/contractor_onboarding/data/onboarding_progress_store.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
+
+class _MockNdisCatalogueRepository extends Mock
+    implements NdisCatalogueRepository {}
 
 class _FakeTokenStorage extends Fake implements TokenStorage {
   JwtClaims? claims;
@@ -451,6 +456,59 @@ void main() {
 
       verify(() => authRepository.getMeContext()).called(1);
     });
+  });
+
+  group('switchTenant', () {
+    setUp(() {
+      Get.testMode = true;
+      Get.reset();
+    });
+
+    tearDown(Get.reset);
+
+    test(
+      'clears NDIS catalogue cache when repository is registered',
+      () async {
+        final catalogueRepository = _MockNdisCatalogueRepository();
+        Get.put<NdisCatalogueRepository>(catalogueRepository);
+
+        tokenStorage.claims = const JwtClaims(
+          sub: 'u1',
+          tenantId: 't1',
+          permissions: ['auth.session'],
+          actorType: 'tenant_member',
+          iat: 1,
+          exp: 2,
+        );
+        when(() => authRepository.switchTenant('t2')).thenAnswer(
+          (_) async => const AuthTokenModel(
+            accessToken: 'a2',
+            refreshToken: 'r2',
+            tokenType: 'bearer',
+            actorType: 'tenant_member',
+            engagements: [
+              EngagementSummaryModel(
+                id: 'e2',
+                tenantId: 't2',
+                tenantName: 'Globex',
+                status: 'active',
+              ),
+            ],
+          ),
+        );
+        when(() => authRepository.getMeContext()).thenAnswer(
+          (_) async => const MeContextModel(
+            actorType: 'tenant_member',
+            tenantId: 't2',
+            tenantMemberId: 'tm2',
+          ),
+        );
+
+        await session.switchTenant('t2');
+
+        verify(() => catalogueRepository.clearCache()).called(1);
+      },
+    );
   });
 
   test('applyAuthTokens stores engagement selection', () async {

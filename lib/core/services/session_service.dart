@@ -7,9 +7,16 @@ import '../../app/data/repositories/auth_repository.dart';
 import '../../app/routes/app_routes.dart';
 import '../../features/contractor_onboarding/data/onboarding_progress_store.dart';
 import '../../features/contractor_onboarding/onboarding_routing.dart';
+import '../../features/billing/data/repositories/ndis_catalogue_repository.dart';
 import '../../app/constants/app_permissions.dart';
 import '../auth/jwt_claims.dart';
 import 'token_storage.dart';
+
+void _clearNdisCatalogueCacheIfRegistered() {
+  if (Get.isRegistered<NdisCatalogueRepository>()) {
+    Get.find<NdisCatalogueRepository>().clearCache();
+  }
+}
 
 /// Permanent session: actor, engagements, permissions, post-login routing.
 ///
@@ -270,6 +277,7 @@ class SessionService extends GetxController {
     // after switch cannot reuse a stale single-flight future.
     _meContextGeneration += 1;
     _hydratingMeContext = null;
+    _clearNdisCatalogueCacheIfRegistered();
     await applyAuthTokens(tokens);
     await hydrateFromMeContext();
     return tokens;
