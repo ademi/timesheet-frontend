@@ -13,6 +13,11 @@ class ClientDetailSupportSection extends StatelessWidget {
     required this.onStartOngoing,
     required this.onBookOne,
     required this.onOpenOngoing,
+    this.canManageSupportPlan = false,
+    this.supportPlanStatus,
+    this.supportPlanNextReview,
+    this.supportPlanOverdue = false,
+    this.onOpenSupportPlan,
   });
 
   final bool hasOngoing;
@@ -22,6 +27,12 @@ class ClientDetailSupportSection extends StatelessWidget {
   final VoidCallback onStartOngoing;
   final VoidCallback onBookOne;
   final VoidCallback onOpenOngoing;
+
+  final bool canManageSupportPlan;
+  final String? supportPlanStatus;
+  final String? supportPlanNextReview;
+  final bool supportPlanOverdue;
+  final VoidCallback? onOpenSupportPlan;
 
   bool get _showStandingSupportItem {
     final code = supportItemCode?.trim();
@@ -62,10 +73,22 @@ class ClientDetailSupportSection extends StatelessWidget {
             child: const Text('Open support'),
           )
         : null;
+    final planBtn = canManageSupportPlan && onOpenSupportPlan != null
+        ? OutlinedButton.icon(
+            onPressed: onOpenSupportPlan,
+            icon: const Icon(Icons.assignment_outlined),
+            label: Text(
+              supportPlanStatus == null || supportPlanStatus!.isEmpty
+                  ? 'Create support plan'
+                  : 'Support plan',
+            ),
+          )
+        : null;
     final rowChildren = <Widget>[
       if (start != null) start,
       if (book != null) book,
       if (open != null) open,
+      if (planBtn != null) planBtn,
     ];
 
     return Column(
@@ -76,6 +99,48 @@ class ClientDetailSupportSection extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
         const SizedBox(height: 8),
+        if (supportPlanStatus != null && supportPlanStatus!.isNotEmpty) ...[
+          Row(
+            children: [
+              Text(
+                'Plan: ${supportPlanStatus!.replaceAll('_', ' ')}',
+                style: const TextStyle(fontSize: 13),
+              ),
+              if (supportPlanNextReview != null &&
+                  supportPlanNextReview!.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Text(
+                  '· Review $supportPlanNextReview',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+              if (supportPlanOverdue) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.openSlotBackground,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.openSlot),
+                  ),
+                  child: const Text(
+                    'Review overdue',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.openSlot,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
         if (rowChildren.isNotEmpty) EqualFillRow(children: rowChildren),
         if (_showStandingSupportItem) ...[
           const SizedBox(height: 12),

@@ -169,7 +169,9 @@ class ClientDetailView extends GetView<ClientsController> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (controller.canManageSupport || controller.hasOngoing)
+            if (controller.canManageSupport ||
+                controller.hasOngoing ||
+                controller.canManage)
               ClientDetailSupportSection(
                 hasOngoing: controller.hasOngoing,
                 canManage: controller.canManageSupport,
@@ -178,6 +180,13 @@ class ClientDetailView extends GetView<ClientsController> {
                 onStartOngoing: controller.startOngoingSupport,
                 onBookOne: controller.bookOneSession,
                 onOpenOngoing: controller.openOngoingSupport,
+                canManageSupportPlan: controller.canManage,
+                supportPlanStatus: controller.supportPlan.value?.status,
+                supportPlanNextReview:
+                    controller.supportPlan.value?.nextReviewAt,
+                supportPlanOverdue:
+                    controller.supportPlan.value?.reviewOverdue == true,
+                onOpenSupportPlan: controller.openSupportPlan,
               )
             else
               const Text(

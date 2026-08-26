@@ -21,10 +21,12 @@ import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../data/models/client_models.dart';
 import '../data/models/client_profile_models.dart';
+import '../data/models/support_plan_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../utils/client_quick_facts.dart';
 import '../utils/client_visit_windows.dart';
 import '../utils/site_geocode_apply.dart';
+import '../utils/support_plan_keys.dart';
 import '../widgets/contact_form_host.dart';
 import '../widgets/site_form_host.dart';
 import 'requirement_draft.dart';
@@ -103,6 +105,8 @@ class ClientsController extends GetxController
   final profileFacts = <ClientProfileFactOut>[].obs;
   final standingJob = Rxn<JobOut>();
   final isLoadingStandingJob = false.obs;
+  final supportPlan = Rxn<SupportPlanDto>();
+  final isLoadingSupportPlan = false.obs;
 
   String? get ndisNumber =>
       ndisFromFacts(profileFacts) ?? ndisFromDrafts(requirementDrafts);
@@ -1142,6 +1146,7 @@ class ClientsController extends GetxController
     visitsTruncated.value = false;
     profileFacts.clear();
     standingJob.value = null;
+    supportPlan.value = null;
     _disposeRequirementDrafts();
     requirementDrafts.clear();
     Get.toNamed(AppRoutes.staffClientDetail, arguments: client);
@@ -1212,6 +1217,49 @@ class ClientsController extends GetxController
     }
     await loadClientVisits();
     await loadStandingJob();
+    await loadSupportPlanSummary();
+  }
+
+  Future<void> loadSupportPlanSummary() async {
+    final id = selected.value?.id;
+    if (id == null || !canRead) {
+      supportPlan.value = null;
+      return;
+    }
+    isLoadingSupportPlan.value = true;
+    try {
+      final plans = await _repository.listSupportPlans(id);
+      SupportPlanDto? pick;
+      for (final p in plans) {
+        if (p.status == SupportPlanKeys.statusActive) {
+          pick = p;
+          break;
+        }
+      }
+      pick ??= plans.isNotEmpty ? plans.first : null;
+      supportPlan.value = pick;
+    } on AppFailure {
+      supportPlan.value = null;
+    } catch (_) {
+      supportPlan.value = null;
+    } finally {
+      isLoadingSupportPlan.value = false;
+    }
+  }
+
+  Future<void> openSupportPlan() async {
+    final client = selected.value;
+    if (client == null || !canManage) return;
+    await Get.toNamed(
+      AppRoutes.staffClientSupportPlan,
+      arguments: {
+        'clientId': client.id,
+        'planId': supportPlan.value?.id,
+        'clientName': client.fullName,
+        'ndisNumber': ndisNumber,
+      },
+    );
+    await loadSupportPlanSummary();
   }
 
   Future<void> loadStandingJob() async {
