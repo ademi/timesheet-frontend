@@ -1,13 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:rostiq/app/data/models/document/document_models.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
+import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/controllers/client_onboarding_controller.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
+import 'package:rostiq/features/documents/data/document_pipeline.dart';
+import 'package:rostiq/shared/models/profile_photo_models.dart';
 
 class _MockClientsRepository extends Mock implements ClientsRepository {}
+
+class _MockSessionService extends Mock implements SessionService {}
+
+class _MockDocumentPipeline extends Mock implements DocumentPipeline {}
 
 class _FakeClientCreateRequest extends Fake implements ClientCreateRequest {}
 
@@ -22,6 +30,8 @@ class _FakeClientContactWriteRequest extends Fake
     implements ClientContactWriteRequest {}
 
 class _FakeGeocodeRequest extends Fake implements GeocodeRequest {}
+
+class _FakeUploadUrlRequest extends Fake implements UploadUrlRequest {}
 
 final _now = DateTime.utc(2026, 8, 26, 9);
 
@@ -49,7 +59,23 @@ final _patientType = ClientTypeOut(
 
 void main() {
   late _MockClientsRepository mock;
+  late _MockSessionService session;
   late ClientOnboardingController c;
+
+  ClientOnboardingController _buildController({
+    Future<bool> Function(List<String> missing)? softGateConfirm,
+    void Function(String clientId)? onFinished,
+    DocumentPipeline? documentPipeline,
+    SessionService? sessionOverride,
+  }) {
+    return ClientOnboardingController(
+      repository: mock,
+      session: sessionOverride ?? session,
+      documentPipeline: documentPipeline,
+      softGateConfirm: softGateConfirm,
+      onFinished: onFinished,
+    );
+  }
 
   setUpAll(() {
     registerFallbackValue(_FakeClientCreateRequest());
@@ -58,14 +84,17 @@ void main() {
     registerFallbackValue(_FakeClientSiteWriteRequest());
     registerFallbackValue(_FakeClientContactWriteRequest());
     registerFallbackValue(_FakeGeocodeRequest());
+    registerFallbackValue(_FakeUploadUrlRequest());
   });
 
   setUp(() {
     mock = _MockClientsRepository();
+    session = _MockSessionService();
+    when(() => session.hasPermission(any())).thenReturn(true);
     when(() => mock.listFormTemplates(tenantLevel: any(named: 'tenantLevel')))
         .thenAnswer((_) async => <FormTemplateSummary>[]);
     when(() => mock.listClientTypes()).thenAnswer((_) async => [_patientType]);
-    c = ClientOnboardingController(repository: mock);
+    c = _buildController();
   });
 
   tearDown(() {
@@ -181,8 +210,8 @@ void main() {
     });
 
     String? finishedId;
-    c = ClientOnboardingController(
-      repository: mock,
+    c.dispose();
+    c = _buildController(
       softGateConfirm: (missing) async {
         softGateCalled = true;
         expect(missing, containsAll(['Consent', 'Service Agreement']));
@@ -200,8 +229,8 @@ void main() {
   });
 
   test('finishOnboarding aborts when soft gate declined', () async {
-    c = ClientOnboardingController(
-      repository: mock,
+    c.dispose();
+    c = _buildController(
       softGateConfirm: (_) async => false,
     );
     c.client.value = _fakeClient;
@@ -243,8 +272,8 @@ void main() {
       );
     });
 
-    c = ClientOnboardingController(
-      repository: mock,
+    c.dispose();
+    c = _buildController(
       softGateConfirm: (_) async => true,
       onFinished: (_) {},
     );
@@ -258,8 +287,8 @@ void main() {
   });
 
   test('finishOnboarding does not patch when getClient fails', () async {
-    c = ClientOnboardingController(
-      repository: mock,
+    c.dispose();
+    c = _buildController(
       softGateConfirm: (_) async => true,
       onFinished: (_) {},
     );
@@ -281,8 +310,8 @@ void main() {
 
   test('finishOnboarding maps unexpected errors to a generic message',
       () async {
-    c = ClientOnboardingController(
-      repository: mock,
+    c.dispose();
+    c = _buildController(
       softGateConfirm: (_) async => true,
       onFinished: (_) {},
     );
@@ -345,5 +374,40 @@ void main() {
     expect(await c.submitRepresentative(), isTrue);
     expect(c.nomineeSkipped.value, isTrue);
     expect(c.step.value, 5);
+  });
+
+  test('upload fails closed without documents.upload / clients.docs.manage',
+      () async {
+    final deniedSession = _MockSessionService();
+    final pipeline = _MockDocumentPipeline();
+    when(() => deniedSession.hasPermission(any())).thenReturn(false);
+
+    c.dispose();
+    c = _buildController(
+      documentPipeline: pipeline,
+      sessionOverride: deniedSession,
+    );
+    c.pendingPhoto.value = const PickedProfilePhoto(
+      name: 'a.jpg',
+      contentType: 'image/jpeg',
+      bytes: [1, 2, 3],
+    );
+    when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
+    when(() => mock.upsertProfileFact(any(), any(), any()))
+        .thenAnswer((_) async {});
+
+    c.fullName.text = 'Sam';
+    c.phone.text = '+61411111111';
+    c.dob.value = DateTime(1990, 1, 1);
+    c.ndisCtrl.text = '430118201';
+
+    expect(await c.submitIdentity(), isFalse);
+    expect(c.errorMessage.value, contains('documents.upload'));
+    verifyNever(
+      () => pipeline.uploadEvidence(
+        request: any(named: 'request'),
+        bytes: any(named: 'bytes'),
+      ),
+    );
   });
 }

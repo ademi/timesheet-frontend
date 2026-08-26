@@ -15,6 +15,7 @@ class ClientOnboardingBinding extends Bindings {
       Get.put(
         ClientOnboardingController(
           repository: Get.find<ClientsRepository>(),
+          session: Get.find<SessionService>(),
           documentPipeline: Get.isRegistered<DocumentPipeline>()
               ? Get.find<DocumentPipeline>()
               : null,

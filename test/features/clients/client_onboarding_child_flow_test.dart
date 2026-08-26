@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/controllers/client_onboarding_controller.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
@@ -7,6 +8,8 @@ import 'package:rostiq/features/clients/data/repositories/clients_repository.dar
 import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
 
 class _MockClientsRepository extends Mock implements ClientsRepository {}
+
+class _MockSessionService extends Mock implements SessionService {}
 
 class _FakeClientCreateRequest extends Fake implements ClientCreateRequest {}
 
@@ -48,6 +51,7 @@ final _patientType = ClientTypeOut(
 
 void main() {
   late _MockClientsRepository mock;
+  late _MockSessionService session;
   late ClientOnboardingController c;
   late List<ClientContactWriteRequest> contactCreates;
   late String? finishedId;
@@ -63,6 +67,8 @@ void main() {
 
   setUp(() {
     mock = _MockClientsRepository();
+    session = _MockSessionService();
+    when(() => session.hasPermission(any())).thenReturn(true);
     contactCreates = [];
     finishedId = null;
 
@@ -142,6 +148,7 @@ void main() {
 
     c = ClientOnboardingController(
       repository: mock,
+      session: session,
       softGateConfirm: (_) async => true,
       onFinished: (id) => finishedId = id,
     );

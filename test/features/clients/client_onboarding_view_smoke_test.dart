@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/controllers/client_onboarding_controller.dart';
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
@@ -9,16 +10,21 @@ import 'package:rostiq/features/clients/views/client_onboarding_view.dart';
 
 class _MockClientsRepository extends Mock implements ClientsRepository {}
 
+class _MockSessionService extends Mock implements SessionService {}
+
 void main() {
   late _MockClientsRepository mock;
+  late _MockSessionService session;
 
   setUp(() {
     Get.testMode = true;
     Get.reset();
     mock = _MockClientsRepository();
+    session = _MockSessionService();
+    when(() => session.hasPermission(any())).thenReturn(true);
     when(() => mock.listFormTemplates(tenantLevel: any(named: 'tenantLevel')))
         .thenAnswer((_) async => <FormTemplateSummary>[]);
-    Get.put(ClientOnboardingController(repository: mock));
+    Get.put(ClientOnboardingController(repository: mock, session: session));
   });
 
   tearDown(Get.reset);

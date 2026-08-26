@@ -2,10 +2,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
 import '../../documents/data/document_pipeline.dart';
 import '../data/models/client_models.dart';
@@ -23,13 +25,16 @@ class ClientOnboardingController extends GetxController
     implements SiteFormHost, ContactFormHost {
   ClientOnboardingController({
     required ClientsRepository repository,
+    required SessionService session,
     DocumentPipeline? documentPipeline,
     this.softGateConfirm,
     this.onFinished,
   })  : _repository = repository,
+        _session = session,
         _pipeline = documentPipeline;
 
   final ClientsRepository _repository;
+  final SessionService _session;
   final DocumentPipeline? _pipeline;
 
   /// Injectable soft-gate dialog for tests.
@@ -172,6 +177,10 @@ class ClientOnboardingController extends GetxController
   }
 
   String? get clientId => client.value?.id;
+
+  bool get canUploadDocs =>
+      _session.hasPermission(AppPermissions.documentsUpload) ||
+      _session.hasPermission(AppPermissions.clientsDocsManage);
 
   bool get requiresChildRepresentative =>
       dob.value != null && isUnder18(dob.value!);
@@ -1153,6 +1162,13 @@ class ClientOnboardingController extends GetxController
       throw const AppFailure(
         code: 'unknown',
         message: 'Document upload is not configured.',
+        presentation: AppFailurePresentation.inline,
+      );
+    }
+    if (!canUploadDocs) {
+      throw const AppFailure(
+        code: 'forbidden',
+        message: 'Missing documents.upload / clients.docs.manage permission.',
         presentation: AppFailurePresentation.inline,
       );
     }
