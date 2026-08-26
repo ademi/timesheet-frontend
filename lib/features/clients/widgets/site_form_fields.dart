@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
-import '../controllers/clients_controller.dart';
+import 'site_form_host.dart';
 
 /// Australian states/territories for site forms.
 const auStates = <String>[
@@ -29,7 +29,7 @@ class SiteFormFields extends StatefulWidget {
     this.showNameField = true,
   });
 
-  final ClientsController controller;
+  final SiteFormHost controller;
   final bool primaryMode;
   final bool showNameField;
 
@@ -38,7 +38,7 @@ class SiteFormFields extends StatefulWidget {
 }
 
 class _SiteFormFieldsState extends State<SiteFormFields> {
-  ClientsController get controller => widget.controller;
+  SiteFormHost get controller => widget.controller;
 
   @override
   void initState() {

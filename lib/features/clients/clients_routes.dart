@@ -6,10 +6,12 @@ import '../../app/routes/middlewares/actor_guard.dart';
 import '../../app/routes/middlewares/auth_guard.dart';
 import '../../app/routes/middlewares/permission_guard.dart';
 import '../shell/staff_shell.dart';
+import 'bindings/client_onboarding_binding.dart';
 import 'bindings/clients_binding.dart';
 import 'views/client_contact_form_view.dart';
 import 'views/client_detail_view.dart';
 import 'views/client_form_view.dart';
+import 'views/client_onboarding_view.dart';
 import 'views/client_site_form_view.dart';
 import 'views/clients_list_view.dart';
 import 'views/public_client_invite_view.dart';
@@ -28,6 +30,17 @@ abstract final class ClientsPages {
           binding: ClientsBinding(),
           page: () => staffShellPage(const ClientsListView()),
           transition: Transition.fadeIn,
+        ),
+        GetPage(
+          name: AppRoutes.staffClientOnboarding,
+          middlewares: [
+            AuthGuard(),
+            ActorGuard(),
+            PermissionGuard(anyOf: [AppPermissions.clientsManage]),
+          ],
+          binding: ClientOnboardingBinding(),
+          page: () => const ClientOnboardingView(),
+          transition: Transition.rightToLeft,
         ),
         GetPage(
           name: AppRoutes.staffClientForm,

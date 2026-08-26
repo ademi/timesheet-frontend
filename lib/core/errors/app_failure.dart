@@ -242,6 +242,8 @@ class AppFailure implements Exception {
       'price_limit_missing_for_tier',
       'export_already_void',
       'export_not_voidable',
+      'ndis_number_in_use',
+      'ndis_required',
     ];
     for (final k in known) {
       if (d == k || d.contains(k)) return k;
@@ -373,6 +375,10 @@ class AppFailure implements Exception {
       case 'counsel_pending_policy':
       case 'legal_document_unavailable':
         return 'This legal document is not available yet.';
+      case 'ndis_number_in_use':
+        return 'This NDIS number is already used by another client.';
+      case 'ndis_required':
+        return 'NDIS number is required.';
       case 'engagement_not_active':
         return 'Engagement isn’t active. Contact your admin.';
       case 'invalid_visit_status':

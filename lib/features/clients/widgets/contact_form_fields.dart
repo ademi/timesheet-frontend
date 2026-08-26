@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../controllers/clients_controller.dart';
+import 'contact_form_host.dart';
 
 /// Shared contact fields: name, email, phone, relationship, primary.
 ///
@@ -10,14 +10,22 @@ class ContactFormFields extends StatelessWidget {
   const ContactFormFields({
     super.key,
     required this.controller,
+    this.lockRelationship,
+    this.hideRelationship = false,
   });
 
-  final ClientsController controller;
+  final ContactFormHost controller;
+
+  /// When set, relationship dropdown is locked to this preset key.
+  final String? lockRelationship;
+
+  /// Hide relationship UI entirely (caller sets preset).
+  final bool hideRelationship;
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final preset = controller.contactRelationshipPreset.value;
+      final preset = lockRelationship ?? controller.contactRelationshipPreset.value;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -46,40 +54,43 @@ class ContactFormFields extends StatelessWidget {
               border: OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            value: preset,
-            decoration: const InputDecoration(
-              labelText: 'Relationship',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              const DropdownMenuItem<String?>(
-                value: null,
-                child: Text('Select relationship'),
-              ),
-              for (final entry
-                  in ClientsController.relationshipPresets.entries)
-                DropdownMenuItem<String?>(
-                  value: entry.key,
-                  child: Text(entry.value),
-                ),
-              const DropdownMenuItem<String?>(
-                value: ClientsController.relationshipOtherKey,
-                child: Text('Other'),
-              ),
-            ],
-            onChanged: (v) => controller.contactRelationshipPreset.value = v,
-          ),
-          if (preset == ClientsController.relationshipOtherKey) ...[
+          if (!hideRelationship) ...[
             const SizedBox(height: 12),
-            TextField(
-              controller: controller.contactRelationshipOtherCtrl,
+            DropdownButtonFormField<String?>(
+              value: preset,
               decoration: const InputDecoration(
-                labelText: 'Relationship (other)',
+                labelText: 'Relationship',
                 border: OutlineInputBorder(),
               ),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('Select relationship'),
+                ),
+                for (final entry in ContactFormHost.relationshipPresets.entries)
+                  DropdownMenuItem<String?>(
+                    value: entry.key,
+                    child: Text(entry.value),
+                  ),
+                const DropdownMenuItem<String?>(
+                  value: ContactFormHost.relationshipOtherKey,
+                  child: Text('Other'),
+                ),
+              ],
+              onChanged: lockRelationship != null
+                  ? null
+                  : (v) => controller.contactRelationshipPreset.value = v,
             ),
+            if (preset == ContactFormHost.relationshipOtherKey) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller.contactRelationshipOtherCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Relationship (other)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
           ],
           SwitchListTile(
             contentPadding: EdgeInsets.zero,

@@ -24,10 +24,12 @@ import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../utils/client_quick_facts.dart';
 import '../utils/client_visit_windows.dart';
-import '../utils/onboarding_keys.dart';
+import '../widgets/contact_form_host.dart';
+import '../widgets/site_form_host.dart';
 import 'requirement_draft.dart';
 
-class ClientsController extends GetxController {
+class ClientsController extends GetxController
+    implements SiteFormHost, ContactFormHost {
   ClientsController({
     required ClientsRepository repository,
     required SessionService session,
@@ -233,7 +235,7 @@ class ClientsController extends GetxController {
   }
 
   Future<void> openCreate() async {
-    isCreateFlow.value = true;
+    isCreateFlow.value = false;
     createStepIndex.value = 0;
     createdClient.value = null;
     selected.value = null;
@@ -246,7 +248,7 @@ class ClientsController extends GetxController {
     errorMessage.value = null;
     profileSaveProgress.value = null;
     _resetFormPhoto();
-    Get.toNamed(AppRoutes.staffClientForm);
+    Get.toNamed(AppRoutes.staffClientOnboarding);
   }
 
   Future<void> openEdit(ClientOut client) async {
@@ -1552,15 +1554,11 @@ class ClientsController extends GetxController {
     }
   }
 
-  static const relationshipOtherKey = '_other';
+  static const relationshipOtherKey = ContactFormHost.relationshipOtherKey;
 
-  static const relationshipPresets = <String, String>{
-    OnboardingKeys.relEmergency: 'Emergency',
-    OnboardingKeys.relCarer: 'Carer',
-    OnboardingKeys.relChildRepresentative: 'Child representative',
-    OnboardingKeys.relNominee: 'Nominee',
-  };
+  static const relationshipPresets = ContactFormHost.relationshipPresets;
 
+  @override
   String? get resolvedContactRelationship {
     final preset = contactRelationshipPreset.value;
     if (preset == null || preset.isEmpty) return null;

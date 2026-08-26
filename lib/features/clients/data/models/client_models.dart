@@ -153,6 +153,7 @@ class ClientUpdateRequest {
     this.serviceAgreementNotes,
     this.clientTypeId,
     this.dob,
+    this.metadata,
   });
 
   final String? fullName;
@@ -162,6 +163,7 @@ class ClientUpdateRequest {
   final String? serviceAgreementNotes;
   final String? clientTypeId;
   final String? dob;
+  final Map<String, dynamic>? metadata;
 
   Map<String, dynamic> toJson() => {
         if (fullName != null) 'full_name': fullName,
@@ -172,6 +174,7 @@ class ClientUpdateRequest {
           'service_agreement_notes': serviceAgreementNotes,
         if (clientTypeId != null) 'client_type_id': clientTypeId,
         if (dob != null) 'dob': dob,
+        if (metadata != null) 'metadata': metadata,
       };
 }
 

@@ -230,6 +230,7 @@ class ClientLegalAcceptRequest {
     this.relationship,
     this.signedAt,
     this.note,
+    this.documentId,
   });
 
   final String eventType;
@@ -239,6 +240,7 @@ class ClientLegalAcceptRequest {
   final String method;
   final DateTime? signedAt;
   final String? note;
+  final String? documentId;
 
   Map<String, dynamic> toJson() => {
         'event_type': eventType,
@@ -249,6 +251,8 @@ class ClientLegalAcceptRequest {
         'method': method,
         'signed_at': (signedAt ?? DateTime.now().toUtc()).toIso8601String(),
         if (note != null) 'note': note,
+        if (documentId != null && documentId!.isNotEmpty)
+          'document_id': documentId,
       };
 }
 
@@ -323,6 +327,7 @@ class ClientLegalAcceptanceOut {
     this.participantOrRepName,
     this.relationship,
     this.method,
+    this.documentId,
   });
 
   final String requirementKey;
@@ -331,6 +336,7 @@ class ClientLegalAcceptanceOut {
   final String? participantOrRepName;
   final String? relationship;
   final String? method;
+  final String? documentId;
 
   factory ClientLegalAcceptanceOut.fromJson(Map<String, dynamic> json) {
     return ClientLegalAcceptanceOut(
@@ -345,6 +351,7 @@ class ClientLegalAcceptanceOut {
       participantOrRepName: json['participant_or_rep_name'] as String?,
       relationship: json['relationship'] as String?,
       method: json['method'] as String?,
+      documentId: json['document_id']?.toString(),
     );
   }
 }
@@ -410,4 +417,42 @@ class PickedClientFile {
   final String name;
   final String contentType;
   final List<int> bytes;
+}
+
+/// Lightweight form-template DTO for onboarding legal pack catalog.
+/// Loaded via `GET /v1/form-templates` (clients remote — not JobsRepository).
+class FormTemplateSummary {
+  const FormTemplateSummary({
+    required this.id,
+    required this.name,
+    required this.schemaJson,
+    this.isActive = true,
+  });
+
+  final String id;
+  final String name;
+  final Map<String, dynamic> schemaJson;
+  final bool isActive;
+
+  String? get category => schemaJson['category']?.toString();
+  String? get ndisPackKey => schemaJson['ndis_pack_key']?.toString();
+
+  bool get isClientOnboarding =>
+      (category ?? '').toLowerCase() == 'client-onboarding';
+
+  bool get isAcknowledgementPack =>
+      (ndisPackKey ?? '').toUpperCase() == 'CL-03' ||
+      name.toLowerCase().contains('acknowledgement');
+
+  factory FormTemplateSummary.fromJson(Map<String, dynamic> json) {
+    final schema = json['schema_json'];
+    return FormTemplateSummary(
+      id: json['id'].toString(),
+      name: json['name'] as String? ?? '',
+      schemaJson: schema is Map
+          ? Map<String, dynamic>.from(schema)
+          : const <String, dynamic>{},
+      isActive: json['is_active'] as bool? ?? true,
+    );
+  }
 }

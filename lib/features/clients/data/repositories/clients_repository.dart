@@ -42,6 +42,12 @@ class ClientsRepository {
   Future<Map<String, dynamic>?> getClientReadiness(String clientId) =>
       _remote.getClientReadiness(clientId);
 
+  /// Form templates via `/v1/form-templates` (onboarding legal pack).
+  Future<List<FormTemplateSummary>> listFormTemplates({
+    bool tenantLevel = true,
+  }) =>
+      _remote.listFormTemplates(tenantLevel: tenantLevel);
+
   Future<List<ClientOut>> listClients() async =>
       sortedByName(await _remote.listClients(), (c) => c.fullName);
   Future<ClientOut> getClient(String id) => _remote.getClient(id);

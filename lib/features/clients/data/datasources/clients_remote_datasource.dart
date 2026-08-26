@@ -114,6 +114,23 @@ class ClientsRemoteDataSource {
     }
   }
 
+  /// `GET /v1/form-templates` — used by onboarding legal pack (not JobsRepository).
+  Future<List<FormTemplateSummary>> listFormTemplates({
+    bool tenantLevel = true,
+  }) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.formTemplates,
+        queryParameters: {
+          if (tenantLevel) 'tenant_level': true,
+        },
+      );
+      return _mapList(response.data, FormTemplateSummary.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<Map<String, dynamic>?> getClientReadiness(String clientId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
