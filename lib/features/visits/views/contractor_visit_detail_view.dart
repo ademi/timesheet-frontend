@@ -6,7 +6,9 @@ import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/external_url.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/contractor_visits_controller.dart';
+import '../controllers/visit_shift_brief_controller.dart';
 import '../services/visit_location_service.dart';
+import '../widgets/shift_brief_panel.dart';
 import '../widgets/visit_schema_form.dart';
 
 String _fmt(DateTime dt) {
@@ -30,11 +32,18 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
     final c = Get.find<ContractorVisitsController>();
     c.hydrateFromArgs();
     c.refreshSelected();
+    final visitId = c.selected.value?.id;
+    if (visitId != null && Get.isRegistered<VisitShiftBriefController>()) {
+      Get.find<VisitShiftBriefController>().load(visitId);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<ContractorVisitsController>();
+    final briefCtrl = Get.isRegistered<VisitShiftBriefController>()
+        ? Get.find<VisitShiftBriefController>()
+        : null;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Visit detail')),
@@ -49,6 +58,9 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
         }
         final gpsBlocked = controller.isWeb;
         final reqs = controller.effectiveFormRequirements;
+        final brief = briefCtrl?.brief.value;
+        final briefLoading = briefCtrl?.isLoading.value ?? false;
+        final briefErr = briefCtrl?.errorMessage.value;
         return Column(
           children: [
             if (controller.isRefreshing.value)
@@ -101,6 +113,12 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                       child: const Text(VisitLocationService.webBlockedMessage),
                     ),
                   ],
+                  if (briefCtrl != null)
+                    ShiftBriefPanel(
+                      brief: brief,
+                      isLoading: briefLoading,
+                      errorMessage: briefErr,
+                    ),
                   const Divider(height: 32),
                   Text('Tasks', style: Get.textTheme.titleMedium),
                   if (v.tasks.isEmpty) const Text('No tasks.'),

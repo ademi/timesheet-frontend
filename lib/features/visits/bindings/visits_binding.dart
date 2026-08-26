@@ -16,6 +16,7 @@ import '../../shifts/data/datasources/shifts_remote_datasource.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
 import '../controllers/contractor_visits_controller.dart';
 import '../controllers/staff_visits_controller.dart';
+import '../controllers/visit_shift_brief_controller.dart';
 import '../data/datasources/visits_remote_datasource.dart';
 import '../data/repositories/visits_repository.dart';
 import '../services/visit_location_service.dart';
@@ -106,6 +107,11 @@ class ContractorVisitsBinding extends Bindings {
           session: Get.find<SessionService>(),
           location: Get.find<VisitLocationService>(),
         ),
+      );
+    }
+    if (!Get.isRegistered<VisitShiftBriefController>()) {
+      Get.put(
+        VisitShiftBriefController(repo: Get.find<VisitsRepository>()),
       );
     }
   }
