@@ -1,6 +1,9 @@
 import '../datasources/ndis_catalogue_remote_datasource.dart';
 import '../models/billing_models.dart';
 
+/// Max rows requested for the session-cached full catalogue fetch (picker path).
+const kNdisCatalogueFetchLimit = 2000;
+
 class NdisCatalogueRepository {
   NdisCatalogueRepository({required NdisCatalogueRemoteDataSource remote})
     : _remote = remote;
@@ -14,7 +17,9 @@ class NdisCatalogueRepository {
   ///
   /// Picker path must use this plus [NdisCatalogueLocalFilter] — not
   /// per-keystroke [searchItems] and not a `/facets` HTTP call.
-  Future<List<NdisCatalogueItemOut>> fetchAllActiveItems({int limit = 1000}) {
+  Future<List<NdisCatalogueItemOut>> fetchAllActiveItems({
+    int limit = kNdisCatalogueFetchLimit,
+  }) {
     final cached = _cachedItems;
     if (cached != null) {
       return Future<List<NdisCatalogueItemOut>>.value(cached);

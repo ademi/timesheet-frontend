@@ -10,9 +10,9 @@ class NdisCatalogueRemoteDataSource {
 
   final Dio _dio;
 
-  /// Full active catalogue in one request (`q` empty, default [limit] 1000).
+  /// Full active catalogue in one request (`q` empty, default [limit] 2000).
   Future<List<NdisCatalogueItemOut>> fetchAllActiveItems({
-    int limit = 1000,
+    int limit = 2000,
   }) async {
     final response = await searchItems(q: '', limit: limit);
     return response.items;

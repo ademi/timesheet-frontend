@@ -7,10 +7,10 @@ import 'package:rostiq/features/billing/data/repositories/ndis_catalogue_reposit
 
 class MockDio extends Mock implements Dio {}
 
-Map<String, dynamic> _cataloguePayload({required int itemCount}) {
+Map<String, dynamic> _cataloguePayload({required int itemCount, int limit = 2000}) {
   return {
     'q': '',
-    'limit': 1000,
+    'limit': limit,
     'items': [
       for (var i = 0; i < itemCount; i++)
         {
@@ -70,7 +70,18 @@ void main() {
     verify(
       () => dio.get<Map<String, dynamic>>(
         ApiPaths.ndisCatalogueItems,
-        queryParameters: {'q': '', 'limit': 1000},
+        queryParameters: {'q': '', 'limit': 2000},
+      ),
+    ).called(1);
+  });
+
+  test('fetchAllActiveItems default limit is 2000', () async {
+    await repository.fetchAllActiveItems();
+
+    verify(
+      () => dio.get<Map<String, dynamic>>(
+        ApiPaths.ndisCatalogueItems,
+        queryParameters: {'q': '', 'limit': 2000},
       ),
     ).called(1);
   });
@@ -85,7 +96,7 @@ void main() {
     verify(
       () => dio.get<Map<String, dynamic>>(
         ApiPaths.ndisCatalogueItems,
-        queryParameters: {'q': '', 'limit': 1000},
+        queryParameters: {'q': '', 'limit': 2000},
       ),
     ).called(2);
   });

@@ -449,6 +449,32 @@ void main() {
     expect(find.text('Filtered locally (2 of 3)'), findsOneWidget);
   });
 
+  testWidgets('shows truncation hint when catalogue hits fetch limit', (
+    tester,
+  ) async {
+    final truncatedCatalogue = [
+      for (var i = 0; i < kNdisCatalogueFetchLimit; i++)
+        NdisCatalogueItemOut(
+          supportItemNumber: '01_01${i.toString().padLeft(3, '0')}_0107_1_1',
+          supportItemName: 'Item $i',
+          supportCategoryNumber: '1',
+          supportCategoryName: 'Assistance with Daily Life',
+          registrationGroupNumber: '0107',
+          registrationGroupName: 'Daily Personal Activities',
+          unit: 'H',
+        ),
+    ];
+    when(
+      () => repository.fetchAllActiveItems(),
+    ).thenAnswer((_) async => truncatedCatalogue);
+
+    await tester.pumpWidget(isolatedHarness());
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.textContaining('may be incomplete'), findsOneWidget);
+  });
+
   testWidgets(
     'catalogue fetch failure shows muted error; field still usable',
     (tester) async {

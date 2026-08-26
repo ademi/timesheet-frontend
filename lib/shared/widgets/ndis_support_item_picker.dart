@@ -81,6 +81,7 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
   bool _loading = true;
   bool _fetchStarted = false;
   bool _catalogueLoaded = false;
+  bool _cataloguePossiblyTruncated = false;
   String? _loadError;
   String? _formatError;
   String? _categoryNumber;
@@ -184,6 +185,8 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
       setState(() {
         _allItems = List<NdisCatalogueItemOut>.of(items);
         _catalogueLoaded = true;
+        _cataloguePossiblyTruncated =
+            items.length >= kNdisCatalogueFetchLimit;
         _loadError = null;
         _loading = false;
         _recomputeOptions();
@@ -380,6 +383,14 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
           const SizedBox(height: 6),
           Text(
             'Filtered locally (${_options.length} of ${_allItems.length})',
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+        ],
+        if (_cataloguePossiblyTruncated) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Catalogue may be incomplete — only the first '
+            '$kNdisCatalogueFetchLimit items were loaded.',
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
         ],
