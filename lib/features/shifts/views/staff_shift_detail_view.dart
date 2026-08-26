@@ -202,6 +202,7 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                             color: switch (label) {
                               'Leave' => AppColors.error,
                               'Busy' => AppColors.openSlot,
+                              'Outside hours' => AppColors.openSlot,
                               _ => AppColors.success,
                             },
                           ),
