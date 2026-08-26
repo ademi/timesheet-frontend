@@ -38,6 +38,17 @@ class ShiftsRepository {
         taskTemplate: taskTemplate,
       );
 
+  Future<ShiftOut> assignShiftBatch({
+    required String shiftId,
+    required List<String> contractorIds,
+    List<TaskTemplateItem>? taskTemplate,
+  }) =>
+      _remote.assignShiftBatch(
+        shiftId: shiftId,
+        contractorIds: contractorIds,
+        taskTemplate: taskTemplate,
+      );
+
   Future<ShiftOut> unassignShift(String shiftId, String contractorId) =>
       _remote.unassignShift(shiftId, contractorId);
 

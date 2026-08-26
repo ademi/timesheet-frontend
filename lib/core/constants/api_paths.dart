@@ -170,6 +170,7 @@ abstract final class ApiPaths {
   static String shiftPublish(String id) => '${shift(id)}/publish';
   static String shiftClaim(String id) => '${shift(id)}/claim';
   static String shiftAssign(String id) => '${shift(id)}/assign';
+  static String shiftAssignBatch(String id) => '${shift(id)}/assign-batch';
   static String shiftRelease(String id) => '${shift(id)}/release';
   static String shiftUnassign(String id) => '${shift(id)}/unassign';
   static String shiftCancel(String id) => '${shift(id)}/cancel';

@@ -104,6 +104,26 @@ class ShiftsRemoteDataSource {
     }
   }
 
+  Future<ShiftOut> assignShiftBatch({
+    required String shiftId,
+    required List<String> contractorIds,
+    List<TaskTemplateItem>? taskTemplate,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.shiftAssignBatch(shiftId),
+        data: {
+          'contractor_ids': contractorIds,
+          if (taskTemplate != null && taskTemplate.isNotEmpty)
+            'task_template': [for (final task in taskTemplate) task.toJson()],
+        },
+      );
+      return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<ShiftOut> unassignShift(String shiftId, String contractorId) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(

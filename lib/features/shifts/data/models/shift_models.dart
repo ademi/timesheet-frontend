@@ -1,3 +1,5 @@
+import '../../../jobs/data/models/job_models.dart';
+
 /// Shift roster DTOs.
 
 class ShiftAssignmentOut {
@@ -155,6 +157,8 @@ class ShiftCreateRequest {
     required this.scheduledEnd,
     this.requiredSlots = 1,
     this.status = 'draft',
+    this.contractorIds = const [],
+    this.taskTemplate = const [],
   });
 
   final String jobId;
@@ -162,6 +166,8 @@ class ShiftCreateRequest {
   final DateTime scheduledEnd;
   final int requiredSlots;
   final String status;
+  final List<String> contractorIds;
+  final List<TaskTemplateItem> taskTemplate;
 
   Map<String, dynamic> toJson() => {
         'job_id': jobId,
@@ -169,5 +175,8 @@ class ShiftCreateRequest {
         'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
         'required_slots': requiredSlots,
         'status': status,
+        if (contractorIds.isNotEmpty) 'contractor_ids': contractorIds,
+        if (taskTemplate.isNotEmpty)
+          'task_template': [for (final t in taskTemplate) t.toJson()],
       };
 }
