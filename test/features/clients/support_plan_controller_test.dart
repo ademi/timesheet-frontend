@@ -120,4 +120,44 @@ void main() {
 
     verify(() => mock.patchSupportPlan('client-1', 'plan-1', any())).called(1);
   });
+
+  test('save draft on active plan omits status from PATCH', () async {
+    c.applyLoadedPlan(
+      _plan(
+        body: const SupportPlanBody(
+          disabilityHealth: DisabilityHealthSection(
+            primaryDisability: 'ASD',
+          ),
+        ),
+        status: SupportPlanKeys.statusActive,
+        nextReviewAt: '2026-09-01',
+        id: 'plan-1',
+      ),
+    );
+
+    c.primaryDisabilityCtrl.text = 'Updated disability';
+
+    when(
+      () => mock.patchSupportPlan(any(), any(), any()),
+    ).thenAnswer((inv) async {
+      final bodyMap = inv.positionalArguments[2] as Map<String, dynamic>;
+      return _plan(
+        id: 'plan-1',
+        status: SupportPlanKeys.statusActive,
+        nextReviewAt: '2026-09-01',
+        body: SupportPlanBody.fromJson(
+          bodyMap['body'] as Map<String, dynamic>?,
+        ),
+      );
+    });
+
+    await c.saveDraft();
+
+    final payload = c.lastSavedPayload;
+    expect(payload, isNotNull);
+    expect(payload!.containsKey('status'), isFalse);
+    expect(c.status.value, SupportPlanKeys.statusActive);
+
+    verify(() => mock.patchSupportPlan('client-1', 'plan-1', any())).called(1);
+  });
 }

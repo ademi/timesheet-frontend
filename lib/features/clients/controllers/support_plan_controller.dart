@@ -363,9 +363,14 @@ class SupportPlanController extends GetxController {
     errorMessage.value = null;
     try {
       final body = buildBody();
+      final currentStatus = status.value;
       final targetStatus =
           activate ? SupportPlanKeys.statusActive : SupportPlanKeys.statusDraft;
-      status.value = targetStatus;
+      // Save draft must not demote active/archived plans — only update local
+      // status when activating or the plan is already draft (or new).
+      if (activate || currentStatus == SupportPlanKeys.statusDraft) {
+        status.value = targetStatus;
+      }
 
       var id = planId.value;
       if (id == null || id.isEmpty) {
@@ -381,9 +386,18 @@ class SupportPlanController extends GetxController {
         }
       }
 
+      final String? patchStatus;
+      if (activate) {
+        patchStatus = SupportPlanKeys.statusActive;
+      } else if (currentStatus == SupportPlanKeys.statusDraft) {
+        patchStatus = SupportPlanKeys.statusDraft;
+      } else {
+        patchStatus = null;
+      }
+
       final update = SupportPlanUpdateRequest(
         body: body,
-        status: targetStatus,
+        status: patchStatus,
         nextReviewAt: nextReviewAt.value,
       );
       final payload = update.toJson();
