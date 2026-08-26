@@ -137,12 +137,17 @@ class ClientsController extends GetxController {
   final siteStateCtrl = TextEditingController();
   final siteCountryCtrl = TextEditingController();
   final sitePostalCtrl = TextEditingController();
+  final siteAccessNotesCtrl = TextEditingController();
   /// Held after geocode / edit hydrate; not shown on the site form.
   final siteLatCtrl = TextEditingController();
   final siteLngCtrl = TextEditingController();
   final siteIsPrimary = false.obs;
   final isGeocoding = false.obs;
   final geocodeHint = RxnString();
+  /// Formatted address from last successful lookup (pending or confirmed).
+  final geocodeFormattedAddress = RxnString();
+  /// True after user confirms the geocode result (or edit hydrate with coords).
+  final addressConfirmed = false.obs;
   /// Observable country/state for dropdowns (defaults AU / NSW).
   final siteCountry = 'AU'.obs;
   final siteState = 'NSW'.obs;
@@ -197,6 +202,7 @@ class ClientsController extends GetxController {
     siteStateCtrl.dispose();
     siteCountryCtrl.dispose();
     sitePostalCtrl.dispose();
+    siteAccessNotesCtrl.dispose();
     siteLatCtrl.dispose();
     siteLngCtrl.dispose();
     contactNameCtrl.dispose();
@@ -1341,12 +1347,59 @@ class ClientsController extends GetxController {
     siteState.value = state;
     siteCountry.value = 'AU';
     sitePostalCtrl.text = site?.postalCode ?? '';
+    siteAccessNotesCtrl.text = site?.accessNotes ?? '';
     siteLatCtrl.text = site?.latitude?.toString() ?? '';
     siteLngCtrl.text = site?.longitude?.toString() ?? '';
     siteIsPrimary.value = site?.isPrimary ?? false;
     errorMessage.value = null;
     geocodeHint.value = null;
+    geocodeFormattedAddress.value = null;
+    // Existing sites with coords are treated as already confirmed.
+    addressConfirmed.value = site?.hasCoordinates ?? false;
     Get.toNamed(AppRoutes.staffClientSiteForm);
+  }
+
+  /// Clears pending/confirmed geocode so the user can re-edit and look up again.
+  void invalidateSiteAddressConfirm() {
+    if (!addressConfirmed.value && geocodeFormattedAddress.value == null) {
+      return;
+    }
+    addressConfirmed.value = false;
+    geocodeFormattedAddress.value = null;
+    siteLatCtrl.clear();
+    siteLngCtrl.clear();
+    geocodeHint.value = null;
+  }
+
+  /// Explicit look-up for the confirm UX (does not mark confirmed).
+  Future<void> lookupSiteAddress() async {
+    addressConfirmed.value = false;
+    final coords = await geocodeFromAddress(showSuccessHint: false);
+    if (coords == null) {
+      geocodeFormattedAddress.value = null;
+      return;
+    }
+    // formatted address already set inside geocodeFromAddress on success
+  }
+
+  void confirmSiteAddress() {
+    final lat = double.tryParse(siteLatCtrl.text.trim());
+    final lng = double.tryParse(siteLngCtrl.text.trim());
+    if (lat == null || lng == null) {
+      errorMessage.value = 'Look up an address before confirming.';
+      return;
+    }
+    addressConfirmed.value = true;
+    errorMessage.value = null;
+  }
+
+  void editSiteAddress() {
+    addressConfirmed.value = false;
+    geocodeFormattedAddress.value = null;
+    siteLatCtrl.clear();
+    siteLngCtrl.clear();
+    geocodeHint.value = null;
+    errorMessage.value = null;
   }
 
   /// Resolves lat/lng from address via `POST /v1/public/geocode`.
@@ -1363,7 +1416,8 @@ class ClientsController extends GetxController {
     siteCountry.value = country;
 
     if (address.isEmpty || city.isEmpty) {
-      errorMessage.value = 'Enter street address and city before saving.';
+      errorMessage.value =
+          'Enter street address and city before looking up.';
       return null;
     }
 
@@ -1383,6 +1437,8 @@ class ClientsController extends GetxController {
       if (confidence == 'low') {
         siteLatCtrl.clear();
         siteLngCtrl.clear();
+        geocodeFormattedAddress.value = null;
+        addressConfirmed.value = false;
         errorMessage.value =
             'Address lookup has low confidence. Check the street and city, '
             'then try again.';
@@ -1390,6 +1446,13 @@ class ClientsController extends GetxController {
       }
       siteLatCtrl.text = result.latitude.toString();
       siteLngCtrl.text = result.longitude.toString();
+      geocodeFormattedAddress.value =
+          (result.formattedAddress != null &&
+                  result.formattedAddress!.isNotEmpty)
+              ? result.formattedAddress
+              : '${siteAddressCtrl.text.trim()}, '
+                  '${siteCityCtrl.text.trim()}';
+      addressConfirmed.value = false;
       if (showSuccessHint) {
         final parts = <String>[
           if (result.formattedAddress != null &&
@@ -1422,15 +1485,21 @@ class ClientsController extends GetxController {
       return;
     }
 
-    var lat = double.tryParse(siteLatCtrl.text.trim());
-    var lng = double.tryParse(siteLngCtrl.text.trim());
+    if (siteIsPrimary.value && sitePostalCtrl.text.trim().isEmpty) {
+      errorMessage.value = 'Postal code is required for the primary site.';
+      return;
+    }
 
-    // New sites always geocode from the address; edits only when coords are missing.
+    final lat = double.tryParse(siteLatCtrl.text.trim());
+    final lng = double.tryParse(siteLngCtrl.text.trim());
+
+    // New sites (or edits missing coords) require look-up + confirm.
     if (editingSite == null || lat == null || lng == null) {
-      final coords = await geocodeFromAddress(showSuccessHint: false);
-      if (coords == null) return;
-      lat = coords.lat;
-      lng = coords.lng;
+      if (!addressConfirmed.value || lat == null || lng == null) {
+        errorMessage.value =
+            'Look up and confirm the address before saving.';
+        return;
+      }
     }
 
     if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
@@ -1453,6 +1522,7 @@ class ClientsController extends GetxController {
         longitude: lng,
         geofenceRadiusM: radius.clamp(10, 5000),
         isPrimary: siteIsPrimary.value,
+        accessNotes: siteAccessNotesCtrl.text.trim().nullIfEmpty,
       );
       if (editingSite == null) {
         await _repository.createSite(clientId, body);

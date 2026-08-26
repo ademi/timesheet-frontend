@@ -5,6 +5,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/clients_controller.dart';
+import '../widgets/contact_form_fields.dart';
 
 class ClientContactFormView extends GetView<ClientsController> {
   const ClientContactFormView({super.key});
@@ -17,7 +18,6 @@ class ClientContactFormView extends GetView<ClientsController> {
       appBar: AppBar(title: Text(isEdit ? 'Edit contact' : 'Add contact')),
       body: Obx(() {
         final err = controller.errorMessage.value;
-        final preset = controller.contactRelationshipPreset.value;
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -40,73 +40,7 @@ class ClientContactFormView extends GetView<ClientsController> {
                     ),
                     const SizedBox(height: 12),
                   ],
-                  TextField(
-                    controller: controller.contactNameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: controller.contactEmailCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: controller.contactPhoneCtrl,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String?>(
-                    value: preset,
-                    decoration: const InputDecoration(
-                      labelText: 'Relationship',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('Select relationship'),
-                      ),
-                      for (final entry
-                          in ClientsController.relationshipPresets.entries)
-                        DropdownMenuItem<String?>(
-                          value: entry.key,
-                          child: Text(entry.value),
-                        ),
-                      const DropdownMenuItem<String?>(
-                        value: ClientsController.relationshipOtherKey,
-                        child: Text('Other'),
-                      ),
-                    ],
-                    onChanged: (v) =>
-                        controller.contactRelationshipPreset.value = v,
-                  ),
-                  if (preset == ClientsController.relationshipOtherKey) ...[
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: controller.contactRelationshipOtherCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Relationship (other)',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ],
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: controller.contactIsPrimary.value,
-                    onChanged: (v) => controller.contactIsPrimary.value = v,
-                    title: const Text('Primary contact'),
-                  ),
+                  ContactFormFields(controller: controller),
                   const SizedBox(height: 16),
                   AsyncElevatedButton(
                     onPressed: controller.saveContact,
