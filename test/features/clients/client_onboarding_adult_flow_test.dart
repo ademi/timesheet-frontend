@@ -140,6 +140,8 @@ void main() {
       );
     });
 
+    when(() => mock.getClient(any())).thenAnswer((_) async => c.client.value!);
+
     when(() => mock.patchClient(any(), any())).thenAnswer((inv) async {
       final patch = inv.positionalArguments[1] as ClientUpdateRequest;
       patchCalls.add(patch);

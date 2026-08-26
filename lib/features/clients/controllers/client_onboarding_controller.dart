@@ -1004,7 +1004,9 @@ class ClientOnboardingController extends GetxController
 
     isSaving.value = true;
     try {
-      final existing = Map<String, dynamic>.from(client.value?.metadata ?? {});
+      final fresh = await _repository.getClient(id);
+      client.value = fresh;
+      final existing = Map<String, dynamic>.from(fresh.metadata);
       existing['onboarding_incomplete'] = false;
       final updated = await _repository.patchClient(
         id,
@@ -1117,6 +1119,8 @@ class ClientOnboardingController extends GetxController
     );
     await _repository.setClientProfilePhoto(clientId, docId);
     pendingPhoto.value = null;
+    // Defense in depth: keep local metadata aligned with server after photo set.
+    client.value = await _repository.getClient(clientId);
   }
 
   Future<String> _uploadClientFile({

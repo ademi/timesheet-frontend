@@ -163,6 +163,7 @@ void main() {
   test('finishOnboarding soft gate warns then clears incomplete flag', () async {
     var softGateCalled = false;
     ClientUpdateRequest? patch;
+    when(() => mock.getClient('client-1')).thenAnswer((_) async => _fakeClient);
     when(() => mock.patchClient(any(), any())).thenAnswer((inv) async {
       patch = inv.positionalArguments[1] as ClientUpdateRequest;
       return ClientOut(
@@ -203,6 +204,75 @@ void main() {
     c.client.value = _fakeClient;
     c.step.value = 6;
     expect(await c.finishOnboarding(), isFalse);
+    verifyNever(() => mock.patchClient(any(), any()));
+  });
+
+  test('finishOnboarding re-fetches client so photo_document_id is not wiped',
+      () async {
+    // Local client is stale: only onboarding_incomplete (simulates post-_persistPhoto
+    // before metadata refresh).
+    when(() => mock.getClient('client-1')).thenAnswer(
+      (_) async => ClientOut(
+        id: 'client-1',
+        tenantId: 'tenant-1',
+        fullName: 'Sam Parent',
+        status: 'active',
+        metadata: const {
+          'onboarding_incomplete': true,
+          'photo_document_id': 'doc-photo-1',
+        },
+        createdAt: _now,
+        updatedAt: _now,
+      ),
+    );
+
+    ClientUpdateRequest? patch;
+    when(() => mock.patchClient(any(), any())).thenAnswer((inv) async {
+      patch = inv.positionalArguments[1] as ClientUpdateRequest;
+      return ClientOut(
+        id: 'client-1',
+        tenantId: 'tenant-1',
+        fullName: 'Sam Parent',
+        status: 'active',
+        metadata: patch?.metadata ?? {},
+        createdAt: _now,
+        updatedAt: _now,
+      );
+    });
+
+    c = ClientOnboardingController(
+      repository: mock,
+      softGateConfirm: (_) async => true,
+      onFinished: (_) {},
+    );
+    c.client.value = _fakeClient;
+    c.step.value = 6;
+
+    expect(await c.finishOnboarding(), isTrue);
+    verify(() => mock.getClient('client-1')).called(1);
+    expect(patch?.metadata?['onboarding_incomplete'], isFalse);
+    expect(patch?.metadata?['photo_document_id'], 'doc-photo-1');
+  });
+
+  test('finishOnboarding does not patch when getClient fails', () async {
+    c = ClientOnboardingController(
+      repository: mock,
+      softGateConfirm: (_) async => true,
+      onFinished: (_) {},
+    );
+    c.client.value = _fakeClient;
+    c.step.value = 6;
+
+    when(() => mock.getClient('client-1')).thenThrow(
+      const AppFailure(
+        code: 'network',
+        message: 'Failed to load client',
+        presentation: AppFailurePresentation.inline,
+      ),
+    );
+
+    expect(await c.finishOnboarding(), isFalse);
+    expect(c.errorMessage.value, 'Failed to load client');
     verifyNever(() => mock.patchClient(any(), any()));
   });
 
