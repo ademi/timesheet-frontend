@@ -364,7 +364,7 @@ class ClientOnboardingController extends GetxController
       }
       return false;
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setUnexpectedError(e);
       return false;
     } finally {
       isSaving.value = false;
@@ -420,7 +420,7 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = e.message;
       geocodeFormattedAddress.value = null;
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setUnexpectedError(e);
       geocodeFormattedAddress.value = null;
     } finally {
       isGeocoding.value = false;
@@ -503,7 +503,7 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = e.message;
       return false;
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setUnexpectedError(e);
       return false;
     } finally {
       isSaving.value = false;
@@ -567,7 +567,7 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = e.message;
       return false;
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setUnexpectedError(e);
       return false;
     } finally {
       isSaving.value = false;
@@ -661,7 +661,7 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = e.message;
       return false;
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setUnexpectedError(e);
       return false;
     } finally {
       isSaving.value = false;
@@ -844,7 +844,7 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = e.message;
       return false;
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setUnexpectedError(e);
       return false;
     } finally {
       isSaving.value = false;
@@ -911,7 +911,7 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = e.message;
       return false;
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setUnexpectedError(e);
       return false;
     } finally {
       isSaving.value = false;
@@ -948,7 +948,7 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = e.message;
       return false;
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setUnexpectedError(e);
       return false;
     } finally {
       isSaving.value = false;
@@ -986,7 +986,7 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = e.message;
       return false;
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setUnexpectedError(e);
       return false;
     } finally {
       isSaving.value = false;
@@ -1039,7 +1039,7 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = e.message;
       return false;
     } catch (e) {
-      errorMessage.value = e.toString();
+      _setUnexpectedError(e);
       return false;
     } finally {
       isSaving.value = false;
@@ -1075,6 +1075,15 @@ class ClientOnboardingController extends GetxController
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────
+
+  static const _unexpectedErrorMessage =
+      'Something went wrong. Please try again.';
+
+  void _setUnexpectedError(Object error) {
+    // Keep AppFailure handling in dedicated `on AppFailure` clauses.
+    // Unexpected errors must not surface raw exception text to staff UI.
+    errorMessage.value = _unexpectedErrorMessage;
+  }
 
   Future<String?> _resolvePatientTypeId() async {
     final types = await _repository.listClientTypes();

@@ -279,6 +279,28 @@ void main() {
     verifyNever(() => mock.patchClient(any(), any()));
   });
 
+  test('finishOnboarding maps unexpected errors to a generic message',
+      () async {
+    c = ClientOnboardingController(
+      repository: mock,
+      softGateConfirm: (_) async => true,
+      onFinished: (_) {},
+    );
+    c.client.value = _fakeClient;
+    c.step.value = 6;
+
+    when(() => mock.getClient('client-1')).thenThrow(StateError('secret-stack'));
+
+    expect(await c.finishOnboarding(), isFalse);
+    expect(c.errorMessage.value, isNot(contains('secret-stack')));
+    expect(c.errorMessage.value, isNot(contains('StateError')));
+    expect(
+      c.errorMessage.value,
+      'Something went wrong. Please try again.',
+    );
+    verifyNever(() => mock.patchClient(any(), any()));
+  });
+
   test('lookupSiteAddress rejects low confidence like ClientsController',
       () async {
     when(() => mock.geocode(any())).thenAnswer(
