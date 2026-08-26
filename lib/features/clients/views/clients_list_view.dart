@@ -33,6 +33,7 @@ class ClientsListView extends GetView<ClientsController> {
             ),
       body: Obx(() {
         final err = controller.errorMessage.value;
+        final visible = controller.visibleItems;
         if (controller.isLoading.value && controller.items.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -49,12 +50,22 @@ class ClientsListView extends GetView<ClientsController> {
                       _ErrorBox(err),
                       const SizedBox(height: 12),
                     ],
-                    if (controller.items.isEmpty)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: FilterChip(
+                        label: const Text('Show incomplete'),
+                        selected: controller.showIncompleteOnboarding.value,
+                        onSelected: (v) =>
+                            controller.showIncompleteOnboarding.value = v,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (visible.isEmpty)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 32),
                         child: Text('No clients yet.'),
                       ),
-                    for (final c in controller.items)
+                    for (final c in visible)
                       _ClientCard(
                         client: c,
                         photo: controller.photosByClient[c.id],

@@ -49,6 +49,8 @@ class ClientsController extends GetxController
   final JobsRepository? _jobs;
 
   final items = <ClientOut>[].obs;
+  /// When false (default), hide clients still mid-wizard (D19).
+  final showIncompleteOnboarding = false.obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
@@ -166,6 +168,16 @@ class ClientsController extends GetxController
   /// Kept for API; UI toggle removed (D15). Defaults false on create.
   final contactNotify = false.obs;
   ClientContactOut? editingContact;
+
+  /// Clients for the list UI — incomplete onboarding excluded unless toggled.
+  List<ClientOut> get visibleItems {
+    final list = items.toList();
+    if (showIncompleteOnboarding.value) return list;
+    return list.where((c) => !isOnboardingIncomplete(c)).toList();
+  }
+
+  static bool isOnboardingIncomplete(ClientOut client) =>
+      client.metadata['onboarding_incomplete'] == true;
 
   bool get canManage =>
       _session.hasPermission(AppPermissions.clientsManage);
