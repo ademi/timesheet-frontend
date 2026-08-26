@@ -179,6 +179,15 @@ void main() {
       () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        jobId: any(named: 'jobId'),
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
     when(
@@ -309,6 +318,66 @@ void main() {
     expect(shiftReq.jobId, 'job-1');
     expect(shiftReq.status, 'published');
     expect(navigations.single.route, AppRoutes.staffVisits);
+  });
+
+  test(
+      'one session create converts civil times with tenant TZ when device differs',
+      () async {
+    tenantUtcOffsetOverride = (tz, _) {
+      if (tz == 'Pacific/Honolulu') return const Duration(hours: -10);
+      return Duration.zero;
+    };
+    when(() => session.tenantTimezone)
+        .thenReturn(RxnString('Pacific/Honolulu'));
+    when(() => jobs.ensureOngoingSupport('client-1'))
+        .thenAnswer((_) async => _job);
+    when(() => shifts.createShift(any())).thenAnswer(
+      (_) async => ShiftOut(
+        id: 'shift-1',
+        tenantId: 'tenant-1',
+        jobId: 'job-1',
+        jobTitle: 'Sam Lee support',
+        scheduledStart: _now,
+        scheduledEnd: _now.add(const Duration(hours: 2)),
+        requiredSlots: 1,
+        openSlots: 1,
+        status: 'published',
+        createdAt: _now,
+        updatedAt: _now,
+      ),
+    );
+
+    final civilStart = DateTime(2026, 8, 13, 9);
+    final civilEnd = DateTime(2026, 8, 13, 12);
+    final expectedStart =
+        tenantCivilInstantUtc(civilStart, 'Pacific/Honolulu');
+    final expectedEnd = tenantCivilInstantUtc(civilEnd, 'Pacific/Honolulu');
+
+    final controller = build(
+      args: UnifiedSupportArgs.forClient(
+        _client,
+        mode: UnifiedSupportMode.oneSession,
+      ),
+    );
+    await controller.load();
+    controller.oneSessionStart.value = civilStart;
+    controller.oneSessionEnd.value = civilEnd;
+    controller.step.value = UnifiedSupportController.assignStep;
+    await controller.submit();
+
+    final shiftReq = verify(() => shifts.createShift(captureAny()))
+        .captured
+        .single as ShiftCreateRequest;
+    expect(shiftReq.scheduledStart.toUtc(), expectedStart);
+    expect(shiftReq.scheduledEnd.toUtc(), expectedEnd);
+    // Payload ISO must match tenant civil conversion, not device .toUtc().
+    final json = shiftReq.toJson();
+    expect(json['scheduled_start'], expectedStart.toIso8601String());
+    expect(json['scheduled_end'], expectedEnd.toIso8601String());
+    expect(
+      json['scheduled_start'],
+      isNot(civilStart.toUtc().toIso8601String()),
+    );
   });
 
   test('blocks submit when client has no sites', () async {

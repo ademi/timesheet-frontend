@@ -178,6 +178,7 @@ void main() {
       () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
     when(

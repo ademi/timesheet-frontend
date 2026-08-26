@@ -39,4 +39,35 @@ void main() {
     prefs.clear();
     expect(box, isEmpty);
   });
+
+  test('prefs are keyed by tenantId and do not leak across tenants', () {
+    final box = <String, dynamic>{};
+    NdisCatalogueFilterPrefs prefsFor(String tenantId) =>
+        NdisCatalogueFilterPrefs(
+          tenantId: tenantId,
+          read: (k) => box[k],
+          write: (k, v) => box[k] = v,
+          remove: (k) => box.remove(k),
+        );
+
+    prefsFor('tenant-a').save(
+      categoryNumber: '1',
+      registrationGroupNumber: '0107',
+    );
+    prefsFor('tenant-b').save(
+      categoryNumber: '4',
+      registrationGroupNumber: '0125',
+    );
+
+    expect(prefsFor('tenant-a').load().categoryNumber, '1');
+    expect(prefsFor('tenant-a').load().registrationGroupNumber, '0107');
+    expect(prefsFor('tenant-b').load().categoryNumber, '4');
+    expect(prefsFor('tenant-b').load().registrationGroupNumber, '0125');
+
+    prefsFor('tenant-a').clear();
+    expect(prefsFor('tenant-a').load().categoryNumber, isNull);
+    expect(prefsFor('tenant-b').load().categoryNumber, '4');
+    expect(box.keys, contains('ndis_filter_category_tenant-b'));
+    expect(box.keys, isNot(contains('ndis_filter_category_tenant-a')));
+  });
 }

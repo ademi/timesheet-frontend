@@ -11,8 +11,9 @@ class ShiftsRepository {
     DateTime? from,
     DateTime? to,
     String? jobId,
+    int limit = 200,
   }) =>
-      _remote.listShifts(from: from, to: to, jobId: jobId);
+      _remote.listShifts(from: from, to: to, jobId: jobId, limit: limit);
 
   Future<List<OpenShiftOut>> listOpenShifts({
     DateTime? from,

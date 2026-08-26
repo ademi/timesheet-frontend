@@ -70,6 +70,81 @@ void main() {
     );
   });
 
+  test('civil day argument is not reinterpreted via device toUtc', () {
+    // Large positive offset: day.toUtc() would land on the prior UTC calendar
+    // day; treating [day] as civil must still match leave on 13 Aug.
+    tenantUtcOffsetOverride = (tz, _) {
+      if (tz == 'Pacific/Kiritimati') return const Duration(hours: 14);
+      return Duration.zero;
+    };
+    final day = DateTime(2026, 8, 13);
+    final leaveStartUtc = tenantCivilDateStartUtc(day, 'Pacific/Kiritimati');
+    final overlay = RosterOverlayOut(
+      contractors: [
+        ContractorRosterOverlay(
+          contractorId: 'jane',
+          displayName: 'Jane',
+          leave: [
+            LeaveIntervalOut(
+              startDate: leaveStartUtc,
+              endDate: leaveStartUtc,
+              leaveType: 'annual',
+            ),
+          ],
+          availability: const [],
+        ),
+      ],
+    );
+
+    expect(
+      assignAvailabilityLabel(
+        contractorId: 'jane',
+        day: day,
+        shiftStart: DateTime(2026, 8, 13, 9),
+        shiftEnd: DateTime(2026, 8, 13, 12),
+        overlay: overlay,
+        shifts: const [],
+        tenantTimezone: 'Pacific/Kiritimati',
+      ),
+      'Leave',
+    );
+
+    // Same civil day components under a negative offset tenant.
+    tenantUtcOffsetOverride = (tz, _) {
+      if (tz == 'Pacific/Honolulu') return const Duration(hours: -10);
+      return Duration.zero;
+    };
+    final leaveHonolulu = tenantCivilDateStartUtc(day, 'Pacific/Honolulu');
+    final overlayHnl = RosterOverlayOut(
+      contractors: [
+        ContractorRosterOverlay(
+          contractorId: 'jane',
+          displayName: 'Jane',
+          leave: [
+            LeaveIntervalOut(
+              startDate: leaveHonolulu,
+              endDate: leaveHonolulu,
+              leaveType: 'annual',
+            ),
+          ],
+          availability: const [],
+        ),
+      ],
+    );
+    expect(
+      assignAvailabilityLabel(
+        contractorId: 'jane',
+        day: day,
+        shiftStart: DateTime(2026, 8, 13, 9),
+        shiftEnd: DateTime(2026, 8, 13, 12),
+        overlay: overlayHnl,
+        shifts: const [],
+        tenantTimezone: 'Pacific/Honolulu',
+      ),
+      'Leave',
+    );
+  });
+
   test('assign candidates mark leave and overlapping shift as busy', () {
     final day = DateTime(2026, 8, 13);
     final shiftStart = DateTime(2026, 8, 13, 9);

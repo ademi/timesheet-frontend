@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../app/themes/app_colors.dart';
 import '../../core/errors/app_failure.dart';
+import '../../core/services/session_service.dart';
 import '../../features/billing/bindings/billing_binding.dart';
 import '../../features/billing/data/models/billing_models.dart';
 import '../../features/billing/data/ndis_catalogue_filter_prefs.dart';
@@ -88,7 +89,12 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
   String? _registrationGroupNumber;
 
   late final NdisCatalogueFilterPrefs _filterPrefs =
-      widget.filterPrefs ?? NdisCatalogueFilterPrefs();
+      widget.filterPrefs ??
+          NdisCatalogueFilterPrefs(
+            tenantId: Get.isRegistered<SessionService>()
+                ? Get.find<SessionService>().tenantId.value
+                : null,
+          );
 
   /// True while applying a catalogue pick so blur/query side-effects are ignored.
   bool _applyingSelection = false;

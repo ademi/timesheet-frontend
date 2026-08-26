@@ -79,6 +79,15 @@ void main() {
       () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        jobId: any(named: 'jobId'),
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
     when(
@@ -123,7 +132,11 @@ void main() {
       () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
     ).called(1);
     verify(
-      () => shifts.listShifts(from: any(named: 'from'), to: any(named: 'to')),
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        limit: any(named: 'limit'),
+      ),
     ).called(1);
   });
 
@@ -150,6 +163,7 @@ void main() {
       () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer(
       (_) async => [
@@ -230,7 +244,11 @@ void main() {
       () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
     ).called(1);
     verify(
-      () => shifts.listShifts(from: any(named: 'from'), to: any(named: 'to')),
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        limit: any(named: 'limit'),
+      ),
     ).called(1);
   });
 
@@ -335,6 +353,7 @@ void main() {
         from: any(named: 'from'),
         to: any(named: 'to'),
         jobId: any(named: 'jobId'),
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer(
       (_) async => [
@@ -405,13 +424,10 @@ void main() {
     expect(controller.assignOverlayWarning.value, isNull);
   });
 
-  test('overlay failure sets leave warning; shift failure does not', () async {
+  test('overlay failure sets leave warning; shifts still load', () async {
     when(
       () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
     ).thenThrow(Exception('overlay down'));
-    when(
-      () => shifts.listShifts(from: any(named: 'from'), to: any(named: 'to')),
-    ).thenThrow(Exception('shifts down'));
 
     final controller = build();
     await controller.load();
@@ -421,15 +437,24 @@ void main() {
 
     await controller.ensureAssignAvailabilityLoaded();
 
+    expect(controller.assignAvailabilityLoaded, isTrue);
     expect(
       controller.assignOverlayWarning.value,
       'Could not load leave and preferred hours',
     );
+    expect(
+      controller.availabilityLabelForContractor('contractor-1'),
+      'Free',
+    );
   });
 
-  test('shift-only failure does not show leave unavailable banner', () async {
+  test('shift failure does not present workers as Free', () async {
     when(
-      () => shifts.listShifts(from: any(named: 'from'), to: any(named: 'to')),
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        limit: any(named: 'limit'),
+      ),
     ).thenThrow(Exception('shifts down'));
 
     final controller = build();
@@ -440,8 +465,66 @@ void main() {
 
     await controller.ensureAssignAvailabilityLoaded();
 
-    expect(controller.assignOverlayWarning.value, isNull);
-    expect(controller.assignAvailabilityLoaded, isTrue);
+    expect(controller.assignAvailabilityLoaded, isFalse);
+    expect(
+      controller.assignOverlayWarning.value,
+      'Could not load worker availability',
+    );
+    expect(
+      controller.availabilityLabelForContractor('contractor-1'),
+      'Unknown',
+    );
+    expect(
+      controller.availabilityLabelForContractor('contractor-1'),
+      isNot('Free'),
+    );
+  });
+
+  test('visits failure does not present workers as Free', () async {
+    when(
+      () => visits.listVisits(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        includeNested: any(named: 'includeNested'),
+      ),
+    ).thenThrow(Exception('visits down'));
+
+    final controller = build();
+    await controller.load();
+    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await controller.ensureAssignAvailabilityLoaded();
+
+    expect(controller.assignAvailabilityLoaded, isFalse);
+    expect(
+      controller.assignOverlayWarning.value,
+      'Could not load worker availability',
+    );
+    expect(
+      controller.availabilityStatusForContractor('contractor-1'),
+      'Unknown',
+    );
+  });
+
+  test('assign availability listShifts uses raised limit', () async {
+    final controller = build();
+    await controller.load();
+    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+    controller.step.value = UnifiedSupportController.assignStep;
+
+    await controller.ensureAssignAvailabilityLoaded();
+
+    final captured = verify(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        limit: captureAny(named: 'limit'),
+      ),
+    ).captured;
+    expect(captured.single, 2000);
   });
 
   test(
@@ -453,6 +536,7 @@ void main() {
       () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer(
       (_) async => [

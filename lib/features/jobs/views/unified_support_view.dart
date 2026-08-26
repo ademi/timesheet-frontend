@@ -898,6 +898,7 @@ class _WorkersStepState extends State<_WorkersStep> {
       'Leave' => AppColors.error,
       'Busy' => AppColors.openSlot,
       'Outside hours' => AppColors.openSlot,
+      'Unknown' => AppColors.textMuted,
       _ => AppColors.success,
     };
   }

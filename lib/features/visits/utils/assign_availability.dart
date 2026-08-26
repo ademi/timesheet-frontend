@@ -71,16 +71,10 @@ String assignAvailabilityLabel({
   DateTime? windowEnd,
   String? tenantTimezone,
 }) {
-  final civil = isTenantTimezoneConversionApplied(tenantTimezone)
-      ? () {
-          final tc = tenantCivilFromUtc(day.toUtc(), tenantTimezone);
-          return DateTime(tc.year, tc.month, tc.day);
-        }()
-      : DateTime(
-          day.toLocal().year,
-          day.toLocal().month,
-          day.toLocal().day,
-        );
+  // Callers pass an already-civil calendar day (query.day / occ.civilDay).
+  // Do not run it through day.toUtc() + tenantCivilFromUtc — that can shift
+  // the date when device offset differs from the tenant.
+  final civil = DateTime(day.year, day.month, day.day);
   final contractor = overlayForContractor(overlay, contractorId);
 
   if (contractor != null) {

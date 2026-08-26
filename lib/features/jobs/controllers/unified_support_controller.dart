@@ -38,6 +38,10 @@ import '../utils/unified_support_args.dart';
 import '../utils/task_title_presets.dart';
 import 'recurrence_workers_selection.dart';
 
+/// Higher than default [ShiftsRepository.listShifts] (200) so ~14d assign /
+/// conflict windows are less likely to truncate Busy overlaps.
+const int _assignListShiftsLimit = 2000;
+
 String formatSupportTimeOfDay(TimeOfDay time) {
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(time.hour)}:${two(time.minute)}';
@@ -363,11 +367,19 @@ class UnifiedSupportController extends GetxController
   }) async {
     isAssignAvailabilityLoading.value = true;
     assignOverlayWarning.value = null;
+    var shiftsFailed = false;
+    var visitsFailed = false;
+    var overlayFailed = false;
     try {
       final shiftsFuture = () async {
         try {
-          return await _shifts.listShifts(from: fetchFrom, to: fetchTo);
+          return await _shifts.listShifts(
+            from: fetchFrom,
+            to: fetchTo,
+            limit: _assignListShiftsLimit,
+          );
         } catch (_) {
+          shiftsFailed = true;
           return const <ShiftOut>[];
         }
       }();
@@ -379,6 +391,7 @@ class UnifiedSupportController extends GetxController
             includeNested: false,
           );
         } catch (_) {
+          visitsFailed = true;
           return const <VisitOut>[];
         }
       }();
@@ -389,16 +402,34 @@ class UnifiedSupportController extends GetxController
             to: fetchTo,
           );
         } catch (_) {
-          // Only this failure means leave / preferred hours are unknown.
-          assignOverlayWarning.value =
-              'Could not load leave and preferred hours';
+          overlayFailed = true;
           return null;
         }
       }();
-      assignShifts.assignAll(await shiftsFuture);
-      assignVisits.assignAll(await visitsFuture);
+      final shifts = await shiftsFuture;
+      final visits = await visitsFuture;
+      final overlay = await overlayFuture;
+
+      // Busy data incomplete → do not present workers as Free.
+      if (shiftsFailed || visitsFailed) {
+        assignShifts.clear();
+        assignVisits.clear();
+        assignOverlay.value = const RosterOverlayOut(contractors: []);
+        assignOverlayWarning.value = 'Could not load worker availability';
+        _assignAvailabilityWindow = null;
+        _assignAvailabilityKey = null;
+        assignAvailabilityLoaded = false;
+        return;
+      }
+
+      assignShifts.assignAll(shifts);
+      assignVisits.assignAll(visits);
       assignOverlay.value =
-          await overlayFuture ?? const RosterOverlayOut(contractors: []);
+          overlay ?? const RosterOverlayOut(contractors: []);
+      if (overlayFailed) {
+        assignOverlayWarning.value =
+            'Could not load leave and preferred hours';
+      }
       _assignAvailabilityWindow = query;
       _assignAvailabilityKey = key;
       assignAvailabilityLoaded = true;
@@ -406,13 +437,10 @@ class UnifiedSupportController extends GetxController
       assignShifts.clear();
       assignVisits.clear();
       assignOverlay.value = const RosterOverlayOut(contractors: []);
-      // Unexpected failure after individual fetches — do not claim leave
-      // specifically failed unless the overlay path already set a warning.
-      assignOverlayWarning.value ??=
-          'Could not load worker availability';
-      _assignAvailabilityWindow = query;
-      _assignAvailabilityKey = key;
-      assignAvailabilityLoaded = true;
+      assignOverlayWarning.value = 'Could not load worker availability';
+      _assignAvailabilityWindow = null;
+      _assignAvailabilityKey = null;
+      assignAvailabilityLoaded = false;
     } finally {
       isAssignAvailabilityLoading.value = false;
     }
@@ -489,6 +517,7 @@ class UnifiedSupportController extends GetxController
             from: query.from,
             to: query.to,
             jobId: standingJobId,
+            limit: _assignListShiftsLimit,
           );
         } catch (_) {
           return const <ShiftOut>[];
@@ -553,8 +582,9 @@ class UnifiedSupportController extends GetxController
   _conflictsWindow;
 
   String availabilityStatusForContractor(String contractorId) {
+    if (!assignAvailabilityLoaded) return 'Unknown';
     final query = _assignAvailabilityWindow;
-    if (query == null) return 'Free';
+    if (query == null) return 'Unknown';
     return assignAvailabilityLabel(
       contractorId: contractorId,
       day: query.day,
@@ -1058,11 +1088,17 @@ class UnifiedSupportController extends GetxController
     await _attachSelectedTemplates(support.id);
     final ids = filledContractorIds;
     final tasks = List<TaskTemplateItem>.from(taskTemplate);
+    // Composer values are tenant civil wall clocks — convert before create
+    // (ShiftCreateRequest.toJson uses DateTime.toUtc(); other callers pass
+    // true instants).
+    final tz = _tenantTimezoneForScheduleWarn ?? await _resolveTenantTimezone();
+    final startUtc = tenantCivilInstantUtc(oneSessionStart.value, tz);
+    final endUtc = tenantCivilInstantUtc(oneSessionEnd.value, tz);
     await _shifts.createShift(
       ShiftCreateRequest(
         jobId: support.id,
-        scheduledStart: oneSessionStart.value,
-        scheduledEnd: oneSessionEnd.value,
+        scheduledStart: startUtc,
+        scheduledEnd: endUtc,
         requiredSlots: requiredSlots.value,
         // D6 intentional: assigned workers ⇒ published even if toggle off.
         status: (publishImmediately.value || ids.isNotEmpty)
