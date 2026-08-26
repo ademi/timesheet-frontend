@@ -15,6 +15,7 @@ import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/features/jobs/utils/unified_support_args.dart';
 import 'package:rostiq/features/jobs/views/unified_support_view.dart';
+import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
 import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
@@ -37,6 +38,8 @@ class _MockNdisCatalogueRepository extends Mock
 
 class _FakeOngoingSupportCreateRequest extends Fake
     implements OngoingSupportCreateRequest {}
+
+class _FakeShiftCreateRequest extends Fake implements ShiftCreateRequest {}
 
 void main() {
   late UnifiedSupportController controller;
@@ -100,6 +103,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(_FakeOngoingSupportCreateRequest());
+    registerFallbackValue(_FakeShiftCreateRequest());
     registerFallbackValue(now);
   });
 
@@ -306,6 +310,96 @@ void main() {
     ]);
     expect(captured.taskTemplate.every((t) => t.supportItemCode == null), isTrue);
 
+    expect(navigations, hasLength(1));
+  });
+
+  testWidgets(
+      'walks five-step flow and submits one session via createShift contractorIds',
+      (tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    when(() => jobs.ensureOngoingSupport('client-1')).thenAnswer((_) async => job);
+    when(() => shifts.createShift(any())).thenAnswer(
+      (_) async => ShiftOut(
+        id: 'shift-1',
+        tenantId: 'tenant-1',
+        jobId: 'job-1',
+        jobTitle: 'Sam Lee support',
+        scheduledStart: now,
+        scheduledEnd: now.add(const Duration(hours: 3)),
+        requiredSlots: 2,
+        openSlots: 0,
+        status: 'published',
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+
+    Get.delete<UnifiedSupportController>();
+    controller = UnifiedSupportController(
+      jobsRepository: jobs,
+      clientsRepository: clients,
+      engagementsRepository: engagements,
+      shiftsRepository: shifts,
+      visitsRepository: visits,
+      session: session,
+      args: UnifiedSupportArgs.forClient(
+        client,
+        mode: UnifiedSupportMode.oneSession,
+      ),
+      onNavigate: (route, arguments) {
+        navigations.add((route: route, arguments: arguments));
+      },
+    );
+    Get.put(controller);
+
+    await pumpView(tester);
+
+    expect(find.text('One session'), findsOneWidget);
+    await tapNext(tester);
+
+    expect(find.text('Where will this support happen?'), findsOneWidget);
+    await tapNext(tester);
+
+    expect(find.text('Start date'), findsOneWidget);
+    final slotsField = find.descendant(
+      of: find.widgetWithText(InputDecorator, 'Required workers'),
+      matching: find.byType(TextField),
+    );
+    await tester.ensureVisible(slotsField);
+    await tester.enterText(slotsField, '2');
+    await tester.pumpAndSettle();
+    await tapNext(tester);
+
+    await tester.enterText(
+      find.byKey(const Key('visit-instructions-field')),
+      'Personal care',
+    );
+    await tester.pumpAndSettle();
+    await tapNext(tester);
+
+    await selectWorker(tester, slot: 0, workerName: 'Alex Worker');
+    await selectWorker(tester, slot: 1, workerName: 'Blair Worker');
+
+    await tester.tap(find.text('Book session'));
+    await tester.pumpAndSettle();
+
+    final shiftReq = verify(() => shifts.createShift(captureAny()))
+        .captured
+        .single as ShiftCreateRequest;
+    expect(shiftReq.contractorIds, ['contractor-1', 'contractor-2']);
+    expect(shiftReq.taskTemplate.map((t) => t.title), ['Personal care']);
+    verifyNever(
+      () => shifts.assignShift(
+        shiftId: any(named: 'shiftId'),
+        contractorId: any(named: 'contractorId'),
+        taskTemplate: any(named: 'taskTemplate'),
+      ),
+    );
+    verifyNever(() => shifts.cancelShift(any()));
     expect(navigations, hasLength(1));
   });
 }

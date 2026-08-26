@@ -589,32 +589,13 @@ void main() {
     expect(captured.contractorIds, ['contractor-1']);
   });
 
-  test('one session always createShift then N assignShift, never manual visit',
+  test(
+      'one session createShift includes contractorIds; never assignShift/batch',
       () async {
     when(() => jobs.ensureOngoingSupport('client-1'))
         .thenAnswer((_) async => _job);
-    when(() => shifts.createShift(any())).thenAnswer((_) async => _publishedShift());
-    when(
-      () => shifts.assignShift(
-        shiftId: any(named: 'shiftId'),
-        contractorId: any(named: 'contractorId'),
-        taskTemplate: any(named: 'taskTemplate'),
-      ),
-    ).thenAnswer(
-      (invocation) async => _publishedShift(
-        assignments: [
-          ShiftAssignmentOut(
-            id: 'asg-1',
-            contractorId: invocation.namedArguments[#contractorId] as String,
-            contractorName: 'Worker',
-            visitId: 'visit-1',
-            source: 'staff_assign',
-            status: 'active',
-          ),
-        ],
-        openSlots: 0,
-      ),
-    );
+    when(() => shifts.createShift(any()))
+        .thenAnswer((_) async => _publishedShift());
 
     final controller = build(
       args: UnifiedSupportArgs.forClient(
@@ -637,35 +618,32 @@ void main() {
         .single as ShiftCreateRequest;
     expect(shiftReq.requiredSlots, 2);
     expect(shiftReq.status, 'published');
-    verify(
-      () => shifts.assignShift(
-        shiftId: 'shift-1',
-        contractorId: 'contractor-1',
-        taskTemplate: any(named: 'taskTemplate'),
-      ),
-    ).called(1);
-    verify(
-      () => shifts.assignShift(
-        shiftId: 'shift-1',
-        contractorId: 'contractor-2',
-        taskTemplate: any(named: 'taskTemplate'),
-      ),
-    ).called(1);
-    verifyNever(() => jobs.createManualVisit(any(), any()));
-    expect(navigations, hasLength(1));
-  });
-
-  test('one session assignShift sends task_template from task list', () async {
-    when(() => jobs.ensureOngoingSupport('client-1'))
-        .thenAnswer((_) async => _job);
-    when(() => shifts.createShift(any())).thenAnswer((_) async => _publishedShift());
-    when(
+    expect(shiftReq.contractorIds, ['contractor-1', 'contractor-2']);
+    expect(shiftReq.taskTemplate.map((t) => t.title), ['Personal care']);
+    verifyNever(
       () => shifts.assignShift(
         shiftId: any(named: 'shiftId'),
         contractorId: any(named: 'contractorId'),
         taskTemplate: any(named: 'taskTemplate'),
       ),
-    ).thenAnswer((_) async => _publishedShift(openSlots: 0));
+    );
+    verifyNever(
+      () => shifts.assignShiftBatch(
+        shiftId: any(named: 'shiftId'),
+        contractorIds: any(named: 'contractorIds'),
+        taskTemplate: any(named: 'taskTemplate'),
+      ),
+    );
+    verifyNever(() => shifts.cancelShift(any()));
+    verifyNever(() => jobs.createManualVisit(any(), any()));
+    expect(navigations, hasLength(1));
+  });
+
+  test('one session createShift sends task_template from task list', () async {
+    when(() => jobs.ensureOngoingSupport('client-1'))
+        .thenAnswer((_) async => _job);
+    when(() => shifts.createShift(any()))
+        .thenAnswer((_) async => _publishedShift());
 
     final controller = build(
       args: UnifiedSupportArgs.forClient(
@@ -680,29 +658,27 @@ void main() {
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
-    final captured = verify(
-      () => shifts.assignShift(
-        shiftId: 'shift-1',
-        contractorId: 'contractor-1',
-        taskTemplate: captureAny(named: 'taskTemplate'),
-      ),
-    ).captured.single as List<TaskTemplateItem>;
-    expect(captured.map((t) => t.title), ['Personal care', 'Meal prep']);
-    expect(captured.map((t) => t.sortOrder), [0, 1]);
-  });
-
-  test('one session with one worker still uses createShift plus assignShift',
-      () async {
-    when(() => jobs.ensureOngoingSupport('client-1'))
-        .thenAnswer((_) async => _job);
-    when(() => shifts.createShift(any())).thenAnswer((_) async => _publishedShift());
-    when(
+    final shiftReq = verify(() => shifts.createShift(captureAny()))
+        .captured
+        .single as ShiftCreateRequest;
+    expect(shiftReq.taskTemplate.map((t) => t.title),
+        ['Personal care', 'Meal prep']);
+    expect(shiftReq.taskTemplate.map((t) => t.sortOrder), [0, 1]);
+    verifyNever(
       () => shifts.assignShift(
         shiftId: any(named: 'shiftId'),
         contractorId: any(named: 'contractorId'),
         taskTemplate: any(named: 'taskTemplate'),
       ),
-    ).thenAnswer((_) async => _publishedShift(openSlots: 0));
+    );
+  });
+
+  test('one session with one worker passes contractorIds on createShift',
+      () async {
+    when(() => jobs.ensureOngoingSupport('client-1'))
+        .thenAnswer((_) async => _job);
+    when(() => shifts.createShift(any()))
+        .thenAnswer((_) async => _publishedShift());
 
     final controller = build(
       args: UnifiedSupportArgs.forClient(
@@ -717,15 +693,46 @@ void main() {
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
-    verify(() => shifts.createShift(any())).called(1);
-    verify(
+    final shiftReq = verify(() => shifts.createShift(captureAny()))
+        .captured
+        .single as ShiftCreateRequest;
+    expect(shiftReq.contractorIds, ['contractor-1']);
+    verifyNever(
       () => shifts.assignShift(
-        shiftId: 'shift-1',
-        contractorId: 'contractor-1',
+        shiftId: any(named: 'shiftId'),
+        contractorId: any(named: 'contractorId'),
         taskTemplate: any(named: 'taskTemplate'),
       ),
-    ).called(1);
+    );
     verifyNever(() => jobs.createManualVisit(any(), any()));
+  });
+
+  test('one session surfaces createShift failure without cancel', () async {
+    when(() => jobs.ensureOngoingSupport('client-1'))
+        .thenAnswer((_) async => _job);
+    when(() => shifts.createShift(any())).thenThrow(
+      const AppFailure(
+        code: 'busy',
+        message: 'overlap',
+        presentation: AppFailurePresentation.inline,
+      ),
+    );
+
+    final controller = build(
+      args: UnifiedSupportArgs.forClient(
+        _client,
+        mode: UnifiedSupportMode.oneSession,
+      ),
+    );
+    await controller.load();
+    controller.syncAssignSlots();
+    controller.selectContractorForSlot(0, 'contractor-1');
+    controller.step.value = UnifiedSupportController.assignStep;
+    await controller.submit();
+
+    expect(controller.errorMessage.value, contains('overlap'));
+    verifyNever(() => shifts.cancelShift(any()));
+    expect(navigations, isEmpty);
   });
 
   test('support item stamp failure blocks navigate and skip roster', () async {

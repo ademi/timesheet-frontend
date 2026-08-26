@@ -1048,7 +1048,8 @@ class UnifiedSupportController extends GetxController
     }
     await _attachSelectedTemplates(support.id);
     final ids = filledContractorIds;
-    final created = await _shifts.createShift(
+    final tasks = List<TaskTemplateItem>.from(taskTemplate);
+    await _shifts.createShift(
       ShiftCreateRequest(
         jobId: support.id,
         scheduledStart: oneSessionStart.value,
@@ -1057,16 +1058,10 @@ class UnifiedSupportController extends GetxController
         status: (publishImmediately.value || ids.isNotEmpty)
             ? 'published'
             : 'draft',
+        contractorIds: ids,
+        taskTemplate: tasks,
       ),
     );
-    final tasks = List<TaskTemplateItem>.from(taskTemplate);
-    for (final contractorId in ids) {
-      await _shifts.assignShift(
-        shiftId: created.id,
-        contractorId: contractorId,
-        taskTemplate: tasks.isEmpty ? null : tasks,
-      );
-    }
     _goToRoster(jobId: support.id, clientId: c.id);
   }
 
