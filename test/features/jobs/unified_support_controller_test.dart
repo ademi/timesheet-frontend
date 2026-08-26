@@ -521,7 +521,7 @@ void main() {
   test('assign step exposes requiredSlots contractor slots', () {
     final c = build();
     c.requiredSlots.value = 3;
-    c.syncAssignSlots();
+    c.syncAssignSlots(c.requiredSlots.value);
     expect(c.selectedContractorIds.length, 3);
     expect(c.selectedContractorIds, everyElement(isNull));
   });
@@ -529,20 +529,20 @@ void main() {
   test('syncAssignSlots keeps existing picks when growing and truncates', () {
     final c = build();
     c.requiredSlots.value = 1;
-    c.syncAssignSlots();
+    c.syncAssignSlots(c.requiredSlots.value);
     c.selectContractorForSlot(0, 'contractor-1');
     c.requiredSlots.value = 3;
-    c.syncAssignSlots();
+    c.syncAssignSlots(c.requiredSlots.value);
     expect(c.selectedContractorIds, ['contractor-1', null, null]);
     c.requiredSlots.value = 1;
-    c.syncAssignSlots();
+    c.syncAssignSlots(c.requiredSlots.value);
     expect(c.selectedContractorIds, ['contractor-1']);
   });
 
   test('rejects duplicate contractor across slots', () {
     final c = build();
     c.requiredSlots.value = 2;
-    c.syncAssignSlots();
+    c.syncAssignSlots(c.requiredSlots.value);
     expect(c.selectContractorForSlot(0, 'contractor-1'), isTrue);
     expect(c.selectContractorForSlot(1, 'contractor-1'), isFalse);
     expect(c.selectedContractorIds[1], isNull);
@@ -556,7 +556,7 @@ void main() {
     final controller = build();
     await controller.load();
     controller.requiredSlots.value = 2;
-    controller.syncAssignSlots();
+    controller.syncAssignSlots(controller.requiredSlots.value);
     controller.selectContractorForSlot(0, 'contractor-1');
     controller.selectContractorForSlot(1, 'contractor-2');
     controller.step.value = UnifiedSupportController.assignStep;
@@ -577,7 +577,7 @@ void main() {
     final controller = build();
     await controller.load();
     controller.requiredSlots.value = 2;
-    controller.syncAssignSlots();
+    controller.syncAssignSlots(controller.requiredSlots.value);
     controller.selectContractorForSlot(0, 'contractor-1');
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
@@ -605,7 +605,7 @@ void main() {
     );
     await controller.load();
     controller.requiredSlots.value = 2;
-    controller.syncAssignSlots();
+    controller.syncAssignSlots(controller.requiredSlots.value);
     controller.selectContractorForSlot(0, 'contractor-1');
     controller.selectContractorForSlot(1, 'contractor-2');
     controller.instructionsCtrl.text = 'Personal care';
@@ -652,7 +652,7 @@ void main() {
       ),
     );
     await controller.load();
-    controller.syncAssignSlots();
+    controller.syncAssignSlots(controller.requiredSlots.value);
     controller.selectContractorForSlot(0, 'contractor-1');
     controller.instructionsCtrl.text = 'Personal care\nMeal prep';
     controller.step.value = UnifiedSupportController.assignStep;
@@ -687,7 +687,7 @@ void main() {
       ),
     );
     await controller.load();
-    controller.syncAssignSlots();
+    controller.syncAssignSlots(controller.requiredSlots.value);
     controller.selectContractorForSlot(0, 'contractor-1');
     controller.instructionsCtrl.text = 'Meal prep';
     controller.step.value = UnifiedSupportController.assignStep;
@@ -725,7 +725,7 @@ void main() {
       ),
     );
     await controller.load();
-    controller.syncAssignSlots();
+    controller.syncAssignSlots(controller.requiredSlots.value);
     controller.selectContractorForSlot(0, 'contractor-1');
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();

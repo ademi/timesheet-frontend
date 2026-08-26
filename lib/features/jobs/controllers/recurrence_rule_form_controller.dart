@@ -39,6 +39,8 @@ class RecurrenceRuleFormController extends GetxController
     super.onInit();
     taskTitlesCtrl.addListener(_syncTaskSupportSlots);
     _syncTaskSupportSlots();
+    ever(requiredSlots, (n) => syncAssignSlots(n));
+    syncAssignSlots(requiredSlots.value);
     ever(startDate, (DateTime start) {
       if (endDate.value.isBefore(start)) {
         endDate.value = defaultRecurrenceEndDate(start);

@@ -217,7 +217,7 @@ void main() {
   ) async {
     await controller.load();
     controller.requiredSlots.value = 2;
-    controller.syncAssignSlots();
+    controller.syncAssignSlots(controller.requiredSlots.value);
     controller.engagements.assignAll([
       EngagementOut(
         id: 'eng-1',
@@ -385,7 +385,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Busy Worker'), findsWidgets);
-    expect(find.textContaining('Busy'), findsOneWidget);
+    expect(find.textContaining(' · Busy'), findsOneWidget);
   });
 
   testWidgets('two slot picks survive availability rebuild and stay in controller', (
@@ -416,7 +416,7 @@ void main() {
     await controller.load();
     controller.setMode(UnifiedSupportMode.oneSession);
     controller.requiredSlots.value = 2;
-    controller.syncAssignSlots();
+    controller.syncAssignSlots(controller.requiredSlots.value);
     controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
     controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
     controller.step.value = UnifiedSupportController.assignStep;

@@ -9,6 +9,7 @@ import '../../../shared/widgets/keyboard_time_field.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../../clients/widgets/ndis_capture_prompt.dart';
 import '../widgets/visit_instructions_field.dart';
+import '../widgets/worker_slot_picker.dart';
 import '../controllers/unified_support_controller.dart';
 import '../utils/partial_assign_preview.dart';
 import '../utils/recurrence_rrule_builder.dart';
@@ -958,65 +959,34 @@ class _WorkersStepState extends State<_WorkersStep> {
                     ),
                     const SizedBox(height: 8),
                   ],
-                  for (var i = 0; i < slots.length; i++) ...[
-                    InputDecorator(
-                      key: ValueKey('assign-slot-$i-${slots[i]}'),
-                      decoration: InputDecoration(
-                        labelText: slots.length == 1
-                            ? 'Worker (optional)'
-                            : 'Worker ${i + 1} (optional)',
-                        border: const OutlineInputBorder(),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String?>(
-                          key: ValueKey('assign-slot-$i'),
-                          value: slots[i],
-                          isExpanded: true,
-                          items: [
-                            const DropdownMenuItem<String?>(
-                              value: null,
-                              child: Text('Unfilled'),
-                            ),
-                            for (final engagement in workers)
-                              DropdownMenuItem<String?>(
-                                value: engagement.contractorId,
-                                child: Text.rich(
-                                  TextSpan(
-                                    children: [
-                                      TextSpan(text: engagement.displayName),
-                                      TextSpan(
-                                        text:
-                                            ' · ${controller.availabilityDisplayLabelForContractor(engagement.contractorId)}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: _availabilityColor(
-                                            controller
-                                                .availabilityStatusForContractor(
-                                              engagement.contractorId,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            if (slots[i] != null && !seen.contains(slots[i]))
-                              DropdownMenuItem<String?>(
-                                value: slots[i],
-                                child: Text(slots[i]!),
-                              ),
-                          ],
-                          onChanged: (value) =>
-                              controller.selectContractorForSlot(i, value),
+                  WorkerSlotPicker(
+                    slots: slots,
+                    engagements: [
+                      for (final e in workers)
+                        WorkerSlotEngagement(
+                          contractorId: e.contractorId,
+                          displayName: e.displayName,
                         ),
-                      ),
-                    ),
+                    ],
+                    enabled: !loading,
+                    onChanged: controller.selectContractorForSlot,
+                    trailingForSlot: (index, contractorId) {
+                      if (contractorId == null) return null;
+                      final label = controller
+                          .availabilityDisplayLabelForContractor(contractorId);
+                      final status = controller
+                          .availabilityStatusForContractor(contractorId);
+                      return Text(
+                        ' · $label',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _availabilityColor(status),
+                        ),
+                      );
+                    },
+                  ),
+                  if (slots.any((id) => id != null && id.isNotEmpty)) ...[
                     const SizedBox(height: 12),
-                  ],
-                  if (slots.any((id) => id != null && id.isNotEmpty))
                     Text(
                       'Selected: ${[
                         for (final id in slots)
@@ -1028,6 +998,7 @@ class _WorkersStepState extends State<_WorkersStep> {
                         color: AppColors.textMuted,
                       ),
                     ),
+                  ],
                 ],
               ),
             ),

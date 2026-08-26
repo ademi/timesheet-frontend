@@ -7,6 +7,8 @@ import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/recurrence_rule_form_controller.dart';
 import '../utils/recurrence_rrule_builder.dart';
+import '../utils/required_slots_input.dart';
+import '../widgets/worker_slot_picker.dart';
 
 class RecurrenceRuleFormView extends StatelessWidget {
   const RecurrenceRuleFormView({super.key});
@@ -33,32 +35,10 @@ class RecurrenceRuleFormView extends StatelessWidget {
                   style: const TextStyle(color: AppColors.error),
                 ),
               ),
-            DropdownButtonFormField<String>(
-              value: c.soleContractorId,
-              items: [
-                const DropdownMenuItem(
-                  value: null,
-                  child: Text('Unfilled (leave open to claim)'),
-                ),
-                for (final engagement in c.jobs.assignableEngagements)
-                  DropdownMenuItem(
-                    value: engagement.contractorId,
-                    child: Text(
-                      engagement.contractorName ?? engagement.contractorId,
-                    ),
-                  ),
-              ],
-              onChanged: c.selectSoleContractor,
-              decoration: const InputDecoration(
-                labelText: 'Worker (optional)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
             DropdownButtonFormField<int>(
               value: c.requiredSlots.value,
               items: [
-                for (var n = 1; n <= 8; n++)
+                for (var n = 1; n <= kRequiredSlotsUiMax; n++)
                   DropdownMenuItem(value: n, child: Text('$n')),
               ],
               onChanged: (value) {
@@ -68,6 +48,31 @@ class RecurrenceRuleFormView extends StatelessWidget {
                 labelText: 'Needs how many people',
                 border: OutlineInputBorder(),
               ),
+            ),
+            const SizedBox(height: 16),
+            WorkerSlotPicker(
+              slots: List<String?>.from(c.selectedContractorIds),
+              engagements: [
+                for (final engagement in c.jobs.assignableEngagements)
+                  WorkerSlotEngagement(
+                    contractorId: engagement.contractorId,
+                    displayName:
+                        engagement.contractorName ?? engagement.contractorId,
+                  ),
+              ],
+              enabled: !c.jobs.isSaving.value,
+              onChanged: (index, contractorId) {
+                final ok = c.setContractorAt(index, contractorId);
+                if (!ok) {
+                  c.error.value =
+                      'That worker is already assigned to another slot.';
+                  c.selectedContractorIds.refresh();
+                } else if (c.error.value?.contains('already assigned') ==
+                    true) {
+                  c.error.value = null;
+                }
+                return ok;
+              },
             ),
             const SizedBox(height: 8),
             const Text(

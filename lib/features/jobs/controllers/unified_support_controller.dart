@@ -182,8 +182,8 @@ class UnifiedSupportController extends GetxController
         endDate.value = defaultRecurrenceEndDate(start);
       }
     });
-    ever(requiredSlots, (_) => syncAssignSlots());
-    syncAssignSlots();
+    ever(requiredSlots, (n) => syncAssignSlots(n));
+    syncAssignSlots(requiredSlots.value);
     ever(oneSessionStart, (DateTime start) {
       if (!oneSessionEnd.value.isAfter(start)) {
         oneSessionEnd.value = start.add(const Duration(hours: 1));
@@ -847,44 +847,18 @@ class UnifiedSupportController extends GetxController
     if (requiredSlots.value > 1) requiredSlots.value--;
   }
 
-  /// Pads or truncates [selectedContractorIds] to [requiredSlots] (null = Unfilled).
-  void syncAssignSlots() {
-    final n = requiredSlots.value;
-    if (n < 1) return;
-    final current = List<String?>.from(selectedContractorIds);
-    if (current.length == n) return;
-    if (current.length < n) {
-      selectedContractorIds.assignAll([
-        ...current,
-        ...List<String?>.filled(n - current.length, null),
-      ]);
-      return;
-    }
-    selectedContractorIds.assignAll(current.sublist(0, n));
-  }
-
   /// Sets one assign-step slot. Rejects the same contractor in two slots (D8).
   bool selectContractorForSlot(int index, String? contractorId) {
-    syncAssignSlots();
+    syncAssignSlots(requiredSlots.value);
     if (index < 0 || index >= selectedContractorIds.length) return false;
-    final trimmed = contractorId?.trim();
-    final value = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
-    if (value != null) {
-      for (var i = 0; i < selectedContractorIds.length; i++) {
-        if (i != index && selectedContractorIds[i] == value) {
-          errorMessage.value =
-              'That worker is already assigned to another slot.';
-          // Force dropdown rebuild so FormField/Menu display matches controller.
-          selectedContractorIds.refresh();
-          return false;
-        }
-      }
+    final ok = setContractorAt(index, contractorId);
+    if (!ok) {
+      errorMessage.value = 'That worker is already assigned to another slot.';
+      // Force dropdown rebuild so FormField/Menu display matches controller.
+      selectedContractorIds.refresh();
+      return false;
     }
     errorMessage.value = null;
-    // assignAll so GetX always notifies even when replacing a single index.
-    final next = List<String?>.from(selectedContractorIds);
-    next[index] = value;
-    selectedContractorIds.assignAll(next);
     return true;
   }
 
@@ -933,7 +907,7 @@ class UnifiedSupportController extends GetxController
         ensureClientConflictsLoaded();
       }
       if (step.value == assignStep) {
-        syncAssignSlots();
+        syncAssignSlots(requiredSlots.value);
         ensureEngagementsLoaded();
         ensureAssignAvailabilityLoaded();
         ensureClientConflictsLoaded();
@@ -1045,7 +1019,7 @@ class UnifiedSupportController extends GetxController
       return;
     }
 
-    syncAssignSlots();
+    syncAssignSlots(requiredSlots.value);
     syncTaskTemplateFromInstructions();
 
     isSaving.value = true;

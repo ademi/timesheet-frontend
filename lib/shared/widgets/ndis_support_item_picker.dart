@@ -63,7 +63,7 @@ class NdisSupportItemPicker extends StatefulWidget {
 
   /// Unused by the local-filter path; kept so existing call sites compile.
   final int searchLimit;
-  final String labelText;
+  final String? labelText;
   final String searchHintText;
 
   @override
@@ -506,7 +506,7 @@ class _SelectedTile extends StatelessWidget {
     required this.onClear,
   });
 
-  final String labelText;
+  final String? labelText;
   final String code;
   final String name;
   final bool enabled;
