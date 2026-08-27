@@ -20,9 +20,9 @@ class EligibilityIncompletePanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF7ED),
+        color: AppColors.openSlotBackground,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFFDBA74)),
+        border: Border.all(color: AppColors.openSlot.withValues(alpha: 0.45)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

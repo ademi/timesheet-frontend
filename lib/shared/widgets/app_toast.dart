@@ -29,12 +29,13 @@ class AppToast {
     Get.snackbar(
       title,
       message,
-      backgroundColor: AppColors.primary,
-      colorText: AppColors.onPrimary,
+      backgroundColor: AppColors.success,
+      colorText: AppColors.textLight,
       snackPosition: SnackPosition.BOTTOM,
       margin: _margin,
       borderRadius: _borderRadius,
       duration: duration ?? _duration,
+      icon: const Icon(Icons.check_circle, color: AppColors.textLight),
     );
   }
 
@@ -42,10 +43,13 @@ class AppToast {
     Get.snackbar(
       title,
       message,
+      backgroundColor: AppColors.primary,
+      colorText: AppColors.textLight,
       snackPosition: SnackPosition.BOTTOM,
       margin: _margin,
       borderRadius: _borderRadius,
       duration: duration ?? _duration,
+      icon: const Icon(Icons.info_outline, color: AppColors.textLight),
     );
   }
 }
