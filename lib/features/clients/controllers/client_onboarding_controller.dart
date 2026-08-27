@@ -220,9 +220,80 @@ class ClientOnboardingController extends GetxController
     }
   }
 
+  /// Clears non-Identity step state from a prior wizard session so resume
+  /// hydrate does not carry stale flags, contacts, or funding fields.
+  void resetForResume() {
+    errorMessage.value = null;
+    ndisFieldError.value = null;
+    isSaving.value = false;
+
+    ndisCtrl.clear();
+    medicareCtrl.clear();
+    allergiesCtrl.clear();
+    sexGender.value = null;
+    atsiStatus.value = null;
+    referralSource.value = null;
+    pendingPhoto.value = null;
+    localPhotoBytes.value = null;
+
+    siteNameCtrl.text = 'Home';
+    siteAddressCtrl.clear();
+    siteCityCtrl.clear();
+    siteStateCtrl.text = 'NSW';
+    sitePostalCtrl.clear();
+    siteAccessNotesCtrl.clear();
+    siteLatCtrl.clear();
+    siteLngCtrl.clear();
+    siteIsPrimary.value = true;
+    isGeocoding.value = false;
+    geocodeFormattedAddress.value = null;
+    addressConfirmed.value = false;
+    siteCountry.value = 'AU';
+    siteState.value = 'NSW';
+    primarySiteSaved.value = false;
+
+    preferredLanguageCtrl.clear();
+    culturalPreferencesCtrl.clear();
+    homeVisitConsent.value = false;
+    swGenderPreference.value = null;
+    interpreterRequired.value = false;
+    preferredContactMethod.value = null;
+
+    emergencySaved.value = false;
+    carerSaved.value = false;
+    contactsCreated.clear();
+    contactDraftMode.value = 'emergency';
+    contactRelationshipPreset.value = OnboardingKeys.relEmergency;
+    _resetContactDraft();
+
+    representativeSaved.value = false;
+    nomineeSkipped.value = false;
+
+    planManagementType.value = null;
+    planManagerNameCtrl.clear();
+    planManagerPhoneCtrl.clear();
+    planManagerEmailCtrl.clear();
+    planStartDate.value = null;
+    planEndDate.value = null;
+    budgetCoreCtrl.clear();
+    budgetCbCtrl.clear();
+    budgetCapitalCtrl.clear();
+    fundingNotToExceedCtrl.clear();
+    scNameCtrl.clear();
+    scPhoneCtrl.clear();
+    scEmailCtrl.clear();
+
+    consentComplete.value = false;
+    serviceAgreementComplete.value = false;
+    acknowledgementComplete.value = false;
+    includeAcknowledgement.value = false;
+    consentSignerNameCtrl.clear();
+  }
+
   /// CR3 minimum resume: set client/id, prefill Identity from [ClientOut],
   /// step 0. Full funding/contacts hydrate is a follow-up.
   void hydrateFromClient(ClientOut existing) {
+    resetForResume();
     client.value = existing;
     fullName.text = existing.fullName;
     email.text = existing.email ?? '';

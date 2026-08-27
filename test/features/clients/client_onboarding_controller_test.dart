@@ -525,6 +525,41 @@ void main() {
     expect(c.step.value, 0);
   });
 
+  test('hydrateFromClient clears prior step state from previous session', () {
+    c.emergencySaved.value = true;
+    c.carerSaved.value = true;
+    c.contactsCreated.add(
+      const ClientContactOut(
+        id: 'contact-1',
+        tenantId: 'tenant-1',
+        clientId: 'client-1',
+        isPrimary: true,
+        notifyVisitComplete: false,
+        name: 'Emergency Contact',
+        relationship: OnboardingKeys.relEmergency,
+      ),
+    );
+    c.planStartDate.value = DateTime(2025, 6, 1);
+    c.planEndDate.value = DateTime(2026, 6, 1);
+    c.primarySiteSaved.value = true;
+    c.representativeSaved.value = true;
+    c.consentComplete.value = true;
+    c.step.value = 5;
+
+    c.hydrateFromClient(_fakeClient);
+
+    expect(c.emergencySaved.value, isFalse);
+    expect(c.carerSaved.value, isFalse);
+    expect(c.contactsCreated, isEmpty);
+    expect(c.planStartDate.value, isNull);
+    expect(c.planEndDate.value, isNull);
+    expect(c.primarySiteSaved.value, isFalse);
+    expect(c.representativeSaved.value, isFalse);
+    expect(c.consentComplete.value, isFalse);
+    expect(c.fullName.text, 'Sam Parent');
+    expect(c.step.value, 0);
+  });
+
   test('submitIdentity after hydrate patches instead of creates', () async {
     when(() => mock.patchClient(any(), any())).thenAnswer((_) async => _fakeClient);
     when(() => mock.upsertProfileFact(any(), any(), any()))
