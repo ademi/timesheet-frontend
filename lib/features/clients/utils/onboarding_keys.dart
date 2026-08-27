@@ -25,7 +25,9 @@ class OnboardingKeys {
   static const supportCoordinatorName = 'support_coordinator_name';
   static const supportCoordinatorPhone = 'support_coordinator_phone';
   static const supportCoordinatorEmail = 'support_coordinator_email';
-  static const consentAgreement = 'consent_agreement';
+  static const consentAgreement = 'consent_agreement'; // requirement_key for accept path
+  static const consentAgreementDocKey =
+      'patient.consent_agreement'; // legal documents catalog
   static const serviceAgreement = 'service_agreement';
   static const acknowledgement = 'acknowledgement';
 

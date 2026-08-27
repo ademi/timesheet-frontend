@@ -29,6 +29,9 @@ class _FakeClientSiteWriteRequest extends Fake
 class _FakeClientContactWriteRequest extends Fake
     implements ClientContactWriteRequest {}
 
+class _FakeClientLegalAcceptRequest extends Fake
+    implements ClientLegalAcceptRequest {}
+
 class _FakeGeocodeRequest extends Fake implements GeocodeRequest {}
 
 class _FakeUploadUrlRequest extends Fake implements UploadUrlRequest {}
@@ -67,11 +70,13 @@ void main() {
     void Function(String clientId)? onFinished,
     DocumentPipeline? documentPipeline,
     SessionService? sessionOverride,
+    Future<({String name, List<int> bytes})?> Function()? pickPdfBytes,
   }) {
     return ClientOnboardingController(
       repository: mock,
       session: sessionOverride ?? session,
       documentPipeline: documentPipeline,
+      pickPdfBytes: pickPdfBytes,
       softGateConfirm: softGateConfirm,
       onFinished: onFinished,
     );
@@ -83,6 +88,7 @@ void main() {
     registerFallbackValue(_FakeProfileFactUpsert());
     registerFallbackValue(_FakeClientSiteWriteRequest());
     registerFallbackValue(_FakeClientContactWriteRequest());
+    registerFallbackValue(_FakeClientLegalAcceptRequest());
     registerFallbackValue(_FakeGeocodeRequest());
     registerFallbackValue(_FakeUploadUrlRequest());
   });
@@ -374,6 +380,102 @@ void main() {
     expect(await c.submitRepresentative(), isTrue);
     expect(c.nomineeSkipped.value, isTrue);
     expect(c.step.value, 5);
+  });
+
+  test('markConsentComplete fetches legal doc with patient.consent_agreement',
+      () async {
+    final pipeline = _MockDocumentPipeline();
+    when(
+      () => pipeline.uploadEvidence(
+        request: any(named: 'request'),
+        bytes: any(named: 'bytes'),
+      ),
+    ).thenAnswer(
+      (_) async => const DocumentOut(
+        id: 'doc-consent-1',
+        ownerType: 'client',
+        ownerId: 'client-1',
+        filename: 'consent.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 3,
+        scanStatus: 'clean',
+      ),
+    );
+    when(() => mock.getLegalDocumentCurrent(any())).thenAnswer(
+      (_) async => const ClientLegalDocumentCurrent(
+        id: 'legal-v1',
+        title: 'Consent',
+        contentMd: '# Consent',
+      ),
+    );
+    when(() => mock.acceptClientLegal(any(), any(), any()))
+        .thenAnswer((_) async {});
+
+    c.dispose();
+    c = _buildController(
+      documentPipeline: pipeline,
+      pickPdfBytes: () async => (name: 'consent.pdf', bytes: [1, 2, 3]),
+    );
+    c.client.value = _fakeClient;
+    c.consentSignerNameCtrl.text = 'Sam Parent';
+
+    expect(await c.markConsentComplete(), isTrue);
+    expect(c.consentComplete.value, isTrue);
+    verify(
+      () => mock.getLegalDocumentCurrent(OnboardingKeys.consentAgreementDocKey),
+    ).called(1);
+    verify(
+      () => mock.acceptClientLegal(
+        'client-1',
+        OnboardingKeys.consentAgreement,
+        any(),
+      ),
+    ).called(1);
+  });
+
+  test('markConsentComplete shows friendly message when legal doc missing',
+      () async {
+    final pipeline = _MockDocumentPipeline();
+    when(
+      () => pipeline.uploadEvidence(
+        request: any(named: 'request'),
+        bytes: any(named: 'bytes'),
+      ),
+    ).thenAnswer(
+      (_) async => const DocumentOut(
+        id: 'doc-consent-1',
+        ownerType: 'client',
+        ownerId: 'client-1',
+        filename: 'consent.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 3,
+        scanStatus: 'clean',
+      ),
+    );
+    when(() => mock.getLegalDocumentCurrent(any())).thenThrow(
+      const AppFailure(
+        code: 'legal_document_unavailable',
+        message: 'This legal document is not available yet.',
+        presentation: AppFailurePresentation.inline,
+        statusCode: 404,
+      ),
+    );
+
+    c.dispose();
+    c = _buildController(
+      documentPipeline: pipeline,
+      pickPdfBytes: () async => (name: 'consent.pdf', bytes: [1, 2, 3]),
+    );
+    c.client.value = _fakeClient;
+    c.consentSignerNameCtrl.text = 'Sam Parent';
+
+    expect(await c.markConsentComplete(), isFalse);
+    expect(c.consentComplete.value, isFalse);
+    expect(
+      c.errorMessage.value,
+      'Consent legal text is not published for this tenant — contact support.',
+    );
+    verifyNever(() => mock.acceptClientLegal(any(), any(), any()));
   });
 
   test('upload fails closed without documents.upload / clients.docs.manage',

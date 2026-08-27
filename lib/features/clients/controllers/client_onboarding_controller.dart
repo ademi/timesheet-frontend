@@ -27,15 +27,19 @@ class ClientOnboardingController extends GetxController
     required ClientsRepository repository,
     required SessionService session,
     DocumentPipeline? documentPipeline,
+    Future<({String name, List<int> bytes})?> Function()? pickPdfBytes,
     this.softGateConfirm,
     this.onFinished,
   })  : _repository = repository,
         _session = session,
-        _pipeline = documentPipeline;
+        _pipeline = documentPipeline,
+        _pickPdfBytesOverride = pickPdfBytes;
 
   final ClientsRepository _repository;
   final SessionService _session;
   final DocumentPipeline? _pipeline;
+  final Future<({String name, List<int> bytes})?> Function()?
+      _pickPdfBytesOverride;
 
   /// Injectable soft-gate dialog for tests.
   Future<bool> Function(List<String> missing)? softGateConfirm;
@@ -901,8 +905,9 @@ class ClientOnboardingController extends GetxController
         contentType: 'application/pdf',
         fileBytes: bytes.bytes,
       );
-      final legalDoc =
-          await _repository.getLegalDocumentCurrent(OnboardingKeys.consentAgreement);
+      final legalDoc = await _repository.getLegalDocumentCurrent(
+        OnboardingKeys.consentAgreementDocKey,
+      );
       await _repository.acceptClientLegal(
         id,
         OnboardingKeys.consentAgreement,
@@ -917,6 +922,10 @@ class ClientOnboardingController extends GetxController
       consentComplete.value = true;
       return true;
     } on AppFailure catch (e) {
+      if (_isConsentLegalUnavailable(e)) {
+        errorMessage.value = _consentLegalUnavailableMessage;
+        return false;
+      }
       errorMessage.value = e.message;
       return false;
     } catch (e) {
@@ -1088,6 +1097,14 @@ class ClientOnboardingController extends GetxController
   static const _unexpectedErrorMessage =
       'Something went wrong. Please try again.';
 
+  static const _consentLegalUnavailableMessage =
+      'Consent legal text is not published for this tenant — contact support.';
+
+  bool _isConsentLegalUnavailable(AppFailure e) =>
+      e.statusCode == 404 ||
+      e.code == 'legal_version_unavailable' ||
+      e.code == 'legal_document_unavailable';
+
   void _setUnexpectedError(Object error) {
     // Keep AppFailure handling in dedicated `on AppFailure` clauses.
     // Unexpected errors must not surface raw exception text to staff UI.
@@ -1187,6 +1204,8 @@ class ClientOnboardingController extends GetxController
   }
 
   Future<({String name, List<int> bytes})?> _pickPdfBytes() async {
+    final override = _pickPdfBytesOverride;
+    if (override != null) return override();
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: const ['pdf'],
