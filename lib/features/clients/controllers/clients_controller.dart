@@ -1134,13 +1134,19 @@ class ClientsController extends GetxController
     }
   }
 
-  /// Tab indices on client detail.
+  /// Tab indices on client detail (Option B).
   static const tabOverview = 0;
-  static const tabSupport = 1;
-  static const tabLocations = 2;
-  static const tabSites = 2;
-  static const tabContacts = 3;
-  static const tabDetails = 4;
+  static const tabCarePlan = 1;
+  static const tabProfile = 2; // was tabDetails (=4)
+  static const tabPeople = 3; // was tabContacts
+  static const tabPlaces = 4; // was tabLocations / tabSites (=2)
+  static const tabVisits = 5;
+  // Name aliases ONLY (same ints as above — never old numbers):
+  static const tabSupport = tabCarePlan;
+  static const tabDetails = tabProfile;
+  static const tabContacts = tabPeople;
+  static const tabLocations = tabPlaces;
+  static const tabSites = tabPlaces;
 
   Future<void> openDetail(
     ClientOut client, {

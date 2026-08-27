@@ -10,6 +10,7 @@ import 'package:rostiq/features/clients/data/repositories/clients_repository.dar
 import 'package:rostiq/features/clients/views/client_detail_view.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/shared/widgets/form_sticky_actions.dart';
+import 'package:rostiq/shared/widgets/subject_tab_bar.dart';
 
 class _MockClientsRepository extends Mock implements ClientsRepository {}
 
@@ -30,6 +31,13 @@ final _client = ClientOut(
   createdAt: _now,
   updatedAt: _now,
 );
+
+Future<void> _openTab(WidgetTester tester, int index) async {
+  final key = find.byKey(ValueKey('client-detail-tab-$index'));
+  await tester.ensureVisible(key);
+  await tester.tap(key);
+  await tester.pump();
+}
 
 void main() {
   late _MockClientsRepository clients;
@@ -60,15 +68,43 @@ void main() {
 
   tearDown(Get.reset);
 
-  testWidgets('shows subject tabs and Overview first', (tester) async {
+  test('Option B tab constants and aliases share new ints', () {
+    expect(ClientsController.tabOverview, 0);
+    expect(ClientsController.tabCarePlan, 1);
+    expect(ClientsController.tabProfile, 2);
+    expect(ClientsController.tabPeople, 3);
+    expect(ClientsController.tabPlaces, 4);
+    expect(ClientsController.tabVisits, 5);
+    expect(ClientsController.tabSupport, ClientsController.tabCarePlan);
+    expect(ClientsController.tabDetails, ClientsController.tabProfile);
+    expect(ClientsController.tabContacts, ClientsController.tabPeople);
+    expect(ClientsController.tabLocations, ClientsController.tabPlaces);
+    expect(ClientsController.tabSites, ClientsController.tabPlaces);
+    expect(ClientsController.tabDetails, isNot(4));
+    expect(ClientsController.tabLocations, isNot(2));
+    expect(ClientsController.tabSites, isNot(2));
+  });
+
+  testWidgets('shows six Option B tabs with Overview first', (tester) async {
     await tester.pumpWidget(const GetMaterialApp(home: ClientDetailView()));
 
-    expect(find.byKey(const ValueKey('client-detail-tab-0')), findsOneWidget);
-    expect(find.byKey(const ValueKey('client-detail-tab-1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('client-detail-tab-2')), findsOneWidget);
-    expect(find.byKey(const ValueKey('client-detail-tab-3')), findsOneWidget);
-    expect(find.byKey(const ValueKey('client-detail-tab-4')), findsOneWidget);
-    expect(find.text('Overview'), findsWidgets);
+    for (var i = 0; i < 6; i++) {
+      expect(find.byKey(ValueKey('client-detail-tab-$i')), findsOneWidget);
+    }
+    expect(find.byKey(const ValueKey('client-detail-tab-6')), findsNothing);
+
+    final bar = tester.widget<SubjectTabBar>(find.byType(SubjectTabBar));
+    expect(bar.labels, [
+      'Overview',
+      'Care plan',
+      'Profile & docs',
+      'People',
+      'Places',
+      'Visits',
+    ]);
+    expect(bar.labels[ClientsController.tabCarePlan], 'Care plan');
+    expect(bar.labels[ClientsController.tabVisits], 'Visits');
+
     expect(find.byType(FormStickyActions), findsNothing);
     expect(find.text('Date of birth'), findsOneWidget);
     expect(
@@ -78,73 +114,87 @@ void main() {
       findsNothing,
     );
     expect(find.text('No locations yet.'), findsNothing);
+    expect(find.text('Upcoming'), findsNothing);
   });
 
-  testWidgets('Locations tab shows only locations content', (tester) async {
+  testWidgets('Places empty state is on tab 4, not Profile', (tester) async {
     await tester.pumpWidget(const GetMaterialApp(home: ClientDetailView()));
 
-    await tester.tap(find.byKey(const ValueKey('client-detail-tab-2')));
-    await tester.pump();
+    await _openTab(tester, ClientsController.tabProfile);
+    expect(find.text('No locations yet.'), findsNothing);
+    expect(find.byType(FormStickyActions), findsOneWidget);
 
+    await _openTab(tester, ClientsController.tabPlaces);
     expect(find.text('No locations yet.'), findsOneWidget);
     expect(find.text('Date of birth'), findsNothing);
     expect(find.text('No contacts yet.'), findsNothing);
+    expect(find.byType(FormStickyActions), findsNothing);
   });
 
-  testWidgets('Contacts and Support tabs isolate their sections', (
+  testWidgets('People and Care plan tabs isolate their sections', (
     tester,
   ) async {
     await tester.pumpWidget(const GetMaterialApp(home: ClientDetailView()));
 
-    await tester.tap(find.byKey(const ValueKey('client-detail-tab-3')));
-    await tester.pump();
+    await _openTab(tester, ClientsController.tabPeople);
     expect(find.text('No contacts yet.'), findsOneWidget);
     expect(find.text('No locations yet.'), findsNothing);
+    expect(find.text('Upcoming'), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('client-detail-tab-1')));
-    await tester.pump();
-    expect(find.text('Upcoming'), findsOneWidget);
-    expect(find.text('Past'), findsOneWidget);
+    await _openTab(tester, ClientsController.tabCarePlan);
+    expect(find.text('Support'), findsOneWidget);
+    expect(find.text('Upcoming'), findsNothing);
+    expect(find.text('Past'), findsNothing);
     expect(find.text('No contacts yet.'), findsNothing);
   });
 
-  testWidgets('Details tab lifts FormStickyActions out of the profile scroll', (
-    tester,
-  ) async {
+  testWidgets('Visits tab is index 5 and shows visit lists', (tester) async {
     await tester.pumpWidget(const GetMaterialApp(home: ClientDetailView()));
 
-    await tester.tap(find.byKey(const ValueKey('client-detail-tab-4')));
-    await tester.pump();
-
-    controller.errorMessage.value = 'NDIS number is required.';
-    await tester.pump();
-
-    expect(find.byType(FormStickyActions), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
-    expect(find.text('Save type & profile'), findsOneWidget);
-    expect(find.text('NDIS number is required.'), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byType(ListView),
-        matching: find.byType(FormStickyActions),
-      ),
-      findsNothing,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(ListView),
-        matching: find.text('Save type & profile'),
-      ),
-      findsNothing,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(ListView),
-        matching: find.text('NDIS number is required.'),
-      ),
-      findsNothing,
-    );
+    await _openTab(tester, ClientsController.tabVisits);
+    expect(find.text('Upcoming'), findsOneWidget);
+    expect(find.text('Past'), findsOneWidget);
+    expect(find.text('No contacts yet.'), findsNothing);
+    expect(find.byType(FormStickyActions), findsNothing);
   });
+
+  testWidgets(
+    'Profile tab lifts FormStickyActions out of the profile scroll',
+    (tester) async {
+      await tester.pumpWidget(const GetMaterialApp(home: ClientDetailView()));
+
+      await _openTab(tester, ClientsController.tabProfile);
+
+      controller.errorMessage.value = 'NDIS number is required.';
+      await tester.pump();
+
+      expect(find.byType(FormStickyActions), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Save type & profile'), findsOneWidget);
+      expect(find.text('NDIS number is required.'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(ListView),
+          matching: find.byType(FormStickyActions),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(ListView),
+          matching: find.text('Save type & profile'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(ListView),
+          matching: find.text('NDIS number is required.'),
+        ),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('incomplete client shows amber banner and Continue onboarding', (
     tester,

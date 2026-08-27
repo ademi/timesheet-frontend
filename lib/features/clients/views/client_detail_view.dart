@@ -21,10 +21,11 @@ class ClientDetailView extends GetView<ClientsController> {
 
   static const _tabLabels = [
     'Overview',
-    'Support',
-    'Locations',
-    'Contacts',
-    'Details',
+    'Care plan',
+    'Profile & docs',
+    'People',
+    'Places',
+    'Visits',
   ];
 
   @override
@@ -42,7 +43,7 @@ class ClientDetailView extends GetView<ClientsController> {
       }
       final err = controller.errorMessage.value;
       final tab = controller.tabIndex.value;
-      final detailsSelected = tab == ClientsController.tabDetails;
+      final profileSelected = tab == ClientsController.tabProfile;
       final canEditProfile =
           controller.canManage || controller.canManageProfile;
       final errorNotice =
@@ -84,7 +85,7 @@ class ClientDetailView extends GetView<ClientsController> {
           children: [
             if (controller.isLoading.value)
               const LinearProgressIndicator(minHeight: 2),
-            if (errorNotice != null && !detailsSelected) errorNotice,
+            if (errorNotice != null && !profileSelected) errorNotice,
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Column(
@@ -144,14 +145,9 @@ class ClientDetailView extends GetView<ClientsController> {
               keyPrefix: 'client-detail-tab',
               onChanged: (i) => controller.tabIndex.value = i,
             ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                children: [PageContent(child: _tabContent(tab))],
-              ),
-            ),
-            if (errorNotice != null && detailsSelected) errorNotice,
-            if (detailsSelected && canEditProfile)
+            Expanded(child: _tabContent(tab)),
+            if (errorNotice != null && profileSelected) errorNotice,
+            if (profileSelected && canEditProfile)
               FormStickyActions(
                 onCancel: controller.discardProfileDrafts,
                 primaryLabel: 'Save type & profile',
@@ -164,70 +160,83 @@ class ClientDetailView extends GetView<ClientsController> {
     });
   }
 
+  Widget _scrollTab(Widget child) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      children: [PageContent(child: child)],
+    );
+  }
+
   Widget _tabContent(int tab) {
     switch (tab) {
-      case ClientsController.tabLocations:
-        return ClientDetailSitesSection(
-          sites: controller.sites.toList(),
-          canManage: controller.canManage,
-          onAdd: () => controller.beginSiteForm(),
-          onEdit: (s) => controller.beginSiteForm(site: s),
-          onDelete: controller.deleteSite,
+      case ClientsController.tabPlaces:
+        return _scrollTab(
+          ClientDetailSitesSection(
+            sites: controller.sites.toList(),
+            canManage: controller.canManage,
+            onAdd: () => controller.beginSiteForm(),
+            onEdit: (s) => controller.beginSiteForm(site: s),
+            onDelete: controller.deleteSite,
+          ),
         );
-      case ClientsController.tabContacts:
-        return ClientDetailContactsSection(
-          contacts: controller.contacts.toList(),
-          canManage: controller.canManage,
-          onAdd: () => controller.beginContactForm(),
-          onEdit: (c) => controller.beginContactForm(contact: c),
-          onDelete: controller.deleteContact,
+      case ClientsController.tabPeople:
+        return _scrollTab(
+          ClientDetailContactsSection(
+            contacts: controller.contacts.toList(),
+            canManage: controller.canManage,
+            onAdd: () => controller.beginContactForm(),
+            onEdit: (c) => controller.beginContactForm(contact: c),
+            onDelete: controller.deleteContact,
+          ),
         );
-      case ClientsController.tabSupport:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (controller.canManageSupport ||
-                controller.hasOngoing ||
-                controller.canManage)
-              ClientDetailSupportSection(
-                hasOngoing: controller.hasOngoing,
-                canManage: controller.canManageSupport,
-                supportItemCode: controller.standingJob.value?.supportItemCode,
-                supportItemName: controller.standingJob.value?.supportItemName,
-                onStartOngoing: controller.startOngoingSupport,
-                onBookOne: controller.bookOneSession,
-                onOpenOngoing: controller.openOngoingSupport,
-                canManageSupportPlan: controller.canManage,
-                supportPlanStatus: controller.supportPlan.value?.status,
-                supportPlanNextReview:
-                    controller.supportPlan.value?.nextReviewAt,
-                supportPlanOverdue:
-                    controller.supportPlan.value?.reviewOverdue == true,
-                onOpenSupportPlan: controller.openSupportPlan,
-              )
-            else
-              const Text(
-                'No support arrangement yet.',
-                style: TextStyle(color: AppColors.textMuted),
-              ),
-            const SizedBox(height: 24),
-            ClientDetailVisitsSection(
-              upcoming: controller.upcomingVisits.toList(),
-              past: controller.pastVisits.toList(),
-              isLoading: controller.isLoadingVisits.value,
-              error: controller.visitsError.value,
-              truncated: controller.visitsTruncated.value,
-              hasVisitsAccess: controller.canViewVisits,
-              onOpen: controller.openVisitDetail,
-            ),
-          ],
+      case ClientsController.tabCarePlan:
+        return _scrollTab(_carePlanTempContent());
+      case ClientsController.tabVisits:
+        return _scrollTab(
+          ClientDetailVisitsSection(
+            upcoming: controller.upcomingVisits.toList(),
+            past: controller.pastVisits.toList(),
+            isLoading: controller.isLoadingVisits.value,
+            error: controller.visitsError.value,
+            truncated: controller.visitsTruncated.value,
+            hasVisitsAccess: controller.canViewVisits,
+            onOpen: controller.openVisitDetail,
+          ),
         );
-      case ClientsController.tabDetails:
-        return ClientDetailProfileSection(controller: controller);
+      case ClientsController.tabProfile:
+        return _scrollTab(ClientDetailProfileSection(controller: controller));
       case ClientsController.tabOverview:
       default:
-        return ClientDetailFactsSection(facts: controller.quickFacts);
+        return _scrollTab(
+          ClientDetailFactsSection(facts: controller.quickFacts),
+        );
     }
+  }
+
+  /// Temporary Care plan body: old Support tab minus the visits list.
+  Widget _carePlanTempContent() {
+    if (controller.canManageSupport ||
+        controller.hasOngoing ||
+        controller.canManage) {
+      return ClientDetailSupportSection(
+        hasOngoing: controller.hasOngoing,
+        canManage: controller.canManageSupport,
+        supportItemCode: controller.standingJob.value?.supportItemCode,
+        supportItemName: controller.standingJob.value?.supportItemName,
+        onStartOngoing: controller.startOngoingSupport,
+        onBookOne: controller.bookOneSession,
+        onOpenOngoing: controller.openOngoingSupport,
+        canManageSupportPlan: controller.canManage,
+        supportPlanStatus: controller.supportPlan.value?.status,
+        supportPlanNextReview: controller.supportPlan.value?.nextReviewAt,
+        supportPlanOverdue: controller.supportPlan.value?.reviewOverdue == true,
+        onOpenSupportPlan: controller.openSupportPlan,
+      );
+    }
+    return const Text(
+      'No support arrangement yet.',
+      style: TextStyle(color: AppColors.textMuted),
+    );
   }
 }
 
