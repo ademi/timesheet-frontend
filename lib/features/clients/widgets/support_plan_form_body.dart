@@ -133,7 +133,7 @@ class SupportPlanFormBody extends StatelessWidget {
         ),
         Obx(
           () => DropdownButtonFormField<String>(
-            initialValue: controller.supportIntensity.value,
+            value: controller.supportIntensity.value,
             decoration: const InputDecoration(
               labelText: 'Support intensity',
               border: OutlineInputBorder(
@@ -156,7 +156,7 @@ class SupportPlanFormBody extends StatelessWidget {
         const SizedBox(height: 12),
         Obx(
           () => DropdownButtonFormField<String>(
-            initialValue: controller.residenceType.value,
+            value: controller.residenceType.value,
             decoration: const InputDecoration(
               labelText: 'Residence type',
               border: OutlineInputBorder(
