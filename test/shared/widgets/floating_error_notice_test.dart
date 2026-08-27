@@ -17,8 +17,32 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
     expect(find.text('NDIS number is required.'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+    expect(dismissed, isTrue);
+  });
+
+  testWidgets('dismiss tap animates out then calls onDismiss', (tester) async {
+    var dismissed = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FloatingErrorNotice(
+            message: 'Something went wrong.',
+            onDismiss: () => dismissed = true,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Something went wrong.'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.close));
+    expect(dismissed, isFalse);
+
+    await tester.pumpAndSettle();
     expect(dismissed, isTrue);
   });
 
@@ -33,6 +57,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
     final text = tester.widget<Text>(find.text('one\ntwo\nthree\nfour\nfive'));
     expect(text.maxLines, 3);
     expect(text.overflow, TextOverflow.ellipsis);
@@ -51,6 +76,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     final box = tester.widget<Container>(
       find
@@ -64,7 +90,7 @@ void main() {
     expect(decoration.color, AppColors.errorBackground);
     expect(decoration.borderRadius, BorderRadius.circular(8));
 
-    final node = tester.getSemantics(find.byType(FloatingErrorNotice));
+    final node = tester.getSemantics(find.text('NDIS number is required.'));
     expect(node.hasFlag(SemanticsFlag.isLiveRegion), isTrue);
     handle.dispose();
   });
