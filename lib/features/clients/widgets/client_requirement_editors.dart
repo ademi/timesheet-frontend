@@ -15,6 +15,10 @@ class ClientRequirementEditor extends StatelessWidget {
     required this.draft,
   });
 
+  static const documentPickerKey = ValueKey<String>(
+    'client-requirement-document-picker',
+  );
+
   final ClientsController controller;
   final RequirementDraft draft;
 
@@ -233,6 +237,7 @@ class _DocumentPicker extends StatelessWidget {
       final files = draft.localFiles;
       final existing = draft.existingDocumentId.value;
       return Column(
+        key: ClientRequirementEditor.documentPickerKey,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           OutlinedButton.icon(

@@ -26,11 +26,6 @@ class ClientDetailProfileSection extends StatelessWidget {
             'Details',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Select a type to show optional profile requirements and documents.',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-          ),
           const SizedBox(height: 12),
           if (progress != null) ...[
             Text(progress, style: const TextStyle(color: AppColors.textMuted)),
@@ -48,7 +43,7 @@ class ClientDetailProfileSection extends StatelessWidget {
               'No client types available.',
               style: TextStyle(color: AppColors.textMuted),
             )
-          else
+          else if (controller.showClientTypePicker)
             DropdownButtonFormField<String>(
               value:
                   selectedTypeId != null &&

@@ -41,7 +41,10 @@ class RequirementDraft {
   bool get capturesField =>
       requirement.capturesField || requirement.isSharingFlag;
 
-  bool get capturesDocument => requirement.capturesDocument;
+  /// NDIS is number-only in Details (D1=C may re-enable plan PDF later).
+  /// Platform seed capture_modes are left unchanged.
+  bool get capturesDocument =>
+      requirement.requirementKey != 'ndis' && requirement.capturesDocument;
 
   Object? get fieldValueJson {
     final type = requirement.valueType ?? 'text';

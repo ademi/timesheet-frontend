@@ -121,6 +121,15 @@ class ClientsController extends GetxController
     return isPatientClientType(typeName: quickFacts?.clientTypeName);
   }
 
+  /// Hide Type when only one type exists (typical NDIS Patient) or every
+  /// type is Patient. Show the picker only when a non-Patient type exists.
+  bool get showClientTypePicker {
+    if (clientTypes.length <= 1) return false;
+    return clientTypes.any(
+      (t) => !isPatientClientType(typeName: t.name, typeCode: t.code),
+    );
+  }
+
   bool get showNdisCapturePrompt =>
       isPatientType && (ndisNumber == null || ndisNumber!.trim().isEmpty);
 
