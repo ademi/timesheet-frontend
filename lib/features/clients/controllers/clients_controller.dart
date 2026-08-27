@@ -903,6 +903,26 @@ class ClientsController extends GetxController
     overviewNdisCtrl.text = ndisFromFacts(profileFacts) ?? '';
   }
 
+  /// True when Overview draft fields differ from persisted client + profile facts.
+  bool get isOverviewDirty {
+    final client = selected.value;
+    if (client == null) return false;
+    if (overviewNameCtrl.text.trim() != client.fullName) return true;
+    if (overviewEmailCtrl.text.trim() != (client.email ?? '')) return true;
+    if (overviewPhoneCtrl.text.trim() != (client.phone ?? '')) return true;
+    if (overviewStatus.value != client.status) return true;
+    final rawDob = client.dob?.trim();
+    final savedDob =
+        rawDob == null || rawDob.isEmpty ? null : DateTime.tryParse(rawDob);
+    if (overviewDob.value != savedDob) return true;
+    final savedTypeId = client.clientTypeId ?? selectedClientTypeId.value;
+    if (overviewClientTypeId.value != savedTypeId) return true;
+    if (overviewNdisCtrl.text.trim() != (ndisFromFacts(profileFacts) ?? '')) {
+      return true;
+    }
+    return false;
+  }
+
   /// Drops unsaved Overview edits.
   Future<void> discardOverviewDrafts() async {
     errorMessage.value = null;
@@ -1321,6 +1341,7 @@ class ClientsController extends GetxController
   }
 
   Future<void> openDetailById(String id) async {
+    final previousId = selected.value?.id;
     isLoading.value = true;
     try {
       final client = await _repository.getClient(id);
@@ -1330,7 +1351,10 @@ class ClientsController extends GetxController
         loadTypeTabForSelected(),
         loadDetailProfilePhoto(id),
       ]);
-      hydrateOverviewDrafts();
+      final sameClient = previousId == id;
+      if (!sameClient || !isOverviewDirty) {
+        hydrateOverviewDrafts();
+      }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {

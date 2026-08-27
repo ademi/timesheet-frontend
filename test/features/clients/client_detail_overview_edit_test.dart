@@ -300,6 +300,29 @@ void main() {
     verifyNever(() => clients.acceptClientLegal(any(), any(), any()));
   });
 
+  testWidgets('saveClientTypeProfile preserves dirty Overview DOB', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const GetMaterialApp(home: Scaffold(body: SizedBox.shrink())),
+    );
+
+    controller.overviewDob.value = DateTime(1988, 3, 10);
+    controller.selectedClientTypeId.value = _patientType.id;
+    controller.clientTypes.assignAll([_patientType]);
+    controller.requirementDrafts.clear();
+
+    when(() => clients.patchClient(any(), any())).thenAnswer((_) async => _client);
+    when(() => clients.listSites(any())).thenAnswer((_) async => []);
+    when(() => clients.listContacts(any())).thenAnswer((_) async => []);
+
+    await controller.saveClientTypeProfile();
+    await tester.pumpAndSettle();
+
+    expect(controller.overviewDob.value, DateTime(1988, 3, 10));
+    expect(controller.isOverviewDirty, isTrue);
+  });
+
   testWidgets('saveClientTypeProfile does not patch DOB from profile drafts', (
     tester,
   ) async {
