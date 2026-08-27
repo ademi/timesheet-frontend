@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/floating_error_notice.dart';
 import '../controllers/clients_controller.dart';
 import '../widgets/contact_form_fields.dart';
 
@@ -18,31 +19,33 @@ class ClientContactFormView extends GetView<ClientsController> {
       appBar: AppBar(title: Text(isEdit ? 'Edit contact' : 'Add contact')),
       body: Obx(() {
         final err = controller.errorMessage.value;
-        return ListView(
-          padding: const EdgeInsets.all(16),
+        return Column(
           children: [
-            PageContent(
-              width: PageContentWidth.narrow,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
                 children: [
-                  if (err != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.errorBackground,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        err,
-                        style: const TextStyle(color: AppColors.error),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  ContactFormFields(controller: controller),
-                  const SizedBox(height: 16),
-                  AsyncElevatedButton(
+                  PageContent(
+                    width: PageContentWidth.narrow,
+                    child: ContactFormFields(controller: controller),
+                  ),
+                ],
+              ),
+            ),
+            if (err != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: FloatingErrorNotice(
+                  message: err,
+                  onDismiss: () => controller.errorMessage.value = null,
+                ),
+              ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: PageContent(
+                  width: PageContentWidth.narrow,
+                  child: AsyncElevatedButton(
                     onPressed: controller.saveContact,
                     isLoading: controller.isSaving.value,
                     style: ElevatedButton.styleFrom(
@@ -52,7 +55,7 @@ class ClientContactFormView extends GetView<ClientsController> {
                     ),
                     child: Text(isEdit ? 'Save contact' : 'Create contact'),
                   ),
-                ],
+                ),
               ),
             ),
           ],

@@ -7,6 +7,7 @@ import 'package:rostiq/features/clients/controllers/client_onboarding_controller
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/views/client_onboarding_view.dart';
+import 'package:rostiq/shared/widgets/floating_error_notice.dart';
 
 class _MockClientsRepository extends Mock implements ClientsRepository {}
 
@@ -22,17 +23,16 @@ void main() {
     mock = _MockClientsRepository();
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
-    when(() => mock.listFormTemplates(tenantLevel: any(named: 'tenantLevel')))
-        .thenAnswer((_) async => <FormTemplateSummary>[]);
+    when(
+      () => mock.listFormTemplates(tenantLevel: any(named: 'tenantLevel')),
+    ).thenAnswer((_) async => <FormTemplateSummary>[]);
     Get.put(ClientOnboardingController(repository: mock, session: session));
   });
 
   tearDown(Get.reset);
 
   testWidgets('onboarding shell shows Identity step and Next', (tester) async {
-    await tester.pumpWidget(
-      const GetMaterialApp(home: ClientOnboardingView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: ClientOnboardingView()));
     await tester.pumpAndSettle();
 
     expect(find.text('Participant identity'), findsOneWidget);
@@ -42,13 +42,31 @@ void main() {
   });
 
   testWidgets('step indicator labels are present', (tester) async {
-    await tester.pumpWidget(
-      const GetMaterialApp(home: ClientOnboardingView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: ClientOnboardingView()));
     await tester.pumpAndSettle();
 
     for (final label in ClientOnboardingController.stepLabels) {
       expect(find.text(label), findsWidgets);
     }
+  });
+
+  testWidgets('error notice sits above footer, not inside ListView', (
+    tester,
+  ) async {
+    Get.find<ClientOnboardingController>().errorMessage.value =
+        'NDIS number is required.';
+    await tester.pumpWidget(const GetMaterialApp(home: ClientOnboardingView()));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FloatingErrorNotice), findsOneWidget);
+    expect(find.text('NDIS number is required.'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(FloatingErrorNotice),
+      ),
+      findsNothing,
+    );
+    expect(find.text('Next'), findsOneWidget);
   });
 }

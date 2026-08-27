@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/floating_error_notice.dart';
 import '../controllers/support_plan_controller.dart';
 
 class SupportPlanView extends GetView<SupportPlanController> {
@@ -38,10 +39,6 @@ class SupportPlanView extends GetView<SupportPlanController> {
                         if (controller.needsBodyRepair.value) ...[
                           const SizedBox(height: 12),
                           const _RepairBanner(),
-                        ],
-                        if (err != null) ...[
-                          const SizedBox(height: 12),
-                          _ErrorBox(err),
                         ],
                         const SizedBox(height: 16),
                         _SectionTitle('Disability & health'),
@@ -83,8 +80,8 @@ class SupportPlanView extends GetView<SupportPlanController> {
                                   label: Text(_label(key)),
                                   selected: controller.functionalLimitations
                                       .contains(key),
-                                  onSelected: (_) =>
-                                      controller.toggleLimitation(key),
+                                  onSelected:
+                                      (_) => controller.toggleLimitation(key),
                                 ),
                             ],
                           ),
@@ -109,8 +106,9 @@ class SupportPlanView extends GetView<SupportPlanController> {
                                   label: Text(_label(key)),
                                   selected: controller.communicationMethods
                                       .contains(key),
-                                  onSelected: (_) =>
-                                      controller.toggleCommunication(key),
+                                  onSelected:
+                                      (_) =>
+                                          controller.toggleCommunication(key),
                                 ),
                             ],
                           ),
@@ -145,8 +143,9 @@ class SupportPlanView extends GetView<SupportPlanController> {
                             contentPadding: EdgeInsets.zero,
                             title: const Text('Behaviour support plan'),
                             value: controller.behaviourSupportPlan.value,
-                            onChanged: (v) =>
-                                controller.behaviourSupportPlan.value = v,
+                            onChanged:
+                                (v) =>
+                                    controller.behaviourSupportPlan.value = v,
                           ),
                         ),
                         Obx(
@@ -155,8 +154,9 @@ class SupportPlanView extends GetView<SupportPlanController> {
                             decoration: const InputDecoration(
                               labelText: 'Support intensity',
                               border: OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(12)),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
                               ),
                             ),
                             items: [
@@ -183,8 +183,9 @@ class SupportPlanView extends GetView<SupportPlanController> {
                             decoration: const InputDecoration(
                               labelText: 'Residence type',
                               border: OutlineInputBorder(
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(12)),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
                               ),
                             ),
                             items: [
@@ -228,7 +229,8 @@ class SupportPlanView extends GetView<SupportPlanController> {
                                   ndisGoal: list[i].ndisGoal,
                                   strategy: list[i].strategy,
                                   measure: list[i].measure,
-                                  workerInstructions: list[i].workerInstructions,
+                                  workerInstructions:
+                                      list[i].workerInstructions,
                                   onRemove: () => controller.removeGoal(i),
                                 ),
                               ],
@@ -236,9 +238,10 @@ class SupportPlanView extends GetView<SupportPlanController> {
                               Align(
                                 alignment: Alignment.centerLeft,
                                 child: OutlinedButton.icon(
-                                  onPressed: list.length >= 20
-                                      ? null
-                                      : controller.addGoal,
+                                  onPressed:
+                                      list.length >= 20
+                                          ? null
+                                          : controller.addGoal,
                                   icon: const Icon(Icons.add),
                                   label: const Text('Add goal'),
                                 ),
@@ -260,8 +263,8 @@ class SupportPlanView extends GetView<SupportPlanController> {
                                   label: Text(_label(key)),
                                   selected: controller.serviceCategories
                                       .contains(key),
-                                  onSelected: (_) =>
-                                      controller.toggleCategory(key),
+                                  onSelected:
+                                      (_) => controller.toggleCategory(key),
                                 ),
                             ],
                           ),
@@ -327,15 +330,9 @@ class SupportPlanView extends GetView<SupportPlanController> {
                         const SizedBox(height: 24),
                         _SectionTitle('Schedule'),
                         const SizedBox(height: 12),
-                        _field(
-                          controller.serviceDaysCtrl,
-                          'Service days',
-                        ),
+                        _field(controller.serviceDaysCtrl, 'Service days'),
                         const SizedBox(height: 12),
-                        _field(
-                          controller.typicalTimesCtrl,
-                          'Typical times',
-                        ),
+                        _field(controller.typicalTimesCtrl, 'Typical times'),
                         const SizedBox(height: 12),
                         _field(
                           controller.recommendedHoursCtrl,
@@ -371,6 +368,14 @@ class SupportPlanView extends GetView<SupportPlanController> {
                 ],
               ),
             ),
+            if (err != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: FloatingErrorNotice(
+                  message: err,
+                  onDismiss: () => controller.errorMessage.value = null,
+                ),
+              ),
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -387,23 +392,25 @@ class SupportPlanView extends GetView<SupportPlanController> {
                             style: OutlinedButton.styleFrom(
                               minimumSize: const Size.fromHeight(48),
                             ),
-                            child: saving
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Text('Save draft'),
+                            child:
+                                saving
+                                    ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                    : const Text('Save draft'),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: AsyncElevatedButton(
-                            onPressed: !controller.canActivate || saving
-                                ? null
-                                : () => controller.activate(),
+                            onPressed:
+                                !controller.canActivate || saving
+                                    ? null
+                                    : () => controller.activate(),
                             isLoading: saving,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
@@ -449,11 +456,7 @@ class SupportPlanView extends GetView<SupportPlanController> {
 
 String _label(String key) => key.replaceAll('_', ' ');
 
-Widget _field(
-  TextEditingController ctrl,
-  String label, {
-  int maxLines = 1,
-}) {
+Widget _field(TextEditingController ctrl, String label, {int maxLines = 1}) {
   return TextField(
     controller: ctrl,
     maxLines: maxLines,
@@ -500,19 +503,13 @@ class _ClientBanner extends StatelessWidget {
         children: [
           Text(
             name,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           ),
           if (ndis != null && ndis!.isNotEmpty) ...[
             const SizedBox(height: 2),
             Text(
               'NDIS $ndis',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textMuted,
-              ),
+              style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
             ),
           ],
         ],
@@ -540,27 +537,6 @@ class _RepairBanner extends StatelessWidget {
           fontWeight: FontWeight.w600,
           color: AppColors.openSlot,
         ),
-      ),
-    );
-  }
-}
-
-class _ErrorBox extends StatelessWidget {
-  const _ErrorBox(this.message);
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.errorBackground,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        message,
-        style: const TextStyle(color: AppColors.error),
       ),
     );
   }

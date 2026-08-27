@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/floating_error_notice.dart';
 import '../controllers/client_onboarding_controller.dart';
 import '../widgets/onboarding/onboarding_address_step.dart';
 import '../widgets/onboarding/onboarding_contacts_step.dart';
@@ -23,9 +24,10 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
       appBar: AppBar(
         title: Obx(() {
           final i = controller.step.value;
-          final label = i >= 0 && i < ClientOnboardingController.stepLabels.length
-              ? ClientOnboardingController.stepLabels[i]
-              : 'Onboarding';
+          final label =
+              i >= 0 && i < ClientOnboardingController.stepLabels.length
+                  ? ClientOnboardingController.stepLabels[i]
+                  : 'Onboarding';
           return Text(label);
         }),
       ),
@@ -51,19 +53,16 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (err != null) ...[
-                          _ErrorBox(err),
-                          const SizedBox(height: 12),
-                        ],
                         switch (controller.step.value) {
                           0 => OnboardingIdentityStep(controller: controller),
                           1 => OnboardingAddressStep(controller: controller),
-                          2 =>
-                            OnboardingPreferencesStep(controller: controller),
+                          2 => OnboardingPreferencesStep(
+                            controller: controller,
+                          ),
                           3 => OnboardingContactsStep(controller: controller),
                           4 => OnboardingRepresentativeStep(
-                              controller: controller,
-                            ),
+                            controller: controller,
+                          ),
                           5 => OnboardingFundingStep(controller: controller),
                           _ => OnboardingLegalPackStep(controller: controller),
                         },
@@ -73,6 +72,14 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                 ],
               ),
             ),
+            if (err != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: FloatingErrorNotice(
+                  message: err,
+                  onDismiss: () => controller.errorMessage.value = null,
+                ),
+              ),
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -80,14 +87,16 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                   width: PageContentWidth.narrow,
                   child: Obx(() {
                     final isLast =
-                        controller.step.value == ClientOnboardingController.maxStep;
+                        controller.step.value ==
+                        ClientOnboardingController.maxStep;
                     return Row(
                       children: [
                         if (controller.step.value > 0)
                           OutlinedButton(
-                            onPressed: controller.isSaving.value
-                                ? null
-                                : controller.previousStep,
+                            onPressed:
+                                controller.isSaving.value
+                                    ? null
+                                    : controller.previousStep,
                             child: const Text('Back'),
                           ),
                         const Spacer(),
@@ -141,9 +150,7 @@ class _StepIndicator extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 10,
-                    color: i <= step
-                        ? AppColors.textDark
-                        : AppColors.textMuted,
+                    color: i <= step ? AppColors.textDark : AppColors.textMuted,
                   ),
                 ),
               ],
@@ -171,32 +178,7 @@ class _ClientBanner extends StatelessWidget {
       ),
       child: Text(
         name,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorBox extends StatelessWidget {
-  const _ErrorBox(this.message);
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        message,
-        style: const TextStyle(color: AppColors.error),
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
       ),
     );
   }

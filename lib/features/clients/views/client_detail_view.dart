@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/widgets/floating_error_notice.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../../../shared/widgets/subject_tab_bar.dart';
 import '../controllers/clients_controller.dart';
@@ -32,9 +33,10 @@ class ClientDetailView extends GetView<ClientsController> {
       if (client == null) {
         return Scaffold(
           appBar: AppBar(title: const Text('Client')),
-          body: controller.isLoading.value
-              ? const Center(child: CircularProgressIndicator())
-              : const Center(child: Text('Client not found.')),
+          body:
+              controller.isLoading.value
+                  ? const Center(child: CircularProgressIndicator())
+                  : const Center(child: Text('Client not found.')),
         );
       }
       final err = controller.errorMessage.value;
@@ -47,17 +49,19 @@ class ClientDetailView extends GetView<ClientsController> {
             if (controller.canManage)
               IconButton(
                 tooltip: 'Edit',
-                onPressed: controller.isSaving.value
-                    ? null
-                    : () => controller.openEdit(client),
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : () => controller.openEdit(client),
                 icon: const Icon(Icons.edit_outlined),
               ),
             if (controller.canManage)
               IconButton(
                 tooltip: 'Delete',
-                onPressed: controller.isSaving.value
-                    ? null
-                    : () => controller.deleteClient(client),
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : () => controller.deleteClient(client),
                 icon: const Icon(Icons.delete_outline),
               ),
           ],
@@ -68,18 +72,10 @@ class ClientDetailView extends GetView<ClientsController> {
               const LinearProgressIndicator(minHeight: 2),
             if (err != null)
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.errorBackground,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    err,
-                    style: const TextStyle(color: AppColors.error),
-                  ),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: FloatingErrorNotice(
+                  message: err,
+                  onDismiss: () => controller.errorMessage.value = null,
                 ),
               ),
             Padding(
@@ -117,8 +113,10 @@ class ClientDetailView extends GetView<ClientsController> {
                   if (controller.showNdisCapturePrompt) ...[
                     const SizedBox(height: 12),
                     NdisCapturePrompt(
-                      onAddDetails: () =>
-                          controller.tabIndex.value = ClientsController.tabDetails,
+                      onAddDetails:
+                          () =>
+                              controller.tabIndex.value =
+                                  ClientsController.tabDetails,
                     ),
                   ],
                 ],
@@ -134,11 +132,7 @@ class ClientDetailView extends GetView<ClientsController> {
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                children: [
-                  PageContent(
-                    child: _tabContent(tab),
-                  ),
-                ],
+                children: [PageContent(child: _tabContent(tab))],
               ),
             ),
           ],
