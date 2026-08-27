@@ -3,6 +3,7 @@ import '../../../../shared/utils/name_sort.dart';
 import '../../../visits/data/models/roster_overlay_models.dart';
 import '../datasources/engagements_remote_datasource.dart';
 import '../models/engagement_models.dart';
+import '../models/staff_contractor_models.dart';
 
 class EngagementsRepository {
   EngagementsRepository({required EngagementsRemoteDataSource remote})
@@ -25,6 +26,23 @@ class EngagementsRepository {
 
   Future<EngagementInviteResponse> invite(EngagementInviteRequest body) =>
       _remote.invite(body);
+
+  Future<StaffContractorCreateResponse> createStaffContractor(
+    StaffContractorCreateRequest body,
+  ) =>
+      _remote.createStaffContractor(body);
+
+  Future<StaffContractorOut> getStaffContractor(String contractorId) =>
+      _remote.getStaffContractor(contractorId);
+
+  Future<StaffContractorOut> patchStaffContractor({
+    required String contractorId,
+    required StaffContractorUpdateRequest body,
+  }) =>
+      _remote.patchStaffContractor(
+        contractorId: contractorId,
+        body: body,
+      );
 
   Future<EngagementInvitePreviewOut> previewInvite(
     EngagementInvitePreviewRequest body,

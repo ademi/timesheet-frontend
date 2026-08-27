@@ -5,6 +5,7 @@ import '../../../../core/errors/app_failure.dart';
 import '../../../../shared/models/profile_photo_models.dart';
 import '../../../visits/data/models/roster_overlay_models.dart';
 import '../models/engagement_models.dart';
+import '../models/staff_contractor_models.dart';
 
 class EngagementsRemoteDataSource {
   EngagementsRemoteDataSource({required Dio authenticatedDio})
@@ -82,6 +83,70 @@ class EngagementsRemoteDataSource {
         data: body.toJson(),
       );
       return _requireInviteResponse(response.data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<StaffContractorCreateResponse> createStaffContractor(
+    StaffContractorCreateRequest body,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.tenantContractors,
+        data: body.toJson(),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'empty_create',
+          message: 'Empty create contractor response',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      return StaffContractorCreateResponse.fromJson(data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<StaffContractorOut> getStaffContractor(String contractorId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.tenantContractor(contractorId),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'empty_contractor',
+          message: 'Empty contractor response',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      return StaffContractorOut.fromJson(data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<StaffContractorOut> patchStaffContractor({
+    required String contractorId,
+    required StaffContractorUpdateRequest body,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.tenantContractor(contractorId),
+        data: body.toJson(),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'empty_patch',
+          message: 'Empty contractor patch response',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      return StaffContractorOut.fromJson(data);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

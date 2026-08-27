@@ -55,6 +55,9 @@ abstract final class ApiPaths {
       '$tenantContractorInvites/$inviteId/resend';
   static String tenantContractorCredentials(String contractorId) =>
       '$_v1/tenants/current/contractors/$contractorId/credentials';
+  static String tenantContractor(String contractorId) =>
+      '$_v1/tenants/current/contractors/$contractorId';
+  static const tenantContractors = '$_v1/tenants/current/contractors';
   static String tenantContractorProfilePhoto(String contractorId) =>
       '$_v1/tenants/current/contractors/$contractorId/profile-photo';
   static String engagement(String id) => '$_v1/engagements/$id';

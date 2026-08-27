@@ -1,6 +1,6 @@
 # Contractor / Workforce Onboarding — Product & Engineering Plan
 
-> **Status:** Phase 0 locked · Phase 1 done · Phase 2 done · **Phase 3 done — waiting for green light for Phase 4**.  
+> **Status:** Phase 0–4 done · **waiting for green light for Phase 5**.  
 > **Rule:** Implement **one phase at a time**. After each phase, stop and wait for explicit approval before starting the next.  
 > **Repos:** Frontend `timesheet-frontend` · Backend `…/flutter backend/timesheet/timesheet-backend` · DB `…/timesheet-db`
 
@@ -308,7 +308,7 @@ Each phase: **backend + db (if needed) → frontend → smoke test → STOP for 
 - [x] Overview actions on `awaiting_approval`: “Approve documents” / “Approve and activate for work”.
 - [x] Contractor home banners: upload remaining vs waiting for approval.
 
-**Green light gate:** Completing uploads flips status; approve paths work; filters correct. **← waiting for your OK before Phase 4.**
+**Green light gate:** Completing uploads flips status; approve paths work; filters correct.
 
 ---
 
@@ -316,22 +316,26 @@ Each phase: **backend + db (if needed) → frontend → smoke test → STOP for 
 
 **Backend / DB**
 
-- [ ] Staff create contractor API (profile + address + optional structured screening/qual/check payloads).
-- [ ] Address (+ screening structured fields) on contractor or related tables / credential metadata.
-- [ ] New credential types as needed (`medication_admin`, `epilepsy_management`, `manual_handling`, `vehicle_registration`, …).
-- [ ] Collection notices seeds for new types.
-- [ ] Staff PATCH profile/compliance on engagement detail for **all** contractors.
-- [ ] Optional: create engagement in `invited` or `pending_docs` and attach required categories.
-- [ ] Wire “Send invite” after create.
+- [x] Staff create contractor API (profile + address + optional structured screening/qual/check payloads).
+- [x] Address (+ screening structured fields) on contractor or related tables / credential metadata.
+- [x] New credential types as needed (`medication_admin`, `epilepsy_management`, `manual_handling`, `vehicle_registration`, …).
+- [x] Collection notices seeds for new types.
+- [x] Staff PATCH profile/compliance on engagement detail for **all** contractors.
+- [x] Optional: create engagement in `invited` or `pending_docs` and attach required categories.
+- [x] Wire “Send invite” after create.
+- [x] Migration `V041__contractor_address_and_invite_profile.sql` (address columns + invite `profile` jsonb).
+- [x] Invite fulfill applies staff profile draft onto contractor.
 
 **Frontend**
 
-- [ ] `ContractorOnboardingView` mirroring client horizontal stepper (Identity → Screening → Qualifications → Checks → Invite).
-- [ ] FAB: **Add contractor** + keep **Invite**.
-- [ ] Workforce detail: view/edit same domains for every contractor.
-- [ ] Reuse client onboarding chrome patterns (`step` + step labels + Next/Back).
+- [x] `ContractorOnboardingView` mirroring client horizontal stepper (Identity → Screening → Qualifications → Checks → Invite).
+- [x] FAB: **Add contractor** + keep **Invite**.
+- [x] Workforce detail: view/edit same domains for every contractor.
+- [x] Reuse client onboarding chrome patterns (`step` + step labels + Next/Back).
 
-**Green light gate:** Staff can create full contractor, invite from stepper, and edit info on detail for invited/active/etc.
+**Out of scope this phase:** staff upload-on-behalf of credential evidence (ACL remains contractor-owned).
+
+**Green light gate:** Staff can create full contractor, invite from stepper, and edit info on detail for invited/active/etc. **← waiting for your OK before Phase 5.**
 
 ---
 
@@ -350,11 +354,11 @@ Each phase: **backend + db (if needed) → frontend → smoke test → STOP for 
 ## 6. Suggested implementation order (reminder)
 
 ```
-Phase 0  decisions          ← you are here after reading this plan
-Phase 1  invite list/resend
-Phase 2  ABN + payment + complete account
-Phase 3  awaiting_approval status
-Phase 4  staff stepper + detail edit
+Phase 0  decisions
+Phase 1  invite list/resend          ← done
+Phase 2  ABN + payment + complete account  ← done
+Phase 3  awaiting_approval status    ← done
+Phase 4  staff stepper + detail edit ← done (waiting for green light)
 Phase 5  polish
 ```
 

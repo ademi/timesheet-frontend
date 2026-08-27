@@ -24,12 +24,29 @@ class WorkforceListView extends GetView<WorkforceController> {
       ),
       floatingActionButton: !controller.canInvite
           ? null
-          : FloatingActionButton.extended(
-              onPressed: () => Get.toNamed(AppRoutes.staffWorkforceInvite),
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
-              icon: const Icon(Icons.person_add_alt_1),
-              label: const Text('Invite'),
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FloatingActionButton.extended(
+                  heroTag: 'workforce-add',
+                  onPressed: () =>
+                      Get.toNamed(AppRoutes.staffWorkforceOnboarding),
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.onPrimary,
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Add contractor'),
+                ),
+                const SizedBox(height: 12),
+                FloatingActionButton.extended(
+                  heroTag: 'workforce-invite',
+                  onPressed: () => Get.toNamed(AppRoutes.staffWorkforceInvite),
+                  backgroundColor: AppColors.surface,
+                  foregroundColor: AppColors.primary,
+                  icon: const Icon(Icons.mail_outline),
+                  label: const Text('Invite'),
+                ),
+              ],
             ),
       body: Obx(() {
         final err = controller.errorMessage.value;

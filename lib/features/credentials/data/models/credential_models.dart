@@ -19,6 +19,10 @@ const credentialTypesAllowlist = <String>[
   'nursing_diploma',
   'other_health_qualification',
   'trade_certificate',
+  'medication_admin',
+  'epilepsy_management',
+  'manual_handling',
+  'vehicle_registration',
   'insurance',
   'other',
 ];
@@ -41,6 +45,10 @@ const credentialCategoryFallbackLabels = <String, String>{
   'nursing_diploma': 'Diploma of Nursing',
   'other_health_qualification': 'Other health qualification',
   'trade_certificate': 'Trade certificate',
+  'medication_admin': 'Medication administration',
+  'epilepsy_management': 'Epilepsy management',
+  'manual_handling': 'Manual handling',
+  'vehicle_registration': 'Vehicle registration',
   'insurance': 'Insurance',
   'other': 'Other',
 };

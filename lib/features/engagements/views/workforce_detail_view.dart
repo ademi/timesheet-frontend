@@ -19,6 +19,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
 
   static const _tabLabels = [
     'Overview',
+    'Profile',
     'Credentials',
     'Visits',
     'Schedule',
@@ -135,6 +136,8 @@ class WorkforceDetailView extends GetView<WorkforceController> {
 
   Widget _tabContent(EngagementOut current, int tab) {
     switch (tab) {
+      case WorkforceController.tabProfile:
+        return _profileContent(current);
       case WorkforceController.tabCredentials:
         return _credentialsContent(current);
       case WorkforceController.tabVisits:
@@ -154,6 +157,201 @@ class WorkforceDetailView extends GetView<WorkforceController> {
       default:
         return _overviewContent(current);
     }
+  }
+
+  Widget _profileContent(EngagementOut current) {
+    if (controller.isLoadingProfile.value &&
+        controller.staffProfile.value == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Email: ${controller.staffProfile.value?.email ?? current.contractorEmail ?? '—'}',
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: controller.profileFullNameCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'Full name'),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller.profilePhoneCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'Phone'),
+        ),
+        const SizedBox(height: 12),
+        Obx(
+          () => ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Date of birth'),
+            subtitle: Text(
+              controller.profileDob.value == null
+                  ? 'Not set'
+                  : controller.profileDob.value!
+                      .toIso8601String()
+                      .split('T')
+                      .first,
+            ),
+            trailing: controller.canInvite
+                ? const Icon(Icons.calendar_today_outlined)
+                : null,
+            onTap: !controller.canInvite
+                ? null
+                : () async {
+                    final now = DateTime.now();
+                    final picked = await showDatePicker(
+                      context: Get.context!,
+                      initialDate: controller.profileDob.value ??
+                          DateTime(now.year - 30),
+                      firstDate: DateTime(now.year - 80),
+                      lastDate: now,
+                    );
+                    if (picked != null) controller.profileDob.value = picked;
+                  },
+          ),
+        ),
+        TextField(
+          controller: controller.profileAbnCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'ABN'),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Address',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller.profileAddress1Ctrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'Address line 1'),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller.profileAddress2Ctrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'Address line 2'),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller.profileSuburbCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'Suburb'),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller.profileStateCtrl,
+                enabled: controller.canInvite,
+                decoration: const InputDecoration(labelText: 'State'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: controller.profilePostcodeCtrl,
+                enabled: controller.canInvite,
+                decoration: const InputDecoration(labelText: 'Postcode'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller.profileCountryCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'Country'),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Screening / checks (CRM)',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller.profileScreeningNumberCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'NDIS screening number'),
+        ),
+        const SizedBox(height: 12),
+        Obx(
+          () => DropdownButtonFormField<String>(
+            value: controller.profileScreeningStatus.value,
+            decoration: const InputDecoration(labelText: 'Clearance status'),
+            items: const [
+              DropdownMenuItem(value: 'cleared', child: Text('Cleared')),
+              DropdownMenuItem(value: 'excluded', child: Text('Excluded')),
+              DropdownMenuItem(value: 'pending', child: Text('Pending')),
+              DropdownMenuItem(value: 'other', child: Text('Other')),
+            ],
+            onChanged: controller.canInvite
+                ? (v) => controller.profileScreeningStatus.value = v
+                : null,
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller.profileScreeningStateCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'Screening state'),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller.profileWwccNumberCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'WWCC number'),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller.profileWwccStateCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'WWCC state'),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller.profileLicenceNumberCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'Licence number'),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller.profileLicenceStateCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'Licence state'),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller.profileVehiclePlateCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'Vehicle plate'),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller.profileVehicleStateCtrl,
+          enabled: controller.canInvite,
+          decoration: const InputDecoration(labelText: 'Vehicle state'),
+        ),
+        if (controller.canInvite) ...[
+          const SizedBox(height: 20),
+          AsyncElevatedButton(
+            onPressed: controller.saveStaffProfile,
+            isLoading: controller.isSavingProfile.value,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              minimumSize: const Size.fromHeight(48),
+            ),
+            child: const Text('Save profile'),
+          ),
+        ],
+      ],
+    );
   }
 
   Widget _scheduleContent() {
