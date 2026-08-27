@@ -40,6 +40,7 @@ abstract final class SupportPlanKeys {
   static const limitationCognition = 'cognition';
   static const limitationAdls = 'adls';
   static const limitationOther = 'other';
+  static const limitationOtherDetail = 'limitation_other_detail';
 
   // Communication methods
   static const commVerbal = 'verbal';
@@ -50,6 +51,7 @@ abstract final class SupportPlanKeys {
   static const commGesture = 'gesture';
   static const commAssistiveTech = 'assistive_technology';
   static const commOther = 'other';
+  static const commOtherDetail = 'comm_other_detail';
 
   // Service categories
   static const catHomemaking = 'homemaking';
@@ -58,4 +60,8 @@ abstract final class SupportPlanKeys {
   static const catCommunityAccess = 'community_access';
   static const catTransport = 'transport';
   static const catOther = 'other';
+  static const catOtherDetail = 'cat_other_detail';
+
+  // Other detail (living)
+  static const residenceOtherDetail = 'residence_other_detail';
 }

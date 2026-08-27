@@ -16,6 +16,8 @@ class DisabilityHealthSection {
     this.gpName = '',
     this.gpPhone = '',
     this.supportIntensity = SupportPlanKeys.intensityStandard,
+    this.limitationOtherDetail = '',
+    this.commOtherDetail = '',
   });
 
   final String primaryDisability;
@@ -29,6 +31,8 @@ class DisabilityHealthSection {
   final String gpName;
   final String gpPhone;
   final String supportIntensity;
+  final String limitationOtherDetail;
+  final String commOtherDetail;
 
   factory DisabilityHealthSection.fromJson(Map<String, dynamic>? json) {
     final m = json ?? const <String, dynamic>{};
@@ -45,6 +49,9 @@ class DisabilityHealthSection {
       gpPhone: m['gp_phone'] as String? ?? '',
       supportIntensity: m['support_intensity'] as String? ??
           SupportPlanKeys.intensityStandard,
+      limitationOtherDetail:
+          m[SupportPlanKeys.limitationOtherDetail] as String? ?? '',
+      commOtherDetail: m[SupportPlanKeys.commOtherDetail] as String? ?? '',
     );
   }
 
@@ -60,6 +67,8 @@ class DisabilityHealthSection {
         'gp_name': gpName,
         'gp_phone': gpPhone,
         'support_intensity': supportIntensity,
+        SupportPlanKeys.limitationOtherDetail: limitationOtherDetail,
+        SupportPlanKeys.commOtherDetail: commOtherDetail,
       };
 }
 
@@ -68,11 +77,13 @@ class LivingSection {
     this.residenceType = SupportPlanKeys.residencePrivateHome,
     this.householdMembers = '',
     this.informalSupports = '',
+    this.residenceOtherDetail = '',
   });
 
   final String residenceType;
   final String householdMembers;
   final String informalSupports;
+  final String residenceOtherDetail;
 
   factory LivingSection.fromJson(Map<String, dynamic>? json) {
     final m = json ?? const <String, dynamic>{};
@@ -81,6 +92,8 @@ class LivingSection {
           SupportPlanKeys.residencePrivateHome,
       householdMembers: m['household_members'] as String? ?? '',
       informalSupports: m['informal_supports'] as String? ?? '',
+      residenceOtherDetail:
+          m[SupportPlanKeys.residenceOtherDetail] as String? ?? '',
     );
   }
 
@@ -88,6 +101,7 @@ class LivingSection {
         'residence_type': residenceType,
         'household_members': householdMembers,
         'informal_supports': informalSupports,
+        SupportPlanKeys.residenceOtherDetail: residenceOtherDetail,
       };
 }
 
@@ -232,6 +246,7 @@ class SupportPlanBody {
     this.preferences = const PreferencesSection(),
     this.risk = const RiskSection(),
     this.schedule = const ScheduleSection(),
+    this.catOtherDetail = '',
   });
 
   final DisabilityHealthSection disabilityHealth;
@@ -241,6 +256,7 @@ class SupportPlanBody {
   final PreferencesSection preferences;
   final RiskSection risk;
   final ScheduleSection schedule;
+  final String catOtherDetail;
 
   factory SupportPlanBody.fromJson(Map<String, dynamic>? json) {
     final m = json ?? const <String, dynamic>{};
@@ -262,6 +278,7 @@ class SupportPlanBody {
       ),
       risk: RiskSection.fromJson(_asMap(m[SupportPlanKeys.risk])),
       schedule: ScheduleSection.fromJson(_asMap(m[SupportPlanKeys.schedule])),
+      catOtherDetail: m[SupportPlanKeys.catOtherDetail] as String? ?? '',
     );
   }
 
@@ -274,6 +291,7 @@ class SupportPlanBody {
         SupportPlanKeys.preferences: preferences.toJson(),
         SupportPlanKeys.risk: risk.toJson(),
         SupportPlanKeys.schedule: schedule.toJson(),
+        SupportPlanKeys.catOtherDetail: catOtherDetail,
       };
 }
 

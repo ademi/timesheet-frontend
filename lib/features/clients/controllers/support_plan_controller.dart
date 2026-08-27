@@ -52,9 +52,12 @@ class SupportPlanController extends GetxController {
   final supportIntensity = SupportPlanKeys.intensityStandard.obs;
   final functionalLimitations = <String>[].obs;
   final communicationMethods = <String>[].obs;
+  final limitationOtherCtrl = TextEditingController();
+  final commOtherCtrl = TextEditingController();
 
   // ── Living ────────────────────────────────────────────────────────────
   final residenceType = SupportPlanKeys.residencePrivateHome.obs;
+  final residenceOtherCtrl = TextEditingController();
   final householdMembersCtrl = TextEditingController();
   final informalSupportsCtrl = TextEditingController();
 
@@ -63,6 +66,7 @@ class SupportPlanController extends GetxController {
 
   // ── Categories ────────────────────────────────────────────────────────
   final serviceCategories = <String>[].obs;
+  final catOtherCtrl = TextEditingController();
 
   // ── Preferences ───────────────────────────────────────────────────────
   final preferredSupportStyleCtrl = TextEditingController();
@@ -228,13 +232,17 @@ class SupportPlanController extends GetxController {
     supportIntensity.value = dh.supportIntensity;
     functionalLimitations.assignAll(dh.functionalLimitations);
     communicationMethods.assignAll(dh.communicationMethods);
+    limitationOtherCtrl.text = dh.limitationOtherDetail;
+    commOtherCtrl.text = dh.commOtherDetail;
 
     residenceType.value = body.living.residenceType;
+    residenceOtherCtrl.text = body.living.residenceOtherDetail;
     householdMembersCtrl.text = body.living.householdMembers;
     informalSupportsCtrl.text = body.living.informalSupports;
 
     _replaceGoals(body.goals);
     serviceCategories.assignAll(body.serviceCategories);
+    catOtherCtrl.text = body.catOtherDetail;
 
     preferredSupportStyleCtrl.text = body.preferences.preferredSupportStyle;
     routinesCtrl.text = body.preferences.routines;
@@ -277,6 +285,9 @@ class SupportPlanController extends GetxController {
   void toggleLimitation(String key) {
     if (functionalLimitations.contains(key)) {
       functionalLimitations.remove(key);
+      if (key == SupportPlanKeys.limitationOther) {
+        limitationOtherCtrl.clear();
+      }
     } else {
       functionalLimitations.add(key);
     }
@@ -285,6 +296,9 @@ class SupportPlanController extends GetxController {
   void toggleCommunication(String key) {
     if (communicationMethods.contains(key)) {
       communicationMethods.remove(key);
+      if (key == SupportPlanKeys.commOther) {
+        commOtherCtrl.clear();
+      }
     } else {
       communicationMethods.add(key);
     }
@@ -293,13 +307,59 @@ class SupportPlanController extends GetxController {
   void toggleCategory(String key) {
     if (serviceCategories.contains(key)) {
       serviceCategories.remove(key);
+      if (key == SupportPlanKeys.catOther) {
+        catOtherCtrl.clear();
+      }
     } else {
       serviceCategories.add(key);
     }
   }
 
+  void setResidenceType(String value) {
+    residenceType.value = value;
+    if (value != SupportPlanKeys.residenceOther) {
+      residenceOtherCtrl.clear();
+    }
+  }
+
+  /// Returns a user-facing error when an Other chip/dropdown lacks detail text.
+  String? validateOtherDetails() {
+    if (functionalLimitations.contains(SupportPlanKeys.limitationOther) &&
+        limitationOtherCtrl.text.trim().isEmpty) {
+      return 'Specify the functional limitation.';
+    }
+    if (communicationMethods.contains(SupportPlanKeys.commOther) &&
+        commOtherCtrl.text.trim().isEmpty) {
+      return 'Specify the communication method.';
+    }
+    if (serviceCategories.contains(SupportPlanKeys.catOther) &&
+        catOtherCtrl.text.trim().isEmpty) {
+      return 'Specify the service category.';
+    }
+    if (residenceType.value == SupportPlanKeys.residenceOther &&
+        residenceOtherCtrl.text.trim().isEmpty) {
+      return 'Specify the residence type.';
+    }
+    return null;
+  }
+
   /// Always full nested body (OV1) — never dirty-fields-only.
   SupportPlanBody buildBody() {
+    final limitationDetail =
+        functionalLimitations.contains(SupportPlanKeys.limitationOther)
+            ? limitationOtherCtrl.text.trim()
+            : '';
+    final commDetail = communicationMethods.contains(SupportPlanKeys.commOther)
+        ? commOtherCtrl.text.trim()
+        : '';
+    final catDetail = serviceCategories.contains(SupportPlanKeys.catOther)
+        ? catOtherCtrl.text.trim()
+        : '';
+    final residenceDetail =
+        residenceType.value == SupportPlanKeys.residenceOther
+            ? residenceOtherCtrl.text.trim()
+            : '';
+
     return SupportPlanBody(
       disabilityHealth: DisabilityHealthSection(
         primaryDisability: primaryDisabilityCtrl.text.trim(),
@@ -313,16 +373,20 @@ class SupportPlanController extends GetxController {
         gpName: gpNameCtrl.text.trim(),
         gpPhone: gpPhoneCtrl.text.trim(),
         supportIntensity: supportIntensity.value,
+        limitationOtherDetail: limitationDetail,
+        commOtherDetail: commDetail,
       ),
       living: LivingSection(
         residenceType: residenceType.value,
         householdMembers: householdMembersCtrl.text.trim(),
         informalSupports: informalSupportsCtrl.text.trim(),
+        residenceOtherDetail: residenceDetail,
       ),
       goals: [
         for (var i = 0; i < goals.length; i++) goals[i].toGoal(sortOrder: i),
       ],
       serviceCategories: serviceCategories.toList(growable: false),
+      catOtherDetail: catDetail,
       preferences: PreferencesSection(
         preferredSupportStyle: preferredSupportStyleCtrl.text.trim(),
         routines: routinesCtrl.text.trim(),
@@ -365,6 +429,13 @@ class SupportPlanController extends GetxController {
 
   Future<void> _persist({required bool activate}) async {
     if (clientId.isEmpty || isSaving.value) return;
+
+    final otherError = validateOtherDetails();
+    if (otherError != null) {
+      errorMessage.value = otherError;
+      return;
+    }
+
     isSaving.value = true;
     errorMessage.value = null;
     try {
@@ -432,6 +503,10 @@ class SupportPlanController extends GetxController {
     medicationScheduleCtrl.dispose();
     gpNameCtrl.dispose();
     gpPhoneCtrl.dispose();
+    limitationOtherCtrl.dispose();
+    commOtherCtrl.dispose();
+    residenceOtherCtrl.dispose();
+    catOtherCtrl.dispose();
     householdMembersCtrl.dispose();
     informalSupportsCtrl.dispose();
     preferredSupportStyleCtrl.dispose();

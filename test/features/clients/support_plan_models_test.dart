@@ -49,6 +49,7 @@ void main() {
         'preferences',
         'risk',
         'schedule',
+        'cat_other_detail',
       });
       expect(
         (json['disability_health'] as Map).keys.toSet(),
@@ -64,10 +65,23 @@ void main() {
           'gp_name',
           'gp_phone',
           'support_intensity',
+          'limitation_other_detail',
+          'comm_other_detail',
+        },
+      );
+      expect(
+        (json['living'] as Map).keys.toSet(),
+        {
+          'residence_type',
+          'household_members',
+          'informal_supports',
+          'residence_other_detail',
         },
       );
       expect(json['disability_health']['primary_disability'], 'ASD');
       expect(json['living']['residence_type'], 'private_home');
+      expect(json['living']['residence_other_detail'], '');
+      expect(json['cat_other_detail'], '');
       expect(json['risk']['triggers'], '');
       expect(json['schedule']['service_days'], '');
       expect(json['preferences']['routines'], '');

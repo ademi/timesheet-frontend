@@ -208,4 +208,102 @@ void main() {
     expect(c.status.value, SupportPlanKeys.statusActive);
     expect(c.errorMessage.value, isNull);
   });
+
+  test('save draft blocked when limitation Other selected without detail',
+      () async {
+    c.applyLoadedPlan(_plan(body: const SupportPlanBody(), id: 'plan-1'));
+    c.functionalLimitations.add(SupportPlanKeys.limitationOther);
+
+    await c.saveDraft();
+
+    expect(c.errorMessage.value, 'Specify the functional limitation.');
+    expect(c.lastSavedPayload, isNull);
+    verifyNever(() => mock.patchSupportPlan(any(), any(), any()));
+  });
+
+  test('activate blocked when communication Other selected without detail',
+      () async {
+    c.applyLoadedPlan(
+      _plan(
+        body: const SupportPlanBody(),
+        nextReviewAt: '2026-09-01',
+        id: 'plan-1',
+      ),
+    );
+    c.communicationMethods.add(SupportPlanKeys.commOther);
+
+    await c.activate();
+
+    expect(c.errorMessage.value, 'Specify the communication method.');
+    verifyNever(() => mock.patchSupportPlan(any(), any(), any()));
+  });
+
+  test('save draft includes Other detail keys in body_json when filled',
+      () async {
+    c.applyLoadedPlan(_plan(body: const SupportPlanBody(), id: 'plan-1'));
+    c.functionalLimitations.add(SupportPlanKeys.limitationOther);
+    c.limitationOtherCtrl.text = 'Custom limitation';
+    c.communicationMethods.add(SupportPlanKeys.commOther);
+    c.commOtherCtrl.text = 'Picture board';
+    c.serviceCategories.add(SupportPlanKeys.catOther);
+    c.catOtherCtrl.text = 'Respite';
+    c.setResidenceType(SupportPlanKeys.residenceOther);
+    c.residenceOtherCtrl.text = 'Boat';
+
+    when(
+      () => mock.patchSupportPlan(any(), any(), any()),
+    ).thenAnswer((inv) async {
+      final bodyMap = inv.positionalArguments[2] as Map<String, dynamic>;
+      return _plan(
+        id: 'plan-1',
+        body: SupportPlanBody.fromJson(
+          bodyMap['body'] as Map<String, dynamic>?,
+        ),
+      );
+    });
+
+    await c.saveDraft();
+
+    final bodyJson = c.lastSavedPayload!['body'] as Map<String, dynamic>;
+    final dh = bodyJson['disability_health'] as Map<String, dynamic>;
+    expect(dh['functional_limitations'], contains('other'));
+    expect(dh['limitation_other_detail'], 'Custom limitation');
+    expect(dh['communication_methods'], contains('other'));
+    expect(dh['comm_other_detail'], 'Picture board');
+    expect(bodyJson['service_categories'], contains('other'));
+    expect(bodyJson['cat_other_detail'], 'Respite');
+    final living = bodyJson['living'] as Map<String, dynamic>;
+    expect(living['residence_type'], 'other');
+    expect(living['residence_other_detail'], 'Boat');
+  });
+
+  test('applyLoadedPlan hydrates Other detail companions', () {
+    c.applyLoadedPlan(
+      _plan(
+        body: SupportPlanBody(
+          disabilityHealth: const DisabilityHealthSection(
+            functionalLimitations: [SupportPlanKeys.limitationOther],
+            communicationMethods: [SupportPlanKeys.commOther],
+            limitationOtherDetail: 'Sensory',
+            commOtherDetail: 'AAC device',
+          ),
+          living: const LivingSection(
+            residenceType: SupportPlanKeys.residenceOther,
+            residenceOtherDetail: 'Granny flat',
+          ),
+          serviceCategories: const [SupportPlanKeys.catOther],
+          catOtherDetail: 'Respite care',
+        ),
+      ),
+    );
+
+    expect(c.functionalLimitations, contains(SupportPlanKeys.limitationOther));
+    expect(c.limitationOtherCtrl.text, 'Sensory');
+    expect(c.communicationMethods, contains(SupportPlanKeys.commOther));
+    expect(c.commOtherCtrl.text, 'AAC device');
+    expect(c.residenceType.value, SupportPlanKeys.residenceOther);
+    expect(c.residenceOtherCtrl.text, 'Granny flat');
+    expect(c.serviceCategories, contains(SupportPlanKeys.catOther));
+    expect(c.catOtherCtrl.text, 'Respite care');
+  });
 }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/other_text_field.dart';
 import '../controllers/support_plan_controller.dart';
+import '../utils/support_plan_keys.dart';
 
 /// Support plan fields only — no Scaffold, no sticky footer, no [Get.back].
 class SupportPlanFormBody extends StatelessWidget {
@@ -66,6 +68,15 @@ class SupportPlanFormBody extends StatelessWidget {
             ],
           ),
         ),
+        Obx(
+          () => OtherTextField(
+            isOther: controller.functionalLimitations.contains(
+              SupportPlanKeys.limitationOther,
+            ),
+            controller: controller.limitationOtherCtrl,
+            label: 'Functional limitation (other)',
+          ),
+        ),
         const SizedBox(height: 12),
         const Text(
           'Communication methods',
@@ -84,6 +95,15 @@ class SupportPlanFormBody extends StatelessWidget {
                   onSelected: (_) => controller.toggleCommunication(key),
                 ),
             ],
+          ),
+        ),
+        Obx(
+          () => OtherTextField(
+            isOther: controller.communicationMethods.contains(
+              SupportPlanKeys.commOther,
+            ),
+            controller: controller.commOtherCtrl,
+            label: 'Communication method (other)',
           ),
         ),
         const SizedBox(height: 12),
@@ -149,9 +169,17 @@ class SupportPlanFormBody extends StatelessWidget {
             ],
             onChanged: (v) {
               if (v != null) {
-                controller.residenceType.value = v;
+                controller.setResidenceType(v);
               }
             },
+          ),
+        ),
+        Obx(
+          () => OtherTextField(
+            isOther: controller.residenceType.value ==
+                SupportPlanKeys.residenceOther,
+            controller: controller.residenceOtherCtrl,
+            label: 'Residence type (other)',
           ),
         ),
         const SizedBox(height: 12),
@@ -211,6 +239,15 @@ class SupportPlanFormBody extends StatelessWidget {
                   onSelected: (_) => controller.toggleCategory(key),
                 ),
             ],
+          ),
+        ),
+        Obx(
+          () => OtherTextField(
+            isOther: controller.serviceCategories.contains(
+              SupportPlanKeys.catOther,
+            ),
+            controller: controller.catOtherCtrl,
+            label: 'Service category (other)',
           ),
         ),
         const SizedBox(height: 24),
