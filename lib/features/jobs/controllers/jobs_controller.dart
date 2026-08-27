@@ -3,10 +3,10 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/utils/name_sort.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../clients/data/models/client_models.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../../engagements/data/models/engagement_models.dart';
@@ -471,12 +471,7 @@ class JobsController extends GetxController {
     try {
       await _repository.addFormCatalog(job.id, templateId);
       await refreshFormCatalog();
-      Get.snackbar(
-        'Attached',
-        'Form template added to job catalog.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-      );
+      AppToast.info('Attached', 'Form template added to job catalog.');
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -536,36 +531,18 @@ class JobsController extends GetxController {
       }
       formTemplates.sort((a, b) => compareNames(a.name, b.name));
       await refreshFormCatalog();
-      Get.snackbar(
+      AppToast.success(
         id == null ? 'Created' : 'Updated',
         'Form template “$trimmed” saved.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
       );
       return true;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
-      Get.snackbar(
-        'Could not save template',
-        e.message,
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.error,
-        colorText: Colors.white,
-      );
+      AppToast.error('Could not save template', e.message);
       return false;
     } catch (e) {
       errorMessage.value = e.toString();
-      Get.snackbar(
-        'Could not save template',
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.error,
-        colorText: Colors.white,
-      );
+      AppToast.error('Could not save template', e.toString());
       return false;
     } finally {
       isSaving.value = false;
@@ -638,13 +615,9 @@ class JobsController extends GetxController {
       );
       final created = result.createdShiftIds.length;
       if (created > 0 && !Get.testMode) {
-        Get.snackbar(
+        AppToast.success(
           'Roster updated',
           '$created new time${created == 1 ? '' : 's'} added.',
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          backgroundColor: AppColors.primary,
-          colorText: AppColors.onPrimary,
         );
       }
     } on AppFailure catch (e) {
@@ -679,15 +652,11 @@ class JobsController extends GetxController {
         idempotencyKey: idemKey,
       );
       lastGenerate.value = result;
-      Get.snackbar(
+      AppToast.success(
         'Generate complete',
         'Created ${result.createdShiftIds.length} shift(s), '
             '${result.createdVisitIds.length} visit(s); '
             'skipped ${result.skipped.length}.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
       );
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -727,11 +696,9 @@ class JobsController extends GetxController {
               .toList(growable: false),
         ),
       );
-      Get.snackbar(
+      AppToast.info(
         'Visit created',
         'Manual visit scheduled (opens in Visits in S7).',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
       );
     } on AppFailure catch (e) {
       errorMessage.value = e.message;

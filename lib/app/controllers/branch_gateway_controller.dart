@@ -3,10 +3,10 @@ import 'package:get/get.dart';
 
 import '../../core/services/session_service.dart';
 import '../../core/services/token_storage.dart';
+import '../../shared/widgets/app_toast.dart';
 import '../data/models/branch/branch_model.dart';
 import '../data/repositories/branch_repository.dart';
 import '../routes/app_routes.dart';
-import '../themes/app_colors.dart';
 import 'auth_controller.dart';
 
 class BranchGatewayController extends GetxController {
@@ -71,13 +71,5 @@ class BranchGatewayController extends GetxController {
     return e.message ?? 'Unable to load branches right now.';
   }
 
-  void _showError(String message) {
-    Get.snackbar(
-      'Error',
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppColors.error,
-      colorText: AppColors.textLight,
-    );
-  }
+  void _showError(String message) => AppToast.error('Error', message);
 }

@@ -4,6 +4,7 @@ import '../../core/constants/feature_flags.dart';
 import '../../core/services/session_service.dart';
 import '../../core/services/token_storage.dart';
 import '../../shared/utils/external_url.dart';
+import '../../shared/widgets/app_toast.dart';
 import '../routes/app_routes.dart';
 import '../services/push_notification_service.dart';
 
@@ -39,22 +40,14 @@ class GatewayController extends GetxController {
   Future<void> openProviderSignup() async {
     final ok = await openExternalUrl(AppEnv.landingUrl);
     if (!ok) {
-      Get.snackbar(
-        'Couldn’t open link',
-        AppEnv.landingUrl,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppToast.error('Couldn’t open link', AppEnv.landingUrl);
     }
   }
 
   Future<void> openBilling() async {
     final ok = await openExternalUrl(AppEnv.billingUrl);
     if (!ok) {
-      Get.snackbar(
-        'Couldn’t open billing',
-        AppEnv.billingUrl,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppToast.error('Couldn’t open billing', AppEnv.billingUrl);
     }
   }
 }

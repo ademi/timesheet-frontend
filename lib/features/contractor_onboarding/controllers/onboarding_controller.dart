@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/mixins/pending_action_mixin.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../credentials/controllers/credentials_controller.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../engagements/controllers/contractor_engagements_controller.dart';
@@ -531,14 +530,7 @@ class OnboardingController extends GetxController with PendingActionMixin {
   }
 
   void _toast(String message) {
-    Get.snackbar(
-      'Complete this step',
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
-      backgroundColor: AppColors.error,
-      colorText: AppColors.textLight,
-    );
+    AppToast.error('Complete this step', message);
   }
 
   OnboardingStep? resolveFirstIncompleteStep() {

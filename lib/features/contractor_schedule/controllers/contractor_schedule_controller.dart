@@ -3,9 +3,9 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../data/models/schedule_models.dart';
 import '../data/repositories/contractor_schedule_repository.dart';
 
@@ -224,13 +224,9 @@ class ContractorScheduleController extends GetxController {
       final saved = await _repository.putAvailability(rules);
       availability.assignAll(saved);
       _syncDraftFromRules(saved.isEmpty ? rules : saved);
-      Get.snackbar(
+      AppToast.success(
         'Availability saved',
         'Preferences only — this does not create visits.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
       );
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -272,11 +268,9 @@ class ContractorScheduleController extends GetxController {
       );
       leaveNotesCtrl.clear();
       await _loadLeave();
-      Get.snackbar(
+      AppToast.info(
         'Leave requested',
         'Preferences only — leave does not create or cancel visits.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
       );
     } on AppFailure catch (e) {
       errorMessage.value = e.message;

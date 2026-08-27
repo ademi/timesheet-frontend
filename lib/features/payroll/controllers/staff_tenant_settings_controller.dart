@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../compliance_ops/data/models/compliance_ops_models.dart';
 import '../../compliance_ops/data/repositories/compliance_ops_repository.dart';
 import '../../subscription/billing_gate.dart';
@@ -106,13 +106,9 @@ class StaffTenantSettingsController extends GetxController {
             : jurisdictionCtrl.text.trim(),
       );
       tenant.value = updated;
-      Get.snackbar(
+      AppToast.success(
         'Saved',
         'Tenant timezone / holiday jurisdiction updated.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
       );
     } on AppFailure catch (e) {
       await BillingGate.showIfNeeded(e);

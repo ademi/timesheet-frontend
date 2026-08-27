@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/feature_flags.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../shared/utils/external_url.dart';
+import '../../../shared/widgets/app_toast.dart';
 
 /// Shared billing deep-link helper (design §6.12).
 abstract final class BillingGate {
@@ -13,12 +14,7 @@ abstract final class BillingGate {
   static Future<void> openBillingUrl() async {
     final ok = await openExternalUrl(AppEnv.billingUrl);
     if (!ok) {
-      Get.snackbar(
-        'Billing',
-        'Could not open ${AppEnv.billingUrl}',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-      );
+      AppToast.error('Billing', 'Could not open ${AppEnv.billingUrl}');
     }
   }
 

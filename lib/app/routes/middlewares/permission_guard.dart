@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../../features/shell/staff_shell.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../app_routes.dart';
 
 /// Route permission check (`anyOf` or `allOf`). On failure → shell home + snackbar.
@@ -59,11 +60,9 @@ class PermissionGuard extends GetMiddleware {
 
   RouteSettings _deny(String? route) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Get.snackbar(
+      AppToast.error(
         'Permission required',
         'You don’t have access to that area.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 3),
       );
     });

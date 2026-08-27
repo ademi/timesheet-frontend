@@ -7,11 +7,11 @@ import 'package:image_picker/image_picker.dart';
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
 import '../../../app/routes/app_routes.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
 import '../../../shared/utils/name_sort.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../documents/data/document_pipeline.dart';
 import '../../jobs/controllers/jobs_controller.dart';
 import '../../jobs/data/models/job_models.dart';
@@ -703,11 +703,9 @@ class ClientsController extends GetxController
             Get.back();
             await load();
             openDetail(created, initialTab: ClientsController.tabOverview);
-            Get.snackbar(
+            AppToast.info(
               'Client saved',
               'Profile photo failed: ${e.message}',
-              snackPosition: SnackPosition.BOTTOM,
-              margin: const EdgeInsets.all(16),
               duration: const Duration(seconds: 6),
             );
             return;
@@ -823,11 +821,9 @@ class ClientsController extends GetxController
         }
         final profileErrors = await _saveDynamicAnswers(client.id);
         if (profileErrors.isNotEmpty) {
-          Get.snackbar(
+          AppToast.info(
             'Saved with warnings',
             profileErrors.take(3).join('\n'),
-            snackPosition: SnackPosition.BOTTOM,
-            margin: const EdgeInsets.all(16),
             duration: const Duration(seconds: 6),
           );
         }
@@ -877,19 +873,15 @@ class ClientsController extends GetxController
       await openDetailById(client.id);
       tabIndex.value = tabDetails;
       if (profileErrors.isNotEmpty) {
-        Get.snackbar(
+        AppToast.info(
           'Saved with warnings',
           profileErrors.take(3).join('\n'),
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
           duration: const Duration(seconds: 6),
         );
       } else {
-        Get.snackbar(
+        AppToast.success(
           'Saved',
           'Client type and profile updated. Create an invite next.',
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
         );
       }
     } on AppFailure catch (e) {
@@ -1702,13 +1694,9 @@ class ClientsController extends GetxController
       final invite = await _repository.createInvite(clientId);
       lastInvite.value = invite;
       invites.assignAll(await _repository.listInvites(clientId));
-      Get.snackbar(
+      AppToast.success(
         'Invite created',
         'Copy the link below. Expires ${invite.expiresAt.toLocal()}.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
       );
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -1722,12 +1710,7 @@ class ClientsController extends GetxController
   Future<void> copyInviteLink(String token) async {
     final path = invitePath(token);
     await Clipboard.setData(ClipboardData(text: path));
-    Get.snackbar(
-      'Copied',
-      path,
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
-    );
+    AppToast.info('Copied', path);
   }
 
   static List<String> _extensionsFromAccept(List<String> accept) {

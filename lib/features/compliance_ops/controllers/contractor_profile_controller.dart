@@ -3,10 +3,10 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../documents/data/document_pipeline.dart';
 import '../../subscription/billing_gate.dart';
 import '../data/models/compliance_ops_models.dart';
@@ -118,14 +118,7 @@ class ContractorProfileController extends GetxController {
       );
       final result = await _repository.setContractorProfilePhoto(doc.id);
       photo.value = result;
-      Get.snackbar(
-        'Profile photo updated',
-        'Your photo was saved.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
-      );
+      AppToast.success('Profile photo updated', 'Your photo was saved.');
     } on AppFailure catch (e) {
       await BillingGate.showIfNeeded(e);
       errorMessage.value = e.message;
@@ -145,12 +138,7 @@ class ContractorProfileController extends GetxController {
       final result = await _repository.clearContractorProfilePhoto();
       photo.value = result;
       localPhotoBytes.value = null;
-      Get.snackbar(
-        'Profile photo removed',
-        'Your photo was cleared.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-      );
+      AppToast.info('Profile photo removed', 'Your photo was cleared.');
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -170,13 +158,9 @@ class ContractorProfileController extends GetxController {
       );
       lastRights.value = created;
       rightsNotesCtrl.clear();
-      Get.snackbar(
+      AppToast.success(
         'Request submitted',
         '${created.requestType} · ${created.status}',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
       );
     } on AppFailure catch (e) {
       await BillingGate.showIfNeeded(e);
@@ -192,11 +176,9 @@ class ContractorProfileController extends GetxController {
     try {
       final result = await _repository.privacyExport();
       lastExport.value = result;
-      Get.snackbar(
+      AppToast.info(
         'Privacy export',
         result.message ?? result.downloadUrl ?? 'Export requested',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
       );
     } on AppFailure catch (e) {
       await BillingGate.showIfNeeded(e);
@@ -239,11 +221,9 @@ class ContractorProfileController extends GetxController {
       await _repository.withdrawConsent(
         credentialType: withdrawTypeCtrl.text.trim(),
       );
-      Get.snackbar(
+      AppToast.info(
         'Consent withdrawn',
         'Recorded for ${withdrawTypeCtrl.text.trim()}.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
       );
     } on AppFailure catch (e) {
       errorMessage.value = e.message;

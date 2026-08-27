@@ -8,6 +8,7 @@ import '../../../core/responsive/page_content.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/responsive/breakpoints.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../../engagements/data/models/engagement_models.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
@@ -57,14 +58,7 @@ class HomeAlertsController extends GetxController {
   final void Function(String title, String message) _showSnack;
 
   static void _defaultSnack(String title, String message) {
-    Get.snackbar(
-      title,
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
-      backgroundColor: AppColors.primary,
-      colorText: AppColors.onPrimary,
-    );
+    AppToast.success(title, message);
   }
 
   final isLoading = false.obs;

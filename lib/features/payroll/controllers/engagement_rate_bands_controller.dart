@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../data/models/payroll_models.dart';
 import '../data/repositories/payroll_repository.dart';
 
@@ -126,13 +126,9 @@ class EngagementRateBandsController extends GetxController {
       if (popOnSuccess) {
         Get.back();
       }
-      Get.snackbar(
+      AppToast.success(
         'Payment rates saved',
         'New payment rate applied (prior open rates end automatically).',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
       );
     } on AppFailure catch (e) {
       errorMessage.value = e.message;

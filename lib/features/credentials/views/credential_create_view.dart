@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
 
@@ -157,11 +158,9 @@ class CredentialCreateView extends GetView<CredentialsController> {
                         final created = await controller.createCredential();
                         if (created != null) {
                           Get.back();
-                          Get.snackbar(
+                          AppToast.success(
                             'Created',
                             'Credential saved with evidence.',
-                            snackPosition: SnackPosition.BOTTOM,
-                            margin: const EdgeInsets.all(16),
                           );
                         }
                       },

@@ -8,6 +8,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/utils/download_bytes.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../data/models/billing_models.dart';
 import '../data/repositories/billing_repository.dart';
 
@@ -141,14 +142,7 @@ class InvoiceExportDetailController extends GetxController {
     try {
       selected.value = await _repository.voidInvoiceExport(id);
       if (!Get.testMode) {
-        Get.snackbar(
-          'Export voided',
-          'Visits can be exported again.',
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          backgroundColor: AppColors.primary,
-          colorText: AppColors.onPrimary,
-        );
+        AppToast.success('Export voided', 'Visits can be exported again.');
       }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;

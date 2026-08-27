@@ -3,10 +3,10 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/utils/name_sort.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../documents/data/evidence_document_opener.dart';
 import '../../documents/data/document_pipeline.dart';
 import '../../engagements/controllers/workforce_controller.dart';
@@ -56,14 +56,7 @@ class StaffCredentialReviewController extends GetxController {
   final void Function(String title, String message) _showSnack;
 
   static void _defaultSnack(String title, String message) {
-    Get.snackbar(
-      title,
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
-      backgroundColor: AppColors.primary,
-      colorText: AppColors.onPrimary,
-    );
+    AppToast.success(title, message);
   }
 
   final reasonCtrl = TextEditingController();

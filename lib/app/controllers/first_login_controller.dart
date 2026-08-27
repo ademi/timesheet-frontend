@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/validation/password_validation.dart';
+import '../../shared/widgets/app_toast.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/models/auth/auth_error_model.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
-import '../themes/app_colors.dart';
 
 class FirstLoginController extends GetxController {
   FirstLoginController({required AuthRepository authRepository})
@@ -37,30 +37,18 @@ class FirstLoginController extends GetxController {
     isLoading.value = true;
     try {
       await _authRepository.completeFirstLogin(newPasswordController.text);
-      Get.snackbar(
+      AppToast.success(
         'Password set',
         'Please log in again with your new password.',
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
-        snackPosition: SnackPosition.BOTTOM,
       );
       Get.offAllNamed(AppRoutes.login);
     } on AuthErrorModel catch (e) {
-      Get.snackbar(
-        'Error',
-        e.detail,
-        backgroundColor: AppColors.error,
-        colorText: AppColors.textLight,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppToast.error('Error', e.detail);
     } on DioException catch (e) {
       final parsed = parseAuthError(e);
-      Get.snackbar(
+      AppToast.error(
         'Error',
         parsed?.detail ?? e.message ?? 'Failed to set password. Please try again.',
-        backgroundColor: AppColors.error,
-        colorText: AppColors.textLight,
-        snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
       isLoading.value = false;

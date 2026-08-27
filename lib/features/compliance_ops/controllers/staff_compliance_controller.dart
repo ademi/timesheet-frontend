@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/utils/name_sort.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
 import '../../engagements/data/models/engagement_models.dart';
@@ -259,14 +259,7 @@ class StaffComplianceController extends GetxController {
       incidentTitleCtrl.clear();
       incidentDescCtrl.clear();
       incidents.assignAll(await _repository.listIncidents());
-      Get.snackbar(
-        'Incident created',
-        'Recorded for compliance follow-up.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
-      );
+      AppToast.success('Incident created', 'Recorded for compliance follow-up.');
     } on AppFailure catch (e) {
       await BillingGate.showIfNeeded(e);
       incidentsError.value = e.message;

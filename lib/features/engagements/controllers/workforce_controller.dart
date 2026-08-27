@@ -11,6 +11,7 @@ import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
 import '../../../shared/utils/name_sort.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
 import '../../visits/data/models/roster_overlay_models.dart';
@@ -442,15 +443,11 @@ class WorkforceController extends GetxController {
           emailRequested: sendEmail,
         );
       } else {
-        Get.snackbar(
+        AppToast.success(
           result.isRegistrationInvite ? 'Invite created' : 'Engagement created',
           result.isRegistrationInvite
               ? 'Share the registration link with the contractor.'
               : 'Engagement created for this provider.',
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          backgroundColor: AppColors.primary,
-          colorText: AppColors.onPrimary,
         );
       }
       await load();
@@ -527,12 +524,7 @@ class WorkforceController extends GetxController {
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: inviteUrl));
               Get.back();
-              Get.snackbar(
-                'Copied',
-                inviteUrl,
-                snackPosition: SnackPosition.BOTTOM,
-                margin: const EdgeInsets.all(16),
-              );
+              AppToast.info('Copied', inviteUrl);
             },
             child: const Text('Copy link'),
           ),
@@ -590,13 +582,9 @@ class WorkforceController extends GetxController {
       } else {
         await load();
       }
-      Get.snackbar(
+      AppToast.success(
         'Updated',
         'Engagement is now ${updated.status}.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
       );
     } on AppFailure catch (e) {
       _setError(e.message);

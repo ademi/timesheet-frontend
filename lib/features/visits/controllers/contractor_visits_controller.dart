@@ -3,9 +3,9 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
 import '../data/models/visit_models.dart';
@@ -221,14 +221,7 @@ class ContractorVisitsController extends GetxController {
       );
       submittedTemplateIds.add(req.formTemplateId);
       await refreshSelected();
-      Get.snackbar(
-        'Form submitted',
-        req.name ?? req.formTemplateId,
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
-      );
+      AppToast.success('Form submitted', req.name ?? req.formTemplateId);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -276,14 +269,7 @@ class ContractorVisitsController extends GetxController {
       );
       selected.value = visit.copyWith(status: result.status);
       await refreshSelected();
-      Get.snackbar(
-        'Checked in',
-        'Visit is now ${result.status}.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
-      );
+      AppToast.success('Checked in', 'Visit is now ${result.status}.');
     } on VisitLocationException catch (e) {
       errorMessage.value = e.message;
     } on AppFailure catch (e) {
@@ -316,14 +302,7 @@ class ContractorVisitsController extends GetxController {
         completedAt: result.completedAt,
       );
       await refreshSelected();
-      Get.snackbar(
-        'Completed',
-        'Visit marked completed.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        backgroundColor: AppColors.primary,
-        colorText: AppColors.onPrimary,
-      );
+      AppToast.success('Completed', 'Visit marked completed.');
     } on VisitLocationException catch (e) {
       errorMessage.value = e.message;
     } on AppFailure catch (e) {

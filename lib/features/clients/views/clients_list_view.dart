@@ -6,6 +6,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/models/profile_photo_models.dart';
 import '../../../shared/utils/external_url.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/clients_controller.dart';
@@ -129,12 +130,7 @@ class _ClientCard extends StatelessWidget {
                 ),
                 onLongPress: () async {
                   await Clipboard.setData(ClipboardData(text: address));
-                  Get.snackbar(
-                    'Copied',
-                    address,
-                    snackPosition: SnackPosition.BOTTOM,
-                    margin: const EdgeInsets.all(16),
-                  );
+                  AppToast.info('Copied', address);
                 },
                 child: Row(
                   children: [
@@ -163,12 +159,7 @@ class _ClientCard extends StatelessWidget {
             ? null
             : () async {
                 await Clipboard.setData(ClipboardData(text: address));
-                Get.snackbar(
-                  'Copied',
-                  address,
-                  snackPosition: SnackPosition.BOTTOM,
-                  margin: const EdgeInsets.all(16),
-                );
+                AppToast.info('Copied', address);
               },
       ),
     );

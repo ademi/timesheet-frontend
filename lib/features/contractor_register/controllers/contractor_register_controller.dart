@@ -4,8 +4,8 @@ import 'package:get/get.dart';
 
 import '../../../core/constants/feature_flags.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../app/routes/app_routes.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../features/contractor_onboarding/data/onboarding_progress_store.dart';
 import '../data/models/contractor_register_models.dart';
 import '../data/repositories/contractor_register_repository.dart';
@@ -140,14 +140,9 @@ class ContractorRegisterController extends GetxController {
       // Mark platform compliance complete locally so the onboarding funnel
       // is not shown again when they log in on this device.
       await OnboardingProgressStore().markPlatformComplete(response.contractorId);
-      Get.snackbar(
+      AppToast.success(
         'Account created',
         'Sign in with your new contractor account.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: AppColors.success,
-        colorText: AppColors.textLight,
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 4),
       );
       Get.offAllNamed(AppRoutes.login);
     } on AppFailure catch (e) {
@@ -161,19 +156,8 @@ class ContractorRegisterController extends GetxController {
 
   void goToLogin() => Get.offNamed(AppRoutes.login);
 
-  void _showError(String message) {
-    Get.snackbar(
-      'Registration failed',
-      message,
-      backgroundColor: AppColors.error,
-      colorText: AppColors.textLight,
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 5),
-      icon: const Icon(Icons.error_rounded, color: Colors.white),
-    );
-  }
+  void _showError(String message) =>
+      AppToast.error('Registration failed', message, duration: const Duration(seconds: 5));
 
   @override
   void onClose() {

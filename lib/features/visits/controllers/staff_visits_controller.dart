@@ -5,11 +5,11 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/time/tenant_civil_time.dart';
 import '../../../shared/utils/name_sort.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../clients/data/repositories/clients_repository.dart';
@@ -351,13 +351,9 @@ class StaffVisitsController extends GetxController {
     if (created <= 0) return;
     horizonSnackCount++;
     if (Get.testMode) return;
-    Get.snackbar(
+    AppToast.success(
       'Roster updated',
       '$created new time${created == 1 ? '' : 's'} added.',
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
-      backgroundColor: AppColors.primary,
-      colorText: AppColors.onPrimary,
     );
   }
 
@@ -689,14 +685,7 @@ class StaffVisitsController extends GetxController {
       await load();
       lastReleaseSnack = 'Hole opened — eligible workers notified.';
       if (!Get.testMode) {
-        Get.snackbar(
-          'Released',
-          lastReleaseSnack!,
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          backgroundColor: AppColors.primary,
-          colorText: AppColors.onPrimary,
-        );
+        AppToast.success('Released', lastReleaseSnack!);
       }
     } on AppFailure catch (e) {
       final msg = e.code == 'invalid_visit_status'
@@ -705,14 +694,7 @@ class StaffVisitsController extends GetxController {
       errorMessage.value = msg;
       lastReleaseSnack = msg;
       if (!Get.testMode) {
-        Get.snackbar(
-          'Could not release',
-          msg,
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          backgroundColor: AppColors.error,
-          colorText: AppColors.onPrimary,
-        );
+        AppToast.error('Could not release', msg);
       }
     } finally {
       isSaving.value = false;

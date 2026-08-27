@@ -7,11 +7,11 @@ import '../../core/services/session_service.dart';
 import '../../features/billing/data/repositories/ndis_catalogue_repository.dart';
 import '../../features/compliance_ops/bindings/compliance_ops_binding.dart';
 import '../../features/contractor_onboarding/bindings/onboarding_binding.dart';
+import '../../shared/widgets/app_toast.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/repositories/auth_repository.dart';
 import '../routes/app_routes.dart';
 import '../services/push_notification_service.dart';
-import '../themes/app_colors.dart';
 
 void _clearNdisCatalogueCacheIfRegistered() {
   if (Get.isRegistered<NdisCatalogueRepository>()) {
@@ -34,19 +34,7 @@ class AuthController extends GetxController {
 
   void togglePasswordVisibility() => isPasswordVisible.toggle();
 
-  void _showError(String message) {
-    Get.snackbar(
-      'Error',
-      message,
-      backgroundColor: AppColors.error,
-      colorText: AppColors.textLight,
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 4),
-      icon: const Icon(Icons.error_rounded, color: Colors.white),
-    );
-  }
+  void _showError(String message) => AppToast.error('Error', message);
 
   Future<void> login() async {
     if (!formKey.currentState!.validate()) return;

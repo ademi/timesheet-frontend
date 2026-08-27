@@ -4,10 +4,10 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/utils/name_sort.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../contractor_onboarding/data/models/compliance_models.dart'
     as compliance;
 import '../../contractor_onboarding/data/repositories/compliance_repository.dart';
@@ -387,11 +387,9 @@ class CredentialsController extends GetxController {
         CredentialSupersedeRequest(noticeEventId: noticeEventId),
       );
       await load();
-      Get.snackbar(
+      AppToast.info(
         'Superseded',
         'A new credential row replaced the previous one.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
       );
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -431,14 +429,7 @@ class CredentialsController extends GetxController {
   }
 
   void _toast(String message) {
-    Get.snackbar(
-      'Credentials',
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
-      backgroundColor: AppColors.error,
-      colorText: AppColors.textLight,
-    );
+    AppToast.error('Credentials', message);
   }
 
   void showErrorToast() {

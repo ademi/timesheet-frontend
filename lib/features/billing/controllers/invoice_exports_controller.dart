@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
-import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../data/models/billing_models.dart';
@@ -185,14 +185,10 @@ class InvoiceExportsController extends GetxController {
       await loadAll();
       tabIndex.value = 0;
       if (!Get.testMode) {
-        Get.snackbar(
+        AppToast.success(
           'Export created',
           '${created.lineCount} line${created.lineCount == 1 ? '' : 's'} · '
           '${created.currencyCode} ${created.totalAmount.toStringAsFixed(2)}',
-          snackPosition: SnackPosition.BOTTOM,
-          margin: const EdgeInsets.all(16),
-          backgroundColor: AppColors.primary,
-          colorText: AppColors.onPrimary,
         );
       }
       openDetail(created);
