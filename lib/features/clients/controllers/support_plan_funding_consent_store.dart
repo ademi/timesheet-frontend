@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -73,14 +74,24 @@ class SupportPlanFundingConsentStore {
   ClientLegalUploadHelper get _legalHelper => ClientLegalUploadHelper(
         repository: _repository,
         pipeline: _pipeline,
-        pickPdfBytes: _pickPdfBytes ??
-            () async => throw const AppFailure(
-                  code: 'unknown',
-                  message: 'PDF picker is not configured.',
-                  presentation: AppFailurePresentation.inline,
-                ),
+        pickPdfBytes: _resolvePickPdfBytes,
         canUploadDocs: _canUploadDocs,
       );
+
+  Future<({String name, List<int> bytes})?> _resolvePickPdfBytes() async {
+    final override = _pickPdfBytes;
+    if (override != null) return override();
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return null;
+    final file = result.files.first;
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) return null;
+    return (name: file.name, bytes: bytes);
+  }
 
   void applyProfileBundle(ClientProfileBundle bundle) {
     _presentKeys
@@ -339,14 +350,9 @@ class SupportPlanFundingConsentStore {
 
   Future<bool> uploadNdisPlanPdf({required String clientId}) async {
     errorMessage.value = null;
-    final pick = _pickPdfBytes;
-    if (pick == null) {
-      errorMessage.value = 'PDF picker is not configured.';
-      return false;
-    }
     isBusy.value = true;
     try {
-      final bytes = await pick();
+      final bytes = await _resolvePickPdfBytes();
       if (bytes == null) {
         errorMessage.value = 'Select an NDIA plan PDF to upload.';
         return false;
