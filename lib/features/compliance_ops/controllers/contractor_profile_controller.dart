@@ -6,8 +6,11 @@ import '../../../app/data/models/document/document_models.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
+import '../../../shared/utils/abn_utils.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../documents/data/document_pipeline.dart';
+import '../../contractor_me/data/models/contractor_me_models.dart';
+import '../../contractor_me/data/repositories/contractor_me_repository.dart';
 import '../../subscription/billing_gate.dart';
 import '../data/models/compliance_ops_models.dart';
 import '../data/repositories/compliance_ops_repository.dart';
@@ -17,13 +20,16 @@ class ContractorProfileController extends GetxController {
     required ComplianceOpsRepository repository,
     required SessionService session,
     DocumentPipeline? documentPipeline,
+    ContractorMeRepository? meRepository,
   })  : _repository = repository,
         _session = session,
-        _pipeline = documentPipeline;
+        _pipeline = documentPipeline,
+        _meRepository = meRepository;
 
   final ComplianceOpsRepository _repository;
   final SessionService _session;
   final DocumentPipeline? _pipeline;
+  final ContractorMeRepository? _meRepository;
 
   final isSaving = false.obs;
   final isLoading = false.obs;
@@ -32,6 +38,7 @@ class ContractorProfileController extends GetxController {
   final lastRights = Rxn<RightsRequestOut>();
   final lastExport = Rxn<PrivacyExportResult>();
   final events = <NotificationEventOut>[].obs;
+  final profile = Rxn<ContractorMeOut>();
 
   final photo = Rxn<ProfilePhotoOut>();
   final localPhotoBytes = Rxn<List<int>>();
@@ -39,6 +46,11 @@ class ContractorProfileController extends GetxController {
   final rightsNotesCtrl = TextEditingController();
   final rightsType = 'access'.obs;
   final withdrawTypeCtrl = TextEditingController(text: 'police_check');
+  final abnCtrl = TextEditingController();
+  final accountNameCtrl = TextEditingController();
+  final bsbCtrl = TextEditingController();
+  final accountNumberCtrl = TextEditingController();
+  final profileFormKey = GlobalKey<FormState>();
 
   bool get canConsent =>
       _session.hasPermission(AppPermissions.complianceConsentManage);
@@ -48,18 +60,88 @@ class ContractorProfileController extends GetxController {
       _pipeline != null &&
       (_session.contractorId.value?.isNotEmpty ?? false);
 
+  bool get canEditProfile => _meRepository != null;
+
   @override
   void onInit() {
     super.onInit();
     _loadEvents();
     loadProfilePhoto();
+    loadProfile();
   }
 
   @override
   void onClose() {
     rightsNotesCtrl.dispose();
     withdrawTypeCtrl.dispose();
+    abnCtrl.dispose();
+    accountNameCtrl.dispose();
+    bsbCtrl.dispose();
+    accountNumberCtrl.dispose();
     super.onClose();
+  }
+
+  Future<void> loadProfile() async {
+    final meRepo = _meRepository;
+    if (meRepo == null) return;
+    try {
+      final me = await meRepo.getMe();
+      profile.value = me;
+      abnCtrl.text = me.abn ?? '';
+      final payment = me.paymentDetails;
+      if (payment != null) {
+        accountNameCtrl.text = payment.accountName;
+        bsbCtrl.text = payment.bsb;
+      }
+      _session.needsProfileCompletion.value = !me.isProfileComplete;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (_) {}
+  }
+
+  Future<void> saveBusinessDetails() async {
+    final meRepo = _meRepository;
+    if (meRepo == null) return;
+    if (!(profileFormKey.currentState?.validate() ?? false)) return;
+
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final abn = AbnUtils.normalizeOrNull(abnCtrl.text);
+      var me = await meRepo.patchMe(abn: abn);
+
+      final name = accountNameCtrl.text.trim();
+      final bsb = AbnUtils.digitsOnly(bsbCtrl.text);
+      final account = AbnUtils.digitsOnly(accountNumberCtrl.text);
+      final anyPayment = name.isNotEmpty || bsb.isNotEmpty || account.isNotEmpty;
+      if (anyPayment) {
+        if (name.isEmpty || bsb.isEmpty || account.isEmpty) {
+          errorMessage.value =
+              'To save payment details, fill account name, BSB, and account number.';
+          return;
+        }
+        me = await meRepo.putPaymentDetails(
+          ContractorPaymentDetailsIn(
+            accountName: name,
+            bsb: bsb,
+            accountNumber: account,
+          ),
+        );
+        accountNumberCtrl.clear();
+      }
+
+      profile.value = me;
+      _session.needsProfileCompletion.value = !me.isProfileComplete;
+      AppToast.success('Saved', 'Business details updated.');
+    } on FormatException catch (e) {
+      errorMessage.value = e.message;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isSaving.value = false;
+    }
   }
 
   Future<void> _loadEvents() async {

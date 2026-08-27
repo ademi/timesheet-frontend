@@ -8,6 +8,8 @@ class ContractorRegisterRequest {
     required this.privacyVersion,
     this.phone,
     this.dob,
+    this.abn,
+    this.paymentDetails,
     this.inviteToken,
   });
 
@@ -18,6 +20,8 @@ class ContractorRegisterRequest {
 
   /// ISO date `YYYY-MM-DD` when set.
   final String? dob;
+  final String? abn;
+  final ContractorRegisterPaymentDetails? paymentDetails;
   final String? inviteToken;
   final String termsVersion;
   final String privacyVersion;
@@ -28,10 +32,30 @@ class ContractorRegisterRequest {
     'password': password,
     if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
     if (dob != null && dob!.isNotEmpty) 'dob': dob,
+    if (abn != null && abn!.isNotEmpty) 'abn': abn,
+    if (paymentDetails != null) 'payment_details': paymentDetails!.toJson(),
     if (inviteToken != null && inviteToken!.trim().isNotEmpty)
       'invite_token': inviteToken!.trim(),
     'terms_version': termsVersion,
     'privacy_version': privacyVersion,
+  };
+}
+
+class ContractorRegisterPaymentDetails {
+  const ContractorRegisterPaymentDetails({
+    required this.accountName,
+    required this.bsb,
+    required this.accountNumber,
+  });
+
+  final String accountName;
+  final String bsb;
+  final String accountNumber;
+
+  Map<String, dynamic> toJson() => {
+    'account_name': accountName,
+    'bsb': bsb,
+    'account_number': accountNumber,
   };
 }
 

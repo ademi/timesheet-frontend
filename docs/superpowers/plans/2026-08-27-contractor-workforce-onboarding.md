@@ -1,6 +1,6 @@
 # Contractor / Workforce Onboarding — Product & Engineering Plan
 
-> **Status:** Phase 0 locked · **Phase 1 in progress**.  
+> **Status:** Phase 0 locked · Phase 1 done · **Phase 2 done — waiting for green light for Phase 3**.  
 > **Rule:** Implement **one phase at a time**. After each phase, stop and wait for explicit approval before starting the next.  
 > **Repos:** Frontend `timesheet-frontend` · Backend `…/flutter backend/timesheet/timesheet-backend` · DB `…/timesheet-db`
 
@@ -275,19 +275,20 @@ Each phase: **backend + db (if needed) → frontend → smoke test → STOP for 
 
 **Backend / DB**
 
-- [ ] ABN on register or immediate post-register profile (validate format); persist (profile column **or** auto-create `abn` credential from field — pick one, prefer single source of truth).
-- [ ] Remove ABN from default “required docs” expectations where product wants it on form only (tenant required-categories may still list it until seed/UI updated).
-- [ ] New storage for optional payment details (e.g. `workforce.contractor_payment_details` with encrypted account number / BSB).
-- [ ] APIs: patch on register completion or `PATCH /v1/contractor-me` + payment endpoints.
-- [ ] Seeds/migrations in `timesheet-db`.
+- [x] ABN on register / `PATCH /v1/contractor-me` as profile field (`workforce.contractors.abn`) — not credential upsert.
+- [x] `workforce.contractor_payment_details` with encrypted account number (Fernet reuse).
+- [x] `PUT/DELETE /v1/contractor-me/payment-details`; payment nested on `ContractorOut`.
+- [x] ABN excluded from credential category catalog used by invite chips.
+- [x] Migration `V039__contractor_abn_and_payment.sql` in `timesheet-db`.
 
 **Frontend**
 
-- [ ] Extend register and/or add **Complete your account** wizard: ABN, optional payment, confirm contact.
-- [ ] Copy/UX for incomplete profile banner until complete.
-- [ ] Stop treating ABN as a normal “required doc chip” in invite defaults (if product agrees).
+- [x] Register form: optional ABN + optional payment fields.
+- [x] Complete your account screen (`/contractor/complete-account`) + post-login redirect when ABN missing.
+- [x] Home banner + Profile business details editor.
+- [x] ABN removed from invite required-doc allowlist / catalog.
 
-**Green light gate:** New contractor can set ABN + optional bank details without using credentials UI for ABN.
+**Green light gate:** New contractor can set ABN + optional bank details without using credentials UI for ABN. **← waiting for your OK before Phase 3.**
 
 ---
 

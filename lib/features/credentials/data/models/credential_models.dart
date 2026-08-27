@@ -13,7 +13,6 @@ const credentialTypesAllowlist = <String>[
   'cpr',
   'infection_control',
   'worker_orientation',
-  'abn',
   'resume',
   'cert_iii',
   'nursing_bachelor',

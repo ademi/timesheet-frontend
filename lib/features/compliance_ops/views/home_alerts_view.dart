@@ -73,6 +73,8 @@ class HomeAlertsController extends GetxController {
   bool get isStaff => _session.isStaff;
   bool get isContractor => _session.isContractor;
   bool get shouldShowDocsBanner => !isStaff && _session.needsDocsAttention;
+  bool get shouldShowProfileBanner =>
+      !isStaff && _session.needsProfileCompletion.value;
   bool get canViewBilling =>
       isStaff &&
       (_session.hasPermission(AppPermissions.subscriptionView) ||
@@ -457,6 +459,24 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+              if (controller.shouldShowProfileBanner) ...[
+                MaterialBanner(
+                  content: const Text(
+                    'Complete your account — add your ABN so providers can '
+                    'verify and pay you.',
+                  ),
+                  leading: const Icon(Icons.badge_outlined),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                  actions: [
+                    TextButton(
+                      onPressed: () =>
+                          Get.toNamed(AppRoutes.contractorCompleteAccount),
+                      child: const Text('Complete account'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
               if (controller.shouldShowDocsBanner) ...[
                 MaterialBanner(
                   content: const Text(

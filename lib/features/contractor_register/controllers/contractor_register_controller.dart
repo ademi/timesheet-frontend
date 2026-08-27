@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../core/constants/feature_flags.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../shared/utils/abn_utils.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../features/contractor_onboarding/data/onboarding_progress_store.dart';
@@ -29,6 +30,10 @@ class ContractorRegisterController extends GetxController {
   final passwordController = TextEditingController();
   final phoneController = TextEditingController();
   final dobController = TextEditingController();
+  final abnController = TextEditingController();
+  final accountNameController = TextEditingController();
+  final bsbController = TextEditingController();
+  final accountNumberController = TextEditingController();
 
   final isLoading = false.obs;
   final isInviteLoading = false.obs;
@@ -124,6 +129,43 @@ class ContractorRegisterController extends GetxController {
     try {
       final phone = phoneController.text.trim();
       final dob = dobController.text.trim();
+      String? abn;
+      try {
+        abn = AbnUtils.normalizeOrNull(abnController.text);
+      } on FormatException catch (e) {
+        _showError(e.message);
+        return;
+      }
+
+      ContractorRegisterPaymentDetails? payment;
+      final accountName = accountNameController.text.trim();
+      final bsb = AbnUtils.digitsOnly(bsbController.text);
+      final accountNumber = AbnUtils.digitsOnly(accountNumberController.text);
+      final anyPayment =
+          accountName.isNotEmpty || bsb.isNotEmpty || accountNumber.isNotEmpty;
+      if (anyPayment) {
+        if (accountName.isEmpty || bsb.isEmpty || accountNumber.isEmpty) {
+          _showError(
+            'To save payment details, fill account name, BSB, and account number.',
+          );
+          return;
+        }
+        final bsbErr = AbnUtils.bsbValidator(bsb, required: true);
+        final acctErr = AbnUtils.accountNumberValidator(
+          accountNumber,
+          required: true,
+        );
+        if (bsbErr != null || acctErr != null) {
+          _showError(bsbErr ?? acctErr!);
+          return;
+        }
+        payment = ContractorRegisterPaymentDetails(
+          accountName: accountName,
+          bsb: bsb,
+          accountNumber: accountNumber,
+        );
+      }
+
       final response = await _repository.register(
         ContractorRegisterRequest(
           fullName: fullNameController.text.trim(),
@@ -131,6 +173,8 @@ class ContractorRegisterController extends GetxController {
           password: passwordController.text,
           phone: phone.isEmpty ? null : phone,
           dob: dob.isEmpty ? null : dob,
+          abn: abn,
+          paymentDetails: payment,
           inviteToken: _inviteToken,
           termsVersion: termsVersion,
           privacyVersion: privacyVersion,
@@ -166,6 +210,10 @@ class ContractorRegisterController extends GetxController {
     passwordController.dispose();
     phoneController.dispose();
     dobController.dispose();
+    abnController.dispose();
+    accountNameController.dispose();
+    bsbController.dispose();
+    accountNumberController.dispose();
     super.onClose();
   }
 }

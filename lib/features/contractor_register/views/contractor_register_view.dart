@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/breakpoints.dart';
 import '../../../core/responsive/max_width_box.dart';
+import '../../../shared/utils/abn_utils.dart';
 import '../../../shared/widgets/markdown_viewer.dart';
 import '../controllers/contractor_register_controller.dart';
 
@@ -158,6 +159,79 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                       readOnly: true,
                       hint: 'YYYY-MM-DD',
                       onTap: () => controller.pickDob(context),
+                    ),
+                    const SizedBox(height: 12),
+                    _field(
+                      controller: controller.abnController,
+                      label: 'ABN (optional)',
+                      icon: Icons.apartment_outlined,
+                      keyboardType: TextInputType.number,
+                      hint: '11 digits',
+                      validator: (v) => AbnUtils.formValidator(v),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Payment details (optional)',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Account name, BSB, and account number for payouts.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _field(
+                      controller: controller.accountNameController,
+                      label: 'Account name',
+                      icon: Icons.person_outline,
+                    ),
+                    const SizedBox(height: 12),
+                    _field(
+                      controller: controller.bsbController,
+                      label: 'BSB',
+                      icon: Icons.account_balance_outlined,
+                      keyboardType: TextInputType.number,
+                      hint: '6 digits',
+                      validator: (v) {
+                        final name =
+                            controller.accountNameController.text.trim();
+                        final account = AbnUtils.digitsOnly(
+                          controller.accountNumberController.text,
+                        );
+                        final any = name.isNotEmpty ||
+                            AbnUtils.digitsOnly(v).isNotEmpty ||
+                            account.isNotEmpty;
+                        if (!any) return null;
+                        return AbnUtils.bsbValidator(v, required: true);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _field(
+                      controller: controller.accountNumberController,
+                      label: 'Account number',
+                      icon: Icons.pin_outlined,
+                      keyboardType: TextInputType.number,
+                      validator: (v) {
+                        final name =
+                            controller.accountNameController.text.trim();
+                        final bsb = AbnUtils.digitsOnly(
+                          controller.bsbController.text,
+                        );
+                        final any = name.isNotEmpty ||
+                            bsb.isNotEmpty ||
+                            AbnUtils.digitsOnly(v).isNotEmpty;
+                        if (!any) return null;
+                        return AbnUtils.accountNumberValidator(
+                          v,
+                          required: true,
+                        );
+                      },
                     ),
                     const SizedBox(height: 24),
                     Obx(() {
