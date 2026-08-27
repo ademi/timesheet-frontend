@@ -512,4 +512,44 @@ void main() {
       ),
     );
   });
+
+  test('hydrateFromClient prefills Identity, sets client, step 0', () {
+    c.step.value = 4;
+    c.hydrateFromClient(_fakeClient);
+
+    expect(c.client.value?.id, 'client-1');
+    expect(c.fullName.text, 'Sam Parent');
+    expect(c.email.text, 'sam@example.com');
+    expect(c.phone.text, '+61411111111');
+    expect(c.dob.value, DateTime(2015, 1, 1));
+    expect(c.step.value, 0);
+  });
+
+  test('submitIdentity after hydrate patches instead of creates', () async {
+    when(() => mock.patchClient(any(), any())).thenAnswer((_) async => _fakeClient);
+    when(() => mock.upsertProfileFact(any(), any(), any()))
+        .thenAnswer((_) async {});
+
+    c.hydrateFromClient(_fakeClient);
+    c.dob.value = DateTime(1990, 5, 1);
+    c.ndisCtrl.text = '430118201';
+
+    expect(await c.submitIdentity(), isTrue);
+    verify(() => mock.patchClient('client-1', any())).called(1);
+    verifyNever(() => mock.createClient(any()));
+  });
+
+  test('onPlanStartPicked defaults end to start + 1 year when end is null', () {
+    final start = DateTime(2026, 3, 15);
+    c.onPlanStartPicked(start);
+    expect(c.planStartDate.value, start);
+    expect(c.planEndDate.value, DateTime(2027, 3, 15));
+  });
+
+  test('onPlanStartPicked does not overwrite an existing plan end', () {
+    final existingEnd = DateTime(2026, 12, 1);
+    c.planEndDate.value = existingEnd;
+    c.onPlanStartPicked(DateTime(2026, 3, 15));
+    expect(c.planEndDate.value, existingEnd);
+  });
 }

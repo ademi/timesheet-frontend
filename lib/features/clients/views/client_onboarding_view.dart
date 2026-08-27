@@ -89,25 +89,48 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                     final isLast =
                         controller.step.value ==
                         ClientOnboardingController.maxStep;
-                    return Row(
+                    final skipCarer = controller.showSkipCarer;
+                    final skipNominee = controller.showSkipNominee;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (controller.step.value > 0)
-                          OutlinedButton(
+                        if (skipCarer)
+                          TextButton(
                             onPressed:
                                 controller.isSaving.value
                                     ? null
-                                    : controller.previousStep,
-                            child: const Text('Back'),
+                                    : controller.skipCarer,
+                            child: const Text('Skip carer'),
                           ),
-                        const Spacer(),
-                        AsyncElevatedButton(
-                          onPressed: controller.nextStep,
-                          isLoading: controller.isSaving.value,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.onPrimary,
+                        if (skipNominee)
+                          TextButton(
+                            onPressed:
+                                controller.isSaving.value
+                                    ? null
+                                    : controller.skipNominee,
+                            child: const Text('Skip nominee'),
                           ),
-                          child: Text(isLast ? 'Finish' : 'Next'),
+                        Row(
+                          children: [
+                            if (controller.step.value > 0)
+                              OutlinedButton(
+                                onPressed:
+                                    controller.isSaving.value
+                                        ? null
+                                        : controller.previousStep,
+                                child: const Text('Back'),
+                              ),
+                            const Spacer(),
+                            AsyncElevatedButton(
+                              onPressed: controller.nextStep,
+                              isLoading: controller.isSaving.value,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.onPrimary,
+                              ),
+                              child: Text(isLast ? 'Finish' : 'Next'),
+                            ),
+                          ],
                         ),
                       ],
                     );

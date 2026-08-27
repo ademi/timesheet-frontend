@@ -277,6 +277,10 @@ class ClientsController extends GetxController
     Get.toNamed(AppRoutes.staffClientOnboarding);
   }
 
+  Future<void> openResumeOnboarding(ClientOut c) async {
+    Get.toNamed(AppRoutes.staffClientOnboarding, arguments: c);
+  }
+
   Future<void> openEdit(ClientOut client) async {
     isCreateFlow.value = false;
     createStepIndex.value = 0;

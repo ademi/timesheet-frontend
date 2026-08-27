@@ -63,13 +63,6 @@ class OnboardingRepresentativeStep extends StatelessWidget {
               isLoading: controller.isSaving.value,
               child: Text(required ? 'Save child representative' : 'Save nominee'),
             ),
-            if (!required) ...[
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: controller.skipNominee,
-                child: const Text('Skip nominee'),
-              ),
-            ],
           ],
         ],
       );

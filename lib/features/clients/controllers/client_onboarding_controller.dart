@@ -195,6 +195,18 @@ class ClientOnboardingController extends GetxController
       ? 'Child representative'
       : 'Nominee (optional)';
 
+  bool get showSkipCarer =>
+      step.value == 3 &&
+      emergencySaved.value &&
+      !carerSaved.value &&
+      contactDraftMode.value == 'carer';
+
+  bool get showSkipNominee =>
+      step.value == 4 &&
+      nomineeOptional &&
+      !representativeSaved.value &&
+      !nomineeSkipped.value;
+
   @override
   void onInit() {
     super.onInit();
@@ -202,6 +214,29 @@ class ClientOnboardingController extends GetxController
     contactRelationshipPreset.value = OnboardingKeys.relEmergency;
     contactDraftMode.value = 'emergency';
     loadFormTemplates();
+    final args = Get.arguments;
+    if (args is ClientOut) {
+      hydrateFromClient(args);
+    }
+  }
+
+  /// CR3 minimum resume: set client/id, prefill Identity from [ClientOut],
+  /// step 0. Full funding/contacts hydrate is a follow-up.
+  void hydrateFromClient(ClientOut existing) {
+    client.value = existing;
+    fullName.text = existing.fullName;
+    email.text = existing.email ?? '';
+    phone.text = existing.phone ?? '';
+    final rawDob = existing.dob?.trim();
+    dob.value = (rawDob == null || rawDob.isEmpty)
+        ? null
+        : DateTime.tryParse(rawDob);
+    step.value = 0;
+  }
+
+  void onPlanStartPicked(DateTime start) {
+    planStartDate.value = start;
+    planEndDate.value ??= DateTime(start.year + 1, start.month, start.day);
   }
 
   @override
@@ -747,6 +782,10 @@ class ClientOnboardingController extends GetxController
 
     if (step.value == 4) step.value = 5;
     return true;
+  }
+
+  void skipCarer() {
+    beginMoreContactDraft();
   }
 
   void skipNominee() {

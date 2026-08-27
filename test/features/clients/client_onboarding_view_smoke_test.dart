@@ -69,4 +69,55 @@ void main() {
     );
     expect(find.text('Next'), findsOneWidget);
   });
+
+  testWidgets('Skip carer sits in footer above Next, not in ListView', (
+    tester,
+  ) async {
+    final c = Get.find<ClientOnboardingController>();
+    c.step.value = 3;
+    c.emergencySaved.value = true;
+    c.beginCarerDraft();
+
+    await tester.pumpWidget(const GetMaterialApp(home: ClientOnboardingView()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Skip carer'), findsOneWidget);
+    expect(find.text('Next'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.text('Skip carer'),
+      ),
+      findsNothing,
+    );
+    expect(
+      tester.getTopLeft(find.text('Skip carer')).dy,
+      lessThan(tester.getTopLeft(find.text('Next')).dy),
+    );
+  });
+
+  testWidgets('Skip nominee sits in footer above Next, not in ListView', (
+    tester,
+  ) async {
+    final c = Get.find<ClientOnboardingController>();
+    c.dob.value = DateTime(1990, 1, 1);
+    c.step.value = 4;
+
+    await tester.pumpWidget(const GetMaterialApp(home: ClientOnboardingView()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Skip nominee'), findsOneWidget);
+    expect(find.text('Next'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.text('Skip nominee'),
+      ),
+      findsNothing,
+    );
+    expect(
+      tester.getTopLeft(find.text('Skip nominee')).dy,
+      lessThan(tester.getTopLeft(find.text('Next')).dy),
+    );
+  });
 }

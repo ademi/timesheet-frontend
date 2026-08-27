@@ -145,4 +145,26 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('incomplete client shows amber banner and Continue onboarding', (
+    tester,
+  ) async {
+    final incomplete = ClientOut(
+      id: 'client-incomplete',
+      tenantId: 'tenant-1',
+      fullName: 'Incomplete Client',
+      status: 'active',
+      email: 'incomplete@example.com',
+      metadata: const {'onboarding_incomplete': true},
+      createdAt: _now,
+      updatedAt: _now,
+    );
+    controller.selected.value = incomplete;
+
+    await tester.pumpWidget(const GetMaterialApp(home: ClientDetailView()));
+    await tester.pump();
+
+    expect(find.text('Continue onboarding'), findsOneWidget);
+    expect(find.text('Onboarding incomplete'), findsOneWidget);
+  });
 }

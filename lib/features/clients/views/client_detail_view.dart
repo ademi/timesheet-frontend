@@ -117,6 +117,14 @@ class ClientDetailView extends GetView<ClientsController> {
                       ),
                     ),
                   ],
+                  if (ClientsController.isOnboardingIncomplete(client)) ...[
+                    const SizedBox(height: 12),
+                    _IncompleteOnboardingBanner(
+                      onContinue: controller.canManage
+                          ? () => controller.openResumeOnboarding(client)
+                          : null,
+                    ),
+                  ],
                   if (controller.showNdisCapturePrompt) ...[
                     const SizedBox(height: 12),
                     NdisCapturePrompt(
@@ -220,5 +228,51 @@ class ClientDetailView extends GetView<ClientsController> {
       default:
         return ClientDetailFactsSection(facts: controller.quickFacts);
     }
+  }
+}
+
+class _IncompleteOnboardingBanner extends StatelessWidget {
+  const _IncompleteOnboardingBanner({this.onContinue});
+
+  final VoidCallback? onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.openSlotBackground,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.openSlot),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Onboarding incomplete',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: AppColors.openSlot,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Finish adding this participant\'s details to complete setup.',
+            style: TextStyle(fontSize: 13),
+          ),
+          if (onContinue != null) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: onContinue,
+                child: const Text('Continue onboarding'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

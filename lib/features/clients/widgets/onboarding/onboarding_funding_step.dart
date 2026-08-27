@@ -92,7 +92,7 @@ class OnboardingFundingStep extends StatelessWidget {
                 firstDate: DateTime(2013),
                 lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
               );
-              if (picked != null) controller.planStartDate.value = picked;
+              if (picked != null) controller.onPlanStartPicked(picked);
             },
           ),
           ListTile(

@@ -78,13 +78,6 @@ class OnboardingContactsStep extends StatelessWidget {
                 isLoading: controller.isSaving.value,
                 child: const Text('Save carer'),
               ),
-              TextButton(
-                onPressed: () {
-                  controller.contactDraftMode.value = 'more';
-                  controller.beginMoreContactDraft();
-                },
-                child: const Text('Skip carer'),
-              ),
             ] else if (mode == 'more') ...[
               ContactFormFields(controller: controller),
               const SizedBox(height: 12),
