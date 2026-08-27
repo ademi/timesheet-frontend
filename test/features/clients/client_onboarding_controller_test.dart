@@ -365,6 +365,152 @@ void main() {
     expect(c.errorMessage.value, contains('emergency'));
   });
 
+  test('saveContactDraft sends kinship mother with isEmergency', () async {
+    ClientContactWriteRequest? captured;
+    when(() => mock.createContact(any(), any())).thenAnswer((inv) async {
+      captured = inv.positionalArguments[1] as ClientContactWriteRequest;
+      return ClientContactOut(
+        id: 'c-mother',
+        tenantId: 'tenant-1',
+        clientId: 'client-1',
+        name: captured!.name,
+        phone: captured!.phone,
+        relationship: captured!.relationship,
+        isPrimary: captured!.isPrimary ?? false,
+        notifyVisitComplete: captured!.notifyVisitComplete ?? false,
+        isEmergency: captured!.isEmergency ?? false,
+      );
+    });
+
+    c.client.value = _fakeClient;
+    c.contactNameCtrl.text = 'Jane Mother';
+    c.contactPhoneCtrl.text = '+61400000011';
+    c.contactRelationshipPreset.value = 'mother';
+    c.contactIsEmergency.value = true;
+
+    expect(await c.saveContactDraft(), isTrue);
+    expect(captured!.relationship, 'mother');
+    expect(captured!.isEmergency, isTrue);
+    expect(c.emergencySaved.value, isTrue);
+  });
+
+  test('submitContacts rejects when saved contacts have no isEmergency',
+      () async {
+    c.client.value = _fakeClient;
+    c.step.value = 3;
+    c.contactsCreated.add(
+      const ClientContactOut(
+        id: 'c-friend',
+        tenantId: 'tenant-1',
+        clientId: 'client-1',
+        name: 'Alex Friend',
+        relationship: 'friend',
+        isPrimary: false,
+        notifyVisitComplete: false,
+      ),
+    );
+    expect(await c.submitContacts(), isFalse);
+    expect(c.errorMessage.value, contains('emergency'));
+    expect(c.step.value, 3);
+  });
+
+  test('nominee also-emergency creates one contact with role and flag',
+      () async {
+    ClientContactWriteRequest? captured;
+    when(() => mock.createContact(any(), any())).thenAnswer((inv) async {
+      captured = inv.positionalArguments[1] as ClientContactWriteRequest;
+      return ClientContactOut(
+        id: 'c-nom',
+        tenantId: 'tenant-1',
+        clientId: 'client-1',
+        name: captured!.name,
+        phone: captured!.phone,
+        relationship: captured!.relationship,
+        isPrimary: captured!.isPrimary ?? false,
+        notifyVisitComplete: captured!.notifyVisitComplete ?? false,
+        isEmergency: captured!.isEmergency ?? false,
+      );
+    });
+
+    c.client.value = _fakeClient;
+    c.dob.value = DateTime(2000, 1, 1);
+    c.contactNameCtrl.text = 'Pat Nominee';
+    c.contactPhoneCtrl.text = '+61400000033';
+    c.contactRelationshipPreset.value = OnboardingKeys.relNominee;
+    c.contactIsEmergency.value = true;
+
+    expect(await c.saveContactDraft(), isTrue);
+    expect(captured!.relationship, OnboardingKeys.relNominee);
+    expect(captured!.isEmergency, isTrue);
+    expect(c.representativeSaved.value, isTrue);
+  });
+
+  test('useExistingAsEmergency patches isEmergency true', () async {
+    when(() => mock.patchContact(any(), any(), any())).thenAnswer((inv) async {
+      final body = inv.positionalArguments[2] as ClientContactWriteRequest;
+      return ClientContactOut(
+        id: 'c-existing',
+        tenantId: 'tenant-1',
+        clientId: 'client-1',
+        name: 'Jane Mother',
+        relationship: 'mother',
+        isPrimary: false,
+        notifyVisitComplete: false,
+        isEmergency: body.isEmergency ?? false,
+      );
+    });
+
+    c.client.value = _fakeClient;
+    c.contactsCreated.add(
+      const ClientContactOut(
+        id: 'c-existing',
+        tenantId: 'tenant-1',
+        clientId: 'client-1',
+        name: 'Jane Mother',
+        relationship: 'mother',
+        isPrimary: false,
+        notifyVisitComplete: false,
+      ),
+    );
+
+    expect(await c.useExistingAsEmergency('c-existing'), isTrue);
+    final body = verify(
+      () => mock.patchContact('client-1', 'c-existing', captureAny()),
+    ).captured.single as ClientContactWriteRequest;
+    expect(body.isEmergency, isTrue);
+    expect(body.toJson().containsKey('is_primary'), isFalse);
+    expect(c.contactsCreated.single.isEmergency, isTrue);
+    expect(c.emergencySaved.value, isTrue);
+  });
+
+  test('carer kinship does not lock a legal representative role', () async {
+    when(() => mock.createContact(any(), any())).thenAnswer((inv) async {
+      final body = inv.positionalArguments[1] as ClientContactWriteRequest;
+      return ClientContactOut(
+        id: 'c-carer',
+        tenantId: 'tenant-1',
+        clientId: 'client-1',
+        name: body.name,
+        phone: body.phone,
+        relationship: body.relationship,
+        isPrimary: body.isPrimary ?? false,
+        notifyVisitComplete: body.notifyVisitComplete ?? false,
+        isEmergency: body.isEmergency ?? false,
+      );
+    });
+
+    c.client.value = _fakeClient;
+    c.contactNameCtrl.text = 'Kim Carer';
+    c.contactPhoneCtrl.text = '+61400000044';
+    c.contactRelationshipPreset.value = OnboardingKeys.relCarer;
+    c.contactIsEmergency.value = true;
+
+    expect(await c.saveContactDraft(), isTrue);
+    expect(c.carerSaved.value, isTrue);
+    expect(c.emergencySaved.value, isTrue);
+    expect(c.representativeSaved.value, isFalse);
+  });
+
   test('submitRepresentative blocks under-18 without child rep', () async {
     c.client.value = _fakeClient;
     c.dob.value = DateTime(2015, 1, 1);

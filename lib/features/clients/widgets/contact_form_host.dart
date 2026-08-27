@@ -7,11 +7,30 @@ import '../utils/onboarding_keys.dart';
 abstract class ContactFormHost {
   static const relationshipOtherKey = '_other';
 
-  static const relationshipPresets = <String, String>{
-    OnboardingKeys.relEmergency: 'Emergency',
-    OnboardingKeys.relCarer: 'Carer',
+  /// Kinship labels for Contacts (D1=A). Emergency is a flag, not a preset.
+  static const kinshipPresets = <String, String>{
+    'mother': 'Mother',
+    'father': 'Father',
+    'son': 'Son',
+    'daughter': 'Daughter',
+    'sibling': 'Sibling',
+    'spouse': 'Spouse / partner',
+    'friend': 'Friend',
+    'neighbour': 'Neighbour',
+    'carer': 'Carer', // CR5: kinship label only here; nominee step uses legalRolePresets
+    'other': 'Other',
+  };
+
+  /// Legal roles for the representative step only.
+  static const legalRolePresets = <String, String>{
     OnboardingKeys.relChildRepresentative: 'Child representative',
     OnboardingKeys.relNominee: 'Nominee',
+  };
+
+  /// Combined labels for list/detail display (not the Contacts dropdown).
+  static const relationshipPresets = <String, String>{
+    ...kinshipPresets,
+    ...legalRolePresets,
   };
 
   TextEditingController get contactNameCtrl;
@@ -21,6 +40,7 @@ abstract class ContactFormHost {
 
   RxnString get contactRelationshipPreset;
   RxBool get contactIsPrimary;
+  RxBool get contactIsEmergency;
 
   String? get resolvedContactRelationship {
     final preset = contactRelationshipPreset.value;

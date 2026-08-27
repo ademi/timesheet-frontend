@@ -19,6 +19,22 @@ void main() {
       expect(contact.notifyVisitComplete, isFalse);
     });
 
+    test('parses is_emergency from JSON', () {
+      final contact = ClientContactOut.fromJson({
+        'id': 'c1',
+        'tenant_id': 't1',
+        'client_id': 'cl1',
+        'name': 'Jane Mother',
+        'phone': '+61400000011',
+        'is_primary': false,
+        'notify_visit_complete': false,
+        'relationship': 'mother',
+        'is_emergency': true,
+      });
+      expect(contact.relationship, 'mother');
+      expect(contact.isEmergency, isTrue);
+    });
+
     test('relationship null when absent', () {
       final contact = ClientContactOut.fromJson({
         'id': 'c1',
@@ -28,6 +44,7 @@ void main() {
         'notify_visit_complete': true,
       });
       expect(contact.relationship, isNull);
+      expect(contact.isEmergency, isFalse);
     });
   });
 
@@ -41,6 +58,22 @@ void main() {
       );
       expect(body.toJson()['relationship'], 'carer');
       expect(body.toJson()['notify_visit_complete'], isFalse);
+    });
+
+    test('serializes is_emergency', () {
+      const body = ClientContactWriteRequest(
+        name: 'Jane',
+        phone: '+61400000011',
+        relationship: 'mother',
+        isEmergency: true,
+      );
+      expect(body.toJson()['is_emergency'], isTrue);
+      expect(body.toJson()['relationship'], 'mother');
+    });
+
+    test('omits is_emergency when unset for partial patch', () {
+      const body = ClientContactWriteRequest(isEmergency: true);
+      expect(body.toJson(), {'is_emergency': true});
     });
   });
 

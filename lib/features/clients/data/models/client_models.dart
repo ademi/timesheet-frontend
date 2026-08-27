@@ -355,6 +355,7 @@ class ClientContactOut {
     this.email,
     this.phone,
     this.relationship,
+    this.isEmergency = false,
   });
 
   final String id;
@@ -366,6 +367,7 @@ class ClientContactOut {
   final String? relationship;
   final bool isPrimary;
   final bool notifyVisitComplete;
+  final bool isEmergency;
 
   factory ClientContactOut.fromJson(Map<String, dynamic> json) {
     return ClientContactOut(
@@ -378,6 +380,7 @@ class ClientContactOut {
       relationship: json['relationship'] as String?,
       isPrimary: json['is_primary'] as bool? ?? false,
       notifyVisitComplete: json['notify_visit_complete'] as bool? ?? true,
+      isEmergency: json['is_emergency'] as bool? ?? false,
     );
   }
 }
@@ -388,24 +391,28 @@ class ClientContactWriteRequest {
     this.email,
     this.phone,
     this.relationship,
-    this.isPrimary = false,
-    this.notifyVisitComplete = false,
+    this.isPrimary,
+    this.notifyVisitComplete,
+    this.isEmergency,
   });
 
   final String? name;
   final String? email;
   final String? phone;
   final String? relationship;
-  final bool isPrimary;
-  final bool notifyVisitComplete;
+  final bool? isPrimary;
+  final bool? notifyVisitComplete;
+  final bool? isEmergency;
 
   Map<String, dynamic> toJson() => {
         if (name != null) 'name': name,
         if (email != null) 'email': email,
         if (phone != null) 'phone': phone,
         if (relationship != null) 'relationship': relationship,
-        'is_primary': isPrimary,
-        'notify_visit_complete': notifyVisitComplete,
+        if (isPrimary != null) 'is_primary': isPrimary,
+        if (notifyVisitComplete != null)
+          'notify_visit_complete': notifyVisitComplete,
+        if (isEmergency != null) 'is_emergency': isEmergency,
       };
 }
 

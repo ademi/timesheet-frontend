@@ -176,9 +176,10 @@ class ClientsController extends GetxController
   final contactEmailCtrl = TextEditingController();
   final contactPhoneCtrl = TextEditingController();
   final contactRelationshipOtherCtrl = TextEditingController();
-  /// Preset key (`emergency`/`carer`/…) or `_other` for free-text.
+  /// Preset key (kinship / legal role) or `_other` for free-text.
   final contactRelationshipPreset = RxnString();
   final contactIsPrimary = false.obs;
+  final contactIsEmergency = false.obs;
   /// Kept for API; UI toggle removed (D15). Defaults false on create.
   final contactNotify = false.obs;
   ClientContactOut? editingContact;
@@ -1639,6 +1640,7 @@ class ClientsController extends GetxController
     contactEmailCtrl.text = contact?.email ?? '';
     contactPhoneCtrl.text = contact?.phone ?? '';
     contactIsPrimary.value = contact?.isPrimary ?? false;
+    contactIsEmergency.value = contact?.isEmergency ?? false;
     contactNotify.value = contact?.notifyVisitComplete ?? false;
     final rel = contact?.relationship?.trim();
     if (rel == null || rel.isEmpty) {
@@ -1675,6 +1677,7 @@ class ClientsController extends GetxController
         relationship: resolvedContactRelationship,
         isPrimary: contactIsPrimary.value,
         notifyVisitComplete: contactNotify.value,
+        isEmergency: contactIsEmergency.value,
       );
       if (editingContact == null) {
         await _repository.createContact(clientId, body);

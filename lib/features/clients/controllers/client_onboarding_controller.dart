@@ -130,7 +130,10 @@ class ClientOnboardingController extends GetxController
   final contactRelationshipPreset = RxnString();
   @override
   final contactIsPrimary = false.obs;
+  @override
+  final contactIsEmergency = true.obs;
   final emergencySaved = false.obs;
+  final reuseEmergencyContactId = RxnString();
   final carerSaved = false.obs;
   final contactsCreated = <ClientContactOut>[].obs;
   final contactDraftMode = 'emergency'.obs; // emergency | carer | more
@@ -211,7 +214,8 @@ class ClientOnboardingController extends GetxController
   void onInit() {
     super.onInit();
     siteNameCtrl.text = 'Home';
-    contactRelationshipPreset.value = OnboardingKeys.relEmergency;
+    contactRelationshipPreset.value = null;
+    contactIsEmergency.value = true;
     contactDraftMode.value = 'emergency';
     loadFormTemplates();
     final args = Get.arguments;
@@ -263,7 +267,8 @@ class ClientOnboardingController extends GetxController
     carerSaved.value = false;
     contactsCreated.clear();
     contactDraftMode.value = 'emergency';
-    contactRelationshipPreset.value = OnboardingKeys.relEmergency;
+    contactRelationshipPreset.value = null;
+    reuseEmergencyContactId.value = null;
     _resetContactDraft();
 
     representativeSaved.value = false;
@@ -698,7 +703,8 @@ class ClientOnboardingController extends GetxController
   void beginEmergencyDraft() {
     _resetContactDraft();
     contactDraftMode.value = 'emergency';
-    contactRelationshipPreset.value = OnboardingKeys.relEmergency;
+    contactRelationshipPreset.value = null;
+    contactIsEmergency.value = true;
     contactIsPrimary.value = true;
   }
 
@@ -720,6 +726,7 @@ class ClientOnboardingController extends GetxController
     contactPhoneCtrl.clear();
     contactRelationshipOtherCtrl.clear();
     contactIsPrimary.value = false;
+    contactIsEmergency.value = !emergencySaved.value;
     errorMessage.value = null;
   }
 
@@ -760,10 +767,11 @@ class ClientOnboardingController extends GetxController
           relationship: relationship,
           isPrimary: contactIsPrimary.value,
           notifyVisitComplete: false,
+          isEmergency: contactIsEmergency.value,
         ),
       );
       contactsCreated.add(created);
-      if (relationship == OnboardingKeys.relEmergency) {
+      if (created.isEmergency || contactIsEmergency.value) {
         emergencySaved.value = true;
       }
       if (relationship == OnboardingKeys.relCarer) {
@@ -787,19 +795,23 @@ class ClientOnboardingController extends GetxController
     }
   }
 
+  bool get hasEmergencyContact =>
+      emergencySaved.value || contactsCreated.any((c) => c.isEmergency);
+
+  bool get _contactDraftHasChannel =>
+      contactNameCtrl.text.trim().isNotEmpty ||
+      contactPhoneCtrl.text.trim().isNotEmpty ||
+      contactEmailCtrl.text.trim().isNotEmpty;
+
   Future<bool> submitContacts() async {
     errorMessage.value = null;
-    if (!emergencySaved.value) {
-      // Try saving current draft if it looks like emergency.
-      if (contactRelationshipPreset.value == OnboardingKeys.relEmergency &&
-          (contactNameCtrl.text.trim().isNotEmpty ||
-              contactPhoneCtrl.text.trim().isNotEmpty ||
-              contactEmailCtrl.text.trim().isNotEmpty)) {
+    if (!hasEmergencyContact) {
+      if (contactIsEmergency.value && _contactDraftHasChannel) {
         final ok = await saveContactDraft();
         if (!ok) return false;
       }
     }
-    if (!emergencySaved.value) {
+    if (!hasEmergencyContact) {
       errorMessage.value = 'An emergency contact is required.';
       return false;
     }
@@ -817,6 +829,41 @@ class ClientOnboardingController extends GetxController
   }
 
   // ── Representative ────────────────────────────────────────────────────
+
+  Future<bool> useExistingAsEmergency(String contactId) async {
+    errorMessage.value = null;
+    final id = clientId;
+    if (id == null) {
+      errorMessage.value = 'Create the client on the Identity step first.';
+      return false;
+    }
+    isSaving.value = true;
+    try {
+      final patched = await _repository.patchContact(
+        id,
+        contactId,
+        const ClientContactWriteRequest(isEmergency: true),
+      );
+      final idx = contactsCreated.indexWhere((c) => c.id == contactId);
+      if (idx >= 0) {
+        contactsCreated[idx] = patched;
+      } else {
+        contactsCreated.add(patched);
+      }
+      contactsCreated.refresh();
+      reuseEmergencyContactId.value = contactId;
+      emergencySaved.value = true;
+      return true;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      return false;
+    } catch (e) {
+      _setUnexpectedError(e);
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
 
   Future<bool> submitRepresentative() async {
     errorMessage.value = null;

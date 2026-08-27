@@ -6,6 +6,7 @@ import '../../../../shared/widgets/async_action.dart';
 import '../../controllers/client_onboarding_controller.dart';
 import '../../utils/onboarding_keys.dart';
 import '../contact_form_fields.dart';
+import '../contact_form_host.dart';
 
 class OnboardingContactsStep extends StatelessWidget {
   const OnboardingContactsStep({super.key, required this.controller});
@@ -40,26 +41,26 @@ class OnboardingContactsStep extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.person_outline),
                 title: Text(c.name ?? c.email ?? c.phone ?? 'Contact'),
-                subtitle: Text(c.relationship ?? ''),
+                subtitle: Text(
+                  [
+                    if (c.relationship != null && c.relationship!.isNotEmpty)
+                      ContactFormHost.relationshipPresets[c.relationship] ??
+                          c.relationship!,
+                    if (c.isEmergency) 'Emergency',
+                  ].join(' · '),
+                ),
               ),
             const Divider(),
           ],
           if (!emergencyDone || mode == 'emergency') ...[
             if (!emergencyDone)
-              ContactFormFields(
-                controller: controller,
-                lockRelationship: OnboardingKeys.relEmergency,
-              ),
+              ContactFormFields(controller: controller),
             if (!emergencyDone) ...[
               const SizedBox(height: 12),
               AsyncOutlinedButton(
-                onPressed: () async {
-                  controller.contactRelationshipPreset.value =
-                      OnboardingKeys.relEmergency;
-                  await controller.saveContactDraft();
-                },
+                onPressed: controller.saveContactDraft,
                 isLoading: controller.isSaving.value,
-                child: const Text('Save emergency contact'),
+                child: const Text('Save contact'),
               ),
             ],
           ] else ...[

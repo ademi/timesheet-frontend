@@ -48,6 +48,7 @@ void main() {
     );
 
     expect(find.text('Relationship'), findsOneWidget);
+    expect(find.text('Emergency contact'), findsOneWidget);
     expect(find.text('Notify on visit complete'), findsNothing);
   });
 }

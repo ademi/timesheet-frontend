@@ -123,7 +123,7 @@ void main() {
         latitude: body.latitude,
         longitude: body.longitude,
         geofenceRadiusM: body.geofenceRadiusM,
-        isPrimary: body.isPrimary,
+        isPrimary: body.isPrimary ?? false,
         accessNotes: body.accessNotes,
         createdAt: _now,
         updatedAt: _now,
@@ -141,8 +141,9 @@ void main() {
         email: body.email,
         phone: body.phone,
         relationship: body.relationship,
-        isPrimary: body.isPrimary,
-        notifyVisitComplete: body.notifyVisitComplete,
+        isPrimary: body.isPrimary ?? false,
+        notifyVisitComplete: body.notifyVisitComplete ?? false,
+        isEmergency: body.isEmergency ?? false,
       );
     });
 
@@ -230,21 +231,22 @@ void main() {
       expect(await c.submitPreferences(), isTrue);
       expect(c.step.value, 3);
 
-      // ── Emergency contact ─────────────────────────────────────────────
+      // ── Emergency contact (kinship + flag) ────────────────────────────
       c.contactNameCtrl.text = 'Sam Emergency';
       c.contactPhoneCtrl.text = '+61433333333';
-      c.contactRelationshipPreset.value = OnboardingKeys.relEmergency;
+      c.contactRelationshipPreset.value = 'mother';
+      c.contactIsEmergency.value = true;
       c.contactIsPrimary.value = true;
 
       expect(await c.submitContacts(), isTrue);
       expect(c.step.value, 4);
       expect(c.emergencySaved.value, isTrue);
       expect(
-        contactCreates.any((r) => r.relationship == OnboardingKeys.relEmergency),
+        contactCreates.any((r) => r.relationship == 'mother' && r.isEmergency == true),
         isTrue,
       );
       final emergency = contactCreates
-          .firstWhere((r) => r.relationship == OnboardingKeys.relEmergency);
+          .firstWhere((r) => r.relationship == 'mother' && r.isEmergency == true);
       expect(emergency.name, 'Sam Emergency');
       expect(emergency.phone, '+61433333333');
 

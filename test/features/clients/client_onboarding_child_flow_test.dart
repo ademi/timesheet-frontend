@@ -104,7 +104,7 @@ void main() {
         latitude: body.latitude,
         longitude: body.longitude,
         geofenceRadiusM: body.geofenceRadiusM,
-        isPrimary: body.isPrimary,
+        isPrimary: body.isPrimary ?? false,
         accessNotes: body.accessNotes,
         createdAt: _now,
         updatedAt: _now,
@@ -122,8 +122,9 @@ void main() {
         email: body.email,
         phone: body.phone,
         relationship: body.relationship,
-        isPrimary: body.isPrimary,
-        notifyVisitComplete: body.notifyVisitComplete,
+        isPrimary: body.isPrimary ?? false,
+        notifyVisitComplete: body.notifyVisitComplete ?? false,
+        isEmergency: body.isEmergency ?? false,
       );
     });
 
@@ -178,7 +179,8 @@ void main() {
 
     c.contactNameCtrl.text = 'Parent Emergency';
     c.contactPhoneCtrl.text = '+61455555555';
-    c.contactRelationshipPreset.value = OnboardingKeys.relEmergency;
+    c.contactRelationshipPreset.value = 'mother';
+    c.contactIsEmergency.value = true;
     expect(await c.submitContacts(), isTrue);
     expect(c.step.value, 4);
     expect(c.contactRelationshipPreset.value,
@@ -237,7 +239,7 @@ void main() {
       expect(
         contactCreates.map((r) => r.relationship).toList(),
         containsAll([
-          OnboardingKeys.relEmergency,
+          'mother',
           OnboardingKeys.relChildRepresentative,
         ]),
       );

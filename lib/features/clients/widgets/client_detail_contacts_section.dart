@@ -77,6 +77,22 @@ class ClientDetailContactsSection extends StatelessWidget {
                       if (contact.isPrimary) 'primary',
                     ].join(' · '),
                   ),
+                  if (contact.isEmergency)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Chip(
+                        label: const Text('Emergency'),
+                        backgroundColor: AppColors.openSlotBackground,
+                        side: const BorderSide(color: AppColors.openSlot),
+                        labelStyle: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.openSlot,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
                   if (contact.notifyVisitComplete)
                     const Padding(
                       padding: EdgeInsets.only(top: 4),
