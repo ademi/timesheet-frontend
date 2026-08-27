@@ -313,13 +313,13 @@ class WorkforceDetailView extends GetView<WorkforceController> {
     }
 
     final actions = <Widget>[
-      if (controller.canApprove && current.isPendingDocs) ...[
+      if (controller.canApprove && current.isAwaitingApproval) ...[
         _actionButton(
-          label: 'Approve',
+          label: 'Approve documents',
           onPressed: () => controller.runAction('approve', current),
         ),
         _actionButton(
-          label: 'Approve & activate',
+          label: 'Approve and activate for work',
           onPressed: () => controller.runAction('approve_and_activate', current),
         ),
       ],

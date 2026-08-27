@@ -73,6 +73,8 @@ class HomeAlertsController extends GetxController {
   bool get isStaff => _session.isStaff;
   bool get isContractor => _session.isContractor;
   bool get shouldShowDocsBanner => !isStaff && _session.needsDocsAttention;
+  bool get shouldShowAwaitingApprovalBanner =>
+      !isStaff && _session.needsApprovalWait;
   bool get shouldShowProfileBanner =>
       !isStaff && _session.needsProfileCompletion.value;
   bool get canViewBilling =>
@@ -490,6 +492,24 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                       onPressed:
                           () => Get.toNamed(AppRoutes.contractorCredentials),
                       child: const Text('Upload credentials'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (controller.shouldShowAwaitingApprovalBanner) ...[
+                MaterialBanner(
+                  content: const Text(
+                    'Your documents are uploaded and waiting for provider '
+                    'approval.',
+                  ),
+                  leading: const Icon(Icons.hourglass_top_outlined),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                  actions: [
+                    TextButton(
+                      onPressed:
+                          () => Get.toNamed(AppRoutes.contractorCredentials),
+                      child: const Text('View credentials'),
                     ),
                   ],
                 ),

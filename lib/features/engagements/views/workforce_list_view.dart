@@ -256,6 +256,7 @@ class _StatusChip extends StatelessWidget {
       'active' => AppColors.success,
       'suspended' || 'ended' => AppColors.error,
       'approved' => AppColors.primary,
+      'awaiting_approval' => const Color(0xFFCA8A04),
       _ => AppColors.slate600,
     };
     return Chip(

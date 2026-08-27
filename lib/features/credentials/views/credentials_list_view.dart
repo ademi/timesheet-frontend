@@ -40,11 +40,12 @@ class CredentialsListView extends GetView<CredentialsController> {
       final engagementList = engagements?.items ?? [];
       final hasEngagements = engagementList.isNotEmpty;
       final pendingDocsEngagements = engagementList
-          .where((e) => e.isPendingDocs)
+          .where((e) => e.isPendingDocs || e.isAwaitingApproval)
           .toList(growable: false);
       final hasRequestedDocs = pendingDocsEngagements.isNotEmpty ||
           (Get.isRegistered<SessionService>() &&
-              Get.find<SessionService>().needsDocsAttention);
+              (Get.find<SessionService>().needsDocsAttention ||
+                  Get.find<SessionService>().needsApprovalWait));
       // Allow adding if there's a doc request, or the contractor already has
       // credentials that may need updating (attach evidence / supersede).
       final canAdd =

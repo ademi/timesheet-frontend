@@ -85,15 +85,22 @@ class SessionService extends GetxController {
 
   bool get isPendingDocs {
     final s = selectedEngagementStatus;
-    return s == 'pending_docs' || s == 'invited' || s == 'approved';
+    return s == 'pending_docs' ||
+        s == 'awaiting_approval' ||
+        s == 'invited' ||
+        s == 'approved';
   }
 
   /// True when at least one engagement still needs contractor accept.
   bool get needsInviteAccept => engagements.any((e) => e.status == 'invited');
 
-  /// True when at least one engagement needs contractor documents.
+  /// True when at least one engagement still needs document uploads.
   bool get needsDocsAttention =>
       engagements.any((e) => e.status == 'pending_docs');
+
+  /// True when uploads are complete and staff approval is pending.
+  bool get needsApprovalWait =>
+      engagements.any((e) => e.status == 'awaiting_approval');
 
   bool hasPermission(String permission) {
     final c = claims;
@@ -265,6 +272,7 @@ class SessionService extends GetxController {
   /// again when local GetStorage progress is missing.
   static const _platformOnboardingSatisfiedStatuses = {
     'pending_docs',
+    'awaiting_approval',
     'approved',
     'active',
   };

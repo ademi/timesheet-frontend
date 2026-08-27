@@ -4,6 +4,7 @@ import '../../../credentials/data/models/credential_models.dart';
 const engagementStatuses = <String>[
   'invited',
   'pending_docs',
+  'awaiting_approval',
   'approved',
   'active',
   'suspended',
@@ -14,6 +15,7 @@ const engagementStatuses = <String>[
 String engagementStatusLabel(String status) => switch (status) {
   'invited' => 'Invited',
   'pending_docs' => 'Pending documents',
+  'awaiting_approval' => 'Waiting for document approval',
   'approved' => 'Approved',
   'active' => 'Active',
   'suspended' => 'Suspended',
@@ -89,6 +91,7 @@ class EngagementOut {
 
   bool get isInvited => status == 'invited';
   bool get isPendingDocs => status == 'pending_docs';
+  bool get isAwaitingApproval => status == 'awaiting_approval';
   bool get isApproved => status == 'approved';
   bool get isActive => status == 'active';
   bool get isSuspended => status == 'suspended';

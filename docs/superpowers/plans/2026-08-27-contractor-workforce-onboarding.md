@@ -1,6 +1,6 @@
 # Contractor / Workforce Onboarding — Product & Engineering Plan
 
-> **Status:** Phase 0 locked · Phase 1 done · **Phase 2 done — waiting for green light for Phase 3**.  
+> **Status:** Phase 0 locked · Phase 1 done · Phase 2 done · **Phase 3 done — waiting for green light for Phase 4**.  
 > **Rule:** Implement **one phase at a time**. After each phase, stop and wait for explicit approval before starting the next.  
 > **Repos:** Frontend `timesheet-frontend` · Backend `…/flutter backend/timesheet/timesheet-backend` · DB `…/timesheet-db`
 
@@ -296,19 +296,19 @@ Each phase: **backend + db (if needed) → frontend → smoke test → STOP for 
 
 **Backend / DB**
 
-- [ ] Migration: add `awaiting_approval` to engagement status CHECK.
-- [ ] Hook on credential create/patch/evidence: recompute completeness → transition `pending_docs` ↔ `awaiting_approval`.
-- [ ] Update approve / approve-and-activate allowed-from statuses.
-- [ ] Notifications/banners for staff when pack ready.
-- [ ] Tests for lifecycle.
+- [x] Migration: add `awaiting_approval` to engagement status CHECK (`V040`).
+- [x] Hook on credential create/supersede/evidence/scan + required-docs update: sync `pending_docs` ↔ `awaiting_approval`.
+- [x] Approve / approve-and-activate only from `awaiting_approval`.
+- [x] Staff notification event `engagement.awaiting_approval`.
+- [x] Lifecycle tests updated for 409 from `pending_docs`.
 
 **Frontend**
 
-- [ ] New status chip/filter label.
-- [ ] Overview actions: show Approve / Approve & activate on `awaiting_approval` with clearer labels.
-- [ ] Contractor home banner copy: distinguish “upload remaining” vs “waiting for approval”.
+- [x] New status chip/filter label: “Waiting for document approval”.
+- [x] Overview actions on `awaiting_approval`: “Approve documents” / “Approve and activate for work”.
+- [x] Contractor home banners: upload remaining vs waiting for approval.
 
-**Green light gate:** Completing uploads flips status; approve paths work; filters correct.
+**Green light gate:** Completing uploads flips status; approve paths work; filters correct. **← waiting for your OK before Phase 4.**
 
 ---
 

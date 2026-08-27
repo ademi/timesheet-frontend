@@ -130,7 +130,11 @@ class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
                 ),
               ),
           if (controller.items.any(
-            (e) => e.isPendingDocs || e.isApproved || e.isActive,
+            (e) =>
+                e.isPendingDocs ||
+                e.isAwaitingApproval ||
+                e.isApproved ||
+                e.isActive,
           )) ...[
             const SizedBox(height: 12),
             const Text(
@@ -143,7 +147,11 @@ class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
             ),
             const SizedBox(height: 8),
             for (final e in controller.items.where(
-              (e) => e.isPendingDocs || e.isApproved || e.isActive,
+              (e) =>
+                  e.isPendingDocs ||
+                  e.isAwaitingApproval ||
+                  e.isApproved ||
+                  e.isActive,
             ))
               Card(
                 margin: const EdgeInsets.only(bottom: 8),
@@ -156,6 +164,8 @@ class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
                   subtitle: Text(
                     e.isPendingDocs
                         ? 'Documents still need attention in Credentials.'
+                        : e.isAwaitingApproval
+                        ? 'Waiting for the provider to approve your documents.'
                         : 'Engagement accepted.',
                   ),
                   trailing: EngagementStatusChip(status: e.status),
