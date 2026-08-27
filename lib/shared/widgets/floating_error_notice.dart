@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../app/themes/app_colors.dart';
 
 /// Persistent form error, placed between the scrolling body and sticky footer.
+///
+/// [SemanticsRole.alert] is omitted because Flutter forbids combining it with
+/// liveRegion; this widget uses liveRegion only.
 class FloatingErrorNotice extends StatelessWidget {
   const FloatingErrorNotice({
     super.key,
