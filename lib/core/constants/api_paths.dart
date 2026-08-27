@@ -47,6 +47,10 @@ abstract final class ApiPaths {
   static const tenantEngagements = '$_v1/tenants/current/engagements';
   static const tenantEngagementInvitePreview =
       '$tenantEngagements/invite-preview';
+  static const tenantContractorInvites =
+      '$_v1/tenants/current/contractor-invites';
+  static String tenantContractorInviteResend(String inviteId) =>
+      '$tenantContractorInvites/$inviteId/resend';
   static String tenantContractorCredentials(String contractorId) =>
       '$_v1/tenants/current/contractors/$contractorId/credentials';
   static String tenantContractorProfilePhoto(String contractorId) =>
@@ -60,6 +64,8 @@ abstract final class ApiPaths {
   static String engagementSuspend(String id) => '${engagement(id)}/suspend';
   static String engagementResume(String id) => '${engagement(id)}/resume';
   static String engagementEnd(String id) => '${engagement(id)}/end';
+  static String engagementResendInvite(String id) =>
+      '${engagement(id)}/resend-invite';
   static String engagementRequiredDocCategories(String id) =>
       '${engagement(id)}/required-doc-categories';
   static String engagementCredentialReviews(String id) =>

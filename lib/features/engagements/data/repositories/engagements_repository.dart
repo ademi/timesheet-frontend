@@ -13,6 +13,16 @@ class EngagementsRepository {
   Future<List<EngagementOut>> listTenantEngagements() async =>
       sortedByName(await _remote.listTenantEngagements(), (e) => e.displayName);
 
+  Future<List<ContractorRegistrationInviteOut>> listPendingContractorInvites() =>
+      _remote.listPendingContractorInvites();
+
+  Future<ContractorRegistrationInviteOut> resendContractorInvite(
+    String inviteId,
+  ) => _remote.resendContractorInvite(inviteId);
+
+  Future<EngagementOut> resendEngagementInvite(String engagementId) =>
+      _remote.resendEngagementInvite(engagementId);
+
   Future<EngagementInviteResponse> invite(EngagementInviteRequest body) =>
       _remote.invite(body);
 

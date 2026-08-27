@@ -33,9 +33,13 @@ class WorkforceListView extends GetView<WorkforceController> {
             ),
       body: Obx(() {
         final err = controller.errorMessage.value;
-        if (controller.isLoading.value && controller.items.isEmpty) {
+        if (controller.isLoading.value &&
+            controller.items.isEmpty &&
+            controller.pendingInvites.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
+        final pending = controller.filteredPendingInvites;
+        final engagements = controller.filtered;
         return RefreshIndicator(
           onRefresh: controller.load,
           child: ListView(
@@ -124,7 +128,41 @@ class WorkforceListView extends GetView<WorkforceController> {
                       ),
                       const SizedBox(height: 12),
                     ],
-                    for (final e in controller.filtered)
+                    for (final invite in pending)
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: AppColors.slate600.withValues(
+                              alpha: 0.12,
+                            ),
+                            child: const Icon(
+                              Icons.mail_outline,
+                              color: AppColors.slate600,
+                            ),
+                          ),
+                          title: Text(invite.email),
+                          subtitle: Text(
+                            'Status: Invited · Expires ${invite.expiresAt.toLocal()}',
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (controller.canInvite)
+                                _ReEmailButton(
+                                  busy:
+                                      controller.resendingInviteId.value ==
+                                      invite.id,
+                                  onPressed: () =>
+                                      controller.resendPendingInvite(invite),
+                                ),
+                              const SizedBox(width: 8),
+                              const _StatusChip(status: 'invited'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    for (final e in engagements)
                       Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
@@ -141,8 +179,33 @@ class WorkforceListView extends GetView<WorkforceController> {
                           }),
                           title: Text(e.displayName),
                           subtitle: Text('Status: ${e.statusLabel}'),
-                          trailing: _StatusChip(status: e.status),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (controller.canInvite && e.isInvited) ...[
+                                _ReEmailButton(
+                                  busy:
+                                      controller.resendingInviteId.value ==
+                                      e.id,
+                                  onPressed: () => controller
+                                      .resendEngagementInviteEmail(e),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              _StatusChip(status: e.status),
+                            ],
+                          ),
                           onTap: () => controller.openDetail(e),
+                        ),
+                      ),
+                    if (pending.isEmpty && engagements.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 48),
+                        child: Center(
+                          child: Text(
+                            'No contractors match this filter.',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
                         ),
                       ),
                   ],
@@ -152,6 +215,32 @@ class WorkforceListView extends GetView<WorkforceController> {
           ),
         );
       }),
+    );
+  }
+}
+
+class _ReEmailButton extends StatelessWidget {
+  const _ReEmailButton({required this.busy, required this.onPressed});
+
+  final bool busy;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    if (busy) {
+      return const SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    return TextButton(
+      style: TextButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+      ),
+      onPressed: onPressed,
+      child: const Text('Re-email'),
     );
   }
 }
