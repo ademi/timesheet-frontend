@@ -23,7 +23,25 @@ class _MockJobsRepository extends Mock implements JobsRepository {}
 
 class _MockSessionService extends Mock implements SessionService {}
 
+class _FakeClientContactWriteRequest extends Fake
+    implements ClientContactWriteRequest {}
+
+final _now = DateTime.utc(2026, 8, 27, 9);
+
+final _client = ClientOut(
+  id: 'client-1',
+  tenantId: 'tenant-1',
+  fullName: 'Sam Client',
+  status: 'active',
+  metadata: const {},
+  createdAt: _now,
+  updatedAt: _now,
+);
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeClientContactWriteRequest());
+  });
   test('kinshipPresets omit Emergency; legal roles stay on representative', () {
     expect(ContactFormHost.kinshipPresets.keys, [
       'mother',
@@ -35,13 +53,33 @@ void main() {
       'friend',
       'neighbour',
       'carer',
-      'other',
     ]);
     expect(ContactFormHost.kinshipPresets.containsKey('emergency'), isFalse);
     expect(ContactFormHost.kinshipPresets['carer'], 'Carer');
+    expect(ContactFormHost.kinshipPresets.containsKey('other'), isFalse);
     expect(ContactFormHost.legalRolePresets, {
       OnboardingKeys.relChildRepresentative: 'Child representative',
       OnboardingKeys.relNominee: 'Nominee',
+    });
+  });
+
+  group('relationship Other (CR5)', () {
+    test('hydrateRelationship maps custom text to _other sentinel', () {
+      final hydrated = ContactFormHost.hydrateRelationship('Godparent');
+      expect(hydrated.preset, ContactFormHost.relationshipOtherKey);
+      expect(hydrated.otherText, 'Godparent');
+    });
+
+    test('hydrateRelationship maps stored other to _other with empty text', () {
+      final hydrated = ContactFormHost.hydrateRelationship('other');
+      expect(hydrated.preset, ContactFormHost.relationshipOtherKey);
+      expect(hydrated.otherText, isEmpty);
+    });
+
+    test('hydrateRelationship keeps known kinship presets', () {
+      final hydrated = ContactFormHost.hydrateRelationship('mother');
+      expect(hydrated.preset, 'mother');
+      expect(hydrated.otherText, isEmpty);
     });
   });
 
@@ -49,6 +87,7 @@ void main() {
     late _MockClientsRepository clients;
     late _MockJobsRepository jobs;
     late _MockSessionService session;
+    late ClientsController controller;
 
     setUp(() {
       Get.testMode = true;
@@ -61,13 +100,13 @@ void main() {
       when(() => clients.getClientProfilePhoto(any())).thenAnswer(
         (_) async => const ProfilePhotoOut(hasPhoto: false),
       );
-      Get.put(
-        ClientsController(
-          repository: clients,
-          session: session,
-          jobsRepository: jobs,
-        ),
+      controller = ClientsController(
+        repository: clients,
+        session: session,
+        jobsRepository: jobs,
       );
+      Get.put(controller);
+      controller.selected.value = _client;
     });
 
     tearDown(Get.reset);
@@ -87,6 +126,77 @@ void main() {
       expect(find.text('Mother').hitTestable(), findsWidgets);
       expect(find.text('Carer').hitTestable(), findsWidgets);
       expect(find.text('Emergency'), findsNothing);
+    });
+
+    testWidgets('Other requires non-empty free text before save', (tester) async {
+      await tester.pumpWidget(
+        const GetMaterialApp(home: ClientContactFormView()),
+      );
+
+      controller.contactNameCtrl.text = 'Alex';
+      controller.contactPhoneCtrl.text = '+61400000001';
+      controller.contactRelationshipPreset.value =
+          ContactFormHost.relationshipOtherKey;
+
+      await tester.tap(find.text('Create contact'));
+      await tester.pumpAndSettle();
+
+      expect(controller.errorMessage.value, contains('Specify the relationship'));
+      verifyNever(() => clients.createContact(any(), any()));
+    });
+
+    test('custom Other resolves typed string for save', () {
+      controller.contactRelationshipPreset.value =
+          ContactFormHost.relationshipOtherKey;
+      controller.contactRelationshipOtherCtrl.text = 'Godparent';
+
+      expect(controller.resolvedContactRelationship, 'Godparent');
+      expect(controller.resolvedContactRelationship, isNot('other'));
+    });
+
+    testWidgets('custom Other reopens with sentinel and free text', (tester) async {
+      final hydrated = ContactFormHost.hydrateRelationship('Godparent');
+      controller.contactRelationshipPreset.value = hydrated.preset;
+      controller.contactRelationshipOtherCtrl.text = hydrated.otherText;
+
+      await tester.pumpWidget(
+        const GetMaterialApp(home: ClientContactFormView()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Relationship (other)'), findsOneWidget);
+      expect(controller.contactRelationshipOtherCtrl.text, 'Godparent');
+    });
+
+    testWidgets('stored other hydrates to Other sentinel with empty text',
+        (tester) async {
+      final hydrated = ContactFormHost.hydrateRelationship('other');
+      controller.contactRelationshipPreset.value = hydrated.preset;
+      controller.contactRelationshipOtherCtrl.text = hydrated.otherText;
+
+      await tester.pumpWidget(
+        const GetMaterialApp(home: ClientContactFormView()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        controller.contactRelationshipPreset.value,
+        ContactFormHost.relationshipOtherKey,
+      );
+      expect(controller.contactRelationshipOtherCtrl.text, isEmpty);
+      expect(find.text('Relationship (other)'), findsOneWidget);
+    });
+
+    test('selecting non-Other clears companion text', () {
+      controller.contactRelationshipPreset.value =
+          ContactFormHost.relationshipOtherKey;
+      controller.contactRelationshipOtherCtrl.text = 'Cousin';
+
+      controller.contactRelationshipPreset.value = 'mother';
+      controller.contactRelationshipOtherCtrl.clear();
+
+      expect(controller.contactRelationshipPreset.value, 'mother');
+      expect(controller.contactRelationshipOtherCtrl.text, isEmpty);
     });
   });
 

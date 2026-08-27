@@ -18,8 +18,9 @@ abstract class ContactFormHost {
     'friend': 'Friend',
     'neighbour': 'Neighbour',
     'carer': 'Carer', // CR5: kinship label only here; nominee step uses legalRolePresets
-    'other': 'Other',
   };
+
+  static const relationshipOtherLabel = 'Other';
 
   /// Legal roles for the representative step only.
   static const legalRolePresets = <String, String>{
@@ -50,5 +51,22 @@ abstract class ContactFormHost {
       return other.isEmpty ? null : other;
     }
     return preset;
+  }
+
+  /// Maps stored relationship to UI preset + free-text companion (CR5).
+  static ({String? preset, String otherText}) hydrateRelationship(
+    String? stored,
+  ) {
+    final rel = stored?.trim();
+    if (rel == null || rel.isEmpty) {
+      return (preset: null, otherText: '');
+    }
+    if (rel == 'other') {
+      return (preset: relationshipOtherKey, otherText: '');
+    }
+    if (kinshipPresets.containsKey(rel) || legalRolePresets.containsKey(rel)) {
+      return (preset: rel, otherText: '');
+    }
+    return (preset: relationshipOtherKey, otherText: rel);
   }
 }

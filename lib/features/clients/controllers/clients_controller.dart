@@ -1872,17 +1872,9 @@ class ClientsController extends GetxController
     contactIsPrimary.value = contact?.isPrimary ?? false;
     contactIsEmergency.value = contact?.isEmergency ?? false;
     contactNotify.value = contact?.notifyVisitComplete ?? false;
-    final rel = contact?.relationship?.trim();
-    if (rel == null || rel.isEmpty) {
-      contactRelationshipPreset.value = null;
-      contactRelationshipOtherCtrl.clear();
-    } else if (relationshipPresets.containsKey(rel)) {
-      contactRelationshipPreset.value = rel;
-      contactRelationshipOtherCtrl.clear();
-    } else {
-      contactRelationshipPreset.value = relationshipOtherKey;
-      contactRelationshipOtherCtrl.text = rel;
-    }
+    final hydrated = ContactFormHost.hydrateRelationship(contact?.relationship);
+    contactRelationshipPreset.value = hydrated.preset;
+    contactRelationshipOtherCtrl.text = hydrated.otherText;
     errorMessage.value = null;
     Get.toNamed(AppRoutes.staffClientContactForm);
   }
@@ -1897,6 +1889,12 @@ class ClientsController extends GetxController
       errorMessage.value = 'Provide at least a name, email, or phone.';
       return;
     }
+    final relationship = resolvedContactRelationship;
+    if (contactRelationshipPreset.value == relationshipOtherKey &&
+        relationship == null) {
+      errorMessage.value = 'Specify the relationship.';
+      return;
+    }
     isSaving.value = true;
     errorMessage.value = null;
     try {
@@ -1904,7 +1902,7 @@ class ClientsController extends GetxController
         name: name.nullIfEmpty,
         email: email.nullIfEmpty,
         phone: phone.nullIfEmpty,
-        relationship: resolvedContactRelationship,
+        relationship: relationship,
         isPrimary: contactIsPrimary.value,
         notifyVisitComplete: contactNotify.value,
         isEmergency: contactIsEmergency.value,

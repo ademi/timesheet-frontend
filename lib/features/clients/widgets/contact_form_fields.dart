@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../shared/widgets/other_text_field.dart';
 import 'contact_form_host.dart';
 
 /// Shared contact fields: name, email, phone, relationship, primary, emergency.
@@ -87,24 +88,27 @@ class ContactFormFields extends StatelessWidget {
                     value: lockRelationship,
                     child: Text(lockRelationship!),
                   ),
-                if (preset == ContactFormHost.relationshipOtherKey)
-                  const DropdownMenuItem<String?>(
+                if (lockRelationship == null)
+                  DropdownMenuItem<String?>(
                     value: ContactFormHost.relationshipOtherKey,
-                    child: Text('Other (custom)'),
+                    child: Text(ContactFormHost.relationshipOtherLabel),
                   ),
               ],
               onChanged: lockRelationship != null
                   ? null
-                  : (v) => controller.contactRelationshipPreset.value = v,
+                  : (v) {
+                      controller.contactRelationshipPreset.value = v;
+                      if (v != ContactFormHost.relationshipOtherKey) {
+                        controller.contactRelationshipOtherCtrl.clear();
+                      }
+                    },
             ),
             if (preset == ContactFormHost.relationshipOtherKey) ...[
               const SizedBox(height: 12),
-              TextField(
+              OtherTextField(
+                isOther: true,
                 controller: controller.contactRelationshipOtherCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Relationship (other)',
-                  border: OutlineInputBorder(),
-                ),
+                label: 'Relationship (other)',
               ),
             ],
           ],

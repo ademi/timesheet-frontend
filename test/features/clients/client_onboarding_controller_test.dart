@@ -8,6 +8,7 @@ import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
+import 'package:rostiq/features/clients/widgets/contact_form_host.dart';
 import 'package:rostiq/features/documents/data/document_pipeline.dart';
 import 'package:rostiq/shared/models/profile_photo_models.dart';
 
@@ -363,6 +364,46 @@ void main() {
     c.step.value = 3;
     expect(await c.submitContacts(), isFalse);
     expect(c.errorMessage.value, contains('emergency'));
+  });
+
+  test('saveContactDraft sends custom relationship for Other free-text', () async {
+    ClientContactWriteRequest? captured;
+    when(() => mock.createContact(any(), any())).thenAnswer((inv) async {
+      captured = inv.positionalArguments[1] as ClientContactWriteRequest;
+      return ClientContactOut(
+        id: 'c-custom',
+        tenantId: 'tenant-1',
+        clientId: 'client-1',
+        name: captured!.name,
+        phone: captured!.phone,
+        relationship: captured!.relationship,
+        isPrimary: captured!.isPrimary ?? false,
+        notifyVisitComplete: captured!.notifyVisitComplete ?? false,
+        isEmergency: captured!.isEmergency ?? false,
+      );
+    });
+
+    c.client.value = _fakeClient;
+    c.contactNameCtrl.text = 'Alex Cousin';
+    c.contactPhoneCtrl.text = '+61400000022';
+    c.contactRelationshipPreset.value = ContactFormHost.relationshipOtherKey;
+    c.contactRelationshipOtherCtrl.text = 'Cousin';
+    c.contactIsEmergency.value = true;
+
+    expect(await c.saveContactDraft(), isTrue);
+    expect(captured!.relationship, 'Cousin');
+    expect(captured!.relationship, isNot('other'));
+  });
+
+  test('saveContactDraft rejects Other without free-text', () async {
+    c.client.value = _fakeClient;
+    c.contactNameCtrl.text = 'Alex';
+    c.contactPhoneCtrl.text = '+61400000022';
+    c.contactRelationshipPreset.value = ContactFormHost.relationshipOtherKey;
+
+    expect(await c.saveContactDraft(), isFalse);
+    expect(c.errorMessage.value, contains('Specify the relationship'));
+    verifyNever(() => mock.createContact(any(), any()));
   });
 
   test('saveContactDraft sends kinship mother with isEmergency', () async {

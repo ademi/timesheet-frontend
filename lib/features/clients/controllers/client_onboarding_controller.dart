@@ -751,6 +751,11 @@ class ClientOnboardingController extends GetxController
     }
 
     final relationship = resolvedContactRelationship;
+    if (contactRelationshipPreset.value == ContactFormHost.relationshipOtherKey &&
+        (relationship == null || relationship.isEmpty)) {
+      errorMessage.value = 'Specify the relationship.';
+      return false;
+    }
     if (relationship == null || relationship.isEmpty) {
       errorMessage.value = 'Select a relationship.';
       return false;
