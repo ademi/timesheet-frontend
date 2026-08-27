@@ -31,6 +31,7 @@ import '../utils/support_plan_keys.dart';
 import '../widgets/contact_form_host.dart';
 import '../widgets/site_form_host.dart';
 import 'requirement_draft.dart';
+import 'support_plan_controller.dart';
 
 class ClientsController extends GetxController
     implements SiteFormHost, ContactFormHost {
@@ -40,11 +41,11 @@ class ClientsController extends GetxController
     DocumentPipeline? documentPipeline,
     VisitsRepository? visitsRepository,
     JobsRepository? jobsRepository,
-  })  : _repository = repository,
-        _session = session,
-        _pipeline = documentPipeline,
-        _visits = visitsRepository,
-        _jobs = jobsRepository;
+  }) : _repository = repository,
+       _session = session,
+       _pipeline = documentPipeline,
+       _visits = visitsRepository,
+       _jobs = jobsRepository;
 
   final ClientsRepository _repository;
   final SessionService _session;
@@ -53,6 +54,7 @@ class ClientsController extends GetxController
   final JobsRepository? _jobs;
 
   final items = <ClientOut>[].obs;
+
   /// When false (default), hide clients still mid-wizard (D19).
   final showIncompleteOnboarding = false.obs;
   final isLoading = false.obs;
@@ -157,16 +159,20 @@ class ClientsController extends GetxController
   final siteCountryCtrl = TextEditingController();
   final sitePostalCtrl = TextEditingController();
   final siteAccessNotesCtrl = TextEditingController();
+
   /// Held after geocode / edit hydrate; not shown on the site form.
   final siteLatCtrl = TextEditingController();
   final siteLngCtrl = TextEditingController();
   final siteIsPrimary = false.obs;
   final isGeocoding = false.obs;
   final geocodeHint = RxnString();
+
   /// Formatted address from last successful lookup (pending or confirmed).
   final geocodeFormattedAddress = RxnString();
+
   /// True after user confirms the geocode result (or edit hydrate with coords).
   final addressConfirmed = false.obs;
+
   /// Observable country/state for dropdowns (defaults AU / NSW).
   final siteCountry = 'AU'.obs;
   final siteState = 'NSW'.obs;
@@ -177,10 +183,12 @@ class ClientsController extends GetxController
   final contactEmailCtrl = TextEditingController();
   final contactPhoneCtrl = TextEditingController();
   final contactRelationshipOtherCtrl = TextEditingController();
+
   /// Preset key (kinship / legal role) or `_other` for free-text.
   final contactRelationshipPreset = RxnString();
   final contactIsPrimary = false.obs;
   final contactIsEmergency = false.obs;
+
   /// Kept for API; UI toggle removed (D15). Defaults false on create.
   final contactNotify = false.obs;
   ClientContactOut? editingContact;
@@ -209,8 +217,7 @@ class ClientsController extends GetxController
   static bool isOnboardingIncomplete(ClientOut client) =>
       client.metadata['onboarding_incomplete'] == true;
 
-  bool get canManage =>
-      _session.hasPermission(AppPermissions.clientsManage);
+  bool get canManage => _session.hasPermission(AppPermissions.clientsManage);
   bool get canRead => _session.hasPermission(AppPermissions.clientsRead);
   bool get canReadTypes =>
       _session.hasPermission(AppPermissions.clientsTypesRead) || canManage;
@@ -230,11 +237,15 @@ class ClientsController extends GetxController
   @override
   void onInit() {
     super.onInit();
+    ever<int>(tabIndex, (i) {
+      if (i == tabCarePlan) ensureCarePlanController();
+    });
     load();
   }
 
   @override
   void onClose() {
+    releaseCarePlanController();
     _disposeRequirementDrafts();
     nameCtrl.dispose();
     emailCtrl.dispose();
@@ -415,7 +426,10 @@ class ClientsController extends GetxController
           presentation: AppFailurePresentation.inline,
         );
       }
-      formPhoto.value = await _repository.setClientProfilePhoto(clientId, docId);
+      formPhoto.value = await _repository.setClientProfilePhoto(
+        clientId,
+        docId,
+      );
       formPendingPhoto.value = null;
       formPhotoCleared.value = false;
       return;
@@ -506,9 +520,7 @@ class ClientsController extends GetxController
       if (bundle.clientType != null) {
         selectedClientTypeId.value = bundle.clientType!.id;
       }
-      final factByKey = {
-        for (final f in bundle.facts) f.requirementKey: f,
-      };
+      final factByKey = {for (final f in bundle.facts) f.requirementKey: f};
       final formByKey = {
         for (final f in bundle.formSubmissions) f.requirementKey: f,
       };
@@ -563,8 +575,7 @@ class ClientsController extends GetxController
     final accept = draft.requirement.acceptMimeTypes;
     final extensions = _extensionsFromAccept(accept);
     final allowMultiple = draft.requirement.maxFiles > 1;
-    final remaining =
-        draft.requirement.maxFiles - draft.localFiles.length;
+    final remaining = draft.requirement.maxFiles - draft.localFiles.length;
     if (remaining <= 0) {
       errorMessage.value =
           'Maximum ${draft.requirement.maxFiles} file(s) for this field.';
@@ -847,10 +858,7 @@ class ClientsController extends GetxController
       final dob = _resolveDobForCore();
       await _repository.patchClient(
         client.id,
-        ClientUpdateRequest(
-          clientTypeId: typeId,
-          dob: dob,
-        ),
+        ClientUpdateRequest(clientTypeId: typeId, dob: dob),
       );
       if (typeId != null && typeId.isNotEmpty && requirementDrafts.isNotEmpty) {
         for (final draft in requirementDrafts) {
@@ -899,7 +907,8 @@ class ClientsController extends GetxController
     final rawDob = client.dob?.trim();
     overviewDob.value =
         rawDob == null || rawDob.isEmpty ? null : DateTime.tryParse(rawDob);
-    overviewClientTypeId.value = client.clientTypeId ?? selectedClientTypeId.value;
+    overviewClientTypeId.value =
+        client.clientTypeId ?? selectedClientTypeId.value;
     overviewNdisCtrl.text = ndisFromFacts(profileFacts) ?? '';
   }
 
@@ -1053,9 +1062,10 @@ class ClientsController extends GetxController
         client.id,
         ClientUpdateRequest(clientTypeId: typeId),
       );
-      final profileErrors = typeId == null || typeId.isEmpty
-          ? <String>[]
-          : await _saveDynamicAnswers(client.id);
+      final profileErrors =
+          typeId == null || typeId.isEmpty
+              ? <String>[]
+              : await _saveDynamicAnswers(client.id);
       await openDetailById(client.id);
       tabIndex.value = tabDetails;
       if (profileErrors.isNotEmpty) {
@@ -1203,8 +1213,7 @@ class ClientsController extends GetxController
     if (draft.capturesField || req.isSharingFlag) {
       final value = draft.fieldValueJson;
       final shouldPutValue = draft.hasFieldContent && value != null;
-      final shouldLinkDoc =
-          uploadedDocId != null && draft.capturesField;
+      final shouldLinkDoc = uploadedDocId != null && draft.capturesField;
       if (shouldPutValue || shouldLinkDoc) {
         await _repository.upsertProfileFact(
           clientId,
@@ -1271,7 +1280,8 @@ class ClientsController extends GetxController
   }
 
   Future<void> deleteClient(ClientOut client) async {
-    final ok = await Get.dialog<bool>(
+    final ok =
+        await Get.dialog<bool>(
           AlertDialog(
             title: const Text('Delete client?'),
             content: Text('Delete ${client.fullName}? This cannot be undone.'),
@@ -1342,6 +1352,9 @@ class ClientsController extends GetxController
 
   Future<void> openDetailById(String id) async {
     final previousId = selected.value?.id;
+    if (previousId != null && previousId != id) {
+      releaseCarePlanController();
+    }
     isLoading.value = true;
     try {
       final client = await _repository.getClient(id);
@@ -1354,6 +1367,9 @@ class ClientsController extends GetxController
       final sameClient = previousId == id;
       if (!sameClient || !isOverviewDirty) {
         hydrateOverviewDrafts();
+      }
+      if (tabIndex.value == tabCarePlan) {
+        ensureCarePlanController();
       }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -1410,6 +1426,32 @@ class ClientsController extends GetxController
     await loadClientVisits();
     await loadStandingJob();
     await loadSupportPlanSummary();
+  }
+
+  /// Puts or replaces [SupportPlanController] for the selected client (CR2).
+  void ensureCarePlanController() {
+    final client = selected.value;
+    if (client == null || !canRead) return;
+    if (Get.isRegistered<SupportPlanController>()) {
+      final existing = Get.find<SupportPlanController>();
+      if (existing.clientId == client.id) return;
+      Get.delete<SupportPlanController>(force: true);
+    }
+    Get.put(
+      SupportPlanController(
+        repository: _repository,
+        clientId: client.id,
+        planId: supportPlan.value?.id,
+        clientName: client.fullName,
+        ndisNumber: ndisNumber,
+      ),
+    );
+  }
+
+  void releaseCarePlanController() {
+    if (Get.isRegistered<SupportPlanController>()) {
+      Get.delete<SupportPlanController>(force: true);
+    }
   }
 
   Future<void> loadSupportPlanSummary() async {
@@ -1469,12 +1511,13 @@ class ClientsController extends GetxController
     isLoadingStandingJob.value = true;
     try {
       final list = await jobsRepo.listJobs();
-      standingJob.value = list
-          .where(
-            (job) =>
-                job.clientId == client.id && job.isStanding && job.isOpen,
-          )
-          .firstOrNull;
+      standingJob.value =
+          list
+              .where(
+                (job) =>
+                    job.clientId == client.id && job.isStanding && job.isOpen,
+              )
+              .firstOrNull;
     } on AppFailure {
       standingJob.value = null;
     } catch (_) {
@@ -1582,10 +1625,7 @@ class ClientsController extends GetxController
   void openVisitDetail(VisitOut visit) {
     Get.toNamed(
       AppRoutes.staffVisitDetail,
-      arguments: <String, dynamic>{
-        'visit': visit,
-        'skipBoardLoad': true,
-      },
+      arguments: <String, dynamic>{'visit': visit, 'skipBoardLoad': true},
     );
   }
 
@@ -1594,9 +1634,10 @@ class ClientsController extends GetxController
     siteNameCtrl.text = site?.name ?? '';
     siteAddressCtrl.text = site?.addressLine1 ?? '';
     siteCityCtrl.text = site?.city ?? '';
-    final state = (site?.state?.trim().isNotEmpty == true)
-        ? site!.state!.trim().toUpperCase()
-        : 'NSW';
+    final state =
+        (site?.state?.trim().isNotEmpty == true)
+            ? site!.state!.trim().toUpperCase()
+            : 'NSW';
     siteStateCtrl.text = state;
     siteCountryCtrl.text = 'AU';
     siteState.value = state;
@@ -1663,16 +1704,16 @@ class ClientsController extends GetxController
   }) async {
     final address = siteAddressCtrl.text.trim();
     final city = siteCityCtrl.text.trim();
-    final state = siteState.value.trim().isNotEmpty
-        ? siteState.value.trim()
-        : siteStateCtrl.text.trim();
+    final state =
+        siteState.value.trim().isNotEmpty
+            ? siteState.value.trim()
+            : siteStateCtrl.text.trim();
     const country = 'AU';
     siteCountryCtrl.text = country;
     siteCountry.value = country;
 
     if (address.isEmpty || city.isEmpty) {
-      errorMessage.value =
-          'Enter street address and city before looking up.';
+      errorMessage.value = 'Enter street address and city before looking up.';
       return null;
     }
 
@@ -1708,9 +1749,10 @@ class ClientsController extends GetxController
             result.formattedAddress!,
           if (result.confidence != null) 'confidence: ${result.confidence}',
         ];
-        geocodeHint.value = parts.isEmpty
-            ? 'Coordinates found from address.'
-            : parts.join(' · ');
+        geocodeHint.value =
+            parts.isEmpty
+                ? 'Coordinates found from address.'
+                : parts.join(' · ');
       }
       return (lat: result.latitude, lng: result.longitude);
     } on AppFailure catch (e) {
@@ -1744,8 +1786,7 @@ class ClientsController extends GetxController
     // New sites (or edits missing coords) require look-up + confirm.
     if (editingSite == null || lat == null || lng == null) {
       if (!addressConfirmed.value || lat == null || lng == null) {
-        errorMessage.value =
-            'Look up and confirm the address before saving.';
+        errorMessage.value = 'Look up and confirm the address before saving.';
         return;
       }
     }
@@ -1762,7 +1803,8 @@ class ClientsController extends GetxController
         name: name,
         addressLine1: siteAddressCtrl.text.trim().nullIfEmpty,
         city: siteCityCtrl.text.trim().nullIfEmpty,
-        state: siteState.value.trim().nullIfEmpty ??
+        state:
+            siteState.value.trim().nullIfEmpty ??
             siteStateCtrl.text.trim().nullIfEmpty,
         country: 'AU',
         postalCode: sitePostalCtrl.text.trim().nullIfEmpty,

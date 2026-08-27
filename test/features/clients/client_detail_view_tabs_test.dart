@@ -37,6 +37,7 @@ Future<void> _openTab(WidgetTester tester, int index) async {
   await tester.ensureVisible(key);
   await tester.tap(key);
   await tester.pump();
+  await tester.pump();
 }
 
 void main() {
@@ -57,6 +58,7 @@ void main() {
       () => clients.getClientProfilePhoto(any()),
     ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
     when(() => clients.listClientTypes()).thenAnswer((_) async => []);
+    when(() => clients.listSupportPlans(any())).thenAnswer((_) async => []);
     controller = ClientsController(
       repository: clients,
       session: session,
@@ -144,7 +146,8 @@ void main() {
     expect(find.text('Upcoming'), findsNothing);
 
     await _openTab(tester, ClientsController.tabCarePlan);
-    expect(find.text('Support'), findsOneWidget);
+    expect(find.text('Primary disability'), findsOneWidget);
+    expect(find.text('Start ongoing support'), findsNothing);
     expect(find.text('Upcoming'), findsNothing);
     expect(find.text('Past'), findsNothing);
     expect(find.text('No contacts yet.'), findsNothing);
@@ -156,47 +159,48 @@ void main() {
     await _openTab(tester, ClientsController.tabVisits);
     expect(find.text('Upcoming'), findsOneWidget);
     expect(find.text('Past'), findsOneWidget);
+    expect(find.text('Start ongoing support'), findsOneWidget);
+    expect(find.text('Book one session'), findsOneWidget);
     expect(find.text('No contacts yet.'), findsNothing);
     expect(find.byType(FormStickyActions), findsNothing);
   });
 
-  testWidgets(
-    'Profile tab lifts FormStickyActions out of the profile scroll',
-    (tester) async {
-      await tester.pumpWidget(const GetMaterialApp(home: ClientDetailView()));
+  testWidgets('Profile tab lifts FormStickyActions out of the profile scroll', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const GetMaterialApp(home: ClientDetailView()));
 
-      await _openTab(tester, ClientsController.tabProfile);
+    await _openTab(tester, ClientsController.tabProfile);
 
-      controller.errorMessage.value = 'NDIS number is required.';
-      await tester.pump();
+    controller.errorMessage.value = 'NDIS number is required.';
+    await tester.pump();
 
-      expect(find.byType(FormStickyActions), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Save type & profile'), findsOneWidget);
-      expect(find.text('NDIS number is required.'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byType(ListView),
-          matching: find.byType(FormStickyActions),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(ListView),
-          matching: find.text('Save type & profile'),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(ListView),
-          matching: find.text('NDIS number is required.'),
-        ),
-        findsNothing,
-      );
-    },
-  );
+    expect(find.byType(FormStickyActions), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Save type & profile'), findsOneWidget);
+    expect(find.text('NDIS number is required.'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(FormStickyActions),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.text('Save type & profile'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.text('NDIS number is required.'),
+      ),
+      findsNothing,
+    );
+  });
 
   testWidgets('incomplete client shows amber banner and Continue onboarding', (
     tester,

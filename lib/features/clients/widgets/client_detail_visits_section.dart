@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/equal_fill_row.dart';
 import '../../visits/data/models/visit_models.dart';
 
 String _fmtTime(DateTime dt) {
@@ -24,6 +25,13 @@ class ClientDetailVisitsSection extends StatelessWidget {
     required this.onOpen,
     this.hasVisitsAccess = true,
     this.showPast = true,
+    this.hasOngoing = false,
+    this.canManage = false,
+    this.supportItemCode,
+    this.supportItemName,
+    this.onStartOngoing,
+    this.onBookOne,
+    this.onOpenOngoing,
   });
 
   final List<VisitOut> upcoming;
@@ -34,6 +42,58 @@ class ClientDetailVisitsSection extends StatelessWidget {
   final void Function(VisitOut visit) onOpen;
   final bool hasVisitsAccess;
   final bool showPast;
+  final bool hasOngoing;
+  final bool canManage;
+  final String? supportItemCode;
+  final String? supportItemName;
+  final VoidCallback? onStartOngoing;
+  final VoidCallback? onBookOne;
+  final VoidCallback? onOpenOngoing;
+
+  bool get _showStandingSupportItem {
+    final code = supportItemCode?.trim();
+    final name = supportItemName?.trim();
+    return code != null && code.isNotEmpty && name != null && name.isNotEmpty;
+  }
+
+  List<Widget> get _rosterActions {
+    final start =
+        canManage && !hasOngoing && onStartOngoing != null
+            ? ElevatedButton.icon(
+              onPressed: onStartOngoing,
+              icon: const Icon(Icons.event_repeat_outlined),
+              label: const Text('Start ongoing support'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+              ),
+            )
+            : null;
+    final book =
+        canManage && onBookOne != null
+            ? ElevatedButton.icon(
+              onPressed: onBookOne,
+              icon: const Icon(Icons.event_outlined),
+              label: const Text('Book one session'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+              ),
+            )
+            : null;
+    final open =
+        hasOngoing && onOpenOngoing != null
+            ? OutlinedButton(
+              onPressed: onOpenOngoing,
+              child: const Text('Open support'),
+            )
+            : null;
+    return [
+      if (start != null) start,
+      if (book != null) book,
+      if (open != null) open,
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +126,21 @@ class ClientDetailVisitsSection extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
         const SizedBox(height: 8),
+        if (_rosterActions.isNotEmpty) ...[
+          EqualFillRow(children: _rosterActions),
+          const SizedBox(height: 12),
+        ],
+        if (_showStandingSupportItem) ...[
+          Text(
+            supportItemName!.trim(),
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          Text(
+            supportItemCode!.trim(),
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+          const SizedBox(height: 12),
+        ],
         if (isLoading) const LinearProgressIndicator(minHeight: 2),
         if (error != null) ...[
           Container(
@@ -75,10 +150,7 @@ class ClientDetailVisitsSection extends StatelessWidget {
               color: AppColors.errorBackground,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(
-              error!,
-              style: const TextStyle(color: AppColors.error),
-            ),
+            child: Text(error!, style: const TextStyle(color: AppColors.error)),
           ),
           const SizedBox(height: 8),
         ],

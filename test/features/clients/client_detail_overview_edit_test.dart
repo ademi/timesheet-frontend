@@ -131,6 +131,7 @@ void main() {
     );
     when(() => clients.listSites(any())).thenAnswer((_) async => []);
     when(() => clients.listContacts(any())).thenAnswer((_) async => []);
+    when(() => clients.listSupportPlans(any())).thenAnswer((_) async => []);
     controller = ClientsController(
       repository: clients,
       session: session,

@@ -14,9 +14,9 @@ class SupportPlanController extends GetxController {
     String? planId,
     this.clientName,
     this.ndisNumber,
-  })  : _repository = repository,
-        clientId = clientId ?? '',
-        _initialPlanId = planId;
+  }) : _repository = repository,
+       clientId = clientId ?? '',
+       _initialPlanId = planId;
 
   final ClientsRepository _repository;
 
@@ -348,6 +348,12 @@ class SupportPlanController extends GetxController {
     await _persist(activate: false);
   }
 
+  /// Reloads the last saved plan. Does not pop a route.
+  Future<void> discardDrafts() async {
+    errorMessage.value = null;
+    await load();
+  }
+
   Future<void> activate() async {
     if (!canActivate) {
       errorMessage.value = 'Set a next review date before activating.';
@@ -371,8 +377,10 @@ class SupportPlanController extends GetxController {
       if (id == null || id.isEmpty) {
         final createPayload = SupportPlanCreateRequest(body: body).toJson();
         lastSavedPayload = createPayload;
-        final created =
-            await _repository.createSupportPlan(clientId, createPayload);
+        final created = await _repository.createSupportPlan(
+          clientId,
+          createPayload,
+        );
         id = created.id;
         planId.value = id;
         if (!activate) {
@@ -402,8 +410,11 @@ class SupportPlanController extends GetxController {
         errorMessage.value = 'Missing plan id.';
         return;
       }
-      final saved =
-          await _repository.patchSupportPlan(clientId, idToPatch, payload);
+      final saved = await _repository.patchSupportPlan(
+        clientId,
+        idToPatch,
+        payload,
+      );
       applyLoadedPlan(saved);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -464,9 +475,10 @@ class SupportPlanGoalEditors {
 
   factory SupportPlanGoalEditors.fromGoal(SupportPlanGoal g) =>
       SupportPlanGoalEditors(
-        id: g.id.isEmpty
-            ? 'g-${DateTime.now().microsecondsSinceEpoch}-${g.sortOrder}'
-            : g.id,
+        id:
+            g.id.isEmpty
+                ? 'g-${DateTime.now().microsecondsSinceEpoch}-${g.sortOrder}'
+                : g.id,
         sortOrder: g.sortOrder,
         ndisGoal: TextEditingController(text: g.ndisGoal),
         strategy: TextEditingController(text: g.strategy),
@@ -482,13 +494,13 @@ class SupportPlanGoalEditors {
   final TextEditingController workerInstructions;
 
   SupportPlanGoal toGoal({required int sortOrder}) => SupportPlanGoal(
-        id: id,
-        ndisGoal: ndisGoal.text.trim(),
-        strategy: strategy.text.trim(),
-        measure: measure.text.trim(),
-        workerInstructions: workerInstructions.text.trim(),
-        sortOrder: sortOrder,
-      );
+    id: id,
+    ndisGoal: ndisGoal.text.trim(),
+    strategy: strategy.text.trim(),
+    measure: measure.text.trim(),
+    workerInstructions: workerInstructions.text.trim(),
+    sortOrder: sortOrder,
+  );
 
   void dispose() {
     ndisGoal.dispose();

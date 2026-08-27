@@ -8,11 +8,12 @@ import '../../../shared/widgets/form_sticky_actions.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../../../shared/widgets/subject_tab_bar.dart';
 import '../controllers/clients_controller.dart';
+import '../controllers/support_plan_controller.dart';
+import '../widgets/client_detail_care_plan_section.dart';
 import '../widgets/client_detail_contacts_section.dart';
 import '../widgets/client_detail_overview_section.dart';
 import '../widgets/client_detail_profile_section.dart';
 import '../widgets/client_detail_sites_section.dart';
-import '../widgets/client_detail_support_section.dart';
 import '../widgets/client_detail_visits_section.dart';
 import '../widgets/ndis_capture_prompt.dart';
 
@@ -45,9 +46,11 @@ class ClientDetailView extends GetView<ClientsController> {
       final tab = controller.tabIndex.value;
       final profileSelected = tab == ClientsController.tabProfile;
       final overviewSelected = tab == ClientsController.tabOverview;
+      final carePlanSelected = tab == ClientsController.tabCarePlan;
       final canEditProfile =
           controller.canManage || controller.canManageProfile;
       final canEditOverview = canEditProfile;
+      final canEditCarePlan = controller.canManage;
       final errorNotice =
           err == null
               ? null
@@ -87,7 +90,10 @@ class ClientDetailView extends GetView<ClientsController> {
           children: [
             if (controller.isLoading.value)
               const LinearProgressIndicator(minHeight: 2),
-            if (errorNotice != null && !profileSelected && !overviewSelected)
+            if (errorNotice != null &&
+                !profileSelected &&
+                !overviewSelected &&
+                !carePlanSelected)
               errorNotice,
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -124,9 +130,10 @@ class ClientDetailView extends GetView<ClientsController> {
                   if (ClientsController.isOnboardingIncomplete(client)) ...[
                     const SizedBox(height: 12),
                     _IncompleteOnboardingBanner(
-                      onContinue: controller.canManage
-                          ? () => controller.openResumeOnboarding(client)
-                          : null,
+                      onContinue:
+                          controller.canManage
+                              ? () => controller.openResumeOnboarding(client)
+                              : null,
                     ),
                   ],
                   if (controller.showNdisCapturePrompt) ...[
@@ -146,7 +153,12 @@ class ClientDetailView extends GetView<ClientsController> {
               labels: _tabLabels,
               index: tab,
               keyPrefix: 'client-detail-tab',
-              onChanged: (i) => controller.tabIndex.value = i,
+              onChanged: (i) {
+                if (i == ClientsController.tabCarePlan) {
+                  controller.ensureCarePlanController();
+                }
+                controller.tabIndex.value = i;
+              },
             ),
             Expanded(child: _tabContent(tab)),
             if (errorNotice != null && overviewSelected) errorNotice,
@@ -157,6 +169,8 @@ class ClientDetailView extends GetView<ClientsController> {
                 onPrimary: controller.saveOverviewProfile,
                 isLoading: controller.isSaving.value,
               ),
+            if (carePlanSelected && Get.isRegistered<SupportPlanController>())
+              _CarePlanSticky(canEdit: canEditCarePlan),
             if (errorNotice != null && profileSelected) errorNotice,
             if (profileSelected && canEditProfile)
               FormStickyActions(
@@ -201,7 +215,20 @@ class ClientDetailView extends GetView<ClientsController> {
           ),
         );
       case ClientsController.tabCarePlan:
-        return _scrollTab(_carePlanTempContent());
+        controller.ensureCarePlanController();
+        if (!Get.isRegistered<SupportPlanController>()) {
+          return _scrollTab(
+            const Text(
+              'No support arrangement yet.',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
+          );
+        }
+        return _scrollTab(
+          ClientDetailCarePlanSection(
+            controller: Get.find<SupportPlanController>(),
+          ),
+        );
       case ClientsController.tabVisits:
         return _scrollTab(
           ClientDetailVisitsSection(
@@ -212,42 +239,60 @@ class ClientDetailView extends GetView<ClientsController> {
             truncated: controller.visitsTruncated.value,
             hasVisitsAccess: controller.canViewVisits,
             onOpen: controller.openVisitDetail,
+            hasOngoing: controller.hasOngoing,
+            canManage: controller.canManageSupport,
+            supportItemCode: controller.standingJob.value?.supportItemCode,
+            supportItemName: controller.standingJob.value?.supportItemName,
+            onStartOngoing: controller.startOngoingSupport,
+            onBookOne: controller.bookOneSession,
+            onOpenOngoing: controller.openOngoingSupport,
           ),
         );
       case ClientsController.tabProfile:
         return _scrollTab(ClientDetailProfileSection(controller: controller));
       case ClientsController.tabOverview:
       default:
-        return _scrollTab(
-          ClientDetailOverviewSection(controller: controller),
-        );
+        return _scrollTab(ClientDetailOverviewSection(controller: controller));
     }
   }
+}
 
-  /// Temporary Care plan body: old Support tab minus the visits list.
-  Widget _carePlanTempContent() {
-    if (controller.canManageSupport ||
-        controller.hasOngoing ||
-        controller.canManage) {
-      return ClientDetailSupportSection(
-        hasOngoing: controller.hasOngoing,
-        canManage: controller.canManageSupport,
-        supportItemCode: controller.standingJob.value?.supportItemCode,
-        supportItemName: controller.standingJob.value?.supportItemName,
-        onStartOngoing: controller.startOngoingSupport,
-        onBookOne: controller.bookOneSession,
-        onOpenOngoing: controller.openOngoingSupport,
-        canManageSupportPlan: controller.canManage,
-        supportPlanStatus: controller.supportPlan.value?.status,
-        supportPlanNextReview: controller.supportPlan.value?.nextReviewAt,
-        supportPlanOverdue: controller.supportPlan.value?.reviewOverdue == true,
-        onOpenSupportPlan: controller.openSupportPlan,
+class _CarePlanSticky extends StatelessWidget {
+  const _CarePlanSticky({required this.canEdit});
+
+  final bool canEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final plan = Get.find<SupportPlanController>();
+      final err = plan.errorMessage.value;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (err != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: FloatingErrorNotice(
+                message: err,
+                onDismiss: () => plan.errorMessage.value = null,
+              ),
+            ),
+          if (canEdit)
+            FormStickyActions(
+              onCancel: plan.isSaving.value ? null : () => plan.discardDrafts(),
+              secondaryLabel: 'Save draft',
+              onSecondary: plan.isSaving.value ? null : () => plan.saveDraft(),
+              primaryLabel: 'Activate',
+              onPrimary:
+                  !plan.canActivate || plan.isSaving.value
+                      ? null
+                      : () => plan.activate(),
+              isLoading: plan.isSaving.value,
+            ),
+        ],
       );
-    }
-    return const Text(
-      'No support arrangement yet.',
-      style: TextStyle(color: AppColors.textMuted),
-    );
+    });
   }
 }
 
