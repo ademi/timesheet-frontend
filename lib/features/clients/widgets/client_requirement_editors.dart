@@ -19,6 +19,10 @@ class ClientRequirementEditor extends StatelessWidget {
     'client-requirement-document-picker',
   );
 
+  static const legalUploadPdfKey = ValueKey<String>(
+    'legal-consent-upload-pdf',
+  );
+
   final ClientsController controller;
   final RequirementDraft draft;
 
@@ -226,10 +230,17 @@ class _FieldInput extends StatelessWidget {
 }
 
 class _DocumentPicker extends StatelessWidget {
-  const _DocumentPicker({required this.controller, required this.draft});
+  const _DocumentPicker({
+    required this.controller,
+    required this.draft,
+    this.uploadLabel,
+    this.buttonKey,
+  });
 
   final ClientsController controller;
   final RequirementDraft draft;
+  final String? uploadLabel;
+  final Key? buttonKey;
 
   @override
   Widget build(BuildContext context) {
@@ -241,21 +252,23 @@ class _DocumentPicker extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           OutlinedButton.icon(
+            key: buttonKey,
             onPressed: controller.isSaving.value
                 ? null
                 : () => controller.pickFilesForRequirement(draft),
             icon: const Icon(Icons.upload_file_outlined),
             label: Text(
-              draft.requirement.maxFiles > 1
-                  ? 'Add file(s)'
-                  : (draft.requirement.acceptMimeTypes.any(
-                          (m) => m.toLowerCase().startsWith('image'),
-                        ) ||
-                        draft.requirement.acceptMimeTypes.any(
-                          (m) => m.toLowerCase().contains('image/*'),
-                        ))
-                      ? 'Choose from photos'
-                      : 'Upload file',
+              uploadLabel ??
+                  (draft.requirement.maxFiles > 1
+                      ? 'Add file(s)'
+                      : (draft.requirement.acceptMimeTypes.any(
+                              (m) => m.toLowerCase().startsWith('image'),
+                            ) ||
+                            draft.requirement.acceptMimeTypes.any(
+                              (m) => m.toLowerCase().contains('image/*'),
+                            ))
+                          ? 'Choose from photos'
+                          : 'Upload file'),
             ),
           ),
           if (existing != null) ...[
@@ -452,6 +465,13 @@ class _LegalBlock extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 10),
+          _DocumentPicker(
+            controller: controller,
+            draft: draft,
+            uploadLabel: 'Upload PDF',
+            buttonKey: ClientRequirementEditor.legalUploadPdfKey,
+          ),
+          const SizedBox(height: 10),
           TextField(
             controller: draft.participantNameCtrl,
             decoration: const InputDecoration(
@@ -483,15 +503,6 @@ class _LegalBlock extends StatelessWidget {
               border: OutlineInputBorder(),
             ),
           ),
-          if (draft.method.value == 'uploaded_scan') ...[
-            const SizedBox(height: 10),
-            Text(
-              'Upload a scanned copy of the signed consent.',
-              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
-            const SizedBox(height: 6),
-            _DocumentPicker(controller: controller, draft: draft),
-          ],
           const SizedBox(height: 10),
           TextField(
             controller: draft.noteCtrl,

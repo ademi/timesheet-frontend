@@ -619,6 +619,9 @@ class ClientsController extends GetxController
       return;
     }
     draft.localFiles.addAll(picked);
+    if (draft.requirement.isLegal && picked.isNotEmpty) {
+      draft.method.value = 'uploaded_scan';
+    }
   }
 
   static bool _acceptIsImagesOnly(
@@ -1162,29 +1165,33 @@ class ClientsController extends GetxController
         );
       }
       final method = draft.method.value;
-      var note = draft.noteCtrl.text.trim();
+      final note = draft.noteCtrl.text.trim();
+      String? scanDocId;
       if (method == 'uploaded_scan') {
-        if (draft.localFiles.isEmpty) {
-          throw const AppFailure(
-            code: 'scan_required',
-            message: 'Upload a scanned consent document for this method.',
-            presentation: AppFailurePresentation.inline,
+        if (draft.localFiles.isNotEmpty) {
+          scanDocId = await _uploadClientFiles(
+            clientId: clientId,
+            category: req.documentCategory ?? 'consent_scan',
+            files: draft.localFiles,
           );
+          if (scanDocId == null || scanDocId.isEmpty) {
+            throw const AppFailure(
+              code: 'scan_upload_failed',
+              message: 'Could not upload the consent scan.',
+              presentation: AppFailurePresentation.inline,
+            );
+          }
+        } else {
+          final existing = draft.existingDocumentId.value?.trim();
+          if (existing == null || existing.isEmpty) {
+            throw const AppFailure(
+              code: 'scan_required',
+              message: 'Upload a scanned consent document for this method.',
+              presentation: AppFailurePresentation.inline,
+            );
+          }
+          scanDocId = existing;
         }
-        final scanDocId = await _uploadClientFiles(
-          clientId: clientId,
-          category: req.documentCategory ?? 'consent_scan',
-          files: draft.localFiles,
-        );
-        if (scanDocId == null || scanDocId.isEmpty) {
-          throw const AppFailure(
-            code: 'scan_upload_failed',
-            message: 'Could not upload the consent scan.',
-            presentation: AppFailurePresentation.inline,
-          );
-        }
-        final scanNote = 'Uploaded scan document_id=$scanDocId';
-        note = note.isEmpty ? scanNote : '$note\n$scanNote';
       }
       await _repository.acceptClientLegal(
         clientId,
@@ -1196,6 +1203,7 @@ class ClientsController extends GetxController
           relationship: draft.relationshipCtrl.text.trim().nullIfEmpty,
           method: method,
           note: note.nullIfEmpty,
+          documentId: scanDocId,
         ),
       );
       return;

@@ -166,6 +166,11 @@ class RequirementDraft {
     if (acceptance.method != null) {
       method.value = acceptance.method!;
     }
+    if (acceptance.documentId != null && acceptance.documentId!.isNotEmpty) {
+      existingDocumentId.value = acceptance.documentId;
+      existingDocumentFilename.value = 'Consent PDF on file';
+      method.value = 'uploaded_scan';
+    }
   }
 
   static String formatDate(DateTime d) {
