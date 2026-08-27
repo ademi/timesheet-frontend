@@ -45,7 +45,7 @@ abstract final class EngagementsPages {
           middlewares: [
             AuthGuard(),
             ActorGuard(),
-            PermissionGuard(anyOf: [AppPermissions.contractorsInvite]),
+            PermissionGuard(anyOf: [AppPermissions.contractorsManage]),
           ],
           binding: ContractorOnboardingBinding(),
           page: () => const ContractorOnboardingView(),

@@ -134,6 +134,10 @@ class ContractorOnboardingController extends GetxController {
         return;
       }
     }
+    if (step.value == maxStep && selectedCategories.isEmpty) {
+      errorMessage.value = 'Select at least one required document.';
+      return;
+    }
     if (step.value < maxStep) {
       step.value++;
       return;
@@ -229,8 +233,8 @@ class ContractorOnboardingController extends GetxController {
   }
 
   Future<void> submit() async {
-    if (!_session.hasPermission(AppPermissions.contractorsInvite)) {
-      errorMessage.value = 'Missing contractors.invite permission.';
+    if (!_session.hasPermission(AppPermissions.contractorsManage)) {
+      errorMessage.value = 'Missing contractors.manage permission.';
       return;
     }
     isSaving.value = true;

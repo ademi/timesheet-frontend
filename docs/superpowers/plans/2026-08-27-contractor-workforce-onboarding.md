@@ -1,6 +1,6 @@
 # Contractor / Workforce Onboarding — Product & Engineering Plan
 
-> **Status:** Phase 0–4 done · **waiting for green light for Phase 5**.  
+> **Status:** Phases 0–5 complete · ready for broader QA / release.  
 > **Rule:** Implement **one phase at a time**. After each phase, stop and wait for explicit approval before starting the next.  
 > **Repos:** Frontend `timesheet-frontend` · Backend `…/flutter backend/timesheet/timesheet-backend` · DB `…/timesheet-db`
 
@@ -335,17 +335,17 @@ Each phase: **backend + db (if needed) → frontend → smoke test → STOP for 
 
 **Out of scope this phase:** staff upload-on-behalf of credential evidence (ACL remains contractor-owned).
 
-**Green light gate:** Staff can create full contractor, invite from stepper, and edit info on detail for invited/active/etc. **← waiting for your OK before Phase 5.**
+**Green light gate:** Staff can create full contractor, invite from stepper, and edit info on detail for invited/active/etc.
 
 ---
 
 ### Phase 5 — Polish, permissions, audit, docs
 
-- [ ] Permissions: `contractors.invite` vs new `contractors.manage` for create/edit profile.
-- [ ] Audit events for staff-entered PII / payment changes.
-- [ ] Empty states, validation messages, mobile layout for stepper.
-- [ ] Update internal docs / seed demos.
-- [ ] Regression: existing invite → register → accept → docs → approve → activate.
+- [x] Permissions: `contractors.invite` (light invite/resend) vs `contractors.manage` (create/edit profile) — manage already existed in seeds; create/patch + UI now gated on manage.
+- [x] Audit events for staff-entered PII / payment changes (`contractor_staff_invite_created`, `contractor_staff_created`, `contractor_profile_updated`, `contractor_payment_upserted` / `_deleted`) — field names / flags only, no raw PII.
+- [x] Empty states, validation messages, mobile layout for stepper.
+- [x] Update internal docs / seed demos (plan, manual-test matrix, seed-v2 README).
+- [x] Regression anchors: permission/audit tests in `tests/contractors/test_staff_create_permissions.py`; existing lifecycle / registration invite / NDIS smoke remain the invite→approve path.
 
 **Green light gate:** Ready for broader QA / release.
 
@@ -358,8 +358,8 @@ Phase 0  decisions
 Phase 1  invite list/resend          ← done
 Phase 2  ABN + payment + complete account  ← done
 Phase 3  awaiting_approval status    ← done
-Phase 4  staff stepper + detail edit ← done (waiting for green light)
-Phase 5  polish
+Phase 4  staff stepper + detail edit ← done
+Phase 5  polish                      ← done
 ```
 
 Do **not** start Phase N+1 until you say go after Phase N.

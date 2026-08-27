@@ -67,33 +67,53 @@ class ContractorOnboardingView
                   child: Obx(() {
                     final isLast = controller.step.value ==
                         ContractorOnboardingController.maxStep;
-                    return Row(
-                      children: [
-                        if (controller.step.value > 0)
-                          OutlinedButton(
+                    final narrow =
+                        MediaQuery.sizeOf(context).width < 420;
+                    final back = controller.step.value > 0
+                        ? OutlinedButton(
                             onPressed: controller.isSaving.value
                                 ? null
                                 : controller.previousStep,
                             child: const Text('Back'),
-                          ),
-                        const Spacer(),
-                        AsyncElevatedButton(
-                          onPressed: controller.nextStep,
-                          isLoading: controller.isSaving.value,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.onPrimary,
-                          ),
-                          child: Obx(
-                            () => Text(
-                              isLast
-                                  ? (controller.sendInvite.value
-                                      ? 'Save & invite'
-                                      : 'Save')
-                                  : 'Next',
-                            ),
-                          ),
+                          )
+                        : null;
+                    final next = AsyncElevatedButton(
+                      onPressed: controller.nextStep,
+                      isLoading: controller.isSaving.value,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onPrimary,
+                        minimumSize: narrow
+                            ? const Size.fromHeight(48)
+                            : null,
+                      ),
+                      child: Obx(
+                        () => Text(
+                          isLast
+                              ? (controller.sendInvite.value
+                                  ? 'Save & invite'
+                                  : 'Save')
+                              : 'Next',
                         ),
+                      ),
+                    );
+                    if (narrow) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          next,
+                          if (back != null) ...[
+                            const SizedBox(height: 8),
+                            back,
+                          ],
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        if (back != null) back,
+                        const Spacer(),
+                        next,
                       ],
                     );
                   }),
@@ -114,34 +134,55 @@ class _StepIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const labels = ContractorOnboardingController.stepLabels;
+    final narrow = MediaQuery.sizeOf(context).width < 520;
+    if (narrow) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (var i = 0; i < labels.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              SizedBox(
+                width: 88,
+                child: _stepCell(i, labels[i]),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
     return Row(
       children: [
         for (var i = 0; i < labels.length; i++) ...[
           if (i > 0) const SizedBox(width: 4),
-          Expanded(
-            child: Column(
-              children: [
-                Container(
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: i <= step ? AppColors.primary : AppColors.divider,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  labels[i],
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: i <= step ? AppColors.textDark : AppColors.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: _stepCell(i, labels[i])),
         ],
+      ],
+    );
+  }
+
+  Widget _stepCell(int i, String label) {
+    return Column(
+      children: [
+        Container(
+          height: 4,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: i <= step ? AppColors.primary : AppColors.divider,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 10,
+            color: i <= step ? AppColors.textDark : AppColors.textMuted,
+          ),
+        ),
       ],
     );
   }

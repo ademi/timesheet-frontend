@@ -425,7 +425,8 @@ Hide or disable controls the JWT lacks. Spot-check with a reduced-permission sta
 | Area                 | Need (any/all per design)             | Expected                      |
 | -------------------- | ------------------------------------- | ----------------------------- |
 | Workforce list       | `contractors.read`                    | Visible                       |
-| Invite               | `contractors.invite`                  | Button works                  |
+| Invite / re-email    | `contractors.invite`                  | Invite FAB / resend           |
+| Add contractor / profile edit | `contractors.manage`         | Stepper + detail Profile tab  |
 | Approve              | `contractors.approve`                 | Else explained empty / hidden |
 | Activate/suspend/end | `contractors.manage`                  | Gated                         |
 | Credential review    | `credentials.review`                  | Gated                         |
@@ -448,11 +449,11 @@ Hide or disable controls the JWT lacks. Spot-check with a reduced-permission sta
 
 Use this as a single dogfood script covering the critical chain.
 
-1. [ ] Staff login → invite **new** email with required categories.
-2. [ ] Open invite register link → lock email → create account → login.
+1. [ ] Staff login → **Add contractor** (manage) or **Invite** (invite) with required categories.
+2. [ ] Open invite register link → lock email → create account (ABN + optional payment) → login.
 3. [ ] Complete onboarding: legal → notices → consents → accept (sharing grant) → exit to home.
-4. [ ] Upload required credentials + evidence → scan clean.
-5. [ ] Staff review credentials → approve engagement → activate.
+4. [ ] Upload required credentials + evidence → scan clean → status moves to **awaiting_approval**.
+5. [ ] Staff review credentials → **Approve documents** and/or **Approve and activate for work**.
 6. [ ] Staff create client + site (lat/lng) → job + form → recurrence → generate visit.
 7. [ ] Contractor (mobile): check in → tasks/forms → complete.
 8. [ ] Staff: access history for a credential; contractor: privacy export / rights request smoke.

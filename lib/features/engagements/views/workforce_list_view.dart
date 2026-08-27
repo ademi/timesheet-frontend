@@ -22,30 +22,38 @@ class WorkforceListView extends GetView<WorkforceController> {
         title: const Text('Workforce'),
         actions: shellAppBarActions(),
       ),
-      floatingActionButton: !controller.canInvite
+      floatingActionButton: (!controller.canInvite && !controller.canManage)
           ? null
           : Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                FloatingActionButton.extended(
-                  heroTag: 'workforce-add',
-                  onPressed: () =>
-                      Get.toNamed(AppRoutes.staffWorkforceOnboarding),
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                  icon: const Icon(Icons.person_add),
-                  label: const Text('Add contractor'),
-                ),
-                const SizedBox(height: 12),
-                FloatingActionButton.extended(
-                  heroTag: 'workforce-invite',
-                  onPressed: () => Get.toNamed(AppRoutes.staffWorkforceInvite),
-                  backgroundColor: AppColors.surface,
-                  foregroundColor: AppColors.primary,
-                  icon: const Icon(Icons.mail_outline),
-                  label: const Text('Invite'),
-                ),
+                if (controller.canManage)
+                  FloatingActionButton.extended(
+                    heroTag: 'workforce-add',
+                    onPressed: () =>
+                        Get.toNamed(AppRoutes.staffWorkforceOnboarding),
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimary,
+                    icon: const Icon(Icons.person_add),
+                    label: const Text('Add contractor'),
+                  ),
+                if (controller.canManage && controller.canInvite)
+                  const SizedBox(height: 12),
+                if (controller.canInvite)
+                  FloatingActionButton.extended(
+                    heroTag: 'workforce-invite',
+                    onPressed: () =>
+                        Get.toNamed(AppRoutes.staffWorkforceInvite),
+                    backgroundColor: controller.canManage
+                        ? AppColors.surface
+                        : AppColors.primary,
+                    foregroundColor: controller.canManage
+                        ? AppColors.primary
+                        : AppColors.onPrimary,
+                    icon: const Icon(Icons.mail_outline),
+                    label: const Text('Invite'),
+                  ),
               ],
             ),
       body: Obx(() {
@@ -216,12 +224,43 @@ class WorkforceListView extends GetView<WorkforceController> {
                         ),
                       ),
                     if (pending.isEmpty && engagements.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 48),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 48),
                         child: Center(
-                          child: Text(
-                            'No contractors match this filter.',
-                            style: TextStyle(color: AppColors.textMuted),
+                          child: Column(
+                            children: [
+                              Text(
+                                controller.statusFilter.value == null &&
+                                        !controller.missingDocsFilter.value
+                                    ? 'No contractors yet.'
+                                    : 'No contractors match this filter.',
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                              if (controller.statusFilter.value == null &&
+                                  !controller.missingDocsFilter.value &&
+                                  (controller.canManage ||
+                                      controller.canInvite)) ...[
+                                const SizedBox(height: 16),
+                                if (controller.canManage)
+                                  TextButton.icon(
+                                    onPressed: () => Get.toNamed(
+                                      AppRoutes.staffWorkforceOnboarding,
+                                    ),
+                                    icon: const Icon(Icons.person_add),
+                                    label: const Text('Add contractor'),
+                                  ),
+                                if (controller.canInvite)
+                                  TextButton.icon(
+                                    onPressed: () => Get.toNamed(
+                                      AppRoutes.staffWorkforceInvite,
+                                    ),
+                                    icon: const Icon(Icons.mail_outline),
+                                    label: const Text('Invite contractor'),
+                                  ),
+                              ],
+                            ],
                           ),
                         ),
                       ),

@@ -411,8 +411,8 @@ class WorkforceController extends GetxController {
   Future<void> saveStaffProfile() async {
     final engagement = selected;
     if (engagement == null) return;
-    if (!canInvite) {
-      _setError('Missing contractors.invite permission.');
+    if (!canManage) {
+      _setError('Missing contractors.manage permission.');
       return;
     }
     isSavingProfile.value = true;

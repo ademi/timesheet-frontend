@@ -174,13 +174,13 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         const SizedBox(height: 16),
         TextField(
           controller: controller.profileFullNameCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'Full name'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: controller.profilePhoneCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'Phone'),
         ),
         const SizedBox(height: 12),
@@ -196,10 +196,10 @@ class WorkforceDetailView extends GetView<WorkforceController> {
                       .split('T')
                       .first,
             ),
-            trailing: controller.canInvite
+            trailing: controller.canManage
                 ? const Icon(Icons.calendar_today_outlined)
                 : null,
-            onTap: !controller.canInvite
+            onTap: !controller.canManage
                 ? null
                 : () async {
                     final now = DateTime.now();
@@ -216,7 +216,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         ),
         TextField(
           controller: controller.profileAbnCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'ABN'),
         ),
         const SizedBox(height: 16),
@@ -227,19 +227,19 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         const SizedBox(height: 8),
         TextField(
           controller: controller.profileAddress1Ctrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'Address line 1'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: controller.profileAddress2Ctrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'Address line 2'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: controller.profileSuburbCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'Suburb'),
         ),
         const SizedBox(height: 12),
@@ -248,7 +248,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
             Expanded(
               child: TextField(
                 controller: controller.profileStateCtrl,
-                enabled: controller.canInvite,
+                enabled: controller.canManage,
                 decoration: const InputDecoration(labelText: 'State'),
               ),
             ),
@@ -256,7 +256,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
             Expanded(
               child: TextField(
                 controller: controller.profilePostcodeCtrl,
-                enabled: controller.canInvite,
+                enabled: controller.canManage,
                 decoration: const InputDecoration(labelText: 'Postcode'),
               ),
             ),
@@ -265,7 +265,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         const SizedBox(height: 12),
         TextField(
           controller: controller.profileCountryCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'Country'),
         ),
         const SizedBox(height: 16),
@@ -276,7 +276,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         const SizedBox(height: 8),
         TextField(
           controller: controller.profileScreeningNumberCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'NDIS screening number'),
         ),
         const SizedBox(height: 12),
@@ -290,7 +290,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
               DropdownMenuItem(value: 'pending', child: Text('Pending')),
               DropdownMenuItem(value: 'other', child: Text('Other')),
             ],
-            onChanged: controller.canInvite
+            onChanged: controller.canManage
                 ? (v) => controller.profileScreeningStatus.value = v
                 : null,
           ),
@@ -298,46 +298,46 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         const SizedBox(height: 12),
         TextField(
           controller: controller.profileScreeningStateCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'Screening state'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: controller.profileWwccNumberCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'WWCC number'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: controller.profileWwccStateCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'WWCC state'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: controller.profileLicenceNumberCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'Licence number'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: controller.profileLicenceStateCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'Licence state'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: controller.profileVehiclePlateCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'Vehicle plate'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: controller.profileVehicleStateCtrl,
-          enabled: controller.canInvite,
+          enabled: controller.canManage,
           decoration: const InputDecoration(labelText: 'Vehicle state'),
         ),
-        if (controller.canInvite) ...[
+        if (controller.canManage) ...[
           const SizedBox(height: 20),
           AsyncElevatedButton(
             onPressed: controller.saveStaffProfile,
