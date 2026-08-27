@@ -3,8 +3,8 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
-import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
+import '../../../shared/widgets/form_sticky_actions.dart';
 import '../controllers/support_plan_controller.dart';
 
 class SupportPlanView extends GetView<SupportPlanController> {
@@ -376,55 +376,19 @@ class SupportPlanView extends GetView<SupportPlanController> {
                   onDismiss: () => controller.errorMessage.value = null,
                 ),
               ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: PageContent(
-                  width: PageContentWidth.narrow,
-                  child: Obx(() {
-                    final saving = controller.isSaving.value;
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed:
-                                saving ? null : () => controller.saveDraft(),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(48),
-                            ),
-                            child:
-                                saving
-                                    ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                    : const Text('Save draft'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AsyncElevatedButton(
-                            onPressed:
-                                !controller.canActivate || saving
-                                    ? null
-                                    : () => controller.activate(),
-                            isLoading: saving,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: AppColors.onPrimary,
-                              minimumSize: const Size.fromHeight(48),
-                            ),
-                            child: const Text('Activate'),
-                          ),
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-              ),
+            FormStickyActions(
+              onCancel: controller.isSaving.value ? null : () => Get.back(),
+              secondaryLabel: 'Save draft',
+              onSecondary:
+                  controller.isSaving.value
+                      ? null
+                      : () => controller.saveDraft(),
+              primaryLabel: 'Activate',
+              onPrimary:
+                  !controller.canActivate || controller.isSaving.value
+                      ? null
+                      : () => controller.activate(),
+              isLoading: controller.isSaving.value,
             ),
           ],
         );

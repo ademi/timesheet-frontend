@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
+import '../../../shared/widgets/form_sticky_actions.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../../../shared/widgets/subject_tab_bar.dart';
 import '../controllers/clients_controller.dart';
@@ -41,6 +42,19 @@ class ClientDetailView extends GetView<ClientsController> {
       }
       final err = controller.errorMessage.value;
       final tab = controller.tabIndex.value;
+      final detailsSelected = tab == ClientsController.tabDetails;
+      final canEditProfile =
+          controller.canManage || controller.canManageProfile;
+      final errorNotice =
+          err == null
+              ? null
+              : Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: FloatingErrorNotice(
+                  message: err,
+                  onDismiss: () => controller.errorMessage.value = null,
+                ),
+              );
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
@@ -70,14 +84,7 @@ class ClientDetailView extends GetView<ClientsController> {
           children: [
             if (controller.isLoading.value)
               const LinearProgressIndicator(minHeight: 2),
-            if (err != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: FloatingErrorNotice(
-                  message: err,
-                  onDismiss: () => controller.errorMessage.value = null,
-                ),
-              ),
+            if (errorNotice != null && !detailsSelected) errorNotice,
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Column(
@@ -135,6 +142,14 @@ class ClientDetailView extends GetView<ClientsController> {
                 children: [PageContent(child: _tabContent(tab))],
               ),
             ),
+            if (errorNotice != null && detailsSelected) errorNotice,
+            if (detailsSelected && canEditProfile)
+              FormStickyActions(
+                onCancel: controller.discardProfileDrafts,
+                primaryLabel: 'Save type & profile',
+                onPrimary: controller.saveClientTypeProfile,
+                isLoading: controller.isSaving.value,
+              ),
           ],
         ),
       );

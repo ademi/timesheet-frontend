@@ -842,6 +842,12 @@ class ClientsController extends GetxController
     }
   }
 
+  /// Reloads type + profile drafts from the server, dropping unsaved edits.
+  Future<void> discardProfileDrafts() async {
+    errorMessage.value = null;
+    await loadTypeTabForSelected();
+  }
+
   /// Saves client type + profile requirements from the Types tab.
   Future<void> saveClientTypeProfile() async {
     final client = selected.value;
