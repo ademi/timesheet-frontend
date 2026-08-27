@@ -317,16 +317,37 @@ class ClientsController extends GetxController
     createStepIndex.value = 0;
     createdClient.value = null;
     editing = client;
-    nameCtrl.text = client.fullName;
-    emailCtrl.text = client.email ?? '';
-    phoneCtrl.text = client.phone ?? '';
+    // I5: prefer dirty Overview drafts when editing the selected client
+    if (selected.value?.id == client.id && isOverviewDirty) {
+      syncFormDraftsFromOverview();
+    } else {
+      nameCtrl.text = client.fullName;
+      emailCtrl.text = client.email ?? '';
+      phoneCtrl.text = client.phone ?? '';
+      status.value = client.status;
+    }
     notesCtrl.text = client.serviceAgreementNotes ?? '';
-    status.value = client.status;
     errorMessage.value = null;
     profileSaveProgress.value = null;
     _resetFormPhoto();
     Get.toNamed(AppRoutes.staffClientForm, arguments: client);
     await loadFormProfilePhoto(client.id);
+  }
+
+  /// Copies Overview identity drafts into AppBar Edit form controllers (I5).
+  void syncFormDraftsFromOverview() {
+    nameCtrl.text = overviewNameCtrl.text;
+    emailCtrl.text = overviewEmailCtrl.text;
+    phoneCtrl.text = overviewPhoneCtrl.text;
+    status.value = overviewStatus.value;
+  }
+
+  /// Copies AppBar Edit form controllers into Overview drafts (I5).
+  void syncOverviewDraftsFromForm() {
+    overviewNameCtrl.text = nameCtrl.text;
+    overviewEmailCtrl.text = emailCtrl.text;
+    overviewPhoneCtrl.text = phoneCtrl.text;
+    overviewStatus.value = status.value;
   }
 
   void _resetFormPhoto() {
@@ -789,6 +810,8 @@ class ClientsController extends GetxController
         if (formPendingPhoto.value != null || formPhotoCleared.value) {
           await _persistFormPhoto(editing!.id);
         }
+        // I5: keep Overview drafts aligned with AppBar Edit after save
+        syncOverviewDraftsFromForm();
         if (isCreateFlow.value) {
           await openDetailById(editing!.id);
           return;
@@ -926,13 +949,19 @@ class ClientsController extends GetxController
     final rawDob = client.dob?.trim();
     final savedDob =
         rawDob == null || rawDob.isEmpty ? null : DateTime.tryParse(rawDob);
-    if (overviewDob.value != savedDob) return true;
+    if (!_sameCalendarDate(overviewDob.value, savedDob)) return true;
     final savedTypeId = client.clientTypeId ?? selectedClientTypeId.value;
     if (overviewClientTypeId.value != savedTypeId) return true;
     if (overviewNdisCtrl.text.trim() != (ndisFromFacts(profileFacts) ?? '')) {
       return true;
     }
     return false;
+  }
+
+  static bool _sameCalendarDate(DateTime? a, DateTime? b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   /// Drops unsaved Overview edits.
@@ -960,31 +989,42 @@ class ClientsController extends GetxController
   }
 
   /// Saves Overview identity fields (CR1 — never saveClient / saveClientTypeProfile).
+  /// Email/phone/DOB: blank fields keep the persisted value (I2/I3 — not wipeable).
   Future<void> saveOverviewProfile() async {
     final client = selected.value;
     if (client == null) return;
 
     final name = overviewNameCtrl.text.trim();
-    final email = overviewEmailCtrl.text.trim();
-    final phone = overviewPhoneCtrl.text.trim();
+    var email = overviewEmailCtrl.text.trim();
+    var phone = overviewPhoneCtrl.text.trim();
     if (name.isEmpty) {
       errorMessage.value = 'Full name is required.';
       return;
+    }
+    // I2: empty field keeps existing — restore into drafts so UI matches persist
+    if (email.isEmpty) {
+      email = client.email?.trim() ?? '';
+      overviewEmailCtrl.text = email;
+    }
+    if (phone.isEmpty) {
+      phone = client.phone?.trim() ?? '';
+      overviewPhoneCtrl.text = phone;
     }
     if (email.isEmpty && phone.isEmpty) {
       errorMessage.value = 'Provide an email and/or phone number.';
       return;
     }
+    // I3: DOB not wipeable — null overviewDob keeps client.dob
+    final dob =
+        overviewDob.value != null
+            ? RequirementDraft.formatDate(overviewDob.value!)
+            : client.dob;
 
     isSaving.value = true;
     errorMessage.value = null;
     profileSaveProgress.value = null;
     try {
       final typeId = overviewClientTypeId.value;
-      final dob =
-          overviewDob.value != null
-              ? RequirementDraft.formatDate(overviewDob.value!)
-              : client.dob;
       final patched = await _repository.patchClient(
         client.id,
         ClientUpdateRequest(
@@ -1034,6 +1074,7 @@ class ClientsController extends GetxController
       }
 
       hydrateOverviewDrafts();
+      syncFormDraftsFromOverview();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (e) {

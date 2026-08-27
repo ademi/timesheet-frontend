@@ -71,7 +71,8 @@ class ClientDetailOverviewSection extends StatelessWidget {
             decoration: const InputDecoration(
               labelText: 'Email',
               border: OutlineInputBorder(),
-              helperText: 'Email or phone is required',
+              helperText:
+                  'Email or phone required. Leave blank to keep the current value (clearing is not supported).',
             ),
           ),
           const SizedBox(height: 12),
@@ -83,6 +84,7 @@ class ClientDetailOverviewSection extends StatelessWidget {
             decoration: const InputDecoration(
               labelText: 'Phone',
               border: OutlineInputBorder(),
+              helperText: 'Leave blank to keep the current value.',
             ),
           ),
           const SizedBox(height: 12),
@@ -93,6 +95,10 @@ class ClientDetailOverviewSection extends StatelessWidget {
               controller.overviewDob.value == null
                   ? 'Date of birth'
                   : 'Date of birth: ${_fmt(controller.overviewDob.value!)}',
+            ),
+            subtitle: const Text(
+              'Tap to change. Clearing date of birth is not supported.',
+              style: TextStyle(fontSize: 12),
             ),
             trailing: const Icon(Icons.calendar_today),
             onTap:

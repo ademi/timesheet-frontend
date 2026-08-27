@@ -379,4 +379,48 @@ void main() {
 
     expect(controller.tabIndex.value, ClientsController.tabOverview);
   });
+
+  test('saveOverviewProfile blank email keeps existing (I2)', () async {
+    controller.hydrateOverviewDrafts();
+    controller.overviewEmailCtrl.text = '';
+    controller.overviewPhoneCtrl.text = '+61400000100';
+    when(() => clients.patchClient(any(), any())).thenAnswer((_) async => _client);
+
+    await controller.saveOverviewProfile();
+
+    final captured =
+        verify(() => clients.patchClient(_client.id, captureAny())).captured.single
+            as ClientUpdateRequest;
+    expect(captured.email, 'demo@example.com');
+    expect(controller.overviewEmailCtrl.text, 'demo@example.com');
+  });
+
+  test('saveOverviewProfile null DOB keeps existing (I3)', () async {
+    controller.hydrateOverviewDrafts();
+    controller.overviewDob.value = null;
+    when(() => clients.patchClient(any(), any())).thenAnswer((_) async => _client);
+
+    await controller.saveOverviewProfile();
+
+    final captured =
+        verify(() => clients.patchClient(_client.id, captureAny())).captured.single
+            as ClientUpdateRequest;
+    expect(captured.dob, '1990-05-15');
+  });
+
+  test('syncFormDraftsFromOverview copies dirty Overview identity (I5)', () {
+    controller.hydrateOverviewDrafts();
+    controller.overviewNameCtrl.text = 'Edited On Overview';
+    controller.overviewEmailCtrl.text = 'ov@example.com';
+    controller.overviewPhoneCtrl.text = '+61400999888';
+    controller.overviewStatus.value = 'inactive';
+
+    expect(controller.isOverviewDirty, isTrue);
+    controller.syncFormDraftsFromOverview();
+
+    expect(controller.nameCtrl.text, 'Edited On Overview');
+    expect(controller.emailCtrl.text, 'ov@example.com');
+    expect(controller.phoneCtrl.text, '+61400999888');
+    expect(controller.status.value, 'inactive');
+  });
 }

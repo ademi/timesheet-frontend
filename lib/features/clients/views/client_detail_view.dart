@@ -215,7 +215,6 @@ class ClientDetailView extends GetView<ClientsController> {
           ),
         );
       case ClientsController.tabCarePlan:
-        controller.ensureCarePlanController();
         if (!Get.isRegistered<SupportPlanController>()) {
           return _scrollTab(
             const Text(
