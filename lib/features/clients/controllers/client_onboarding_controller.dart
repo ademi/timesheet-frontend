@@ -17,6 +17,7 @@ import '../utils/onboarding_age.dart';
 import '../utils/onboarding_keys.dart';
 import '../utils/site_geocode_apply.dart';
 import '../widgets/contact_form_host.dart';
+import '../widgets/onboarding/onboarding_identity_step.dart';
 import '../widgets/site_form_host.dart';
 import 'clients_controller.dart';
 
@@ -71,6 +72,8 @@ class ClientOnboardingController extends GetxController
   final ndisCtrl = TextEditingController();
   final medicareCtrl = TextEditingController();
   final allergiesCtrl = TextEditingController();
+  final referralOtherCtrl = TextEditingController();
+  final sexGenderOtherCtrl = TextEditingController();
   final dob = Rxn<DateTime>();
   final sexGender = RxnString();
   final atsiStatus = RxnString();
@@ -144,6 +147,26 @@ class ClientOnboardingController extends GetxController
     if (preset == null || preset.isEmpty) return null;
     if (preset == ContactFormHost.relationshipOtherKey) {
       final other = contactRelationshipOtherCtrl.text.trim();
+      return other.isEmpty ? null : other;
+    }
+    return preset;
+  }
+
+  String? get resolvedReferralSource {
+    final preset = referralSource.value;
+    if (preset == null || preset.isEmpty) return null;
+    if (preset == OnboardingIdentityStep.otherPresetKey) {
+      final other = referralOtherCtrl.text.trim();
+      return other.isEmpty ? null : other;
+    }
+    return preset;
+  }
+
+  String? get resolvedSexGender {
+    final preset = sexGender.value;
+    if (preset == null || preset.isEmpty) return null;
+    if (preset == OnboardingIdentityStep.otherPresetKey) {
+      final other = sexGenderOtherCtrl.text.trim();
       return other.isEmpty ? null : other;
     }
     return preset;
@@ -234,6 +257,8 @@ class ClientOnboardingController extends GetxController
     ndisCtrl.clear();
     medicareCtrl.clear();
     allergiesCtrl.clear();
+    referralOtherCtrl.clear();
+    sexGenderOtherCtrl.clear();
     sexGender.value = null;
     atsiStatus.value = null;
     referralSource.value = null;
@@ -310,6 +335,39 @@ class ClientOnboardingController extends GetxController
     step.value = 0;
   }
 
+  /// Applies stored profile facts to Identity fields (CR5 Other hydration).
+  void hydrateIdentityFromFacts(Iterable<ClientProfileFactOut> facts) {
+    for (final fact in facts) {
+      final stored = fact.valueJson?.toString();
+      switch (fact.requirementKey) {
+        case OnboardingKeys.referralSource:
+          _applyHydratedReferral(stored);
+        case OnboardingKeys.sexGender:
+          _applyHydratedSexGender(stored);
+        case OnboardingKeys.ndis:
+          ndisCtrl.text = stored?.trim() ?? '';
+        case OnboardingKeys.medicareCard:
+          medicareCtrl.text = stored?.trim() ?? '';
+        case OnboardingKeys.allergies:
+          allergiesCtrl.text = stored?.trim() ?? '';
+        case OnboardingKeys.atsiStatus:
+          atsiStatus.value = stored?.trim();
+      }
+    }
+  }
+
+  void _applyHydratedReferral(String? stored) {
+    final hydrated = OnboardingIdentityStep.hydrateReferral(stored);
+    referralSource.value = hydrated.preset;
+    referralOtherCtrl.text = hydrated.otherText;
+  }
+
+  void _applyHydratedSexGender(String? stored) {
+    final hydrated = OnboardingIdentityStep.hydrateSexGender(stored);
+    sexGender.value = hydrated.preset;
+    sexGenderOtherCtrl.text = hydrated.otherText;
+  }
+
   void onPlanStartPicked(DateTime start) {
     planStartDate.value = start;
     planEndDate.value ??= DateTime(start.year + 1, start.month, start.day);
@@ -323,6 +381,8 @@ class ClientOnboardingController extends GetxController
     ndisCtrl.dispose();
     medicareCtrl.dispose();
     allergiesCtrl.dispose();
+    referralOtherCtrl.dispose();
+    sexGenderOtherCtrl.dispose();
     siteNameCtrl.dispose();
     siteAddressCtrl.dispose();
     siteCityCtrl.dispose();
@@ -409,6 +469,16 @@ class ClientOnboardingController extends GetxController
       ndisFieldError.value = 'NDIS number is required.';
       return false;
     }
+    if (referralSource.value == OnboardingIdentityStep.otherPresetKey &&
+        (resolvedReferralSource == null || resolvedReferralSource!.isEmpty)) {
+      errorMessage.value = 'Specify the referral source.';
+      return false;
+    }
+    if (sexGender.value == OnboardingIdentityStep.otherPresetKey &&
+        (resolvedSexGender == null || resolvedSexGender!.isEmpty)) {
+      errorMessage.value = 'Specify sex / gender.';
+      return false;
+    }
 
     isSaving.value = true;
     try {
@@ -461,12 +531,12 @@ class ClientOnboardingController extends GetxController
         );
       }
 
-      await _putOptionalFact(id, OnboardingKeys.sexGender, sexGender.value);
+      await _putOptionalFact(id, OnboardingKeys.sexGender, resolvedSexGender);
       await _putOptionalFact(id, OnboardingKeys.atsiStatus, atsiStatus.value);
       await _putOptionalFact(
         id,
         OnboardingKeys.referralSource,
-        referralSource.value,
+        resolvedReferralSource,
       );
       final allergies = allergiesCtrl.text.trim();
       if (allergies.isNotEmpty) {

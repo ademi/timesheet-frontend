@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../shared/widgets/other_text_field.dart';
 import '../../../../shared/widgets/profile_photo_editor.dart';
 import '../../controllers/client_onboarding_controller.dart';
 
@@ -9,12 +10,15 @@ class OnboardingIdentityStep extends StatelessWidget {
 
   final ClientOnboardingController controller;
 
+  static const otherPresetKey = 'Other';
+
   static const sexOptions = [
     'Male',
     'Female',
     'Non-binary',
     'Undisclosed',
     'Prefer not to say',
+    otherPresetKey,
   ];
   static const atsiOptions = [
     'Aboriginal',
@@ -27,8 +31,44 @@ class OnboardingIdentityStep extends StatelessWidget {
     'LAC',
     'Friend/Family',
     'Self Referred',
-    'Other',
+    otherPresetKey,
   ];
+
+  /// Maps stored referral to UI preset + free-text companion (CR5).
+  static ({String? preset, String otherText}) hydrateReferral(String? stored) {
+    final v = stored?.trim();
+    if (v == null || v.isEmpty) {
+      return (preset: null, otherText: '');
+    }
+    if (v.toLowerCase() == 'other') {
+      return (preset: otherPresetKey, otherText: '');
+    }
+    if (referralOptions.contains(v) && v != otherPresetKey) {
+      return (preset: v, otherText: '');
+    }
+    if (v == otherPresetKey) {
+      return (preset: otherPresetKey, otherText: '');
+    }
+    return (preset: otherPresetKey, otherText: v);
+  }
+
+  /// Maps stored sex/gender to UI preset + free-text companion (CR5).
+  static ({String? preset, String otherText}) hydrateSexGender(String? stored) {
+    final v = stored?.trim();
+    if (v == null || v.isEmpty) {
+      return (preset: null, otherText: '');
+    }
+    if (v.toLowerCase() == 'other') {
+      return (preset: otherPresetKey, otherText: '');
+    }
+    if (sexOptions.contains(v) && v != otherPresetKey) {
+      return (preset: v, otherText: '');
+    }
+    if (v == otherPresetKey) {
+      return (preset: otherPresetKey, otherText: '');
+    }
+    return (preset: otherPresetKey, otherText: v);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +165,17 @@ class OnboardingIdentityStep extends StatelessWidget {
               for (final o in referralOptions)
                 DropdownMenuItem(value: o, child: Text(o)),
             ],
-            onChanged: (v) => controller.referralSource.value = v,
+            onChanged: (v) {
+              controller.referralSource.value = v;
+              if (v != otherPresetKey) {
+                controller.referralOtherCtrl.clear();
+              }
+            },
+          ),
+          OtherTextField(
+            isOther: controller.referralSource.value == otherPresetKey,
+            controller: controller.referralOtherCtrl,
+            label: 'Referral source (other)',
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
@@ -142,7 +192,17 @@ class OnboardingIdentityStep extends StatelessWidget {
               for (final o in sexOptions)
                 DropdownMenuItem(value: o, child: Text(o)),
             ],
-            onChanged: (v) => controller.sexGender.value = v,
+            onChanged: (v) {
+              controller.sexGender.value = v;
+              if (v != otherPresetKey) {
+                controller.sexGenderOtherCtrl.clear();
+              }
+            },
+          ),
+          OtherTextField(
+            isOther: controller.sexGender.value == otherPresetKey,
+            controller: controller.sexGenderOtherCtrl,
+            label: 'Sex / gender (other)',
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(

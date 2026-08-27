@@ -9,6 +9,7 @@ import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
 import 'package:rostiq/features/clients/widgets/contact_form_host.dart';
+import 'package:rostiq/features/clients/widgets/onboarding/onboarding_identity_step.dart';
 import 'package:rostiq/features/documents/data/document_pipeline.dart';
 import 'package:rostiq/shared/models/profile_photo_models.dart';
 
@@ -773,5 +774,126 @@ void main() {
     c.planEndDate.value = existingEnd;
     c.onPlanStartPicked(DateTime(2026, 3, 15));
     expect(c.planEndDate.value, existingEnd);
+  });
+
+  group('referral Other (CR5)', () {
+    test('hydrateReferral maps custom text to Other preset', () {
+      final hydrated = OnboardingIdentityStep.hydrateReferral('Community Centre');
+      expect(hydrated.preset, OnboardingIdentityStep.otherPresetKey);
+      expect(hydrated.otherText, 'Community Centre');
+    });
+
+    test('hydrateReferral keeps known presets', () {
+      final hydrated = OnboardingIdentityStep.hydrateReferral('NDIS');
+      expect(hydrated.preset, 'NDIS');
+      expect(hydrated.otherText, isEmpty);
+    });
+
+    test('submitIdentity rejects referral Other without free-text', () async {
+      when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
+
+      c.fullName.text = 'Sam';
+      c.phone.text = '+61411111111';
+      c.dob.value = DateTime(1990, 1, 1);
+      c.ndisCtrl.text = '430118201';
+      c.referralSource.value = OnboardingIdentityStep.otherPresetKey;
+
+      expect(await c.submitIdentity(), isFalse);
+      expect(c.errorMessage.value, contains('referral'));
+      verifyNever(() => mock.upsertProfileFact(any(), any(), any()));
+    });
+
+    test('submitIdentity saves typed referral string for Other', () async {
+      ProfileFactUpsert? captured;
+      when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
+      when(() => mock.upsertProfileFact(any(), any(), any()))
+          .thenAnswer((inv) async {
+        final key = inv.positionalArguments[1] as String;
+        if (key == OnboardingKeys.referralSource) {
+          captured = inv.positionalArguments[2] as ProfileFactUpsert;
+        }
+      });
+
+      c.fullName.text = 'Sam';
+      c.phone.text = '+61411111111';
+      c.dob.value = DateTime(1990, 1, 1);
+      c.ndisCtrl.text = '430118201';
+      c.referralSource.value = OnboardingIdentityStep.otherPresetKey;
+      c.referralOtherCtrl.text = 'Community Centre';
+
+      expect(await c.submitIdentity(), isTrue);
+      expect(captured?.valueJson, 'Community Centre');
+      expect(captured?.valueJson, isNot('Other'));
+    });
+  });
+
+  group('sex Other (CR5)', () {
+    test('hydrateSexGender maps custom text to Other preset', () {
+      final hydrated = OnboardingIdentityStep.hydrateSexGender('Agender');
+      expect(hydrated.preset, OnboardingIdentityStep.otherPresetKey);
+      expect(hydrated.otherText, 'Agender');
+    });
+
+    test('hydrateSexGender keeps known presets', () {
+      final hydrated = OnboardingIdentityStep.hydrateSexGender('Non-binary');
+      expect(hydrated.preset, 'Non-binary');
+      expect(hydrated.otherText, isEmpty);
+    });
+
+    test('submitIdentity rejects sex Other without free-text', () async {
+      when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
+
+      c.fullName.text = 'Sam';
+      c.phone.text = '+61411111111';
+      c.dob.value = DateTime(1990, 1, 1);
+      c.ndisCtrl.text = '430118201';
+      c.sexGender.value = OnboardingIdentityStep.otherPresetKey;
+
+      expect(await c.submitIdentity(), isFalse);
+      expect(c.errorMessage.value, contains('sex'));
+      verifyNever(() => mock.upsertProfileFact(any(), any(), any()));
+    });
+
+    test('submitIdentity saves typed sex string for Other', () async {
+      ProfileFactUpsert? captured;
+      when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
+      when(() => mock.upsertProfileFact(any(), any(), any()))
+          .thenAnswer((inv) async {
+        final key = inv.positionalArguments[1] as String;
+        if (key == OnboardingKeys.sexGender) {
+          captured = inv.positionalArguments[2] as ProfileFactUpsert;
+        }
+      });
+
+      c.fullName.text = 'Sam';
+      c.phone.text = '+61411111111';
+      c.dob.value = DateTime(1990, 1, 1);
+      c.ndisCtrl.text = '430118201';
+      c.sexGender.value = OnboardingIdentityStep.otherPresetKey;
+      c.sexGenderOtherCtrl.text = 'Agender';
+
+      expect(await c.submitIdentity(), isTrue);
+      expect(captured?.valueJson, 'Agender');
+      expect(captured?.valueJson, isNot('Other'));
+    });
+  });
+
+  test('hydrateIdentityFromFacts maps unknown referral and sex to Other + text',
+      () {
+    c.hydrateIdentityFromFacts([
+      const ClientProfileFactOut(
+        requirementKey: OnboardingKeys.referralSource,
+        valueJson: 'Community Centre',
+      ),
+      const ClientProfileFactOut(
+        requirementKey: OnboardingKeys.sexGender,
+        valueJson: 'Agender',
+      ),
+    ]);
+
+    expect(c.referralSource.value, OnboardingIdentityStep.otherPresetKey);
+    expect(c.referralOtherCtrl.text, 'Community Centre');
+    expect(c.sexGender.value, OnboardingIdentityStep.otherPresetKey);
+    expect(c.sexGenderOtherCtrl.text, 'Agender');
   });
 }
