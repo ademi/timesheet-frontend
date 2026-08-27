@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -9,6 +10,8 @@ import 'package:rostiq/features/clients/data/models/support_plan_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
 import 'package:rostiq/features/clients/utils/support_plan_keys.dart';
+import 'package:rostiq/features/clients/widgets/support_plan_consent_section.dart';
+import 'package:rostiq/features/clients/widgets/support_plan_funding_section.dart';
 
 class _MockClientsRepository extends Mock implements ClientsRepository {}
 
@@ -155,8 +158,8 @@ void main() {
 
   test('D3=A fact failure skips plan PATCH and reloads', () async {
     var reloads = 0;
-    when(() => mock.upsertProfileFact(any(), any(), any())).thenThrow(
-      const AppFailure(
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer(
+      (_) async => throw const AppFailure(
         code: 'server_error',
         message: 'fact failed',
         presentation: AppFailurePresentation.inline,
@@ -240,5 +243,169 @@ void main() {
     await plan.discardDrafts();
     expect(reloads, greaterThan(0));
     plan.onClose();
+  });
+
+  test('activate with missing SA sets soft warning but still patches', () async {
+    when(() => mock.upsertProfileFact(any(), any(), any()))
+        .thenAnswer((_) async {});
+    when(() => mock.patchSupportPlan(any(), any(), any())).thenAnswer(
+      (_) async => _plan(status: SupportPlanKeys.statusActive),
+    );
+
+    final store = SupportPlanFundingConsentStore(repository: mock)
+      ..hasHydrated = true
+      ..planManagementType.value = 'self_managed'
+      ..consentAgreementComplete.value = true
+      ..serviceAgreementComplete.value = false;
+    final plan = SupportPlanController(
+      repository: mock,
+      clientId: 'c1',
+      planId: 'plan-1',
+      fundingConsent: store,
+    );
+    plan.nextReviewAt.value = '2026-09-01';
+
+    await plan.activate();
+
+    expect(plan.status.value, SupportPlanKeys.statusActive);
+    expect(plan.activateSoftWarning.value, contains('Service Agreement'));
+    verify(() => mock.patchSupportPlan('c1', 'plan-1', any())).called(1);
+    plan.onClose();
+  });
+
+  test('isBusy is true when fundingConsent.isBusy', () {
+    final store = SupportPlanFundingConsentStore(repository: mock);
+    final plan = SupportPlanController(
+      repository: mock,
+      clientId: 'c1',
+      fundingConsent: store,
+    );
+    expect(plan.isBusy, isFalse);
+    store.isBusy.value = true;
+    expect(plan.isBusy, isTrue);
+    plan.onClose();
+  });
+
+  test('D7=A _persist no-ops while store.isBusy', () async {
+    final store = SupportPlanFundingConsentStore(repository: mock)
+      ..isBusy.value = true
+      ..hasHydrated = true
+      ..planManagementType.value = 'self_managed';
+    final plan = SupportPlanController(
+      repository: mock,
+      clientId: 'c1',
+      planId: 'plan-1',
+      fundingConsent: store,
+    );
+    await plan.saveDraft();
+    verifyNever(() => mock.patchSupportPlan(any(), any(), any()));
+    verifyNever(() => mock.upsertProfileFact(any(), any(), any()));
+    plan.onClose();
+  });
+
+  test('D14=C 409 profile_fact_conflict reloads and skips plan PATCH', () async {
+    var reloads = 0;
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer(
+      (_) async => throw const AppFailure(
+        code: 'profile_fact_conflict',
+        message: 'stale',
+        statusCode: 409,
+        presentation: AppFailurePresentation.inline,
+      ),
+    );
+    when(() => mock.getClientProfile(any())).thenAnswer(
+      (_) async => const ClientProfileBundle(),
+    );
+
+    final store = SupportPlanFundingConsentStore(repository: mock)
+      ..hasHydrated = true
+      ..planManagementType.value = 'self_managed'
+      ..onReload = () => reloads++;
+    final plan = SupportPlanController(
+      repository: mock,
+      clientId: 'c1',
+      planId: 'plan-1',
+      fundingConsent: store,
+    );
+
+    await plan.saveDraft();
+
+    expect(
+      plan.errorMessage.value,
+      SupportPlanFundingConsentStore.conflictMessage,
+    );
+    expect(reloads, greaterThan(0));
+    verifyNever(() => mock.patchSupportPlan(any(), any(), any()));
+    plan.onClose();
+  });
+
+  test('persistFacts sends expectedUpdatedAt from hydrate snapshot', () async {
+    final captured = <String, ProfileFactUpsert>{};
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((inv) {
+      final key = inv.positionalArguments[1] as String;
+      captured[key] = inv.positionalArguments[2] as ProfileFactUpsert;
+      return Future.value();
+    });
+
+    final stamp = DateTime.utc(2026, 8, 1, 12);
+    final store = SupportPlanFundingConsentStore(repository: mock);
+    store.applyProfileBundle(
+      ClientProfileBundle(
+        facts: [
+          ClientProfileFactOut(
+            requirementKey: OnboardingKeys.planManagementType,
+            valueJson: 'ndia',
+            updatedAt: stamp,
+          ),
+        ],
+      ),
+    );
+    store.planManagementType.value = 'self_managed';
+
+    await store.persistFacts(clientId: 'c1');
+    expect(
+      captured[OnboardingKeys.planManagementType]?.expectedUpdatedAt,
+      stamp,
+    );
+    store.dispose();
+  });
+
+  testWidgets('Funding section shows plan management and NDIA PDF CTA',
+      (tester) async {
+    final store = SupportPlanFundingConsentStore(repository: mock);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SupportPlanFundingSection(store: store, clientId: 'c1'),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Funding'), findsOneWidget);
+    expect(find.textContaining('Plan management'), findsOneWidget);
+    expect(find.textContaining('NDIA plan PDF'), findsWidgets);
+    expect(find.textContaining('Preferred claiming'), findsOneWidget);
+    store.dispose();
+  });
+
+  testWidgets('Consent section shows legal status and share flags',
+      (tester) async {
+    final store = SupportPlanFundingConsentStore(repository: mock);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SupportPlanConsentSection(store: store, clientId: 'c1'),
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Consent & agreements'), findsOneWidget);
+    expect(find.textContaining('Consent agreement'), findsOneWidget);
+    expect(find.textContaining('Service agreement'), findsOneWidget);
+    expect(find.textContaining('Information share'), findsOneWidget);
+    expect(find.textContaining('Specific supports'), findsOneWidget);
+    store.dispose();
   });
 }

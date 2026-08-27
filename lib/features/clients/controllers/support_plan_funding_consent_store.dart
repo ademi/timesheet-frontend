@@ -39,6 +39,10 @@ class SupportPlanFundingConsentStore {
   bool hasHydrated = false;
 
   final _presentKeys = <String>{};
+  final _factUpdatedAt = <String, DateTime>{};
+
+  static const conflictMessage =
+      'Funding was updated elsewhere — review and save again.';
 
   // ── Funding ───────────────────────────────────────────────────────────
   final planManagementType = RxnString();
@@ -82,6 +86,12 @@ class SupportPlanFundingConsentStore {
     _presentKeys
       ..clear()
       ..addAll(bundle.facts.map((f) => f.requirementKey));
+    _factUpdatedAt
+      ..clear()
+      ..addEntries([
+        for (final f in bundle.facts)
+          if (f.updatedAt != null) MapEntry(f.requirementKey, f.updatedAt!),
+      ]);
 
     planManagementType.value = _stringFact(bundle, OnboardingKeys.planManagementType);
     planManagerNameCtrl.text =
@@ -130,6 +140,11 @@ class SupportPlanFundingConsentStore {
     hasHydrated = true;
   }
 
+  void onPlanStartPicked(DateTime picked) {
+    planStartDate.value = picked;
+    planEndDate.value ??= DateTime(picked.year + 1, picked.month, picked.day);
+  }
+
   Future<void> reload(String clientId) async {
     if (clientId.isEmpty) return;
     isLoading.value = true;
@@ -176,6 +191,7 @@ class SupportPlanFundingConsentStore {
 
     void putValue(String key, String label, Object? value) {
       if (value == null) return;
+      final expected = _factUpdatedAt[key];
       if (value is String && value.isEmpty) {
         if (!_presentKeys.contains(key)) return; // D10: never-loaded empty
         jobs.add((
@@ -184,7 +200,10 @@ class SupportPlanFundingConsentStore {
           future: _repository.upsertProfileFact(
             clientId,
             key,
-            const ProfileFactUpsert(clearValue: true),
+            ProfileFactUpsert(
+              clearValue: true,
+              expectedUpdatedAt: expected,
+            ),
           ),
         ));
         return;
@@ -195,7 +214,10 @@ class SupportPlanFundingConsentStore {
         future: _repository.upsertProfileFact(
           clientId,
           key,
-          ProfileFactUpsert(valueJson: value),
+          ProfileFactUpsert(
+            valueJson: value,
+            expectedUpdatedAt: expected,
+          ),
         ),
       ));
     }
@@ -302,12 +324,17 @@ class SupportPlanFundingConsentStore {
         try {
           await j.future;
           return null;
+        } on AppFailure catch (e) {
+          if (e.code == 'profile_fact_conflict' || e.statusCode == 409) {
+            return conflictMessage;
+          }
+          return j.label;
         } catch (_) {
           return j.label;
         }
       }),
     );
-    return results.whereType<String>().toList(growable: false);
+    return results.whereType<String>().toSet().toList(growable: false);
   }
 
   Future<bool> uploadNdisPlanPdf({required String clientId}) async {

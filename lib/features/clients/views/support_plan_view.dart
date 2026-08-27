@@ -6,7 +6,9 @@ import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
 import '../controllers/support_plan_controller.dart';
+import '../widgets/support_plan_consent_section.dart';
 import '../widgets/support_plan_form_body.dart';
+import '../widgets/support_plan_funding_section.dart';
 
 class SupportPlanView extends GetView<SupportPlanController> {
   const SupportPlanView({super.key});
@@ -20,7 +22,10 @@ class SupportPlanView extends GetView<SupportPlanController> {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
-        final err = controller.errorMessage.value;
+        final err = controller.errorMessage.value ??
+            controller.fundingConsent.errorMessage.value;
+        final soft = controller.activateSoftWarning.value;
+        final busy = controller.isBusy;
         return Column(
           children: [
             Expanded(
@@ -29,32 +34,77 @@ class SupportPlanView extends GetView<SupportPlanController> {
                 children: [
                   PageContent(
                     width: PageContentWidth.narrow,
-                    child: SupportPlanFormBody(controller: controller),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (controller.reviewOverdue.value) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.openSlotBackground,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.openSlot),
+                            ),
+                            child: const Text(
+                              'Review overdue',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.openSlot,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        SupportPlanFundingSection(
+                          store: controller.fundingConsent,
+                          clientId: controller.clientId,
+                        ),
+                        const SizedBox(height: 24),
+                        SupportPlanFormBody(controller: controller),
+                        const SizedBox(height: 24),
+                        SupportPlanConsentSection(
+                          store: controller.fundingConsent,
+                          clientId: controller.clientId,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
+            if (soft != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: FloatingErrorNotice(
+                  message: soft,
+                  onDismiss: () => controller.activateSoftWarning.value = null,
+                ),
+              ),
             if (err != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: FloatingErrorNotice(
                   message: err,
-                  onDismiss: () => controller.errorMessage.value = null,
+                  onDismiss: () {
+                    controller.errorMessage.value = null;
+                    controller.fundingConsent.errorMessage.value = null;
+                  },
                 ),
               ),
             FormStickyActions(
-              onCancel: controller.isSaving.value ? null : () => Get.back(),
+              onCancel: busy ? null : () => Get.back(),
               secondaryLabel: 'Save draft',
-              onSecondary:
-                  controller.isSaving.value
-                      ? null
-                      : () => controller.saveDraft(),
+              onSecondary: busy ? null : () => controller.saveDraft(),
               primaryLabel: 'Activate',
               onPrimary:
-                  !controller.canActivate || controller.isSaving.value
+                  !controller.canActivate || busy
                       ? null
                       : () => controller.activate(),
-              isLoading: controller.isSaving.value,
+              isLoading: busy,
             ),
           ],
         );

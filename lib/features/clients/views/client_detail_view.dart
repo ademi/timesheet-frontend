@@ -265,29 +265,41 @@ class _CarePlanSticky extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final plan = Get.find<SupportPlanController>();
-      final err = plan.errorMessage.value;
+      final err =
+          plan.errorMessage.value ?? plan.fundingConsent.errorMessage.value;
+      final soft = plan.activateSoftWarning.value;
+      final busy = plan.isBusy;
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (soft != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: FloatingErrorNotice(
+                message: soft,
+                onDismiss: () => plan.activateSoftWarning.value = null,
+              ),
+            ),
           if (err != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: FloatingErrorNotice(
                 message: err,
-                onDismiss: () => plan.errorMessage.value = null,
+                onDismiss: () {
+                  plan.errorMessage.value = null;
+                  plan.fundingConsent.errorMessage.value = null;
+                },
               ),
             ),
           if (canEdit)
             FormStickyActions(
-              onCancel: plan.isSaving.value ? null : () => plan.discardDrafts(),
+              onCancel: busy ? null : () => plan.discardDrafts(),
               secondaryLabel: 'Save draft',
-              onSecondary: plan.isSaving.value ? null : () => plan.saveDraft(),
+              onSecondary: busy ? null : () => plan.saveDraft(),
               primaryLabel: 'Activate',
               onPrimary:
-                  !plan.canActivate || plan.isSaving.value
-                      ? null
-                      : () => plan.activate(),
-              isLoading: plan.isSaving.value,
+                  !plan.canActivate || busy ? null : () => plan.activate(),
+              isLoading: busy,
             ),
         ],
       );

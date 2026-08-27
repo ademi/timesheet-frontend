@@ -483,8 +483,12 @@ class SupportPlanController extends GetxController {
       if (fundingConsent.hasHydrated) {
         final failed = await fundingConsent.persistFacts(clientId: clientId);
         if (failed.isNotEmpty) {
-          errorMessage.value =
-              'Could not save funding/consent: ${failed.join(', ')}';
+          final isConflict = failed.contains(
+            SupportPlanFundingConsentStore.conflictMessage,
+          );
+          errorMessage.value = isConflict
+              ? SupportPlanFundingConsentStore.conflictMessage
+              : 'Could not save funding/consent: ${failed.join(', ')}';
           await fundingConsent.reload(clientId);
           return;
         }
