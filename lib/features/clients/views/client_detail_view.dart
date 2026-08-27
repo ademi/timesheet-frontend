@@ -9,7 +9,7 @@ import '../../../shared/widgets/profile_photo_editor.dart';
 import '../../../shared/widgets/subject_tab_bar.dart';
 import '../controllers/clients_controller.dart';
 import '../widgets/client_detail_contacts_section.dart';
-import '../widgets/client_detail_facts_section.dart';
+import '../widgets/client_detail_overview_section.dart';
 import '../widgets/client_detail_profile_section.dart';
 import '../widgets/client_detail_sites_section.dart';
 import '../widgets/client_detail_support_section.dart';
@@ -44,8 +44,10 @@ class ClientDetailView extends GetView<ClientsController> {
       final err = controller.errorMessage.value;
       final tab = controller.tabIndex.value;
       final profileSelected = tab == ClientsController.tabProfile;
+      final overviewSelected = tab == ClientsController.tabOverview;
       final canEditProfile =
           controller.canManage || controller.canManageProfile;
+      final canEditOverview = canEditProfile;
       final errorNotice =
           err == null
               ? null
@@ -85,7 +87,8 @@ class ClientDetailView extends GetView<ClientsController> {
           children: [
             if (controller.isLoading.value)
               const LinearProgressIndicator(minHeight: 2),
-            if (errorNotice != null && !profileSelected) errorNotice,
+            if (errorNotice != null && !profileSelected && !overviewSelected)
+              errorNotice,
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Column(
@@ -132,7 +135,7 @@ class ClientDetailView extends GetView<ClientsController> {
                       onAddDetails:
                           () =>
                               controller.tabIndex.value =
-                                  ClientsController.tabDetails,
+                                  ClientsController.tabOverview,
                     ),
                   ],
                 ],
@@ -146,6 +149,14 @@ class ClientDetailView extends GetView<ClientsController> {
               onChanged: (i) => controller.tabIndex.value = i,
             ),
             Expanded(child: _tabContent(tab)),
+            if (errorNotice != null && overviewSelected) errorNotice,
+            if (overviewSelected && canEditOverview)
+              FormStickyActions(
+                onCancel: controller.discardOverviewDrafts,
+                primaryLabel: 'Save',
+                onPrimary: controller.saveOverviewProfile,
+                isLoading: controller.isSaving.value,
+              ),
             if (errorNotice != null && profileSelected) errorNotice,
             if (profileSelected && canEditProfile)
               FormStickyActions(
@@ -208,7 +219,7 @@ class ClientDetailView extends GetView<ClientsController> {
       case ClientsController.tabOverview:
       default:
         return _scrollTab(
-          ClientDetailFactsSection(facts: controller.quickFacts),
+          ClientDetailOverviewSection(controller: controller),
         );
     }
   }

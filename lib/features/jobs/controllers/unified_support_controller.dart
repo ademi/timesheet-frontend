@@ -992,7 +992,7 @@ class UnifiedSupportController extends GetxController
     if (Get.isRegistered<ClientsController>()) {
       final clientsCtrl = Get.find<ClientsController>();
       clientsCtrl.selected.value = c;
-      clientsCtrl.tabIndex.value = ClientsController.tabDetails;
+      clientsCtrl.tabIndex.value = ClientsController.tabOverview;
     }
     await Get.toNamed(AppRoutes.staffClientDetail, arguments: c);
     await _loadClientProfile(c.id);

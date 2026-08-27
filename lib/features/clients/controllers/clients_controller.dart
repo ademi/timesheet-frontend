@@ -25,6 +25,7 @@ import '../data/models/support_plan_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../utils/client_quick_facts.dart';
 import '../utils/client_visit_windows.dart';
+import '../utils/onboarding_keys.dart';
 import '../utils/site_geocode_apply.dart';
 import '../utils/support_plan_keys.dart';
 import '../widgets/contact_form_host.dart';
@@ -184,6 +185,20 @@ class ClientsController extends GetxController
   final contactNotify = false.obs;
   ClientContactOut? editingContact;
 
+  // Overview draft fields (dedicated — not AppBar Edit nameCtrl).
+  final overviewNameCtrl = TextEditingController();
+  final overviewEmailCtrl = TextEditingController();
+  final overviewPhoneCtrl = TextEditingController();
+  final overviewNdisCtrl = TextEditingController();
+  final overviewStatus = 'active'.obs;
+  final overviewDob = Rxn<DateTime>();
+  final overviewClientTypeId = RxnString();
+
+  static const overviewOwnedRequirementKeys = {'dob', 'ndis'};
+
+  static bool isOverviewOwnedRequirement(String key) =>
+      overviewOwnedRequirementKeys.contains(key);
+
   /// Clients for the list UI — incomplete onboarding excluded unless toggled.
   List<ClientOut> get visibleItems {
     final list = items.toList();
@@ -238,6 +253,10 @@ class ClientsController extends GetxController
     contactEmailCtrl.dispose();
     contactPhoneCtrl.dispose();
     contactRelationshipOtherCtrl.dispose();
+    overviewNameCtrl.dispose();
+    overviewEmailCtrl.dispose();
+    overviewPhoneCtrl.dispose();
+    overviewNdisCtrl.dispose();
     super.onClose();
   }
 
@@ -445,7 +464,11 @@ class ClientsController extends GetxController
     try {
       final reqs = await _repository.listTypeRequirements(typeId);
       _disposeRequirementDrafts();
-      final drafts = reqs.map(RequirementDraft.new).toList();
+      final drafts =
+          reqs
+              .where((r) => !isOverviewOwnedRequirement(r.requirementKey))
+              .map(RequirementDraft.new)
+              .toList();
       requirementDrafts.assignAll(drafts);
       for (final draft in drafts) {
         if (draft.requirement.isLegal &&
@@ -474,7 +497,10 @@ class ClientsController extends GetxController
       if (bundle.requirements.isNotEmpty && requirementDrafts.isEmpty) {
         _disposeRequirementDrafts();
         requirementDrafts.assignAll(
-          bundle.requirements.map(RequirementDraft.new).toList(),
+          bundle.requirements
+              .where((r) => !isOverviewOwnedRequirement(r.requirementKey))
+              .map(RequirementDraft.new)
+              .toList(),
         );
       }
       if (bundle.clientType != null) {
@@ -862,6 +888,130 @@ class ClientsController extends GetxController
     await loadTypeTabForSelected();
   }
 
+  /// Reloads Overview identity drafts from the current client + profile facts.
+  void hydrateOverviewDrafts() {
+    final client = selected.value;
+    if (client == null) return;
+    overviewNameCtrl.text = client.fullName;
+    overviewEmailCtrl.text = client.email ?? '';
+    overviewPhoneCtrl.text = client.phone ?? '';
+    overviewStatus.value = client.status;
+    final rawDob = client.dob?.trim();
+    overviewDob.value =
+        rawDob == null || rawDob.isEmpty ? null : DateTime.tryParse(rawDob);
+    overviewClientTypeId.value = client.clientTypeId ?? selectedClientTypeId.value;
+    overviewNdisCtrl.text = ndisFromFacts(profileFacts) ?? '';
+  }
+
+  /// Drops unsaved Overview edits.
+  Future<void> discardOverviewDrafts() async {
+    errorMessage.value = null;
+    hydrateOverviewDrafts();
+  }
+
+  Future<void> pickOverviewDob(BuildContext context) async {
+    final now = DateTime.now();
+    final initial = overviewDob.value ?? DateTime(now.year - 30);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+    if (picked != null) {
+      overviewDob.value = picked;
+    }
+  }
+
+  void onOverviewClientTypeChanged(String? typeId) {
+    overviewClientTypeId.value = typeId;
+  }
+
+  /// Saves Overview identity fields (CR1 — never saveClient / saveClientTypeProfile).
+  Future<void> saveOverviewProfile() async {
+    final client = selected.value;
+    if (client == null) return;
+
+    final name = overviewNameCtrl.text.trim();
+    final email = overviewEmailCtrl.text.trim();
+    final phone = overviewPhoneCtrl.text.trim();
+    if (name.isEmpty) {
+      errorMessage.value = 'Full name is required.';
+      return;
+    }
+    if (email.isEmpty && phone.isEmpty) {
+      errorMessage.value = 'Provide an email and/or phone number.';
+      return;
+    }
+
+    isSaving.value = true;
+    errorMessage.value = null;
+    profileSaveProgress.value = null;
+    try {
+      final typeId = overviewClientTypeId.value;
+      final dob =
+          overviewDob.value != null
+              ? RequirementDraft.formatDate(overviewDob.value!)
+              : client.dob;
+      final patched = await _repository.patchClient(
+        client.id,
+        ClientUpdateRequest(
+          fullName: name,
+          status: overviewStatus.value,
+          email: email.isEmpty ? null : email,
+          phone: phone.isEmpty ? null : phone,
+          clientTypeId: typeId,
+          dob: dob,
+        ),
+      );
+      selected.value = patched;
+
+      final ndis = overviewNdisCtrl.text.trim();
+      final existingNdis = ndisFromFacts(profileFacts) ?? '';
+      if (ndis != existingNdis) {
+        if (ndis.isNotEmpty) {
+          await _repository.upsertProfileFact(
+            client.id,
+            OnboardingKeys.ndis,
+            ProfileFactUpsert(valueJson: ndis),
+          );
+        } else if (existingNdis.isNotEmpty) {
+          await _repository.upsertProfileFact(
+            client.id,
+            OnboardingKeys.ndis,
+            const ProfileFactUpsert(clearValue: true),
+          );
+        }
+      }
+
+      final refreshed = await _repository.getClient(client.id);
+      selected.value = refreshed;
+      if (canManageProfile || canRead) {
+        try {
+          final bundle = await _repository.getClientProfile(client.id);
+          profileFacts.assignAll(bundle.facts);
+        } on AppFailure catch (e) {
+          errorMessage.value ??= e.message;
+        }
+      }
+
+      final typeChanged = typeId != null && typeId != client.clientTypeId;
+      if (typeChanged) {
+        selectedClientTypeId.value = typeId;
+        await loadTypeTabForSelected();
+      }
+
+      hydrateOverviewDrafts();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isSaving.value = false;
+      profileSaveProgress.value = null;
+    }
+  }
+
   /// Saves client type + profile requirements from the Types tab.
   Future<void> saveClientTypeProfile() async {
     final client = selected.value;
@@ -879,13 +1029,9 @@ class ClientsController extends GetxController
     profileSaveProgress.value = null;
     try {
       final typeId = selectedClientTypeId.value;
-      final dob = _resolveDobForCore();
       await _repository.patchClient(
         client.id,
-        ClientUpdateRequest(
-          clientTypeId: typeId,
-          dob: dob,
-        ),
+        ClientUpdateRequest(clientTypeId: typeId),
       );
       final profileErrors = typeId == null || typeId.isEmpty
           ? <String>[]
@@ -930,6 +1076,9 @@ class ClientsController extends GetxController
     var done = 0;
 
     for (final draft in requirementDrafts) {
+      if (isOverviewOwnedRequirement(draft.requirement.requirementKey)) {
+        continue;
+      }
       if (!draft.hasAnyContent) continue;
 
       done++;
@@ -1181,6 +1330,7 @@ class ClientsController extends GetxController
         loadTypeTabForSelected(),
         loadDetailProfilePhoto(id),
       ]);
+      hydrateOverviewDrafts();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {

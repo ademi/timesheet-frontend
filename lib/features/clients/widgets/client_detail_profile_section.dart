@@ -13,17 +13,21 @@ class ClientDetailProfileSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final types = controller.clientTypes;
-      final selectedTypeId = controller.selectedClientTypeId.value;
-      final drafts = controller.requirementDrafts;
+      final drafts =
+          controller.requirementDrafts
+              .where(
+                (d) => !ClientsController.isOverviewOwnedRequirement(
+                  d.requirement.requirementKey,
+                ),
+              )
+              .toList();
       final progress = controller.profileSaveProgress.value;
-      final canEdit = controller.canManage || controller.canManageProfile;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Details',
+            'Profile & docs',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
           ),
           const SizedBox(height: 12),
@@ -33,42 +37,10 @@ class ClientDetailProfileSection extends StatelessWidget {
             const LinearProgressIndicator(minHeight: 2),
             const SizedBox(height: 12),
           ],
-          if (controller.isLoadingTypes.value)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: LinearProgressIndicator(minHeight: 2),
-            )
-          else if (types.isEmpty)
-            const Text(
-              'No client types available.',
-              style: TextStyle(color: AppColors.textMuted),
-            )
-          else if (controller.showClientTypePicker)
-            DropdownButtonFormField<String>(
-              value:
-                  selectedTypeId != null &&
-                          types.any((t) => t.id == selectedTypeId)
-                      ? selectedTypeId
-                      : null,
-              items: [
-                for (final t in types)
-                  DropdownMenuItem(value: t.id, child: Text(t.name)),
-              ],
-              onChanged:
-                  !canEdit || controller.isSaving.value
-                      ? null
-                      : (v) => controller.onClientTypeChanged(v),
-              decoration: const InputDecoration(
-                labelText: 'Type',
-                border: OutlineInputBorder(),
-              ),
-            ),
           if (controller.isLoadingRequirements.value) ...[
-            const SizedBox(height: 16),
             const LinearProgressIndicator(minHeight: 2),
           ],
           if (drafts.isNotEmpty) ...[
-            const SizedBox(height: 24),
             const Text(
               'Type-specific details',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
@@ -81,6 +53,11 @@ class ClientDetailProfileSection extends StatelessWidget {
             const SizedBox(height: 12),
             for (final draft in drafts)
               ClientRequirementEditor(controller: controller, draft: draft),
+          ] else if (!controller.isLoadingRequirements.value) ...[
+            const Text(
+              'No profile requirements for this client type.',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
           ],
         ],
       );

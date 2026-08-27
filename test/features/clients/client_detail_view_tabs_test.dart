@@ -63,6 +63,7 @@ void main() {
       jobsRepository: jobs,
     );
     controller.selected.value = _client;
+    controller.hydrateOverviewDrafts();
     Get.put(controller);
   });
 
@@ -105,8 +106,9 @@ void main() {
     expect(bar.labels[ClientsController.tabCarePlan], 'Care plan');
     expect(bar.labels[ClientsController.tabVisits], 'Visits');
 
-    expect(find.byType(FormStickyActions), findsNothing);
-    expect(find.text('Date of birth'), findsOneWidget);
+    expect(find.byType(FormStickyActions), findsOneWidget);
+    expect(find.text('Save'), findsOneWidget);
+    expect(find.textContaining('Date of birth'), findsOneWidget);
     expect(
       find.text(
         'Select a type to show optional profile requirements and documents.',

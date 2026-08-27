@@ -34,7 +34,7 @@ class NdisCapturePrompt extends StatelessWidget {
           const SizedBox(height: 4),
           const Text(
             'Patient clients need an NDIS number for plan-manager exports and demos. '
-            'Add it on the Details tab.',
+            'Add it on the Overview tab.',
             style: TextStyle(fontSize: 13),
           ),
           if (onAddDetails != null) ...[
@@ -43,7 +43,7 @@ class NdisCapturePrompt extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: TextButton(
                 onPressed: onAddDetails,
-                child: const Text('Open Details tab'),
+                child: const Text('Add NDIS details'),
               ),
             ),
           ],
