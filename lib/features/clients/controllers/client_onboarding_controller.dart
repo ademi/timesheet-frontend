@@ -115,6 +115,7 @@ class ClientOnboardingController extends GetxController
   // ── Preferences ───────────────────────────────────────────────────────
   final preferredLanguageCtrl = TextEditingController();
   final culturalPreferencesCtrl = TextEditingController();
+  final interpreterLanguageCtrl = TextEditingController();
   final homeVisitConsent = false.obs;
   final swGenderPreference = RxnString();
   final interpreterRequired = false.obs;
@@ -393,6 +394,7 @@ class ClientOnboardingController extends GetxController
     siteLngCtrl.dispose();
     preferredLanguageCtrl.dispose();
     culturalPreferencesCtrl.dispose();
+    interpreterLanguageCtrl.dispose();
     contactNameCtrl.dispose();
     contactEmailCtrl.dispose();
     contactPhoneCtrl.dispose();
@@ -722,6 +724,12 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = 'Create the client on the Identity step first.';
       return false;
     }
+    if (interpreterRequired.value &&
+        interpreterLanguageCtrl.text.trim().isEmpty) {
+      errorMessage.value =
+          'Enter the interpreter language when an interpreter is required.';
+      return false;
+    }
 
     isSaving.value = true;
     try {
@@ -750,6 +758,13 @@ class ClientOnboardingController extends GetxController
         OnboardingKeys.interpreterRequired,
         ProfileFactUpsert(valueJson: interpreterRequired.value),
       );
+      if (interpreterRequired.value) {
+        await _putOptionalFact(
+          id,
+          OnboardingKeys.interpreterLanguage,
+          _nullIfEmpty(interpreterLanguageCtrl.text),
+        );
+      }
       await _putOptionalFact(
         id,
         OnboardingKeys.preferredContactMethod,

@@ -896,4 +896,25 @@ void main() {
     expect(c.sexGender.value, OnboardingIdentityStep.otherPresetKey);
     expect(c.sexGenderOtherCtrl.text, 'Agender');
   });
+
+  test('submitPreferences requires interpreter language when interpreter on',
+      () async {
+    c.client.value = _fakeClient;
+    c.step.value = 2;
+    c.interpreterRequired.value = true;
+    expect(await c.submitPreferences(), isFalse);
+    expect(c.errorMessage.value, contains('interpreter language'));
+
+    when(() => mock.upsertProfileFact(any(), any(), any()))
+        .thenAnswer((_) async {});
+    c.interpreterLanguageCtrl.text = 'Arabic';
+    expect(await c.submitPreferences(), isTrue);
+    verify(
+      () => mock.upsertProfileFact(
+        'client-1',
+        OnboardingKeys.interpreterLanguage,
+        any(),
+      ),
+    ).called(1);
+  });
 }

@@ -11,6 +11,7 @@ class OnboardingKeys {
   static const homeVisitConsent = 'home_visit_consent';
   static const swGenderPreference = 'support_worker_gender_preference';
   static const interpreterRequired = 'interpreter_required';
+  static const interpreterLanguage = 'interpreter_language';
   static const preferredContactMethod = 'preferred_contact_method';
   static const planManagementType = 'plan_management_type';
   static const planManagerName = 'plan_manager_name';
