@@ -67,19 +67,23 @@ class ContractorOnboardingView
                   child: Obx(() {
                     final isLast = controller.step.value ==
                         ContractorOnboardingController.maxStep;
+                    final isSaving = controller.isSaving.value;
+                    final sendInvite = controller.sendInvite.value;
                     final narrow =
                         MediaQuery.sizeOf(context).width < 420;
+                    final nextLabel = isLast
+                        ? (sendInvite ? 'Save & invite' : 'Save')
+                        : 'Next';
                     final back = controller.step.value > 0
                         ? OutlinedButton(
-                            onPressed: controller.isSaving.value
-                                ? null
-                                : controller.previousStep,
+                            onPressed:
+                                isSaving ? null : controller.previousStep,
                             child: const Text('Back'),
                           )
                         : null;
                     final next = AsyncElevatedButton(
                       onPressed: controller.nextStep,
-                      isLoading: controller.isSaving.value,
+                      isLoading: isSaving,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.onPrimary,
@@ -87,15 +91,7 @@ class ContractorOnboardingView
                             ? const Size.fromHeight(48)
                             : null,
                       ),
-                      child: Obx(
-                        () => Text(
-                          isLast
-                              ? (controller.sendInvite.value
-                                  ? 'Save & invite'
-                                  : 'Save')
-                              : 'Next',
-                        ),
-                      ),
+                      child: Text(nextLabel),
                     );
                     if (narrow) {
                       return Column(
