@@ -225,8 +225,9 @@ void main() {
       expect(childRep.phone, '+61466666666');
 
       // Funding → Legal (mock) → Finish.
+      c.ndisCtrl.text = '431234567';
       c.planManagementType.value = 'self_managed';
-      expect(await c.submitFunding(), isTrue);
+      expect(await c.submitSupportPlan(), isTrue);
       expect(c.step.value, 6);
 
       c.consentComplete.value = true;

@@ -179,22 +179,89 @@ void main() {
     expect(c.nomineeOptional, isTrue);
   });
 
-  test('submitFunding blocks plan_managed without manager fields', () async {
+  test('submitSupportPlan blocks without NDIS number', () async {
     c.client.value = _fakeClient;
     c.step.value = 5;
+    c.planManagementType.value = 'self_managed';
+    expect(await c.submitSupportPlan(), isFalse);
+    expect(c.ndisFieldError.value, contains('NDIS'));
+  });
+
+  test('submitSupportPlan blocks plan_managed without manager fields', () async {
+    c.client.value = _fakeClient;
+    c.step.value = 5;
+    c.ndisCtrl.text = '431234567';
     c.planManagementType.value = 'plan_managed';
-    expect(await c.submitFunding(), isFalse);
+    expect(await c.submitSupportPlan(), isFalse);
     expect(c.errorMessage.value, contains('Plan manager'));
   });
 
-  test('submitFunding accepts self_managed', () async {
+  test('submitSupportPlan accepts self_managed with NDIS', () async {
     when(() => mock.upsertProfileFact(any(), any(), any()))
         .thenAnswer((_) async {});
     c.client.value = _fakeClient;
     c.step.value = 5;
+    c.ndisCtrl.text = '431234567';
     c.planManagementType.value = 'self_managed';
-    expect(await c.submitFunding(), isTrue);
+    expect(await c.submitSupportPlan(), isTrue);
     expect(c.step.value, 6);
+    verify(
+      () => mock.upsertProfileFact(
+        'client-1',
+        OnboardingKeys.ndis,
+        any(
+          that: predicate<ProfileFactUpsert>(
+            (u) => u.valueJson == '431234567',
+          ),
+        ),
+      ),
+    ).called(1);
+  });
+
+  test('submitSupportPlan surfaces ndis_number_in_use on field error', () async {
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer(
+      (inv) async {
+        if (inv.positionalArguments[1] == OnboardingKeys.ndis) {
+          throw const AppFailure(
+            code: 'ndis_number_in_use',
+            message: 'This NDIS number is already used by another client.',
+            presentation: AppFailurePresentation.inline,
+          );
+        }
+      },
+    );
+    c.client.value = _fakeClient;
+    c.step.value = 5;
+    c.ndisCtrl.text = '431234567';
+    c.planManagementType.value = 'self_managed';
+    expect(await c.submitSupportPlan(), isFalse);
+    expect(c.ndisFieldError.value, contains('already used'));
+    expect(c.step.value, 5);
+  });
+
+  test('submitSupportPlan upserts plan manager expanded fields when plan_managed',
+      () async {
+    when(() => mock.upsertProfileFact(any(), any(), any()))
+        .thenAnswer((_) async {});
+    c.client.value = _fakeClient;
+    c.step.value = 5;
+    c.ndisCtrl.text = '431234567';
+    c.planManagementType.value = 'plan_managed';
+    c.planManagerNameCtrl.text = 'Acme PM';
+    c.planManagerCompanyCtrl.text = 'Acme Co';
+    c.planManagerPhoneCtrl.text = '+61400000001';
+    expect(await c.submitSupportPlan(), isTrue);
+    verify(
+      () => mock.upsertProfileFact(
+        'client-1',
+        OnboardingKeys.planManagerCompany,
+        any(
+          that: predicate<ProfileFactUpsert>(
+            (u) => u.valueJson == 'Acme Co',
+          ),
+        ),
+      ),
+    ).called(1);
   });
 
   test('finishOnboarding soft gate warns then clears incomplete flag', () async {
@@ -957,6 +1024,39 @@ void main() {
     expect(c.referralOtherCtrl.text, 'Community Centre');
     expect(c.sexGender.value, OnboardingIdentityStep.otherPresetKey);
     expect(c.sexGenderOtherCtrl.text, 'Agender');
+  });
+
+  test('hydrateSupportPlanFromFacts restores NDIS and legacy Other fallback', () {
+    c.hydrateSupportPlanFromFacts([
+      const ClientProfileFactOut(
+        requirementKey: OnboardingKeys.ndis,
+        valueJson: '431234567',
+        documentId: 'doc-ndis-1',
+      ),
+      const ClientProfileFactOut(
+        requirementKey: OnboardingKeys.fundingNotToExceed,
+        valueJson: '5000',
+      ),
+    ]);
+
+    expect(c.ndisCtrl.text, '431234567');
+    expect(c.ndisPdfAttachment.existingDocumentId.value, 'doc-ndis-1');
+    expect(c.supportPlanOtherCtrl.text, '5000');
+  });
+
+  test('hydrateSupportPlanFromFacts prefers support_plan_other over legacy', () {
+    c.hydrateSupportPlanFromFacts([
+      const ClientProfileFactOut(
+        requirementKey: OnboardingKeys.supportPlanOther,
+        valueJson: 'Custom note',
+      ),
+      const ClientProfileFactOut(
+        requirementKey: OnboardingKeys.fundingNotToExceed,
+        valueJson: '5000',
+      ),
+    ]);
+
+    expect(c.supportPlanOtherCtrl.text, 'Custom note');
   });
 
   test('submitPreferences requires interpreter language when interpreter on',

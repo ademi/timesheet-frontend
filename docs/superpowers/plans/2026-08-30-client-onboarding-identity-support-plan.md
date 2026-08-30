@@ -1,6 +1,6 @@
 # Client onboarding — Identity, Contacts & Support Plan refresh
 
-> **Status:** Phase D complete · **waiting for green light before Phase E.**  
+> **Status:** Phase E complete · **waiting for green light before Phase F.**  
 > **Rule:** Implement **one phase at a time**. After each phase, stop and wait for explicit approval before starting the next.  
 > **Repos:** Frontend `timesheet-frontend` · Backend `…/flutter backend/timesheet/timesheet-backend` · DB `…/timesheet/timesheet-db`
 
@@ -332,15 +332,15 @@ Update `OnboardingKeys.carePlanOwnedFundingKeys` and backend requirement sort_or
 
 **Deliverables**
 
-- [ ] Rename step label **Funding → Support Plan** in `client_onboarding_view.dart` step indicator and `onboarding_funding_step.dart` (consider rename file to `onboarding_support_plan_step.dart`).
-- [ ] Top section: NDIS number (required) + NDIS PDF upload + **Other** text field.
-- [ ] Expand plan manager + support coordinator sections (7 fields each).
-- [ ] Add four collapsible optional sections for therapists (shared widget recommended, e.g. `SupportPlanProfessionalFields`).
-- [ ] `client_onboarding_controller.dart`: move NDIS validation/upload from Identity to `submitFunding()` → rename to `submitSupportPlan()`; upsert all new keys; rename `fundingNotToExceedCtrl` → `supportPlanOtherCtrl`.
-- [ ] `onboarding_keys.dart`: add all new constants; update `carePlanOwnedFundingKeys`.
-- [ ] Tests: funding/support plan validation, plan_managed required fields, NDIS duplicate error on this step.
+- [x] Rename step label **Funding → Support Plan** in `client_onboarding_view.dart` step indicator and `onboarding_support_plan_step.dart` (replaced `onboarding_funding_step.dart`).
+- [x] Top section: NDIS number (required) + NDIS PDF upload + **Other** text field.
+- [x] Expand plan manager + support coordinator sections (7 fields each).
+- [x] Add four collapsible optional sections for therapists (shared widget `SupportPlanProfessionalSection` + `SupportPlanProfessionalFields`).
+- [x] `client_onboarding_controller.dart`: move NDIS validation/upload from Identity to `submitSupportPlan()`; upsert all new keys; rename `fundingNotToExceedCtrl` → `supportPlanOtherCtrl`.
+- [x] `onboarding_keys.dart`: add all new constants; update `carePlanOwnedFundingKeys`.
+- [x] Tests: funding/support plan validation, plan_managed required fields, NDIS duplicate error on this step.
 
-**Green light gate:** Full wizard run with NDIS only on Support Plan; all professional sections optional; plan_managed validates expanded plan manager fields.
+**Green light gate:** Full wizard run with NDIS only on Support Plan; all professional sections optional; plan_managed validates expanded plan manager fields. ✅
 
 ---
 

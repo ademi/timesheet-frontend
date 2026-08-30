@@ -13,6 +13,7 @@ import '../../documents/data/document_pipeline.dart';
 import '../data/models/client_models.dart';
 import '../data/models/client_profile_models.dart';
 import '../models/identity_card_attachment.dart';
+import '../models/support_plan_professional_fields.dart';
 import '../data/repositories/clients_repository.dart';
 import '../services/client_legal_upload_helper.dart';
 import '../utils/onboarding_age.dart';
@@ -60,7 +61,7 @@ class ClientOnboardingController extends GetxController
     'Preferences',
     'Contacts',
     'Representative',
-    'Funding',
+    'Support Plan',
     'Legal',
   ];
 
@@ -186,20 +187,32 @@ class ClientOnboardingController extends GetxController
   final representativeSaved = false.obs;
   final nomineeSkipped = false.obs;
 
-  // ── Funding ───────────────────────────────────────────────────────────
+  // ── Support Plan ──────────────────────────────────────────────────────
+  final ndisPdfAttachment = IdentityCardAttachment();
   final planManagementType = RxnString();
   final planManagerNameCtrl = TextEditingController();
+  final planManagerCompanyCtrl = TextEditingController();
+  final planManagerAbnAcnCtrl = TextEditingController();
+  final planManagerOrgIdCtrl = TextEditingController();
   final planManagerPhoneCtrl = TextEditingController();
   final planManagerEmailCtrl = TextEditingController();
+  final planManagerAddressCtrl = TextEditingController();
   final planStartDate = Rxn<DateTime>();
   final planEndDate = Rxn<DateTime>();
   final budgetCoreCtrl = TextEditingController();
   final budgetCbCtrl = TextEditingController();
   final budgetCapitalCtrl = TextEditingController();
-  final fundingNotToExceedCtrl = TextEditingController();
-  final scNameCtrl = TextEditingController();
-  final scPhoneCtrl = TextEditingController();
-  final scEmailCtrl = TextEditingController();
+  final supportPlanOtherCtrl = TextEditingController();
+  final supportCoordinator = SupportPlanProfessionalFields();
+  final behaviouralTherapist = SupportPlanProfessionalFields();
+  final speechTherapist = SupportPlanProfessionalFields();
+  final occupationalTherapist = SupportPlanProfessionalFields();
+  final physiotherapist = SupportPlanProfessionalFields();
+  final supportCoordinatorExpanded = false.obs;
+  final behaviouralTherapistExpanded = false.obs;
+  final speechTherapistExpanded = false.obs;
+  final occupationalTherapistExpanded = false.obs;
+  final physiotherapistExpanded = false.obs;
 
   // ── Legal pack ────────────────────────────────────────────────────────
   final consentComplete = false.obs;
@@ -267,7 +280,6 @@ class ClientOnboardingController extends GetxController
     ndisFieldError.value = null;
     isSaving.value = false;
 
-    ndisCtrl.clear();
     medicareCtrl.clear();
     medicareCardAttachment.reset();
     companionCardAttachment.reset();
@@ -316,19 +328,32 @@ class ClientOnboardingController extends GetxController
     representativeSaved.value = false;
     nomineeSkipped.value = false;
 
+    ndisCtrl.clear();
+    ndisPdfAttachment.reset();
     planManagementType.value = null;
     planManagerNameCtrl.clear();
+    planManagerCompanyCtrl.clear();
+    planManagerAbnAcnCtrl.clear();
+    planManagerOrgIdCtrl.clear();
     planManagerPhoneCtrl.clear();
     planManagerEmailCtrl.clear();
+    planManagerAddressCtrl.clear();
     planStartDate.value = null;
     planEndDate.value = null;
     budgetCoreCtrl.clear();
     budgetCbCtrl.clear();
     budgetCapitalCtrl.clear();
-    fundingNotToExceedCtrl.clear();
-    scNameCtrl.clear();
-    scPhoneCtrl.clear();
-    scEmailCtrl.clear();
+    supportPlanOtherCtrl.clear();
+    supportCoordinator.clear();
+    behaviouralTherapist.clear();
+    speechTherapist.clear();
+    occupationalTherapist.clear();
+    physiotherapist.clear();
+    supportCoordinatorExpanded.value = false;
+    behaviouralTherapistExpanded.value = false;
+    speechTherapistExpanded.value = false;
+    occupationalTherapistExpanded.value = false;
+    physiotherapistExpanded.value = false;
 
     consentComplete.value = false;
     serviceAgreementComplete.value = false;
@@ -400,6 +425,131 @@ class ClientOnboardingController extends GetxController
     attachment.existingDocumentLabel.value = 'Document on file';
   }
 
+  /// Applies stored profile facts to Support Plan fields (legacy Other fallback).
+  void hydrateSupportPlanFromFacts(Iterable<ClientProfileFactOut> facts) {
+    String? otherText;
+    String? legacyOther;
+    for (final fact in facts) {
+      final stored = fact.valueJson?.toString().trim();
+      switch (fact.requirementKey) {
+        case OnboardingKeys.ndis:
+          ndisCtrl.text = stored ?? '';
+          _hydrateCardAttachment(ndisPdfAttachment, fact);
+        case OnboardingKeys.supportPlanOther:
+          otherText = stored;
+        case OnboardingKeys.fundingNotToExceed:
+          legacyOther = stored;
+        case OnboardingKeys.planManagementType:
+          planManagementType.value = stored;
+        case OnboardingKeys.planManagerName:
+          planManagerNameCtrl.text = stored ?? '';
+        case OnboardingKeys.planManagerCompany:
+          planManagerCompanyCtrl.text = stored ?? '';
+        case OnboardingKeys.planManagerAbnAcn:
+          planManagerAbnAcnCtrl.text = stored ?? '';
+        case OnboardingKeys.planManagerOrgId:
+          planManagerOrgIdCtrl.text = stored ?? '';
+        case OnboardingKeys.planManagerPhone:
+          planManagerPhoneCtrl.text = stored ?? '';
+        case OnboardingKeys.planManagerEmail:
+          planManagerEmailCtrl.text = stored ?? '';
+        case OnboardingKeys.planManagerAddress:
+          planManagerAddressCtrl.text = stored ?? '';
+        case OnboardingKeys.planStartDate:
+          planStartDate.value = _parseHydratedDate(stored);
+        case OnboardingKeys.planEndDate:
+          planEndDate.value = _parseHydratedDate(stored);
+        case OnboardingKeys.budgetCore:
+          budgetCoreCtrl.text = stored ?? '';
+        case OnboardingKeys.budgetCb:
+          budgetCbCtrl.text = stored ?? '';
+        case OnboardingKeys.budgetCapital:
+          budgetCapitalCtrl.text = stored ?? '';
+        case OnboardingKeys.supportCoordinatorName:
+          supportCoordinator.nameCtrl.text = stored ?? '';
+        case OnboardingKeys.supportCoordinatorCompany:
+          supportCoordinator.companyCtrl.text = stored ?? '';
+        case OnboardingKeys.supportCoordinatorAbnAcn:
+          supportCoordinator.abnAcnCtrl.text = stored ?? '';
+        case OnboardingKeys.supportCoordinatorOrgId:
+          supportCoordinator.orgIdCtrl.text = stored ?? '';
+        case OnboardingKeys.supportCoordinatorPhone:
+          supportCoordinator.phoneCtrl.text = stored ?? '';
+        case OnboardingKeys.supportCoordinatorEmail:
+          supportCoordinator.emailCtrl.text = stored ?? '';
+        case OnboardingKeys.supportCoordinatorAddress:
+          supportCoordinator.addressCtrl.text = stored ?? '';
+        case OnboardingKeys.behaviouralTherapistName:
+          behaviouralTherapist.nameCtrl.text = stored ?? '';
+        case OnboardingKeys.behaviouralTherapistCompany:
+          behaviouralTherapist.companyCtrl.text = stored ?? '';
+        case OnboardingKeys.behaviouralTherapistAbnAcn:
+          behaviouralTherapist.abnAcnCtrl.text = stored ?? '';
+        case OnboardingKeys.behaviouralTherapistOrgId:
+          behaviouralTherapist.orgIdCtrl.text = stored ?? '';
+        case OnboardingKeys.behaviouralTherapistPhone:
+          behaviouralTherapist.phoneCtrl.text = stored ?? '';
+        case OnboardingKeys.behaviouralTherapistEmail:
+          behaviouralTherapist.emailCtrl.text = stored ?? '';
+        case OnboardingKeys.behaviouralTherapistAddress:
+          behaviouralTherapist.addressCtrl.text = stored ?? '';
+        case OnboardingKeys.speechTherapistName:
+          speechTherapist.nameCtrl.text = stored ?? '';
+        case OnboardingKeys.speechTherapistCompany:
+          speechTherapist.companyCtrl.text = stored ?? '';
+        case OnboardingKeys.speechTherapistAbnAcn:
+          speechTherapist.abnAcnCtrl.text = stored ?? '';
+        case OnboardingKeys.speechTherapistOrgId:
+          speechTherapist.orgIdCtrl.text = stored ?? '';
+        case OnboardingKeys.speechTherapistPhone:
+          speechTherapist.phoneCtrl.text = stored ?? '';
+        case OnboardingKeys.speechTherapistEmail:
+          speechTherapist.emailCtrl.text = stored ?? '';
+        case OnboardingKeys.speechTherapistAddress:
+          speechTherapist.addressCtrl.text = stored ?? '';
+        case OnboardingKeys.occupationalTherapistName:
+          occupationalTherapist.nameCtrl.text = stored ?? '';
+        case OnboardingKeys.occupationalTherapistCompany:
+          occupationalTherapist.companyCtrl.text = stored ?? '';
+        case OnboardingKeys.occupationalTherapistAbnAcn:
+          occupationalTherapist.abnAcnCtrl.text = stored ?? '';
+        case OnboardingKeys.occupationalTherapistOrgId:
+          occupationalTherapist.orgIdCtrl.text = stored ?? '';
+        case OnboardingKeys.occupationalTherapistPhone:
+          occupationalTherapist.phoneCtrl.text = stored ?? '';
+        case OnboardingKeys.occupationalTherapistEmail:
+          occupationalTherapist.emailCtrl.text = stored ?? '';
+        case OnboardingKeys.occupationalTherapistAddress:
+          occupationalTherapist.addressCtrl.text = stored ?? '';
+        case OnboardingKeys.physiotherapistName:
+          physiotherapist.nameCtrl.text = stored ?? '';
+        case OnboardingKeys.physiotherapistCompany:
+          physiotherapist.companyCtrl.text = stored ?? '';
+        case OnboardingKeys.physiotherapistAbnAcn:
+          physiotherapist.abnAcnCtrl.text = stored ?? '';
+        case OnboardingKeys.physiotherapistOrgId:
+          physiotherapist.orgIdCtrl.text = stored ?? '';
+        case OnboardingKeys.physiotherapistPhone:
+          physiotherapist.phoneCtrl.text = stored ?? '';
+        case OnboardingKeys.physiotherapistEmail:
+          physiotherapist.emailCtrl.text = stored ?? '';
+        case OnboardingKeys.physiotherapistAddress:
+          physiotherapist.addressCtrl.text = stored ?? '';
+      }
+    }
+    final resolvedOther = (otherText != null && otherText.isNotEmpty)
+        ? otherText
+        : legacyOther;
+    if (resolvedOther != null && resolvedOther.isNotEmpty) {
+      supportPlanOtherCtrl.text = resolvedOther;
+    }
+  }
+
+  static DateTime? _parseHydratedDate(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
   Future<void> pickIdentityCard(IdentityCardAttachment attachment) async {
     final override = _pickCardFileOverride;
     final picked =
@@ -411,6 +561,23 @@ class ClientOnboardingController extends GetxController
 
   void clearIdentityCardPending(IdentityCardAttachment attachment) {
     attachment.pending.value = null;
+  }
+
+  Future<void> pickNdisPlanPdf() async {
+    final override = _pickPdfBytesOverride;
+    final picked =
+        override != null ? await override() : await _pickPdfBytes();
+    if (picked != null) {
+      ndisPdfAttachment.pending.value = PendingIdentityCardFile(
+        name: picked.name,
+        bytes: picked.bytes,
+        contentType: 'application/pdf',
+      );
+    }
+  }
+
+  void clearNdisPlanPdfPending() {
+    ndisPdfAttachment.pending.value = null;
   }
 
   void onPlanStartPicked(DateTime start) {
@@ -444,15 +611,21 @@ class ClientOnboardingController extends GetxController
     contactPhoneCtrl.dispose();
     contactRelationshipOtherCtrl.dispose();
     planManagerNameCtrl.dispose();
+    planManagerCompanyCtrl.dispose();
+    planManagerAbnAcnCtrl.dispose();
+    planManagerOrgIdCtrl.dispose();
     planManagerPhoneCtrl.dispose();
     planManagerEmailCtrl.dispose();
+    planManagerAddressCtrl.dispose();
     budgetCoreCtrl.dispose();
     budgetCbCtrl.dispose();
     budgetCapitalCtrl.dispose();
-    fundingNotToExceedCtrl.dispose();
-    scNameCtrl.dispose();
-    scPhoneCtrl.dispose();
-    scEmailCtrl.dispose();
+    supportPlanOtherCtrl.dispose();
+    supportCoordinator.dispose();
+    behaviouralTherapist.dispose();
+    speechTherapist.dispose();
+    occupationalTherapist.dispose();
+    physiotherapist.dispose();
     consentSignerNameCtrl.dispose();
     super.onClose();
   }
@@ -471,7 +644,7 @@ class ClientOnboardingController extends GetxController
       2 => await submitPreferences(),
       3 => await submitContacts(),
       4 => await submitRepresentative(),
-      5 => await submitFunding(),
+      5 => await submitSupportPlan(),
       _ => await finishOnboarding(),
     };
     if (!ok) return;
@@ -1029,13 +1202,20 @@ class ClientOnboardingController extends GetxController
     errorMessage.value = null;
   }
 
-  // ── Funding ───────────────────────────────────────────────────────────
+  // ── Support Plan ──────────────────────────────────────────────────────
 
-  Future<bool> submitFunding() async {
+  Future<bool> submitSupportPlan() async {
     errorMessage.value = null;
+    ndisFieldError.value = null;
     final id = clientId;
     if (id == null) {
       errorMessage.value = 'Create the client on the Identity step first.';
+      return false;
+    }
+
+    final ndis = ndisCtrl.text.trim();
+    if (ndis.isEmpty) {
+      ndisFieldError.value = 'NDIS number is required.';
       return false;
     }
 
@@ -1062,6 +1242,43 @@ class ClientOnboardingController extends GetxController
 
     isSaving.value = true;
     try {
+      var ndisDocId = ndisPdfAttachment.existingDocumentId.value;
+      final ndisPending = ndisPdfAttachment.pending.value;
+      if (ndisPending != null) {
+        ndisDocId = await _uploadClientFile(
+          clientId: id,
+          category: OnboardingKeys.ndis,
+          name: ndisPending.name,
+          contentType: ndisPending.contentType,
+          fileBytes: ndisPending.bytes,
+        );
+        ndisPdfAttachment.existingDocumentId.value = ndisDocId;
+        ndisPdfAttachment.existingDocumentLabel.value = ndisPending.name;
+        ndisPdfAttachment.pending.value = null;
+      }
+
+      try {
+        await _repository.upsertProfileFact(
+          id,
+          OnboardingKeys.ndis,
+          ProfileFactUpsert(
+            valueJson: ndis,
+            documentId: ndisDocId,
+          ),
+        );
+      } on AppFailure catch (e) {
+        if (e.code == 'ndis_number_in_use') {
+          ndisFieldError.value = e.message;
+          return false;
+        }
+        rethrow;
+      }
+
+      await _putOptionalFact(
+        id,
+        OnboardingKeys.supportPlanOther,
+        supportPlanOtherCtrl.text.trim(),
+      );
       await _repository.upsertProfileFact(
         id,
         OnboardingKeys.planManagementType,
@@ -1075,6 +1292,21 @@ class ClientOnboardingController extends GetxController
         );
         await _putOptionalFact(
           id,
+          OnboardingKeys.planManagerCompany,
+          planManagerCompanyCtrl.text.trim(),
+        );
+        await _putOptionalFact(
+          id,
+          OnboardingKeys.planManagerAbnAcn,
+          planManagerAbnAcnCtrl.text.trim(),
+        );
+        await _putOptionalFact(
+          id,
+          OnboardingKeys.planManagerOrgId,
+          planManagerOrgIdCtrl.text.trim(),
+        );
+        await _putOptionalFact(
+          id,
           OnboardingKeys.planManagerPhone,
           planManagerPhoneCtrl.text.trim(),
         );
@@ -1082,6 +1314,11 @@ class ClientOnboardingController extends GetxController
           id,
           OnboardingKeys.planManagerEmail,
           planManagerEmailCtrl.text.trim(),
+        );
+        await _putOptionalFact(
+          id,
+          OnboardingKeys.planManagerAddress,
+          planManagerAddressCtrl.text.trim(),
         );
       }
       if (planStartDate.value != null) {
@@ -1105,25 +1342,60 @@ class ClientOnboardingController extends GetxController
         OnboardingKeys.budgetCapital,
         budgetCapitalCtrl,
       );
-      await _putOptionalNumber(
+      await _putProfessionalFields(
         id,
-        OnboardingKeys.fundingNotToExceed,
-        fundingNotToExceedCtrl,
+        supportCoordinator,
+        nameKey: OnboardingKeys.supportCoordinatorName,
+        companyKey: OnboardingKeys.supportCoordinatorCompany,
+        abnAcnKey: OnboardingKeys.supportCoordinatorAbnAcn,
+        orgIdKey: OnboardingKeys.supportCoordinatorOrgId,
+        phoneKey: OnboardingKeys.supportCoordinatorPhone,
+        emailKey: OnboardingKeys.supportCoordinatorEmail,
+        addressKey: OnboardingKeys.supportCoordinatorAddress,
       );
-      await _putOptionalFact(
+      await _putProfessionalFields(
         id,
-        OnboardingKeys.supportCoordinatorName,
-        scNameCtrl.text.trim(),
+        behaviouralTherapist,
+        nameKey: OnboardingKeys.behaviouralTherapistName,
+        companyKey: OnboardingKeys.behaviouralTherapistCompany,
+        abnAcnKey: OnboardingKeys.behaviouralTherapistAbnAcn,
+        orgIdKey: OnboardingKeys.behaviouralTherapistOrgId,
+        phoneKey: OnboardingKeys.behaviouralTherapistPhone,
+        emailKey: OnboardingKeys.behaviouralTherapistEmail,
+        addressKey: OnboardingKeys.behaviouralTherapistAddress,
       );
-      await _putOptionalFact(
+      await _putProfessionalFields(
         id,
-        OnboardingKeys.supportCoordinatorPhone,
-        scPhoneCtrl.text.trim(),
+        speechTherapist,
+        nameKey: OnboardingKeys.speechTherapistName,
+        companyKey: OnboardingKeys.speechTherapistCompany,
+        abnAcnKey: OnboardingKeys.speechTherapistAbnAcn,
+        orgIdKey: OnboardingKeys.speechTherapistOrgId,
+        phoneKey: OnboardingKeys.speechTherapistPhone,
+        emailKey: OnboardingKeys.speechTherapistEmail,
+        addressKey: OnboardingKeys.speechTherapistAddress,
       );
-      await _putOptionalFact(
+      await _putProfessionalFields(
         id,
-        OnboardingKeys.supportCoordinatorEmail,
-        scEmailCtrl.text.trim(),
+        occupationalTherapist,
+        nameKey: OnboardingKeys.occupationalTherapistName,
+        companyKey: OnboardingKeys.occupationalTherapistCompany,
+        abnAcnKey: OnboardingKeys.occupationalTherapistAbnAcn,
+        orgIdKey: OnboardingKeys.occupationalTherapistOrgId,
+        phoneKey: OnboardingKeys.occupationalTherapistPhone,
+        emailKey: OnboardingKeys.occupationalTherapistEmail,
+        addressKey: OnboardingKeys.occupationalTherapistAddress,
+      );
+      await _putProfessionalFields(
+        id,
+        physiotherapist,
+        nameKey: OnboardingKeys.physiotherapistName,
+        companyKey: OnboardingKeys.physiotherapistCompany,
+        abnAcnKey: OnboardingKeys.physiotherapistAbnAcn,
+        orgIdKey: OnboardingKeys.physiotherapistOrgId,
+        phoneKey: OnboardingKeys.physiotherapistPhone,
+        emailKey: OnboardingKeys.physiotherapistEmail,
+        addressKey: OnboardingKeys.physiotherapistAddress,
       );
 
       if (step.value == 5) step.value = 6;
@@ -1364,6 +1636,38 @@ class ClientOnboardingController extends GetxController
       clientId,
       key,
       ProfileFactUpsert(valueJson: n),
+    );
+  }
+
+  Future<void> _putProfessionalFields(
+    String clientId,
+    SupportPlanProfessionalFields fields, {
+    required String nameKey,
+    required String companyKey,
+    required String abnAcnKey,
+    required String orgIdKey,
+    required String phoneKey,
+    required String emailKey,
+    required String addressKey,
+  }) async {
+    await _putOptionalFact(clientId, nameKey, fields.nameCtrl.text.trim());
+    await _putOptionalFact(
+      clientId,
+      companyKey,
+      fields.companyCtrl.text.trim(),
+    );
+    await _putOptionalFact(
+      clientId,
+      abnAcnKey,
+      fields.abnAcnCtrl.text.trim(),
+    );
+    await _putOptionalFact(clientId, orgIdKey, fields.orgIdCtrl.text.trim());
+    await _putOptionalFact(clientId, phoneKey, fields.phoneCtrl.text.trim());
+    await _putOptionalFact(clientId, emailKey, fields.emailCtrl.text.trim());
+    await _putOptionalFact(
+      clientId,
+      addressKey,
+      fields.addressCtrl.text.trim(),
     );
   }
 

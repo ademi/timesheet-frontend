@@ -8,7 +8,7 @@ import '../../../shared/widgets/floating_error_notice.dart';
 import '../controllers/client_onboarding_controller.dart';
 import '../widgets/onboarding/onboarding_address_step.dart';
 import '../widgets/onboarding/onboarding_contacts_step.dart';
-import '../widgets/onboarding/onboarding_funding_step.dart';
+import '../widgets/onboarding/onboarding_support_plan_step.dart';
 import '../widgets/onboarding/onboarding_identity_step.dart';
 import '../widgets/onboarding/onboarding_legal_pack_step.dart';
 import '../widgets/onboarding/onboarding_preferences_step.dart';
@@ -63,7 +63,7 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                           4 => OnboardingRepresentativeStep(
                             controller: controller,
                           ),
-                          5 => OnboardingFundingStep(controller: controller),
+                          5 => OnboardingSupportPlanStep(controller: controller),
                           _ => OnboardingLegalPackStep(controller: controller),
                         },
                       ],
