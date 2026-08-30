@@ -3,6 +3,7 @@ import '../../../../shared/utils/name_sort.dart';
 import '../../../visits/data/models/roster_overlay_models.dart';
 import '../datasources/engagements_remote_datasource.dart';
 import '../models/engagement_models.dart';
+import '../models/staff_contractor_models.dart';
 
 class EngagementsRepository {
   EngagementsRepository({required EngagementsRemoteDataSource remote})
@@ -13,8 +14,21 @@ class EngagementsRepository {
   Future<List<EngagementOut>> listTenantEngagements() async =>
       sortedByName(await _remote.listTenantEngagements(), (e) => e.displayName);
 
+  Future<List<ContractorRegistrationInviteOut>> listPendingContractorInvites() =>
+      _remote.listPendingContractorInvites();
+
+  Future<ContractorRegistrationInviteOut> resendContractorInvite(
+    String inviteId,
+  ) => _remote.resendContractorInvite(inviteId);
+
+  Future<EngagementOut> resendEngagementInvite(String engagementId) =>
+      _remote.resendEngagementInvite(engagementId);
+
   Future<EngagementInviteResponse> invite(EngagementInviteRequest body) =>
       _remote.invite(body);
+
+  Future<StaffContractorOut> getStaffContractor(String contractorId) =>
+      _remote.getStaffContractor(contractorId);
 
   Future<EngagementInvitePreviewOut> previewInvite(
     EngagementInvitePreviewRequest body,

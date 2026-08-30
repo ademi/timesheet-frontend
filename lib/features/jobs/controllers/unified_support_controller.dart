@@ -174,7 +174,7 @@ class UnifiedSupportController extends GetxController
   bool get supportItemPrefilledFromStanding => _supportItemPrefilledFromStanding;
 
   List<EngagementOut> get assignableEngagements => sortedByName(
-        engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs),
+        engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs || e.isAwaitingApproval),
         (e) => e.displayName,
       );
 

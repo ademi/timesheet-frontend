@@ -132,11 +132,13 @@ Fail the build if any of these are violated.
 
 ### 2.1 Public register (no invite)
 
-- [x] Gateway → Register as contractor.
-- [x] Form: full name, email, password; optional phone/dob.
-- [x] Terms + Privacy accepted **separately** (bundled versions match `TERMS_VERSION` / `PRIVACY_VERSION`).
-- [x] Submit → success → navigate to **login** (no tokens issued).
-- [x] Rate-limit / validation errors show readable messages (no crash).
+- [ ] Gateway → Register as contractor.
+- [ ] **5-step stepper:** Identity → Screening → Qualifications → Checks → Legal & create account.
+- [ ] Identity: email, password, optional name/phone/DOB; address with **geocode lookup + confirm**; optional ABN + payment.
+- [ ] Screening / Qualifications / Checks: optional CRM fields (no file uploads in stepper).
+- [ ] Legal: Terms + Privacy accepted **separately** (bundled versions match `TERMS_VERSION` / `PRIVACY_VERSION`).
+- [ ] Submit → success → navigate to **login** (no tokens issued).
+- [ ] Rate-limit / validation errors show readable messages (no crash).
 
 
 
@@ -152,9 +154,9 @@ Fail the build if any of these are violated.
 ### 2.3 Invite deep link register
 
 - [ ] Open `/contractor/register?invite=<token>` (or emailed link).
-- [ ] While invite loads: **Create account** disabled / submit no-ops.
-- [ ] After load: email **pre-filled and read-only**; inviting tenant shown.
-- [ ] Register with token → login → engagement appears for that tenant.
+- [ ] While invite loads: stepper submit disabled / no-ops.
+- [ ] After load: email **pre-filled and read-only**; inviting tenant + required categories shown.
+- [ ] Complete stepper with token → login → engagement appears for that tenant.
 - [ ] Bad token / email mismatch → actionable error (`invite_token_invalid` / `invite_email_mismatch`).
 
 ---
@@ -285,6 +287,14 @@ Fail the build if any of these are violated.
 - [ ] Incomplete → `eligibility_incomplete` with **itemised** reasons panel.
 - [ ] Suspend / Resume / End honour `contractors.manage`.
 - [ ] User **without** approve permission: lifecycle area explains empty state (not silent blank).
+
+
+
+### 5.4 Staff read-only profile (workforce detail)
+
+- [ ] Profile tab shows identity, address, screening/qual/checks, ABN, masked payment — **no edit controls**.
+- [ ] Data matches what contractor entered at register or updated on **Profile** (`PATCH /v1/contractor-me`).
+- [ ] Requires `contractors.read` (not `contractors.manage`).
 
 ---
 
@@ -425,7 +435,8 @@ Hide or disable controls the JWT lacks. Spot-check with a reduced-permission sta
 | Area                 | Need (any/all per design)             | Expected                      |
 | -------------------- | ------------------------------------- | ----------------------------- |
 | Workforce list       | `contractors.read`                    | Visible                       |
-| Invite               | `contractors.invite`                  | Button works                  |
+| Workforce detail Profile (read-only) | `contractors.read`      | View only; no staff edit      |
+| Invite / re-email    | `contractors.invite`                  | Invite FAB / resend           |
 | Approve              | `contractors.approve`                 | Else explained empty / hidden |
 | Activate/suspend/end | `contractors.manage`                  | Gated                         |
 | Credential review    | `credentials.review`                  | Gated                         |
@@ -448,11 +459,11 @@ Hide or disable controls the JWT lacks. Spot-check with a reduced-permission sta
 
 Use this as a single dogfood script covering the critical chain.
 
-1. [ ] Staff login → invite **new** email with required categories.
-2. [ ] Open invite register link → lock email → create account → login.
-3. [ ] Complete onboarding: legal → notices → consents → accept (sharing grant) → exit to home.
-4. [ ] Upload required credentials + evidence → scan clean.
-5. [ ] Staff review credentials → approve engagement → activate.
+1. [ ] Staff login → **Invite** (`contractors.invite`) with required categories.
+2. [ ] Open invite register link → lock email → complete **register stepper** (Identity incl. ABN/payment + optional CRM steps) → login.
+3. [ ] Complete onboarding funnel: legal → notices → consents → accept (sharing grant) → exit to home.
+4. [ ] Upload required credentials + evidence → scan clean → status moves to **awaiting_approval**.
+5. [ ] Staff review credentials → **Approve documents** and/or **Approve and activate for work**.
 6. [ ] Staff create client + site (lat/lng) → job + form → recurrence → generate visit.
 7. [ ] Contractor (mobile): check in → tasks/forms → complete.
 8. [ ] Staff: access history for a credential; contractor: privacy export / rights request smoke.

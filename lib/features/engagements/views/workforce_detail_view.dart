@@ -19,6 +19,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
 
   static const _tabLabels = [
     'Overview',
+    'Profile',
     'Credentials',
     'Visits',
     'Schedule',
@@ -135,6 +136,8 @@ class WorkforceDetailView extends GetView<WorkforceController> {
 
   Widget _tabContent(EngagementOut current, int tab) {
     switch (tab) {
+      case WorkforceController.tabProfile:
+        return _profileContent(current);
       case WorkforceController.tabCredentials:
         return _credentialsContent(current);
       case WorkforceController.tabVisits:
@@ -154,6 +157,159 @@ class WorkforceDetailView extends GetView<WorkforceController> {
       default:
         return _overviewContent(current);
     }
+  }
+
+  Widget _profileContent(EngagementOut current) {
+    return Obx(() {
+      if (controller.isLoadingProfile.value &&
+          controller.staffProfile.value == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      final profile = controller.staffProfile.value;
+      final screening = profile?.compliance['screening'];
+      final checks = profile?.compliance['checks'];
+      final qualifications = profile?.compliance['qualifications'];
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Profile information is entered by the contractor. '
+            'Staff can review it here but cannot edit it.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+          _row('Email', profile?.email ?? current.contractorEmail ?? '—'),
+          _row('Full name', profile?.fullName ?? current.displayName),
+          _row('Phone', _orDash(profile?.phone)),
+          _row(
+            'Date of birth',
+            profile?.dob == null
+                ? '—'
+                : profile!.dob!.toIso8601String().split('T').first,
+          ),
+          _row('ABN', _orDash(profile?.abn)),
+          const SizedBox(height: 16),
+          const Text(
+            'Address',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          _row('Line 1', _orDash(profile?.address.addressLine1)),
+          _row('Line 2', _orDash(profile?.address.addressLine2)),
+          _row('Suburb', _orDash(profile?.address.suburb)),
+          _row('State', _orDash(profile?.address.state)),
+          _row('Postcode', _orDash(profile?.address.postcode)),
+          _row('Country', _orDash(profile?.address.country)),
+          const SizedBox(height: 16),
+          const Text(
+            'Screening',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          if (screening is Map) ...[
+            _row('NDIS screening number', _mapText(screening, 'number')),
+            _row('Clearance status', _mapText(screening, 'status')),
+            _row('Issue date', _mapText(screening, 'issue_date')),
+            _row('Expiry date', _mapText(screening, 'expiry_date')),
+            _row('State/territory', _mapText(screening, 'state')),
+          ] else
+            const Text(
+              'No screening details on file.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+          const SizedBox(height: 16),
+          const Text(
+            'Qualifications',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          if (qualifications is List && qualifications.isNotEmpty)
+            for (var i = 0; i < qualifications.length; i++)
+              if (qualifications[i] is Map) ...[
+                if (i > 0) const SizedBox(height: 8),
+                _row(
+                  'Type',
+                  _mapText(qualifications[i] as Map, 'type'),
+                ),
+                _row(
+                  'Issue date',
+                  _mapText(qualifications[i] as Map, 'issue_date'),
+                ),
+                _row(
+                  'Expiry date',
+                  _mapText(qualifications[i] as Map, 'expiry_date'),
+                ),
+              ]
+          else
+            const Text(
+              'No qualifications on file.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+          const SizedBox(height: 16),
+          const Text(
+            'Checks',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          if (checks is Map) ...[
+            _checkSection('WWCC', checks['wwcc']),
+            _checkSection('Driver licence', checks['drivers_licence'],
+                numberKey: 'number'),
+            _checkSection('Vehicle registration', checks['vehicle_registration'],
+                numberKey: 'plate'),
+          ] else
+            const Text(
+              'No check details on file.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+          if (profile?.paymentDetails != null) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Payment',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            _row('Account name', profile!.paymentDetails!.accountName),
+            _row('BSB', profile.paymentDetails!.bsb),
+            _row(
+              'Account number',
+              profile.paymentDetails!.accountNumberMasked,
+            ),
+          ],
+        ],
+      );
+    });
+  }
+
+  Widget _checkSection(
+    String label,
+    Object? value, {
+    String numberKey = 'number',
+  }) {
+    if (value is! Map) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: _row(label, '—'),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _row('$label number', _mapText(value, numberKey)),
+        _row('$label state', _mapText(value, 'state')),
+        _row('$label expiry', _mapText(value, 'expiry_date')),
+      ],
+    );
+  }
+
+  String _orDash(String? value) =>
+      value == null || value.trim().isEmpty ? '—' : value.trim();
+
+  String _mapText(Map map, String key) {
+    final value = map[key];
+    if (value == null) return '—';
+    final text = value.toString().trim();
+    return text.isEmpty ? '—' : text;
   }
 
   Widget _scheduleContent() {
@@ -313,13 +469,13 @@ class WorkforceDetailView extends GetView<WorkforceController> {
     }
 
     final actions = <Widget>[
-      if (controller.canApprove && current.isPendingDocs) ...[
+      if (controller.canApprove && current.isAwaitingApproval) ...[
         _actionButton(
-          label: 'Approve',
+          label: 'Approve documents',
           onPressed: () => controller.runAction('approve', current),
         ),
         _actionButton(
-          label: 'Approve & activate',
+          label: 'Approve and activate for work',
           onPressed: () => controller.runAction('approve_and_activate', current),
         ),
       ],

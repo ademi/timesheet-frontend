@@ -49,4 +49,24 @@ class ContractorRegisterRemoteDataSource {
       throw AppFailure.fromDio(e);
     }
   }
+
+  Future<GeocodeResponse> geocode(GeocodeRequest body) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.publicGeocode,
+        data: body.toJson(),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'empty_geocode',
+          message: 'Empty geocode response',
+          presentation: AppFailurePresentation.toast,
+        );
+      }
+      return GeocodeResponse.fromJson(data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
 }

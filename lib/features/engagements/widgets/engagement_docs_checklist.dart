@@ -146,6 +146,7 @@ class EngagementStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = switch (status) {
       'active' || 'approved' => AppColors.success,
+      'awaiting_approval' => const Color(0xFFCA8A04),
       'pending_docs' || 'invited' => const Color(0xFFEA580C),
       'suspended' || 'ended' => AppColors.error,
       _ => AppColors.slate600,

@@ -73,6 +73,10 @@ class HomeAlertsController extends GetxController {
   bool get isStaff => _session.isStaff;
   bool get isContractor => _session.isContractor;
   bool get shouldShowDocsBanner => !isStaff && _session.needsDocsAttention;
+  bool get shouldShowAwaitingApprovalBanner =>
+      !isStaff && _session.needsApprovalWait;
+  bool get shouldShowProfileBanner =>
+      !isStaff && _session.needsProfileCompletion.value;
   bool get canViewBilling =>
       isStaff &&
       (_session.hasPermission(AppPermissions.subscriptionView) ||
@@ -457,6 +461,23 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+              if (controller.shouldShowProfileBanner) ...[
+                MaterialBanner(
+                  content: const Text(
+                    'Complete your account — add your ABN so providers can '
+                    'verify and pay you.',
+                  ),
+                  leading: const Icon(Icons.badge_outlined),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Get.toNamed(AppRoutes.contractorProfile),
+                      child: const Text('Complete profile'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
               if (controller.shouldShowDocsBanner) ...[
                 MaterialBanner(
                   content: const Text(
@@ -470,6 +491,24 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                       onPressed:
                           () => Get.toNamed(AppRoutes.contractorCredentials),
                       child: const Text('Upload credentials'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (controller.shouldShowAwaitingApprovalBanner) ...[
+                MaterialBanner(
+                  content: const Text(
+                    'Your documents are uploaded and waiting for provider '
+                    'approval.',
+                  ),
+                  leading: const Icon(Icons.hourglass_top_outlined),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                  actions: [
+                    TextButton(
+                      onPressed:
+                          () => Get.toNamed(AppRoutes.contractorCredentials),
+                      child: const Text('View credentials'),
                     ),
                   ],
                 ),

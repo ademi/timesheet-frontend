@@ -31,6 +31,8 @@ abstract final class ApiPaths {
       '${contractorMeCredential(id)}/supersede';
   static const contractorMePrivacyExport = '$_v1/contractor-me/privacy-export';
   static const contractorMeProfilePhoto = '$_v1/contractor-me/profile-photo';
+  static const contractorMePaymentDetails =
+      '$_v1/contractor-me/payment-details';
   static const contractorMeTimetable = '$_v1/contractor-me/timetable';
   static const contractorMeAvailability = '$_v1/contractor-me/availability';
   static const contractorMeLeave = '$_v1/contractor-me/leave';
@@ -47,8 +49,15 @@ abstract final class ApiPaths {
   static const tenantEngagements = '$_v1/tenants/current/engagements';
   static const tenantEngagementInvitePreview =
       '$tenantEngagements/invite-preview';
+  static const tenantContractorInvites =
+      '$_v1/tenants/current/contractor-invites';
+  static String tenantContractorInviteResend(String inviteId) =>
+      '$tenantContractorInvites/$inviteId/resend';
   static String tenantContractorCredentials(String contractorId) =>
       '$_v1/tenants/current/contractors/$contractorId/credentials';
+  static String tenantContractor(String contractorId) =>
+      '$_v1/tenants/current/contractors/$contractorId';
+  static const tenantContractors = '$_v1/tenants/current/contractors';
   static String tenantContractorProfilePhoto(String contractorId) =>
       '$_v1/tenants/current/contractors/$contractorId/profile-photo';
   static String engagement(String id) => '$_v1/engagements/$id';
@@ -60,6 +69,8 @@ abstract final class ApiPaths {
   static String engagementSuspend(String id) => '${engagement(id)}/suspend';
   static String engagementResume(String id) => '${engagement(id)}/resume';
   static String engagementEnd(String id) => '${engagement(id)}/end';
+  static String engagementResendInvite(String id) =>
+      '${engagement(id)}/resend-invite';
   static String engagementRequiredDocCategories(String id) =>
       '${engagement(id)}/required-doc-categories';
   static String engagementCredentialReviews(String id) =>

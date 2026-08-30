@@ -5,6 +5,8 @@ import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../clients/bindings/clients_binding.dart';
 import '../../clients/data/repositories/clients_repository.dart';
+import '../../contractor_me/data/datasources/contractor_me_remote_datasource.dart';
+import '../../contractor_me/data/repositories/contractor_me_repository.dart';
 import '../../credentials/bindings/credentials_binding.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
 import '../../documents/data/document_pipeline.dart';
@@ -79,6 +81,21 @@ class ContractorProfileOpsBinding extends Bindings {
     ComplianceOpsBinding.ensureShared();
     CredentialsBinding.ensureDependencies();
     if (!Get.isRegistered<SessionService>()) return;
+    if (!Get.isRegistered<ContractorMeRemoteDataSource>()) {
+      Get.lazyPut<ContractorMeRemoteDataSource>(
+        () => ContractorMeRemoteDataSource(
+          authenticatedDio: Get.find<ApiClient>().dio,
+          plainDio: Get.find<ApiClient>().plainDio,
+        ),
+      );
+    }
+    if (!Get.isRegistered<ContractorMeRepository>()) {
+      Get.lazyPut<ContractorMeRepository>(
+        () => ContractorMeRepository(
+          remote: Get.find<ContractorMeRemoteDataSource>(),
+        ),
+      );
+    }
     if (!Get.isRegistered<ContractorProfileController>()) {
       Get.put(
         ContractorProfileController(
@@ -87,6 +104,7 @@ class ContractorProfileOpsBinding extends Bindings {
           documentPipeline: Get.isRegistered<DocumentPipeline>()
               ? Get.find<DocumentPipeline>()
               : null,
+          meRepository: Get.find<ContractorMeRepository>(),
         ),
       );
     }

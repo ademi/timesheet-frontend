@@ -19,6 +19,7 @@ import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../../visits/utils/visit_windows.dart';
 import '../data/models/engagement_models.dart';
+import '../data/models/staff_contractor_models.dart';
 import '../data/repositories/engagements_repository.dart';
 import '../utils/missing_categories.dart';
 
@@ -39,6 +40,7 @@ class WorkforceController extends GetxController {
   final VisitsRepository? _visits;
 
   final items = <EngagementOut>[].obs;
+  final pendingInvites = <ContractorRegistrationInviteOut>[].obs;
   final statusFilter = RxnString();
   final missingDocsFilter = false.obs;
   final credentialsByContractor = <String, List<CredentialOut>>{}.obs;
@@ -46,6 +48,7 @@ class WorkforceController extends GetxController {
   final photosByContractor = <String, ProfilePhotoOut>{}.obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
+  final resendingInviteId = RxnString();
   final errorMessage = RxnString();
   final eligibilityReasons = <String>[].obs;
   final detailPhoto = Rxn<ProfilePhotoOut>();
@@ -76,9 +79,13 @@ class WorkforceController extends GetxController {
   bool _detailExtrasLoaded = false;
 
   static const tabOverview = 0;
-  static const tabCredentials = 1;
-  static const tabVisits = 2;
-  static const tabSchedule = 3;
+  static const tabProfile = 1;
+  static const tabCredentials = 2;
+  static const tabVisits = 3;
+  static const tabSchedule = 4;
+
+  final staffProfile = Rxn<StaffContractorOut>();
+  final isLoadingProfile = false.obs;
 
   /// Invite multi-select options (catalog when loaded, else allowlist fallback).
   List<CredentialCategory> get inviteCategoryChoices {
@@ -117,6 +124,16 @@ class WorkforceController extends GetxController {
       list = list.where(hasMissingRequiredDocs).toList();
     }
     list.sort((a, b) => compareNames(a.displayName, b.displayName));
+    return list;
+  }
+
+  /// Pending registration invites shown when filter is All or Invited.
+  List<ContractorRegistrationInviteOut> get filteredPendingInvites {
+    if (missingDocsFilter.value) return const [];
+    final f = statusFilter.value;
+    if (f != null && f.isNotEmpty && f != 'invited') return const [];
+    final list = pendingInvites.toList()
+      ..sort((a, b) => a.email.toLowerCase().compareTo(b.email.toLowerCase()));
     return list;
   }
 
@@ -184,8 +201,14 @@ class WorkforceController extends GetxController {
     isLoading.value = true;
     clearError();
     try {
-      final list = await _repository.listTenantEngagements();
-      items.assignAll(list);
+      final results = await Future.wait([
+        _repository.listTenantEngagements(),
+        _repository.listPendingContractorInvites(),
+      ]);
+      items.assignAll(results[0] as List<EngagementOut>);
+      pendingInvites.assignAll(
+        results[1] as List<ContractorRegistrationInviteOut>,
+      );
       photosByContractor.clear();
       // Load avatars in the background so the list can render immediately.
       _ensureListPhotosLoaded();
@@ -221,6 +244,7 @@ class WorkforceController extends GetxController {
     visitsTruncated.value = false;
     detailAvailability.clear();
     scheduleError.value = null;
+    staffProfile.value = null;
     clearError();
     detailPhoto.value = photosByContractor[e.contractorId];
     detailSelectedCategories
@@ -231,6 +255,20 @@ class WorkforceController extends GetxController {
     }
     Get.toNamed(AppRoutes.staffWorkforceDetail, arguments: e);
     loadDetailProfilePhoto(e.contractorId);
+    loadStaffProfile(e.contractorId);
+  }
+
+  Future<void> loadStaffProfile(String contractorId) async {
+    isLoadingProfile.value = true;
+    try {
+      staffProfile.value = await _repository.getStaffContractor(contractorId);
+    } on AppFailure catch (e) {
+      _setError(e.message);
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      isLoadingProfile.value = false;
+    }
   }
 
   Future<void> loadDetailVisits() async {
@@ -411,21 +449,12 @@ class WorkforceController extends GetxController {
         return;
       }
 
-      var sendEmail = true;
-      if (preview.needsRegistration) {
-        final choice = await _confirmRegistrationInviteEmail(
-          message: preview.message,
-        );
-        if (choice == null) return; // cancelled
-        sendEmail = choice;
-      }
-
       final result = await _repository.invite(
         EngagementInviteRequest(
           email: email.isEmpty ? null : email,
           phone: phone.isEmpty ? null : phone,
           requiredCategories: selectedCategories.toList(),
-          sendEmail: sendEmail,
+          sendEmail: true,
         ),
       );
       emailCtrl.clear();
@@ -440,14 +469,13 @@ class WorkforceController extends GetxController {
         await _showRegistrationInviteLinkDialog(
           inviteUrl: inviteUrl,
           expiresAt: invite!.expiresAt,
-          emailRequested: sendEmail,
         );
       } else {
         AppToast.success(
-          result.isRegistrationInvite ? 'Invite created' : 'Engagement created',
+          result.isRegistrationInvite ? 'Invite sent' : 'Engagement created',
           result.isRegistrationInvite
-              ? 'Share the registration link with the contractor.'
-              : 'Engagement created for this provider.',
+              ? 'Invitation email sent. You can re-email from the workforce list.'
+              : 'Invitation email sent to this contractor.',
         );
       }
       await load();
@@ -460,55 +488,83 @@ class WorkforceController extends GetxController {
     }
   }
 
-  /// Returns `true` to send email, `false` for link-only, `null` if cancelled.
-  Future<bool?> _confirmRegistrationInviteEmail({
-    required String message,
-  }) async {
-    return Get.dialog<bool>(
-      AlertDialog(
-        title: const Text('Contractor not in Rostiq'),
-        content: Text(
-          '$message\n\n'
-          'Send an invitation email now? You can still copy a registration '
-          'link either way.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: null),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: const Text('Link only'),
-          ),
-          ElevatedButton(
-            onPressed: () => Get.back(result: true),
-            child: const Text('Send email'),
-          ),
-        ],
-      ),
-      barrierDismissible: false,
-    );
+  Future<void> resendPendingInvite(ContractorRegistrationInviteOut invite) async {
+    if (!canInvite) {
+      _setError('Missing contractors.invite permission.');
+      return;
+    }
+    resendingInviteId.value = invite.id;
+    clearError();
+    try {
+      final updated = await _repository.resendContractorInvite(invite.id);
+      final idx = pendingInvites.indexWhere((e) => e.id == invite.id);
+      if (idx >= 0) {
+        pendingInvites.removeAt(idx);
+      }
+      pendingInvites.insert(0, updated);
+      AppToast.success('Invite re-sent', 'Invitation email sent to ${updated.email}.');
+      final inviteUrl = updated.inviteUrl?.trim();
+      if (inviteUrl != null && inviteUrl.isNotEmpty) {
+        await _showRegistrationInviteLinkDialog(
+          inviteUrl: inviteUrl,
+          expiresAt: updated.expiresAt,
+        );
+      }
+    } on AppFailure catch (e) {
+      _setError(e.message);
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      resendingInviteId.value = null;
+    }
   }
+
+  Future<void> resendEngagementInviteEmail(EngagementOut engagement) async {
+    if (!canInvite) {
+      _setError('Missing contractors.invite permission.');
+      return;
+    }
+    if (!engagement.isInvited) return;
+    resendingInviteId.value = engagement.id;
+    clearError();
+    try {
+      await _repository.resendEngagementInvite(engagement.id);
+      AppToast.success(
+        'Invite re-sent',
+        'Invitation email sent to ${engagement.contractorEmail ?? engagement.displayName}.',
+      );
+    } on AppFailure catch (e) {
+      _setError(e.message);
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      resendingInviteId.value = null;
+    }
+  }
+
+  Future<void> showInviteLinkDialog({
+    required String inviteUrl,
+    required DateTime expiresAt,
+  }) =>
+      _showRegistrationInviteLinkDialog(
+        inviteUrl: inviteUrl,
+        expiresAt: expiresAt,
+      );
 
   Future<void> _showRegistrationInviteLinkDialog({
     required String inviteUrl,
     required DateTime expiresAt,
-    bool emailRequested = true,
   }) async {
     await Get.dialog<void>(
       AlertDialog(
-        title: const Text('Invite created'),
+        title: const Text('Invite sent'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              emailRequested
-                  ? 'An invitation email was requested (In case of an issue, copy and share this link '
-                      'as a backup.'
-                  : 'No invitation email was sent. Copy and share this link '
-                      'with the contractor.',
+            const Text(
+              'An invitation email was sent. If needed, copy and share this '
+              'link as a backup.',
             ),
             const SizedBox(height: 12),
             SelectableText(inviteUrl),

@@ -11,6 +11,7 @@ import '../clients/clients_routes.dart';
 import '../compliance_ops/bindings/compliance_ops_binding.dart';
 import '../compliance_ops/compliance_ops_routes.dart';
 import '../compliance_ops/views/home_alerts_view.dart';
+import '../contractor_me/contractor_me_routes.dart';
 import '../contractor_onboarding/contractor_onboarding_routes.dart';
 import '../contractor_register/contractor_register_routes.dart';
 import '../contractor_schedule/contractor_schedule_routes.dart';
@@ -60,6 +61,7 @@ abstract final class ShellPages {
         ...ComplianceOpsPages.routes,
         ...CredentialsPages.routes,
         ...ContractorOnboardingPages.routes,
+        ...ContractorMePages.routes,
         ContractorRegisterPages.page,
       ];
 }

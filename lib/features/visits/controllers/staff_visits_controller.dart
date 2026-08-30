@@ -146,7 +146,7 @@ class StaffVisitsController extends GetxController {
       _session.hasPermission(AppPermissions.jobsManage);
 
   List<EngagementOut> get assignableEngagements => sortedByName(
-        engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs),
+        engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs || e.isAwaitingApproval),
         (e) => e.displayName,
       );
 

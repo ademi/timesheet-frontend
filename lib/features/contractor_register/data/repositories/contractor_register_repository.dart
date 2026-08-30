@@ -14,4 +14,6 @@ class ContractorRegisterRepository {
   Future<ContractorRegisterResponse> register(
     ContractorRegisterRequest request,
   ) => _remote.register(request);
+
+  Future<GeocodeResponse> geocode(GeocodeRequest body) => _remote.geocode(body);
 }

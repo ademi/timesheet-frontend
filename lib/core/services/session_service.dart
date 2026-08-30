@@ -5,11 +5,13 @@ import '../../app/data/models/auth/engagement_summary_model.dart';
 import '../../app/data/models/auth/me_context_model.dart';
 import '../../app/data/repositories/auth_repository.dart';
 import '../../app/routes/app_routes.dart';
+import '../../app/constants/app_permissions.dart';
+import '../../features/billing/data/repositories/ndis_catalogue_repository.dart';
+import '../../features/contractor_me/data/datasources/contractor_me_remote_datasource.dart';
 import '../../features/contractor_onboarding/data/onboarding_progress_store.dart';
 import '../../features/contractor_onboarding/onboarding_routing.dart';
-import '../../features/billing/data/repositories/ndis_catalogue_repository.dart';
-import '../../app/constants/app_permissions.dart';
 import '../auth/jwt_claims.dart';
+import '../network/api_client.dart';
 import 'token_storage.dart';
 
 void _clearNdisCatalogueCacheIfRegistered() {
@@ -49,6 +51,8 @@ class SessionService extends GetxController {
   final needsOnboarding = false.obs;
   final needsPlatformCompliance = false.obs;
   final needsEngagementWork = false.obs;
+  /// True when contractor ABN is missing (Complete your account).
+  final needsProfileCompletion = false.obs;
   Future<void>? _hydratingMeContext;
   int _meContextGeneration = 0;
 
@@ -81,15 +85,22 @@ class SessionService extends GetxController {
 
   bool get isPendingDocs {
     final s = selectedEngagementStatus;
-    return s == 'pending_docs' || s == 'invited' || s == 'approved';
+    return s == 'pending_docs' ||
+        s == 'awaiting_approval' ||
+        s == 'invited' ||
+        s == 'approved';
   }
 
   /// True when at least one engagement still needs contractor accept.
   bool get needsInviteAccept => engagements.any((e) => e.status == 'invited');
 
-  /// True when at least one engagement needs contractor documents.
+  /// True when at least one engagement still needs document uploads.
   bool get needsDocsAttention =>
       engagements.any((e) => e.status == 'pending_docs');
+
+  /// True when uploads are complete and staff approval is pending.
+  bool get needsApprovalWait =>
+      engagements.any((e) => e.status == 'awaiting_approval');
 
   bool hasPermission(String permission) {
     final c = claims;
@@ -190,6 +201,9 @@ class SessionService extends GetxController {
       final ctx = await _authRepository.getMeContext();
       if (generation == _meContextGeneration) {
         applyMeContext(ctx);
+        if (isContractor) {
+          await refreshProfileCompletion();
+        }
       }
     } catch (_) {
       if (generation != _meContextGeneration) return;
@@ -199,6 +213,9 @@ class SessionService extends GetxController {
       contractorId.value ??= claims?.contractorId;
       tenantMemberId.value ??= claims?.tenantMemberId;
       _recomputeOnboarding();
+      if (isContractor) {
+        await refreshProfileCompletion();
+      }
     } finally {
       if (generation == _meContextGeneration) {
         isHydrating.value = false;
@@ -227,6 +244,28 @@ class SessionService extends GetxController {
     }
     _backendConfirmedPlatformCompliance = ctx.platformComplianceAccepted;
     _recomputeOnboarding();
+    if (!isContractor) {
+      needsProfileCompletion.value = false;
+    }
+  }
+
+  /// Refresh [needsProfileCompletion] from `GET /v1/contractor-me`.
+  Future<void> refreshProfileCompletion() async {
+    if (!isContractor) {
+      needsProfileCompletion.value = false;
+      return;
+    }
+    try {
+      if (!Get.isRegistered<ApiClient>()) return;
+      final remote = ContractorMeRemoteDataSource(
+        authenticatedDio: Get.find<ApiClient>().dio,
+        plainDio: Get.find<ApiClient>().plainDio,
+      );
+      final me = await remote.getMe();
+      needsProfileCompletion.value = !me.isProfileComplete;
+    } catch (_) {
+      // Non-blocking: home banner / complete-account can retry.
+    }
   }
 
   /// Engagement statuses that mean the contractor already passed platform
@@ -234,6 +273,7 @@ class SessionService extends GetxController {
   /// again when local GetStorage progress is missing.
   static const _platformOnboardingSatisfiedStatuses = {
     'pending_docs',
+    'awaiting_approval',
     'approved',
     'active',
   };
@@ -248,6 +288,7 @@ class SessionService extends GetxController {
       needsOnboarding.value = false;
       needsPlatformCompliance.value = false;
       needsEngagementWork.value = false;
+      needsProfileCompletion.value = false;
       return;
     }
     final id = contractorId.value;
@@ -296,6 +337,7 @@ class SessionService extends GetxController {
     needsOnboarding.value = false;
     needsPlatformCompliance.value = false;
     needsEngagementWork.value = false;
+    needsProfileCompletion.value = false;
     _backendConfirmedPlatformCompliance = false;
   }
 
@@ -313,6 +355,9 @@ class SessionService extends GetxController {
           needsPlatformCompliance: needsPlatformCompliance.value,
           needsInviteAccept: needsInviteAccept,
         );
+      }
+      if (needsProfileCompletion.value) {
+        return AppRoutes.contractorProfile;
       }
       if (engagements.length > 1 && claims?.tenantId == null) {
         return AppRoutes.contractorProfile;

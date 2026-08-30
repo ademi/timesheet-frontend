@@ -5,6 +5,7 @@ import '../../../../core/errors/app_failure.dart';
 import '../../../../shared/models/profile_photo_models.dart';
 import '../../../visits/data/models/roster_overlay_models.dart';
 import '../models/engagement_models.dart';
+import '../models/staff_contractor_models.dart';
 
 class EngagementsRemoteDataSource {
   EngagementsRemoteDataSource({required Dio authenticatedDio})
@@ -23,6 +24,58 @@ class EngagementsRemoteDataSource {
     }
   }
 
+  Future<List<ContractorRegistrationInviteOut>> listPendingContractorInvites() async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.tenantContractorInvites,
+      );
+      final data = response.data;
+      if (data == null) return const [];
+      return data
+          .whereType<Map>()
+          .map(
+            (e) => ContractorRegistrationInviteOut.fromJson(
+              Map<String, dynamic>.from(e),
+            ),
+          )
+          .toList(growable: false);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ContractorRegistrationInviteOut> resendContractorInvite(
+    String inviteId,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.tenantContractorInviteResend(inviteId),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'empty_resend',
+          message: 'Empty invite resend response',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      return ContractorRegistrationInviteOut.fromJson(data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<EngagementOut> resendEngagementInvite(String engagementId) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.engagementResendInvite(engagementId),
+      );
+      return _requireOut(response.data, 'resend-invite');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<EngagementInviteResponse> invite(EngagementInviteRequest body) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -30,6 +83,25 @@ class EngagementsRemoteDataSource {
         data: body.toJson(),
       );
       return _requireInviteResponse(response.data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<StaffContractorOut> getStaffContractor(String contractorId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.tenantContractor(contractorId),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'empty_contractor',
+          message: 'Empty contractor response',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      return StaffContractorOut.fromJson(data);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

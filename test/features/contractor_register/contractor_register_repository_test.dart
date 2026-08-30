@@ -17,7 +17,6 @@ void main() {
     repository = ContractorRegisterRepository(remote: remote);
     registerFallbackValue(
       const ContractorRegisterRequest(
-        fullName: 'A',
         email: 'a@b.com',
         password: 'Password1',
         termsVersion: 'v0.1-placeholder',
@@ -55,21 +54,43 @@ void main() {
       password: 'Password1',
       phone: '+61400000000',
       dob: '1990-01-02',
+      addressLine1: '1 Example St',
+      suburb: 'Sydney',
+      state: 'NSW',
+      postcode: '2000',
+      country: 'AU',
+      compliance: {
+        'screening': {'number': 'SCR-1'},
+      },
+      metadata: {
+        'location': {'latitude': -33.87, 'longitude': 151.21},
+      },
       termsVersion: 'v0.1-placeholder',
       privacyVersion: 'v0.1-placeholder',
     );
     final json = withOptional.toJson();
     expect(json['full_name'], 'Ada');
-    expect(json['terms_version'], 'v0.1-placeholder');
-    expect(json['privacy_version'], 'v0.1-placeholder');
+    expect(json['address_line1'], '1 Example St');
+    expect(json['suburb'], 'Sydney');
+    expect(json['compliance'], isNotNull);
+    expect(json['metadata'], isNotNull);
     expect(json['phone'], '+61400000000');
     expect(json['dob'], '1990-01-02');
     expect(json.containsKey('access_token'), isFalse);
   });
 
+  test('request json omits full_name when blank', () {
+    const request = ContractorRegisterRequest(
+      email: 'a@b.com',
+      password: 'Password1',
+      termsVersion: 'v0.1-placeholder',
+      privacyVersion: 'v0.1-placeholder',
+    );
+    expect(request.toJson().containsKey('full_name'), isFalse);
+  });
+
   test('request json includes invite token when supplied', () {
     const request = ContractorRegisterRequest(
-      fullName: 'Ada',
       email: 'ada@example.com',
       password: 'Password1',
       termsVersion: 'v0.1-placeholder',
@@ -91,7 +112,6 @@ void main() {
     expect(
       () => repository.register(
         const ContractorRegisterRequest(
-          fullName: 'A',
           email: 'a@b.com',
           password: 'Password1',
           termsVersion: 'v',
