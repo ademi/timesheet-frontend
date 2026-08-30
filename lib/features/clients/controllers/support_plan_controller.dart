@@ -166,6 +166,32 @@ class SupportPlanController extends GetxController {
     SupportPlanKeys.residenceOther,
   ];
 
+  static const wizardStepLabels = [
+    'Funding',
+    'Consent',
+    'Health',
+    'Living',
+    'Goals',
+    'Risk',
+    'Review',
+  ];
+
+  static const wizardStepCount = 7;
+
+  final wizardStep = 0.obs;
+
+  void nextStep() {
+    if (wizardStep.value < wizardStepCount - 1) {
+      wizardStep.value++;
+    }
+  }
+
+  void prevStep() {
+    if (wizardStep.value > 0) {
+      wizardStep.value--;
+    }
+  }
+
   /// Activate requires a next review date (BE `next_review_at_required`).
   bool get canActivate {
     final review = nextReviewAt.value;

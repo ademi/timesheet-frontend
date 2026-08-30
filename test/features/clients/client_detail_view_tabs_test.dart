@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/controllers/clients_controller.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
+import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/shared/models/profile_photo_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/views/client_detail_view.dart';
@@ -59,6 +60,10 @@ void main() {
     ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
     when(() => clients.listClientTypes()).thenAnswer((_) async => []);
     when(() => clients.listSupportPlans(any())).thenAnswer((_) async => []);
+    when(
+      () => clients.getClientProfile(any()),
+    ).thenAnswer((_) async => const ClientProfileBundle(facts: []));
+    when(() => clients.listStrengthsNeeds(any())).thenAnswer((_) async => []);
     controller = ClientsController(
       repository: clients,
       session: session,
@@ -146,7 +151,7 @@ void main() {
     expect(find.text('Upcoming'), findsNothing);
 
     await _openTab(tester, ClientsController.tabCarePlan);
-    expect(find.text('Primary disability'), findsOneWidget);
+    expect(find.text('Funding'), findsWidgets);
     expect(find.text('Start ongoing support'), findsNothing);
     expect(find.text('Upcoming'), findsNothing);
     expect(find.text('Past'), findsNothing);

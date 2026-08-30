@@ -3,10 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../controllers/support_plan_controller.dart';
-import 'support_plan_clinical_section.dart';
-import 'support_plan_consent_section.dart';
-import 'support_plan_form_body.dart';
-import 'support_plan_funding_section.dart';
+import 'support_plan_wizard_shell.dart';
 
 class ClientDetailCarePlanSection extends StatelessWidget {
   const ClientDetailCarePlanSection({super.key, required this.controller});
@@ -44,27 +41,7 @@ class ClientDetailCarePlanSection extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
-          SupportPlanFundingSection(
-            store: controller.fundingConsent,
-            clientId: controller.clientId,
-          ),
-          const SizedBox(height: 24),
-          SupportPlanConsentSection(
-            store: controller.fundingConsent,
-            clientId: controller.clientId,
-          ),
-          const SizedBox(height: 24),
-          SupportPlanClinicalSection(
-            store: controller.clinical,
-            clientId: controller.clientId,
-          ),
-          const SizedBox(height: 24),
-          SupportPlanSnSection(
-            planController: controller,
-            clientId: controller.clientId,
-          ),
-          const SizedBox(height: 24),
-          SupportPlanFormBody(controller: controller),
+          SupportPlanWizardShell(controller: controller),
         ],
       );
     });

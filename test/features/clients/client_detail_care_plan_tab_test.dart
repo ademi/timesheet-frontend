@@ -11,7 +11,7 @@ import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/views/client_detail_view.dart';
 import 'package:rostiq/features/clients/views/support_plan_view.dart';
-import 'package:rostiq/features/clients/widgets/support_plan_form_body.dart';
+import 'package:rostiq/features/clients/widgets/support_plan_wizard_shell.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/shared/models/profile_photo_models.dart';
 import 'package:rostiq/shared/widgets/form_sticky_actions.dart';
@@ -104,10 +104,10 @@ void main() {
       await _openTab(tester, ClientsController.tabCarePlan);
 
       expect(find.byType(ClientDetailView), findsOneWidget);
-      expect(find.byType(SupportPlanFormBody), findsOneWidget);
-      expect(find.text('Primary disability'), findsOneWidget);
+      expect(find.byType(SupportPlanWizardShell), findsOneWidget);
+      expect(find.text('Funding'), findsWidgets);
       expect(find.text('Save draft'), findsOneWidget);
-      expect(find.text('Activate'), findsOneWidget);
+      expect(find.text('Next'), findsOneWidget);
       expect(find.byType(SupportPlanView), findsNothing);
       expect(Get.currentRoute, isNot(AppRoutes.staffClientSupportPlan));
       expect(find.text('Start ongoing support'), findsNothing);
@@ -138,7 +138,7 @@ void main() {
     await _openTab(tester, ClientsController.tabCarePlan);
     expect(find.byType(ClientDetailView), findsOneWidget);
 
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.text('Discard'));
     await tester.pump();
     await tester.pump();
 
@@ -193,8 +193,8 @@ void main() {
 
       expect(find.byType(SupportPlanView), findsOneWidget);
       expect(find.text('Support plan'), findsOneWidget);
-      expect(find.byType(SupportPlanFormBody), findsOneWidget);
-      expect(find.text('Primary disability'), findsOneWidget);
+      expect(find.byType(SupportPlanWizardShell), findsOneWidget);
+      expect(find.text('Funding'), findsWidgets);
 
       await tester.tap(find.text('Cancel'));
       await tester.pump();
