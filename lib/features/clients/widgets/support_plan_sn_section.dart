@@ -26,7 +26,8 @@ class SupportPlanSnSection extends StatefulWidget {
 
 class _SupportPlanSnSectionState extends State<SupportPlanSnSection> {
   bool _loading = true;
-  StrengthsNeedsDto? _current;
+  StrengthsNeedsDto? _draft;
+  StrengthsNeedsDto? _submittedCurrent;
   String? _error;
 
   ClientsRepository get _repository => Get.find<ClientsRepository>();
@@ -43,16 +44,27 @@ class _SupportPlanSnSectionState extends State<SupportPlanSnSection> {
       _error = null;
     });
     try {
-      StrengthsNeedsDto? pick;
+      StrengthsNeedsDto? submittedCurrent;
       try {
-        pick = await _repository.getCurrentStrengthsNeeds(widget.clientId);
+        submittedCurrent =
+            await _repository.getCurrentStrengthsNeeds(widget.clientId);
       } on AppFailure catch (e) {
         if (e.statusCode != 404) rethrow;
       }
-      pick ??= await _loadDraft();
+
+      StrengthsNeedsDto? draft;
+      final list = await _repository.listStrengthsNeeds(widget.clientId);
+      for (final item in list) {
+        if (item.status == StrengthsNeedsKeys.statusDraft) {
+          draft = item;
+          break;
+        }
+      }
+
       if (!mounted) return;
       setState(() {
-        _current = pick;
+        _draft = draft;
+        _submittedCurrent = submittedCurrent;
         _loading = false;
       });
     } on AppFailure catch (e) {
@@ -70,15 +82,7 @@ class _SupportPlanSnSectionState extends State<SupportPlanSnSection> {
     }
   }
 
-  Future<StrengthsNeedsDto?> _loadDraft() async {
-    final list = await _repository.listStrengthsNeeds(widget.clientId);
-    for (final item in list) {
-      if (item.status == StrengthsNeedsKeys.statusDraft) {
-        return item;
-      }
-    }
-    return null;
-  }
+  StrengthsNeedsDto? get _editorTarget => _draft ?? _submittedCurrent;
 
   Future<void> _openEditor() async {
     ClientsBinding.ensureShared();
@@ -86,7 +90,7 @@ class _SupportPlanSnSectionState extends State<SupportPlanSnSection> {
       AppRoutes.staffClientStrengthsNeeds,
       arguments: {
         'clientId': widget.clientId,
-        if (_current != null) 'assessmentId': _current!.id,
+        if (_editorTarget != null) 'assessmentId': _editorTarget!.id,
       },
     );
     if (result == true) {
@@ -95,11 +99,9 @@ class _SupportPlanSnSectionState extends State<SupportPlanSnSection> {
   }
 
   Future<void> _importToPlan() async {
-    final assessment = _current;
-    if (assessment == null ||
-        assessment.status != StrengthsNeedsKeys.statusSubmitted) {
-      return;
-    }
+    final assessment = _submittedCurrent;
+    if (assessment == null) return;
+
     final selected = {...StrengthsNeedsKeys.defaultImportKeys};
     final confirmed = await showDialog<bool>(
       context: context,
@@ -200,7 +202,7 @@ class _SupportPlanSnSectionState extends State<SupportPlanSnSection> {
             style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
           )
         else ...[
-          _StatusChip(assessment: _current),
+          _StatusSummary(draft: _draft, submittedCurrent: _submittedCurrent),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -208,9 +210,11 @@ class _SupportPlanSnSectionState extends State<SupportPlanSnSection> {
             children: [
               OutlinedButton(
                 onPressed: _openEditor,
-                child: Text(_current == null ? 'Start assessment' : 'Edit assessment'),
+                child: Text(
+                  _editorTarget == null ? 'Start assessment' : 'Edit assessment',
+                ),
               ),
-              if (_current?.status == StrengthsNeedsKeys.statusSubmitted)
+              if (_submittedCurrent != null)
                 OutlinedButton(
                   onPressed: _importToPlan,
                   child: const Text('Import to plan'),
@@ -223,22 +227,34 @@ class _SupportPlanSnSectionState extends State<SupportPlanSnSection> {
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.assessment});
+class _StatusSummary extends StatelessWidget {
+  const _StatusSummary({
+    required this.draft,
+    required this.submittedCurrent,
+  });
 
-  final StrengthsNeedsDto? assessment;
+  final StrengthsNeedsDto? draft;
+  final StrengthsNeedsDto? submittedCurrent;
 
   @override
   Widget build(BuildContext context) {
-    final label = switch (assessment?.status) {
-      StrengthsNeedsKeys.statusDraft => 'Draft in progress',
-      StrengthsNeedsKeys.statusSubmitted when assessment!.isCurrent =>
-        'Submitted (current)',
-      StrengthsNeedsKeys.statusSubmitted => 'Submitted',
-      _ => 'No assessment yet',
-    };
+    if (draft == null && submittedCurrent == null) {
+      return const Text(
+        'No assessment yet',
+        style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+      );
+    }
+
+    final lines = <String>[];
+    if (draft != null) {
+      lines.add('Draft in progress');
+    }
+    if (submittedCurrent != null) {
+      lines.add('Submitted (current)');
+    }
+
     return Text(
-      label,
+      lines.join(' · '),
       style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
     );
   }
