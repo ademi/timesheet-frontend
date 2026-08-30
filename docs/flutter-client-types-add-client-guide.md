@@ -542,6 +542,42 @@ Future<void> saveAddClient(AddClientDraft draft) async {
 
 ---
 
+## 13. Add Client onboarding wizard (V042)
+
+**Status:** Live in Flutter (migration `V042`)  
+**Plan:** `docs/superpowers/plans/2026-08-30-client-onboarding-identity-support-plan.md`
+
+The **Add client** flow is a fixed 7-step wizard (not schema-driven like §3). Step order and owned profile keys:
+
+| Step | Label | Key behaviour |
+|------|-------|----------------|
+| 0 | Identity | Email + phone required; Medicare (number + file), Companion, Disability, Pension card uploads; **no NDIS** |
+| 1 | Address | Primary site with geocode confirm |
+| 2 | Preferences | Language, cultural, interpreter, home visit |
+| 3 | Contacts | **Optional** — Skip contacts or save emergency/carer |
+| 4 | Representative | Child rep required under 18; nominee optional for adults |
+| 5 | Support Plan | **NDIS required** (+ optional PDF); plan management; expanded plan manager / SC / therapist blocks; free-text **Other** (`support_plan_other`) |
+| 6 | Legal | Consent, service agreement, optional acknowledgement |
+
+### Support Plan API keys (step 5)
+
+Upsert via `PUT /v1/clients/{id}/profile/{requirement_key}`:
+
+- `ndis` — `{ value_json, document_id? }` (tenant-unique; duplicate → `ndis_number_in_use`)
+- `support_plan_other` — free text (legacy read fallback from deprecated `funding_not_to_exceed`)
+- `plan_management_type`, `plan_manager_*` (7 fields when plan-managed)
+- `support_coordinator_*`, `behavioural_therapist_*`, `speech_therapist_*`, `occupational_therapist_*`, `physiotherapist_*` — all optional partial blocks
+
+### Care plan parity
+
+Staff edit the same Support Plan fields on the client **Care plan → Support Plan** section (`SupportPlanFundingConsentStore` + `SupportPlanFundingSection`). Profile tab drafts hide keys listed in `OnboardingKeys.carePlanOwnedFundingKeys`.
+
+### Manual QA
+
+See §8 of the V042 plan doc for the full checklist (Identity cards, skip contacts, NDIS collision, document permission paths, resume hydrate).
+
+---
+
 ## Related backend files
 
 - Routes: `timesheet-backend/app/modules/clients/router.py`

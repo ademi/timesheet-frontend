@@ -370,7 +370,89 @@ void main() {
     store.dispose();
   });
 
-  testWidgets('Funding section shows plan management and NDIA PDF CTA',
+  test('applyProfileBundle hydrates legacy funding_not_to_exceed into Other',
+      () {
+    final store = SupportPlanFundingConsentStore(repository: mock);
+    store.applyProfileBundle(
+      const ClientProfileBundle(
+        facts: [
+          ClientProfileFactOut(
+            requirementKey: OnboardingKeys.fundingNotToExceed,
+            valueJson: 5000,
+          ),
+        ],
+      ),
+    );
+    expect(store.supportPlanOtherCtrl.text, '5000');
+    store.dispose();
+  });
+
+  test('applyProfileBundle prefers support_plan_other over legacy Other', () {
+    final store = SupportPlanFundingConsentStore(repository: mock);
+    store.applyProfileBundle(
+      const ClientProfileBundle(
+        facts: [
+          ClientProfileFactOut(
+            requirementKey: OnboardingKeys.supportPlanOther,
+            valueJson: 'Custom note',
+          ),
+          ClientProfileFactOut(
+            requirementKey: OnboardingKeys.fundingNotToExceed,
+            valueJson: 5000,
+          ),
+        ],
+      ),
+    );
+    expect(store.supportPlanOtherCtrl.text, 'Custom note');
+    store.dispose();
+  });
+
+  test('persistFacts upserts NDIS and support_plan_other', () async {
+    final putKeys = <String>[];
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((inv) {
+      putKeys.add(inv.positionalArguments[1] as String);
+      return Future.value();
+    });
+
+    final store = SupportPlanFundingConsentStore(repository: mock);
+    store.hasHydrated = true;
+    store.ndisCtrl.text = '431234567';
+    store.supportPlanOtherCtrl.text = 'Notes';
+    store.planManagementType.value = 'self_managed';
+
+    final failed = await store.persistFacts(clientId: 'c1');
+    expect(failed, isEmpty);
+    expect(putKeys, contains(OnboardingKeys.ndis));
+    expect(putKeys, contains(OnboardingKeys.supportPlanOther));
+    store.dispose();
+  });
+
+  test('persistFacts sets ndisFieldError on ndis_number_in_use', () async {
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((inv) {
+      if (inv.positionalArguments[1] == OnboardingKeys.ndis) {
+        return Future<void>.error(
+          const AppFailure(
+            code: 'ndis_number_in_use',
+            message: 'This NDIS number is already used by another client.',
+            presentation: AppFailurePresentation.inline,
+          ),
+        );
+      }
+      return Future.value();
+    });
+
+    final store = SupportPlanFundingConsentStore(repository: mock);
+    store.hasHydrated = true;
+    store.ndisCtrl.text = '431234567';
+    store.planManagementType.value = 'self_managed';
+
+    final failed = await store.persistFacts(clientId: 'c1');
+    expect(failed, contains('NDIS number'));
+    expect(store.ndisFieldError.value, contains('already used'));
+    store.dispose();
+  });
+
+  testWidgets('Support Plan section shows NDIS, plan management and NDIA PDF',
       (tester) async {
     final store = SupportPlanFundingConsentStore(repository: mock);
     await tester.pumpWidget(
@@ -382,7 +464,8 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Funding'), findsOneWidget);
+    expect(find.text('Support Plan'), findsOneWidget);
+    expect(find.textContaining('NDIS number'), findsOneWidget);
     expect(find.textContaining('Plan management'), findsOneWidget);
     expect(find.textContaining('NDIA plan PDF'), findsWidgets);
     expect(find.textContaining('Preferred claiming'), findsOneWidget);

@@ -1,6 +1,6 @@
 # Client onboarding — Identity, Contacts & Support Plan refresh
 
-> **Status:** Phase E complete · **waiting for green light before Phase F.**  
+> **Status:** Phase G complete · ready for QA / release.  
 > **Rule:** Implement **one phase at a time**. After each phase, stop and wait for explicit approval before starting the next.  
 > **Repos:** Frontend `timesheet-frontend` · Backend `…/flutter backend/timesheet/timesheet-backend` · DB `…/timesheet/timesheet-db`
 
@@ -350,11 +350,11 @@ Update `OnboardingKeys.carePlanOwnedFundingKeys` and backend requirement sort_or
 
 **Deliverables**
 
-- [ ] `support_plan_funding_consent_store.dart` + funding UI section: mirror all Phase E fields (hydrate + save + conflict handling).
-- [ ] Client detail overview/profile tabs if they surface NDIS, medicare, or funding fields (`clients_controller.dart`, detail widgets).
-- [ ] Read fallback: display `funding_not_to_exceed` in Other if `support_plan_other` empty (legacy clients).
+- [x] `support_plan_funding_consent_store.dart` + funding UI section: mirror all Phase E fields (hydrate + save + conflict handling).
+- [x] Client detail overview/profile tabs if they surface NDIS, medicare, or funding fields (`clients_controller.dart`, detail widgets).
+- [x] Read fallback: display `funding_not_to_exceed` in Other if `support_plan_other` empty (legacy clients).
 
-**Green light gate:** Edit Support Plan on existing client matches onboarding fields; legacy data displays correctly.
+**Green light gate:** Edit Support Plan on existing client matches onboarding fields; legacy data displays correctly. ✅
 
 ---
 
@@ -362,11 +362,11 @@ Update `OnboardingKeys.carePlanOwnedFundingKeys` and backend requirement sort_or
 
 **Deliverables**
 
-- [ ] Update `docs/flutter-client-types-add-client-guide.md` (or add onboarding addendum).
-- [ ] Manual QA checklist (see §8).
-- [ ] Full regression: create → skip contacts → Support Plan → Legal finish; resume incomplete onboarding; NDIS collision; document permission denied paths.
+- [x] Update `docs/flutter-client-types-add-client-guide.md` (or add onboarding addendum).
+- [x] Manual QA checklist (see §8).
+- [x] Full regression: create → skip contacts → Support Plan → Legal finish; resume incomplete onboarding; NDIS collision; document permission denied paths.
 
-**Green light gate:** Ready for QA / release.
+**Green light gate:** Ready for QA / release. ✅
 
 ---
 

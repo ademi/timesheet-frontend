@@ -3,8 +3,9 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../controllers/support_plan_funding_consent_store.dart';
+import 'onboarding/support_plan_professional_section.dart';
 
-/// Care-plan Funding section (profile facts + NDIA PDF).
+/// Care-plan Support Plan section (profile facts + NDIA PDF).
 class SupportPlanFundingSection extends StatelessWidget {
   const SupportPlanFundingSection({
     super.key,
@@ -34,15 +35,42 @@ class SupportPlanFundingSection extends StatelessWidget {
       final planType = store.planManagementType.value;
       final isPlanManaged = planType == 'plan_managed';
       final claiming = store.preferredClaimingMethod.value;
+      final enabled = !store.isBusy.value;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Funding',
+            'Support Plan',
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
           const SizedBox(height: 12),
+          TextField(
+            controller: store.ndisCtrl,
+            enabled: enabled,
+            decoration: InputDecoration(
+              labelText: 'NDIS number',
+              border: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+              errorText: store.ndisFieldError.value,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: store.supportPlanOtherCtrl,
+            enabled: enabled,
+            minLines: 2,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              labelText: 'Other',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+              alignLabelWithHint: true,
+            ),
+          ),
+          const SizedBox(height: 16),
           DropdownButtonFormField<String?>(
             value: planType,
             decoration: const InputDecoration(
@@ -59,12 +87,18 @@ class SupportPlanFundingSection extends StatelessWidget {
               for (final e in planTypes.entries)
                 DropdownMenuItem(value: e.key, child: Text(e.value)),
             ],
-            onChanged: (v) => store.planManagementType.value = v,
+            onChanged: enabled ? (v) => store.planManagementType.value = v : null,
           ),
           if (isPlanManaged) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            const Text(
+              'Plan manager details',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
             TextField(
               controller: store.planManagerNameCtrl,
+              enabled: enabled,
               decoration: const InputDecoration(
                 labelText: 'Plan manager name *',
                 border: OutlineInputBorder(
@@ -74,10 +108,44 @@ class SupportPlanFundingSection extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             TextField(
+              controller: store.planManagerCompanyCtrl,
+              enabled: enabled,
+              decoration: const InputDecoration(
+                labelText: 'Company name',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: store.planManagerAbnAcnCtrl,
+              enabled: enabled,
+              decoration: const InputDecoration(
+                labelText: 'ACN/ABN',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: store.planManagerOrgIdCtrl,
+              enabled: enabled,
+              decoration: const InputDecoration(
+                labelText: 'Organisation ID',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
               controller: store.planManagerPhoneCtrl,
+              enabled: enabled,
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
-                labelText: 'Plan manager phone',
+                labelText: 'Phone number',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
@@ -86,12 +154,27 @@ class SupportPlanFundingSection extends StatelessWidget {
             const SizedBox(height: 12),
             TextField(
               controller: store.planManagerEmailCtrl,
+              enabled: enabled,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
-                labelText: 'Plan manager email',
+                labelText: 'Email',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: store.planManagerAddressCtrl,
+              enabled: enabled,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Address',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+                alignLabelWithHint: true,
               ),
             ),
           ],
@@ -108,15 +191,18 @@ class SupportPlanFundingSection extends StatelessWidget {
                   : 'Start: ${_fmt(store.planStartDate.value!)}',
             ),
             trailing: const Icon(Icons.calendar_today),
-            onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: store.planStartDate.value ?? DateTime.now(),
-                firstDate: DateTime(2013),
-                lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-              );
-              if (picked != null) store.onPlanStartPicked(picked);
-            },
+            onTap: enabled
+                ? () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate:
+                          store.planStartDate.value ?? DateTime.now(),
+                      firstDate: DateTime(2013),
+                      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+                    );
+                    if (picked != null) store.onPlanStartPicked(picked);
+                  }
+                : null,
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -126,16 +212,18 @@ class SupportPlanFundingSection extends StatelessWidget {
                   : 'End: ${_fmt(store.planEndDate.value!)}',
             ),
             trailing: const Icon(Icons.calendar_today),
-            onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: store.planEndDate.value ??
-                    DateTime.now().add(const Duration(days: 365)),
-                firstDate: DateTime(2013),
-                lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-              );
-              if (picked != null) store.planEndDate.value = picked;
-            },
+            onTap: enabled
+                ? () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: store.planEndDate.value ??
+                          DateTime.now().add(const Duration(days: 365)),
+                      firstDate: DateTime(2013),
+                      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+                    );
+                    if (picked != null) store.planEndDate.value = picked;
+                  }
+                : null,
           ),
           const SizedBox(height: 8),
           const Text(
@@ -145,6 +233,7 @@ class SupportPlanFundingSection extends StatelessWidget {
           const SizedBox(height: 8),
           TextField(
             controller: store.budgetCoreCtrl,
+            enabled: enabled,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
               labelText: 'Core support budget',
@@ -156,6 +245,7 @@ class SupportPlanFundingSection extends StatelessWidget {
           const SizedBox(height: 12),
           TextField(
             controller: store.budgetCbCtrl,
+            enabled: enabled,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
               labelText: 'Capacity building budget',
@@ -167,6 +257,7 @@ class SupportPlanFundingSection extends StatelessWidget {
           const SizedBox(height: 12),
           TextField(
             controller: store.budgetCapitalCtrl,
+            enabled: enabled,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
               labelText: 'Capital support budget',
@@ -175,53 +266,41 @@ class SupportPlanFundingSection extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: store.fundingNotToExceedCtrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Funding not to exceed',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Support coordinator (optional)',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
           const SizedBox(height: 8),
-          TextField(
-            controller: store.scNameCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Name',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-            ),
+          SupportPlanProfessionalSection(
+            title: 'Support coordinator (optional)',
+            nameLabel: 'SC name',
+            fields: store.supportCoordinator,
+            expanded: store.supportCoordinatorExpanded,
+            enabled: enabled,
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: store.scPhoneCtrl,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Phone',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-            ),
+          SupportPlanProfessionalSection(
+            title: 'Behavioural therapist (optional)',
+            nameLabel: 'Specialist name',
+            fields: store.behaviouralTherapist,
+            expanded: store.behaviouralTherapistExpanded,
+            enabled: enabled,
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: store.scEmailCtrl,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-            ),
+          SupportPlanProfessionalSection(
+            title: 'Speech therapist (optional)',
+            nameLabel: 'Specialist name',
+            fields: store.speechTherapist,
+            expanded: store.speechTherapistExpanded,
+            enabled: enabled,
+          ),
+          SupportPlanProfessionalSection(
+            title: 'Occupational therapist (optional)',
+            nameLabel: 'Specialist name',
+            fields: store.occupationalTherapist,
+            expanded: store.occupationalTherapistExpanded,
+            enabled: enabled,
+          ),
+          SupportPlanProfessionalSection(
+            title: 'Physiotherapist (optional)',
+            nameLabel: 'Specialist name',
+            fields: store.physiotherapist,
+            expanded: store.physiotherapistExpanded,
+            enabled: enabled,
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String?>(
@@ -240,12 +319,14 @@ class SupportPlanFundingSection extends StatelessWidget {
               for (final e in claimingMethods.entries)
                 DropdownMenuItem(value: e.key, child: Text(e.value)),
             ],
-            onChanged: (v) => store.preferredClaimingMethod.value = v,
+            onChanged:
+                enabled ? (v) => store.preferredClaimingMethod.value = v : null,
           ),
           if (claiming == 'other') ...[
             const SizedBox(height: 12),
             TextField(
               controller: store.preferredClaimingOtherCtrl,
+              enabled: enabled,
               decoration: const InputDecoration(
                 labelText: 'Other claiming detail *',
                 border: OutlineInputBorder(
@@ -269,9 +350,9 @@ class SupportPlanFundingSection extends StatelessWidget {
               ),
             ),
           OutlinedButton.icon(
-            onPressed: store.isBusy.value
-                ? null
-                : () => store.uploadNdisPlanPdf(clientId: clientId),
+            onPressed: enabled
+                ? () => store.uploadNdisPlanPdf(clientId: clientId)
+                : null,
             icon: const Icon(Icons.upload_file_outlined),
             label: Text(
               store.ndisPdfOnFile.value

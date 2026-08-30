@@ -8,6 +8,7 @@ import '../../documents/data/document_pipeline.dart';
 import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../services/client_legal_upload_helper.dart';
+import '../models/support_plan_professional_fields.dart';
 import '../utils/onboarding_keys.dart';
 
 /// Care-plan Funding + Consent collaborator (facts/legal; not plan body_json).
@@ -45,20 +46,33 @@ class SupportPlanFundingConsentStore {
   static const conflictMessage =
       'Funding was updated elsewhere — review and save again.';
 
-  // ── Funding ───────────────────────────────────────────────────────────
+  // ── Support Plan (funding facts) ───────────────────────────────────────
+  final ndisCtrl = TextEditingController();
+  final ndisFieldError = RxnString();
   final planManagementType = RxnString();
   final planManagerNameCtrl = TextEditingController();
+  final planManagerCompanyCtrl = TextEditingController();
+  final planManagerAbnAcnCtrl = TextEditingController();
+  final planManagerOrgIdCtrl = TextEditingController();
   final planManagerPhoneCtrl = TextEditingController();
   final planManagerEmailCtrl = TextEditingController();
+  final planManagerAddressCtrl = TextEditingController();
   final planStartDate = Rxn<DateTime>();
   final planEndDate = Rxn<DateTime>();
   final budgetCoreCtrl = TextEditingController();
   final budgetCbCtrl = TextEditingController();
   final budgetCapitalCtrl = TextEditingController();
-  final fundingNotToExceedCtrl = TextEditingController();
-  final scNameCtrl = TextEditingController();
-  final scPhoneCtrl = TextEditingController();
-  final scEmailCtrl = TextEditingController();
+  final supportPlanOtherCtrl = TextEditingController();
+  final supportCoordinator = SupportPlanProfessionalFields();
+  final behaviouralTherapist = SupportPlanProfessionalFields();
+  final speechTherapist = SupportPlanProfessionalFields();
+  final occupationalTherapist = SupportPlanProfessionalFields();
+  final physiotherapist = SupportPlanProfessionalFields();
+  final supportCoordinatorExpanded = false.obs;
+  final behaviouralTherapistExpanded = false.obs;
+  final speechTherapistExpanded = false.obs;
+  final occupationalTherapistExpanded = false.obs;
+  final physiotherapistExpanded = false.obs;
   final preferredClaimingMethod = RxnString();
   final preferredClaimingOtherCtrl = TextEditingController();
   final ndisPdfOnFile = false.obs;
@@ -104,26 +118,84 @@ class SupportPlanFundingConsentStore {
           if (f.updatedAt != null) MapEntry(f.requirementKey, f.updatedAt!),
       ]);
 
+    ndisFieldError.value = null;
+    ndisCtrl.text = _stringFact(bundle, OnboardingKeys.ndis) ?? '';
     planManagementType.value = _stringFact(bundle, OnboardingKeys.planManagementType);
     planManagerNameCtrl.text =
         _stringFact(bundle, OnboardingKeys.planManagerName) ?? '';
+    planManagerCompanyCtrl.text =
+        _stringFact(bundle, OnboardingKeys.planManagerCompany) ?? '';
+    planManagerAbnAcnCtrl.text =
+        _stringFact(bundle, OnboardingKeys.planManagerAbnAcn) ?? '';
+    planManagerOrgIdCtrl.text =
+        _stringFact(bundle, OnboardingKeys.planManagerOrgId) ?? '';
     planManagerPhoneCtrl.text =
         _stringFact(bundle, OnboardingKeys.planManagerPhone) ?? '';
     planManagerEmailCtrl.text =
         _stringFact(bundle, OnboardingKeys.planManagerEmail) ?? '';
+    planManagerAddressCtrl.text =
+        _stringFact(bundle, OnboardingKeys.planManagerAddress) ?? '';
     planStartDate.value = _dateFact(bundle, OnboardingKeys.planStartDate);
     planEndDate.value = _dateFact(bundle, OnboardingKeys.planEndDate);
     budgetCoreCtrl.text = _numberText(bundle, OnboardingKeys.budgetCore);
     budgetCbCtrl.text = _numberText(bundle, OnboardingKeys.budgetCb);
     budgetCapitalCtrl.text = _numberText(bundle, OnboardingKeys.budgetCapital);
-    fundingNotToExceedCtrl.text =
-        _numberText(bundle, OnboardingKeys.fundingNotToExceed);
-    scNameCtrl.text =
-        _stringFact(bundle, OnboardingKeys.supportCoordinatorName) ?? '';
-    scPhoneCtrl.text =
-        _stringFact(bundle, OnboardingKeys.supportCoordinatorPhone) ?? '';
-    scEmailCtrl.text =
-        _stringFact(bundle, OnboardingKeys.supportCoordinatorEmail) ?? '';
+    supportPlanOtherCtrl.text = _resolveSupportPlanOther(bundle);
+    _hydrateProfessional(
+      bundle,
+      supportCoordinator,
+      nameKey: OnboardingKeys.supportCoordinatorName,
+      companyKey: OnboardingKeys.supportCoordinatorCompany,
+      abnAcnKey: OnboardingKeys.supportCoordinatorAbnAcn,
+      orgIdKey: OnboardingKeys.supportCoordinatorOrgId,
+      phoneKey: OnboardingKeys.supportCoordinatorPhone,
+      emailKey: OnboardingKeys.supportCoordinatorEmail,
+      addressKey: OnboardingKeys.supportCoordinatorAddress,
+    );
+    _hydrateProfessional(
+      bundle,
+      behaviouralTherapist,
+      nameKey: OnboardingKeys.behaviouralTherapistName,
+      companyKey: OnboardingKeys.behaviouralTherapistCompany,
+      abnAcnKey: OnboardingKeys.behaviouralTherapistAbnAcn,
+      orgIdKey: OnboardingKeys.behaviouralTherapistOrgId,
+      phoneKey: OnboardingKeys.behaviouralTherapistPhone,
+      emailKey: OnboardingKeys.behaviouralTherapistEmail,
+      addressKey: OnboardingKeys.behaviouralTherapistAddress,
+    );
+    _hydrateProfessional(
+      bundle,
+      speechTherapist,
+      nameKey: OnboardingKeys.speechTherapistName,
+      companyKey: OnboardingKeys.speechTherapistCompany,
+      abnAcnKey: OnboardingKeys.speechTherapistAbnAcn,
+      orgIdKey: OnboardingKeys.speechTherapistOrgId,
+      phoneKey: OnboardingKeys.speechTherapistPhone,
+      emailKey: OnboardingKeys.speechTherapistEmail,
+      addressKey: OnboardingKeys.speechTherapistAddress,
+    );
+    _hydrateProfessional(
+      bundle,
+      occupationalTherapist,
+      nameKey: OnboardingKeys.occupationalTherapistName,
+      companyKey: OnboardingKeys.occupationalTherapistCompany,
+      abnAcnKey: OnboardingKeys.occupationalTherapistAbnAcn,
+      orgIdKey: OnboardingKeys.occupationalTherapistOrgId,
+      phoneKey: OnboardingKeys.occupationalTherapistPhone,
+      emailKey: OnboardingKeys.occupationalTherapistEmail,
+      addressKey: OnboardingKeys.occupationalTherapistAddress,
+    );
+    _hydrateProfessional(
+      bundle,
+      physiotherapist,
+      nameKey: OnboardingKeys.physiotherapistName,
+      companyKey: OnboardingKeys.physiotherapistCompany,
+      abnAcnKey: OnboardingKeys.physiotherapistAbnAcn,
+      orgIdKey: OnboardingKeys.physiotherapistOrgId,
+      phoneKey: OnboardingKeys.physiotherapistPhone,
+      emailKey: OnboardingKeys.physiotherapistEmail,
+      addressKey: OnboardingKeys.physiotherapistAddress,
+    );
     preferredClaimingMethod.value =
         _stringFact(bundle, OnboardingKeys.preferredClaimingMethod);
     preferredClaimingOtherCtrl.text =
@@ -198,6 +270,7 @@ class SupportPlanFundingConsentStore {
   Future<List<String>> persistFacts({required String clientId}) async {
     if (!hasHydrated || clientId.isEmpty) return const [];
 
+    ndisFieldError.value = null;
     final jobs = <({String key, String label, Future<void> future})>[];
 
     void putValue(String key, String label, Object? value) {
@@ -238,11 +311,37 @@ class SupportPlanFundingConsentStore {
       putValue(OnboardingKeys.planManagementType, 'Plan management', planType);
     }
 
+    putValue(
+      OnboardingKeys.ndis,
+      'NDIS number',
+      ndisCtrl.text.trim(),
+    );
+    putValue(
+      OnboardingKeys.supportPlanOther,
+      'Other',
+      supportPlanOtherCtrl.text.trim(),
+    );
+
     if (planType == 'plan_managed') {
       putValue(
         OnboardingKeys.planManagerName,
         'Plan manager name',
         planManagerNameCtrl.text.trim(),
+      );
+      putValue(
+        OnboardingKeys.planManagerCompany,
+        'Plan manager company',
+        planManagerCompanyCtrl.text.trim(),
+      );
+      putValue(
+        OnboardingKeys.planManagerAbnAcn,
+        'Plan manager ACN/ABN',
+        planManagerAbnAcnCtrl.text.trim(),
+      );
+      putValue(
+        OnboardingKeys.planManagerOrgId,
+        'Plan manager organisation ID',
+        planManagerOrgIdCtrl.text.trim(),
       );
       putValue(
         OnboardingKeys.planManagerPhone,
@@ -253,6 +352,11 @@ class SupportPlanFundingConsentStore {
         OnboardingKeys.planManagerEmail,
         'Plan manager email',
         planManagerEmailCtrl.text.trim(),
+      );
+      putValue(
+        OnboardingKeys.planManagerAddress,
+        'Plan manager address',
+        planManagerAddressCtrl.text.trim(),
       );
     }
 
@@ -281,25 +385,65 @@ class SupportPlanFundingConsentStore {
       'Budget capital',
       _parseNumberOrEmpty(budgetCapitalCtrl.text),
     );
-    putValue(
-      OnboardingKeys.fundingNotToExceed,
-      'Funding not-to-exceed',
-      _parseNumberOrEmpty(fundingNotToExceedCtrl.text),
+    _putProfessionalValues(
+      putValue,
+      supportCoordinator,
+      nameKey: OnboardingKeys.supportCoordinatorName,
+      companyKey: OnboardingKeys.supportCoordinatorCompany,
+      abnAcnKey: OnboardingKeys.supportCoordinatorAbnAcn,
+      orgIdKey: OnboardingKeys.supportCoordinatorOrgId,
+      phoneKey: OnboardingKeys.supportCoordinatorPhone,
+      emailKey: OnboardingKeys.supportCoordinatorEmail,
+      addressKey: OnboardingKeys.supportCoordinatorAddress,
+      labelPrefix: 'Support coordinator',
     );
-    putValue(
-      OnboardingKeys.supportCoordinatorName,
-      'Support coordinator name',
-      scNameCtrl.text.trim(),
+    _putProfessionalValues(
+      putValue,
+      behaviouralTherapist,
+      nameKey: OnboardingKeys.behaviouralTherapistName,
+      companyKey: OnboardingKeys.behaviouralTherapistCompany,
+      abnAcnKey: OnboardingKeys.behaviouralTherapistAbnAcn,
+      orgIdKey: OnboardingKeys.behaviouralTherapistOrgId,
+      phoneKey: OnboardingKeys.behaviouralTherapistPhone,
+      emailKey: OnboardingKeys.behaviouralTherapistEmail,
+      addressKey: OnboardingKeys.behaviouralTherapistAddress,
+      labelPrefix: 'Behavioural therapist',
     );
-    putValue(
-      OnboardingKeys.supportCoordinatorPhone,
-      'Support coordinator phone',
-      scPhoneCtrl.text.trim(),
+    _putProfessionalValues(
+      putValue,
+      speechTherapist,
+      nameKey: OnboardingKeys.speechTherapistName,
+      companyKey: OnboardingKeys.speechTherapistCompany,
+      abnAcnKey: OnboardingKeys.speechTherapistAbnAcn,
+      orgIdKey: OnboardingKeys.speechTherapistOrgId,
+      phoneKey: OnboardingKeys.speechTherapistPhone,
+      emailKey: OnboardingKeys.speechTherapistEmail,
+      addressKey: OnboardingKeys.speechTherapistAddress,
+      labelPrefix: 'Speech therapist',
     );
-    putValue(
-      OnboardingKeys.supportCoordinatorEmail,
-      'Support coordinator email',
-      scEmailCtrl.text.trim(),
+    _putProfessionalValues(
+      putValue,
+      occupationalTherapist,
+      nameKey: OnboardingKeys.occupationalTherapistName,
+      companyKey: OnboardingKeys.occupationalTherapistCompany,
+      abnAcnKey: OnboardingKeys.occupationalTherapistAbnAcn,
+      orgIdKey: OnboardingKeys.occupationalTherapistOrgId,
+      phoneKey: OnboardingKeys.occupationalTherapistPhone,
+      emailKey: OnboardingKeys.occupationalTherapistEmail,
+      addressKey: OnboardingKeys.occupationalTherapistAddress,
+      labelPrefix: 'Occupational therapist',
+    );
+    _putProfessionalValues(
+      putValue,
+      physiotherapist,
+      nameKey: OnboardingKeys.physiotherapistName,
+      companyKey: OnboardingKeys.physiotherapistCompany,
+      abnAcnKey: OnboardingKeys.physiotherapistAbnAcn,
+      orgIdKey: OnboardingKeys.physiotherapistOrgId,
+      phoneKey: OnboardingKeys.physiotherapistPhone,
+      emailKey: OnboardingKeys.physiotherapistEmail,
+      addressKey: OnboardingKeys.physiotherapistAddress,
+      labelPrefix: 'Physiotherapist',
     );
 
     final claiming = preferredClaimingMethod.value?.trim();
@@ -336,6 +480,10 @@ class SupportPlanFundingConsentStore {
           await j.future;
           return null;
         } on AppFailure catch (e) {
+          if (e.code == 'ndis_number_in_use' &&
+              j.key == OnboardingKeys.ndis) {
+            ndisFieldError.value = e.message;
+          }
           if (e.code == 'profile_fact_conflict' || e.statusCode == 409) {
             return conflictMessage;
           }
@@ -381,7 +529,10 @@ class SupportPlanFundingConsentStore {
       await _repository.upsertProfileFact(
         clientId,
         OnboardingKeys.ndis,
-        ProfileFactUpsert(documentId: doc.id),
+        ProfileFactUpsert(
+          valueJson: ndisCtrl.text.trim().isEmpty ? null : ndisCtrl.text.trim(),
+          documentId: doc.id,
+        ),
       );
       ndisPdfOnFile.value = true;
       return true;
@@ -459,18 +610,72 @@ class SupportPlanFundingConsentStore {
   }
 
   void dispose() {
+    ndisCtrl.dispose();
     planManagerNameCtrl.dispose();
+    planManagerCompanyCtrl.dispose();
+    planManagerAbnAcnCtrl.dispose();
+    planManagerOrgIdCtrl.dispose();
     planManagerPhoneCtrl.dispose();
     planManagerEmailCtrl.dispose();
+    planManagerAddressCtrl.dispose();
     budgetCoreCtrl.dispose();
     budgetCbCtrl.dispose();
     budgetCapitalCtrl.dispose();
-    fundingNotToExceedCtrl.dispose();
-    scNameCtrl.dispose();
-    scPhoneCtrl.dispose();
-    scEmailCtrl.dispose();
+    supportPlanOtherCtrl.dispose();
+    supportCoordinator.dispose();
+    behaviouralTherapist.dispose();
+    speechTherapist.dispose();
+    occupationalTherapist.dispose();
+    physiotherapist.dispose();
     preferredClaimingOtherCtrl.dispose();
     consentSignerNameCtrl.dispose();
+  }
+
+  static String _resolveSupportPlanOther(ClientProfileBundle bundle) {
+    final other = _stringFact(bundle, OnboardingKeys.supportPlanOther);
+    if (other != null && other.isNotEmpty) return other;
+    return _numberText(bundle, OnboardingKeys.fundingNotToExceed);
+  }
+
+  static void _hydrateProfessional(
+    ClientProfileBundle bundle,
+    SupportPlanProfessionalFields fields, {
+    required String nameKey,
+    required String companyKey,
+    required String abnAcnKey,
+    required String orgIdKey,
+    required String phoneKey,
+    required String emailKey,
+    required String addressKey,
+  }) {
+    fields.nameCtrl.text = _stringFact(bundle, nameKey) ?? '';
+    fields.companyCtrl.text = _stringFact(bundle, companyKey) ?? '';
+    fields.abnAcnCtrl.text = _stringFact(bundle, abnAcnKey) ?? '';
+    fields.orgIdCtrl.text = _stringFact(bundle, orgIdKey) ?? '';
+    fields.phoneCtrl.text = _stringFact(bundle, phoneKey) ?? '';
+    fields.emailCtrl.text = _stringFact(bundle, emailKey) ?? '';
+    fields.addressCtrl.text = _stringFact(bundle, addressKey) ?? '';
+  }
+
+  static void _putProfessionalValues(
+    void Function(String key, String label, Object? value) putValue,
+    SupportPlanProfessionalFields fields, {
+    required String nameKey,
+    required String companyKey,
+    required String abnAcnKey,
+    required String orgIdKey,
+    required String phoneKey,
+    required String emailKey,
+    required String addressKey,
+    required String labelPrefix,
+  }) {
+    putValue(nameKey, '$labelPrefix name', fields.nameCtrl.text.trim());
+    putValue(companyKey, '$labelPrefix company', fields.companyCtrl.text.trim());
+    putValue(abnAcnKey, '$labelPrefix ACN/ABN', fields.abnAcnCtrl.text.trim());
+    putValue(orgIdKey, '$labelPrefix org ID', fields.orgIdCtrl.text.trim());
+    putValue(phoneKey, '$labelPrefix phone', fields.phoneCtrl.text.trim());
+    putValue(emailKey, '$labelPrefix email', fields.emailCtrl.text.trim());
+    putValue(addressKey, '$labelPrefix address', fields.addressCtrl.text.trim());
   }
 
   static ClientProfileFactOut? _fact(ClientProfileBundle b, String key) {
