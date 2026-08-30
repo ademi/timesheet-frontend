@@ -6,6 +6,7 @@ import '../../../../shared/models/profile_photo_models.dart';
 import '../models/client_models.dart';
 import '../models/client_profile_models.dart';
 import '../models/support_plan_models.dart';
+import '../models/strengths_needs_models.dart';
 
 class ClientsRemoteDataSource {
   ClientsRemoteDataSource({
@@ -399,6 +400,127 @@ class ClientsRemoteDataSource {
         response.data,
         SupportPlanDto.fromJson,
         'patch support plan',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<StrengthsNeedsDto>> listStrengthsNeeds(String clientId) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.clientStrengthsNeeds(clientId),
+      );
+      return _mapList(response.data, StrengthsNeedsDto.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<StrengthsNeedsDto> getCurrentStrengthsNeeds(String clientId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.clientStrengthsNeedsCurrent(clientId),
+      );
+      return _require(
+        response.data,
+        StrengthsNeedsDto.fromJson,
+        'current strengths needs',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<StrengthsNeedsDto> createStrengthsNeeds(
+    String clientId,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.clientStrengthsNeeds(clientId),
+        data: body,
+      );
+      return _require(
+        response.data,
+        StrengthsNeedsDto.fromJson,
+        'create strengths needs',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<StrengthsNeedsDto> getStrengthsNeeds(
+    String clientId,
+    String assessmentId,
+  ) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.clientStrengthsNeedsAssessment(clientId, assessmentId),
+      );
+      return _require(
+        response.data,
+        StrengthsNeedsDto.fromJson,
+        'get strengths needs',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<StrengthsNeedsDto> patchStrengthsNeeds(
+    String clientId,
+    String assessmentId,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.clientStrengthsNeedsAssessment(clientId, assessmentId),
+        data: body,
+      );
+      return _require(
+        response.data,
+        StrengthsNeedsDto.fromJson,
+        'patch strengths needs',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<StrengthsNeedsDto> submitStrengthsNeeds(
+    String clientId,
+    String assessmentId,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.clientStrengthsNeedsSubmit(clientId, assessmentId),
+      );
+      return _require(
+        response.data,
+        StrengthsNeedsDto.fromJson,
+        'submit strengths needs',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<SupportPlanDto> importStrengthsNeedsToPlan(
+    String clientId,
+    String assessmentId,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.clientStrengthsNeedsImport(clientId, assessmentId),
+        data: body,
+      );
+      return _require(
+        response.data,
+        SupportPlanDto.fromJson,
+        'import strengths needs to plan',
       );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);

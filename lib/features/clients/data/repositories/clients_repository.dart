@@ -4,6 +4,7 @@ import '../datasources/clients_remote_datasource.dart';
 import '../models/client_models.dart';
 import '../models/client_profile_models.dart';
 import '../models/support_plan_models.dart';
+import '../models/strengths_needs_models.dart';
 
 class ClientsRepository {
   ClientsRepository({required ClientsRemoteDataSource remote}) : _remote = remote;
@@ -118,6 +119,42 @@ class ClientsRepository {
     Map<String, dynamic> body,
   ) =>
       _remote.patchSupportPlan(clientId, planId, body);
+
+  Future<List<StrengthsNeedsDto>> listStrengthsNeeds(String clientId) =>
+      _remote.listStrengthsNeeds(clientId);
+  Future<StrengthsNeedsDto> getCurrentStrengthsNeeds(String clientId) =>
+      _remote.getCurrentStrengthsNeeds(clientId);
+  Future<StrengthsNeedsDto> createStrengthsNeeds(
+    String clientId,
+    StrengthsNeedsCreateRequest body,
+  ) =>
+      _remote.createStrengthsNeeds(clientId, body.toJson());
+  Future<StrengthsNeedsDto> getStrengthsNeeds(
+    String clientId,
+    String assessmentId,
+  ) =>
+      _remote.getStrengthsNeeds(clientId, assessmentId);
+  Future<StrengthsNeedsDto> patchStrengthsNeeds(
+    String clientId,
+    String assessmentId,
+    StrengthsNeedsUpdateRequest body,
+  ) =>
+      _remote.patchStrengthsNeeds(clientId, assessmentId, body.toJson());
+  Future<StrengthsNeedsDto> submitStrengthsNeeds(
+    String clientId,
+    String assessmentId,
+  ) =>
+      _remote.submitStrengthsNeeds(clientId, assessmentId);
+  Future<SupportPlanDto> importStrengthsNeedsToPlan(
+    String clientId,
+    String assessmentId,
+    SnImportRequest body,
+  ) =>
+      _remote.importStrengthsNeedsToPlan(
+        clientId,
+        assessmentId,
+        body.toJson(),
+      );
 
   Future<ClientInviteCreateResponse> createInvite(String clientId) =>
       _remote.createInvite(clientId);

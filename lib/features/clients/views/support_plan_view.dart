@@ -10,6 +10,7 @@ import '../widgets/support_plan_clinical_section.dart';
 import '../widgets/support_plan_consent_section.dart';
 import '../widgets/support_plan_form_body.dart';
 import '../widgets/support_plan_funding_section.dart';
+import '../widgets/support_plan_sn_section.dart';
 
 class SupportPlanView extends GetView<SupportPlanController> {
   const SupportPlanView({super.key});
@@ -73,6 +74,11 @@ class SupportPlanView extends GetView<SupportPlanController> {
                         const SizedBox(height: 24),
                         SupportPlanClinicalSection(
                           store: controller.clinical,
+                          clientId: controller.clientId,
+                        ),
+                        const SizedBox(height: 24),
+                        SupportPlanSnSection(
+                          planController: controller,
                           clientId: controller.clientId,
                         ),
                         const SizedBox(height: 24),

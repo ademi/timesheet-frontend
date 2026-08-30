@@ -59,6 +59,11 @@ class ClientDetailCarePlanSection extends StatelessWidget {
             clientId: controller.clientId,
           ),
           const SizedBox(height: 24),
+          SupportPlanSnSection(
+            planController: controller,
+            clientId: controller.clientId,
+          ),
+          const SizedBox(height: 24),
           SupportPlanFormBody(controller: controller),
         ],
       );
