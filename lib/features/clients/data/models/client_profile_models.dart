@@ -173,18 +173,22 @@ class ProfileFactUpsert {
     this.documentId,
     this.clearValue = false,
     this.clearDocument = false,
+    this.expectedUpdatedAt,
   });
 
   final Object? valueJson;
   final String? documentId;
   final bool clearValue;
   final bool clearDocument;
+  final DateTime? expectedUpdatedAt;
 
   Map<String, dynamic> toJson() => {
         if (valueJson != null) 'value_json': valueJson,
         if (documentId != null) 'document_id': documentId,
         if (clearValue) 'clear_value': true,
         if (clearDocument) 'clear_document': true,
+        if (expectedUpdatedAt != null)
+          'expected_updated_at': expectedUpdatedAt!.toUtc().toIso8601String(),
       };
 }
 
@@ -276,18 +280,24 @@ class ClientProfileFactOut {
     required this.requirementKey,
     this.valueJson,
     this.documentId,
+    this.updatedAt,
   });
 
   final String requirementKey;
   final Object? valueJson;
   final String? documentId;
+  final DateTime? updatedAt;
 
   factory ClientProfileFactOut.fromJson(Map<String, dynamic> json) {
+    final updatedRaw = json['updated_at'];
     return ClientProfileFactOut(
       requirementKey:
           (json['requirement_key'] ?? json['key'] ?? '').toString(),
       valueJson: json['value_json'],
       documentId: json['document_id']?.toString(),
+      updatedAt: updatedRaw == null
+          ? null
+          : DateTime.tryParse(updatedRaw.toString()),
     );
   }
 }

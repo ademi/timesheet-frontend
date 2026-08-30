@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../documents/data/document_pipeline.dart';
 import '../data/models/support_plan_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../utils/support_plan_keys.dart';
+import 'support_plan_clinical_store.dart';
+import 'support_plan_funding_consent_store.dart';
 
 /// Thin Support Plan form: Care body + Review (status / next review).
 class SupportPlanController extends GetxController {
@@ -14,11 +17,37 @@ class SupportPlanController extends GetxController {
     String? planId,
     this.clientName,
     this.ndisNumber,
+    SupportPlanFundingConsentStore? fundingConsent,
+    SupportPlanClinicalStore? clinical,
+    DocumentPipeline? documentPipeline,
+    Future<({String name, List<int> bytes})?> Function()? pickPdfBytes,
   }) : _repository = repository,
        clientId = clientId ?? '',
-       _initialPlanId = planId;
+       _initialPlanId = planId,
+       fundingConsent = fundingConsent ??
+           SupportPlanFundingConsentStore(
+             repository: repository,
+             documentPipeline: documentPipeline,
+             pickPdfBytes: pickPdfBytes,
+           ),
+       clinical = clinical ??
+           SupportPlanClinicalStore(
+             repository: repository,
+             documentPipeline: documentPipeline,
+             pickPdfBytes: pickPdfBytes,
+           ) {
+    if (planId != null && planId.isNotEmpty) {
+      this.planId.value = planId;
+    }
+  }
 
   final ClientsRepository _repository;
+
+  /// Funding + Consent facts collaborator (D4=B).
+  final SupportPlanFundingConsentStore fundingConsent;
+
+  /// Clinical on-file flags + document uploads.
+  final SupportPlanClinicalStore clinical;
 
   /// Optional overrides for tests (skip Get.arguments).
   final String? clientName;
@@ -36,6 +65,9 @@ class SupportPlanController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+
+  /// Soft Activate notice when Consent/SA incomplete (Task 7).
+  final activateSoftWarning = RxnString();
 
   /// Last PATCH/create body map (for OV1 full-replace tests).
   Map<String, dynamic>? lastSavedPayload;
@@ -140,6 +172,14 @@ class SupportPlanController extends GetxController {
     return review != null && review.trim().isNotEmpty;
   }
 
+  /// Combined busy sticky (D7=A).
+  bool get isBusy =>
+      isSaving.value ||
+      fundingConsent.isBusy.value ||
+      fundingConsent.isLoading.value ||
+      clinical.isBusy.value ||
+      clinical.isLoading.value;
+
   String get displayName => clientName ?? '';
   String? get displayNdis => ndisNumber;
 
@@ -200,6 +240,8 @@ class SupportPlanController extends GetxController {
         );
         planId.value = null;
       }
+      await fundingConsent.reload(clientId);
+      await clinical.reload(clientId);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -415,6 +457,7 @@ class SupportPlanController extends GetxController {
   /// Reloads the last saved plan. Does not pop a route.
   Future<void> discardDrafts() async {
     errorMessage.value = null;
+    activateSoftWarning.value = null;
     await load();
   }
 
@@ -429,6 +472,7 @@ class SupportPlanController extends GetxController {
 
   Future<void> _persist({required bool activate}) async {
     if (clientId.isEmpty || isSaving.value) return;
+    if (fundingConsent.isBusy.value || clinical.isBusy.value) return;
 
     final otherError = validateOtherDetails();
     if (otherError != null) {
@@ -436,9 +480,50 @@ class SupportPlanController extends GetxController {
       return;
     }
 
+    if (fundingConsent.hasHydrated) {
+      final fundingError = fundingConsent.validateFunding(
+        requirePlanType: activate,
+      );
+      if (fundingError != null) {
+        errorMessage.value = fundingError;
+        return;
+      }
+    }
+
     isSaving.value = true;
     errorMessage.value = null;
+    activateSoftWarning.value = null;
     try {
+      if (clinical.hasHydrated) {
+        final clinicalFailed =
+            await clinical.persistFacts(clientId: clientId);
+        if (clinicalFailed.isNotEmpty) {
+          final isConflict = clinicalFailed.contains(
+            SupportPlanClinicalStore.conflictMessage,
+          );
+          errorMessage.value = isConflict
+              ? SupportPlanClinicalStore.conflictMessage
+              : 'Could not save clinical documents: ${clinicalFailed.join(', ')}';
+          await clinical.reload(clientId);
+          return;
+        }
+      }
+
+      if (fundingConsent.hasHydrated) {
+        final failed = await fundingConsent.persistFacts(clientId: clientId);
+        if (failed.isNotEmpty) {
+          final isConflict = failed.contains(
+            SupportPlanFundingConsentStore.conflictMessage,
+          );
+          errorMessage.value = isConflict
+              ? SupportPlanFundingConsentStore.conflictMessage
+              : 'Could not save funding/consent: ${failed.join(', ')}';
+          await fundingConsent.reload(clientId);
+          await clinical.reload(clientId);
+          return;
+        }
+      }
+
       final body = buildBody();
       // Snapshot prior status for PATCH payload decisions; do not mutate
       // status.value until the network call succeeds (applyLoadedPlan).
@@ -487,8 +572,27 @@ class SupportPlanController extends GetxController {
         payload,
       );
       applyLoadedPlan(saved);
+      if (activate && fundingConsent.hasHydrated) {
+        final missing = <String>[];
+        if (!fundingConsent.consentAgreementComplete.value) {
+          missing.add('Consent');
+        }
+        if (!fundingConsent.serviceAgreementComplete.value) {
+          missing.add('Service Agreement');
+        }
+        if (missing.isNotEmpty) {
+          activateSoftWarning.value =
+              'Plan activated — still missing: ${missing.join(', ')}.';
+        }
+      }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+      if (fundingConsent.hasHydrated) {
+        await fundingConsent.reload(clientId);
+      }
+      if (clinical.hasHydrated) {
+        await clinical.reload(clientId);
+      }
     } finally {
       isSaving.value = false;
     }
@@ -496,6 +600,7 @@ class SupportPlanController extends GetxController {
 
   @override
   void onClose() {
+    fundingConsent.dispose();
     primaryDisabilityCtrl.dispose();
     secondaryConditionsCtrl.dispose();
     functionalImpactCtrl.dispose();
