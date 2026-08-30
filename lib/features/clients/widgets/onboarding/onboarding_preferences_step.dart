@@ -11,6 +11,12 @@ class OnboardingPreferencesStep extends StatelessWidget {
   static const swGenderOptions = ['Male', 'Female', 'No preference'];
   static const contactMethodOptions = ['Phone', 'Email', 'SMS', 'Any'];
 
+  static const culturalPreferencesHint =
+      'e.g. Prefers female workers for personal care; '
+      'Halal meals only; observes Ramadan — no visits at Maghrib; '
+      'Aboriginal — ask before entering, no photos without consent; '
+      'Arabic at home, simple English for booking';
+
   @override
   Widget build(BuildContext context) {
     return Obx(() {
@@ -32,10 +38,12 @@ class OnboardingPreferencesStep extends StatelessWidget {
           const SizedBox(height: 12),
           TextField(
             controller: controller.culturalPreferencesCtrl,
-            minLines: 2,
-            maxLines: 4,
+            minLines: 3,
+            maxLines: 5,
             decoration: const InputDecoration(
               labelText: 'Cultural preferences',
+              hintText: culturalPreferencesHint,
+              hintMaxLines: 4,
               border: OutlineInputBorder(),
               alignLabelWithHint: true,
             ),
@@ -65,9 +73,23 @@ class OnboardingPreferencesStep extends StatelessWidget {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             value: controller.interpreterRequired.value,
-            onChanged: (v) => controller.interpreterRequired.value = v,
+            onChanged: (v) {
+              controller.interpreterRequired.value = v;
+              if (!v) controller.interpreterLanguageCtrl.clear();
+            },
             title: const Text('Interpreter required'),
           ),
+          if (controller.interpreterRequired.value) ...[
+            TextField(
+              controller: controller.interpreterLanguageCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Interpreter language',
+                hintText: 'e.g. Mandarin, Arabic, Auslan',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           DropdownButtonFormField<String?>(
             value: controller.preferredContactMethod.value,
             decoration: const InputDecoration(

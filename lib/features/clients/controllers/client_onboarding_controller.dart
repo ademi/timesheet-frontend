@@ -13,6 +13,7 @@ import '../../documents/data/document_pipeline.dart';
 import '../data/models/client_models.dart';
 import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
+import '../services/client_legal_upload_helper.dart';
 import '../utils/onboarding_age.dart';
 import '../utils/onboarding_keys.dart';
 import '../utils/site_geocode_apply.dart';
@@ -115,6 +116,7 @@ class ClientOnboardingController extends GetxController
   // ── Preferences ───────────────────────────────────────────────────────
   final preferredLanguageCtrl = TextEditingController();
   final culturalPreferencesCtrl = TextEditingController();
+  final interpreterLanguageCtrl = TextEditingController();
   final homeVisitConsent = false.obs;
   final swGenderPreference = RxnString();
   final interpreterRequired = false.obs;
@@ -393,6 +395,7 @@ class ClientOnboardingController extends GetxController
     siteLngCtrl.dispose();
     preferredLanguageCtrl.dispose();
     culturalPreferencesCtrl.dispose();
+    interpreterLanguageCtrl.dispose();
     contactNameCtrl.dispose();
     contactEmailCtrl.dispose();
     contactPhoneCtrl.dispose();
@@ -722,6 +725,12 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = 'Create the client on the Identity step first.';
       return false;
     }
+    if (interpreterRequired.value &&
+        interpreterLanguageCtrl.text.trim().isEmpty) {
+      errorMessage.value =
+          'Enter the interpreter language when an interpreter is required.';
+      return false;
+    }
 
     isSaving.value = true;
     try {
@@ -750,6 +759,13 @@ class ClientOnboardingController extends GetxController
         OnboardingKeys.interpreterRequired,
         ProfileFactUpsert(valueJson: interpreterRequired.value),
       );
+      if (interpreterRequired.value) {
+        await _putOptionalFact(
+          id,
+          OnboardingKeys.interpreterLanguage,
+          _nullIfEmpty(interpreterLanguageCtrl.text),
+        );
+      }
       await _putOptionalFact(
         id,
         OnboardingKeys.preferredContactMethod,
@@ -1113,49 +1129,30 @@ class ClientOnboardingController extends GetxController
     }
   }
 
+  ClientLegalUploadHelper get _legalUploadHelper => ClientLegalUploadHelper(
+        repository: _repository,
+        pipeline: _pipeline,
+        pickPdfBytes: _pickPdfBytes,
+        canUploadDocs: () => canUploadDocs,
+      );
+
   Future<bool> markConsentComplete() async {
     errorMessage.value = null;
     final id = clientId;
     if (id == null) return false;
-    final signer = consentSignerNameCtrl.text.trim();
-    if (signer.isEmpty) {
-      errorMessage.value = 'Enter the participant or representative name.';
-      return false;
-    }
 
     isSaving.value = true;
     try {
-      final bytes = await _pickPdfBytes();
-      if (bytes == null) {
-        errorMessage.value = 'Select a Consent PDF to upload.';
-        return false;
-      }
-      final docId = await _uploadClientFile(
+      await _legalUploadHelper.completeConsent(
         clientId: id,
-        category: 'consent',
-        name: bytes.name,
-        contentType: 'application/pdf',
-        fileBytes: bytes.bytes,
-      );
-      final legalDoc = await _repository.getLegalDocumentCurrent(
-        OnboardingKeys.consentAgreementDocKey,
-      );
-      await _repository.acceptClientLegal(
-        id,
-        OnboardingKeys.consentAgreement,
-        ClientLegalAcceptRequest(
-          eventType: 'consented',
-          legalDocumentVersionId: legalDoc.id,
-          participantOrRepName: signer,
-          method: 'uploaded_scan',
-          documentId: docId,
-        ),
+        participantOrRepName: consentSignerNameCtrl.text,
       );
       consentComplete.value = true;
       return true;
     } on AppFailure catch (e) {
-      if (_isConsentLegalUnavailable(e)) {
-        errorMessage.value = _consentLegalUnavailableMessage;
+      if (ClientLegalUploadHelper.isConsentLegalUnavailable(e)) {
+        errorMessage.value =
+            ClientLegalUploadHelper.consentLegalUnavailableMessage;
         return false;
       }
       errorMessage.value = e.message;
@@ -1175,23 +1172,7 @@ class ClientOnboardingController extends GetxController
 
     isSaving.value = true;
     try {
-      final bytes = await _pickPdfBytes();
-      if (bytes == null) {
-        errorMessage.value = 'Select a Service Agreement PDF to upload.';
-        return false;
-      }
-      final docId = await _uploadClientFile(
-        clientId: id,
-        category: 'service_agreement',
-        name: bytes.name,
-        contentType: 'application/pdf',
-        fileBytes: bytes.bytes,
-      );
-      await _repository.upsertProfileFact(
-        id,
-        OnboardingKeys.serviceAgreement,
-        ProfileFactUpsert(documentId: docId),
-      );
+      await _legalUploadHelper.completeServiceAgreement(clientId: id);
       serviceAgreementComplete.value = true;
       return true;
     } on AppFailure catch (e) {
@@ -1212,23 +1193,7 @@ class ClientOnboardingController extends GetxController
 
     isSaving.value = true;
     try {
-      final bytes = await _pickPdfBytes();
-      if (bytes == null) {
-        errorMessage.value = 'Select an Acknowledgement PDF to upload.';
-        return false;
-      }
-      final docId = await _uploadClientFile(
-        clientId: id,
-        category: 'acknowledgement',
-        name: bytes.name,
-        contentType: 'application/pdf',
-        fileBytes: bytes.bytes,
-      );
-      await _repository.upsertProfileFact(
-        id,
-        OnboardingKeys.acknowledgement,
-        ProfileFactUpsert(documentId: docId),
-      );
+      await _legalUploadHelper.completeAcknowledgement(clientId: id);
       acknowledgementComplete.value = true;
       includeAcknowledgement.value = true;
       return true;
@@ -1328,14 +1293,6 @@ class ClientOnboardingController extends GetxController
 
   static const _unexpectedErrorMessage =
       'Something went wrong. Please try again.';
-
-  static const _consentLegalUnavailableMessage =
-      'Consent legal text is not published for this tenant — contact support.';
-
-  bool _isConsentLegalUnavailable(AppFailure e) =>
-      e.statusCode == 404 ||
-      e.code == 'legal_version_unavailable' ||
-      e.code == 'legal_document_unavailable';
 
   void _setUnexpectedError(Object error) {
     // Keep AppFailure handling in dedicated `on AppFailure` clauses.
