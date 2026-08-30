@@ -96,7 +96,7 @@ class ContractorProfileSections extends StatelessWidget {
             icon: Icons.public_outlined,
           ),
           const SizedBox(height: 12),
-          Obx(() => _AddressGeocodePanel(controller: controller)),
+          _AddressGeocodePanel(controller: controller),
           const SizedBox(height: 20),
           _sectionTitle('Business & payment'),
           _field(

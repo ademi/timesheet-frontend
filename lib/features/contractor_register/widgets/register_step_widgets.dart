@@ -238,7 +238,7 @@ class RegisterIdentityStep extends StatelessWidget {
             icon: Icons.public_outlined,
           ),
           const SizedBox(height: 12),
-          Obx(() => _AddressGeocodePanel(controller: controller)),
+          _AddressGeocodePanel(controller: controller),
           const SizedBox(height: 20),
           _field(
             controller: controller.abnController,
@@ -247,49 +247,10 @@ class RegisterIdentityStep extends StatelessWidget {
             keyboardType: TextInputType.number,
             validator: (v) => AbnUtils.formValidator(v),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           const Text(
-            'Payment details (optional)',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.accountNameController,
-            label: 'Account name',
-            icon: Icons.person_outline,
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.bsbController,
-            label: 'BSB',
-            icon: Icons.account_balance_outlined,
-            keyboardType: TextInputType.number,
-            validator: (v) {
-              final any = controller.accountNameController.text
-                      .trim()
-                      .isNotEmpty ||
-                  AbnUtils.digitsOnly(controller.accountNumberController.text)
-                      .isNotEmpty ||
-                  AbnUtils.digitsOnly(v).isNotEmpty;
-              if (!any) return null;
-              return AbnUtils.bsbValidator(v, required: true);
-            },
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.accountNumberController,
-            label: 'Account number',
-            icon: Icons.pin_outlined,
-            keyboardType: TextInputType.number,
-            validator: (v) {
-              final any = controller.accountNameController.text
-                      .trim()
-                      .isNotEmpty ||
-                  AbnUtils.digitsOnly(controller.bsbController.text).isNotEmpty ||
-                  AbnUtils.digitsOnly(v).isNotEmpty;
-              if (!any) return null;
-              return AbnUtils.accountNumberValidator(v, required: true);
-            },
+            'Bank payment details can be added after signup under Profile.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
         ],
       ),

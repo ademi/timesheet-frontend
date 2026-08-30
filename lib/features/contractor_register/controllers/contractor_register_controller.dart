@@ -71,9 +71,6 @@ class ContractorRegisterController extends GetxController {
   final phoneController = TextEditingController();
   final dobController = TextEditingController();
   final abnController = TextEditingController();
-  final accountNameController = TextEditingController();
-  final bsbController = TextEditingController();
-  final accountNumberController = TextEditingController();
 
   final addressLine1Controller = TextEditingController();
   final addressLine2Controller = TextEditingController();
@@ -175,13 +172,51 @@ class ContractorRegisterController extends GetxController {
   Future<void> nextStep() async {
     errorMessage.value = null;
     if (step.value == 0) {
-      if (!(identityFormKey.currentState?.validate() ?? false)) return;
+      if (!_validateIdentityForm()) return;
     }
     if (step.value < maxStep) {
       step.value++;
       return;
     }
     await submit();
+  }
+
+  /// Identity [Form] is only mounted on step 0 — use manual checks on submit.
+  bool _validateIdentityForm() =>
+      identityFormKey.currentState?.validate() ?? false;
+
+  String? _identityValidationError() {
+    final email = emailController.text.trim();
+    if (email.isEmpty) return 'Email is required';
+    if (!GetUtils.isEmail(email)) return 'Enter a valid email';
+
+    final password = passwordController.text;
+    if (password.isEmpty) return 'Password is required';
+    if (password.length < 8) return 'Minimum 8 characters';
+    if (!RegExp(r'[A-Z]').hasMatch(password)) {
+      return 'Include an uppercase letter';
+    }
+    if (!RegExp(r'[a-z]').hasMatch(password)) {
+      return 'Include a lowercase letter';
+    }
+    if (!RegExp(r'\d').hasMatch(password)) return 'Include a digit';
+
+    final abnErr = AbnUtils.formValidator(abnController.text);
+    if (abnErr != null) return abnErr;
+
+    return null;
+  }
+
+  bool _ensureIdentityValidForSubmit() {
+    final formState = identityFormKey.currentState;
+    if (formState != null) return formState.validate();
+
+    final error = _identityValidationError();
+    if (error != null) {
+      _showError(error);
+      return false;
+    }
+    return true;
   }
 
   void invalidateAddressConfirm() {
@@ -377,7 +412,7 @@ class ContractorRegisterController extends GetxController {
 
   Future<void> submit() async {
     if (isInviteLoading.value) return;
-    if (!(identityFormKey.currentState?.validate() ?? false)) {
+    if (!_ensureIdentityValidForSubmit()) {
       step.value = 0;
       return;
     }
@@ -406,37 +441,6 @@ class ContractorRegisterController extends GetxController {
         return;
       }
 
-      ContractorRegisterPaymentDetails? payment;
-      final accountName = accountNameController.text.trim();
-      final bsb = AbnUtils.digitsOnly(bsbController.text);
-      final accountNumber = AbnUtils.digitsOnly(accountNumberController.text);
-      final anyPayment =
-          accountName.isNotEmpty || bsb.isNotEmpty || accountNumber.isNotEmpty;
-      if (anyPayment) {
-        if (accountName.isEmpty || bsb.isEmpty || accountNumber.isEmpty) {
-          step.value = 0;
-          _showError(
-            'To save payment details, fill account name, BSB, and account number.',
-          );
-          return;
-        }
-        final bsbErr = AbnUtils.bsbValidator(bsb, required: true);
-        final acctErr = AbnUtils.accountNumberValidator(
-          accountNumber,
-          required: true,
-        );
-        if (bsbErr != null || acctErr != null) {
-          step.value = 0;
-          _showError(bsbErr ?? acctErr!);
-          return;
-        }
-        payment = ContractorRegisterPaymentDetails(
-          accountName: accountName,
-          bsb: bsb,
-          accountNumber: accountNumber,
-        );
-      }
-
       final response = await _repository.register(
         ContractorRegisterRequest(
           fullName: fullNameController.text.trim(),
@@ -453,7 +457,6 @@ class ContractorRegisterController extends GetxController {
           country: countryController.text.trim(),
           compliance: _compliancePayload(),
           metadata: _metadataPayload(),
-          paymentDetails: payment,
           inviteToken: _inviteToken,
           termsVersion: termsVersion,
           privacyVersion: privacyVersion,
@@ -489,9 +492,6 @@ class ContractorRegisterController extends GetxController {
     phoneController.dispose();
     dobController.dispose();
     abnController.dispose();
-    accountNameController.dispose();
-    bsbController.dispose();
-    accountNumberController.dispose();
     addressLine1Controller.dispose();
     addressLine2Controller.dispose();
     suburbController.dispose();
