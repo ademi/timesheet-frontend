@@ -19,6 +19,7 @@ class OnboardingContactsStep extends StatelessWidget {
       final emergencyDone = controller.emergencySaved.value;
       final carerDone = controller.carerSaved.value;
       final mode = controller.contactDraftMode.value;
+      final hasSavedContacts = controller.contactsCreated.isNotEmpty;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -29,9 +30,11 @@ class OnboardingContactsStep extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            emergencyDone
-                ? 'Emergency contact saved. Optionally add a carer.'
-                : 'Add an emergency contact (required).',
+            hasSavedContacts
+                ? (emergencyDone
+                    ? 'Emergency contact saved. Optionally add a carer or another contact.'
+                    : 'Contact saved. You can add more or press Next.')
+                : 'Contacts are optional. Add a contact below or skip this step.',
             style: const TextStyle(fontSize: 13),
           ),
           const SizedBox(height: 12),
@@ -101,7 +104,7 @@ class OnboardingContactsStep extends StatelessWidget {
                 ),
             ],
           ],
-          if (emergencyDone)
+          if (hasSavedContacts)
             const Padding(
               padding: EdgeInsets.only(top: 12),
               child: Text(

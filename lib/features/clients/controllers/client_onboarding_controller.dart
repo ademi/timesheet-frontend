@@ -237,6 +237,9 @@ class ClientOnboardingController extends GetxController
       !carerSaved.value &&
       contactDraftMode.value == 'carer';
 
+  bool get showSkipContacts =>
+      step.value == 3 && contactsCreated.isEmpty;
+
   bool get showSkipNominee =>
       step.value == 4 &&
       nomineeOptional &&
@@ -915,18 +918,24 @@ class ClientOnboardingController extends GetxController
 
   Future<bool> submitContacts() async {
     errorMessage.value = null;
-    if (!hasEmergencyContact) {
-      if (contactIsEmergency.value && _contactDraftHasChannel) {
-        final ok = await saveContactDraft();
-        if (!ok) return false;
-      }
+    if (!hasEmergencyContact &&
+        contactIsEmergency.value &&
+        _contactDraftHasChannel) {
+      final ok = await saveContactDraft();
+      if (!ok) return false;
     }
-    if (!hasEmergencyContact) {
-      errorMessage.value = 'An emergency contact is required.';
-      return false;
-    }
+    _prepRepresentativeStep();
     if (step.value == 3) step.value = 4;
-    // Prep representative draft.
+    return true;
+  }
+
+  void skipContacts() {
+    errorMessage.value = null;
+    _prepRepresentativeStep();
+    if (step.value == 3) step.value = 4;
+  }
+
+  void _prepRepresentativeStep() {
     _resetContactDraft();
     if (requiresChildRepresentative) {
       contactRelationshipPreset.value = OnboardingKeys.relChildRepresentative;
@@ -935,7 +944,6 @@ class ClientOnboardingController extends GetxController
       contactRelationshipPreset.value = OnboardingKeys.relNominee;
       contactDraftMode.value = 'nominee';
     }
-    return true;
   }
 
   // ── Representative ────────────────────────────────────────────────────

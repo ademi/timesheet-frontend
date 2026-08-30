@@ -90,10 +90,19 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                         controller.step.value ==
                         ClientOnboardingController.maxStep;
                     final skipCarer = controller.showSkipCarer;
+                    final skipContacts = controller.showSkipContacts;
                     final skipNominee = controller.showSkipNominee;
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        if (skipContacts)
+                          TextButton(
+                            onPressed:
+                                controller.isSaving.value
+                                    ? null
+                                    : controller.skipContacts,
+                            child: const Text('Skip contacts'),
+                          ),
                         if (skipCarer)
                           TextButton(
                             onPressed:

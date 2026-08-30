@@ -357,11 +357,24 @@ void main() {
     expect(c.errorMessage.value, contains('low confidence'));
   });
 
-  test('submitContacts requires emergency contact', () async {
+  test('submitContacts allows advancing with no contacts', () async {
     c.client.value = _fakeClient;
     c.step.value = 3;
-    expect(await c.submitContacts(), isFalse);
-    expect(c.errorMessage.value, contains('emergency'));
+    c.dob.value = DateTime(1990, 1, 1);
+    expect(await c.submitContacts(), isTrue);
+    expect(c.errorMessage.value, isNull);
+    expect(c.step.value, 4);
+    expect(c.contactDraftMode.value, 'nominee');
+  });
+
+  test('skipContacts advances to representative without saving', () {
+    c.client.value = _fakeClient;
+    c.step.value = 3;
+    c.dob.value = DateTime(1990, 1, 1);
+    c.skipContacts();
+    expect(c.step.value, 4);
+    expect(c.contactDraftMode.value, 'nominee');
+    verifyNever(() => mock.createContact(any(), any()));
   });
 
   test('saveContactDraft sends custom relationship for Other free-text', () async {
@@ -433,10 +446,10 @@ void main() {
     expect(c.emergencySaved.value, isTrue);
   });
 
-  test('submitContacts rejects when saved contacts have no isEmergency',
-      () async {
+  test('submitContacts advances with non-emergency contact only', () async {
     c.client.value = _fakeClient;
     c.step.value = 3;
+    c.dob.value = DateTime(1990, 1, 1);
     c.contactsCreated.add(
       const ClientContactOut(
         id: 'c-friend',
@@ -448,9 +461,8 @@ void main() {
         notifyVisitComplete: false,
       ),
     );
-    expect(await c.submitContacts(), isFalse);
-    expect(c.errorMessage.value, contains('emergency'));
-    expect(c.step.value, 3);
+    expect(await c.submitContacts(), isTrue);
+    expect(c.step.value, 4);
   });
 
   test('nominee also-emergency creates one contact with role and flag',

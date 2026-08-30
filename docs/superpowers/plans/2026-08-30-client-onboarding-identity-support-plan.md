@@ -1,6 +1,6 @@
 # Client onboarding — Identity, Contacts & Support Plan refresh
 
-> **Status:** Phase C complete · **waiting for green light before Phase D.**  
+> **Status:** Phase D complete · **waiting for green light before Phase E.**  
 > **Rule:** Implement **one phase at a time**. After each phase, stop and wait for explicit approval before starting the next.  
 > **Repos:** Frontend `timesheet-frontend` · Backend `…/flutter backend/timesheet/timesheet-backend` · DB `…/timesheet/timesheet-db`
 
@@ -317,12 +317,12 @@ Update `OnboardingKeys.carePlanOwnedFundingKeys` and backend requirement sort_or
 
 **Deliverables**
 
-- [ ] `client_onboarding_controller.dart`: `submitContacts()` allows Next when `!hasEmergencyContact`; remove error *“An emergency contact is required.”*
-- [ ] `client_onboarding_view.dart`: add **Skip contacts** when step 3 has no saved contacts (mirror `showSkipNominee` pattern).
-- [ ] `onboarding_contacts_step.dart`: helper copy that contacts are optional.
-- [ ] Tests: `client_onboarding_adult_flow_test.dart`, `client_onboarding_child_flow_test.dart`, `client_contact_kinship_emergency_test.dart` — add skip path; keep save-contact tests.
+- [x] `client_onboarding_controller.dart`: `submitContacts()` allows Next with zero contacts; removed emergency required error.
+- [x] `client_onboarding_view.dart`: **Skip contacts** footer button when no contacts saved (`showSkipContacts`).
+- [x] `onboarding_contacts_step.dart`: helper copy that contacts are optional.
+- [x] Tests: skip/advance with no contacts, non-emergency-only contact, view smoke for Skip contacts footer.
 
-**Green light gate:** User completes onboarding with zero contacts; existing add-contact flow still works.
+**Green light gate:** User completes onboarding with zero contacts; existing add-contact flow still works. ✅
 
 ---
 

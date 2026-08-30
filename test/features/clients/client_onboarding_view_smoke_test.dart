@@ -70,6 +70,30 @@ void main() {
     expect(find.text('Next'), findsOneWidget);
   });
 
+  testWidgets('Skip contacts sits in footer above Next, not in ListView', (
+    tester,
+  ) async {
+    final c = Get.find<ClientOnboardingController>();
+    c.step.value = 3;
+
+    await tester.pumpWidget(const GetMaterialApp(home: ClientOnboardingView()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Skip contacts'), findsOneWidget);
+    expect(find.text('Next'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.text('Skip contacts'),
+      ),
+      findsNothing,
+    );
+    expect(
+      tester.getTopLeft(find.text('Skip contacts')).dy,
+      lessThan(tester.getTopLeft(find.text('Next')).dy),
+    );
+  });
+
   testWidgets('Skip carer sits in footer above Next, not in ListView', (
     tester,
   ) async {
