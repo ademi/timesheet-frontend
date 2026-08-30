@@ -6,6 +6,7 @@ import '../../documents/data/document_pipeline.dart';
 import '../data/models/support_plan_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../utils/support_plan_keys.dart';
+import 'support_plan_clinical_store.dart';
 import 'support_plan_funding_consent_store.dart';
 
 /// Thin Support Plan form: Care body + Review (status / next review).
@@ -17,6 +18,7 @@ class SupportPlanController extends GetxController {
     this.clientName,
     this.ndisNumber,
     SupportPlanFundingConsentStore? fundingConsent,
+    SupportPlanClinicalStore? clinical,
     DocumentPipeline? documentPipeline,
     Future<({String name, List<int> bytes})?> Function()? pickPdfBytes,
   }) : _repository = repository,
@@ -24,6 +26,12 @@ class SupportPlanController extends GetxController {
        _initialPlanId = planId,
        fundingConsent = fundingConsent ??
            SupportPlanFundingConsentStore(
+             repository: repository,
+             documentPipeline: documentPipeline,
+             pickPdfBytes: pickPdfBytes,
+           ),
+       clinical = clinical ??
+           SupportPlanClinicalStore(
              repository: repository,
              documentPipeline: documentPipeline,
              pickPdfBytes: pickPdfBytes,
@@ -37,6 +45,9 @@ class SupportPlanController extends GetxController {
 
   /// Funding + Consent facts collaborator (D4=B).
   final SupportPlanFundingConsentStore fundingConsent;
+
+  /// Clinical on-file flags + document uploads.
+  final SupportPlanClinicalStore clinical;
 
   /// Optional overrides for tests (skip Get.arguments).
   final String? clientName;
@@ -165,7 +176,9 @@ class SupportPlanController extends GetxController {
   bool get isBusy =>
       isSaving.value ||
       fundingConsent.isBusy.value ||
-      fundingConsent.isLoading.value;
+      fundingConsent.isLoading.value ||
+      clinical.isBusy.value ||
+      clinical.isLoading.value;
 
   String get displayName => clientName ?? '';
   String? get displayNdis => ndisNumber;
@@ -228,6 +241,7 @@ class SupportPlanController extends GetxController {
         planId.value = null;
       }
       await fundingConsent.reload(clientId);
+      await clinical.reload(clientId);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -458,7 +472,7 @@ class SupportPlanController extends GetxController {
 
   Future<void> _persist({required bool activate}) async {
     if (clientId.isEmpty || isSaving.value) return;
-    if (fundingConsent.isBusy.value) return;
+    if (fundingConsent.isBusy.value || clinical.isBusy.value) return;
 
     final otherError = validateOtherDetails();
     if (otherError != null) {
@@ -480,6 +494,21 @@ class SupportPlanController extends GetxController {
     errorMessage.value = null;
     activateSoftWarning.value = null;
     try {
+      if (clinical.hasHydrated) {
+        final clinicalFailed =
+            await clinical.persistFacts(clientId: clientId);
+        if (clinicalFailed.isNotEmpty) {
+          final isConflict = clinicalFailed.contains(
+            SupportPlanClinicalStore.conflictMessage,
+          );
+          errorMessage.value = isConflict
+              ? SupportPlanClinicalStore.conflictMessage
+              : 'Could not save clinical documents: ${clinicalFailed.join(', ')}';
+          await clinical.reload(clientId);
+          return;
+        }
+      }
+
       if (fundingConsent.hasHydrated) {
         final failed = await fundingConsent.persistFacts(clientId: clientId);
         if (failed.isNotEmpty) {
@@ -490,6 +519,7 @@ class SupportPlanController extends GetxController {
               ? SupportPlanFundingConsentStore.conflictMessage
               : 'Could not save funding/consent: ${failed.join(', ')}';
           await fundingConsent.reload(clientId);
+          await clinical.reload(clientId);
           return;
         }
       }
@@ -559,6 +589,9 @@ class SupportPlanController extends GetxController {
       errorMessage.value = e.message;
       if (fundingConsent.hasHydrated) {
         await fundingConsent.reload(clientId);
+      }
+      if (clinical.hasHydrated) {
+        await clinical.reload(clientId);
       }
     } finally {
       isSaving.value = false;

@@ -25,6 +25,7 @@ import '../data/models/support_plan_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../utils/client_quick_facts.dart';
 import '../utils/client_visit_windows.dart';
+import '../utils/clinical_keys.dart';
 import '../utils/onboarding_keys.dart';
 import '../utils/site_geocode_apply.dart';
 import '../utils/support_plan_keys.dart';
@@ -209,6 +210,9 @@ class ClientsController extends GetxController
 
   static bool isCarePlanOwnedFundingRequirement(String key) =>
       OnboardingKeys.carePlanOwnedFundingKeys.contains(key);
+
+  static bool isCarePlanOwnedClinicalRequirement(String key) =>
+      ClinicalKeys.carePlanOwnedClinicalKeys.contains(key);
 
   /// Clients for the list UI — incomplete onboarding excluded unless toggled.
   List<ClientOut> get visibleItems {
@@ -507,7 +511,8 @@ class ClientsController extends GetxController
               .where(
                 (r) =>
                     !isOverviewOwnedRequirement(r.requirementKey) &&
-                    !isCarePlanOwnedFundingRequirement(r.requirementKey),
+                    !isCarePlanOwnedFundingRequirement(r.requirementKey) &&
+                    !isCarePlanOwnedClinicalRequirement(r.requirementKey),
               )
               .map(RequirementDraft.new)
               .toList();
@@ -543,7 +548,8 @@ class ClientsController extends GetxController
               .where(
                 (r) =>
                     !isOverviewOwnedRequirement(r.requirementKey) &&
-                    !isCarePlanOwnedFundingRequirement(r.requirementKey),
+                    !isCarePlanOwnedFundingRequirement(r.requirementKey) &&
+                    !isCarePlanOwnedClinicalRequirement(r.requirementKey),
               )
               .map(RequirementDraft.new)
               .toList(),
@@ -1162,7 +1168,8 @@ class ClientsController extends GetxController
 
     for (final draft in requirementDrafts) {
       if (isOverviewOwnedRequirement(draft.requirement.requirementKey) ||
-          isCarePlanOwnedFundingRequirement(draft.requirement.requirementKey)) {
+          isCarePlanOwnedFundingRequirement(draft.requirement.requirementKey) ||
+          isCarePlanOwnedClinicalRequirement(draft.requirement.requirementKey)) {
         continue;
       }
       if (!draft.hasAnyContent) continue;

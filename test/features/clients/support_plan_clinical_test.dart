@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -5,6 +6,7 @@ import 'package:rostiq/features/clients/controllers/support_plan_clinical_store.
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/utils/clinical_keys.dart';
+import 'package:rostiq/features/clients/widgets/support_plan_clinical_section.dart';
 
 class _MockClientsRepository extends Mock implements ClientsRepository {}
 
@@ -79,5 +81,22 @@ void main() {
         ),
       ),
     ).called(1);
+  });
+
+  testWidgets('Clinical section shows BSP and nutrition rows', (tester) async {
+    final store = SupportPlanClinicalStore(repository: mock);
+    store.applyProfileBundle(const ClientProfileBundle(facts: []));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SupportPlanClinicalSection(store: store, clientId: 'c1'),
+        ),
+      ),
+    );
+
+    expect(find.text('Behaviour support plan'), findsOneWidget);
+    expect(find.text('Nutrition checklist'), findsOneWidget);
+    expect(find.text('Hazard checklist'), findsOneWidget);
   });
 }

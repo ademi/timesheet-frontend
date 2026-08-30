@@ -266,7 +266,9 @@ class _CarePlanSticky extends StatelessWidget {
     return Obx(() {
       final plan = Get.find<SupportPlanController>();
       final err =
-          plan.errorMessage.value ?? plan.fundingConsent.errorMessage.value;
+          plan.errorMessage.value ??
+          plan.fundingConsent.errorMessage.value ??
+          plan.clinical.errorMessage.value;
       final soft = plan.activateSoftWarning.value;
       final busy = plan.isBusy;
       return Column(
@@ -288,6 +290,7 @@ class _CarePlanSticky extends StatelessWidget {
                 onDismiss: () {
                   plan.errorMessage.value = null;
                   plan.fundingConsent.errorMessage.value = null;
+                  plan.clinical.errorMessage.value = null;
                 },
               ),
             ),

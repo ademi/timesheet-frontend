@@ -6,6 +6,7 @@ import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
 import '../controllers/support_plan_controller.dart';
+import '../widgets/support_plan_clinical_section.dart';
 import '../widgets/support_plan_consent_section.dart';
 import '../widgets/support_plan_form_body.dart';
 import '../widgets/support_plan_funding_section.dart';
@@ -23,7 +24,8 @@ class SupportPlanView extends GetView<SupportPlanController> {
           return const Center(child: CircularProgressIndicator());
         }
         final err = controller.errorMessage.value ??
-            controller.fundingConsent.errorMessage.value;
+            controller.fundingConsent.errorMessage.value ??
+            controller.clinical.errorMessage.value;
         final soft = controller.activateSoftWarning.value;
         final busy = controller.isBusy;
         return Column(
@@ -64,12 +66,17 @@ class SupportPlanView extends GetView<SupportPlanController> {
                           clientId: controller.clientId,
                         ),
                         const SizedBox(height: 24),
-                        SupportPlanFormBody(controller: controller),
-                        const SizedBox(height: 24),
                         SupportPlanConsentSection(
                           store: controller.fundingConsent,
                           clientId: controller.clientId,
                         ),
+                        const SizedBox(height: 24),
+                        SupportPlanClinicalSection(
+                          store: controller.clinical,
+                          clientId: controller.clientId,
+                        ),
+                        const SizedBox(height: 24),
+                        SupportPlanFormBody(controller: controller),
                       ],
                     ),
                   ),
@@ -92,6 +99,7 @@ class SupportPlanView extends GetView<SupportPlanController> {
                   onDismiss: () {
                     controller.errorMessage.value = null;
                     controller.fundingConsent.errorMessage.value = null;
+                    controller.clinical.errorMessage.value = null;
                   },
                 ),
               ),
