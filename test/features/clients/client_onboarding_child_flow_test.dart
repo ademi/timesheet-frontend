@@ -161,9 +161,9 @@ void main() {
 
   Future<void> walkToRepresentativeStep() async {
     c.fullName.text = 'Casey Child';
+    c.email.text = 'casey@example.com';
     c.phone.text = '+61444444444';
     c.dob.value = DateTime(2015, 3, 10);
-    c.ndisCtrl.text = '430118999';
     expect(await c.submitIdentity(), isTrue);
     expect(c.requiresChildRepresentative, isTrue);
 

@@ -188,7 +188,6 @@ void main() {
       c.email.text = 'alex@example.com';
       c.phone.text = '+61422222222';
       c.dob.value = DateTime(1990, 5, 15);
-      c.ndisCtrl.text = '430118201';
 
       expect(await c.submitIdentity(), isTrue);
       expect(c.step.value, 1);
@@ -196,12 +195,8 @@ void main() {
       expect(createCalls.first.metadata?['onboarding_incomplete'], isTrue);
       expect(
         factUpserts.any((e) => e.$2 == OnboardingKeys.ndis),
-        isTrue,
+        isFalse,
       );
-      final ndisUpsert =
-          factUpserts.firstWhere((e) => e.$2 == OnboardingKeys.ndis);
-      expect(ndisUpsert.$1, 'client-adult-1');
-      expect(ndisUpsert.$3.valueJson, '430118201');
 
       // ── Address ───────────────────────────────────────────────────────
       c.siteNameCtrl.text = 'Home';
@@ -292,13 +287,6 @@ void main() {
       // Create still had incomplete=true; finish cleared it.
       expect(createCalls.first.metadata?['onboarding_incomplete'], isTrue);
       verify(() => mock.createClient(any())).called(1);
-      verify(
-        () => mock.upsertProfileFact(
-          'client-adult-1',
-          OnboardingKeys.ndis,
-          any(),
-        ),
-      ).called(1);
       verify(() => mock.createSite('client-adult-1', any())).called(1);
       verify(() => mock.createContact('client-adult-1', any())).called(1);
       verify(() => mock.patchClient('client-adult-1', any())).called(1);

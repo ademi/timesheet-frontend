@@ -70,7 +70,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Sex / gender (other)'), findsOneWidget);
+    expect(find.text('Participant gender (other)'), findsOneWidget);
     expect(c.sexGenderOtherCtrl.text, 'Agender');
   });
 }

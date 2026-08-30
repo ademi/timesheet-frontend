@@ -12,6 +12,7 @@ import '../../../shared/models/profile_photo_models.dart';
 import '../../documents/data/document_pipeline.dart';
 import '../data/models/client_models.dart';
 import '../data/models/client_profile_models.dart';
+import '../models/identity_card_attachment.dart';
 import '../data/repositories/clients_repository.dart';
 import '../services/client_legal_upload_helper.dart';
 import '../utils/onboarding_age.dart';
@@ -30,18 +31,21 @@ class ClientOnboardingController extends GetxController
     required SessionService session,
     DocumentPipeline? documentPipeline,
     Future<({String name, List<int> bytes})?> Function()? pickPdfBytes,
+    Future<PendingIdentityCardFile?> Function()? pickCardFile,
     this.softGateConfirm,
     this.onFinished,
   })  : _repository = repository,
         _session = session,
         _pipeline = documentPipeline,
-        _pickPdfBytesOverride = pickPdfBytes;
+        _pickPdfBytesOverride = pickPdfBytes,
+        _pickCardFileOverride = pickCardFile;
 
   final ClientsRepository _repository;
   final SessionService _session;
   final DocumentPipeline? _pipeline;
   final Future<({String name, List<int> bytes})?> Function()?
       _pickPdfBytesOverride;
+  final Future<PendingIdentityCardFile?> Function()? _pickCardFileOverride;
 
   /// Injectable soft-gate dialog for tests.
   Future<bool> Function(List<String> missing)? softGateConfirm;
@@ -72,6 +76,10 @@ class ClientOnboardingController extends GetxController
   final phone = TextEditingController();
   final ndisCtrl = TextEditingController();
   final medicareCtrl = TextEditingController();
+  final medicareCardAttachment = IdentityCardAttachment();
+  final companionCardAttachment = IdentityCardAttachment();
+  final disabilityCardAttachment = IdentityCardAttachment();
+  final pensionCardAttachment = IdentityCardAttachment();
   final allergiesCtrl = TextEditingController();
   final referralOtherCtrl = TextEditingController();
   final sexGenderOtherCtrl = TextEditingController();
@@ -258,6 +266,10 @@ class ClientOnboardingController extends GetxController
 
     ndisCtrl.clear();
     medicareCtrl.clear();
+    medicareCardAttachment.reset();
+    companionCardAttachment.reset();
+    disabilityCardAttachment.reset();
+    pensionCardAttachment.reset();
     allergiesCtrl.clear();
     referralOtherCtrl.clear();
     sexGenderOtherCtrl.clear();
@@ -346,10 +358,15 @@ class ClientOnboardingController extends GetxController
           _applyHydratedReferral(stored);
         case OnboardingKeys.sexGender:
           _applyHydratedSexGender(stored);
-        case OnboardingKeys.ndis:
-          ndisCtrl.text = stored?.trim() ?? '';
         case OnboardingKeys.medicareCard:
           medicareCtrl.text = stored?.trim() ?? '';
+          _hydrateCardAttachment(medicareCardAttachment, fact);
+        case OnboardingKeys.companionCard:
+          _hydrateCardAttachment(companionCardAttachment, fact);
+        case OnboardingKeys.disabilityCard:
+          _hydrateCardAttachment(disabilityCardAttachment, fact);
+        case OnboardingKeys.pensionCard:
+          _hydrateCardAttachment(pensionCardAttachment, fact);
         case OnboardingKeys.allergies:
           allergiesCtrl.text = stored?.trim() ?? '';
         case OnboardingKeys.atsiStatus:
@@ -368,6 +385,29 @@ class ClientOnboardingController extends GetxController
     final hydrated = OnboardingIdentityStep.hydrateSexGender(stored);
     sexGender.value = hydrated.preset;
     sexGenderOtherCtrl.text = hydrated.otherText;
+  }
+
+  void _hydrateCardAttachment(
+    IdentityCardAttachment attachment,
+    ClientProfileFactOut fact,
+  ) {
+    final docId = fact.documentId?.trim();
+    if (docId == null || docId.isEmpty) return;
+    attachment.existingDocumentId.value = docId;
+    attachment.existingDocumentLabel.value = 'Document on file';
+  }
+
+  Future<void> pickIdentityCard(IdentityCardAttachment attachment) async {
+    final override = _pickCardFileOverride;
+    final picked =
+        override != null ? await override() : await _pickCardFile();
+    if (picked != null) {
+      attachment.pending.value = picked;
+    }
+  }
+
+  void clearIdentityCardPending(IdentityCardAttachment attachment) {
+    attachment.pending.value = null;
   }
 
   void onPlanStartPicked(DateTime start) {
@@ -448,28 +488,25 @@ class ClientOnboardingController extends GetxController
 
   Future<bool> submitIdentity() async {
     errorMessage.value = null;
-    ndisFieldError.value = null;
 
     final name = fullName.text.trim();
     final em = email.text.trim();
     final ph = phone.text.trim();
-    final ndis = ndisCtrl.text.trim();
 
     if (name.isEmpty) {
-      errorMessage.value = 'Full name is required.';
+      errorMessage.value = 'Participant full name is required.';
       return false;
     }
-    if (em.isEmpty && ph.isEmpty) {
-      errorMessage.value = 'Provide an email and/or phone number.';
+    if (em.isEmpty) {
+      errorMessage.value = 'Participant email is required.';
+      return false;
+    }
+    if (ph.isEmpty) {
+      errorMessage.value = 'Participant phone number is required.';
       return false;
     }
     if (dob.value == null) {
-      errorMessage.value = 'Date of birth (DOB) is required.';
-      return false;
-    }
-    if (ndis.isEmpty) {
-      errorMessage.value = 'NDIS number is required.';
-      ndisFieldError.value = 'NDIS number is required.';
+      errorMessage.value = 'Participant date of birth is required.';
       return false;
     }
     if (referralSource.value == OnboardingIdentityStep.otherPresetKey &&
@@ -492,8 +529,8 @@ class ClientOnboardingController extends GetxController
         final created = await _repository.createClient(
           ClientCreateRequest(
             fullName: name,
-            email: em.isEmpty ? null : em,
-            phone: ph.isEmpty ? null : ph,
+            email: em,
+            phone: ph,
             clientTypeId: patientTypeId,
             dob: dobStr,
             metadata: const {'onboarding_incomplete': true},
@@ -519,20 +556,7 @@ class ClientOnboardingController extends GetxController
         await _persistPhoto(id);
       }
 
-      await _repository.upsertProfileFact(
-        id,
-        OnboardingKeys.ndis,
-        ProfileFactUpsert(valueJson: ndis),
-      );
-
-      final medicare = medicareCtrl.text.trim();
-      if (medicare.isNotEmpty) {
-        await _repository.upsertProfileFact(
-          id,
-          OnboardingKeys.medicareCard,
-          ProfileFactUpsert(valueJson: medicare),
-        );
-      }
+      await _persistIdentityCards(id);
 
       await _putOptionalFact(id, OnboardingKeys.sexGender, resolvedSexGender);
       await _putOptionalFact(id, OnboardingKeys.atsiStatus, atsiStatus.value);
@@ -553,12 +577,7 @@ class ClientOnboardingController extends GetxController
       if (step.value == 0) step.value = 1;
       return true;
     } on AppFailure catch (e) {
-      if (e.code == 'ndis_number_in_use' || e.statusCode == 409) {
-        ndisFieldError.value = e.message;
-        errorMessage.value = e.message;
-      } else {
-        errorMessage.value = e.message;
-      }
+      errorMessage.value = e.message;
       return false;
     } catch (e) {
       _setUnexpectedError(e);
@@ -1338,6 +1357,95 @@ class ClientOnboardingController extends GetxController
       key,
       ProfileFactUpsert(valueJson: n),
     );
+  }
+
+  Future<void> _persistIdentityCards(String clientId) async {
+    final medicare = medicareCtrl.text.trim();
+    await _persistIdentityCard(
+      clientId: clientId,
+      requirementKey: OnboardingKeys.medicareCard,
+      category: OnboardingKeys.medicareCard,
+      attachment: medicareCardAttachment,
+      valueJson: medicare.isEmpty ? null : medicare,
+    );
+    await _persistIdentityCard(
+      clientId: clientId,
+      requirementKey: OnboardingKeys.companionCard,
+      category: OnboardingKeys.companionCard,
+      attachment: companionCardAttachment,
+    );
+    await _persistIdentityCard(
+      clientId: clientId,
+      requirementKey: OnboardingKeys.disabilityCard,
+      category: OnboardingKeys.disabilityCard,
+      attachment: disabilityCardAttachment,
+    );
+    await _persistIdentityCard(
+      clientId: clientId,
+      requirementKey: OnboardingKeys.pensionCard,
+      category: OnboardingKeys.pensionCard,
+      attachment: pensionCardAttachment,
+    );
+  }
+
+  Future<void> _persistIdentityCard({
+    required String clientId,
+    required String requirementKey,
+    required String category,
+    required IdentityCardAttachment attachment,
+    String? valueJson,
+  }) async {
+    var docId = attachment.existingDocumentId.value;
+    final pending = attachment.pending.value;
+    if (pending != null) {
+      docId = await _uploadClientFile(
+        clientId: clientId,
+        category: category,
+        name: pending.name,
+        contentType: pending.contentType,
+        fileBytes: pending.bytes,
+      );
+      attachment.existingDocumentId.value = docId;
+      attachment.existingDocumentLabel.value = pending.name;
+      attachment.pending.value = null;
+    }
+
+    final hasValue = valueJson != null && valueJson.trim().isNotEmpty;
+    if (!hasValue && (docId == null || docId.isEmpty)) return;
+
+    await _repository.upsertProfileFact(
+      clientId,
+      requirementKey,
+      ProfileFactUpsert(
+        valueJson: hasValue ? valueJson.trim() : null,
+        documentId: docId,
+      ),
+    );
+  }
+
+  Future<PendingIdentityCardFile?> _pickCardFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return null;
+    final file = result.files.first;
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) return null;
+    return PendingIdentityCardFile(
+      name: file.name,
+      bytes: bytes,
+      contentType: _contentTypeForFilename(file.name),
+    );
+  }
+
+  static String _contentTypeForFilename(String name) {
+    final lower = name.toLowerCase();
+    if (lower.endsWith('.pdf')) return 'application/pdf';
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
   }
 
   Future<void> _persistPhoto(String clientId) async {

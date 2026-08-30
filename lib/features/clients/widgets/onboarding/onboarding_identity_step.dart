@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../shared/widgets/other_text_field.dart';
 import '../../../../shared/widgets/profile_photo_editor.dart';
 import '../../controllers/client_onboarding_controller.dart';
+import 'onboarding_identity_card_field.dart';
 
 class OnboardingIdentityStep extends StatelessWidget {
   const OnboardingIdentityStep({super.key, required this.controller});
@@ -73,6 +74,8 @@ class OnboardingIdentityStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final enabled = !controller.isSaving.value;
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -83,7 +86,7 @@ class OnboardingIdentityStep extends StatelessWidget {
           const SizedBox(height: 12),
           ProfilePhotoEditor(
             localBytes: controller.localPhotoBytes.value,
-            enabled: !controller.isSaving.value,
+            enabled: enabled,
             onChanged: controller.onPhotoPicked,
             onRemove: controller.clearPhoto,
           ),
@@ -91,7 +94,68 @@ class OnboardingIdentityStep extends StatelessWidget {
           TextField(
             controller: controller.fullName,
             decoration: const InputDecoration(
-              labelText: 'Full name *',
+              labelText: 'Participant full name *',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            value: controller.sexGender.value,
+            decoration: const InputDecoration(
+              labelText: 'Participant gender',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('Select'),
+              ),
+              for (final o in sexOptions)
+                DropdownMenuItem(value: o, child: Text(o)),
+            ],
+            onChanged: enabled
+                ? (v) {
+                    controller.sexGender.value = v;
+                    if (v != otherPresetKey) {
+                      controller.sexGenderOtherCtrl.clear();
+                    }
+                  }
+                : null,
+          ),
+          OtherTextField(
+            isOther: controller.sexGender.value == otherPresetKey,
+            controller: controller.sexGenderOtherCtrl,
+            label: 'Participant gender (other)',
+          ),
+          const SizedBox(height: 12),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              controller.dob.value == null
+                  ? 'Participant date of birth *'
+                  : 'DOB: ${_fmt(controller.dob.value!)}',
+            ),
+            trailing: const Icon(Icons.calendar_today),
+            onTap: enabled
+                ? () async {
+                    final now = DateTime.now();
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate:
+                          controller.dob.value ?? DateTime(now.year - 30),
+                      firstDate: DateTime(1900),
+                      lastDate: now,
+                    );
+                    if (picked != null) controller.dob.value = picked;
+                  }
+                : null,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller.phone,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: 'Participant phone number *',
               border: OutlineInputBorder(),
             ),
           ),
@@ -100,57 +164,57 @@ class OnboardingIdentityStep extends StatelessWidget {
             controller: controller.email,
             keyboardType: TextInputType.emailAddress,
             decoration: const InputDecoration(
-              labelText: 'Email',
+              labelText: 'Participant email *',
               border: OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: controller.phone,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Phone',
-              border: OutlineInputBorder(),
+          const SizedBox(height: 16),
+          OnboardingIdentityCardField(
+            label: 'Participant Medicare (optional)',
+            numberController: controller.medicareCtrl,
+            numberLabel: 'Medicare number (optional)',
+            attachment: controller.medicareCardAttachment,
+            enabled: enabled,
+            onPick: () => controller.pickIdentityCard(
+              controller.medicareCardAttachment,
+            ),
+            onClearPending: () => controller.clearIdentityCardPending(
+              controller.medicareCardAttachment,
             ),
           ),
-          const SizedBox(height: 12),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              controller.dob.value == null
-                  ? 'Date of birth *'
-                  : 'DOB: ${_fmt(controller.dob.value!)}',
+          OnboardingIdentityCardField(
+            label: 'Participant Companion card (optional)',
+            attachment: controller.companionCardAttachment,
+            enabled: enabled,
+            onPick: () => controller.pickIdentityCard(
+              controller.companionCardAttachment,
             ),
-            trailing: const Icon(Icons.calendar_today),
-            onTap: () async {
-              final now = DateTime.now();
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: controller.dob.value ?? DateTime(now.year - 30),
-                firstDate: DateTime(1900),
-                lastDate: now,
-              );
-              if (picked != null) controller.dob.value = picked;
-            },
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: controller.ndisCtrl,
-            decoration: InputDecoration(
-              labelText: 'NDIS number *',
-              border: const OutlineInputBorder(),
-              errorText: controller.ndisFieldError.value,
+            onClearPending: () => controller.clearIdentityCardPending(
+              controller.companionCardAttachment,
             ),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: controller.medicareCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Medicare card (optional)',
-              border: OutlineInputBorder(),
+          OnboardingIdentityCardField(
+            label: 'Participant Disability card (optional)',
+            attachment: controller.disabilityCardAttachment,
+            enabled: enabled,
+            onPick: () => controller.pickIdentityCard(
+              controller.disabilityCardAttachment,
+            ),
+            onClearPending: () => controller.clearIdentityCardPending(
+              controller.disabilityCardAttachment,
             ),
           ),
-          const SizedBox(height: 12),
+          OnboardingIdentityCardField(
+            label: 'Participant Pension card (optional)',
+            attachment: controller.pensionCardAttachment,
+            enabled: enabled,
+            onPick: () => controller.pickIdentityCard(
+              controller.pensionCardAttachment,
+            ),
+            onClearPending: () => controller.clearIdentityCardPending(
+              controller.pensionCardAttachment,
+            ),
+          ),
           DropdownButtonFormField<String?>(
             value: controller.referralSource.value,
             decoration: const InputDecoration(
@@ -165,44 +229,19 @@ class OnboardingIdentityStep extends StatelessWidget {
               for (final o in referralOptions)
                 DropdownMenuItem(value: o, child: Text(o)),
             ],
-            onChanged: (v) {
-              controller.referralSource.value = v;
-              if (v != otherPresetKey) {
-                controller.referralOtherCtrl.clear();
-              }
-            },
+            onChanged: enabled
+                ? (v) {
+                    controller.referralSource.value = v;
+                    if (v != otherPresetKey) {
+                      controller.referralOtherCtrl.clear();
+                    }
+                  }
+                : null,
           ),
           OtherTextField(
             isOther: controller.referralSource.value == otherPresetKey,
             controller: controller.referralOtherCtrl,
             label: 'Referral source (other)',
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            value: controller.sexGender.value,
-            decoration: const InputDecoration(
-              labelText: 'Sex / gender',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              const DropdownMenuItem<String?>(
-                value: null,
-                child: Text('Select'),
-              ),
-              for (final o in sexOptions)
-                DropdownMenuItem(value: o, child: Text(o)),
-            ],
-            onChanged: (v) {
-              controller.sexGender.value = v;
-              if (v != otherPresetKey) {
-                controller.sexGenderOtherCtrl.clear();
-              }
-            },
-          ),
-          OtherTextField(
-            isOther: controller.sexGender.value == otherPresetKey,
-            controller: controller.sexGenderOtherCtrl,
-            label: 'Sex / gender (other)',
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
@@ -219,7 +258,7 @@ class OnboardingIdentityStep extends StatelessWidget {
               for (final o in atsiOptions)
                 DropdownMenuItem(value: o, child: Text(o)),
             ],
-            onChanged: (v) => controller.atsiStatus.value = v,
+            onChanged: enabled ? (v) => controller.atsiStatus.value = v : null,
           ),
           const SizedBox(height: 12),
           TextField(

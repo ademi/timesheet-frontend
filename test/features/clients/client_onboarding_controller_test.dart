@@ -7,6 +7,7 @@ import 'package:rostiq/features/clients/controllers/client_onboarding_controller
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
+import 'package:rostiq/features/clients/models/identity_card_attachment.dart';
 import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
 import 'package:rostiq/features/clients/widgets/contact_form_host.dart';
 import 'package:rostiq/features/clients/widgets/onboarding/onboarding_identity_step.dart';
@@ -73,15 +74,24 @@ void main() {
     DocumentPipeline? documentPipeline,
     SessionService? sessionOverride,
     Future<({String name, List<int> bytes})?> Function()? pickPdfBytes,
+    Future<PendingIdentityCardFile?> Function()? pickCardFile,
   }) {
     return ClientOnboardingController(
       repository: mock,
       session: sessionOverride ?? session,
       documentPipeline: documentPipeline,
       pickPdfBytes: pickPdfBytes,
+      pickCardFile: pickCardFile,
       softGateConfirm: softGateConfirm,
       onFinished: onFinished,
     );
+  }
+
+  void _fillValidIdentity(ClientOnboardingController controller) {
+    controller.fullName.text = 'Sam Parent';
+    controller.email.text = 'sam@example.com';
+    controller.phone.text = '+61411111111';
+    controller.dob.value = DateTime(1990, 5, 1);
   }
 
   setUpAll(() {
@@ -109,21 +119,31 @@ void main() {
     c.dispose();
   });
 
-  test('cannot leave Identity without dob and ndis', () async {
+  test('cannot leave Identity without dob', () async {
     c.fullName.text = 'Sam';
+    c.email.text = 'sam@example.com';
     c.phone.text = '+61411111111';
     expect(await c.submitIdentity(), isFalse);
-    expect(c.errorMessage.value, contains('DOB'));
+    expect(c.errorMessage.value, contains('date of birth'));
     expect(c.step.value, 0);
   });
 
-  test('cannot leave Identity without ndis when dob set', () async {
+  test('cannot leave Identity without email', () async {
     c.fullName.text = 'Sam';
     c.phone.text = '+61411111111';
     c.dob.value = DateTime(1990, 1, 1);
     expect(await c.submitIdentity(), isFalse);
-    expect(c.errorMessage.value, contains('NDIS'));
-    expect(c.ndisFieldError.value, isNotNull);
+    expect(c.errorMessage.value, contains('email'));
+    expect(c.step.value, 0);
+  });
+
+  test('cannot leave Identity without phone', () async {
+    c.fullName.text = 'Sam';
+    c.email.text = 'sam@example.com';
+    c.dob.value = DateTime(1990, 1, 1);
+    expect(await c.submitIdentity(), isFalse);
+    expect(c.errorMessage.value, contains('phone'));
+    expect(c.step.value, 0);
   });
 
   test('submitIdentity sets onboarding_incomplete and advances', () async {
@@ -135,39 +155,16 @@ void main() {
     when(() => mock.upsertProfileFact(any(), any(), any()))
         .thenAnswer((_) async {});
 
-    c.fullName.text = 'Sam Parent';
-    c.phone.text = '+61411111111';
-    c.dob.value = DateTime(1990, 5, 1);
-    c.ndisCtrl.text = '430118201';
+    _fillValidIdentity(c);
 
     expect(await c.submitIdentity(), isTrue);
     expect(c.step.value, 1);
     expect(captured?.metadata?['onboarding_incomplete'], isTrue);
-    verify(
+    expect(captured?.email, 'sam@example.com');
+    expect(captured?.phone, '+61411111111');
+    verifyNever(
       () => mock.upsertProfileFact('client-1', OnboardingKeys.ndis, any()),
-    ).called(1);
-  });
-
-  test('maps 409 ndis_number_in_use to field error', () async {
-    when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
-    when(() => mock.upsertProfileFact(any(), OnboardingKeys.ndis, any()))
-        .thenThrow(
-      const AppFailure(
-        code: 'ndis_number_in_use',
-        message: 'This NDIS number is already used by another client.',
-        presentation: AppFailurePresentation.inline,
-        statusCode: 409,
-      ),
     );
-
-    c.fullName.text = 'Sam';
-    c.phone.text = '+61411111111';
-    c.dob.value = DateTime(1990, 1, 1);
-    c.ndisCtrl.text = '430118201';
-
-    expect(await c.submitIdentity(), isFalse);
-    expect(c.ndisFieldError.value, contains('NDIS'));
-    expect(c.step.value, 0);
   });
 
   test('representative step requires child_representative when under 18', () {
@@ -687,9 +684,9 @@ void main() {
         .thenAnswer((_) async {});
 
     c.fullName.text = 'Sam';
+    c.email.text = 'sam@example.com';
     c.phone.text = '+61411111111';
     c.dob.value = DateTime(1990, 1, 1);
-    c.ndisCtrl.text = '430118201';
 
     expect(await c.submitIdentity(), isFalse);
     expect(c.errorMessage.value, contains('documents.upload'));
@@ -755,7 +752,6 @@ void main() {
 
     c.hydrateFromClient(_fakeClient);
     c.dob.value = DateTime(1990, 5, 1);
-    c.ndisCtrl.text = '430118201';
 
     expect(await c.submitIdentity(), isTrue);
     verify(() => mock.patchClient('client-1', any())).called(1);
@@ -792,10 +788,7 @@ void main() {
     test('submitIdentity rejects referral Other without free-text', () async {
       when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
 
-      c.fullName.text = 'Sam';
-      c.phone.text = '+61411111111';
-      c.dob.value = DateTime(1990, 1, 1);
-      c.ndisCtrl.text = '430118201';
+      _fillValidIdentity(c);
       c.referralSource.value = OnboardingIdentityStep.otherPresetKey;
 
       expect(await c.submitIdentity(), isFalse);
@@ -814,10 +807,7 @@ void main() {
         }
       });
 
-      c.fullName.text = 'Sam';
-      c.phone.text = '+61411111111';
-      c.dob.value = DateTime(1990, 1, 1);
-      c.ndisCtrl.text = '430118201';
+      _fillValidIdentity(c);
       c.referralSource.value = OnboardingIdentityStep.otherPresetKey;
       c.referralOtherCtrl.text = 'Community Centre';
 
@@ -843,10 +833,7 @@ void main() {
     test('submitIdentity rejects sex Other without free-text', () async {
       when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
 
-      c.fullName.text = 'Sam';
-      c.phone.text = '+61411111111';
-      c.dob.value = DateTime(1990, 1, 1);
-      c.ndisCtrl.text = '430118201';
+      _fillValidIdentity(c);
       c.sexGender.value = OnboardingIdentityStep.otherPresetKey;
 
       expect(await c.submitIdentity(), isFalse);
@@ -865,10 +852,7 @@ void main() {
         }
       });
 
-      c.fullName.text = 'Sam';
-      c.phone.text = '+61411111111';
-      c.dob.value = DateTime(1990, 1, 1);
-      c.ndisCtrl.text = '430118201';
+      _fillValidIdentity(c);
       c.sexGender.value = OnboardingIdentityStep.otherPresetKey;
       c.sexGenderOtherCtrl.text = 'Agender';
 
@@ -876,6 +860,72 @@ void main() {
       expect(captured?.valueJson, 'Agender');
       expect(captured?.valueJson, isNot('Other'));
     });
+  });
+
+  test('submitIdentity uploads optional identity card attachments', () async {
+    final pipeline = _MockDocumentPipeline();
+    when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
+    when(() => mock.upsertProfileFact(any(), any(), any()))
+        .thenAnswer((_) async {});
+    when(
+      () => pipeline.uploadEvidence(
+        request: any(named: 'request'),
+        bytes: any(named: 'bytes'),
+      ),
+    ).thenAnswer(
+      (_) async => const DocumentOut(
+        id: 'doc-companion',
+        ownerType: 'client',
+        ownerId: 'client-1',
+        filename: 'companion.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 3,
+        scanStatus: 'clean',
+        category: 'companion_card',
+      ),
+    );
+
+    c.dispose();
+    c = _buildController(
+      documentPipeline: pipeline,
+      pickCardFile: () async => const PendingIdentityCardFile(
+        name: 'companion.pdf',
+        bytes: [1, 2, 3],
+        contentType: 'application/pdf',
+      ),
+    );
+
+    _fillValidIdentity(c);
+    c.companionCardAttachment.pending.value = const PendingIdentityCardFile(
+      name: 'companion.pdf',
+      bytes: [1, 2, 3],
+      contentType: 'application/pdf',
+    );
+
+    expect(await c.submitIdentity(), isTrue);
+    verify(
+      () => mock.upsertProfileFact(
+        'client-1',
+        OnboardingKeys.companionCard,
+        any(
+          that: predicate<ProfileFactUpsert>(
+            (upsert) => upsert.documentId == 'doc-companion',
+          ),
+        ),
+      ),
+    ).called(1);
+  });
+
+  test('hydrateIdentityFromFacts restores card document ids', () {
+    c.hydrateIdentityFromFacts([
+      const ClientProfileFactOut(
+        requirementKey: OnboardingKeys.pensionCard,
+        documentId: 'doc-pension-1',
+      ),
+    ]);
+
+    expect(c.pensionCardAttachment.existingDocumentId.value, 'doc-pension-1');
+    expect(c.pensionCardAttachment.existingDocumentLabel.value, isNotEmpty);
   });
 
   test('hydrateIdentityFromFacts maps unknown referral and sex to Other + text',
