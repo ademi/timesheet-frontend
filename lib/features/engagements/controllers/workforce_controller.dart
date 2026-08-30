@@ -86,26 +86,6 @@ class WorkforceController extends GetxController {
 
   final staffProfile = Rxn<StaffContractorOut>();
   final isLoadingProfile = false.obs;
-  final isSavingProfile = false.obs;
-  final profileFullNameCtrl = TextEditingController();
-  final profilePhoneCtrl = TextEditingController();
-  final profileAbnCtrl = TextEditingController();
-  final profileAddress1Ctrl = TextEditingController();
-  final profileAddress2Ctrl = TextEditingController();
-  final profileSuburbCtrl = TextEditingController();
-  final profileStateCtrl = TextEditingController();
-  final profilePostcodeCtrl = TextEditingController();
-  final profileCountryCtrl = TextEditingController();
-  final profileDob = Rxn<DateTime>();
-  final profileScreeningNumberCtrl = TextEditingController();
-  final profileScreeningStatus = RxnString();
-  final profileScreeningStateCtrl = TextEditingController();
-  final profileWwccNumberCtrl = TextEditingController();
-  final profileWwccStateCtrl = TextEditingController();
-  final profileLicenceNumberCtrl = TextEditingController();
-  final profileLicenceStateCtrl = TextEditingController();
-  final profileVehiclePlateCtrl = TextEditingController();
-  final profileVehicleStateCtrl = TextEditingController();
 
   /// Invite multi-select options (catalog when loaded, else allowlist fallback).
   List<CredentialCategory> get inviteCategoryChoices {
@@ -197,23 +177,6 @@ class WorkforceController extends GetxController {
     _errorClearTimer?.cancel();
     emailCtrl.dispose();
     phoneCtrl.dispose();
-    profileFullNameCtrl.dispose();
-    profilePhoneCtrl.dispose();
-    profileAbnCtrl.dispose();
-    profileAddress1Ctrl.dispose();
-    profileAddress2Ctrl.dispose();
-    profileSuburbCtrl.dispose();
-    profileStateCtrl.dispose();
-    profilePostcodeCtrl.dispose();
-    profileCountryCtrl.dispose();
-    profileScreeningNumberCtrl.dispose();
-    profileScreeningStateCtrl.dispose();
-    profileWwccNumberCtrl.dispose();
-    profileWwccStateCtrl.dispose();
-    profileLicenceNumberCtrl.dispose();
-    profileLicenceStateCtrl.dispose();
-    profileVehiclePlateCtrl.dispose();
-    profileVehicleStateCtrl.dispose();
     super.onClose();
   }
 
@@ -298,155 +261,13 @@ class WorkforceController extends GetxController {
   Future<void> loadStaffProfile(String contractorId) async {
     isLoadingProfile.value = true;
     try {
-      final profile = await _repository.getStaffContractor(contractorId);
-      staffProfile.value = profile;
-      _bindProfileForm(profile);
+      staffProfile.value = await _repository.getStaffContractor(contractorId);
     } on AppFailure catch (e) {
       _setError(e.message);
     } catch (e) {
       _setError(e.toString());
     } finally {
       isLoadingProfile.value = false;
-    }
-  }
-
-  void _bindProfileForm(StaffContractorOut profile) {
-    profileFullNameCtrl.text = profile.fullName;
-    profilePhoneCtrl.text = profile.phone ?? '';
-    profileAbnCtrl.text = profile.abn ?? '';
-    profileDob.value = profile.dob;
-    profileAddress1Ctrl.text = profile.address.addressLine1 ?? '';
-    profileAddress2Ctrl.text = profile.address.addressLine2 ?? '';
-    profileSuburbCtrl.text = profile.address.suburb ?? '';
-    profileStateCtrl.text = profile.address.state ?? '';
-    profilePostcodeCtrl.text = profile.address.postcode ?? '';
-    profileCountryCtrl.text = profile.address.country ?? '';
-
-    final screening = profile.compliance['screening'];
-    if (screening is Map) {
-      profileScreeningNumberCtrl.text = screening['number']?.toString() ?? '';
-      profileScreeningStatus.value = screening['status']?.toString();
-      profileScreeningStateCtrl.text = screening['state']?.toString() ?? '';
-    } else {
-      profileScreeningNumberCtrl.clear();
-      profileScreeningStatus.value = null;
-      profileScreeningStateCtrl.clear();
-    }
-    final checks = profile.compliance['checks'];
-    if (checks is Map) {
-      final wwcc = checks['wwcc'];
-      if (wwcc is Map) {
-        profileWwccNumberCtrl.text = wwcc['number']?.toString() ?? '';
-        profileWwccStateCtrl.text = wwcc['state']?.toString() ?? '';
-      } else {
-        profileWwccNumberCtrl.clear();
-        profileWwccStateCtrl.clear();
-      }
-      final licence = checks['drivers_licence'];
-      if (licence is Map) {
-        profileLicenceNumberCtrl.text = licence['number']?.toString() ?? '';
-        profileLicenceStateCtrl.text = licence['state']?.toString() ?? '';
-      } else {
-        profileLicenceNumberCtrl.clear();
-        profileLicenceStateCtrl.clear();
-      }
-      final vehicle = checks['vehicle_registration'];
-      if (vehicle is Map) {
-        profileVehiclePlateCtrl.text = vehicle['plate']?.toString() ?? '';
-        profileVehicleStateCtrl.text = vehicle['state']?.toString() ?? '';
-      } else {
-        profileVehiclePlateCtrl.clear();
-        profileVehicleStateCtrl.clear();
-      }
-    } else {
-      profileWwccNumberCtrl.clear();
-      profileWwccStateCtrl.clear();
-      profileLicenceNumberCtrl.clear();
-      profileLicenceStateCtrl.clear();
-      profileVehiclePlateCtrl.clear();
-      profileVehicleStateCtrl.clear();
-    }
-  }
-
-  Map<String, dynamic> _profileCompliancePayload() {
-    final existing = Map<String, dynamic>.from(staffProfile.value?.compliance ?? {});
-    final screening = <String, dynamic>{
-      if (profileScreeningNumberCtrl.text.trim().isNotEmpty)
-        'number': profileScreeningNumberCtrl.text.trim(),
-      if (profileScreeningStatus.value != null)
-        'status': profileScreeningStatus.value,
-      if (profileScreeningStateCtrl.text.trim().isNotEmpty)
-        'state': profileScreeningStateCtrl.text.trim(),
-    };
-    final checks = Map<String, dynamic>.from(
-      existing['checks'] is Map
-          ? Map<String, dynamic>.from(existing['checks'] as Map)
-          : {},
-    );
-    checks['wwcc'] = {
-      if (profileWwccNumberCtrl.text.trim().isNotEmpty)
-        'number': profileWwccNumberCtrl.text.trim(),
-      if (profileWwccStateCtrl.text.trim().isNotEmpty)
-        'state': profileWwccStateCtrl.text.trim(),
-    };
-    checks['drivers_licence'] = {
-      if (profileLicenceNumberCtrl.text.trim().isNotEmpty)
-        'number': profileLicenceNumberCtrl.text.trim(),
-      if (profileLicenceStateCtrl.text.trim().isNotEmpty)
-        'state': profileLicenceStateCtrl.text.trim(),
-    };
-    checks['vehicle_registration'] = {
-      if (profileVehiclePlateCtrl.text.trim().isNotEmpty)
-        'plate': profileVehiclePlateCtrl.text.trim(),
-      if (profileVehicleStateCtrl.text.trim().isNotEmpty)
-        'state': profileVehicleStateCtrl.text.trim(),
-    };
-    return {
-      ...existing,
-      if (screening.isNotEmpty) 'screening': screening,
-      'checks': checks,
-    };
-  }
-
-  Future<void> saveStaffProfile() async {
-    final engagement = selected;
-    if (engagement == null) return;
-    if (!canManage) {
-      _setError('Missing contractors.manage permission.');
-      return;
-    }
-    isSavingProfile.value = true;
-    clearError();
-    try {
-      final updated = await _repository.patchStaffContractor(
-        contractorId: engagement.contractorId,
-        body: StaffContractorUpdateRequest(
-          fullName: profileFullNameCtrl.text.trim().isEmpty
-              ? null
-              : profileFullNameCtrl.text.trim(),
-          phone: profilePhoneCtrl.text.trim(),
-          dob: profileDob.value,
-          abn: profileAbnCtrl.text.trim(),
-          address: ContractorAddress(
-            addressLine1: profileAddress1Ctrl.text,
-            addressLine2: profileAddress2Ctrl.text,
-            suburb: profileSuburbCtrl.text,
-            state: profileStateCtrl.text,
-            postcode: profilePostcodeCtrl.text,
-            country: profileCountryCtrl.text,
-          ),
-          compliance: _profileCompliancePayload(),
-        ),
-      );
-      staffProfile.value = updated;
-      _bindProfileForm(updated);
-      AppToast.success('Saved', 'Contractor profile updated.');
-    } on AppFailure catch (e) {
-      _setError(e.message);
-    } catch (e) {
-      _setError(e.toString());
-    } finally {
-      isSavingProfile.value = false;
     }
   }
 

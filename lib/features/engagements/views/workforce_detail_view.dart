@@ -160,198 +160,156 @@ class WorkforceDetailView extends GetView<WorkforceController> {
   }
 
   Widget _profileContent(EngagementOut current) {
-    if (controller.isLoadingProfile.value &&
-        controller.staffProfile.value == null) {
-      return const Center(child: CircularProgressIndicator());
+    return Obx(() {
+      if (controller.isLoadingProfile.value &&
+          controller.staffProfile.value == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      final profile = controller.staffProfile.value;
+      final screening = profile?.compliance['screening'];
+      final checks = profile?.compliance['checks'];
+      final qualifications = profile?.compliance['qualifications'];
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Profile information is entered by the contractor. '
+            'Staff can review it here but cannot edit it.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+          _row('Email', profile?.email ?? current.contractorEmail ?? '—'),
+          _row('Full name', profile?.fullName ?? current.displayName),
+          _row('Phone', _orDash(profile?.phone)),
+          _row(
+            'Date of birth',
+            profile?.dob == null
+                ? '—'
+                : profile!.dob!.toIso8601String().split('T').first,
+          ),
+          _row('ABN', _orDash(profile?.abn)),
+          const SizedBox(height: 16),
+          const Text(
+            'Address',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          _row('Line 1', _orDash(profile?.address.addressLine1)),
+          _row('Line 2', _orDash(profile?.address.addressLine2)),
+          _row('Suburb', _orDash(profile?.address.suburb)),
+          _row('State', _orDash(profile?.address.state)),
+          _row('Postcode', _orDash(profile?.address.postcode)),
+          _row('Country', _orDash(profile?.address.country)),
+          const SizedBox(height: 16),
+          const Text(
+            'Screening',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          if (screening is Map) ...[
+            _row('NDIS screening number', _mapText(screening, 'number')),
+            _row('Clearance status', _mapText(screening, 'status')),
+            _row('Issue date', _mapText(screening, 'issue_date')),
+            _row('Expiry date', _mapText(screening, 'expiry_date')),
+            _row('State/territory', _mapText(screening, 'state')),
+          ] else
+            const Text(
+              'No screening details on file.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+          const SizedBox(height: 16),
+          const Text(
+            'Qualifications',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          if (qualifications is List && qualifications.isNotEmpty)
+            for (var i = 0; i < qualifications.length; i++)
+              if (qualifications[i] is Map) ...[
+                if (i > 0) const SizedBox(height: 8),
+                _row(
+                  'Type',
+                  _mapText(qualifications[i] as Map, 'type'),
+                ),
+                _row(
+                  'Issue date',
+                  _mapText(qualifications[i] as Map, 'issue_date'),
+                ),
+                _row(
+                  'Expiry date',
+                  _mapText(qualifications[i] as Map, 'expiry_date'),
+                ),
+              ]
+          else
+            const Text(
+              'No qualifications on file.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+          const SizedBox(height: 16),
+          const Text(
+            'Checks',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          if (checks is Map) ...[
+            _checkSection('WWCC', checks['wwcc']),
+            _checkSection('Driver licence', checks['drivers_licence'],
+                numberKey: 'number'),
+            _checkSection('Vehicle registration', checks['vehicle_registration'],
+                numberKey: 'plate'),
+          ] else
+            const Text(
+              'No check details on file.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+          if (profile?.paymentDetails != null) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Payment',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            _row('Account name', profile!.paymentDetails!.accountName),
+            _row('BSB', profile.paymentDetails!.bsb),
+            _row(
+              'Account number',
+              profile.paymentDetails!.accountNumberMasked,
+            ),
+          ],
+        ],
+      );
+    });
+  }
+
+  Widget _checkSection(
+    String label,
+    Object? value, {
+    String numberKey = 'number',
+  }) {
+    if (value is! Map) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: _row(label, '—'),
+      );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Email: ${controller.staffProfile.value?.email ?? current.contractorEmail ?? '—'}',
-          style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: controller.profileFullNameCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'Full name'),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller.profilePhoneCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'Phone'),
-        ),
-        const SizedBox(height: 12),
-        Obx(
-          () => ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Date of birth'),
-            subtitle: Text(
-              controller.profileDob.value == null
-                  ? 'Not set'
-                  : controller.profileDob.value!
-                      .toIso8601String()
-                      .split('T')
-                      .first,
-            ),
-            trailing: controller.canManage
-                ? const Icon(Icons.calendar_today_outlined)
-                : null,
-            onTap: !controller.canManage
-                ? null
-                : () async {
-                    final now = DateTime.now();
-                    final picked = await showDatePicker(
-                      context: Get.context!,
-                      initialDate: controller.profileDob.value ??
-                          DateTime(now.year - 30),
-                      firstDate: DateTime(now.year - 80),
-                      lastDate: now,
-                    );
-                    if (picked != null) controller.profileDob.value = picked;
-                  },
-          ),
-        ),
-        TextField(
-          controller: controller.profileAbnCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'ABN'),
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'Address',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller.profileAddress1Ctrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'Address line 1'),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller.profileAddress2Ctrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'Address line 2'),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller.profileSuburbCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'Suburb'),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: controller.profileStateCtrl,
-                enabled: controller.canManage,
-                decoration: const InputDecoration(labelText: 'State'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: controller.profilePostcodeCtrl,
-                enabled: controller.canManage,
-                decoration: const InputDecoration(labelText: 'Postcode'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller.profileCountryCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'Country'),
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'Screening / checks (CRM)',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller.profileScreeningNumberCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'NDIS screening number'),
-        ),
-        const SizedBox(height: 12),
-        Obx(
-          () => DropdownButtonFormField<String>(
-            value: controller.profileScreeningStatus.value,
-            decoration: const InputDecoration(labelText: 'Clearance status'),
-            items: const [
-              DropdownMenuItem(value: 'cleared', child: Text('Cleared')),
-              DropdownMenuItem(value: 'excluded', child: Text('Excluded')),
-              DropdownMenuItem(value: 'pending', child: Text('Pending')),
-              DropdownMenuItem(value: 'other', child: Text('Other')),
-            ],
-            onChanged: controller.canManage
-                ? (v) => controller.profileScreeningStatus.value = v
-                : null,
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller.profileScreeningStateCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'Screening state'),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller.profileWwccNumberCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'WWCC number'),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller.profileWwccStateCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'WWCC state'),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller.profileLicenceNumberCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'Licence number'),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller.profileLicenceStateCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'Licence state'),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller.profileVehiclePlateCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'Vehicle plate'),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: controller.profileVehicleStateCtrl,
-          enabled: controller.canManage,
-          decoration: const InputDecoration(labelText: 'Vehicle state'),
-        ),
-        if (controller.canManage) ...[
-          const SizedBox(height: 20),
-          AsyncElevatedButton(
-            onPressed: controller.saveStaffProfile,
-            isLoading: controller.isSavingProfile.value,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
-              minimumSize: const Size.fromHeight(48),
-            ),
-            child: const Text('Save profile'),
-          ),
-        ],
+        _row('$label number', _mapText(value, numberKey)),
+        _row('$label state', _mapText(value, 'state')),
+        _row('$label expiry', _mapText(value, 'expiry_date')),
       ],
     );
+  }
+
+  String _orDash(String? value) =>
+      value == null || value.trim().isEmpty ? '—' : value.trim();
+
+  String _mapText(Map map, String key) {
+    final value = map[key];
+    if (value == null) return '—';
+    final text = value.toString().trim();
+    return text.isEmpty ? '—' : text;
   }
 
   Widget _scheduleContent() {

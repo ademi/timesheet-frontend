@@ -23,40 +23,16 @@ class WorkforceListView extends GetView<WorkforceController> {
         title: const Text('Workforce'),
         actions: shellAppBarActions(),
       ),
-      floatingActionButton: (!controller.canInvite && !controller.canManage)
-          ? null
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (controller.canManage)
-                  FloatingActionButton.extended(
-                    heroTag: 'workforce-add',
-                    onPressed: () =>
-                        Get.toNamed(AppRoutes.staffWorkforceOnboarding),
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.onPrimary,
-                    icon: const Icon(Icons.person_add),
-                    label: const Text('Add contractor'),
-                  ),
-                if (controller.canManage && controller.canInvite)
-                  const SizedBox(height: 12),
-                if (controller.canInvite)
-                  FloatingActionButton.extended(
-                    heroTag: 'workforce-invite',
-                    onPressed: () =>
-                        Get.toNamed(AppRoutes.staffWorkforceInvite),
-                    backgroundColor: controller.canManage
-                        ? AppColors.surface
-                        : AppColors.primary,
-                    foregroundColor: controller.canManage
-                        ? AppColors.primary
-                        : AppColors.onPrimary,
-                    icon: const Icon(Icons.mail_outline),
-                    label: const Text('Invite'),
-                  ),
-              ],
-            ),
+      floatingActionButton: controller.canInvite
+          ? FloatingActionButton.extended(
+              heroTag: 'workforce-invite',
+              onPressed: () => Get.toNamed(AppRoutes.staffWorkforceInvite),
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              icon: const Icon(Icons.mail_outline),
+              label: const Text('Invite'),
+            )
+          : null,
       body: Obx(() {
         final err = controller.errorMessage.value;
         if (controller.isLoading.value &&
@@ -198,25 +174,15 @@ class WorkforceListView extends GetView<WorkforceController> {
                                     ),
                                     if (controller.statusFilter.value == null &&
                                         !controller.missingDocsFilter.value &&
-                                        (controller.canManage ||
-                                            controller.canInvite)) ...[
+                                        controller.canInvite) ...[
                                       const SizedBox(height: 16),
-                                      if (controller.canManage)
-                                        TextButton.icon(
-                                          onPressed: () => Get.toNamed(
-                                            AppRoutes.staffWorkforceOnboarding,
-                                          ),
-                                          icon: const Icon(Icons.person_add),
-                                          label: const Text('Add contractor'),
+                                      TextButton.icon(
+                                        onPressed: () => Get.toNamed(
+                                          AppRoutes.staffWorkforceInvite,
                                         ),
-                                      if (controller.canInvite)
-                                        TextButton.icon(
-                                          onPressed: () => Get.toNamed(
-                                            AppRoutes.staffWorkforceInvite,
-                                          ),
-                                          icon: const Icon(Icons.mail_outline),
-                                          label: const Text('Invite contractor'),
-                                        ),
+                                        icon: const Icon(Icons.mail_outline),
+                                        label: const Text('Invite contractor'),
+                                      ),
                                     ],
                                   ],
                                 ),

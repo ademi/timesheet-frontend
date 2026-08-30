@@ -27,22 +27,8 @@ class EngagementsRepository {
   Future<EngagementInviteResponse> invite(EngagementInviteRequest body) =>
       _remote.invite(body);
 
-  Future<StaffContractorCreateResponse> createStaffContractor(
-    StaffContractorCreateRequest body,
-  ) =>
-      _remote.createStaffContractor(body);
-
   Future<StaffContractorOut> getStaffContractor(String contractorId) =>
       _remote.getStaffContractor(contractorId);
-
-  Future<StaffContractorOut> patchStaffContractor({
-    required String contractorId,
-    required StaffContractorUpdateRequest body,
-  }) =>
-      _remote.patchStaffContractor(
-        contractorId: contractorId,
-        body: body,
-      );
 
   Future<EngagementInvitePreviewOut> previewInvite(
     EngagementInvitePreviewRequest body,

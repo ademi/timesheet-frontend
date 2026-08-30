@@ -6,9 +6,7 @@ import '../../app/routes/middlewares/actor_guard.dart';
 import '../../app/routes/middlewares/auth_guard.dart';
 import '../../app/routes/middlewares/permission_guard.dart';
 import '../shell/staff_shell.dart';
-import 'bindings/contractor_onboarding_binding.dart';
 import 'bindings/engagements_binding.dart';
-import 'views/contractor_onboarding_view.dart';
 import 'views/workforce_detail_view.dart';
 import 'views/workforce_invite_view.dart';
 import 'views/workforce_list_view.dart';
@@ -38,17 +36,6 @@ abstract final class EngagementsPages {
           ],
           binding: EngagementsBinding(),
           page: () => const WorkforceInviteView(),
-          transition: Transition.rightToLeft,
-        ),
-        GetPage(
-          name: AppRoutes.staffWorkforceOnboarding,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(anyOf: [AppPermissions.contractorsManage]),
-          ],
-          binding: ContractorOnboardingBinding(),
-          page: () => const ContractorOnboardingView(),
           transition: Transition.rightToLeft,
         ),
         GetPage(

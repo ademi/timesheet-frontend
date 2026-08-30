@@ -1,6 +1,4 @@
-import 'engagement_models.dart';
-
-/// Staff contractor CRM create/get/patch DTOs (Phase 4).
+// Staff read-only contractor profile DTO (GET /tenants/current/contractors/{id}).
 
 class ContractorAddress {
   const ContractorAddress({
@@ -30,40 +28,6 @@ class ContractorAddress {
       country: json['country'] as String?,
     );
   }
-
-  Map<String, dynamic> toJson() => {
-        if (addressLine1 != null && addressLine1!.trim().isNotEmpty)
-          'address_line1': addressLine1!.trim(),
-        if (addressLine2 != null && addressLine2!.trim().isNotEmpty)
-          'address_line2': addressLine2!.trim(),
-        if (suburb != null && suburb!.trim().isNotEmpty)
-          'suburb': suburb!.trim(),
-        if (state != null && state!.trim().isNotEmpty) 'state': state!.trim(),
-        if (postcode != null && postcode!.trim().isNotEmpty)
-          'postcode': postcode!.trim(),
-        if (country != null && country!.trim().isNotEmpty)
-          'country': country!.trim(),
-      };
-
-  bool get isEmpty => toJson().isEmpty;
-}
-
-class StaffContractorPaymentDetails {
-  const StaffContractorPaymentDetails({
-    required this.accountName,
-    required this.bsb,
-    required this.accountNumber,
-  });
-
-  final String accountName;
-  final String bsb;
-  final String accountNumber;
-
-  Map<String, dynamic> toJson() => {
-        'account_name': accountName.trim(),
-        'bsb': bsb.trim(),
-        'account_number': accountNumber.trim(),
-      };
 }
 
 class StaffContractorPaymentDetailsOut {
@@ -138,116 +102,6 @@ class StaffContractorOut {
       paymentDetails: payment is Map
           ? StaffContractorPaymentDetailsOut.fromJson(
               Map<String, dynamic>.from(payment),
-            )
-          : null,
-    );
-  }
-}
-
-class StaffContractorCreateRequest {
-  const StaffContractorCreateRequest({
-    required this.email,
-    this.fullName,
-    this.phone,
-    this.dob,
-    this.abn,
-    this.address,
-    this.compliance,
-    this.requiredCategories = const [],
-    this.sendInvite = true,
-  });
-
-  final String email;
-  final String? fullName;
-  final String? phone;
-  final DateTime? dob;
-  final String? abn;
-  final ContractorAddress? address;
-  final Map<String, dynamic>? compliance;
-  final List<String> requiredCategories;
-  final bool sendInvite;
-
-  Map<String, dynamic> toJson() {
-    final addr = address?.toJson() ?? {};
-    return {
-      'email': email.trim().toLowerCase(),
-      if (fullName != null && fullName!.trim().isNotEmpty)
-        'full_name': fullName!.trim(),
-      if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
-      if (dob != null) 'dob': dob!.toIso8601String().split('T').first,
-      if (abn != null && abn!.trim().isNotEmpty) 'abn': abn!.trim(),
-      if (addr.isNotEmpty) 'address': addr,
-      if (compliance != null && compliance!.isNotEmpty) 'compliance': compliance,
-      'required_categories': requiredCategories,
-      'send_invite': sendInvite,
-    };
-  }
-}
-
-class StaffContractorUpdateRequest {
-  const StaffContractorUpdateRequest({
-    this.fullName,
-    this.phone,
-    this.dob,
-    this.abn,
-    this.address,
-    this.compliance,
-    this.paymentDetails,
-  });
-
-  final String? fullName;
-  final String? phone;
-  final DateTime? dob;
-  final String? abn;
-  final ContractorAddress? address;
-  final Map<String, dynamic>? compliance;
-  final StaffContractorPaymentDetails? paymentDetails;
-
-  Map<String, dynamic> toJson() {
-    final addr = address?.toJson() ?? {};
-    return {
-      if (fullName != null && fullName!.trim().isNotEmpty)
-        'full_name': fullName!.trim(),
-      if (phone != null) 'phone': phone!.trim().isEmpty ? null : phone!.trim(),
-      if (dob != null) 'dob': dob!.toIso8601String().split('T').first,
-      if (abn != null) 'abn': abn!.trim().isEmpty ? null : abn!.trim(),
-      if (addr.isNotEmpty) 'address': addr,
-      if (compliance != null) 'compliance': compliance,
-      if (paymentDetails != null) 'payment_details': paymentDetails!.toJson(),
-    };
-  }
-}
-
-class StaffContractorCreateResponse {
-  const StaffContractorCreateResponse({
-    required this.kind,
-    this.contractor,
-    this.engagement,
-    this.registrationInvite,
-  });
-
-  final String kind;
-  final StaffContractorOut? contractor;
-  final EngagementOut? engagement;
-  final ContractorRegistrationInviteOut? registrationInvite;
-
-  bool get isRegistrationInvite => kind == 'registration_invite';
-
-  factory StaffContractorCreateResponse.fromJson(Map<String, dynamic> json) {
-    final contractor = json['contractor'];
-    final invite = json['registration_invite'];
-    final engagement = json['engagement'];
-    return StaffContractorCreateResponse(
-      kind: json['kind'] as String? ?? '',
-      contractor: contractor is Map
-          ? StaffContractorOut.fromJson(Map<String, dynamic>.from(contractor))
-          : null,
-      engagement: engagement is Map
-          ? EngagementOut.fromJson(Map<String, dynamic>.from(engagement))
-          : null,
-      registrationInvite: invite is Map
-          ? ContractorRegistrationInviteOut.fromJson(
-              Map<String, dynamic>.from(invite),
             )
           : null,
     );
