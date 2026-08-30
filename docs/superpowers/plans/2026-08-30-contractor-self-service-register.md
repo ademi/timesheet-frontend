@@ -225,19 +225,19 @@ Each phase: **backend + db (if needed) → frontend → tests/smoke → STOP for
 - [x] Address edits use same geocode lookup as register Identity step.
 - [x] Redirect logic: if ABN missing after login, prefer Profile or slim banner → Profile (reduce duplicate `complete_account_view` where safe; keep redirect until profile covers all gaps).
 
-**Green light gate:** Contractor can edit all CRM domains in Profile; changes visible read-only on staff detail. **← waiting for your OK before Phase D.**
+**Green light gate:** Contractor can edit all CRM domains in Profile; changes visible read-only on staff detail. ✅
 
 ---
 
 ### Phase D — Cleanup, permissions, docs, regression
 
-- [ ] Remove dead code: staff contractor models’ create/update types if unused; staff onboarding tests.
-- [ ] Permissions: `contractors.manage` no longer gates staff create/patch (document `contractors.invite` + `contractors.read` for workforce).
-- [ ] Update [2026-08-27-contractor-workforce-onboarding.md](./2026-08-27-contractor-workforce-onboarding.md) with pivot note + link here.
-- [ ] Update manual test matrix / seed demos.
-- [ ] Regression: invite → register stepper → accept engagement → upload docs → `awaiting_approval` → approve.
+- [x] Remove dead code: staff contractor models’ create/update types if unused; staff onboarding tests.
+- [x] Permissions: `contractors.manage` no longer gates staff create/patch (document `contractors.invite` + `contractors.read` for workforce).
+- [x] Update [2026-08-27-contractor-workforce-onboarding.md](./2026-08-27-contractor-workforce-onboarding.md) with pivot note + link here.
+- [x] Update manual test matrix / seed demos.
+- [x] Regression: invite → register stepper → accept engagement → upload docs → `awaiting_approval` → approve.
 
-**Green light gate:** Ready for QA / release.
+**Green light gate:** Ready for QA / release. ✅
 
 ---
 

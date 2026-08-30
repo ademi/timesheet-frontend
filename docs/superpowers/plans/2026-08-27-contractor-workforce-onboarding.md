@@ -1,6 +1,7 @@
 # Contractor / Workforce Onboarding — Product & Engineering Plan
 
 > **Status:** Phases 0–5 complete · ready for broader QA / release.  
+> **Pivot (2026-08-30):** Phase 4 staff “Add contractor” stepper + staff CRM edit were **superseded** by contractor self-service register. Staff are **invite-only**; profile CRM editing is on contractor **Profile**; staff workforce detail Profile tab is **read-only**. See [2026-08-30-contractor-self-service-register.md](./2026-08-30-contractor-self-service-register.md).  
 > **Rule:** Implement **one phase at a time**. After each phase, stop and wait for explicit approval before starting the next.  
 > **Repos:** Frontend `timesheet-frontend` · Backend `…/flutter backend/timesheet/timesheet-backend` · DB `…/timesheet-db`
 
@@ -313,6 +314,8 @@ Each phase: **backend + db (if needed) → frontend → smoke test → STOP for 
 ---
 
 ### Phase 4 — Staff Add contractor (horizontal stepper) + detail edit
+
+> **Superseded (2026-08-30):** Staff create/patch APIs and Add contractor UI were removed. Contractors fill profile via the **register stepper** and **Profile** screen; staff see read-only Profile on workforce detail. [Pivot plan →](./2026-08-30-contractor-self-service-register.md)
 
 **Backend / DB**
 
