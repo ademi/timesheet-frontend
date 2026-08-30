@@ -1,19 +1,27 @@
 /// Request body for `POST /v1/contractors/register`.
 class ContractorRegisterRequest {
   const ContractorRegisterRequest({
-    required this.fullName,
     required this.email,
     required this.password,
     required this.termsVersion,
     required this.privacyVersion,
+    this.fullName,
     this.phone,
     this.dob,
     this.abn,
+    this.addressLine1,
+    this.addressLine2,
+    this.suburb,
+    this.state,
+    this.postcode,
+    this.country,
+    this.compliance,
+    this.metadata,
     this.paymentDetails,
     this.inviteToken,
   });
 
-  final String fullName;
+  final String? fullName;
   final String email;
   final String password;
   final String? phone;
@@ -21,24 +29,46 @@ class ContractorRegisterRequest {
   /// ISO date `YYYY-MM-DD` when set.
   final String? dob;
   final String? abn;
+  final String? addressLine1;
+  final String? addressLine2;
+  final String? suburb;
+  final String? state;
+  final String? postcode;
+  final String? country;
+  final Map<String, dynamic>? compliance;
+  final Map<String, dynamic>? metadata;
   final ContractorRegisterPaymentDetails? paymentDetails;
   final String? inviteToken;
   final String termsVersion;
   final String privacyVersion;
 
   Map<String, dynamic> toJson() => {
-    'full_name': fullName,
-    'email': email,
-    'password': password,
-    if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
-    if (dob != null && dob!.isNotEmpty) 'dob': dob,
-    if (abn != null && abn!.isNotEmpty) 'abn': abn,
-    if (paymentDetails != null) 'payment_details': paymentDetails!.toJson(),
-    if (inviteToken != null && inviteToken!.trim().isNotEmpty)
-      'invite_token': inviteToken!.trim(),
-    'terms_version': termsVersion,
-    'privacy_version': privacyVersion,
-  };
+        if (fullName != null && fullName!.trim().isNotEmpty)
+          'full_name': fullName!.trim(),
+        'email': email,
+        'password': password,
+        if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
+        if (dob != null && dob!.isNotEmpty) 'dob': dob,
+        if (abn != null && abn!.isNotEmpty) 'abn': abn,
+        if (addressLine1 != null && addressLine1!.trim().isNotEmpty)
+          'address_line1': addressLine1!.trim(),
+        if (addressLine2 != null && addressLine2!.trim().isNotEmpty)
+          'address_line2': addressLine2!.trim(),
+        if (suburb != null && suburb!.trim().isNotEmpty) 'suburb': suburb!.trim(),
+        if (state != null && state!.trim().isNotEmpty) 'state': state!.trim(),
+        if (postcode != null && postcode!.trim().isNotEmpty)
+          'postcode': postcode!.trim(),
+        if (country != null && country!.trim().isNotEmpty)
+          'country': country!.trim(),
+        if (compliance != null && compliance!.isNotEmpty)
+          'compliance': compliance,
+        if (metadata != null && metadata!.isNotEmpty) 'metadata': metadata,
+        if (paymentDetails != null) 'payment_details': paymentDetails!.toJson(),
+        if (inviteToken != null && inviteToken!.trim().isNotEmpty)
+          'invite_token': inviteToken!.trim(),
+        'terms_version': termsVersion,
+        'privacy_version': privacyVersion,
+      };
 }
 
 class ContractorRegisterPaymentDetails {
@@ -53,10 +83,55 @@ class ContractorRegisterPaymentDetails {
   final String accountNumber;
 
   Map<String, dynamic> toJson() => {
-    'account_name': accountName,
-    'bsb': bsb,
-    'account_number': accountNumber,
-  };
+        'account_name': accountName,
+        'bsb': bsb,
+        'account_number': accountNumber,
+      };
+}
+
+/// `POST /v1/public/geocode`
+class GeocodeRequest {
+  const GeocodeRequest({
+    required this.addressLine1,
+    required this.city,
+    required this.country,
+    this.state,
+  });
+
+  final String addressLine1;
+  final String city;
+  final String country;
+  final String? state;
+
+  Map<String, dynamic> toJson() => {
+        'address_line1': addressLine1,
+        'city': city,
+        'country': country,
+        if (state != null && state!.isNotEmpty) 'state': state,
+      };
+}
+
+class GeocodeResponse {
+  const GeocodeResponse({
+    required this.latitude,
+    required this.longitude,
+    this.formattedAddress,
+    this.confidence,
+  });
+
+  final double latitude;
+  final double longitude;
+  final String? formattedAddress;
+  final String? confidence;
+
+  factory GeocodeResponse.fromJson(Map<String, dynamic> json) {
+    return GeocodeResponse(
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+      formattedAddress: json['formatted_address'] as String?,
+      confidence: json['confidence'] as String?,
+    );
+  }
 }
 
 /// Public information displayed to a contractor registering from an invite.

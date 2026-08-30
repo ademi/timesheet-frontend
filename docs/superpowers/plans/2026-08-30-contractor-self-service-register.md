@@ -1,6 +1,6 @@
 # Contractor self-service register — Product & Engineering Plan
 
-> **Status:** Phase A complete · **waiting for green light before Phase B.**  
+> **Status:** Phase B complete · **waiting for green light before Phase C.**  
 > **Rule:** Implement **one phase at a time**. After each phase, stop and wait for explicit approval before starting the next.  
 > **Supersedes (partially):** Phase 4 staff “Add contractor” stepper + staff CRM edit from [2026-08-27-contractor-workforce-onboarding.md](./2026-08-27-contractor-workforce-onboarding.md). Phases 0–5 of that plan remain shipped; this plan **pivots** who fills profile data and **removes** staff create/edit paths.  
 > **Repos:** Frontend `timesheet-frontend` · Backend `…/flutter backend/timesheet/timesheet-backend` · DB `…/timesheet/timesheet-db`
@@ -192,21 +192,21 @@ Each phase: **backend + db (if needed) → frontend → tests/smoke → STOP for
 
 **Backend**
 
-- [ ] Extend `ContractorRegisterRequest` with optional address fields (`address_line1`, `address_line2`, `suburb`, `state`, `postcode`, `country`) and optional `metadata` / structured `compliance` payload (screening, qualifications[], checks).
-- [ ] `register_contractor` persists address + merges compliance into `contractors.metadata` (reuse helpers from former `apply_staff_profile_dict` where sensible).
-- [ ] Validation: only email/password/legal required; ABN normalized if present; address fields optional.
-- [ ] Register tests: minimal register still works; full stepper payload persists address + compliance metadata.
+- [x] Extend `ContractorRegisterRequest` with optional address fields (`address_line1`, `address_line2`, `suburb`, `state`, `postcode`, `country`) and optional `metadata` / structured `compliance` payload (screening, qualifications[], checks).
+- [x] `register_contractor` persists address + merges compliance into `contractors.metadata` (reuse helpers from former `apply_staff_profile_dict` where sensible).
+- [x] Validation: only email/password/legal required; ABN normalized if present; address fields optional.
+- [x] Register tests: minimal register still works; full stepper payload persists address + compliance metadata.
 
 **Frontend**
 
-- [ ] Replace `contractor_register_view.dart` single form with **horizontal stepper** (new controller, e.g. `ContractorRegisterStepperController`).
-- [ ] Move/adapt step widgets from `contractor_onboarding_view.dart` → `contractor_register/` (or shared `contractor_profile_steps/` widget module).
-- [ ] Step 0 Identity: integrate **`POST /v1/public/geocode`** for address (lookup + confirm + low-confidence gate).
-- [ ] Step 4 Legal: terms/privacy + submit → existing register API + login flow.
-- [ ] Invite token: load email + required categories; lock email field when invite present.
-- [ ] Remove obsolete single-page register layout (or keep redirect for old deep links if any).
+- [x] Replace `contractor_register_view.dart` single form with **horizontal stepper** (new controller, e.g. `ContractorRegisterStepperController`).
+- [x] Move/adapt step widgets from `contractor_onboarding_view.dart` → `contractor_register/` (or shared `contractor_profile_steps/` widget module).
+- [x] Step 0 Identity: integrate **`POST /v1/public/geocode`** for address (lookup + confirm + low-confidence gate).
+- [x] Step 4 Legal: terms/privacy + submit → existing register API + login flow.
+- [x] Invite token: load email + required categories; lock email field when invite present.
+- [x] Remove obsolete single-page register layout (or keep redirect for old deep links if any).
 
-**Green light gate:** Contractor opens invite link, completes stepper with geocoded address, creates account, logs in; staff sees read-only profile on detail.
+**Green light gate:** Contractor opens invite link, completes stepper with geocoded address, creates account, logs in; staff sees read-only profile on detail. **← waiting for your OK before Phase C.**
 
 ---
 

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
-import '../../../core/responsive/breakpoints.dart';
-import '../../../core/responsive/max_width_box.dart';
-import '../../../shared/utils/abn_utils.dart';
-import '../../../shared/widgets/markdown_viewer.dart';
+import '../../../core/responsive/page_content.dart';
+import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/floating_error_notice.dart';
 import '../controllers/contractor_register_controller.dart';
+import '../widgets/register_step_widgets.dart';
 
 class ContractorRegisterView extends GetView<ContractorRegisterController> {
   const ContractorRegisterView({super.key});
@@ -16,399 +16,125 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Register as contractor'),
+        title: Obx(() {
+          final i = controller.step.value;
+          final label =
+              i >= 0 && i < ContractorRegisterController.stepLabels.length
+                  ? ContractorRegisterController.stepLabels[i]
+                  : 'Register';
+          return Text(label);
+        }),
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.textDark,
         elevation: 0,
       ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: MaxWidthBox(
-              maxWidth: Breakpoints.formMaxWidth,
-              child: Form(
-                key: controller.formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Create your contractor profile',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textDark,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'After registering you will sign in. Company accounts '
-                      'are created on the website.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                    Obx(() {
-                      if (controller.isInviteLoading.value) {
-                        return const Padding(
-                          padding: EdgeInsets.only(top: 12),
-                          child: LinearProgressIndicator(),
-                        );
-                      }
-                      final error = controller.inviteLoadError.value;
-                      if (error != null) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Text(
-                            error,
-                            style: const TextStyle(color: AppColors.error),
-                          ),
-                        );
-                      }
-                      final invite = controller.invite.value;
-                      if (invite == null) return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(
-                          'You were invited by ${invite.tenantName}. '
-                          'Register with ${invite.email}.',
-                          style: const TextStyle(color: AppColors.textMuted),
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 20),
-                    _field(
-                      controller: controller.fullNameController,
-                      label: 'Full name',
-                      icon: Icons.badge_outlined,
-                      validator:
-                          (v) =>
-                              (v == null || v.trim().isEmpty)
-                                  ? 'Full name is required'
-                                  : null,
-                    ),
-                    const SizedBox(height: 12),
-                    Obx(
-                      () => _field(
-                        controller: controller.emailController,
-                        label: 'Email',
-                        icon: Icons.email_outlined,
-                        keyboardType: TextInputType.emailAddress,
-                        readOnly: controller.invite.value != null,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Email is required';
-                          }
-                          if (!GetUtils.isEmail(v.trim())) {
-                            return 'Enter a valid email';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Obx(
-                      () => _field(
-                        controller: controller.passwordController,
-                        label: 'Password',
-                        icon: Icons.lock_outline,
-                        obscureText: !controller.isPasswordVisible.value,
-                        suffix: IconButton(
-                          onPressed: controller.togglePasswordVisibility,
-                          icon: Icon(
-                            controller.isPasswordVisible.value
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) {
-                            return 'Password is required';
-                          }
-                          if (v.length < 8) {
-                            return 'Minimum 8 characters';
-                          }
-                          if (!RegExp(r'[A-Z]').hasMatch(v)) {
-                            return 'Include an uppercase letter';
-                          }
-                          if (!RegExp(r'[a-z]').hasMatch(v)) {
-                            return 'Include a lowercase letter';
-                          }
-                          if (!RegExp(r'\d').hasMatch(v)) {
-                            return 'Include a digit';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _field(
-                      controller: controller.phoneController,
-                      label: 'Phone (optional)',
-                      icon: Icons.phone_outlined,
-                      keyboardType: TextInputType.phone,
-                      hint: '+614… or 04…',
-                    ),
-                    const SizedBox(height: 12),
-                    _field(
-                      controller: controller.dobController,
-                      label: 'Date of birth (optional)',
-                      icon: Icons.cake_outlined,
-                      readOnly: true,
-                      hint: 'YYYY-MM-DD',
-                      onTap: () => controller.pickDob(context),
-                    ),
-                    const SizedBox(height: 12),
-                    _field(
-                      controller: controller.abnController,
-                      label: 'ABN (optional)',
-                      icon: Icons.apartment_outlined,
-                      keyboardType: TextInputType.number,
-                      hint: '11 digits',
-                      validator: (v) => AbnUtils.formValidator(v),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Payment details (optional)',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Account name, BSB, and account number for payouts.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _field(
-                      controller: controller.accountNameController,
-                      label: 'Account name',
-                      icon: Icons.person_outline,
-                    ),
-                    const SizedBox(height: 12),
-                    _field(
-                      controller: controller.bsbController,
-                      label: 'BSB',
-                      icon: Icons.account_balance_outlined,
-                      keyboardType: TextInputType.number,
-                      hint: '6 digits',
-                      validator: (v) {
-                        final name =
-                            controller.accountNameController.text.trim();
-                        final account = AbnUtils.digitsOnly(
-                          controller.accountNumberController.text,
-                        );
-                        final any = name.isNotEmpty ||
-                            AbnUtils.digitsOnly(v).isNotEmpty ||
-                            account.isNotEmpty;
-                        if (!any) return null;
-                        return AbnUtils.bsbValidator(v, required: true);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _field(
-                      controller: controller.accountNumberController,
-                      label: 'Account number',
-                      icon: Icons.pin_outlined,
-                      keyboardType: TextInputType.number,
-                      validator: (v) {
-                        final name =
-                            controller.accountNameController.text.trim();
-                        final bsb = AbnUtils.digitsOnly(
-                          controller.bsbController.text,
-                        );
-                        final any = name.isNotEmpty ||
-                            bsb.isNotEmpty ||
-                            AbnUtils.digitsOnly(v).isNotEmpty;
-                        if (!any) return null;
-                        return AbnUtils.accountNumberValidator(
-                          v,
-                          required: true,
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    Obx(() {
-                      if (controller.legalLoadError.value != null) {
-                        return Text(
-                          controller.legalLoadError.value!,
-                          style: const TextStyle(color: AppColors.error),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    }),
-                    _LegalBlock(
-                      title: 'Platform Terms',
-                      markdown: controller.termsMarkdown,
-                      accepted: controller.acceptedTerms,
-                      acceptLabel: 'I accept the Platform Terms',
-                    ),
-                    const SizedBox(height: 16),
-                    _LegalBlock(
-                      title: 'Privacy Policy',
-                      markdown: controller.privacyMarkdown,
-                      accepted: controller.acceptedPrivacy,
-                      acceptLabel: 'I accept the Privacy Policy',
-                    ),
-                    const SizedBox(height: 24),
-                    Obx(
-                      () => SizedBox(
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed:
-                              controller.isLoading.value ||
-                                      controller.isInviteLoading.value
-                                  ? null
-                                  : controller.submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.onPrimary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+      body: Obx(() {
+        final err = controller.errorMessage.value;
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: RegisterStepIndicator(step: controller.step.value),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  PageContent(
+                    width: PageContentWidth.narrow,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (controller.step.value == 0) ...[
+                          const Text(
+                            'Create your contractor profile',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          child:
-                              controller.isLoading.value
-                                  ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                  : const Text(
-                                    'Create account',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'After registering you will sign in and complete '
+                            'any remaining onboarding steps.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        switch (controller.step.value) {
+                          0 => RegisterIdentityStep(controller: controller),
+                          1 => RegisterScreeningStep(controller: controller),
+                          2 => RegisterQualificationsStep(
+                            controller: controller,
+                          ),
+                          3 => RegisterChecksStep(controller: controller),
+                          _ => RegisterLegalStep(controller: controller),
+                        },
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (err != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: FloatingErrorNotice(
+                  message: err,
+                  onDismiss: () => controller.errorMessage.value = null,
+                ),
+              ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: PageContent(
+                  width: PageContentWidth.narrow,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (controller.step.value == 0)
+                        TextButton(
+                          onPressed: controller.goToLogin,
+                          child: const Text('Already have an account? Sign in'),
                         ),
+                      Row(
+                        children: [
+                          if (controller.step.value > 0)
+                            OutlinedButton(
+                              onPressed: controller.isLoading.value
+                                  ? null
+                                  : controller.previousStep,
+                              child: const Text('Back'),
+                            ),
+                          const Spacer(),
+                          AsyncElevatedButton(
+                            onPressed: controller.nextStep,
+                            isLoading: controller.isLoading.value ||
+                                controller.isInviteLoading.value,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.onPrimary,
+                            ),
+                            child: Text(
+                              controller.step.value ==
+                                      ContractorRegisterController.maxStep
+                                  ? 'Create account'
+                                  : 'Next',
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: controller.goToLogin,
-                      child: const Text('Already have an account? Sign in'),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _field({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    String? hint,
-    String? Function(String?)? validator,
-    TextInputType? keyboardType,
-    bool obscureText = false,
-    bool readOnly = false,
-    Widget? suffix,
-    VoidCallback? onTap,
-  }) {
-    return TextFormField(
-      controller: controller,
-      validator: validator,
-      keyboardType: keyboardType,
-      obscureText: obscureText,
-      readOnly: readOnly,
-      onTap: onTap,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon, color: AppColors.primaryDark),
-        suffixIcon: suffix,
-        filled: true,
-        fillColor: AppColors.cardBackground,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-      ),
-    );
-  }
-}
-
-class _LegalBlock extends StatelessWidget {
-  const _LegalBlock({
-    required this.title,
-    required this.markdown,
-    required this.accepted,
-    required this.acceptLabel,
-  });
-
-  final String title;
-  final RxString markdown;
-  final RxBool accepted;
-  final String acceptLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.cardBackground,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.divider),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: AppColors.textDark,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 180,
-            child: Obx(
-              () =>
-                  markdown.value.isEmpty
-                      ? const Center(child: CircularProgressIndicator())
-                      : MarkdownViewer(markdown: markdown.value),
-            ),
-          ),
-          const Divider(height: 1),
-          Obx(
-            () => CheckboxListTile(
-              value: accepted.value,
-              onChanged: (v) => accepted.value = v ?? false,
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Text(acceptLabel, style: const TextStyle(fontSize: 13)),
-            ),
-          ),
-        ],
-      ),
+          ],
+        );
+      }),
     );
   }
 }
