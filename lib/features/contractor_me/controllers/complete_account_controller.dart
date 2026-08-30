@@ -34,7 +34,9 @@ class CompleteAccountController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.offNamed(AppRoutes.contractorProfile);
+    });
   }
 
   @override

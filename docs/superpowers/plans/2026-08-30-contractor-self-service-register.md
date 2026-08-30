@@ -1,6 +1,6 @@
 # Contractor self-service register — Product & Engineering Plan
 
-> **Status:** Phase B complete · **waiting for green light before Phase C.**  
+> **Status:** Phase C complete · **waiting for green light before Phase D.**  
 > **Rule:** Implement **one phase at a time**. After each phase, stop and wait for explicit approval before starting the next.  
 > **Supersedes (partially):** Phase 4 staff “Add contractor” stepper + staff CRM edit from [2026-08-27-contractor-workforce-onboarding.md](./2026-08-27-contractor-workforce-onboarding.md). Phases 0–5 of that plan remain shipped; this plan **pivots** who fills profile data and **removes** staff create/edit paths.  
 > **Repos:** Frontend `timesheet-frontend` · Backend `…/flutter backend/timesheet/timesheet-backend` · DB `…/timesheet/timesheet-db`
@@ -216,16 +216,16 @@ Each phase: **backend + db (if needed) → frontend → tests/smoke → STOP for
 
 **Backend**
 
-- [ ] Confirm `ContractorUpdate` / `PATCH /v1/contractor-me` accepts address + `metadata.compliance` (already on schema — add tests if missing).
+- [x] Confirm `ContractorUpdate` / `PATCH /v1/contractor-me` accepts address + `metadata.compliance` (already on schema — add tests if missing).
 
 **Frontend**
 
-- [ ] Expand `ContractorProfileOpsView` + `ContractorProfileController` with sections or sub-steps matching register domains.
-- [ ] Extend `ContractorMeRepository.patchMe` to send address + compliance metadata.
-- [ ] Address edits use same geocode lookup as register Identity step.
-- [ ] Redirect logic: if ABN missing after login, prefer Profile or slim banner → Profile (reduce duplicate `complete_account_view` where safe; keep redirect until profile covers all gaps).
+- [x] Expand `ContractorProfileOpsView` + `ContractorProfileController` with sections or sub-steps matching register domains.
+- [x] Extend `ContractorMeRepository.patchMe` to send address + compliance metadata.
+- [x] Address edits use same geocode lookup as register Identity step.
+- [x] Redirect logic: if ABN missing after login, prefer Profile or slim banner → Profile (reduce duplicate `complete_account_view` where safe; keep redirect until profile covers all gaps).
 
-**Green light gate:** Contractor can edit all CRM domains in Profile; changes visible read-only on staff detail.
+**Green light gate:** Contractor can edit all CRM domains in Profile; changes visible read-only on staff detail. **← waiting for your OK before Phase D.**
 
 ---
 

@@ -1,13 +1,12 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
-import '../../../shared/utils/abn_utils.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../controllers/contractor_profile_controller.dart';
+import '../widgets/contractor_profile_sections.dart';
 import '../widgets/notification_bell_button.dart';
 
 class ContractorProfileOpsView extends GetView<ContractorProfileController> {
@@ -23,6 +22,9 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
       ),
       body: Obx(() {
         final err = controller.errorMessage.value;
+        if (controller.isLoading.value && controller.profile.value == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
         final payment = controller.profile.value?.paymentDetails;
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -46,6 +48,17 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
                     ),
                     const SizedBox(height: 12),
                   ],
+                  if (controller.needsAbnBanner) ...[
+                    MaterialBanner(
+                      content: const Text(
+                        'Add your ABN below so providers can verify and pay you.',
+                      ),
+                      leading: const Icon(Icons.badge_outlined),
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                      actions: const [SizedBox.shrink()],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   Center(
                     child: ProfilePhotoEditor(
                       localBytes: controller.localPhotoBytes.value,
@@ -63,86 +76,34 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
                   ),
                   if (controller.canEditProfile) ...[
                     const Divider(height: 32),
-                    const Text(
-                      'Business details',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
+                    ContractorProfileSections(controller: controller),
+                    if (payment != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Saved account ending ${payment.accountNumberMasked}',
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 13,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Form(
-                      key: controller.profileFormKey,
-                      child: Column(
-                        children: [
-                          TextFormField(
-                            controller: controller.abnCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'ABN',
-                              hintText: '11 digits',
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(11),
-                            ],
-                            validator: (v) => AbnUtils.formValidator(v),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: controller.accountNameCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Account name (optional)',
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: controller.bsbCtrl,
-                            decoration: InputDecoration(
-                              labelText: 'BSB (optional)',
-                              helperText: payment == null
-                                  ? null
-                                  : 'Saved account ending ${payment.accountNumberMasked}',
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(6),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: controller.accountNumberCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Account number (optional)',
-                              helperText:
-                                  'Enter a new number only when updating payment details',
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(10),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: FilledButton(
-                              onPressed: controller.isSaving.value
-                                  ? null
-                                  : controller.saveBusinessDetails,
-                              child: controller.isSaving.value
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text('Save business details'),
-                            ),
-                          ),
-                        ],
+                    ],
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FilledButton(
+                        onPressed: controller.isSaving.value
+                            ? null
+                            : controller.saveProfile,
+                        child: controller.isSaving.value
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Save profile'),
                       ),
                     ),
                   ],

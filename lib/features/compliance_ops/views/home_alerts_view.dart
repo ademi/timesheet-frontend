@@ -471,9 +471,8 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                   backgroundColor: AppColors.primary.withValues(alpha: 0.08),
                   actions: [
                     TextButton(
-                      onPressed: () =>
-                          Get.toNamed(AppRoutes.contractorCompleteAccount),
-                      child: const Text('Complete account'),
+                      onPressed: () => Get.toNamed(AppRoutes.contractorProfile),
+                      child: const Text('Complete profile'),
                     ),
                   ],
                 ),

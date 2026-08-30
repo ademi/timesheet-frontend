@@ -85,6 +85,7 @@ class ContractorProfileOpsBinding extends Bindings {
       Get.lazyPut<ContractorMeRemoteDataSource>(
         () => ContractorMeRemoteDataSource(
           authenticatedDio: Get.find<ApiClient>().dio,
+          plainDio: Get.find<ApiClient>().plainDio,
         ),
       );
     }

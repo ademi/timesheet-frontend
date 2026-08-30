@@ -259,6 +259,7 @@ class SessionService extends GetxController {
       if (!Get.isRegistered<ApiClient>()) return;
       final remote = ContractorMeRemoteDataSource(
         authenticatedDio: Get.find<ApiClient>().dio,
+        plainDio: Get.find<ApiClient>().plainDio,
       );
       final me = await remote.getMe();
       needsProfileCompletion.value = !me.isProfileComplete;
@@ -356,7 +357,7 @@ class SessionService extends GetxController {
         );
       }
       if (needsProfileCompletion.value) {
-        return AppRoutes.contractorCompleteAccount;
+        return AppRoutes.contractorProfile;
       }
       if (engagements.length > 1 && claims?.tenantId == null) {
         return AppRoutes.contractorProfile;

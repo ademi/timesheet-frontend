@@ -10,6 +10,12 @@ class ContractorMeOut {
     this.phone,
     this.dob,
     this.abn,
+    this.addressLine1,
+    this.addressLine2,
+    this.suburb,
+    this.state,
+    this.postcode,
+    this.country,
     this.paymentDetails,
     this.metadata = const {},
   });
@@ -21,12 +27,26 @@ class ContractorMeOut {
   final String? phone;
   final String? dob;
   final String? abn;
+  final String? addressLine1;
+  final String? addressLine2;
+  final String? suburb;
+  final String? state;
+  final String? postcode;
+  final String? country;
   final ContractorPaymentDetailsOut? paymentDetails;
   final Map<String, dynamic> metadata;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   bool get isProfileComplete => (abn ?? '').trim().isNotEmpty;
+
+  Map<String, dynamic> get compliance {
+    final value = metadata['compliance'];
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    return const {};
+  }
 
   factory ContractorMeOut.fromJson(Map<String, dynamic> json) {
     final payment = json['payment_details'];
@@ -38,6 +58,12 @@ class ContractorMeOut {
       phone: json['phone'] as String?,
       dob: json['dob']?.toString(),
       abn: json['abn'] as String?,
+      addressLine1: json['address_line1'] as String?,
+      addressLine2: json['address_line2'] as String?,
+      suburb: json['suburb'] as String?,
+      state: json['state'] as String?,
+      postcode: json['postcode'] as String?,
+      country: json['country'] as String?,
       paymentDetails:
           payment is Map
               ? ContractorPaymentDetailsOut.fromJson(

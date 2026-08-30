@@ -10,6 +10,7 @@ import '../../../features/clients/utils/site_geocode_apply.dart';
 import '../../../features/contractor_onboarding/data/onboarding_progress_store.dart';
 import '../../../shared/utils/abn_utils.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../models/contractor_qual_row.dart';
 import '../data/models/contractor_register_models.dart';
 import '../data/repositories/contractor_register_repository.dart';
 
@@ -19,17 +20,8 @@ abstract final class LegalDocKeys {
   static const privacyPolicy = 'privacy_policy';
 }
 
-class RegisterQualRow {
-  RegisterQualRow({this.type = 'first_aid'});
-
-  String type;
-  final issueDateCtrl = TextEditingController();
-  final expiryDateCtrl = TextEditingController();
-
-  void dispose() {
-    issueDateCtrl.dispose();
-    expiryDateCtrl.dispose();
-  }
+class RegisterQualRow extends ContractorQualRow {
+  RegisterQualRow({super.type});
 }
 
 class ContractorRegisterController extends GetxController {
