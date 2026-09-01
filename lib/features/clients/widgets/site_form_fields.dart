@@ -27,15 +27,11 @@ class SiteFormFields extends StatefulWidget {
     required this.controller,
     this.primaryMode = false,
     this.showNameField = true,
-    this.nameAtEnd = false,
   });
 
   final SiteFormHost controller;
   final bool primaryMode;
   final bool showNameField;
-
-  /// When true, the site name field renders after access notes and geocode confirm.
-  final bool nameAtEnd;
 
   @override
   State<SiteFormFields> createState() => _SiteFormFieldsState();
@@ -76,8 +72,8 @@ class _SiteFormFieldsState extends State<SiteFormFields> {
           ? TextField(
               controller: controller.siteNameCtrl,
               decoration: const InputDecoration(
-                labelText: 'Name *',
-                hintText: 'Home, Work',
+                labelText: 'Address Reference Name ( Home / Work) *',
+                hintText: 'Home / Work',
                 border: OutlineInputBorder(),
               ),
             )
@@ -86,7 +82,7 @@ class _SiteFormFieldsState extends State<SiteFormFields> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (nameField != null && !widget.nameAtEnd) ...[
+          if (nameField != null) ...[
             nameField,
             const SizedBox(height: 12),
           ],
@@ -222,10 +218,6 @@ class _SiteFormFieldsState extends State<SiteFormFields> {
                 ],
               ),
             ),
-          ],
-          if (nameField != null && widget.nameAtEnd) ...[
-            const SizedBox(height: 12),
-            nameField,
           ],
         ],
       );

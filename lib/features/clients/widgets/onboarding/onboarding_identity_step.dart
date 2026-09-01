@@ -232,24 +232,6 @@ class OnboardingIdentityStep extends StatelessWidget {
               controller.photoIdAttachment,
             ),
           ),
-          DropdownButtonFormField<String?>(
-            value: controller.photoIdType.value,
-            decoration: const InputDecoration(
-              labelText: 'Photo ID type (optional)',
-              border: OutlineInputBorder(),
-            ),
-            items: const [
-              DropdownMenuItem<String?>(value: null, child: Text('Select')),
-              DropdownMenuItem(value: 'Passport', child: Text('Passport')),
-              DropdownMenuItem(
-                value: 'Driver licence',
-                child: Text('Driver licence'),
-              ),
-              DropdownMenuItem(value: 'Photo card', child: Text('Photo card')),
-              DropdownMenuItem(value: 'Other', child: Text('Other')),
-            ],
-            onChanged: enabled ? (v) => controller.photoIdType.value = v : null,
-          ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
             value: controller.referralSource.value,

@@ -617,7 +617,9 @@ class SupportPlanFundingConsentStore {
   }
 
   void addSupportSpecialist(String type) {
-    supportSpecialists.add(SupportPlanSpecialistEntry.create(type));
+    supportSpecialists.add(
+      SupportPlanSpecialistEntry.create(type, expanded: true),
+    );
   }
 
   void removeSupportSpecialist(String id) {

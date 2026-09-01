@@ -1199,10 +1199,11 @@ void main() {
     ).called(1);
   });
 
-  test('addSupportSpecialist allows duplicate types', () {
+  test('addSupportSpecialist allows duplicate types and expands details', () {
     c.addSupportSpecialist(SupportPlanSpecialistTypes.speechTherapist);
     c.addSupportSpecialist(SupportPlanSpecialistTypes.speechTherapist);
     expect(c.supportSpecialists, hasLength(2));
+    expect(c.supportSpecialists.every((e) => e.expanded.value), isTrue);
     c.clearSupportSpecialists();
   });
 
@@ -1279,7 +1280,7 @@ void main() {
     expect(captured[OnboardingKeys.pensionCard]?.valueJson, 'PC-456');
   });
 
-  test('submitIdentity persists photo_id number and type as JSON', () async {
+  test('submitIdentity persists photo_id number as plain text', () async {
     ProfileFactUpsert? photoFact;
     when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
     when(() => mock.upsertProfileFact(any(), any(), any()))
@@ -1292,14 +1293,12 @@ void main() {
 
     _fillValidIdentity(c);
     c.photoIdNumberCtrl.text = 'P1234567';
-    c.photoIdType.value = 'Passport';
 
     expect(await c.submitIdentity(), isTrue);
-    expect(photoFact?.valueJson, contains('P1234567'));
-    expect(photoFact?.valueJson, contains('Passport'));
+    expect(photoFact?.valueJson, 'P1234567');
   });
 
-  test('hydrateIdentityFromFacts restores photo_id JSON fields', () {
+  test('hydrateIdentityFromFacts restores photo_id number from legacy JSON', () {
     c.hydrateIdentityFromFacts([
       const ClientProfileFactOut(
         requirementKey: OnboardingKeys.photoId,
@@ -1308,7 +1307,6 @@ void main() {
     ]);
 
     expect(c.photoIdNumberCtrl.text, 'P99');
-    expect(c.photoIdType.value, 'Photo card');
   });
 
   test('saveExistingContactAsRepresentative patches legal_role', () async {

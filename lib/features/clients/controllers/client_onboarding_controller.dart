@@ -97,7 +97,6 @@ class ClientOnboardingController extends GetxController
   final pensionCardNumberCtrl = TextEditingController();
   final photoIdAttachment = IdentityCardAttachment();
   final photoIdNumberCtrl = TextEditingController();
-  final photoIdType = RxnString();
   final allergiesCtrl = TextEditingController();
   final referralOtherCtrl = TextEditingController();
   final sexGenderOtherCtrl = TextEditingController();
@@ -316,7 +315,6 @@ class ClientOnboardingController extends GetxController
     pensionCardNumberCtrl.clear();
     photoIdAttachment.reset();
     photoIdNumberCtrl.clear();
-    photoIdType.value = null;
     allergiesCtrl.clear();
     referralOtherCtrl.clear();
     sexGenderOtherCtrl.clear();
@@ -443,8 +441,8 @@ class ClientOnboardingController extends GetxController
     try {
       final decoded = jsonDecode(stored);
       if (decoded is Map) {
-        photoIdNumberCtrl.text = decoded['number']?.toString() ?? '';
-        photoIdType.value = decoded['id_type']?.toString();
+        photoIdNumberCtrl.text =
+            decoded['number']?.toString() ?? decoded['id']?.toString() ?? '';
         return;
       }
     } catch (_) {
@@ -1733,7 +1731,9 @@ class ClientOnboardingController extends GetxController
   }
 
   void addSupportSpecialist(String type) {
-    supportSpecialists.add(SupportPlanSpecialistEntry.create(type));
+    supportSpecialists.add(
+      SupportPlanSpecialistEntry.create(type, expanded: true),
+    );
   }
 
   void removeSupportSpecialist(String id) {
@@ -1781,21 +1781,12 @@ class ClientOnboardingController extends GetxController
   }
 
   Future<void> _persistPhotoId(String clientId) async {
-    final number = photoIdNumberCtrl.text.trim();
-    final idType = photoIdType.value?.trim();
-    String? valueJson;
-    if (number.isNotEmpty || (idType != null && idType.isNotEmpty)) {
-      final parts = <String, String>{};
-      if (number.isNotEmpty) parts['number'] = number;
-      if (idType != null && idType.isNotEmpty) parts['id_type'] = idType;
-      valueJson = jsonEncode(parts);
-    }
     await _persistIdentityCard(
       clientId: clientId,
       requirementKey: OnboardingKeys.photoId,
       category: OnboardingKeys.photoId,
       attachment: photoIdAttachment,
-      valueJson: valueJson,
+      valueJson: _nullIfEmpty(photoIdNumberCtrl.text.trim()),
     );
   }
 
