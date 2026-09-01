@@ -86,5 +86,12 @@ void main() {
         isNotNull,
       );
     });
+
+    test('validateDollarText rejects negative amounts', () {
+      expect(
+        NdisPlanBudgetsCodec.validateDollarText('-100'),
+        contains('negative'),
+      );
+    });
   });
 }

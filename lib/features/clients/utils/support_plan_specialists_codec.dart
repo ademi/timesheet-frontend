@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../data/models/client_profile_models.dart';
 import '../models/support_plan_professional_fields.dart';
 import '../models/support_plan_specialist_entry.dart';
@@ -12,8 +14,14 @@ abstract final class SupportPlanSpecialistsCodec {
     if (valueJson is List) {
       rawList = valueJson;
     } else if (valueJson is String) {
-      // Defensive: some APIs may stringify JSON arrays.
-      return const [];
+      try {
+        final decoded = jsonDecode(valueJson);
+        if (decoded is List) {
+          rawList = decoded;
+        }
+      } catch (_) {
+        return const [];
+      }
     }
     if (rawList == null) return [];
     final out = <SupportPlanSpecialistEntry>[];
@@ -152,6 +160,21 @@ abstract final class SupportPlanSpecialistsCodec {
         if (e.hasAnyFieldFilled) e.toJson(),
     ];
   }
+
+  /// Flat V042 specialist keys superseded by [OnboardingKeys.supportPlanSpecialists].
+  static final legacyFactKeys = _legacyDefs
+      .expand(
+        (d) => [
+          d.nameKey,
+          d.companyKey,
+          d.abnAcnKey,
+          d.orgIdKey,
+          d.phoneKey,
+          d.emailKey,
+          d.addressKey,
+        ],
+      )
+      .toList(growable: false);
 }
 
 class _LegacySpecialistDef {

@@ -16,7 +16,6 @@ import '../data/models/client_models.dart';
 import '../data/models/client_profile_models.dart';
 import '../models/identity_card_attachment.dart';
 import '../models/support_plan_specialist_entry.dart';
-import '../models/support_plan_specialist_entry.dart';
 import '../data/repositories/clients_repository.dart';
 import '../services/client_legal_upload_helper.dart';
 import '../utils/onboarding_age.dart';
@@ -52,6 +51,10 @@ class ClientOnboardingController extends GetxController
   final Future<({String name, List<int> bytes})?> Function()?
       _pickPdfBytesOverride;
   final Future<PendingIdentityCardFile?> Function()? _pickCardFileOverride;
+
+  /// Requirement keys loaded from the server (D10: skip empty clears).
+  final _presentKeys = <String>{};
+  final _factUpdatedAt = <String, DateTime>{};
 
   /// Injectable soft-gate dialog for tests.
   Future<bool> Function(List<String> missing)? softGateConfirm;
@@ -384,6 +387,8 @@ class ClientOnboardingController extends GetxController
     acknowledgementComplete.value = false;
     includeAcknowledgement.value = false;
     consentSignerNameCtrl.clear();
+    _presentKeys.clear();
+    _factUpdatedAt.clear();
   }
 
   /// CR3 minimum resume: set client/id, prefill Identity from [ClientOut],
@@ -403,6 +408,7 @@ class ClientOnboardingController extends GetxController
 
   /// Applies stored profile facts to Identity fields (CR5 Other hydration).
   void hydrateIdentityFromFacts(Iterable<ClientProfileFactOut> facts) {
+    _recordPresentFacts(facts);
     for (final fact in facts) {
       final stored = fact.valueJson?.toString();
       switch (fact.requirementKey) {
@@ -471,6 +477,7 @@ class ClientOnboardingController extends GetxController
 
   /// Applies stored profile facts to Support Plan fields (legacy Other fallback).
   void hydrateSupportPlanFromFacts(Iterable<ClientProfileFactOut> facts) {
+    _recordPresentFacts(facts);
     final factsList = facts is List<ClientProfileFactOut>
         ? facts
         : facts.toList();
@@ -1420,32 +1427,28 @@ class ClientOnboardingController extends GetxController
       );
       final budgetJson = NdisPlanBudgetsCodec.toFactValue(budgetEntries);
       if (budgetJson == null) {
-        await _repository.upsertProfileFact(
-          id,
-          OnboardingKeys.ndisPlanBudgets,
-          const ProfileFactUpsert(clearValue: true),
-        );
+        await _clearFactIfPresent(id, OnboardingKeys.ndisPlanBudgets);
       } else {
         await _repository.upsertProfileFact(
           id,
           OnboardingKeys.ndisPlanBudgets,
           ProfileFactUpsert(valueJson: budgetJson),
         );
+        _presentKeys.add(OnboardingKeys.ndisPlanBudgets);
+        await _clearLegacyBudgetFacts(id);
       }
       final specialistJson =
           SupportPlanSpecialistsCodec.toFactValue(supportSpecialists);
       if (specialistJson.isEmpty) {
-        await _repository.upsertProfileFact(
-          id,
-          OnboardingKeys.supportPlanSpecialists,
-          const ProfileFactUpsert(clearValue: true),
-        );
+        await _clearFactIfPresent(id, OnboardingKeys.supportPlanSpecialists);
       } else {
         await _repository.upsertProfileFact(
           id,
           OnboardingKeys.supportPlanSpecialists,
           ProfileFactUpsert(valueJson: specialistJson),
         );
+        _presentKeys.add(OnboardingKeys.supportPlanSpecialists);
+        await _clearLegacySpecialistFacts(id);
       }
 
       if (step.value == 5) step.value = 6;
@@ -1593,7 +1596,7 @@ class ClientOnboardingController extends GetxController
         if (Get.isRegistered<ClientsController>()) {
           await Get.find<ClientsController>().load();
         }
-        Get.offNamed(AppRoutes.staffClientDetail, arguments: updated);
+        Get.offAllNamed(AppRoutes.staffClientDetail, arguments: updated);
       }
       return true;
     } on AppFailure catch (e) {
@@ -1668,6 +1671,42 @@ class ClientOnboardingController extends GetxController
       key,
       ProfileFactUpsert(valueJson: value is String ? value.trim() : value),
     );
+  }
+
+  void _recordPresentFacts(Iterable<ClientProfileFactOut> facts) {
+    for (final fact in facts) {
+      _presentKeys.add(fact.requirementKey);
+      final updatedAt = fact.updatedAt;
+      if (updatedAt != null) {
+        _factUpdatedAt[fact.requirementKey] = updatedAt;
+      }
+    }
+  }
+
+  Future<void> _clearFactIfPresent(String clientId, String key) async {
+    if (!_presentKeys.contains(key)) return;
+    await _repository.upsertProfileFact(
+      clientId,
+      key,
+      ProfileFactUpsert(
+        clearValue: true,
+        expectedUpdatedAt: _factUpdatedAt[key],
+      ),
+    );
+    _presentKeys.remove(key);
+    _factUpdatedAt.remove(key);
+  }
+
+  Future<void> _clearLegacyBudgetFacts(String clientId) async {
+    for (final key in NdisPlanBudgetsCodec.legacyFactKeys) {
+      await _clearFactIfPresent(clientId, key);
+    }
+  }
+
+  Future<void> _clearLegacySpecialistFacts(String clientId) async {
+    for (final key in SupportPlanSpecialistsCodec.legacyFactKeys) {
+      await _clearFactIfPresent(clientId, key);
+    }
   }
 
   Future<void> _putOptionalNumber(

@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 
 import '../../models/support_plan_specialist_entry.dart';
 import '../../models/support_plan_specialist_types.dart';
-import '../../models/support_plan_specialist_entry.dart';
 import 'support_plan_specialist_section.dart';
 
 /// Dynamic list of support specialists with add/remove controls.

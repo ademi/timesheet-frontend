@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -16,12 +18,10 @@ class SupportPlanSpecialistEntry {
         fields = fields ?? SupportPlanProfessionalFields(),
         expanded = expanded.obs;
 
-  static int _idSeq = 0;
+  static final _rng = Random();
 
-  static String _nextId() {
-    _idSeq += 1;
-    return 'specialist-$_idSeq';
-  }
+  static String _nextId() =>
+      'specialist-${DateTime.now().microsecondsSinceEpoch}-${_rng.nextInt(1 << 32)}';
 
   factory SupportPlanSpecialistEntry.fromLegacy({
     required String type,

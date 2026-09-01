@@ -21,11 +21,24 @@ abstract final class NdisPlanBudgetsCodec {
   static String? validateDollarText(String raw) {
     final t = raw.trim();
     if (t.isEmpty) return null;
-    if (double.tryParse(t) == null) {
+    final parsed = double.tryParse(t);
+    if (parsed == null) {
       return 'Budget values must be valid dollar amounts.';
+    }
+    if (parsed < 0) {
+      return 'Budget values cannot be negative.';
     }
     return null;
   }
+
+  /// Flat V042 budget keys superseded by [OnboardingKeys.ndisPlanBudgets].
+  static const legacyFactKeys = <String>[
+    OnboardingKeys.budgetCore,
+    OnboardingKeys.budgetCb,
+    OnboardingKeys.budgetCapital,
+    OnboardingKeys.budgetOther,
+    OnboardingKeys.budgetOtherLabel,
+  ];
 
   static String? validateAll({
     required String core,

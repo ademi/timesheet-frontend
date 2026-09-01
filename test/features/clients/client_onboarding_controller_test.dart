@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/app/data/models/document/document_models.dart';
+import 'package:rostiq/app/routes/app_routes.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/controllers/client_onboarding_controller.dart';
@@ -217,6 +220,68 @@ void main() {
         ),
       ),
     ).called(1);
+    verifyNever(
+      () => mock.upsertProfileFact(
+        'client-1',
+        OnboardingKeys.ndisPlanBudgets,
+        any(),
+      ),
+    );
+    verifyNever(
+      () => mock.upsertProfileFact(
+        'client-1',
+        OnboardingKeys.supportPlanSpecialists,
+        any(),
+      ),
+    );
+  });
+
+  test('submitSupportPlan clears legacy budget keys when saving JSON', () async {
+    final clearedKeys = <String>[];
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((inv) {
+      final key = inv.positionalArguments[1] as String;
+      final body = inv.positionalArguments[2] as ProfileFactUpsert;
+      if (body.clearValue == true) {
+        clearedKeys.add(key);
+      }
+      return Future.value();
+    });
+
+    c.hydrateSupportPlanFromFacts([
+      const ClientProfileFactOut(
+        requirementKey: OnboardingKeys.budgetCore,
+        valueJson: 5000,
+      ),
+    ]);
+    c.client.value = _fakeClient;
+    c.step.value = 5;
+    c.ndisCtrl.text = '431234567';
+    c.planManagementType.value = 'self_managed';
+    c.budgetCoreCtrl.text = '1000';
+
+    expect(await c.submitSupportPlan(), isTrue);
+    expect(clearedKeys, contains(OnboardingKeys.budgetCore));
+    verify(
+      () => mock.upsertProfileFact(
+        'client-1',
+        OnboardingKeys.ndisPlanBudgets,
+        any(
+          that: predicate<ProfileFactUpsert>(
+            (u) => u.valueJson != null && u.clearValue != true,
+          ),
+        ),
+      ),
+    ).called(1);
+  });
+
+  test('submitSupportPlan rejects negative budget values', () async {
+    c.client.value = _fakeClient;
+    c.step.value = 5;
+    c.ndisCtrl.text = '431234567';
+    c.planManagementType.value = 'self_managed';
+    c.budgetCoreCtrl.text = '-50';
+    expect(await c.submitSupportPlan(), isFalse);
+    expect(c.budgetFieldError.value, contains('negative'));
   });
 
   test('submitSupportPlan surfaces ndis_number_in_use on field error', () async {
@@ -401,6 +466,55 @@ void main() {
       'Something went wrong. Please try again.',
     );
     verifyNever(() => mock.patchClient(any(), any()));
+  });
+
+  testWidgets('finishOnboarding replaces stack with client detail route',
+      (tester) async {
+    Get.testMode = true;
+    Get.reset();
+    await tester.pumpWidget(
+      GetMaterialApp(
+        initialRoute: AppRoutes.staffClientOnboarding,
+        getPages: [
+          GetPage(
+            name: AppRoutes.staffClientOnboarding,
+            page: () => const SizedBox.shrink(),
+          ),
+          GetPage(
+            name: AppRoutes.staffClientDetail,
+            page: () => const SizedBox.shrink(),
+          ),
+          GetPage(
+            name: '/staff/clients/other',
+            page: () => const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+    Get.toNamed('/staff/clients/other');
+
+    when(() => mock.getClient('client-1')).thenAnswer((_) async => _fakeClient);
+    when(() => mock.patchClient(any(), any())).thenAnswer(
+      (inv) async => ClientOut(
+        id: _fakeClient.id,
+        tenantId: _fakeClient.tenantId,
+        fullName: _fakeClient.fullName,
+        status: _fakeClient.status,
+        metadata: (inv.positionalArguments[1] as ClientUpdateRequest).metadata ??
+            {},
+        createdAt: _now,
+        updatedAt: _now,
+      ),
+    );
+
+    c.dispose();
+    c = _buildController(softGateConfirm: (_) async => true);
+    c.client.value = _fakeClient;
+    c.step.value = 6;
+
+    expect(await c.finishOnboarding(), isTrue);
+    await tester.pumpAndSettle();
+    expect(Get.currentRoute, AppRoutes.staffClientDetail);
   });
 
   test('lookupSiteAddress rejects low confidence like ClientsController',

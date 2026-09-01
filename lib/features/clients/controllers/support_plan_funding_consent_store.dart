@@ -357,6 +357,11 @@ class SupportPlanFundingConsentStore {
           ),
         ),
       ));
+      _queueLegacyClears(
+        jobs,
+        clientId: clientId,
+        legacyKeys: NdisPlanBudgetsCodec.legacyFactKeys,
+      );
     }
     final specialistJson =
         SupportPlanSpecialistsCodec.toFactValue(supportSpecialists);
@@ -390,6 +395,11 @@ class SupportPlanFundingConsentStore {
           ),
         ),
       ));
+      _queueLegacyClears(
+        jobs,
+        clientId: clientId,
+        legacyKeys: SupportPlanSpecialistsCodec.legacyFactKeys,
+      );
     }
 
     final claiming = preferredClaimingMethod.value?.trim();
@@ -552,6 +562,28 @@ class SupportPlanFundingConsentStore {
       return false;
     } finally {
       isBusy.value = false;
+    }
+  }
+
+  void _queueLegacyClears(
+    List<({String key, String label, Future<void> future})> jobs, {
+    required String clientId,
+    required Iterable<String> legacyKeys,
+  }) {
+    for (final key in legacyKeys) {
+      if (!_presentKeys.contains(key)) continue;
+      jobs.add((
+        key: key,
+        label: key,
+        future: _repository.upsertProfileFact(
+          clientId,
+          key,
+          ProfileFactUpsert(
+            clearValue: true,
+            expectedUpdatedAt: _factUpdatedAt[key],
+          ),
+        ),
+      ));
     }
   }
 

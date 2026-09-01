@@ -192,6 +192,37 @@ void main() {
     store.dispose();
   });
 
+  test('persistFacts clears legacy budget keys when saving JSON', () async {
+    final putBodies = <String, ProfileFactUpsert>{};
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((inv) {
+      final key = inv.positionalArguments[1] as String;
+      putBodies[key] = inv.positionalArguments[2] as ProfileFactUpsert;
+      return Future.value();
+    });
+
+    final store = SupportPlanFundingConsentStore(repository: mock);
+    store.applyProfileBundle(
+      const ClientProfileBundle(
+        facts: [
+          ClientProfileFactOut(
+            requirementKey: OnboardingKeys.budgetCore,
+            valueJson: 9000,
+          ),
+        ],
+      ),
+    );
+    store.planManagementType.value = 'ndia';
+    store.budgetCoreCtrl.text = '1000';
+
+    final failed = await store.persistFacts(clientId: 'c1');
+    expect(failed, isEmpty);
+    expect(
+      putBodies[OnboardingKeys.budgetCore]?.clearValue,
+      isTrue,
+    );
+    store.dispose();
+  });
+
   test('applyProfileBundle hydrates support_plan_specialists JSON', () {
     final store = SupportPlanFundingConsentStore(repository: mock);
     store.applyProfileBundle(

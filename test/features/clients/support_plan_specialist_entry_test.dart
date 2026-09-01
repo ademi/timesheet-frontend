@@ -7,6 +7,18 @@ import 'package:rostiq/features/clients/utils/support_plan_specialists_codec.dar
 
 void main() {
   group('SupportPlanSpecialistEntry', () {
+    test('create assigns unique ids', () {
+      final a = SupportPlanSpecialistEntry.create(
+        SupportPlanSpecialistTypes.speechTherapist,
+      );
+      final b = SupportPlanSpecialistEntry.create(
+        SupportPlanSpecialistTypes.speechTherapist,
+      );
+      expect(a.id, isNot(equals(b.id)));
+      a.dispose();
+      b.dispose();
+    });
+
     test('toJson / fromJson round-trip', () {
       final entry = SupportPlanSpecialistEntry.create(
         SupportPlanSpecialistTypes.speechTherapist,
@@ -82,6 +94,17 @@ void main() {
           SupportPlanSpecialistTypes.physiotherapist,
         },
       );
+      for (final e in entries) {
+        e.dispose();
+      }
+    });
+
+    test('fromFactValue decodes stringified JSON array', () {
+      const json = '[{"type":"physiotherapist","name":"Bob PT"}]';
+      final entries = SupportPlanSpecialistsCodec.fromFactValue(json);
+      expect(entries, hasLength(1));
+      expect(entries.first.type, SupportPlanSpecialistTypes.physiotherapist);
+      expect(entries.first.fields.nameCtrl.text, 'Bob PT');
       for (final e in entries) {
         e.dispose();
       }
