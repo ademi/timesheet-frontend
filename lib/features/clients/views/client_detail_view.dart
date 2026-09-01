@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
@@ -64,6 +66,7 @@ class ClientDetailView extends GetView<ClientsController> {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
+          leading: const AppBackButton(fallbackRoute: AppRoutes.staffClients),
           title: Text(client.fullName),
           actions: [
             if (controller.canManage)
@@ -162,7 +165,7 @@ class ClientDetailView extends GetView<ClientsController> {
             ),
             Expanded(child: _tabContent(tab)),
             if (errorNotice != null && overviewSelected) errorNotice,
-            if (overviewSelected && canEditOverview)
+            if (overviewSelected && canEditOverview && controller.overviewEditing.value)
               FormStickyActions(
                 onCancel: controller.discardOverviewDrafts,
                 primaryLabel: 'Save',

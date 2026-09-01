@@ -259,9 +259,15 @@ void main() {
 
       expect(find.text('Also emergency contact'), findsOneWidget);
       expect(find.text('Use existing contact as emergency'), findsOneWidget);
-      await tester.tap(find.byType(DropdownButtonFormField<String?>).first);
+      expect(find.text('Name'), findsOneWidget);
+
+      c.reuseEmergencyContactId.value = 'c-existing';
       await tester.pumpAndSettle();
-      expect(find.text('Jane Mother').hitTestable(), findsWidgets);
+
+      expect(find.text('Name'), findsNothing);
+      expect(find.text('Jane Mother'), findsWidgets);
+      expect(find.text('Marked as emergency contact'), findsOneWidget);
+      expect(find.text('Save as nominee'), findsOneWidget);
     });
   });
 

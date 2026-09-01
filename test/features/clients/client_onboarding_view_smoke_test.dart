@@ -6,6 +6,8 @@ import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/controllers/client_onboarding_controller.dart';
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
+import 'package:rostiq/features/clients/data/models/client_models.dart';
+import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
 import 'package:rostiq/features/clients/views/client_onboarding_view.dart';
 import 'package:rostiq/shared/widgets/floating_error_notice.dart';
 
@@ -92,6 +94,7 @@ void main() {
       tester.getTopLeft(find.text('Skip contacts')).dy,
       lessThan(tester.getTopLeft(find.text('Next')).dy),
     );
+    expect(find.byType(OutlinedButton), findsWidgets);
   });
 
   testWidgets('Skip carer sits in footer above Next, not in ListView', (
@@ -144,4 +147,35 @@ void main() {
       lessThan(tester.getTopLeft(find.text('Next')).dy),
     );
   });
+
+  testWidgets('back from representative returns to contacts without exception', (
+    tester,
+  ) async {
+    final c = Get.find<ClientOnboardingController>();
+    c.client.value = ClientOut(
+      id: 'client-1',
+      tenantId: 'tenant-1',
+      fullName: 'Test Client',
+      status: 'active',
+      metadata: const {},
+      createdAt: _now,
+      updatedAt: _now,
+    );
+    c.dob.value = DateTime(2015, 1, 1);
+    c.step.value = 4;
+    c.contactDraftMode.value = 'representative';
+
+    await tester.pumpWidget(const GetMaterialApp(home: ClientOnboardingView()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Back'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(c.step.value, 3);
+    expect(c.contactRelationshipPreset.value, isNull);
+    expect(find.text('Emergency contact'), findsOneWidget);
+  });
 }
+
+final _now = DateTime.utc(2026, 9, 1, 9);

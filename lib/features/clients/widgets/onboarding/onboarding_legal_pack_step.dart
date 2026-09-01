@@ -44,7 +44,7 @@ class OnboardingLegalPackStep extends StatelessWidget {
                 const SizedBox(height: 8),
                 AsyncOutlinedButton(
                   onPressed: controller.markConsentComplete,
-                  isLoading: controller.isSaving.value,
+                  isLoading: controller.consentUploading.value,
                   child: Text(
                     controller.consentComplete.value
                         ? 'Re-upload consent'
@@ -60,7 +60,7 @@ class OnboardingLegalPackStep extends StatelessWidget {
             complete: controller.serviceAgreementComplete.value,
             child: AsyncOutlinedButton(
               onPressed: controller.markServiceAgreementComplete,
-              isLoading: controller.isSaving.value,
+              isLoading: controller.serviceAgreementUploading.value,
               child: Text(
                 controller.serviceAgreementComplete.value
                     ? 'Re-upload service agreement'
@@ -76,7 +76,7 @@ class OnboardingLegalPackStep extends StatelessWidget {
               complete: controller.acknowledgementComplete.value,
               child: AsyncOutlinedButton(
                 onPressed: controller.markAcknowledgementComplete,
-                isLoading: controller.isSaving.value,
+                isLoading: controller.acknowledgementUploading.value,
                 child: Text(
                   controller.acknowledgementComplete.value
                       ? 'Re-upload acknowledgement'

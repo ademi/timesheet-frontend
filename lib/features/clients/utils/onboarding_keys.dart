@@ -5,6 +5,7 @@ class OnboardingKeys {
   static const companionCard = 'companion_card';
   static const disabilityCard = 'disability_card';
   static const pensionCard = 'pension_card';
+  static const photoId = 'photo_id';
   static const sexGender = 'sex_gender';
   static const atsiStatus = 'atsi_status';
   static const referralSource = 'referral_source';

@@ -417,7 +417,6 @@ Widget _field({
       labelText: label,
       prefixIcon: Icon(icon, color: AppColors.primaryDark),
       filled: true,
-      fillColor: AppColors.cardBackground,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
     ),
   );
@@ -437,7 +436,6 @@ Widget _dateField({
       labelText: label,
       prefixIcon: const Icon(Icons.calendar_today_outlined),
       filled: true,
-      fillColor: AppColors.cardBackground,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
     ),
   );

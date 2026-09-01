@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/other_text_field.dart';
 import '../controllers/clients_controller.dart';
 import '../controllers/requirement_draft.dart';
 import '../data/models/client_profile_models.dart';
@@ -182,22 +183,9 @@ class _FieldInput extends StatelessWidget {
           ),
         );
       case 'select':
-        final options = draft.requirement.selectOptions;
-        return DropdownButtonFormField<String>(
-          value: draft.textCtrl.text.isEmpty ? null : draft.textCtrl.text,
-          items: [
-            for (final opt in options)
-              DropdownMenuItem(value: opt, child: Text(opt)),
-          ],
-          onChanged: (v) {
-            draft.textCtrl.text = v ?? '';
-          },
-          decoration: InputDecoration(
-            labelText: draft.requirement.label,
-            hintText: placeholder,
-            border: const OutlineInputBorder(),
-            isDense: true,
-          ),
+        return _SelectRequirementField(
+          draft: draft,
+          placeholder: placeholder,
         );
       case 'textarea':
         return TextField(
@@ -523,5 +511,105 @@ class _LegalBlock extends StatelessWidget {
         ],
       );
     });
+  }
+}
+
+class _SelectRequirementField extends StatefulWidget {
+  const _SelectRequirementField({
+    required this.draft,
+    required this.placeholder,
+  });
+
+  final RequirementDraft draft;
+  final String? placeholder;
+
+  static const otherKey = 'Other';
+
+  @override
+  State<_SelectRequirementField> createState() =>
+      _SelectRequirementFieldState();
+}
+
+class _SelectRequirementFieldState extends State<_SelectRequirementField> {
+  late final TextEditingController _otherCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final options = widget.draft.requirement.selectOptions;
+    final stored = widget.draft.textCtrl.text.trim();
+    _otherCtrl = TextEditingController(
+      text: stored.isNotEmpty && !options.contains(stored) ? stored : '',
+    );
+    _otherCtrl.addListener(_syncOtherToDraft);
+  }
+
+  void _syncOtherToDraft() {
+    if (_dropdownValue == _SelectRequirementField.otherKey) {
+      widget.draft.textCtrl.text = _otherCtrl.text;
+    }
+  }
+
+  @override
+  void dispose() {
+    _otherCtrl.removeListener(_syncOtherToDraft);
+    _otherCtrl.dispose();
+    super.dispose();
+  }
+
+  String? get _dropdownValue {
+    final stored = widget.draft.textCtrl.text.trim();
+    final options = widget.draft.requirement.selectOptions;
+    if (stored.isEmpty) return null;
+    if (options.contains(stored)) return stored;
+    return _SelectRequirementField.otherKey;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final options = widget.draft.requirement.selectOptions;
+    final dropdownValue = _dropdownValue;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DropdownButtonFormField<String?>(
+          value: dropdownValue,
+          items: [
+            for (final opt in options)
+              DropdownMenuItem<String?>(value: opt, child: Text(opt)),
+            if (!options.contains(_SelectRequirementField.otherKey))
+              const DropdownMenuItem<String?>(
+                value: _SelectRequirementField.otherKey,
+                child: Text(_SelectRequirementField.otherKey),
+              ),
+          ],
+          onChanged: (v) {
+            if (v == null) {
+              widget.draft.textCtrl.clear();
+              _otherCtrl.clear();
+              return;
+            }
+            if (v == _SelectRequirementField.otherKey) {
+              widget.draft.textCtrl.text = _otherCtrl.text.trim();
+            } else {
+              widget.draft.textCtrl.text = v;
+              _otherCtrl.clear();
+            }
+            setState(() {});
+          },
+          decoration: InputDecoration(
+            labelText: widget.draft.requirement.label,
+            hintText: widget.placeholder,
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        OtherTextField(
+          isOther: dropdownValue == _SelectRequirementField.otherKey,
+          controller: _otherCtrl,
+          label: '${widget.draft.requirement.label} (other)',
+        ),
+      ],
+    );
   }
 }

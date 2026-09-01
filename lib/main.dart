@@ -117,6 +117,9 @@ class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
   }
 }
 
+@visibleForTesting
+ThemeData appTheme() => _appTheme();
+
 ThemeData _appTheme() {
   return ThemeData(
     fontFamily: 'Roboto',
@@ -181,6 +184,8 @@ ThemeData _appTheme() {
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.cardBackground,
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12.r),

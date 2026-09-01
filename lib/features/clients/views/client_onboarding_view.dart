@@ -96,11 +96,14 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (skipContacts)
-                          TextButton(
+                          OutlinedButton(
                             onPressed:
                                 controller.isSaving.value
                                     ? null
                                     : controller.skipContacts,
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(88, 40),
+                            ),
                             child: const Text('Skip contacts'),
                           ),
                         if (skipCarer)

@@ -544,6 +544,7 @@ void main() {
         name: captured!.name,
         phone: captured!.phone,
         relationship: captured!.relationship,
+        legalRole: captured!.legalRole,
         isPrimary: captured!.isPrimary ?? false,
         notifyVisitComplete: captured!.notifyVisitComplete ?? false,
         isEmergency: captured!.isEmergency ?? false,
@@ -552,13 +553,16 @@ void main() {
 
     c.client.value = _fakeClient;
     c.dob.value = DateTime(2000, 1, 1);
+    c.step.value = 4;
+    c.contactDraftMode.value = 'nominee';
     c.contactNameCtrl.text = 'Pat Nominee';
     c.contactPhoneCtrl.text = '+61400000033';
-    c.contactRelationshipPreset.value = OnboardingKeys.relNominee;
+    c.contactRelationshipPreset.value = 'mother';
     c.contactIsEmergency.value = true;
 
     expect(await c.saveContactDraft(), isTrue);
-    expect(captured!.relationship, OnboardingKeys.relNominee);
+    expect(captured!.relationship, 'mother');
+    expect(captured!.legalRole, OnboardingKeys.relNominee);
     expect(captured!.isEmergency, isTrue);
     expect(c.representativeSaved.value, isTrue);
   });
@@ -634,7 +638,7 @@ void main() {
     c.dob.value = DateTime(2015, 1, 1);
     c.step.value = 4;
     expect(await c.submitRepresentative(), isFalse);
-    expect(c.errorMessage.value, contains('child representative'));
+    expect(c.errorMessage.value, contains('representative'));
   });
 
   test('submitRepresentative allows adult to skip nominee', () async {
@@ -860,8 +864,8 @@ void main() {
 
     test('hydrateReferral keeps known presets', () {
       final hydrated = OnboardingIdentityStep.hydrateReferral('NDIS');
-      expect(hydrated.preset, 'NDIS');
-      expect(hydrated.otherText, isEmpty);
+      expect(hydrated.preset, OnboardingIdentityStep.otherPresetKey);
+      expect(hydrated.otherText, 'NDIS');
     });
 
     test('submitIdentity rejects referral Other without free-text', () async {
@@ -1078,5 +1082,126 @@ void main() {
         any(),
       ),
     ).called(1);
+  });
+
+  test('submitSupportPlan rejects invalid budget values', () async {
+    c.client.value = _fakeClient;
+    c.step.value = 5;
+    c.ndisCtrl.text = '431234567';
+    c.planManagementType.value = 'self_managed';
+    c.budgetCoreCtrl.text = 'abc';
+    expect(await c.submitSupportPlan(), isFalse);
+    expect(c.budgetFieldError.value, contains('valid numbers'));
+  });
+
+  test('previousStep from representative resets kinship preset for contacts',
+      () {
+    c.step.value = 4;
+    c.contactDraftMode.value = 'representative';
+    c.contactRelationshipPreset.value = 'mother';
+    c.previousStep();
+    expect(c.step.value, 3);
+    expect(c.contactRelationshipPreset.value, isNull);
+    expect(c.contactDraftMode.value, 'emergency');
+  });
+
+  test('legal upload flags are independent per document', () async {
+    c.client.value = _fakeClient;
+    c.consentUploading.value = true;
+    c.serviceAgreementUploading.value = false;
+    expect(c.consentUploading.value, isTrue);
+    expect(c.serviceAgreementUploading.value, isFalse);
+  });
+
+  test('submitIdentity persists companion and pension card numbers', () async {
+    final captured = <String, ProfileFactUpsert>{};
+    when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
+    when(() => mock.upsertProfileFact(any(), any(), any()))
+        .thenAnswer((inv) async {
+      captured[inv.positionalArguments[1] as String] =
+          inv.positionalArguments[2] as ProfileFactUpsert;
+    });
+
+    _fillValidIdentity(c);
+    c.companionCardNumberCtrl.text = 'CC-123';
+    c.pensionCardNumberCtrl.text = 'PC-456';
+
+    expect(await c.submitIdentity(), isTrue);
+    expect(captured[OnboardingKeys.companionCard]?.valueJson, 'CC-123');
+    expect(captured[OnboardingKeys.pensionCard]?.valueJson, 'PC-456');
+  });
+
+  test('submitIdentity persists photo_id number and type as JSON', () async {
+    ProfileFactUpsert? photoFact;
+    when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
+    when(() => mock.upsertProfileFact(any(), any(), any()))
+        .thenAnswer((inv) async {
+      final key = inv.positionalArguments[1] as String;
+      if (key == OnboardingKeys.photoId) {
+        photoFact = inv.positionalArguments[2] as ProfileFactUpsert;
+      }
+    });
+
+    _fillValidIdentity(c);
+    c.photoIdNumberCtrl.text = 'P1234567';
+    c.photoIdType.value = 'Passport';
+
+    expect(await c.submitIdentity(), isTrue);
+    expect(photoFact?.valueJson, contains('P1234567'));
+    expect(photoFact?.valueJson, contains('Passport'));
+  });
+
+  test('hydrateIdentityFromFacts restores photo_id JSON fields', () {
+    c.hydrateIdentityFromFacts([
+      const ClientProfileFactOut(
+        requirementKey: OnboardingKeys.photoId,
+        valueJson: '{"number":"P99","id_type":"Photo card"}',
+      ),
+    ]);
+
+    expect(c.photoIdNumberCtrl.text, 'P99');
+    expect(c.photoIdType.value, 'Photo card');
+  });
+
+  test('saveExistingContactAsRepresentative patches legal_role', () async {
+    when(() => mock.patchContact(any(), any(), any())).thenAnswer((inv) async {
+      final body = inv.positionalArguments[2] as ClientContactWriteRequest;
+      return ClientContactOut(
+        id: 'c-mother',
+        tenantId: 'tenant-1',
+        clientId: 'client-1',
+        name: 'Jane Mother',
+        relationship: 'mother',
+        legalRole: body.legalRole,
+        isPrimary: false,
+        notifyVisitComplete: false,
+        isEmergency: true,
+      );
+    });
+
+    c.client.value = _fakeClient;
+    c.dob.value = DateTime(2015, 1, 1);
+    c.step.value = 4;
+    c.contactDraftMode.value = 'representative';
+    c.reuseEmergencyContactId.value = 'c-mother';
+    c.contactsCreated.add(
+      const ClientContactOut(
+        id: 'c-mother',
+        tenantId: 'tenant-1',
+        clientId: 'client-1',
+        name: 'Jane Mother',
+        relationship: 'mother',
+        isPrimary: false,
+        notifyVisitComplete: false,
+        isEmergency: true,
+      ),
+    );
+
+    expect(await c.saveExistingContactAsRepresentative(), isTrue);
+    expect(c.representativeSaved.value, isTrue);
+    final body = verify(
+      () => mock.patchContact('client-1', 'c-mother', captureAny()),
+    ).captured.single as ClientContactWriteRequest;
+    expect(body.legalRole, OnboardingKeys.relChildRepresentative);
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/client_onboarding_controller.dart';
@@ -85,18 +86,6 @@ class OnboardingSupportPlanStep extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
-          TextField(
-            controller: controller.supportPlanOtherCtrl,
-            enabled: enabled,
-            minLines: 2,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Other',
-              border: OutlineInputBorder(),
-              alignLabelWithHint: true,
-            ),
-          ),
-          const SizedBox(height: 16),
           DropdownButtonFormField<String?>(
             value: planType,
             decoration: const InputDecoration(
@@ -245,9 +234,13 @@ class OnboardingSupportPlanStep extends StatelessWidget {
             controller: controller.budgetCoreCtrl,
             enabled: enabled,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            ],
+            decoration: InputDecoration(
               labelText: 'Core support budget',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              errorText: controller.budgetFieldError.value,
             ),
           ),
           const SizedBox(height: 12),
@@ -255,9 +248,13 @@ class OnboardingSupportPlanStep extends StatelessWidget {
             controller: controller.budgetCbCtrl,
             enabled: enabled,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            ],
+            decoration: InputDecoration(
               labelText: 'Capacity building budget',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              errorText: controller.budgetFieldError.value,
             ),
           ),
           const SizedBox(height: 12),
@@ -265,9 +262,13 @@ class OnboardingSupportPlanStep extends StatelessWidget {
             controller: controller.budgetCapitalCtrl,
             enabled: enabled,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            ],
+            decoration: InputDecoration(
               labelText: 'Capital support budget',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              errorText: controller.budgetFieldError.value,
             ),
           ),
           const SizedBox(height: 8),

@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/controllers/clients_controller.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
+import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/shared/models/profile_photo_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/views/client_detail_view.dart';
@@ -59,6 +60,11 @@ void main() {
     ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
     when(() => clients.listClientTypes()).thenAnswer((_) async => []);
     when(() => clients.listSupportPlans(any())).thenAnswer((_) async => []);
+    when(() => clients.getClientProfile(any())).thenAnswer(
+      (_) async => const ClientProfileBundle(facts: []),
+    );
+    when(() => clients.listSites(any())).thenAnswer((_) async => []);
+    when(() => clients.listContacts(any())).thenAnswer((_) async => []);
     controller = ClientsController(
       repository: clients,
       session: session,
@@ -108,8 +114,8 @@ void main() {
     expect(bar.labels[ClientsController.tabCarePlan], 'Care plan');
     expect(bar.labels[ClientsController.tabVisits], 'Visits');
 
-    expect(find.byType(FormStickyActions), findsOneWidget);
-    expect(find.text('Save'), findsOneWidget);
+    expect(find.byType(FormStickyActions), findsNothing);
+    expect(find.text('Save'), findsNothing);
     expect(find.textContaining('Date of birth'), findsOneWidget);
     expect(
       find.text(

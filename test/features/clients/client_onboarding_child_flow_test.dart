@@ -122,6 +122,7 @@ void main() {
         email: body.email,
         phone: body.phone,
         relationship: body.relationship,
+        legalRole: body.legalRole,
         isPrimary: body.isPrimary ?? false,
         notifyVisitComplete: body.notifyVisitComplete ?? false,
         isEmergency: body.isEmergency ?? false,
@@ -183,8 +184,8 @@ void main() {
     c.contactIsEmergency.value = true;
     expect(await c.submitContacts(), isTrue);
     expect(c.step.value, 4);
-    expect(c.contactRelationshipPreset.value,
-        OnboardingKeys.relChildRepresentative);
+    expect(c.contactRelationshipPreset.value, isNull);
+    expect(c.contactDraftMode.value, 'representative');
   }
 
   test(
@@ -196,11 +197,12 @@ void main() {
       // Blocked without child representative.
       expect(c.representativeSaved.value, isFalse);
       expect(await c.submitRepresentative(), isFalse);
-      expect(c.errorMessage.value, contains('child representative'));
+      expect(c.errorMessage.value, contains('representative'));
       expect(c.step.value, 4);
       expect(
-        contactCreates
-            .any((r) => r.relationship == OnboardingKeys.relChildRepresentative),
+        contactCreates.any(
+          (r) => r.legalRole == OnboardingKeys.relChildRepresentative,
+        ),
         isFalse,
       );
 
@@ -208,21 +210,25 @@ void main() {
       c.contactNameCtrl.text = 'Jamie Guardian';
       c.contactPhoneCtrl.text = '+61466666666';
       c.contactEmailCtrl.text = 'jamie@example.com';
-      c.contactRelationshipPreset.value = OnboardingKeys.relChildRepresentative;
+      c.contactRelationshipPreset.value = 'mother';
 
       expect(await c.submitRepresentative(), isTrue);
       expect(c.representativeSaved.value, isTrue);
       expect(c.step.value, 5);
       expect(
-        contactCreates
-            .any((r) => r.relationship == OnboardingKeys.relChildRepresentative),
+        contactCreates.any(
+          (r) =>
+              r.legalRole == OnboardingKeys.relChildRepresentative &&
+              r.relationship == 'mother',
+        ),
         isTrue,
       );
       final childRep = contactCreates.firstWhere(
-        (r) => r.relationship == OnboardingKeys.relChildRepresentative,
+        (r) => r.legalRole == OnboardingKeys.relChildRepresentative,
       );
       expect(childRep.name, 'Jamie Guardian');
       expect(childRep.phone, '+61466666666');
+      expect(childRep.relationship, 'mother');
 
       // Funding → Legal (mock) → Finish.
       c.ndisCtrl.text = '431234567';
@@ -239,10 +245,14 @@ void main() {
       verify(() => mock.createContact('client-child-1', any())).called(2);
       expect(
         contactCreates.map((r) => r.relationship).toList(),
-        containsAll([
-          'mother',
-          OnboardingKeys.relChildRepresentative,
-        ]),
+        containsAll(['mother', 'mother']),
+      );
+      expect(
+        contactCreates
+            .map((r) => r.legalRole)
+            .whereType<String>()
+            .toList(),
+        contains(OnboardingKeys.relChildRepresentative),
       );
     },
   );

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -70,6 +72,10 @@ class ClientOnboardingController extends GetxController
   final errorMessage = RxnString();
   final isSaving = false.obs;
   final ndisFieldError = RxnString();
+  final budgetFieldError = RxnString();
+  final consentUploading = false.obs;
+  final serviceAgreementUploading = false.obs;
+  final acknowledgementUploading = false.obs;
 
   // ── Identity ──────────────────────────────────────────────────────────
   final fullName = TextEditingController();
@@ -81,6 +87,11 @@ class ClientOnboardingController extends GetxController
   final companionCardAttachment = IdentityCardAttachment();
   final disabilityCardAttachment = IdentityCardAttachment();
   final pensionCardAttachment = IdentityCardAttachment();
+  final companionCardNumberCtrl = TextEditingController();
+  final pensionCardNumberCtrl = TextEditingController();
+  final photoIdAttachment = IdentityCardAttachment();
+  final photoIdNumberCtrl = TextEditingController();
+  final photoIdType = RxnString();
   final allergiesCtrl = TextEditingController();
   final referralOtherCtrl = TextEditingController();
   final sexGenderOtherCtrl = TextEditingController();
@@ -186,6 +197,8 @@ class ClientOnboardingController extends GetxController
   // ── Representative ────────────────────────────────────────────────────
   final representativeSaved = false.obs;
   final nomineeSkipped = false.obs;
+  final representativeEditing = false.obs;
+  final savedRepresentativeContact = Rxn<ClientContactOut>();
 
   // ── Support Plan ──────────────────────────────────────────────────────
   final ndisPdfAttachment = IdentityCardAttachment();
@@ -241,8 +254,12 @@ class ClientOnboardingController extends GetxController
   bool get nomineeOptional => !requiresChildRepresentative;
 
   String get representativeStepTitle => requiresChildRepresentative
-      ? 'Child representative'
-      : 'Nominee (optional)';
+      ? 'Representative'
+      : 'Representative (optional)';
+
+  String get representativeRoleChipLabel => requiresChildRepresentative
+      ? 'Representative'
+      : 'Nominee';
 
   bool get showSkipCarer =>
       step.value == 3 &&
@@ -258,6 +275,18 @@ class ClientOnboardingController extends GetxController
       nomineeOptional &&
       !representativeSaved.value &&
       !nomineeSkipped.value;
+
+  ClientContactOut? get selectedExistingEmergencyContact {
+    final id = reuseEmergencyContactId.value;
+    if (id == null) return null;
+    for (final c in contactsCreated) {
+      if (c.id == id) return c;
+    }
+    return null;
+  }
+
+  bool get showNewRepresentativeContactForm =>
+      reuseEmergencyContactId.value == null;
 
   @override
   void onInit() {
@@ -283,8 +312,13 @@ class ClientOnboardingController extends GetxController
     medicareCtrl.clear();
     medicareCardAttachment.reset();
     companionCardAttachment.reset();
+    companionCardNumberCtrl.clear();
     disabilityCardAttachment.reset();
     pensionCardAttachment.reset();
+    pensionCardNumberCtrl.clear();
+    photoIdAttachment.reset();
+    photoIdNumberCtrl.clear();
+    photoIdType.value = null;
     allergiesCtrl.clear();
     referralOtherCtrl.clear();
     sexGenderOtherCtrl.clear();
@@ -327,6 +361,8 @@ class ClientOnboardingController extends GetxController
 
     representativeSaved.value = false;
     nomineeSkipped.value = false;
+    representativeEditing.value = false;
+    savedRepresentativeContact.value = null;
 
     ndisCtrl.clear();
     ndisPdfAttachment.reset();
@@ -390,17 +426,37 @@ class ClientOnboardingController extends GetxController
           medicareCtrl.text = stored?.trim() ?? '';
           _hydrateCardAttachment(medicareCardAttachment, fact);
         case OnboardingKeys.companionCard:
+          companionCardNumberCtrl.text = stored?.trim() ?? '';
           _hydrateCardAttachment(companionCardAttachment, fact);
         case OnboardingKeys.disabilityCard:
           _hydrateCardAttachment(disabilityCardAttachment, fact);
         case OnboardingKeys.pensionCard:
+          pensionCardNumberCtrl.text = stored?.trim() ?? '';
           _hydrateCardAttachment(pensionCardAttachment, fact);
+        case OnboardingKeys.photoId:
+          _hydratePhotoId(stored, fact);
         case OnboardingKeys.allergies:
           allergiesCtrl.text = stored?.trim() ?? '';
         case OnboardingKeys.atsiStatus:
           atsiStatus.value = stored?.trim();
       }
     }
+  }
+
+  void _hydratePhotoId(String? stored, ClientProfileFactOut fact) {
+    _hydrateCardAttachment(photoIdAttachment, fact);
+    if (stored == null || stored.trim().isEmpty) return;
+    try {
+      final decoded = jsonDecode(stored);
+      if (decoded is Map) {
+        photoIdNumberCtrl.text = decoded['number']?.toString() ?? '';
+        photoIdType.value = decoded['id_type']?.toString();
+        return;
+      }
+    } catch (_) {
+      // Plain string fallback.
+    }
+    photoIdNumberCtrl.text = stored.trim();
   }
 
   void _applyHydratedReferral(String? stored) {
@@ -592,6 +648,9 @@ class ClientOnboardingController extends GetxController
     phone.dispose();
     ndisCtrl.dispose();
     medicareCtrl.dispose();
+    companionCardNumberCtrl.dispose();
+    pensionCardNumberCtrl.dispose();
+    photoIdNumberCtrl.dispose();
     allergiesCtrl.dispose();
     referralOtherCtrl.dispose();
     sexGenderOtherCtrl.dispose();
@@ -633,8 +692,17 @@ class ClientOnboardingController extends GetxController
   void previousStep() {
     if (step.value > 0) {
       errorMessage.value = null;
+      if (step.value == 4) {
+        _prepContactsStep();
+      }
       step.value--;
     }
+  }
+
+  void _prepContactsStep() {
+    _resetContactDraft();
+    contactDraftMode.value = 'emergency';
+    contactRelationshipPreset.value = null;
   }
 
   Future<void> nextStep() async {
@@ -1051,6 +1119,7 @@ class ClientOnboardingController extends GetxController
           email: _nullIfEmpty(em),
           phone: _nullIfEmpty(ph),
           relationship: relationship,
+          legalRole: _representativeLegalRole,
           isPrimary: contactIsPrimary.value,
           notifyVisitComplete: false,
           isEmergency: contactIsEmergency.value,
@@ -1063,9 +1132,11 @@ class ClientOnboardingController extends GetxController
       if (relationship == OnboardingKeys.relCarer) {
         carerSaved.value = true;
       }
-      if (relationship == OnboardingKeys.relChildRepresentative ||
-          relationship == OnboardingKeys.relNominee) {
+      final legalRole = _representativeLegalRole;
+      if (legalRole != null && created.legalRole == legalRole) {
         representativeSaved.value = true;
+        representativeEditing.value = false;
+        savedRepresentativeContact.value = created;
         nomineeSkipped.value = false;
       }
       _resetContactDraft();
@@ -1111,12 +1182,24 @@ class ClientOnboardingController extends GetxController
   void _prepRepresentativeStep() {
     _resetContactDraft();
     if (requiresChildRepresentative) {
-      contactRelationshipPreset.value = OnboardingKeys.relChildRepresentative;
       contactDraftMode.value = 'representative';
     } else {
-      contactRelationshipPreset.value = OnboardingKeys.relNominee;
       contactDraftMode.value = 'nominee';
     }
+    contactRelationshipPreset.value = null;
+  }
+
+  String? get _representativeLegalRole {
+    if (step.value != 4 &&
+        contactDraftMode.value != 'representative' &&
+        contactDraftMode.value != 'nominee') {
+      return null;
+    }
+    if (requiresChildRepresentative) {
+      return OnboardingKeys.relChildRepresentative;
+    }
+    if (nomineeSkipped.value) return null;
+    return OnboardingKeys.relNominee;
   }
 
   // ── Representative ────────────────────────────────────────────────────
@@ -1156,6 +1239,54 @@ class ClientOnboardingController extends GetxController
     }
   }
 
+  Future<bool> saveExistingContactAsRepresentative() async {
+    errorMessage.value = null;
+    final id = clientId;
+    final contactId = reuseEmergencyContactId.value;
+    final legalRole = _representativeLegalRole;
+    if (id == null) {
+      errorMessage.value = 'Create the client on the Identity step first.';
+      return false;
+    }
+    if (contactId == null || contactId.isEmpty) {
+      errorMessage.value = 'Select an existing contact first.';
+      return false;
+    }
+    if (legalRole == null) {
+      errorMessage.value = 'Representative role is not available on this step.';
+      return false;
+    }
+
+    isSaving.value = true;
+    try {
+      final patched = await _repository.patchContact(
+        id,
+        contactId,
+        ClientContactWriteRequest(legalRole: legalRole),
+      );
+      final idx = contactsCreated.indexWhere((c) => c.id == contactId);
+      if (idx >= 0) {
+        contactsCreated[idx] = patched;
+      } else {
+        contactsCreated.add(patched);
+      }
+      contactsCreated.refresh();
+      representativeSaved.value = true;
+      representativeEditing.value = false;
+      savedRepresentativeContact.value = patched;
+      nomineeSkipped.value = false;
+      return true;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      return false;
+    } catch (e) {
+      _setUnexpectedError(e);
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
   Future<bool> submitRepresentative() async {
     errorMessage.value = null;
 
@@ -1165,15 +1296,13 @@ class ClientOnboardingController extends GetxController
             contactPhoneCtrl.text.trim().isNotEmpty ||
             contactEmailCtrl.text.trim().isNotEmpty;
         if (hasDraft) {
-          contactRelationshipPreset.value =
-              OnboardingKeys.relChildRepresentative;
           final ok = await saveContactDraft();
           if (!ok) return false;
         }
       }
       if (!representativeSaved.value) {
         errorMessage.value =
-            'A child representative is required for participants under 18.';
+            'A representative is required for participants under 18.';
         return false;
       }
     } else if (!representativeSaved.value && !nomineeSkipped.value) {
@@ -1181,7 +1310,6 @@ class ClientOnboardingController extends GetxController
           contactPhoneCtrl.text.trim().isNotEmpty ||
           contactEmailCtrl.text.trim().isNotEmpty;
       if (hasDraft) {
-        contactRelationshipPreset.value = OnboardingKeys.relNominee;
         final ok = await saveContactDraft();
         if (!ok) return false;
       } else {
@@ -1200,6 +1328,25 @@ class ClientOnboardingController extends GetxController
   void skipNominee() {
     nomineeSkipped.value = true;
     errorMessage.value = null;
+  }
+
+  void beginEditRepresentative() {
+    representativeEditing.value = true;
+    final saved = savedRepresentativeContact.value;
+    if (saved == null) return;
+    contactNameCtrl.text = saved.name ?? '';
+    contactEmailCtrl.text = saved.email ?? '';
+    contactPhoneCtrl.text = saved.phone ?? '';
+    final hydrated = ContactFormHost.hydrateRelationship(saved.relationship);
+    contactRelationshipPreset.value = hydrated.preset;
+    contactRelationshipOtherCtrl.text = hydrated.otherText;
+    contactIsEmergency.value = saved.isEmergency;
+    contactIsPrimary.value = saved.isPrimary;
+  }
+
+  void cancelEditRepresentative() {
+    representativeEditing.value = false;
+    _resetContactDraft();
   }
 
   // ── Support Plan ──────────────────────────────────────────────────────
@@ -1240,6 +1387,19 @@ class ClientOnboardingController extends GetxController
       }
     }
 
+    budgetFieldError.value = null;
+    for (final entry in [
+      (OnboardingKeys.budgetCore, budgetCoreCtrl),
+      (OnboardingKeys.budgetCb, budgetCbCtrl),
+      (OnboardingKeys.budgetCapital, budgetCapitalCtrl),
+    ]) {
+      final raw = entry.$2.text.trim();
+      if (raw.isNotEmpty && num.tryParse(raw) == null) {
+        budgetFieldError.value = 'Budget values must be valid numbers.';
+        return false;
+      }
+    }
+
     isSaving.value = true;
     try {
       var ndisDocId = ndisPdfAttachment.existingDocumentId.value;
@@ -1274,11 +1434,6 @@ class ClientOnboardingController extends GetxController
         rethrow;
       }
 
-      await _putOptionalFact(
-        id,
-        OnboardingKeys.supportPlanOther,
-        supportPlanOtherCtrl.text.trim(),
-      );
       await _repository.upsertProfileFact(
         id,
         OnboardingKeys.planManagementType,
@@ -1440,7 +1595,7 @@ class ClientOnboardingController extends GetxController
     final id = clientId;
     if (id == null) return false;
 
-    isSaving.value = true;
+    consentUploading.value = true;
     try {
       await _legalUploadHelper.completeConsent(
         clientId: id,
@@ -1460,7 +1615,7 @@ class ClientOnboardingController extends GetxController
       _setUnexpectedError(e);
       return false;
     } finally {
-      isSaving.value = false;
+      consentUploading.value = false;
     }
   }
 
@@ -1469,7 +1624,7 @@ class ClientOnboardingController extends GetxController
     final id = clientId;
     if (id == null) return false;
 
-    isSaving.value = true;
+    serviceAgreementUploading.value = true;
     try {
       await _legalUploadHelper.completeServiceAgreement(clientId: id);
       serviceAgreementComplete.value = true;
@@ -1481,7 +1636,7 @@ class ClientOnboardingController extends GetxController
       _setUnexpectedError(e);
       return false;
     } finally {
-      isSaving.value = false;
+      serviceAgreementUploading.value = false;
     }
   }
 
@@ -1490,7 +1645,7 @@ class ClientOnboardingController extends GetxController
     final id = clientId;
     if (id == null) return false;
 
-    isSaving.value = true;
+    acknowledgementUploading.value = true;
     try {
       await _legalUploadHelper.completeAcknowledgement(clientId: id);
       acknowledgementComplete.value = true;
@@ -1503,7 +1658,7 @@ class ClientOnboardingController extends GetxController
       _setUnexpectedError(e);
       return false;
     } finally {
-      isSaving.value = false;
+      acknowledgementUploading.value = false;
     }
   }
 
@@ -1541,12 +1696,9 @@ class ClientOnboardingController extends GetxController
         onFinished!(id);
       } else {
         if (Get.isRegistered<ClientsController>()) {
-          final cc = Get.find<ClientsController>();
-          await cc.load();
-          await cc.openDetail(updated);
-        } else {
-          Get.offNamed(AppRoutes.staffClientDetail, arguments: updated);
+          await Get.find<ClientsController>().load();
         }
+        Get.offNamed(AppRoutes.staffClientDetail, arguments: updated);
       }
       return true;
     } on AppFailure catch (e) {
@@ -1685,6 +1837,7 @@ class ClientOnboardingController extends GetxController
       requirementKey: OnboardingKeys.companionCard,
       category: OnboardingKeys.companionCard,
       attachment: companionCardAttachment,
+      valueJson: _nullIfEmpty(companionCardNumberCtrl.text.trim()),
     );
     await _persistIdentityCard(
       clientId: clientId,
@@ -1697,6 +1850,27 @@ class ClientOnboardingController extends GetxController
       requirementKey: OnboardingKeys.pensionCard,
       category: OnboardingKeys.pensionCard,
       attachment: pensionCardAttachment,
+      valueJson: _nullIfEmpty(pensionCardNumberCtrl.text.trim()),
+    );
+    await _persistPhotoId(clientId);
+  }
+
+  Future<void> _persistPhotoId(String clientId) async {
+    final number = photoIdNumberCtrl.text.trim();
+    final idType = photoIdType.value?.trim();
+    String? valueJson;
+    if (number.isNotEmpty || (idType != null && idType.isNotEmpty)) {
+      final parts = <String, String>{};
+      if (number.isNotEmpty) parts['number'] = number;
+      if (idType != null && idType.isNotEmpty) parts['id_type'] = idType;
+      valueJson = jsonEncode(parts);
+    }
+    await _persistIdentityCard(
+      clientId: clientId,
+      requirementKey: OnboardingKeys.photoId,
+      category: OnboardingKeys.photoId,
+      attachment: photoIdAttachment,
+      valueJson: valueJson,
     );
   }
 

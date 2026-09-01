@@ -17,9 +17,7 @@ class OnboardingIdentityStep extends StatelessWidget {
     'Male',
     'Female',
     'Non-binary',
-    'Undisclosed',
-    'Prefer not to say',
-    otherPresetKey,
+    'Prefer not to say'
   ];
   static const atsiOptions = [
     'Aboriginal',
@@ -28,8 +26,6 @@ class OnboardingIdentityStep extends StatelessWidget {
     'No',
   ];
   static const referralOptions = [
-    'NDIS',
-    'LAC',
     'Friend/Family',
     'Self Referred',
     otherPresetKey,
@@ -112,6 +108,10 @@ class OnboardingIdentityStep extends StatelessWidget {
               ),
               for (final o in sexOptions)
                 DropdownMenuItem(value: o, child: Text(o)),
+              const DropdownMenuItem(
+                value: otherPresetKey,
+                child: Text(otherPresetKey),
+              ),
             ],
             onChanged: enabled
                 ? (v) {
@@ -184,6 +184,8 @@ class OnboardingIdentityStep extends StatelessWidget {
           ),
           OnboardingIdentityCardField(
             label: 'Participant Companion card (optional)',
+            numberController: controller.companionCardNumberCtrl,
+            numberLabel: 'Companion card number (optional)',
             attachment: controller.companionCardAttachment,
             enabled: enabled,
             onPick: () => controller.pickIdentityCard(
@@ -206,6 +208,8 @@ class OnboardingIdentityStep extends StatelessWidget {
           ),
           OnboardingIdentityCardField(
             label: 'Participant Pension card (optional)',
+            numberController: controller.pensionCardNumberCtrl,
+            numberLabel: 'Pension card number (optional)',
             attachment: controller.pensionCardAttachment,
             enabled: enabled,
             onPick: () => controller.pickIdentityCard(
@@ -215,6 +219,38 @@ class OnboardingIdentityStep extends StatelessWidget {
               controller.pensionCardAttachment,
             ),
           ),
+          OnboardingIdentityCardField(
+            label: 'Participant photo ID / passport (optional)',
+            numberController: controller.photoIdNumberCtrl,
+            numberLabel: 'ID number (optional)',
+            attachment: controller.photoIdAttachment,
+            enabled: enabled,
+            onPick: () => controller.pickIdentityCard(
+              controller.photoIdAttachment,
+            ),
+            onClearPending: () => controller.clearIdentityCardPending(
+              controller.photoIdAttachment,
+            ),
+          ),
+          DropdownButtonFormField<String?>(
+            value: controller.photoIdType.value,
+            decoration: const InputDecoration(
+              labelText: 'Photo ID type (optional)',
+              border: OutlineInputBorder(),
+            ),
+            items: const [
+              DropdownMenuItem<String?>(value: null, child: Text('Select')),
+              DropdownMenuItem(value: 'Passport', child: Text('Passport')),
+              DropdownMenuItem(
+                value: 'Driver licence',
+                child: Text('Driver licence'),
+              ),
+              DropdownMenuItem(value: 'Photo card', child: Text('Photo card')),
+              DropdownMenuItem(value: 'Other', child: Text('Other')),
+            ],
+            onChanged: enabled ? (v) => controller.photoIdType.value = v : null,
+          ),
+          const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
             value: controller.referralSource.value,
             decoration: const InputDecoration(

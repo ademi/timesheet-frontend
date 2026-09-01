@@ -355,6 +355,7 @@ class ClientContactOut {
     this.email,
     this.phone,
     this.relationship,
+    this.legalRole,
     this.isEmergency = false,
   });
 
@@ -365,6 +366,7 @@ class ClientContactOut {
   final String? email;
   final String? phone;
   final String? relationship;
+  final String? legalRole;
   final bool isPrimary;
   final bool notifyVisitComplete;
   final bool isEmergency;
@@ -378,6 +380,7 @@ class ClientContactOut {
       email: json['email'] as String?,
       phone: json['phone'] as String?,
       relationship: json['relationship'] as String?,
+      legalRole: json['legal_role'] as String?,
       isPrimary: json['is_primary'] as bool? ?? false,
       notifyVisitComplete: json['notify_visit_complete'] as bool? ?? true,
       isEmergency: json['is_emergency'] as bool? ?? false,
@@ -391,6 +394,7 @@ class ClientContactWriteRequest {
     this.email,
     this.phone,
     this.relationship,
+    this.legalRole,
     this.isPrimary,
     this.notifyVisitComplete,
     this.isEmergency,
@@ -400,6 +404,7 @@ class ClientContactWriteRequest {
   final String? email;
   final String? phone;
   final String? relationship;
+  final String? legalRole;
   final bool? isPrimary;
   final bool? notifyVisitComplete;
   final bool? isEmergency;
@@ -409,6 +414,7 @@ class ClientContactWriteRequest {
         if (email != null) 'email': email,
         if (phone != null) 'phone': phone,
         if (relationship != null) 'relationship': relationship,
+        if (legalRole != null) 'legal_role': legalRole,
         if (isPrimary != null) 'is_primary': isPrimary,
         if (notifyVisitComplete != null)
           'notify_visit_complete': notifyVisitComplete,

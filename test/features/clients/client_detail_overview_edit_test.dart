@@ -150,7 +150,7 @@ void main() {
 
   Finder documentPicker() => find.byIcon(Icons.upload_file_outlined);
 
-  testWidgets('Overview shows editable identity fields', (tester) async {
+  testWidgets('Overview shows identity fields read-only by default', (tester) async {
     await tester.pumpWidget(
       GetMaterialApp(
         home: Scaffold(
@@ -160,6 +160,26 @@ void main() {
         ),
       ),
     );
+
+    expect(find.byKey(ClientDetailOverviewSection.editKey), findsOneWidget);
+    expect(find.byKey(ClientDetailOverviewSection.fullNameKey), findsNothing);
+    expect(find.text('Demo Patient'), findsOneWidget);
+    expect(find.text('demo@example.com'), findsOneWidget);
+  });
+
+  testWidgets('Overview Edit reveals editable identity fields', (tester) async {
+    await tester.pumpWidget(
+      GetMaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ClientDetailOverviewSection(controller: controller),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(ClientDetailOverviewSection.editKey));
+    await tester.pumpAndSettle();
 
     expect(find.byKey(ClientDetailOverviewSection.fullNameKey), findsOneWidget);
     expect(find.byKey(ClientDetailOverviewSection.emailKey), findsOneWidget);
@@ -171,6 +191,7 @@ void main() {
   });
 
   testWidgets('Overview NDIS field has no document picker', (tester) async {
+    controller.overviewEditing.value = true;
     await tester.pumpWidget(
       GetMaterialApp(
         home: Scaffold(
@@ -184,7 +205,10 @@ void main() {
     expect(find.byKey(ClientRequirementEditor.documentPickerKey), findsNothing);
   });
 
-  testWidgets('Overview tab shows sticky Save and Cancel', (tester) async {
+  testWidgets('Overview tab shows sticky Save and Cancel in edit mode', (
+    tester,
+  ) async {
+    controller.overviewEditing.value = true;
     await tester.pumpWidget(const GetMaterialApp(home: ClientDetailView()));
     await tester.pump();
 
@@ -195,6 +219,7 @@ void main() {
   });
 
   testWidgets('Overview Cancel restores draft edits', (tester) async {
+    controller.overviewEditing.value = true;
     controller.overviewNameCtrl.text = 'Changed Name';
     await tester.pumpWidget(const GetMaterialApp(home: ClientDetailView()));
     await tester.pump();
@@ -203,6 +228,7 @@ void main() {
     await tester.pump();
 
     expect(controller.overviewNameCtrl.text, _client.fullName);
+    expect(controller.overviewEditing.value, isFalse);
   });
 
   testWidgets('Profile section has no DOB or NDIS editors', (tester) async {
@@ -253,6 +279,7 @@ void main() {
   ) async {
     controller.clientTypes.assignAll([_patientType, _orgType]);
     controller.overviewClientTypeId.value = _patientType.id;
+    controller.overviewEditing.value = true;
 
     await tester.pumpWidget(
       GetMaterialApp(

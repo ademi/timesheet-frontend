@@ -202,6 +202,7 @@ class ClientsController extends GetxController
   final overviewStatus = 'active'.obs;
   final overviewDob = Rxn<DateTime>();
   final overviewClientTypeId = RxnString();
+  final overviewEditing = false.obs;
 
   static const overviewOwnedRequirementKeys = {'dob', 'ndis'};
 
@@ -984,6 +985,7 @@ class ClientsController extends GetxController
   /// Drops unsaved Overview edits.
   Future<void> discardOverviewDrafts() async {
     errorMessage.value = null;
+    overviewEditing.value = false;
     hydrateOverviewDrafts();
   }
 
@@ -1092,6 +1094,7 @@ class ClientsController extends GetxController
 
       hydrateOverviewDrafts();
       syncFormDraftsFromOverview();
+      overviewEditing.value = false;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (e) {
@@ -1400,6 +1403,7 @@ class ClientsController extends GetxController
     int initialTab = tabOverview,
   }) async {
     selected.value = client;
+    overviewEditing.value = false;
     lastInvite.value = null;
     invites.clear();
     tabIndex.value = initialTab;
