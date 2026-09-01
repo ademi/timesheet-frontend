@@ -9,6 +9,7 @@ import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../services/client_legal_upload_helper.dart';
 import '../models/support_plan_professional_fields.dart';
+import '../utils/ndis_plan_budgets_codec.dart';
 import '../utils/onboarding_keys.dart';
 
 /// Care-plan Funding + Consent collaborator (facts/legal; not plan body_json).
@@ -39,6 +40,7 @@ class SupportPlanFundingConsentStore {
 
   /// False until [applyProfileBundle] / [reload] succeeds (D10).
   bool hasHydrated = false;
+  bool _disposed = false;
 
   final _presentKeys = <String>{};
   final _factUpdatedAt = <String, DateTime>{};
@@ -62,6 +64,8 @@ class SupportPlanFundingConsentStore {
   final budgetCoreCtrl = TextEditingController();
   final budgetCbCtrl = TextEditingController();
   final budgetCapitalCtrl = TextEditingController();
+  final budgetOtherLabelCtrl = TextEditingController();
+  final budgetOtherCtrl = TextEditingController();
   final supportPlanOtherCtrl = TextEditingController();
   final supportCoordinator = SupportPlanProfessionalFields();
   final behaviouralTherapist = SupportPlanProfessionalFields();
@@ -108,6 +112,7 @@ class SupportPlanFundingConsentStore {
   }
 
   void applyProfileBundle(ClientProfileBundle bundle) {
+    if (_disposed) return;
     _presentKeys
       ..clear()
       ..addAll(bundle.facts.map((f) => f.requirementKey));
@@ -137,9 +142,14 @@ class SupportPlanFundingConsentStore {
         _stringFact(bundle, OnboardingKeys.planManagerAddress) ?? '';
     planStartDate.value = _dateFact(bundle, OnboardingKeys.planStartDate);
     planEndDate.value = _dateFact(bundle, OnboardingKeys.planEndDate);
-    budgetCoreCtrl.text = _numberText(bundle, OnboardingKeys.budgetCore);
-    budgetCbCtrl.text = _numberText(bundle, OnboardingKeys.budgetCb);
-    budgetCapitalCtrl.text = _numberText(bundle, OnboardingKeys.budgetCapital);
+    NdisPlanBudgetsCodec.applyToControllers(
+      entries: NdisPlanBudgetsCodec.resolveFromFacts(bundle.facts),
+      core: budgetCoreCtrl,
+      capacityBuilding: budgetCbCtrl,
+      capital: budgetCapitalCtrl,
+      otherLabel: budgetOtherLabelCtrl,
+      otherAmount: budgetOtherCtrl,
+    );
     supportPlanOtherCtrl.text = _resolveSupportPlanOther(bundle);
     _hydrateProfessional(
       bundle,
@@ -229,11 +239,12 @@ class SupportPlanFundingConsentStore {
   }
 
   Future<void> reload(String clientId) async {
-    if (clientId.isEmpty) return;
+    if (clientId.isEmpty || _disposed) return;
     isLoading.value = true;
     errorMessage.value = null;
     try {
       final bundle = await _repository.getClientProfile(clientId);
+      if (_disposed) return;
       applyProfileBundle(bundle);
       onReload?.call();
     } on AppFailure catch (e) {
@@ -370,21 +381,43 @@ class SupportPlanFundingConsentStore {
       'Plan end',
       planEndDate.value == null ? '' : _formatDate(planEndDate.value!),
     );
-    putValue(
-      OnboardingKeys.budgetCore,
-      'Budget core',
-      _parseNumberOrEmpty(budgetCoreCtrl.text),
+    final budgetEntries = NdisPlanBudgetsCodec.readFromControllers(
+      core: budgetCoreCtrl,
+      capacityBuilding: budgetCbCtrl,
+      capital: budgetCapitalCtrl,
+      otherLabel: budgetOtherLabelCtrl,
+      otherAmount: budgetOtherCtrl,
     );
-    putValue(
-      OnboardingKeys.budgetCb,
-      'Budget CB',
-      _parseNumberOrEmpty(budgetCbCtrl.text),
-    );
-    putValue(
-      OnboardingKeys.budgetCapital,
-      'Budget capital',
-      _parseNumberOrEmpty(budgetCapitalCtrl.text),
-    );
+    final budgetJson = NdisPlanBudgetsCodec.toFactValue(budgetEntries);
+    if (budgetJson == null) {
+      if (_presentKeys.contains(OnboardingKeys.ndisPlanBudgets)) {
+        jobs.add((
+          key: OnboardingKeys.ndisPlanBudgets,
+          label: 'Plan budgets',
+          future: _repository.upsertProfileFact(
+            clientId,
+            OnboardingKeys.ndisPlanBudgets,
+            ProfileFactUpsert(
+              clearValue: true,
+              expectedUpdatedAt: _factUpdatedAt[OnboardingKeys.ndisPlanBudgets],
+            ),
+          ),
+        ));
+      }
+    } else {
+      jobs.add((
+        key: OnboardingKeys.ndisPlanBudgets,
+        label: 'Plan budgets',
+        future: _repository.upsertProfileFact(
+          clientId,
+          OnboardingKeys.ndisPlanBudgets,
+          ProfileFactUpsert(
+            valueJson: budgetJson,
+            expectedUpdatedAt: _factUpdatedAt[OnboardingKeys.ndisPlanBudgets],
+          ),
+        ),
+      ));
+    }
     _putProfessionalValues(
       putValue,
       supportCoordinator,
@@ -610,6 +643,8 @@ class SupportPlanFundingConsentStore {
   }
 
   void dispose() {
+    if (_disposed) return;
+    _disposed = true;
     ndisCtrl.dispose();
     planManagerNameCtrl.dispose();
     planManagerCompanyCtrl.dispose();
@@ -621,6 +656,8 @@ class SupportPlanFundingConsentStore {
     budgetCoreCtrl.dispose();
     budgetCbCtrl.dispose();
     budgetCapitalCtrl.dispose();
+    budgetOtherLabelCtrl.dispose();
+    budgetOtherCtrl.dispose();
     supportPlanOtherCtrl.dispose();
     supportCoordinator.dispose();
     behaviouralTherapist.dispose();

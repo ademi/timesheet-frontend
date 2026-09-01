@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
@@ -235,8 +236,12 @@ class SupportPlanFundingSection extends StatelessWidget {
             controller: store.budgetCoreCtrl,
             enabled: enabled,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            ],
             decoration: const InputDecoration(
-              labelText: 'Core support budget',
+              labelText: 'Core supports budget',
+              prefixText: '\$ ',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
@@ -247,8 +252,12 @@ class SupportPlanFundingSection extends StatelessWidget {
             controller: store.budgetCbCtrl,
             enabled: enabled,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            ],
             decoration: const InputDecoration(
               labelText: 'Capacity building budget',
+              prefixText: '\$ ',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
@@ -259,8 +268,39 @@ class SupportPlanFundingSection extends StatelessWidget {
             controller: store.budgetCapitalCtrl,
             enabled: enabled,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            ],
             decoration: const InputDecoration(
-              labelText: 'Capital support budget',
+              labelText: 'Capital supports budget',
+              prefixText: '\$ ',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: store.budgetOtherLabelCtrl,
+            enabled: enabled,
+            decoration: const InputDecoration(
+              labelText: 'Other budget label (optional)',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: store.budgetOtherCtrl,
+            enabled: enabled,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            ],
+            decoration: const InputDecoration(
+              labelText: 'Other budget amount',
+              prefixText: '\$ ',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(12)),
               ),

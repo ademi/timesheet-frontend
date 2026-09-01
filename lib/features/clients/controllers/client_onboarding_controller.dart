@@ -19,6 +19,7 @@ import '../models/support_plan_professional_fields.dart';
 import '../data/repositories/clients_repository.dart';
 import '../services/client_legal_upload_helper.dart';
 import '../utils/onboarding_age.dart';
+import '../utils/ndis_plan_budgets_codec.dart';
 import '../utils/onboarding_keys.dart';
 import '../utils/site_geocode_apply.dart';
 import '../widgets/contact_form_host.dart';
@@ -215,6 +216,8 @@ class ClientOnboardingController extends GetxController
   final budgetCoreCtrl = TextEditingController();
   final budgetCbCtrl = TextEditingController();
   final budgetCapitalCtrl = TextEditingController();
+  final budgetOtherLabelCtrl = TextEditingController();
+  final budgetOtherCtrl = TextEditingController();
   final supportPlanOtherCtrl = TextEditingController();
   final supportCoordinator = SupportPlanProfessionalFields();
   final behaviouralTherapist = SupportPlanProfessionalFields();
@@ -291,7 +294,6 @@ class ClientOnboardingController extends GetxController
   @override
   void onInit() {
     super.onInit();
-    siteNameCtrl.text = 'Home';
     contactRelationshipPreset.value = null;
     contactIsEmergency.value = true;
     contactDraftMode.value = 'emergency';
@@ -328,7 +330,7 @@ class ClientOnboardingController extends GetxController
     pendingPhoto.value = null;
     localPhotoBytes.value = null;
 
-    siteNameCtrl.text = 'Home';
+    siteNameCtrl.clear();
     siteAddressCtrl.clear();
     siteCityCtrl.clear();
     siteStateCtrl.text = 'NSW';
@@ -379,6 +381,8 @@ class ClientOnboardingController extends GetxController
     budgetCoreCtrl.clear();
     budgetCbCtrl.clear();
     budgetCapitalCtrl.clear();
+    budgetOtherLabelCtrl.clear();
+    budgetOtherCtrl.clear();
     supportPlanOtherCtrl.clear();
     supportCoordinator.clear();
     behaviouralTherapist.clear();
@@ -483,6 +487,9 @@ class ClientOnboardingController extends GetxController
 
   /// Applies stored profile facts to Support Plan fields (legacy Other fallback).
   void hydrateSupportPlanFromFacts(Iterable<ClientProfileFactOut> facts) {
+    final factsList = facts is List<ClientProfileFactOut>
+        ? facts
+        : facts.toList();
     String? otherText;
     String? legacyOther;
     for (final fact in facts) {
@@ -515,12 +522,6 @@ class ClientOnboardingController extends GetxController
           planStartDate.value = _parseHydratedDate(stored);
         case OnboardingKeys.planEndDate:
           planEndDate.value = _parseHydratedDate(stored);
-        case OnboardingKeys.budgetCore:
-          budgetCoreCtrl.text = stored ?? '';
-        case OnboardingKeys.budgetCb:
-          budgetCbCtrl.text = stored ?? '';
-        case OnboardingKeys.budgetCapital:
-          budgetCapitalCtrl.text = stored ?? '';
         case OnboardingKeys.supportCoordinatorName:
           supportCoordinator.nameCtrl.text = stored ?? '';
         case OnboardingKeys.supportCoordinatorCompany:
@@ -593,6 +594,14 @@ class ClientOnboardingController extends GetxController
           physiotherapist.addressCtrl.text = stored ?? '';
       }
     }
+    NdisPlanBudgetsCodec.applyToControllers(
+      entries: NdisPlanBudgetsCodec.resolveFromFacts(factsList),
+      core: budgetCoreCtrl,
+      capacityBuilding: budgetCbCtrl,
+      capital: budgetCapitalCtrl,
+      otherLabel: budgetOtherLabelCtrl,
+      otherAmount: budgetOtherCtrl,
+    );
     final resolvedOther = (otherText != null && otherText.isNotEmpty)
         ? otherText
         : legacyOther;
@@ -679,6 +688,8 @@ class ClientOnboardingController extends GetxController
     budgetCoreCtrl.dispose();
     budgetCbCtrl.dispose();
     budgetCapitalCtrl.dispose();
+    budgetOtherLabelCtrl.dispose();
+    budgetOtherCtrl.dispose();
     supportPlanOtherCtrl.dispose();
     supportCoordinator.dispose();
     behaviouralTherapist.dispose();
@@ -1387,17 +1398,14 @@ class ClientOnboardingController extends GetxController
       }
     }
 
-    budgetFieldError.value = null;
-    for (final entry in [
-      (OnboardingKeys.budgetCore, budgetCoreCtrl),
-      (OnboardingKeys.budgetCb, budgetCbCtrl),
-      (OnboardingKeys.budgetCapital, budgetCapitalCtrl),
-    ]) {
-      final raw = entry.$2.text.trim();
-      if (raw.isNotEmpty && num.tryParse(raw) == null) {
-        budgetFieldError.value = 'Budget values must be valid numbers.';
-        return false;
-      }
+    budgetFieldError.value = NdisPlanBudgetsCodec.validateAll(
+      core: budgetCoreCtrl.text,
+      capacityBuilding: budgetCbCtrl.text,
+      capital: budgetCapitalCtrl.text,
+      otherAmount: budgetOtherCtrl.text,
+    );
+    if (budgetFieldError.value != null) {
+      return false;
     }
 
     isSaving.value = true;
@@ -1490,13 +1498,27 @@ class ClientOnboardingController extends GetxController
           ProfileFactUpsert(valueJson: _formatDate(planEndDate.value!)),
         );
       }
-      await _putOptionalNumber(id, OnboardingKeys.budgetCore, budgetCoreCtrl);
-      await _putOptionalNumber(id, OnboardingKeys.budgetCb, budgetCbCtrl);
-      await _putOptionalNumber(
-        id,
-        OnboardingKeys.budgetCapital,
-        budgetCapitalCtrl,
+      final budgetEntries = NdisPlanBudgetsCodec.readFromControllers(
+        core: budgetCoreCtrl,
+        capacityBuilding: budgetCbCtrl,
+        capital: budgetCapitalCtrl,
+        otherLabel: budgetOtherLabelCtrl,
+        otherAmount: budgetOtherCtrl,
       );
+      final budgetJson = NdisPlanBudgetsCodec.toFactValue(budgetEntries);
+      if (budgetJson == null) {
+        await _repository.upsertProfileFact(
+          id,
+          OnboardingKeys.ndisPlanBudgets,
+          const ProfileFactUpsert(clearValue: true),
+        );
+      } else {
+        await _repository.upsertProfileFact(
+          id,
+          OnboardingKeys.ndisPlanBudgets,
+          ProfileFactUpsert(valueJson: budgetJson),
+        );
+      }
       await _putProfessionalFields(
         id,
         supportCoordinator,

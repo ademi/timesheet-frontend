@@ -28,6 +28,7 @@ class OnboardingAddressStep extends StatelessWidget {
           SiteFormFields(
             controller: controller,
             primaryMode: true,
+            nameAtEnd: true,
           ),
           if (controller.primarySiteSaved.value) ...[
             const SizedBox(height: 16),

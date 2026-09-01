@@ -238,7 +238,8 @@ class OnboardingSupportPlanStep extends StatelessWidget {
               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
             ],
             decoration: InputDecoration(
-              labelText: 'Core support budget',
+              labelText: 'Core supports budget',
+              prefixText: '\$ ',
               border: const OutlineInputBorder(),
               errorText: controller.budgetFieldError.value,
             ),
@@ -253,6 +254,7 @@ class OnboardingSupportPlanStep extends StatelessWidget {
             ],
             decoration: InputDecoration(
               labelText: 'Capacity building budget',
+              prefixText: '\$ ',
               border: const OutlineInputBorder(),
               errorText: controller.budgetFieldError.value,
             ),
@@ -266,7 +268,32 @@ class OnboardingSupportPlanStep extends StatelessWidget {
               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
             ],
             decoration: InputDecoration(
-              labelText: 'Capital support budget',
+              labelText: 'Capital supports budget',
+              prefixText: '\$ ',
+              border: const OutlineInputBorder(),
+              errorText: controller.budgetFieldError.value,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller.budgetOtherLabelCtrl,
+            enabled: enabled,
+            decoration: const InputDecoration(
+              labelText: 'Other budget label (optional)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller.budgetOtherCtrl,
+            enabled: enabled,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+            ],
+            decoration: InputDecoration(
+              labelText: 'Other budget amount',
+              prefixText: '\$ ',
               border: const OutlineInputBorder(),
               errorText: controller.budgetFieldError.value,
             ),

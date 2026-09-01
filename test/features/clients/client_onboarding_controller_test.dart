@@ -1091,7 +1091,7 @@ void main() {
     c.planManagementType.value = 'self_managed';
     c.budgetCoreCtrl.text = 'abc';
     expect(await c.submitSupportPlan(), isFalse);
-    expect(c.budgetFieldError.value, contains('valid numbers'));
+    expect(c.budgetFieldError.value, contains('dollar amounts'));
   });
 
   test('previousStep from representative resets kinship preset for contacts',
@@ -1203,5 +1203,15 @@ void main() {
       () => mock.patchContact('client-1', 'c-mother', captureAny()),
     ).captured.single as ClientContactWriteRequest;
     expect(body.legalRole, OnboardingKeys.relChildRepresentative);
+  });
+
+  test('siteNameCtrl is empty on init (no default Home)', () {
+    expect(c.siteNameCtrl.text, isEmpty);
+  });
+
+  test('resetForResume clears siteNameCtrl', () {
+    c.siteNameCtrl.text = 'Home';
+    c.resetForResume();
+    expect(c.siteNameCtrl.text, isEmpty);
   });
 }

@@ -31,6 +31,9 @@ class OnboardingKeys {
   static const budgetCore = 'budget_core';
   static const budgetCb = 'budget_cb';
   static const budgetCapital = 'budget_capital';
+  static const budgetOther = 'budget_other';
+  static const budgetOtherLabel = 'budget_other_label';
+  static const ndisPlanBudgets = 'ndis_plan_budgets';
   static const fundingNotToExceed = 'funding_not_to_exceed';
   static const supportCoordinatorName = 'support_coordinator_name';
   static const supportCoordinatorCompany = 'support_coordinator_company';
@@ -93,6 +96,9 @@ class OnboardingKeys {
     budgetCore,
     budgetCb,
     budgetCapital,
+    budgetOther,
+    budgetOtherLabel,
+    ndisPlanBudgets,
     fundingNotToExceed,
     supportCoordinatorName,
     supportCoordinatorCompany,

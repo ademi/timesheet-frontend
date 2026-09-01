@@ -132,6 +132,66 @@ void main() {
     store.dispose();
   });
 
+  test('applyProfileBundle hydrates ndis_plan_budgets JSON', () {
+    final store = SupportPlanFundingConsentStore(repository: mock);
+    store.applyProfileBundle(
+      const ClientProfileBundle(
+        facts: [
+          ClientProfileFactOut(
+            requirementKey: OnboardingKeys.ndisPlanBudgets,
+            valueJson: {
+              'budgets': [
+                {'type': 'core', 'amount_dollars': 5000},
+                {
+                  'type': 'other',
+                  'amount_dollars': 200,
+                  'label': 'Transport',
+                },
+              ],
+            },
+          ),
+        ],
+      ),
+    );
+    expect(store.budgetCoreCtrl.text, '5000');
+    expect(store.budgetOtherLabelCtrl.text, 'Transport');
+    expect(store.budgetOtherCtrl.text, '200');
+    store.dispose();
+  });
+
+  test('persistFacts upserts ndis_plan_budgets JSON not flat budget keys',
+      () async {
+    final putKeys = <String>[];
+    final values = <String, Object?>{};
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((inv) {
+      final key = inv.positionalArguments[1] as String;
+      final body = inv.positionalArguments[2] as ProfileFactUpsert;
+      putKeys.add(key);
+      values[key] = body.valueJson;
+      return Future.value();
+    });
+
+    final store = SupportPlanFundingConsentStore(repository: mock)
+      ..hasHydrated = true
+      ..planManagementType.value = 'ndia';
+    store.budgetCoreCtrl.text = '1000';
+    store.budgetCbCtrl.text = '500';
+
+    final failed = await store.persistFacts(clientId: 'c1');
+    expect(failed, isEmpty);
+    expect(putKeys, contains(OnboardingKeys.ndisPlanBudgets));
+    expect(putKeys, isNot(contains(OnboardingKeys.budgetCore)));
+    final json = values[OnboardingKeys.ndisPlanBudgets]! as Map;
+    final budgets = json['budgets'] as List;
+    expect(
+      budgets.any(
+        (b) => b['type'] == 'core' && b['amount_dollars'] == 1000,
+      ),
+      isTrue,
+    );
+    store.dispose();
+  });
+
   test('D10=A save before hydrate does not PUT facts', () async {
     final putKeys = <String>[];
     when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((inv) {
