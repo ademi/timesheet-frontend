@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/client_onboarding_controller.dart';
-import 'support_plan_professional_section.dart';
+import 'support_plan_specialists_panel.dart';
 
 class OnboardingSupportPlanStep extends StatelessWidget {
   const OnboardingSupportPlanStep({super.key, required this.controller});
@@ -299,40 +299,14 @@ class OnboardingSupportPlanStep extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          SupportPlanProfessionalSection(
-            title: 'Support coordinator (optional)',
-            nameLabel: 'SC name',
-            fields: controller.supportCoordinator,
-            expanded: controller.supportCoordinatorExpanded,
+          SupportPlanSpecialistsPanel(
+            specialists: controller.supportSpecialists,
             enabled: enabled,
-          ),
-          SupportPlanProfessionalSection(
-            title: 'Behavioural therapist (optional)',
-            nameLabel: 'Specialist name',
-            fields: controller.behaviouralTherapist,
-            expanded: controller.behaviouralTherapistExpanded,
-            enabled: enabled,
-          ),
-          SupportPlanProfessionalSection(
-            title: 'Speech therapist (optional)',
-            nameLabel: 'Specialist name',
-            fields: controller.speechTherapist,
-            expanded: controller.speechTherapistExpanded,
-            enabled: enabled,
-          ),
-          SupportPlanProfessionalSection(
-            title: 'Occupational therapist (optional)',
-            nameLabel: 'Specialist name',
-            fields: controller.occupationalTherapist,
-            expanded: controller.occupationalTherapistExpanded,
-            enabled: enabled,
-          ),
-          SupportPlanProfessionalSection(
-            title: 'Physiotherapist (optional)',
-            nameLabel: 'Specialist name',
-            fields: controller.physiotherapist,
-            expanded: controller.physiotherapistExpanded,
-            enabled: enabled,
+            onAdd: (context) => SupportPlanSpecialistsPanel.showTypePicker(
+              context,
+              onSelected: controller.addSupportSpecialist,
+            ),
+            onRemove: controller.removeSupportSpecialist,
           ),
         ],
       );

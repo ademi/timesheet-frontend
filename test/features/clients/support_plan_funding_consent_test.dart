@@ -192,6 +192,49 @@ void main() {
     store.dispose();
   });
 
+  test('applyProfileBundle hydrates support_plan_specialists JSON', () {
+    final store = SupportPlanFundingConsentStore(repository: mock);
+    store.applyProfileBundle(
+      const ClientProfileBundle(
+        facts: [
+          ClientProfileFactOut(
+            requirementKey: OnboardingKeys.supportPlanSpecialists,
+            valueJson: [
+              {
+                'type': 'physiotherapist',
+                'name': 'Bob PT',
+              },
+            ],
+          ),
+        ],
+      ),
+    );
+    expect(store.supportSpecialists, hasLength(1));
+    expect(store.supportSpecialists.first.fields.nameCtrl.text, 'Bob PT');
+    store.dispose();
+  });
+
+  test('persistFacts upserts support_plan_specialists not flat coordinator keys',
+      () async {
+    final putKeys = <String>[];
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((inv) {
+      putKeys.add(inv.positionalArguments[1] as String);
+      return Future.value();
+    });
+
+    final store = SupportPlanFundingConsentStore(repository: mock)
+      ..hasHydrated = true
+      ..planManagementType.value = 'ndia';
+    store.addSupportSpecialist('speech_therapist');
+    store.supportSpecialists.first.fields.nameCtrl.text = 'Alex';
+
+    final failed = await store.persistFacts(clientId: 'c1');
+    expect(failed, isEmpty);
+    expect(putKeys, contains(OnboardingKeys.supportPlanSpecialists));
+    expect(putKeys, isNot(contains(OnboardingKeys.supportCoordinatorName)));
+    store.dispose();
+  });
+
   test('D10=A save before hydrate does not PUT facts', () async {
     final putKeys = <String>[];
     when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((inv) {

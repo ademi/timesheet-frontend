@@ -8,6 +8,7 @@ import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/models/identity_card_attachment.dart';
+import 'package:rostiq/features/clients/models/support_plan_specialist_types.dart';
 import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
 import 'package:rostiq/features/clients/widgets/contact_form_host.dart';
 import 'package:rostiq/features/clients/widgets/onboarding/onboarding_identity_step.dart';
@@ -1082,6 +1083,39 @@ void main() {
         any(),
       ),
     ).called(1);
+  });
+
+  test('addSupportSpecialist allows duplicate types', () {
+    c.addSupportSpecialist(SupportPlanSpecialistTypes.speechTherapist);
+    c.addSupportSpecialist(SupportPlanSpecialistTypes.speechTherapist);
+    expect(c.supportSpecialists, hasLength(2));
+    c.clearSupportSpecialists();
+  });
+
+  test('submitSupportPlan upserts support_plan_specialists JSON', () async {
+    when(() => mock.upsertProfileFact(any(), any(), any()))
+        .thenAnswer((_) async {});
+    c.client.value = _fakeClient;
+    c.step.value = 5;
+    c.ndisCtrl.text = '431234567';
+    c.planManagementType.value = 'self_managed';
+    c.addSupportSpecialist(SupportPlanSpecialistTypes.supportCoordinator);
+    c.supportSpecialists.first.fields.nameCtrl.text = 'Jane SC';
+
+    expect(await c.submitSupportPlan(), isTrue);
+
+    final captured = verify(
+      () => mock.upsertProfileFact(
+        'client-1',
+        OnboardingKeys.supportPlanSpecialists,
+        captureAny(),
+      ),
+    ).captured.single as ProfileFactUpsert;
+    final value = captured.valueJson as List;
+    expect(value, hasLength(1));
+    expect(value.first['type'], SupportPlanSpecialistTypes.supportCoordinator);
+    expect(value.first['name'], 'Jane SC');
+    c.clearSupportSpecialists();
   });
 
   test('submitSupportPlan rejects invalid budget values', () async {

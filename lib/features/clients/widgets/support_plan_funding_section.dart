@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../controllers/support_plan_funding_consent_store.dart';
-import 'onboarding/support_plan_professional_section.dart';
+import 'onboarding/support_plan_specialists_panel.dart';
 
 /// Care-plan Support Plan section (profile facts + NDIA PDF).
 class SupportPlanFundingSection extends StatelessWidget {
@@ -307,40 +307,14 @@ class SupportPlanFundingSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          SupportPlanProfessionalSection(
-            title: 'Support coordinator (optional)',
-            nameLabel: 'SC name',
-            fields: store.supportCoordinator,
-            expanded: store.supportCoordinatorExpanded,
+          SupportPlanSpecialistsPanel(
+            specialists: store.supportSpecialists,
             enabled: enabled,
-          ),
-          SupportPlanProfessionalSection(
-            title: 'Behavioural therapist (optional)',
-            nameLabel: 'Specialist name',
-            fields: store.behaviouralTherapist,
-            expanded: store.behaviouralTherapistExpanded,
-            enabled: enabled,
-          ),
-          SupportPlanProfessionalSection(
-            title: 'Speech therapist (optional)',
-            nameLabel: 'Specialist name',
-            fields: store.speechTherapist,
-            expanded: store.speechTherapistExpanded,
-            enabled: enabled,
-          ),
-          SupportPlanProfessionalSection(
-            title: 'Occupational therapist (optional)',
-            nameLabel: 'Specialist name',
-            fields: store.occupationalTherapist,
-            expanded: store.occupationalTherapistExpanded,
-            enabled: enabled,
-          ),
-          SupportPlanProfessionalSection(
-            title: 'Physiotherapist (optional)',
-            nameLabel: 'Specialist name',
-            fields: store.physiotherapist,
-            expanded: store.physiotherapistExpanded,
-            enabled: enabled,
+            onAdd: (context) => SupportPlanSpecialistsPanel.showTypePicker(
+              context,
+              onSelected: store.addSupportSpecialist,
+            ),
+            onRemove: store.removeSupportSpecialist,
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String?>(

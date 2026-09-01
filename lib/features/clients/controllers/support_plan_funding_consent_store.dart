@@ -8,7 +8,8 @@ import '../../documents/data/document_pipeline.dart';
 import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../services/client_legal_upload_helper.dart';
-import '../models/support_plan_professional_fields.dart';
+import '../models/support_plan_specialist_entry.dart';
+import '../utils/support_plan_specialists_codec.dart';
 import '../utils/ndis_plan_budgets_codec.dart';
 import '../utils/onboarding_keys.dart';
 
@@ -67,16 +68,7 @@ class SupportPlanFundingConsentStore {
   final budgetOtherLabelCtrl = TextEditingController();
   final budgetOtherCtrl = TextEditingController();
   final supportPlanOtherCtrl = TextEditingController();
-  final supportCoordinator = SupportPlanProfessionalFields();
-  final behaviouralTherapist = SupportPlanProfessionalFields();
-  final speechTherapist = SupportPlanProfessionalFields();
-  final occupationalTherapist = SupportPlanProfessionalFields();
-  final physiotherapist = SupportPlanProfessionalFields();
-  final supportCoordinatorExpanded = false.obs;
-  final behaviouralTherapistExpanded = false.obs;
-  final speechTherapistExpanded = false.obs;
-  final occupationalTherapistExpanded = false.obs;
-  final physiotherapistExpanded = false.obs;
+  final supportSpecialists = <SupportPlanSpecialistEntry>[].obs;
   final preferredClaimingMethod = RxnString();
   final preferredClaimingOtherCtrl = TextEditingController();
   final ndisPdfOnFile = false.obs;
@@ -151,60 +143,8 @@ class SupportPlanFundingConsentStore {
       otherAmount: budgetOtherCtrl,
     );
     supportPlanOtherCtrl.text = _resolveSupportPlanOther(bundle);
-    _hydrateProfessional(
-      bundle,
-      supportCoordinator,
-      nameKey: OnboardingKeys.supportCoordinatorName,
-      companyKey: OnboardingKeys.supportCoordinatorCompany,
-      abnAcnKey: OnboardingKeys.supportCoordinatorAbnAcn,
-      orgIdKey: OnboardingKeys.supportCoordinatorOrgId,
-      phoneKey: OnboardingKeys.supportCoordinatorPhone,
-      emailKey: OnboardingKeys.supportCoordinatorEmail,
-      addressKey: OnboardingKeys.supportCoordinatorAddress,
-    );
-    _hydrateProfessional(
-      bundle,
-      behaviouralTherapist,
-      nameKey: OnboardingKeys.behaviouralTherapistName,
-      companyKey: OnboardingKeys.behaviouralTherapistCompany,
-      abnAcnKey: OnboardingKeys.behaviouralTherapistAbnAcn,
-      orgIdKey: OnboardingKeys.behaviouralTherapistOrgId,
-      phoneKey: OnboardingKeys.behaviouralTherapistPhone,
-      emailKey: OnboardingKeys.behaviouralTherapistEmail,
-      addressKey: OnboardingKeys.behaviouralTherapistAddress,
-    );
-    _hydrateProfessional(
-      bundle,
-      speechTherapist,
-      nameKey: OnboardingKeys.speechTherapistName,
-      companyKey: OnboardingKeys.speechTherapistCompany,
-      abnAcnKey: OnboardingKeys.speechTherapistAbnAcn,
-      orgIdKey: OnboardingKeys.speechTherapistOrgId,
-      phoneKey: OnboardingKeys.speechTherapistPhone,
-      emailKey: OnboardingKeys.speechTherapistEmail,
-      addressKey: OnboardingKeys.speechTherapistAddress,
-    );
-    _hydrateProfessional(
-      bundle,
-      occupationalTherapist,
-      nameKey: OnboardingKeys.occupationalTherapistName,
-      companyKey: OnboardingKeys.occupationalTherapistCompany,
-      abnAcnKey: OnboardingKeys.occupationalTherapistAbnAcn,
-      orgIdKey: OnboardingKeys.occupationalTherapistOrgId,
-      phoneKey: OnboardingKeys.occupationalTherapistPhone,
-      emailKey: OnboardingKeys.occupationalTherapistEmail,
-      addressKey: OnboardingKeys.occupationalTherapistAddress,
-    );
-    _hydrateProfessional(
-      bundle,
-      physiotherapist,
-      nameKey: OnboardingKeys.physiotherapistName,
-      companyKey: OnboardingKeys.physiotherapistCompany,
-      abnAcnKey: OnboardingKeys.physiotherapistAbnAcn,
-      orgIdKey: OnboardingKeys.physiotherapistOrgId,
-      phoneKey: OnboardingKeys.physiotherapistPhone,
-      emailKey: OnboardingKeys.physiotherapistEmail,
-      addressKey: OnboardingKeys.physiotherapistAddress,
+    replaceSupportSpecialists(
+      SupportPlanSpecialistsCodec.resolveFromFacts(bundle.facts),
     );
     preferredClaimingMethod.value =
         _stringFact(bundle, OnboardingKeys.preferredClaimingMethod);
@@ -418,66 +358,39 @@ class SupportPlanFundingConsentStore {
         ),
       ));
     }
-    _putProfessionalValues(
-      putValue,
-      supportCoordinator,
-      nameKey: OnboardingKeys.supportCoordinatorName,
-      companyKey: OnboardingKeys.supportCoordinatorCompany,
-      abnAcnKey: OnboardingKeys.supportCoordinatorAbnAcn,
-      orgIdKey: OnboardingKeys.supportCoordinatorOrgId,
-      phoneKey: OnboardingKeys.supportCoordinatorPhone,
-      emailKey: OnboardingKeys.supportCoordinatorEmail,
-      addressKey: OnboardingKeys.supportCoordinatorAddress,
-      labelPrefix: 'Support coordinator',
-    );
-    _putProfessionalValues(
-      putValue,
-      behaviouralTherapist,
-      nameKey: OnboardingKeys.behaviouralTherapistName,
-      companyKey: OnboardingKeys.behaviouralTherapistCompany,
-      abnAcnKey: OnboardingKeys.behaviouralTherapistAbnAcn,
-      orgIdKey: OnboardingKeys.behaviouralTherapistOrgId,
-      phoneKey: OnboardingKeys.behaviouralTherapistPhone,
-      emailKey: OnboardingKeys.behaviouralTherapistEmail,
-      addressKey: OnboardingKeys.behaviouralTherapistAddress,
-      labelPrefix: 'Behavioural therapist',
-    );
-    _putProfessionalValues(
-      putValue,
-      speechTherapist,
-      nameKey: OnboardingKeys.speechTherapistName,
-      companyKey: OnboardingKeys.speechTherapistCompany,
-      abnAcnKey: OnboardingKeys.speechTherapistAbnAcn,
-      orgIdKey: OnboardingKeys.speechTherapistOrgId,
-      phoneKey: OnboardingKeys.speechTherapistPhone,
-      emailKey: OnboardingKeys.speechTherapistEmail,
-      addressKey: OnboardingKeys.speechTherapistAddress,
-      labelPrefix: 'Speech therapist',
-    );
-    _putProfessionalValues(
-      putValue,
-      occupationalTherapist,
-      nameKey: OnboardingKeys.occupationalTherapistName,
-      companyKey: OnboardingKeys.occupationalTherapistCompany,
-      abnAcnKey: OnboardingKeys.occupationalTherapistAbnAcn,
-      orgIdKey: OnboardingKeys.occupationalTherapistOrgId,
-      phoneKey: OnboardingKeys.occupationalTherapistPhone,
-      emailKey: OnboardingKeys.occupationalTherapistEmail,
-      addressKey: OnboardingKeys.occupationalTherapistAddress,
-      labelPrefix: 'Occupational therapist',
-    );
-    _putProfessionalValues(
-      putValue,
-      physiotherapist,
-      nameKey: OnboardingKeys.physiotherapistName,
-      companyKey: OnboardingKeys.physiotherapistCompany,
-      abnAcnKey: OnboardingKeys.physiotherapistAbnAcn,
-      orgIdKey: OnboardingKeys.physiotherapistOrgId,
-      phoneKey: OnboardingKeys.physiotherapistPhone,
-      emailKey: OnboardingKeys.physiotherapistEmail,
-      addressKey: OnboardingKeys.physiotherapistAddress,
-      labelPrefix: 'Physiotherapist',
-    );
+    final specialistJson =
+        SupportPlanSpecialistsCodec.toFactValue(supportSpecialists);
+    if (specialistJson.isEmpty) {
+      if (_presentKeys.contains(OnboardingKeys.supportPlanSpecialists)) {
+        jobs.add((
+          key: OnboardingKeys.supportPlanSpecialists,
+          label: 'Support specialists',
+          future: _repository.upsertProfileFact(
+            clientId,
+            OnboardingKeys.supportPlanSpecialists,
+            ProfileFactUpsert(
+              clearValue: true,
+              expectedUpdatedAt:
+                  _factUpdatedAt[OnboardingKeys.supportPlanSpecialists],
+            ),
+          ),
+        ));
+      }
+    } else {
+      jobs.add((
+        key: OnboardingKeys.supportPlanSpecialists,
+        label: 'Support specialists',
+        future: _repository.upsertProfileFact(
+          clientId,
+          OnboardingKeys.supportPlanSpecialists,
+          ProfileFactUpsert(
+            valueJson: specialistJson,
+            expectedUpdatedAt:
+                _factUpdatedAt[OnboardingKeys.supportPlanSpecialists],
+          ),
+        ),
+      ));
+    }
 
     final claiming = preferredClaimingMethod.value?.trim();
     if (claiming != null && claiming.isNotEmpty) {
@@ -659,60 +572,38 @@ class SupportPlanFundingConsentStore {
     budgetOtherLabelCtrl.dispose();
     budgetOtherCtrl.dispose();
     supportPlanOtherCtrl.dispose();
-    supportCoordinator.dispose();
-    behaviouralTherapist.dispose();
-    speechTherapist.dispose();
-    occupationalTherapist.dispose();
-    physiotherapist.dispose();
+    clearSupportSpecialists();
     preferredClaimingOtherCtrl.dispose();
     consentSignerNameCtrl.dispose();
+  }
+
+  void clearSupportSpecialists() {
+    for (final entry in supportSpecialists) {
+      entry.dispose();
+    }
+    supportSpecialists.clear();
+  }
+
+  void addSupportSpecialist(String type) {
+    supportSpecialists.add(SupportPlanSpecialistEntry.create(type));
+  }
+
+  void removeSupportSpecialist(String id) {
+    final index = supportSpecialists.indexWhere((e) => e.id == id);
+    if (index < 0) return;
+    supportSpecialists[index].dispose();
+    supportSpecialists.removeAt(index);
+  }
+
+  void replaceSupportSpecialists(Iterable<SupportPlanSpecialistEntry> entries) {
+    clearSupportSpecialists();
+    supportSpecialists.assignAll(entries);
   }
 
   static String _resolveSupportPlanOther(ClientProfileBundle bundle) {
     final other = _stringFact(bundle, OnboardingKeys.supportPlanOther);
     if (other != null && other.isNotEmpty) return other;
     return _numberText(bundle, OnboardingKeys.fundingNotToExceed);
-  }
-
-  static void _hydrateProfessional(
-    ClientProfileBundle bundle,
-    SupportPlanProfessionalFields fields, {
-    required String nameKey,
-    required String companyKey,
-    required String abnAcnKey,
-    required String orgIdKey,
-    required String phoneKey,
-    required String emailKey,
-    required String addressKey,
-  }) {
-    fields.nameCtrl.text = _stringFact(bundle, nameKey) ?? '';
-    fields.companyCtrl.text = _stringFact(bundle, companyKey) ?? '';
-    fields.abnAcnCtrl.text = _stringFact(bundle, abnAcnKey) ?? '';
-    fields.orgIdCtrl.text = _stringFact(bundle, orgIdKey) ?? '';
-    fields.phoneCtrl.text = _stringFact(bundle, phoneKey) ?? '';
-    fields.emailCtrl.text = _stringFact(bundle, emailKey) ?? '';
-    fields.addressCtrl.text = _stringFact(bundle, addressKey) ?? '';
-  }
-
-  static void _putProfessionalValues(
-    void Function(String key, String label, Object? value) putValue,
-    SupportPlanProfessionalFields fields, {
-    required String nameKey,
-    required String companyKey,
-    required String abnAcnKey,
-    required String orgIdKey,
-    required String phoneKey,
-    required String emailKey,
-    required String addressKey,
-    required String labelPrefix,
-  }) {
-    putValue(nameKey, '$labelPrefix name', fields.nameCtrl.text.trim());
-    putValue(companyKey, '$labelPrefix company', fields.companyCtrl.text.trim());
-    putValue(abnAcnKey, '$labelPrefix ACN/ABN', fields.abnAcnCtrl.text.trim());
-    putValue(orgIdKey, '$labelPrefix org ID', fields.orgIdCtrl.text.trim());
-    putValue(phoneKey, '$labelPrefix phone', fields.phoneCtrl.text.trim());
-    putValue(emailKey, '$labelPrefix email', fields.emailCtrl.text.trim());
-    putValue(addressKey, '$labelPrefix address', fields.addressCtrl.text.trim());
   }
 
   static ClientProfileFactOut? _fact(ClientProfileBundle b, String key) {

@@ -15,11 +15,13 @@ import '../../documents/data/document_pipeline.dart';
 import '../data/models/client_models.dart';
 import '../data/models/client_profile_models.dart';
 import '../models/identity_card_attachment.dart';
-import '../models/support_plan_professional_fields.dart';
+import '../models/support_plan_specialist_entry.dart';
+import '../models/support_plan_specialist_entry.dart';
 import '../data/repositories/clients_repository.dart';
 import '../services/client_legal_upload_helper.dart';
 import '../utils/onboarding_age.dart';
 import '../utils/ndis_plan_budgets_codec.dart';
+import '../utils/support_plan_specialists_codec.dart';
 import '../utils/onboarding_keys.dart';
 import '../utils/site_geocode_apply.dart';
 import '../widgets/contact_form_host.dart';
@@ -219,16 +221,7 @@ class ClientOnboardingController extends GetxController
   final budgetOtherLabelCtrl = TextEditingController();
   final budgetOtherCtrl = TextEditingController();
   final supportPlanOtherCtrl = TextEditingController();
-  final supportCoordinator = SupportPlanProfessionalFields();
-  final behaviouralTherapist = SupportPlanProfessionalFields();
-  final speechTherapist = SupportPlanProfessionalFields();
-  final occupationalTherapist = SupportPlanProfessionalFields();
-  final physiotherapist = SupportPlanProfessionalFields();
-  final supportCoordinatorExpanded = false.obs;
-  final behaviouralTherapistExpanded = false.obs;
-  final speechTherapistExpanded = false.obs;
-  final occupationalTherapistExpanded = false.obs;
-  final physiotherapistExpanded = false.obs;
+  final supportSpecialists = <SupportPlanSpecialistEntry>[].obs;
 
   // ── Legal pack ────────────────────────────────────────────────────────
   final consentComplete = false.obs;
@@ -384,16 +377,7 @@ class ClientOnboardingController extends GetxController
     budgetOtherLabelCtrl.clear();
     budgetOtherCtrl.clear();
     supportPlanOtherCtrl.clear();
-    supportCoordinator.clear();
-    behaviouralTherapist.clear();
-    speechTherapist.clear();
-    occupationalTherapist.clear();
-    physiotherapist.clear();
-    supportCoordinatorExpanded.value = false;
-    behaviouralTherapistExpanded.value = false;
-    speechTherapistExpanded.value = false;
-    occupationalTherapistExpanded.value = false;
-    physiotherapistExpanded.value = false;
+    clearSupportSpecialists();
 
     consentComplete.value = false;
     serviceAgreementComplete.value = false;
@@ -522,76 +506,6 @@ class ClientOnboardingController extends GetxController
           planStartDate.value = _parseHydratedDate(stored);
         case OnboardingKeys.planEndDate:
           planEndDate.value = _parseHydratedDate(stored);
-        case OnboardingKeys.supportCoordinatorName:
-          supportCoordinator.nameCtrl.text = stored ?? '';
-        case OnboardingKeys.supportCoordinatorCompany:
-          supportCoordinator.companyCtrl.text = stored ?? '';
-        case OnboardingKeys.supportCoordinatorAbnAcn:
-          supportCoordinator.abnAcnCtrl.text = stored ?? '';
-        case OnboardingKeys.supportCoordinatorOrgId:
-          supportCoordinator.orgIdCtrl.text = stored ?? '';
-        case OnboardingKeys.supportCoordinatorPhone:
-          supportCoordinator.phoneCtrl.text = stored ?? '';
-        case OnboardingKeys.supportCoordinatorEmail:
-          supportCoordinator.emailCtrl.text = stored ?? '';
-        case OnboardingKeys.supportCoordinatorAddress:
-          supportCoordinator.addressCtrl.text = stored ?? '';
-        case OnboardingKeys.behaviouralTherapistName:
-          behaviouralTherapist.nameCtrl.text = stored ?? '';
-        case OnboardingKeys.behaviouralTherapistCompany:
-          behaviouralTherapist.companyCtrl.text = stored ?? '';
-        case OnboardingKeys.behaviouralTherapistAbnAcn:
-          behaviouralTherapist.abnAcnCtrl.text = stored ?? '';
-        case OnboardingKeys.behaviouralTherapistOrgId:
-          behaviouralTherapist.orgIdCtrl.text = stored ?? '';
-        case OnboardingKeys.behaviouralTherapistPhone:
-          behaviouralTherapist.phoneCtrl.text = stored ?? '';
-        case OnboardingKeys.behaviouralTherapistEmail:
-          behaviouralTherapist.emailCtrl.text = stored ?? '';
-        case OnboardingKeys.behaviouralTherapistAddress:
-          behaviouralTherapist.addressCtrl.text = stored ?? '';
-        case OnboardingKeys.speechTherapistName:
-          speechTherapist.nameCtrl.text = stored ?? '';
-        case OnboardingKeys.speechTherapistCompany:
-          speechTherapist.companyCtrl.text = stored ?? '';
-        case OnboardingKeys.speechTherapistAbnAcn:
-          speechTherapist.abnAcnCtrl.text = stored ?? '';
-        case OnboardingKeys.speechTherapistOrgId:
-          speechTherapist.orgIdCtrl.text = stored ?? '';
-        case OnboardingKeys.speechTherapistPhone:
-          speechTherapist.phoneCtrl.text = stored ?? '';
-        case OnboardingKeys.speechTherapistEmail:
-          speechTherapist.emailCtrl.text = stored ?? '';
-        case OnboardingKeys.speechTherapistAddress:
-          speechTherapist.addressCtrl.text = stored ?? '';
-        case OnboardingKeys.occupationalTherapistName:
-          occupationalTherapist.nameCtrl.text = stored ?? '';
-        case OnboardingKeys.occupationalTherapistCompany:
-          occupationalTherapist.companyCtrl.text = stored ?? '';
-        case OnboardingKeys.occupationalTherapistAbnAcn:
-          occupationalTherapist.abnAcnCtrl.text = stored ?? '';
-        case OnboardingKeys.occupationalTherapistOrgId:
-          occupationalTherapist.orgIdCtrl.text = stored ?? '';
-        case OnboardingKeys.occupationalTherapistPhone:
-          occupationalTherapist.phoneCtrl.text = stored ?? '';
-        case OnboardingKeys.occupationalTherapistEmail:
-          occupationalTherapist.emailCtrl.text = stored ?? '';
-        case OnboardingKeys.occupationalTherapistAddress:
-          occupationalTherapist.addressCtrl.text = stored ?? '';
-        case OnboardingKeys.physiotherapistName:
-          physiotherapist.nameCtrl.text = stored ?? '';
-        case OnboardingKeys.physiotherapistCompany:
-          physiotherapist.companyCtrl.text = stored ?? '';
-        case OnboardingKeys.physiotherapistAbnAcn:
-          physiotherapist.abnAcnCtrl.text = stored ?? '';
-        case OnboardingKeys.physiotherapistOrgId:
-          physiotherapist.orgIdCtrl.text = stored ?? '';
-        case OnboardingKeys.physiotherapistPhone:
-          physiotherapist.phoneCtrl.text = stored ?? '';
-        case OnboardingKeys.physiotherapistEmail:
-          physiotherapist.emailCtrl.text = stored ?? '';
-        case OnboardingKeys.physiotherapistAddress:
-          physiotherapist.addressCtrl.text = stored ?? '';
       }
     }
     NdisPlanBudgetsCodec.applyToControllers(
@@ -601,6 +515,9 @@ class ClientOnboardingController extends GetxController
       capital: budgetCapitalCtrl,
       otherLabel: budgetOtherLabelCtrl,
       otherAmount: budgetOtherCtrl,
+    );
+    replaceSupportSpecialists(
+      SupportPlanSpecialistsCodec.resolveFromFacts(factsList),
     );
     final resolvedOther = (otherText != null && otherText.isNotEmpty)
         ? otherText
@@ -691,11 +608,7 @@ class ClientOnboardingController extends GetxController
     budgetOtherLabelCtrl.dispose();
     budgetOtherCtrl.dispose();
     supportPlanOtherCtrl.dispose();
-    supportCoordinator.dispose();
-    behaviouralTherapist.dispose();
-    speechTherapist.dispose();
-    occupationalTherapist.dispose();
-    physiotherapist.dispose();
+    clearSupportSpecialists();
     consentSignerNameCtrl.dispose();
     super.onClose();
   }
@@ -1519,61 +1432,21 @@ class ClientOnboardingController extends GetxController
           ProfileFactUpsert(valueJson: budgetJson),
         );
       }
-      await _putProfessionalFields(
-        id,
-        supportCoordinator,
-        nameKey: OnboardingKeys.supportCoordinatorName,
-        companyKey: OnboardingKeys.supportCoordinatorCompany,
-        abnAcnKey: OnboardingKeys.supportCoordinatorAbnAcn,
-        orgIdKey: OnboardingKeys.supportCoordinatorOrgId,
-        phoneKey: OnboardingKeys.supportCoordinatorPhone,
-        emailKey: OnboardingKeys.supportCoordinatorEmail,
-        addressKey: OnboardingKeys.supportCoordinatorAddress,
-      );
-      await _putProfessionalFields(
-        id,
-        behaviouralTherapist,
-        nameKey: OnboardingKeys.behaviouralTherapistName,
-        companyKey: OnboardingKeys.behaviouralTherapistCompany,
-        abnAcnKey: OnboardingKeys.behaviouralTherapistAbnAcn,
-        orgIdKey: OnboardingKeys.behaviouralTherapistOrgId,
-        phoneKey: OnboardingKeys.behaviouralTherapistPhone,
-        emailKey: OnboardingKeys.behaviouralTherapistEmail,
-        addressKey: OnboardingKeys.behaviouralTherapistAddress,
-      );
-      await _putProfessionalFields(
-        id,
-        speechTherapist,
-        nameKey: OnboardingKeys.speechTherapistName,
-        companyKey: OnboardingKeys.speechTherapistCompany,
-        abnAcnKey: OnboardingKeys.speechTherapistAbnAcn,
-        orgIdKey: OnboardingKeys.speechTherapistOrgId,
-        phoneKey: OnboardingKeys.speechTherapistPhone,
-        emailKey: OnboardingKeys.speechTherapistEmail,
-        addressKey: OnboardingKeys.speechTherapistAddress,
-      );
-      await _putProfessionalFields(
-        id,
-        occupationalTherapist,
-        nameKey: OnboardingKeys.occupationalTherapistName,
-        companyKey: OnboardingKeys.occupationalTherapistCompany,
-        abnAcnKey: OnboardingKeys.occupationalTherapistAbnAcn,
-        orgIdKey: OnboardingKeys.occupationalTherapistOrgId,
-        phoneKey: OnboardingKeys.occupationalTherapistPhone,
-        emailKey: OnboardingKeys.occupationalTherapistEmail,
-        addressKey: OnboardingKeys.occupationalTherapistAddress,
-      );
-      await _putProfessionalFields(
-        id,
-        physiotherapist,
-        nameKey: OnboardingKeys.physiotherapistName,
-        companyKey: OnboardingKeys.physiotherapistCompany,
-        abnAcnKey: OnboardingKeys.physiotherapistAbnAcn,
-        orgIdKey: OnboardingKeys.physiotherapistOrgId,
-        phoneKey: OnboardingKeys.physiotherapistPhone,
-        emailKey: OnboardingKeys.physiotherapistEmail,
-        addressKey: OnboardingKeys.physiotherapistAddress,
-      );
+      final specialistJson =
+          SupportPlanSpecialistsCodec.toFactValue(supportSpecialists);
+      if (specialistJson.isEmpty) {
+        await _repository.upsertProfileFact(
+          id,
+          OnboardingKeys.supportPlanSpecialists,
+          const ProfileFactUpsert(clearValue: true),
+        );
+      } else {
+        await _repository.upsertProfileFact(
+          id,
+          OnboardingKeys.supportPlanSpecialists,
+          ProfileFactUpsert(valueJson: specialistJson),
+        );
+      }
 
       if (step.value == 5) step.value = 6;
       return true;
@@ -1813,36 +1686,27 @@ class ClientOnboardingController extends GetxController
     );
   }
 
-  Future<void> _putProfessionalFields(
-    String clientId,
-    SupportPlanProfessionalFields fields, {
-    required String nameKey,
-    required String companyKey,
-    required String abnAcnKey,
-    required String orgIdKey,
-    required String phoneKey,
-    required String emailKey,
-    required String addressKey,
-  }) async {
-    await _putOptionalFact(clientId, nameKey, fields.nameCtrl.text.trim());
-    await _putOptionalFact(
-      clientId,
-      companyKey,
-      fields.companyCtrl.text.trim(),
-    );
-    await _putOptionalFact(
-      clientId,
-      abnAcnKey,
-      fields.abnAcnCtrl.text.trim(),
-    );
-    await _putOptionalFact(clientId, orgIdKey, fields.orgIdCtrl.text.trim());
-    await _putOptionalFact(clientId, phoneKey, fields.phoneCtrl.text.trim());
-    await _putOptionalFact(clientId, emailKey, fields.emailCtrl.text.trim());
-    await _putOptionalFact(
-      clientId,
-      addressKey,
-      fields.addressCtrl.text.trim(),
-    );
+  void clearSupportSpecialists() {
+    for (final entry in supportSpecialists) {
+      entry.dispose();
+    }
+    supportSpecialists.clear();
+  }
+
+  void addSupportSpecialist(String type) {
+    supportSpecialists.add(SupportPlanSpecialistEntry.create(type));
+  }
+
+  void removeSupportSpecialist(String id) {
+    final index = supportSpecialists.indexWhere((e) => e.id == id);
+    if (index < 0) return;
+    supportSpecialists[index].dispose();
+    supportSpecialists.removeAt(index);
+  }
+
+  void replaceSupportSpecialists(Iterable<SupportPlanSpecialistEntry> entries) {
+    clearSupportSpecialists();
+    supportSpecialists.assignAll(entries);
   }
 
   Future<void> _persistIdentityCards(String clientId) async {
