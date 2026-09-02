@@ -1,80 +1,40 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' as getx;
 
-import '../../app/data/datasources/remote/auth_remote_datasource.dart';
-import '../../app/data/models/auth/auth_token_model.dart';
 import '../../app/routes/app_routes.dart';
-import '../constants/app_constants.dart';
+import '../auth/auth_session_invalidation.dart';
+import '../services/token_refresh_service.dart';
 import '../services/token_storage.dart';
 import 'must_change_password.dart';
 
 /// Marks a request that already went through one 401 → refresh → retry cycle.
 const String kAuth401RetriedExtra = 'auth_401_retried';
 
-/// Attaches Bearer tokens, refreshes on 401 via [plainDio] (auth base URL),
+/// Attaches Bearer tokens, refreshes on 401 via [TokenRefreshService],
 /// and retries on [authenticatedDio].
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required TokenStorage storage,
-    required Dio plainDio,
+    required TokenRefreshService refreshService,
     required Dio authenticatedDio,
   })  : _storage = storage,
-        _plainDio = plainDio,
+        _refreshService = refreshService,
         _authenticatedDio = authenticatedDio;
 
   final TokenStorage _storage;
-  final Dio _plainDio;
+  final TokenRefreshService _refreshService;
   final Dio _authenticatedDio;
-
-  Future<void>? _refreshFuture;
 
   bool _isAuthRefreshPath(String path) => path.contains('/v1/auth/refresh');
 
   bool _isAuthLoginPath(String path) => path.contains('/v1/auth/login');
 
-  Future<void> _persistTokens(AuthTokenModel tokens) async {
-    await _storage.persistTokens(
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-    );
-  }
-
-  Future<void> _clearTokens() async {
-    await _storage.clear();
+  Future<void> _invalidateSession() async {
+    await invalidateStoredAuthSession();
   }
 
   void _redirectToLogin() {
     getx.Get.offAllNamed(AppRoutes.login);
-  }
-
-  Future<void> _refreshOrWait() async {
-    if (_refreshFuture != null) {
-      await _refreshFuture!;
-      return;
-    }
-    final refreshToken = _storage.refreshToken;
-    if (refreshToken == null || refreshToken.isEmpty) {
-      throw DioException(
-        requestOptions: RequestOptions(
-          path: '/v1/auth/refresh',
-          baseUrl: AppConstants.baseUrl,
-        ),
-        message: 'Missing refresh token',
-      );
-    }
-    final future = () async {
-      final tokens = await executeRefreshRequest(_plainDio, refreshToken);
-      await _persistTokens(tokens);
-      redirectToFirstLoginIfNeeded(
-        mustChangePassword: tokens.mustChangePassword,
-      );
-    }();
-    _refreshFuture = future;
-    try {
-      await future;
-    } finally {
-      _refreshFuture = null;
-    }
   }
 
   @override
@@ -108,13 +68,13 @@ class AuthInterceptor extends Interceptor {
 
     final options = err.requestOptions;
     if (options.extra[kAuth401RetriedExtra] == true) {
-      await _clearTokens();
+      await _invalidateSession();
       _redirectToLogin();
       return handler.reject(err);
     }
 
     if (_isAuthRefreshPath(options.path)) {
-      await _clearTokens();
+      await _invalidateSession();
       _redirectToLogin();
       return handler.reject(err);
     }
@@ -123,12 +83,16 @@ class AuthInterceptor extends Interceptor {
       return handler.next(err);
     }
 
-    try {
-      await _refreshOrWait();
-    } catch (_) {
-      await _clearTokens();
-      _redirectToLogin();
-      return handler.reject(err);
+    final outcome = await _refreshService.refreshIfNeeded(force: true);
+    switch (outcome) {
+      case TokenRefreshOutcome.success:
+      case TokenRefreshOutcome.notNeeded:
+        break;
+      case TokenRefreshOutcome.invalidRefreshToken:
+        _redirectToLogin();
+        return handler.reject(err);
+      case TokenRefreshOutcome.transientFailure:
+        return handler.reject(err);
     }
 
     final newAccess = _storage.accessToken;

@@ -4,16 +4,14 @@ import 'package:get/get.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../app_routes.dart';
+import 'auth_route_utils.dart';
 
 /// Re-evaluates authentication on every resolution of a protected route.
 class AuthGuard extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
-    final hasToken = Get.isRegistered<TokenStorage>() &&
-        (Get.find<TokenStorage>().accessToken?.isNotEmpty ?? false);
-    if (!hasToken) {
-      return const RouteSettings(name: AppRoutes.gateway);
-    }
+    final unauthenticated = redirectWhenUnauthenticated();
+    if (unauthenticated != null) return unauthenticated;
 
     final claims = Get.find<TokenStorage>().jwtClaims;
     if (claims?.mustChangePassword == true && route != AppRoutes.firstLogin) {

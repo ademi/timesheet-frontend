@@ -30,6 +30,32 @@ class TokenStorage {
 
   String? get accessToken => _cachedAccessToken;
   String? get refreshToken => _cachedRefreshToken;
+
+  bool get hasRefreshToken =>
+      _cachedRefreshToken != null && _cachedRefreshToken!.isNotEmpty;
+
+  DateTime? get accessTokenExpiresAt {
+    final payload = _jwtPayload;
+    if (payload == null) return null;
+    final exp = _readExpSeconds(payload['exp']);
+    if (exp == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
+  }
+
+  /// True when a non-empty access token decodes and is not past its `exp`.
+  bool get hasValidAccessToken {
+    final token = _cachedAccessToken;
+    if (token == null || token.isEmpty) return false;
+    if (_jwtPayload == null) return false;
+    final expiresAt = accessTokenExpiresAt;
+    if (expiresAt == null) return false;
+    return DateTime.now().toUtc().isBefore(expiresAt);
+  }
+
+  bool get needsSessionRefresh => !hasValidAccessToken && hasRefreshToken;
+
+  /// True when the user can stay on a protected route and recover via refresh.
+  bool get canAttemptAuth => hasValidAccessToken || hasRefreshToken;
   String? get branchId => _cachedBranchId;
   String? get branchName => _cachedBranchName;
 
@@ -94,19 +120,17 @@ class TokenStorage {
   }
 
   bool needsProactiveRefresh({int thresholdSeconds = 300}) {
-    final payload = _jwtPayload;
-    if (payload == null) return false;
-    try {
-      final exp = payload['exp'];
-      if (exp is! int) return false;
-      final expiresAt =
-          DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
-      return DateTime.now().toUtc().isAfter(
-            expiresAt.subtract(Duration(seconds: thresholdSeconds)),
-          );
-    } catch (_) {
-      return false;
-    }
+    final expiresAt = accessTokenExpiresAt;
+    if (expiresAt == null) return false;
+    return DateTime.now().toUtc().isAfter(
+          expiresAt.subtract(Duration(seconds: thresholdSeconds)),
+        );
+  }
+
+  int? _readExpSeconds(Object? exp) {
+    if (exp is int) return exp;
+    if (exp is num) return exp.toInt();
+    return null;
   }
 
   Future<void> persist({

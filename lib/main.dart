@@ -7,11 +7,10 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
 import 'app/bindings/initial_binding.dart';
-import 'app/data/datasources/remote/auth_remote_datasource.dart';
 import 'app/routes/app_pages.dart';
 import 'app/themes/app_colors.dart';
-import 'core/network/api_client.dart';
 import 'core/services/session_service.dart';
+import 'core/services/token_refresh_service.dart';
 import 'core/services/token_storage.dart';
 import 'core/time/tenant_civil_time.dart';
 
@@ -64,26 +63,23 @@ class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _maybeRefreshToken();
+      _refreshSessionIfNeeded();
     }
   }
 
-  Future<void> _maybeRefreshToken() async {
+  Future<void> _refreshSessionIfNeeded() async {
     if (!Get.isRegistered<TokenStorage>()) return;
     final tokenStorage = Get.find<TokenStorage>();
-    if (!tokenStorage.needsProactiveRefresh()) return;
-    final refreshToken = tokenStorage.refreshToken;
-    if (refreshToken == null || refreshToken.isEmpty) return;
-    if (!Get.isRegistered<ApiClient>()) return;
+    if (!tokenStorage.needsProactiveRefresh() &&
+        !tokenStorage.needsSessionRefresh) {
+      return;
+    }
+    if (!Get.isRegistered<TokenRefreshService>()) return;
+
     try {
-      final client = Get.find<ApiClient>();
-      final newTokens =
-          await executeRefreshRequest(client.plainDio, refreshToken);
-      await tokenStorage.persistTokens(
-        accessToken: newTokens.accessToken,
-        refreshToken: newTokens.refreshToken,
-      );
-      if (Get.isRegistered<SessionService>()) {
+      final outcome = await Get.find<TokenRefreshService>().refreshIfNeeded();
+      if (outcome == TokenRefreshOutcome.success &&
+          Get.isRegistered<SessionService>()) {
         await Get.find<SessionService>().hydrateFromMeContext();
       }
     } catch (_) {

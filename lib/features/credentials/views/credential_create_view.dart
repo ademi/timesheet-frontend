@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/external_url.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
@@ -19,6 +20,9 @@ class CredentialCreateView extends GetView<CredentialsController> {
         final type = controller.selectedType.value;
         final sensitive = isSensitiveCredentialType(type);
         final govId = isGovernmentIdCredentialType(type);
+        // Depend on catalog load so help links appear without changing type.
+        final _ = controller.catalogRevision.value;
+        final helpUrl = credentialTypeHelpUrl(type);
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -66,6 +70,25 @@ class CredentialCreateView extends GetView<CredentialsController> {
                       },
               decoration: const InputDecoration(border: OutlineInputBorder()),
             ),
+            if (helpUrl != null) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed:
+                      () => openExternalUrl(helpUrl).then((opened) {
+                        if (!opened && context.mounted) {
+                          AppToast.error(
+                            'Could not open link',
+                            'Try again or open the course in your browser.',
+                          );
+                        }
+                      }),
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: const Text('Get this credential'),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             TextField(
               controller: controller.issuerCtrl,

@@ -37,4 +37,32 @@ void main() {
     expect(category.code, 'cpr');
     expect(category.label, 'CPR');
   });
+
+  test('CredentialCategory.fromJson parses help_url', () {
+    final category = CredentialCategory.fromJson({
+      'code': 'wwcc',
+      'label': 'Working with Children Check',
+      'help_url': 'https://example.com/wwcc',
+    });
+    expect(category.helpUrl, 'https://example.com/wwcc');
+  });
+
+  test('credentialTypeHelpUrl uses cached catalog values', () {
+    cacheCredentialCategoryLabels(const [
+      CredentialCategory(
+        code: 'ndis_induction',
+        label: 'NDIS induction',
+        helpUrl: 'https://example.com/induction',
+      ),
+    ]);
+    expect(
+      credentialTypeHelpUrl('ndis_induction'),
+      'https://example.com/induction',
+    );
+    expect(credentialTypeHelpUrl('wwcc'), isNull);
+  });
+
+  test('car insurance label uses fallback map', () {
+    expect(credentialTypeLabel('insurance'), 'Car insurance');
+  });
 }

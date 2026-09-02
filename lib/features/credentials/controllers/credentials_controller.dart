@@ -61,6 +61,9 @@ class CredentialsController extends GetxController {
 
   CredentialOut? selected;
 
+  /// Bumped after credential catalog fetch so create UI can show help links.
+  final catalogRevision = 0.obs;
+
   bool get canManage =>
       _session.hasPermission(AppPermissions.credentialsManage);
 
@@ -88,6 +91,7 @@ class CredentialsController extends GetxController {
   Future<void> _loadCredentialCategories() async {
     try {
       await _repository.listCredentialCategories();
+      catalogRevision.value++;
     } catch (_) {
       // Fallback labels remain available via credentialTypeLabel.
     }

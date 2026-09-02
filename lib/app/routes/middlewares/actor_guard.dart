@@ -6,16 +6,14 @@ import '../../../core/services/token_storage.dart';
 import '../../../features/shell/contractor_shell.dart';
 import '../../../features/shell/staff_shell.dart';
 import '../app_routes.dart';
+import 'auth_route_utils.dart';
 
 /// Ensures the signed-in actor matches the shell.
 class ActorGuard extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
-    final hasToken = Get.isRegistered<TokenStorage>() &&
-        (Get.find<TokenStorage>().accessToken?.isNotEmpty ?? false);
-    if (!hasToken) {
-      return const RouteSettings(name: AppRoutes.gateway);
-    }
+    final unauthenticated = redirectWhenUnauthenticated();
+    if (unauthenticated != null) return unauthenticated;
 
     final claims = Get.find<TokenStorage>().jwtClaims;
     final actor = claims?.actorType ??

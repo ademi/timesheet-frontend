@@ -14,88 +14,127 @@ class GatewayView extends GetView<GatewayController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: MaxWidthBox(
-              maxWidth: Breakpoints.formMaxWidth,
-              child: Column(
-                children: [
-                  const SizedBox(height: 24),
-                  Image.asset(
-                    'assets/images/logo.png',
-                    height: 56,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.schedule_rounded,
-                      size: 56,
-                      color: AppColors.primary,
-                    ),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: MaxWidthBox(
+                  maxWidth: Breakpoints.formMaxWidth,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 24),
+                      Image.asset(
+                        'assets/images/logo.png',
+                        height: 56,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Icons.schedule_rounded,
+                          size: 56,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      const Text(
+                        'Rostiq',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Contractor platform',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.primaryDark,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      Obx(
+                        () => IgnorePointer(
+                          ignoring: controller.isRestoringSession.value,
+                          child: Opacity(
+                            opacity:
+                                controller.isRestoringSession.value ? 0.5 : 1,
+                            child: Column(
+                              children: [
+                                _ActionCard(
+                                  icon: Icons.login_rounded,
+                                  title: 'Sign in',
+                                  subtitle: 'Staff or contractor account',
+                                  onTap: controller.goToSignIn,
+                                ),
+                                const SizedBox(height: 16),
+                                _ActionCard(
+                                  icon: Icons.person_add_alt_1_rounded,
+                                  title: 'Register as contractor',
+                                  subtitle: 'Create your contractor profile',
+                                  onTap: controller.goToContractorRegister,
+                                ),
+                                const SizedBox(height: 16),
+                                _ActionCard(
+                                  icon: Icons.business_rounded,
+                                  title: 'Provider signup',
+                                  subtitle: 'Company account on the website',
+                                  onTap: controller.openProviderSignup,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Text(
+                        'Billing & company signup live on the landing site.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        AppEnv.landingUrl,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                  const SizedBox(height: 28),
-                  const Text(
-                    'Rostiq',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Contractor platform',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.primaryDark,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  _ActionCard(
-                    icon: Icons.login_rounded,
-                    title: 'Sign in',
-                    subtitle: 'Staff or contractor account',
-                    onTap: controller.goToSignIn,
-                  ),
-                  const SizedBox(height: 16),
-                  _ActionCard(
-                    icon: Icons.person_add_alt_1_rounded,
-                    title: 'Register as contractor',
-                    subtitle: 'Create your contractor profile',
-                    onTap: controller.goToContractorRegister,
-                  ),
-                  const SizedBox(height: 16),
-                  _ActionCard(
-                    icon: Icons.business_rounded,
-                    title: 'Provider signup',
-                    subtitle: 'Company account on the website',
-                    onTap: controller.openProviderSignup,
-                  ),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Billing & company signup live on the landing site.',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    AppEnv.landingUrl,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey.shade500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+          Obx(
+            () => controller.isRestoringSession.value
+                ? const ColoredBox(
+                    color: Color(0x33000000),
+                    child: Center(
+                      child: Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(height: 16),
+                              Text('Restoring your session…'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
       ),
     );
   }

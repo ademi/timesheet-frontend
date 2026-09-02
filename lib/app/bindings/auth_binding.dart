@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/services/session_service.dart';
+import '../../core/services/token_refresh_service.dart';
 import '../../core/services/token_storage.dart';
 import '../controllers/auth_controller.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
@@ -12,12 +13,21 @@ class AuthBinding extends Bindings {
   @override
   void dependencies() {
     if (!Get.isRegistered<TokenStorage>()) {
-      Get.put<TokenStorage>(TokenStorage(), permanent: true);
+      throw StateError(
+        'TokenStorage must be registered in main() with loadFromStorage() '
+        'before AuthBinding runs.',
+      );
     }
 
     if (!Get.isRegistered<ApiClient>()) {
       Get.put<ApiClient>(
         ApiClient(Get.find<TokenStorage>()),
+        permanent: true,
+      );
+    }
+    if (!Get.isRegistered<TokenRefreshService>()) {
+      Get.put<TokenRefreshService>(
+        Get.find<ApiClient>().refreshService,
         permanent: true,
       );
     }

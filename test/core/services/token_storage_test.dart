@@ -81,6 +81,70 @@ void main() {
     expect(storage.needsProactiveRefresh(), isFalse);
   });
 
+  test('hasValidAccessToken is false for expired token', () async {
+    final storage = TokenStorage();
+    await storage.persistTokens(
+      accessToken: _fakeJwt({'exp': 1}),
+      refreshToken: 'refresh',
+    );
+
+    expect(storage.hasValidAccessToken, isFalse);
+    expect(storage.needsSessionRefresh, isTrue);
+  });
+
+  test('hasValidAccessToken is true for future exp', () async {
+    final storage = TokenStorage();
+    await storage.persistTokens(
+      accessToken: _fakeJwt({'exp': 9999999999}),
+      refreshToken: 'refresh',
+    );
+
+    expect(storage.hasValidAccessToken, isTrue);
+    expect(storage.needsSessionRefresh, isFalse);
+  });
+
+  test('canAttemptAuth is true with refresh token only', () async {
+    final storage = TokenStorage();
+    await storage.persistTokens(
+      accessToken: _fakeJwt({'exp': 1}),
+      refreshToken: 'refresh',
+    );
+
+    expect(storage.hasValidAccessToken, isFalse);
+    expect(storage.canAttemptAuth, isTrue);
+  });
+
+  test('canAttemptAuth is false with no tokens', () {
+    final storage = TokenStorage();
+    expect(storage.canAttemptAuth, isFalse);
+  });
+
+  test('hasValidAccessToken is false when exp claim is missing', () async {
+    final storage = TokenStorage();
+    await storage.persistTokens(
+      accessToken: _fakeJwt({'sub': 'user-1'}),
+      refreshToken: 'refresh',
+    );
+
+    expect(storage.hasValidAccessToken, isFalse);
+    expect(storage.needsSessionRefresh, isTrue);
+  });
+
+  test('needsProactiveRefresh handles numeric exp claim', () async {
+    final storage = TokenStorage();
+    final nearExpiry = DateTime.now()
+        .toUtc()
+        .add(const Duration(minutes: 2))
+        .millisecondsSinceEpoch ~/
+        1000;
+    await storage.persistTokens(
+      accessToken: _fakeJwt({'exp': nearExpiry.toDouble()}),
+      refreshToken: 'refresh',
+    );
+
+    expect(storage.needsProactiveRefresh(), isTrue);
+  });
+
   test('permissions empty without token', () {
     final storage = TokenStorage();
     expect(storage.permissions, isEmpty);

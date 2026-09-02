@@ -23,11 +23,14 @@ class PermissionGuard extends GetMiddleware {
     if (anyOf.isEmpty && allOf.isEmpty) return null;
 
     if (!Get.isRegistered<SessionService>()) {
-      final claims = Get.isRegistered<TokenStorage>()
-          ? Get.find<TokenStorage>().jwtClaims
-          : null;
-      if (claims == null) {
+      final storage = Get.find<TokenStorage>();
+      if (!storage.canAttemptAuth) {
         return const RouteSettings(name: AppRoutes.gateway);
+      }
+      final claims = storage.jwtClaims;
+      if (claims == null) {
+        // Access token absent; refresh token will be used by AuthInterceptor.
+        return null;
       }
       final ok = _checkClaims(claims.hasPermission);
       if (!ok) return _deny(route);
