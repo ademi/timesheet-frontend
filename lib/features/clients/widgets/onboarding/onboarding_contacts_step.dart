@@ -25,7 +25,7 @@ class OnboardingContactsStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Contacts',
+            'Contacts (Optional)',
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
           const SizedBox(height: 4),
@@ -34,7 +34,7 @@ class OnboardingContactsStep extends StatelessWidget {
                 ? (emergencyDone
                     ? 'Emergency contact saved. Optionally add a carer or another contact.'
                     : 'Contact saved. You can add more or press Next.')
-                : 'Contacts are optional. Add a contact below or skip this step.',
+                : 'Add a contact below or press Next to continue.',
             style: const TextStyle(fontSize: 13),
           ),
           const SizedBox(height: 12),

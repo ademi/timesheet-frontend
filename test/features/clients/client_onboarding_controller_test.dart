@@ -549,16 +549,6 @@ void main() {
     expect(c.contactDraftMode.value, 'nominee');
   });
 
-  test('skipContacts advances to representative without saving', () {
-    c.client.value = _fakeClient;
-    c.step.value = 3;
-    c.dob.value = DateTime(1990, 1, 1);
-    c.skipContacts();
-    expect(c.step.value, 4);
-    expect(c.contactDraftMode.value, 'nominee');
-    verifyNever(() => mock.createContact(any(), any()));
-  });
-
   test('saveContactDraft sends custom relationship for Other free-text', () async {
     ClientContactWriteRequest? captured;
     when(() => mock.createContact(any(), any())).thenAnswer((inv) async {

@@ -67,7 +67,7 @@ class ClientOnboardingController extends GetxController
     'Identity',
     'Address',
     'Preferences',
-    'Contacts',
+    'Contacts (Optional)',
     'Representative',
     'Support Plan',
     'Legal',
@@ -264,9 +264,6 @@ class ClientOnboardingController extends GetxController
       emergencySaved.value &&
       !carerSaved.value &&
       contactDraftMode.value == 'carer';
-
-  bool get showSkipContacts =>
-      step.value == 3 && contactsCreated.isEmpty;
 
   bool get showSkipNominee =>
       step.value == 4 &&
@@ -1100,12 +1097,6 @@ class ClientOnboardingController extends GetxController
     _prepRepresentativeStep();
     if (step.value == 3) step.value = 4;
     return true;
-  }
-
-  void skipContacts() {
-    errorMessage.value = null;
-    _prepRepresentativeStep();
-    if (step.value == 3) step.value = 4;
   }
 
   void _prepRepresentativeStep() {

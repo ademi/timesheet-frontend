@@ -50,7 +50,7 @@ final _patientType = ClientTypeOut(
   sortOrder: 1,
 );
 
-/// Phase G regression: skip contacts → Support Plan → finish path.
+/// Phase G regression: empty contacts → Support Plan → finish path.
 void main() {
   late _MockClientsRepository mock;
   late _MockSessionService session;
@@ -85,7 +85,7 @@ void main() {
 
   tearDown(() => c.dispose());
 
-  test('skip contacts path reaches Support Plan and finishes', () async {
+  test('empty contacts path reaches Support Plan and finishes', () async {
     c.fullName.text = 'Reg Client';
     c.email.text = 'reg@example.com';
     c.phone.text = '+61411111111';
