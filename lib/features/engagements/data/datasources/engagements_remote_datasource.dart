@@ -65,6 +65,30 @@ class EngagementsRemoteDataSource {
     }
   }
 
+  Future<ContractorRegistrationInviteOut> updateContractorInvite(
+    String inviteId, {
+    required String email,
+    required String phone,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.tenantContractorInvite(inviteId),
+        data: {'email': email, 'phone': phone},
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'empty_update',
+          message: 'Empty invite update response',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      return ContractorRegistrationInviteOut.fromJson(data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<EngagementOut> resendEngagementInvite(String engagementId) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(

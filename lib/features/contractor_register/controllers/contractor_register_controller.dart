@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+
+import '../../../app/utils/email_utils.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/feature_flags.dart';
@@ -117,6 +120,26 @@ class ContractorRegisterController extends GetxController {
 
   String? _inviteToken;
 
+  /// Resolves invite token from path param, legacy query param, or web URI.
+  @visibleForTesting
+  static String? resolveInviteToken({
+    Map<String, String?>? parameters,
+    Uri? baseUri,
+  }) {
+    final pathToken = parameters?['token']?.trim();
+    if (pathToken != null && pathToken.isNotEmpty) return pathToken;
+    final legacyParam = parameters?['invite']?.trim();
+    if (legacyParam != null && legacyParam.isNotEmpty) return legacyParam;
+    if (baseUri != null) {
+      final queryToken = baseUri.queryParameters['invite']?.trim();
+      if (queryToken != null && queryToken.isNotEmpty) return queryToken;
+    }
+    return null;
+  }
+
+  @visibleForTesting
+  String? get inviteTokenForTest => _inviteToken;
+
   String get termsVersion => AppEnv.termsVersion;
   String get privacyVersion => AppEnv.privacyVersion;
 
@@ -130,7 +153,10 @@ class ContractorRegisterController extends GetxController {
   }
 
   Future<void> _loadInviteFromRoute() async {
-    final token = Get.parameters['invite']?.trim();
+    final token = resolveInviteToken(
+      parameters: Get.parameters,
+      baseUri: kIsWeb ? Uri.base : null,
+    );
     if (token == null || token.isEmpty) return;
 
     _inviteToken = token;
@@ -188,7 +214,7 @@ class ContractorRegisterController extends GetxController {
   String? _identityValidationError() {
     final email = emailController.text.trim();
     if (email.isEmpty) return 'Email is required';
-    if (!GetUtils.isEmail(email)) return 'Enter a valid email';
+    if (!EmailUtils.isValid(email)) return EmailUtils.formatHint;
 
     final password = passwordController.text;
     if (password.isEmpty) return 'Password is required';

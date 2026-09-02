@@ -40,8 +40,7 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
                 children: [
             const Text(
               'Invite by email and/or phone. Select at least one required '
-              'document type. If the person is not already in Rostiq, you will '
-              'be asked whether to send an invitation email.',
+              'document type. An invitation email is sent automatically.',
               style: TextStyle(color: AppColors.textMuted),
             ),
             if (err != null) ...[

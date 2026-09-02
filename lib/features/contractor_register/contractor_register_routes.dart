@@ -8,10 +8,18 @@ import 'views/contractor_register_view.dart';
 abstract final class ContractorRegisterPages {
   ContractorRegisterPages._();
 
-  static final GetPage page = GetPage(
-    name: AppRoutes.contractorRegister,
-    page: () => const ContractorRegisterView(),
-    binding: ContractorRegisterBinding(),
-    transition: Transition.fadeIn,
-  );
+  static final List<GetPage> pages = [
+    GetPage(
+      name: AppRoutes.contractorRegister,
+      page: () => const ContractorRegisterView(),
+      binding: ContractorRegisterBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.contractorRegisterWithToken,
+      page: () => const ContractorRegisterView(),
+      binding: ContractorRegisterBinding(),
+      transition: Transition.fadeIn,
+    ),
+  ];
 }

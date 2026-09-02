@@ -351,6 +351,12 @@ dig +short app.rostiq.co
 curl -I https://app.rostiq.co/
 curl -I https://app.rostiq.co/main.dart.js
 
+# Contractor invite deep link (SPA fallback — expect 200 or index.html body)
+curl -sS -o /dev/null -w "%{http_code}" https://app.rostiq.co/contractor/register/example-token
+
+# API invite links use PUBLIC_APP_BASE_URL (set on backend host)
+# PUBLIC_APP_BASE_URL=https://app.rostiq.co
+
 # Backend reachable from the new origin (preflight)
 curl -I -X OPTIONS https://api.rostiq.co/v1/auth/login \
   -H "Origin: https://app.rostiq.co" \

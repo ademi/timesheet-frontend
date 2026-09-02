@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../app/utils/email_utils.dart';
 import '../../../shared/utils/abn_utils.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/markdown_viewer.dart';
@@ -129,7 +130,7 @@ class RegisterIdentityStep extends StatelessWidget {
               readOnly: controller.invite.value != null,
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Email is required';
-                if (!GetUtils.isEmail(v.trim())) return 'Enter a valid email';
+                if (!EmailUtils.isValid(v.trim())) return EmailUtils.formatHint;
                 return null;
               },
             ),

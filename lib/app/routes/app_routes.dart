@@ -43,6 +43,8 @@ abstract class AppRoutes {
 
   // ContractorShell + public / onboarding
   static const contractorRegister = '/contractor/register';
+  /// Path-token registration link from invitation email (`/contractor/register/{token}`).
+  static const contractorRegisterWithToken = '/contractor/register/:token';
   static const contractorOnboarding = '/contractor/onboarding';
   static const contractorOnboardingLegal = '/contractor/onboarding/legal';
   static const contractorOnboardingNotices = '/contractor/onboarding/notices';

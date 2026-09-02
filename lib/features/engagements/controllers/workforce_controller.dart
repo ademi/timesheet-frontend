@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
@@ -10,6 +9,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
+import '../../../app/utils/email_utils.dart';
 import '../../../shared/utils/name_sort.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../credentials/data/models/credential_models.dart';
@@ -22,6 +22,8 @@ import '../data/models/engagement_models.dart';
 import '../data/models/staff_contractor_models.dart';
 import '../data/repositories/engagements_repository.dart';
 import '../utils/missing_categories.dart';
+import '../widgets/invite_sent_dialog.dart';
+import '../widgets/pending_invite_contact_dialog.dart';
 
 class WorkforceController extends GetxController {
   WorkforceController({
@@ -49,6 +51,7 @@ class WorkforceController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final resendingInviteId = RxnString();
+  final updatingInviteId = RxnString();
   final errorMessage = RxnString();
   final eligibilityReasons = <String>[].obs;
   final detailPhoto = Rxn<ProfilePhotoOut>();
@@ -430,6 +433,10 @@ class WorkforceController extends GetxController {
       _setError('Provide an email and/or phone.');
       return;
     }
+    if (email.isNotEmpty && !EmailUtils.isValid(email)) {
+      _setError(EmailUtils.formatHint);
+      return;
+    }
     if (selectedCategories.isEmpty) {
       _setError('Select at least one required document.');
       return;
@@ -462,14 +469,8 @@ class WorkforceController extends GetxController {
       selectedCategories.clear();
       Get.back();
       final invite = result.registrationInvite;
-      final inviteUrl = invite?.inviteUrl?.trim();
-      if (result.isRegistrationInvite &&
-          inviteUrl != null &&
-          inviteUrl.isNotEmpty) {
-        await _showRegistrationInviteLinkDialog(
-          inviteUrl: inviteUrl,
-          expiresAt: invite!.expiresAt,
-        );
+      if (result.isRegistrationInvite && invite != null) {
+        await _showInviteSentConfirmation(expiresAt: invite.expiresAt);
       } else {
         AppToast.success(
           result.isRegistrationInvite ? 'Invite sent' : 'Engagement created',
@@ -503,19 +504,62 @@ class WorkforceController extends GetxController {
       }
       pendingInvites.insert(0, updated);
       AppToast.success('Invite re-sent', 'Invitation email sent to ${updated.email}.');
-      final inviteUrl = updated.inviteUrl?.trim();
-      if (inviteUrl != null && inviteUrl.isNotEmpty) {
-        await _showRegistrationInviteLinkDialog(
-          inviteUrl: inviteUrl,
-          expiresAt: updated.expiresAt,
-        );
-      }
+      await _showInviteSentConfirmation(expiresAt: updated.expiresAt);
     } on AppFailure catch (e) {
       _setError(e.message);
     } catch (e) {
       _setError(e.toString());
     } finally {
       resendingInviteId.value = null;
+    }
+  }
+
+  Future<void> updatePendingInviteContact(
+    ContractorRegistrationInviteOut invite,
+  ) async {
+    if (!canInvite) {
+      _setError('Missing contractors.invite permission.');
+      return;
+    }
+    final result = await Get.dialog<Map<String, String?>>(
+      PendingInviteContactDialog(invite: invite),
+    );
+    if (result == null) return;
+
+    final newEmail = EmailUtils.normalize(result['email'] ?? '');
+    final phoneRaw = result['phone'] ?? '';
+    final emailChanged = newEmail != EmailUtils.normalize(invite.email);
+    final phoneChanged = phoneRaw != (invite.phone ?? '');
+    if (!emailChanged && !phoneChanged) return;
+
+    updatingInviteId.value = invite.id;
+    clearError();
+    try {
+      final updated = await _repository.updateContractorInvite(
+        invite.id,
+        email: newEmail,
+        phone: phoneRaw,
+      );
+      final idx = pendingInvites.indexWhere((e) => e.id == invite.id);
+      if (idx >= 0) {
+        pendingInvites.removeAt(idx);
+      }
+      pendingInvites.insert(0, updated);
+      if (emailChanged) {
+        AppToast.success(
+          'Invite updated',
+          'A new invitation was sent to ${updated.email}.',
+        );
+        await _showInviteSentConfirmation(expiresAt: updated.expiresAt);
+      } else {
+        AppToast.success('Contact updated', 'Phone number saved for this invite.');
+      }
+    } on AppFailure catch (e) {
+      _setError(e.message);
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      updatingInviteId.value = null;
     }
   }
 
@@ -542,51 +586,9 @@ class WorkforceController extends GetxController {
     }
   }
 
-  Future<void> showInviteLinkDialog({
-    required String inviteUrl,
-    required DateTime expiresAt,
-  }) =>
-      _showRegistrationInviteLinkDialog(
-        inviteUrl: inviteUrl,
-        expiresAt: expiresAt,
-      );
-
-  Future<void> _showRegistrationInviteLinkDialog({
-    required String inviteUrl,
-    required DateTime expiresAt,
-  }) async {
+  Future<void> _showInviteSentConfirmation({required DateTime expiresAt}) async {
     await Get.dialog<void>(
-      AlertDialog(
-        title: const Text('Invite sent'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'An invitation email was sent. If needed, copy and share this '
-              'link as a backup.',
-            ),
-            const SizedBox(height: 12),
-            SelectableText(inviteUrl),
-            const SizedBox(height: 8),
-            Text(
-              'Expires ${expiresAt.toLocal()}.',
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: inviteUrl));
-              Get.back();
-              AppToast.info('Copied', inviteUrl);
-            },
-            child: const Text('Copy link'),
-          ),
-          TextButton(onPressed: () => Get.back(), child: const Text('Close')),
-        ],
-      ),
+      InviteSentDialog(expiresAt: expiresAt),
     );
   }
 

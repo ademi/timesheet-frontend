@@ -62,6 +62,6 @@ abstract final class ShellPages {
         ...CredentialsPages.routes,
         ...ContractorOnboardingPages.routes,
         ...ContractorMePages.routes,
-        ContractorRegisterPages.page,
+        ...ContractorRegisterPages.pages,
       ];
 }

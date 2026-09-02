@@ -53,6 +53,8 @@ abstract final class ApiPaths {
       '$_v1/tenants/current/contractor-invites';
   static String tenantContractorInviteResend(String inviteId) =>
       '$tenantContractorInvites/$inviteId/resend';
+  static String tenantContractorInvite(String inviteId) =>
+      '$tenantContractorInvites/$inviteId';
   static String tenantContractorCredentials(String contractorId) =>
       '$_v1/tenants/current/contractors/$contractorId/credentials';
   static String tenantContractor(String contractorId) =>

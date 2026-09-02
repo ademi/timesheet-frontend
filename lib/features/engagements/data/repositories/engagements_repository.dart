@@ -21,6 +21,12 @@ class EngagementsRepository {
     String inviteId,
   ) => _remote.resendContractorInvite(inviteId);
 
+  Future<ContractorRegistrationInviteOut> updateContractorInvite(
+    String inviteId, {
+    required String email,
+    required String phone,
+  }) => _remote.updateContractorInvite(inviteId, email: email, phone: phone);
+
   Future<EngagementOut> resendEngagementInvite(String engagementId) =>
       _remote.resendEngagementInvite(engagementId);
 

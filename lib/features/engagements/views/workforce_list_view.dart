@@ -102,12 +102,26 @@ class WorkforceListView extends GetView<WorkforceController> {
                                 ),
                                 title: Text(invite.email),
                                 subtitle: Text(
-                                  'Status: Invited · Expires ${invite.expiresAt.toLocal()}',
+                                  [
+                                    'Status: Invited',
+                                    if (invite.phone != null &&
+                                        invite.phone!.trim().isNotEmpty)
+                                      invite.phone!,
+                                    'Expires ${invite.expiresAt.toLocal()}',
+                                  ].join(' · '),
                                 ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (controller.canInvite)
+                                    if (controller.canInvite) ...[
+                                      _EditContactButton(
+                                        busy:
+                                            controller.updatingInviteId.value ==
+                                            invite.id,
+                                        onPressed: () => controller
+                                            .updatePendingInviteContact(invite),
+                                      ),
+                                      const SizedBox(width: 4),
                                       _ReEmailButton(
                                         busy:
                                             controller.resendingInviteId.value ==
@@ -115,6 +129,7 @@ class WorkforceListView extends GetView<WorkforceController> {
                                         onPressed: () => controller
                                             .resendPendingInvite(invite),
                                       ),
+                                    ],
                                     const SizedBox(width: 8),
                                     const _StatusChip(status: 'invited'),
                                   ],
@@ -297,6 +312,32 @@ class _WorkforceStatusFiltersState extends State<_WorkforceStatusFilters> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _EditContactButton extends StatelessWidget {
+  const _EditContactButton({required this.busy, required this.onPressed});
+
+  final bool busy;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    if (busy) {
+      return const SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    return TextButton(
+      style: TextButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+      ),
+      onPressed: onPressed,
+      child: const Text('Edit'),
     );
   }
 }
