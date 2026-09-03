@@ -7,6 +7,7 @@ import '../../../core/services/session_service.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
+import '../data/exported_visit_ids_store.dart';
 import '../data/models/billing_models.dart';
 import '../data/repositories/billing_repository.dart';
 import '../utils/invoice_export_errors.dart';
@@ -28,19 +29,21 @@ class InvoiceExportsController extends GetxController {
     required BillingRepository repository,
     required VisitsRepository visitsRepository,
     required SessionService session,
+    required ExportedVisitIdsStore exportedVisitIds,
   }) : _repository = repository,
        _visitsRepository = visitsRepository,
-       _session = session;
+       _session = session,
+       _exportedVisitIds = exportedVisitIds;
 
   final BillingRepository _repository;
   final VisitsRepository _visitsRepository;
   final SessionService _session;
+  final ExportedVisitIdsStore _exportedVisitIds;
 
   final tabIndex = 0.obs;
   final exports = <InvoiceExportOut>[].obs;
   final exportableVisits = <VisitOut>[].obs;
   final selectedVisitIds = <String>{}.obs;
-  final excludedVisitIds = <String>{}.obs;
   final lastVisitErrors = <InvoiceExportVisitError>[].obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
@@ -50,6 +53,9 @@ class InvoiceExportsController extends GetxController {
 
   bool get canView => _session.canViewBilling;
   bool get canManage => _session.canManageBilling;
+
+  /// Test/read access to the shared export exclusion set.
+  ExportedVisitIdsStore get exportedVisitIds => _exportedVisitIds;
 
   @override
   void onInit() {
@@ -105,7 +111,7 @@ class InvoiceExportsController extends GetxController {
         limit: 200,
       );
       exportableVisits.assignAll(
-        list.where((v) => !excludedVisitIds.contains(v.id)).toList(),
+        list.where((v) => !_exportedVisitIds.contains(v.id)).toList(),
       );
       selectedVisitIds.removeWhere(
         (id) => !exportableVisits.any((v) => v.id == id),
@@ -155,7 +161,7 @@ class InvoiceExportsController extends GetxController {
         .where((v) => selectedVisitIds.contains(v.id))
         .toList(growable: false);
     if (selected.isEmpty) return false;
-    return selectedVisitsExportReady(selected, excludedVisitIds);
+    return selectedVisitsExportReady(selected, _exportedVisitIds.ids);
   }
 
   void toggleVisit(String visitId) {
@@ -164,6 +170,12 @@ class InvoiceExportsController extends GetxController {
     } else {
       selectedVisitIds.add(visitId);
     }
+  }
+
+  void _dropExportedFromList(Iterable<String> visitIds) {
+    _exportedVisitIds.mark(visitIds);
+    selectedVisitIds.removeWhere(_exportedVisitIds.contains);
+    exportableVisits.removeWhere((v) => _exportedVisitIds.contains(v.id));
   }
 
   Future<void> createExport() async {
@@ -176,7 +188,7 @@ class InvoiceExportsController extends GetxController {
     final selected = exportableVisits
         .where((v) => visitIds.contains(v.id))
         .toList(growable: false);
-    if (!selectedVisitsExportReady(selected, excludedVisitIds)) {
+    if (!selectedVisitsExportReady(selected, _exportedVisitIds.ids)) {
       errorMessage.value =
           'Fix blocked pre-flight items before creating an export.';
       return;
@@ -189,6 +201,7 @@ class InvoiceExportsController extends GetxController {
       final created = await _repository.createInvoiceExport(
         InvoiceExportCreateRequest(visitIds: visitIds),
       );
+      _dropExportedFromList(visitIds);
       selectedVisitIds.clear();
       await loadAll();
       tabIndex.value = 0;
@@ -241,14 +254,15 @@ class InvoiceExportsController extends GetxController {
   }
 
   void _applyExcludedFromVisitErrors(List<InvoiceExportVisitError> errors) {
-    for (final err in errors) {
-      if (err.code == 'visit_already_exported') {
-        excludedVisitIds.add(err.visitId);
-        selectedVisitIds.remove(err.visitId);
-      }
-    }
-    exportableVisits.removeWhere((v) => excludedVisitIds.contains(v.id));
-    excludedVisitIds.refresh();
+    _dropExportedFromList([
+      for (final err in errors)
+        if (err.code == 'visit_already_exported') err.visitId,
+    ]);
+  }
+
+  void openVisitForFix(VisitOut visit) {
+    if (Get.testMode) return;
+    Get.toNamed(AppRoutes.staffVisitDetail, arguments: visit);
   }
 
   void openDetail(InvoiceExportOut export) {

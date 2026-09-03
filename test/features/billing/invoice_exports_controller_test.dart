@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/billing/controllers/invoice_exports_controller.dart';
+import 'package:rostiq/features/billing/data/exported_visit_ids_store.dart';
 import 'package:rostiq/features/billing/data/models/billing_models.dart';
 import 'package:rostiq/features/billing/data/repositories/billing_repository.dart';
 import 'package:rostiq/features/visits/data/models/visit_models.dart';
@@ -62,12 +63,14 @@ InvoiceExportsController _controller({
   required _MockBillingRepository repository,
   required _MockVisitsRepository visitsRepository,
   required _MockSessionService session,
+  ExportedVisitIdsStore? exportedVisitIds,
   bool init = false,
 }) {
   final controller = InvoiceExportsController(
     repository: repository,
     visitsRepository: visitsRepository,
     session: session,
+    exportedVisitIds: exportedVisitIds ?? ExportedVisitIdsStore(),
   );
   if (init) {
     controller.onInit();
@@ -203,6 +206,49 @@ void main() {
     );
 
     test(
+      'createExport marks visits in ExportedVisitIdsStore and drops them from create list',
+      () async {
+        when(() => session.canManageBilling).thenReturn(true);
+        when(
+          () => visitsRepository.listVisits(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            status: 'completed',
+            limit: 200,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _exportableVisit(id: 'visit-1'),
+            _exportableVisit(id: 'visit-2'),
+          ],
+        );
+        when(
+          () => repository.createInvoiceExport(any()),
+        ).thenAnswer((_) async => _export(id: 'export-new'));
+        when(
+          () => repository.listInvoiceExports(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [_export(id: 'export-new')]);
+
+        final store = ExportedVisitIdsStore();
+        final controller = _controller(
+          repository: repository,
+          visitsRepository: visitsRepository,
+          session: session,
+          exportedVisitIds: store,
+          init: true,
+        );
+        await controller.loadExportableVisits();
+        controller.selectedVisitIds.add('visit-1');
+
+        await controller.createExport();
+
+        expect(store.contains('visit-1'), isTrue);
+        expect(controller.exportableVisits.map((v) => v.id), ['visit-2']);
+        expect(controller.selectedVisitIds, isEmpty);
+      },
+    );
+
+    test(
       'createExport maps visit_errors and excludes already exported visits',
       () async {
         when(() => session.canManageBilling).thenReturn(true);
@@ -235,10 +281,12 @@ void main() {
           ),
         );
 
+        final store = ExportedVisitIdsStore();
         final controller = _controller(
           repository: repository,
           visitsRepository: visitsRepository,
           session: session,
+          exportedVisitIds: store,
           init: true,
         );
         await controller.loadExportableVisits();
@@ -248,7 +296,7 @@ void main() {
 
         expect(controller.lastVisitErrors, hasLength(1));
         expect(controller.lastVisitErrors.single.visitId, 'visit-1');
-        expect(controller.excludedVisitIds, contains('visit-1'));
+        expect(store.contains('visit-1'), isTrue);
         expect(controller.exportableVisits.map((v) => v.id), ['visit-2']);
         expect(controller.selectedVisitIds, ['visit-2']);
       },

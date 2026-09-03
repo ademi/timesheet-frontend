@@ -76,6 +76,7 @@ class StaffInvoiceExportsBinding extends Bindings {
           repository: Get.find<BillingRepository>(),
           visitsRepository: Get.find<VisitsRepository>(),
           session: Get.find<SessionService>(),
+          exportedVisitIds: Get.find<ExportedVisitIdsStore>(),
         ),
       );
     }
