@@ -192,6 +192,9 @@ class AppFailure implements Exception {
       'legal_document_unavailable',
       'engagement_not_active',
       'invalid_visit_status',
+      'visit_cancelled',
+      'visit_already_completed',
+      'clock_times_in_future',
       'visit_overlap',
       'shift_overlap',
       'site_or_branch_required',
@@ -308,6 +311,9 @@ class AppFailure implements Exception {
       case 'price_limit_missing_for_tier':
       case 'export_already_void':
       case 'export_not_voidable':
+      case 'visit_cancelled':
+      case 'visit_already_completed':
+      case 'clock_times_in_future':
         return AppFailurePresentation.inline;
       case 'proxy_required':
         return AppFailurePresentation.inline;
@@ -385,6 +391,12 @@ class AppFailure implements Exception {
         return 'Engagement isn’t active. Contact your admin.';
       case 'invalid_visit_status':
         return 'Cannot change this visit in its current status. Refresh and try again.';
+      case 'visit_cancelled':
+        return 'This visit was cancelled. Refresh and pick another visit.';
+      case 'visit_already_completed':
+        return 'This visit is already completed.';
+      case 'clock_times_in_future':
+        return 'Arrival and departure can’t be in the future.';
       case 'visit_overlap':
         return 'Overlapping visit — adjust the window or use partial generate.';
       case 'shift_overlap':

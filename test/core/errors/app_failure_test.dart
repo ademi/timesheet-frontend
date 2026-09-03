@@ -445,5 +445,38 @@ void main() {
         expect(failure.presentation, AppFailurePresentation.inline);
       }
     });
+
+    test('maps admin record-visit attendance codes', () {
+      const expected = {
+        'clock_times_in_future': (
+          400,
+          'Arrival and departure can’t be in the future.',
+        ),
+        'visit_already_completed': (
+          409,
+          'This visit is already completed.',
+        ),
+        'visit_cancelled': (
+          409,
+          'This visit was cancelled. Refresh and pick another visit.',
+        ),
+      };
+      for (final entry in expected.entries) {
+        final failure = AppFailure.fromDio(
+          DioException(
+            requestOptions: RequestOptions(path: '/attendance/adjustments'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/attendance/adjustments'),
+              statusCode: entry.value.$1,
+              data: {'detail': entry.key},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+        expect(failure.code, entry.key);
+        expect(failure.message, entry.value.$2);
+        expect(failure.presentation, AppFailurePresentation.inline);
+      }
+    });
   });
 }
