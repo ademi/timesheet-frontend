@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../core/network/must_change_password.dart';
 import '../../core/services/session_service.dart';
+import '../../features/billing/data/exported_visit_ids_store.dart';
 import '../../features/billing/data/repositories/ndis_catalogue_repository.dart';
 import '../../features/compliance_ops/bindings/compliance_ops_binding.dart';
 import '../../features/contractor_onboarding/bindings/onboarding_binding.dart';
@@ -16,6 +17,12 @@ import '../services/push_notification_service.dart';
 void _clearNdisCatalogueCacheIfRegistered() {
   if (Get.isRegistered<NdisCatalogueRepository>()) {
     Get.find<NdisCatalogueRepository>().clearCache();
+  }
+}
+
+void _clearExportedVisitIdsIfRegistered() {
+  if (Get.isRegistered<ExportedVisitIdsStore>()) {
+    Get.find<ExportedVisitIdsStore>().clear();
   }
 }
 
@@ -88,6 +95,7 @@ class AuthController extends GetxController {
       await Get.find<SessionService>().clear();
     }
     _clearNdisCatalogueCacheIfRegistered();
+    _clearExportedVisitIdsIfRegistered();
     await _authRepository.logout();
     emailController.clear();
     passwordController.clear();

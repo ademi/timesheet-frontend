@@ -6,6 +6,7 @@ import '../../app/data/models/auth/me_context_model.dart';
 import '../../app/data/repositories/auth_repository.dart';
 import '../../app/routes/app_routes.dart';
 import '../../app/constants/app_permissions.dart';
+import '../../features/billing/data/exported_visit_ids_store.dart';
 import '../../features/billing/data/repositories/ndis_catalogue_repository.dart';
 import '../../features/contractor_me/data/datasources/contractor_me_remote_datasource.dart';
 import '../../features/contractor_onboarding/data/onboarding_progress_store.dart';
@@ -17,6 +18,12 @@ import 'token_storage.dart';
 void _clearNdisCatalogueCacheIfRegistered() {
   if (Get.isRegistered<NdisCatalogueRepository>()) {
     Get.find<NdisCatalogueRepository>().clearCache();
+  }
+}
+
+void _clearExportedVisitIdsIfRegistered() {
+  if (Get.isRegistered<ExportedVisitIdsStore>()) {
+    Get.find<ExportedVisitIdsStore>().clear();
   }
 }
 
@@ -320,6 +327,7 @@ class SessionService extends GetxController {
     _meContextGeneration += 1;
     _hydratingMeContext = null;
     _clearNdisCatalogueCacheIfRegistered();
+    _clearExportedVisitIdsIfRegistered();
     await applyAuthTokens(tokens);
     await hydrateFromMeContext();
     return tokens;

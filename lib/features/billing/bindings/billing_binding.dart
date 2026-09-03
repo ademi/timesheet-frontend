@@ -9,6 +9,7 @@ import '../controllers/invoice_export_detail_controller.dart';
 import '../controllers/invoice_exports_controller.dart';
 import '../data/datasources/billing_remote_datasource.dart';
 import '../data/datasources/ndis_catalogue_remote_datasource.dart';
+import '../data/exported_visit_ids_store.dart';
 import '../data/repositories/billing_repository.dart';
 import '../data/repositories/ndis_catalogue_repository.dart';
 
@@ -56,6 +57,9 @@ class BillingBinding extends Bindings {
         () => BillingRepository(remote: Get.find<BillingRemoteDataSource>()),
         fenix: true,
       );
+    }
+    if (!Get.isRegistered<ExportedVisitIdsStore>()) {
+      Get.put<ExportedVisitIdsStore>(ExportedVisitIdsStore(), permanent: true);
     }
   }
 }
