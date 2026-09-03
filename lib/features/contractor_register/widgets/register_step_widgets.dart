@@ -5,6 +5,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../app/utils/email_utils.dart';
 import '../../../shared/utils/abn_utils.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/au_state_dropdown.dart';
 import '../../../shared/widgets/markdown_viewer.dart';
 import '../controllers/contractor_register_controller.dart';
 
@@ -205,23 +206,11 @@ class RegisterIdentityStep extends StatelessWidget {
             onChanged: (_) => controller.invalidateAddressConfirm(),
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: ContractorRegisterController.auStates.contains(
-              controller.stateController.text.trim(),
-            )
-                ? controller.stateController.text.trim()
-                : ContractorRegisterController.auStates.first,
-            decoration: const InputDecoration(
-              labelText: 'State',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              for (final s in ContractorRegisterController.auStates)
-                DropdownMenuItem(value: s, child: Text(s)),
-            ],
-            onChanged: (v) {
-              if (v == null) return;
-              controller.stateController.text = v;
+          AuStateDropdown(
+            value: controller.stateController.text,
+            profileStyle: true,
+            onChanged: (selected) {
+              controller.stateController.text = selected;
               controller.invalidateAddressConfirm();
             },
           ),
@@ -511,10 +500,9 @@ class RegisterChecksStep extends StatelessWidget {
           icon: Icons.child_care_outlined,
         ),
         const SizedBox(height: 12),
-        _field(
+        OptionalAuStateDropdown(
           controller: controller.wwccStateCtrl,
           label: 'WWCC state',
-          icon: Icons.map_outlined,
         ),
         const SizedBox(height: 12),
         _dateField(

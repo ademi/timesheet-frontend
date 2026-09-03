@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../../app/utils/email_utils.dart';
 
 import '../../../app/routes/app_routes.dart';
+import '../../../core/constants/australian_states.dart';
 import '../../../core/constants/feature_flags.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../features/clients/data/models/client_models.dart' as client_models;
@@ -52,17 +53,6 @@ class ContractorRegisterController extends GetxController {
     'manual_handling',
     'nursing_bachelor',
     'other_health_qualification',
-  ];
-
-  static const auStates = [
-    'NSW',
-    'VIC',
-    'QLD',
-    'WA',
-    'SA',
-    'TAS',
-    'ACT',
-    'NT',
   ];
 
   final step = 0.obs;
@@ -146,7 +136,7 @@ class ContractorRegisterController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    stateController.text = auStates.first;
+    stateController.text = kDefaultAustralianState;
     qualifications.add(RegisterQualRow());
     _loadBundledLegal();
     _loadInviteFromRoute();

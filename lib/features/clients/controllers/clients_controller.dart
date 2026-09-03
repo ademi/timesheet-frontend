@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../core/constants/australian_states.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
@@ -176,7 +177,7 @@ class ClientsController extends GetxController
 
   /// Observable country/state for dropdowns (defaults AU / NSW).
   final siteCountry = 'AU'.obs;
-  final siteState = 'NSW'.obs;
+  final siteState = kDefaultAustralianState.obs;
   ClientSiteOut? editingSite;
 
   // Contact form
@@ -1708,8 +1709,8 @@ class ClientsController extends GetxController
     siteCityCtrl.text = site?.city ?? '';
     final state =
         (site?.state?.trim().isNotEmpty == true)
-            ? site!.state!.trim().toUpperCase()
-            : 'NSW';
+            ? normalizeAustralianState(site!.state)
+            : kDefaultAustralianState;
     siteStateCtrl.text = state;
     siteCountryCtrl.text = 'AU';
     siteState.value = state;

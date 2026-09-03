@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
+import '../../../core/constants/australian_states.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../features/clients/data/models/client_models.dart' as client_models;
@@ -34,17 +35,6 @@ class ContractorProfileController extends GetxController {
   final SessionService _session;
   final DocumentPipeline? _pipeline;
   final ContractorMeRepository? _meRepository;
-
-  static const auStates = [
-    'NSW',
-    'VIC',
-    'QLD',
-    'WA',
-    'SA',
-    'TAS',
-    'ACT',
-    'NT',
-  ];
 
   static const qualTypeOptions = <String>[
     'cert_iii',
@@ -129,7 +119,7 @@ class ContractorProfileController extends GetxController {
   void onInit() {
     super.onInit();
     qualifications.add(ContractorQualRow());
-    stateCtrl.text = auStates.first;
+    stateCtrl.text = kDefaultAustralianState;
     _loadEvents();
     loadProfilePhoto();
     loadProfile();
@@ -199,7 +189,7 @@ class ContractorProfileController extends GetxController {
     addressLine1Ctrl.text = me.addressLine1 ?? '';
     addressLine2Ctrl.text = me.addressLine2 ?? '';
     suburbCtrl.text = me.suburb ?? '';
-    stateCtrl.text = me.state ?? auStates.first;
+    stateCtrl.text = me.state ?? kDefaultAustralianState;
     postcodeCtrl.text = me.postcode ?? '';
     countryCtrl.text = me.country ?? 'AU';
 

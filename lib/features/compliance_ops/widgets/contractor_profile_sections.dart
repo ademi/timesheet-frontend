@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/utils/abn_utils.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/au_state_dropdown.dart';
 import '../controllers/contractor_profile_controller.dart';
 
 class ContractorProfileSections extends StatelessWidget {
@@ -62,23 +63,11 @@ class ContractorProfileSections extends StatelessWidget {
             onChanged: (_) => controller.invalidateAddressConfirm(),
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: ContractorProfileController.auStates.contains(
-              controller.stateCtrl.text.trim(),
-            )
-                ? controller.stateCtrl.text.trim()
-                : ContractorProfileController.auStates.first,
-            decoration: const InputDecoration(
-              labelText: 'State',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              for (final s in ContractorProfileController.auStates)
-                DropdownMenuItem(value: s, child: Text(s)),
-            ],
-            onChanged: (v) {
-              if (v == null) return;
-              controller.stateCtrl.text = v;
+          AuStateDropdown(
+            value: controller.stateCtrl.text,
+            profileStyle: true,
+            onChanged: (selected) {
+              controller.stateCtrl.text = selected;
               controller.invalidateAddressConfirm();
             },
           ),
@@ -210,10 +199,9 @@ class ContractorProfileSections extends StatelessWidget {
             icon: Icons.child_care_outlined,
           ),
           const SizedBox(height: 12),
-          _field(
+          OptionalAuStateDropdown(
             controller: controller.wwccStateCtrl,
             label: 'WWCC state',
-            icon: Icons.map_outlined,
           ),
           const SizedBox(height: 12),
           _dateField(

@@ -8,6 +8,7 @@ import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../core/constants/australian_states.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
@@ -115,7 +116,7 @@ class ClientOnboardingController extends GetxController
   @override
   final siteCityCtrl = TextEditingController();
   @override
-  final siteStateCtrl = TextEditingController(text: 'NSW');
+  final siteStateCtrl = TextEditingController(text: kDefaultAustralianState);
   @override
   final sitePostalCtrl = TextEditingController();
   @override
@@ -135,7 +136,7 @@ class ClientOnboardingController extends GetxController
   @override
   final siteCountry = 'AU'.obs;
   @override
-  final siteState = 'NSW'.obs;
+  final siteState = kDefaultAustralianState.obs;
   final primarySiteSaved = false.obs;
 
   // ── Preferences ───────────────────────────────────────────────────────
@@ -324,7 +325,7 @@ class ClientOnboardingController extends GetxController
     siteNameCtrl.clear();
     siteAddressCtrl.clear();
     siteCityCtrl.clear();
-    siteStateCtrl.text = 'NSW';
+    siteStateCtrl.text = kDefaultAustralianState;
     sitePostalCtrl.clear();
     siteAccessNotesCtrl.clear();
     siteLatCtrl.clear();
@@ -334,7 +335,7 @@ class ClientOnboardingController extends GetxController
     geocodeFormattedAddress.value = null;
     addressConfirmed.value = false;
     siteCountry.value = 'AU';
-    siteState.value = 'NSW';
+    siteState.value = kDefaultAustralianState;
     primarySiteSaved.value = false;
 
     preferredLanguageCtrl.clear();

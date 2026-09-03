@@ -3,19 +3,8 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/au_state_dropdown.dart';
 import 'site_form_host.dart';
-
-/// Australian states/territories for site forms.
-const auStates = <String>[
-  'NSW',
-  'VIC',
-  'QLD',
-  'WA',
-  'SA',
-  'TAS',
-  'ACT',
-  'NT',
-];
 
 /// Shared address / postal / access-notes / geocode-confirm fields.
 ///
@@ -60,7 +49,6 @@ class _SiteFormFieldsState extends State<SiteFormFields> {
   Widget build(BuildContext context) {
     return Obx(() {
       final stateValue = controller.siteState.value;
-      final stateItems = {stateValue, ...auStates}.toList();
       final isPrimary =
           widget.primaryMode || controller.siteIsPrimary.value;
       final postalRequired = isPrimary;
@@ -104,22 +92,13 @@ class _SiteFormFieldsState extends State<SiteFormFields> {
             ),
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
+          AuStateDropdown(
             value: stateValue,
-            items: [
-              for (final s in stateItems)
-                DropdownMenuItem(value: s, child: Text(s)),
-            ],
-            onChanged: (v) {
-              if (v == null) return;
-              controller.siteState.value = v;
-              controller.siteStateCtrl.text = v;
+            onChanged: (selected) {
+              controller.siteState.value = selected;
+              controller.siteStateCtrl.text = selected;
               controller.invalidateSiteAddressConfirm();
             },
-            decoration: const InputDecoration(
-              labelText: 'State',
-              border: OutlineInputBorder(),
-            ),
           ),
           const SizedBox(height: 12),
           TextField(

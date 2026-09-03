@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../core/constants/australian_states.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/time/tenant_civil_time.dart';
@@ -1012,9 +1013,9 @@ class UnifiedSupportController extends GetxController
     clientsCtrl.siteNameCtrl.clear();
     clientsCtrl.siteAddressCtrl.clear();
     clientsCtrl.siteCityCtrl.clear();
-    clientsCtrl.siteStateCtrl.text = 'NSW';
+    clientsCtrl.siteStateCtrl.text = kDefaultAustralianState;
     clientsCtrl.siteCountryCtrl.text = 'AU';
-    clientsCtrl.siteState.value = 'NSW';
+    clientsCtrl.siteState.value = kDefaultAustralianState;
     clientsCtrl.siteCountry.value = 'AU';
     clientsCtrl.sitePostalCtrl.clear();
     clientsCtrl.siteLatCtrl.clear();
