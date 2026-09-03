@@ -121,8 +121,15 @@ void main() {
     );
     expect(reasonField, findsOneWidget);
     await tester.enterText(reasonField, 'Paper timesheet');
-    await tester.tap(find.text('Record visit').last);
+    await tester.pump();
+    final submit = find.widgetWithText(ElevatedButton, 'Record visit');
+    expect(submit, findsOneWidget);
+    await tester.ensureVisible(submit);
+    await tester.tap(submit);
     await tester.pumpAndSettle();
+    expect(find.text('Reason is required'), findsNothing);
+    expect(find.text('Times cannot be in the future'), findsNothing);
+    expect(find.text('Departure must be after arrival'), findsNothing);
     expect(captured?.reason, 'Paper timesheet');
     expect(find.text('open'), findsOneWidget);
   });
