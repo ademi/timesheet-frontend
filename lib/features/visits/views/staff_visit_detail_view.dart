@@ -220,7 +220,8 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                         Text(
                           PriceTier.sourceHint(
                             priceTierOverride: v.priceTierOverride,
-                            lockedExported: controller.priceTierEditBlocked.value,
+                            lockedExported:
+                                controller.priceTierEditBlocked.value,
                           ),
                           style: const TextStyle(
                             fontSize: 12,
@@ -232,7 +233,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                         if (controller.hasCodedTasks) ...[
                           const SizedBox(height: 4),
                           const Text(
-                            'Tasks with NDIS codes export as separate invoice lines (multi-line mode).',
+                            'Coded tasks export as separate invoice lines.',
                             style: TextStyle(
                               fontSize: 12,
                               color: AppColors.textMuted,
@@ -245,14 +246,19 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppColors.errorBackground,
+                              color: AppColors.openSlotBackground,
                               borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.openSlot.withValues(
+                                  alpha: 0.35,
+                                ),
+                              ),
                             ),
                             child: Text(
-                              'Task minutes total (${controller.codedTaskMinutesTotal}) '
-                              'exceeds visit duration (${controller.visitScheduledMinutes} min). '
-                              'Export will fail until adjusted.',
-                              style: const TextStyle(color: AppColors.error),
+                              'Task minutes (${controller.codedTaskMinutesTotal}) '
+                              'exceed visit duration '
+                              '(${controller.visitScheduledMinutes} min).',
+                              style: const TextStyle(color: AppColors.openSlot),
                             ),
                           ),
                         ],

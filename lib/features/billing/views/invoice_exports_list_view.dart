@@ -9,20 +9,7 @@ import '../../visits/data/models/visit_models.dart';
 import '../controllers/invoice_exports_controller.dart';
 import '../data/models/billing_models.dart';
 import '../utils/visit_export_preflight.dart';
-
-String _fmtDateTime(DateTime dt) {
-  final local = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${local.year}-${two(local.month)}-${two(local.day)} ${two(local.hour)}:${two(local.minute)}';
-}
-
-String _fmtMoney(double amount, String currency) =>
-    '$currency ${amount.toStringAsFixed(2)}';
-
-String _ymd(DateTime d) {
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${d.year}-${two(d.month)}-${two(d.day)}';
-}
+import '../widgets/billing_ui.dart';
 
 class InvoiceExportsListView extends GetView<InvoiceExportsController> {
   const InvoiceExportsListView({super.key});
@@ -38,53 +25,85 @@ class InvoiceExportsListView extends GetView<InvoiceExportsController> {
       body: Obx(() {
         final tab = controller.tabIndex.value;
         final err = controller.errorMessage.value;
+        final loading = controller.isLoading.value;
+        final showCreate = tab == 1 && controller.canManage;
+
         return Column(
           children: [
             PageContent(
+              width: PageContentWidth.workflow,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (err != null) ...[
-                      _ErrorBox(err),
+                      BillingErrorBox(err),
                       const SizedBox(height: 12),
                     ],
                     if (controller.canManage)
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          ChoiceChip(
-                            label: const Text('Exports'),
-                            selected: tab == 0,
-                            onSelected: (_) => controller.tabIndex.value = 0,
+                      Semantics(
+                        label: 'Export mode',
+                        child: SegmentedButton<int>(
+                          segments: const [
+                            ButtonSegment(
+                              value: 0,
+                              label: Text('Exports'),
+                              icon: Icon(Icons.receipt_long_outlined, size: 18),
+                            ),
+                            ButtonSegment(
+                              value: 1,
+                              label: Text('Create'),
+                              icon: Icon(Icons.add, size: 18),
+                            ),
+                          ],
+                          selected: {tab},
+                          onSelectionChanged: (next) {
+                            final v = next.first;
+                            if (v == 1) {
+                              controller.switchToCreateTab();
+                            } else {
+                              controller.tabIndex.value = 0;
+                            }
+                          },
+                          style: ButtonStyle(
+                            visualDensity: VisualDensity.compact,
+                            foregroundColor: WidgetStateProperty.resolveWith((
+                              states,
+                            ) {
+                              if (states.contains(WidgetState.selected)) {
+                                return AppColors.onPrimary;
+                              }
+                              return AppColors.textDark;
+                            }),
+                            backgroundColor: WidgetStateProperty.resolveWith((
+                              states,
+                            ) {
+                              if (states.contains(WidgetState.selected)) {
+                                return AppColors.dark;
+                              }
+                              return AppColors.primaryLight;
+                            }),
                           ),
-                          ChoiceChip(
-                            label: const Text('Create export'),
-                            selected: tab == 1,
-                            onSelected: (_) {
-                              controller.tabIndex.value = 1;
-                              controller.loadExportableVisits();
-                            },
-                          ),
-                        ],
+                        ),
                       ),
                   ],
                 ),
               ),
             ),
-            if (controller.isLoading.value &&
-                (tab == 0
-                    ? controller.exports.isEmpty
-                    : controller.exportableVisits.isEmpty))
-              const Expanded(child: Center(child: CircularProgressIndicator()))
-            else
-              Expanded(
-                child:
-                    tab == 0 || !controller.canManage
-                        ? _ExportsTab(controller: controller)
-                        : _CreateExportTab(controller: controller),
+            if (loading) const LinearProgressIndicator(minHeight: 2),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: KeyedSubtree(
+                  key: ValueKey('billing-tab-$tab'),
+                  child:
+                      showCreate
+                          ? _CreateExportTab(controller: controller)
+                          : _ExportsTab(controller: controller),
+                ),
               ),
+            ),
           ],
         );
       }),
@@ -99,21 +118,34 @@ class _ExportsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (controller.isLoading.value && controller.exports.isEmpty) {
-        return const Center(child: CircularProgressIndicator());
-      }
       return RefreshIndicator(
         onRefresh: controller.loadExports,
         child:
-            controller.exports.isEmpty
+            controller.exports.isEmpty && !controller.isLoading.value
                 ? ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  children: const [
-                    SizedBox(height: 48),
-                    Center(
-                      child: Text(
-                        'No invoice exports yet.',
-                        style: TextStyle(color: AppColors.textMuted),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    PageContent(
+                      width: PageContentWidth.workflow,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 48),
+                        child: Column(
+                          children: [
+                            const Text(
+                              'No invoice exports yet.',
+                              style: TextStyle(color: AppColors.textMuted),
+                              textAlign: TextAlign.center,
+                            ),
+                            if (controller.canManage) ...[
+                              const SizedBox(height: 12),
+                              TextButton(
+                                onPressed: controller.switchToCreateTab,
+                                child: const Text('Create an export'),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -124,9 +156,12 @@ class _ExportsTab extends StatelessWidget {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final export = controller.exports[index];
-                    return _ExportTile(
-                      export: export,
-                      onTap: () => controller.openDetail(export),
+                    return PageContent(
+                      width: PageContentWidth.workflow,
+                      child: _ExportTile(
+                        export: export,
+                        onTap: () => controller.openDetail(export),
+                      ),
                     );
                   },
                 ),
@@ -142,72 +177,178 @@ class _CreateExportTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      return RefreshIndicator(
-        onRefresh: controller.loadExportableVisits,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            PageContent(
-              width: PageContentWidth.narrow,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+      final hint = controller.createExportHint;
+      return Column(
+        children: [
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: controller.loadExportableVisits,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 children: [
-                  OutlinedButton.icon(
-                    onPressed: () => controller.pickPeriod(context),
-                    icon: const Icon(Icons.date_range),
-                    label: Text(
-                      'Period: ${_ymd(controller.periodRange.value.start)}'
-                      ' – ${_ymd(controller.periodRange.value.end)}',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Select completed visits to export as NDIS plan-manager CSV lines.',
-                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-                  ),
-                  if (controller.lastVisitErrors.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Export issues',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    for (final err in controller.lastVisitErrors)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          '${err.visitId}: ${err.message}',
-                          style: const TextStyle(color: AppColors.error),
+                  PageContent(
+                    width: PageContentWidth.workflow,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _PeriodFilter(
+                          range: controller.periodRange.value,
+                          onPick: () => controller.pickPeriod(context),
                         ),
-                      ),
-                  ],
-                  const SizedBox(height: 16),
-                  if (controller.exportableVisits.isEmpty)
-                    const Text(
-                      'No completed visits in this period.',
-                      style: TextStyle(color: AppColors.textMuted),
-                    ),
-                  for (final visit in controller.exportableVisits)
-                    _VisitExportTile(controller: controller, visit: visit),
-                  const SizedBox(height: 16),
-                  AsyncElevatedButton(
-                    onPressed:
-                        controller.selectedVisitsReady
-                            ? controller.createExport
-                            : null,
-                    isLoading: controller.isSaving.value,
-                    child: Text(
-                      controller.selectedVisitIds.isEmpty
-                          ? 'Create export'
-                          : 'Create export (${controller.selectedVisitIds.length})',
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Select completed visits to export as NDIS '
+                          'plan-manager CSV lines.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        if (controller.lastVisitErrors.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Export issues',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          for (final err in controller.lastVisitErrors)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                '${controller.visitLabelForError(err)}: '
+                                '${err.message}',
+                                style: const TextStyle(color: AppColors.error),
+                              ),
+                            ),
+                        ],
+                        const SizedBox(height: 16),
+                        if (controller.exportableVisits.isEmpty &&
+                            !controller.isLoading.value)
+                          const Text(
+                            'No completed visits in this period.',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                        for (final visit in controller.exportableVisits)
+                          _VisitExportTile(
+                            controller: controller,
+                            visit: visit,
+                          ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          Material(
+            color: AppColors.surface,
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: AppColors.divider)),
+              ),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                12 + MediaQuery.paddingOf(context).bottom,
+              ),
+              child: PageContent(
+                width: PageContentWidth.workflow,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Semantics(
+                      button: true,
+                      enabled: controller.selectedVisitsReady,
+                      label:
+                          controller.selectedVisitIds.isEmpty
+                              ? 'Create export'
+                              : 'Create export with '
+                                  '${controller.selectedVisitIds.length} visits',
+                      child: AsyncElevatedButton(
+                        onPressed:
+                            controller.selectedVisitsReady
+                                ? controller.createExport
+                                : null,
+                        isLoading: controller.isSaving.value,
+                        child: Text(
+                          controller.selectedVisitIds.isEmpty
+                              ? 'Create export'
+                              : 'Create export '
+                                  '(${controller.selectedVisitIds.length})',
+                        ),
+                      ),
+                    ),
+                    if (hint != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        hint,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       );
     });
+  }
+}
+
+class _PeriodFilter extends StatelessWidget {
+  const _PeriodFilter({required this.range, required this.onPick});
+
+  final DateTimeRange range;
+  final VoidCallback onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Period',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textMuted,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Material(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            onTap: onPick,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              decoration: billingPanelDecoration(),
+              child: Row(
+                children: [
+                  const Icon(Icons.date_range, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '${billingFmtYmd(range.start)} – ${billingFmtYmd(range.end)}',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  const Icon(Icons.expand_more, color: AppColors.textMuted),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -222,20 +363,30 @@ class _VisitExportTile extends StatelessWidget {
     final preflight = controller.preflightFor(visit);
     final serverErr = controller.visitErrorFor(visit.id);
     final selected = controller.selectedVisitIds.contains(visit.id);
+    final showFix =
+        !preflight.isReady ||
+        (serverErr != null && serverErr.code != 'visit_already_exported');
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
+      decoration: billingPanelDecoration(),
       child: ExpansionTile(
-        leading: Checkbox(
-          value: selected,
-          onChanged:
-              preflight.isReady
-                  ? (_) => controller.toggleVisit(visit.id)
-                  : null,
+        shape: const Border(),
+        collapsedShape: const Border(),
+        leading: Semantics(
+          label: 'Select visit for export',
+          checked: selected,
+          child: Checkbox(
+            value: selected,
+            onChanged:
+                preflight.isReady
+                    ? (_) => controller.toggleVisit(visit.id)
+                    : null,
+          ),
         ),
         title: Text(visit.jobTitle ?? 'Visit'),
         subtitle: Text(
-          '${_fmtDateTime(visit.scheduledStart)}'
+          '${billingFmtDateTime(visit.scheduledStart)}'
           '${visit.contractorName != null ? ' · ${visit.contractorName}' : ''}',
         ),
         children: [
@@ -248,14 +399,12 @@ class _VisitExportTile extends StatelessWidget {
               ),
             ),
           for (final check in preflight.checks) _PreflightRow(check: check),
-          if (!preflight.isReady ||
-              (serverErr != null &&
-                  serverErr.code != 'visit_already_exported'))
+          if (showFix)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: TextButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: () => controller.openVisitForFix(visit),
                   icon: const Icon(Icons.open_in_new, size: 18),
                   label: const Text('Fix on visit'),
@@ -279,10 +428,10 @@ class _PreflightRow extends StatelessWidget {
     switch (check.status) {
       case VisitExportCheckStatus.ok:
         icon = Icons.check_circle_outline;
-        color = AppColors.primary;
+        color = AppColors.success;
       case VisitExportCheckStatus.warn:
         icon = Icons.warning_amber_outlined;
-        color = AppColors.textMuted;
+        color = AppColors.openSlot;
       case VisitExportCheckStatus.block:
         icon = Icons.error_outline;
         color = AppColors.error;
@@ -304,42 +453,52 @@ class _ExportTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        title: Text(
-          invoiceExportStatusLabel(export.status),
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: export.isVoid ? AppColors.textMuted : null,
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: billingPanelDecoration(),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${billingFmtDate(export.createdAt)} · '
+                      '${billingFmtMoney(export.totalAmount, export.currencyCode)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        InvoiceExportStatusPill(status: export.status),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${export.lineCount} line'
+                          '${export.lineCount == 1 ? '' : 's'}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textMuted),
+            ],
           ),
         ),
-        subtitle: Text(
-          '${export.lineCount} line${export.lineCount == 1 ? '' : 's'} · '
-          '${_fmtMoney(export.totalAmount, export.currencyCode)}\n'
-          'Created ${_fmtDateTime(export.createdAt)}',
-        ),
-        isThreeLine: true,
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
       ),
-    );
-  }
-}
-
-class _ErrorBox extends StatelessWidget {
-  const _ErrorBox(this.message);
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.errorBackground,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(message, style: const TextStyle(color: AppColors.error)),
     );
   }
 }

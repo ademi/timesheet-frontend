@@ -156,6 +156,36 @@ class InvoiceExportsController extends GetxController {
     return null;
   }
 
+  /// Human label for export error rows (prefer visit title over UUID).
+  String visitLabelForError(InvoiceExportVisitError err) {
+    for (final visit in exportableVisits) {
+      if (visit.id == err.visitId) {
+        final title = visit.jobTitle?.trim();
+        if (title != null && title.isNotEmpty) return title;
+        break;
+      }
+    }
+    final short =
+        err.visitId.length <= 8 ? err.visitId : err.visitId.substring(0, 8);
+    return 'Visit $short';
+  }
+
+  String? get createExportHint {
+    if (!canManage) return null;
+    if (selectedVisitIds.isEmpty) {
+      return 'Select ready visits to create an export.';
+    }
+    if (!selectedVisitsReady) {
+      return 'Fix blocked visits before creating an export.';
+    }
+    return null;
+  }
+
+  void switchToCreateTab() {
+    tabIndex.value = 1;
+    loadExportableVisits();
+  }
+
   bool get selectedVisitsReady {
     final selected = exportableVisits
         .where((v) => selectedVisitIds.contains(v.id))

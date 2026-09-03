@@ -5,23 +5,8 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/invoice_export_detail_controller.dart';
-import '../controllers/invoice_exports_controller.dart';
 import '../data/models/billing_models.dart';
-
-String _fmtDateTime(DateTime dt) {
-  final local = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${local.year}-${two(local.month)}-${two(local.day)} ${two(local.hour)}:${two(local.minute)}';
-}
-
-String _fmtDate(DateTime dt) {
-  final local = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${local.year}-${two(local.month)}-${two(local.day)}';
-}
-
-String _fmtMoney(double amount, String currency) =>
-    '$currency ${amount.toStringAsFixed(2)}';
+import '../widgets/billing_ui.dart';
 
 class InvoiceExportDetailView extends GetView<InvoiceExportDetailController> {
   const InvoiceExportDetailView({super.key});
@@ -50,8 +35,13 @@ class InvoiceExportDetailView extends GetView<InvoiceExportDetailController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (controller.isLoading.value)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: LinearProgressIndicator(minHeight: 2),
+                      ),
                     if (err != null) ...[
-                      _ErrorBox(err),
+                      BillingErrorBox(err),
                       const SizedBox(height: 12),
                     ],
                     _SummaryHeader(export: export),
@@ -60,7 +50,7 @@ class InvoiceExportDetailView extends GetView<InvoiceExportDetailController> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        AsyncOutlinedButton(
+                        AsyncElevatedButton(
                           onPressed: controller.downloadCsv,
                           isLoading: controller.isDownloadingCsv.value,
                           child: const Text('Download CSV'),
@@ -72,6 +62,7 @@ class InvoiceExportDetailView extends GetView<InvoiceExportDetailController> {
                             isLoading: controller.isVoiding.value,
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.error,
+                              side: const BorderSide(color: AppColors.error),
                             ),
                             child: const Text('Void export'),
                           ),
@@ -111,25 +102,39 @@ class _SummaryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          invoiceExportStatusLabel(export.status),
-          style: Get.textTheme.titleMedium?.copyWith(
-            color: export.isVoid ? AppColors.textMuted : null,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: billingPanelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InvoiceExportStatusPill(status: export.status),
+          const SizedBox(height: 10),
+          Text(
+            billingFmtMoney(export.totalAmount, export.currencyCode),
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text('Lines: ${export.lineCount}'),
-        Text(
-          'Total: ${_fmtMoney(export.totalAmount, export.currencyCode)}',
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        Text('Created: ${_fmtDateTime(export.createdAt)}'),
-        if (export.finalizedAt != null)
-          Text('Finalized: ${_fmtDateTime(export.finalizedAt!)}'),
-      ],
+          const SizedBox(height: 6),
+          Text(
+            '${export.lineCount} line${export.lineCount == 1 ? '' : 's'}',
+            style: const TextStyle(color: AppColors.textMuted),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Created ${billingFmtDateTime(export.createdAt)}',
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+          if (export.finalizedAt != null)
+            Text(
+              'Finalized ${billingFmtDateTime(export.finalizedAt!)}',
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -143,62 +148,51 @@ class _ExportLineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ndis = line.participantNdisNumber?.trim();
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              line.clientName ?? 'Client',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            if (ndis != null && ndis.isNotEmpty)
-              Text(
-                'NDIS: $ndis',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textMuted,
+      padding: const EdgeInsets.all(12),
+      decoration: billingPanelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  line.clientName ?? 'Client',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
-            const SizedBox(height: 4),
-            Text(
+              Text(
+                billingFmtMoney(line.lineAmount, currency),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            [
+              if (ndis != null && ndis.isNotEmpty) 'NDIS $ndis',
               line.supportItemNumber,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-            ),
-            Text(line.supportItemName),
-            const SizedBox(height: 8),
-            Text('Service date: ${_fmtDate(line.serviceDate)}'),
-            Text('Tier: ${PriceTier.labelForOverride(line.priceTier)}'),
-            const SizedBox(height: 4),
-            Text(
-              '${line.quantity.toStringAsFixed(2)} ${line.unit} '
-              '@ ${_fmtMoney(line.unitPrice, currency)} '
-              '= ${_fmtMoney(line.lineAmount, currency)}',
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
+              PriceTier.labelForOverride(line.priceTier),
+              billingFmtDate(line.serviceDate),
+            ].join(' · '),
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            line.supportItemName,
+            style: const TextStyle(fontSize: 13),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${line.quantity.toStringAsFixed(2)} ${line.unit} @ '
+            '${billingFmtMoney(line.unitPrice, currency)}',
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _ErrorBox extends StatelessWidget {
-  const _ErrorBox(this.message);
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.errorBackground,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(message, style: const TextStyle(color: AppColors.error)),
     );
   }
 }

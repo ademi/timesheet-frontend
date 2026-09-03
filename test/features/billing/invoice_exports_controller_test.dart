@@ -37,7 +37,7 @@ InvoiceExportOut _export({
   );
 }
 
-VisitOut _exportableVisit({String id = 'visit-1'}) {
+VisitOut _exportableVisit({String id = 'visit-1', String? jobTitle}) {
   return VisitOut(
     id: id,
     tenantId: 'tenant-1',
@@ -56,6 +56,7 @@ VisitOut _exportableVisit({String id = 'visit-1'}) {
     updatedAt: _visitStart,
     supportItemCode: '01_011_0107_1_1',
     priceTierOverride: PriceTier.national,
+    jobTitle: jobTitle,
   );
 }
 
@@ -301,6 +302,42 @@ void main() {
         expect(controller.selectedVisitIds, ['visit-2']);
       },
     );
+
+    test('visitLabelForError and createExportHint', () async {
+      when(() => session.canManageBilling).thenReturn(true);
+      when(
+        () => visitsRepository.listVisits(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          status: 'completed',
+          limit: 200,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          _exportableVisit(id: 'visit-abcdef12', jobTitle: 'Morning self-care'),
+        ],
+      );
+
+      final controller = _controller(
+        repository: repository,
+        visitsRepository: visitsRepository,
+        session: session,
+        init: true,
+      );
+      await controller.loadExportableVisits();
+
+      expect(
+        controller.visitLabelForError(
+          const InvoiceExportVisitError(
+            visitId: 'visit-abcdef12',
+            code: 'support_item_required',
+            message: 'Missing item',
+          ),
+        ),
+        'Morning self-care',
+      );
+      expect(controller.createExportHint, contains('Select ready'));
+    });
   });
 
   test('invoiceExportStatusLabel formats known statuses', () {

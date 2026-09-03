@@ -110,15 +110,23 @@ class InvoiceExportDetailController extends GetxController {
 
   Future<void> confirmAndVoidExport(BuildContext context) async {
     if (!canVoid) return;
+    final export = selected.value;
+    final lines = export?.lineCount ?? 0;
+    final total =
+        export == null
+            ? ''
+            : '${export.currencyCode} ${export.totalAmount.toStringAsFixed(2)}';
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder:
           (ctx) => AlertDialog(
             title: const Text('Void this export?'),
-            content: const Text(
-              'Visits in this export will become billable again and can be included '
-              'in a new export. This cannot be undone.',
+            content: Text(
+              'This export has $lines line${lines == 1 ? '' : 's'}'
+              '${total.isEmpty ? '' : ' · $total'}.\n\n'
+              'Visits will become billable again and can be included in a new '
+              'export. This cannot be undone.',
             ),
             actions: [
               TextButton(
