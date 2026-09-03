@@ -82,15 +82,19 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                         ),
                         Text('Start: ${_fmt(v.scheduledStart)}'),
                         Text('End: ${_fmt(v.scheduledEnd)}'),
-                        if (v.clockInAt != null || v.clockOutAt != null)
+                        if (v.clockInAt != null || v.clockOutAt != null) ...[
+                          const SizedBox(height: 6),
                           Semantics(
                             label:
                                 'Actual attendance: in ${_fmtClock(v.clockInAt)}, '
                                 'out ${v.clockOutAt == null ? 'not recorded' : _fmtClock(v.clockOutAt)}',
-                            child: Text(
-                              'Actual: in ${_fmtClock(v.clockInAt)} · out ${_fmtClock(v.clockOutAt)}',
+                            child: _DashedActualBox(
+                              child: Text(
+                                'Actual: in ${_fmtClock(v.clockInAt)} · out ${_fmtClock(v.clockOutAt)}',
+                              ),
                             ),
                           ),
+                        ],
                         if (v.locationLabel?.isNotEmpty == true)
                           Text('Location: ${v.locationLabel}'),
                         Text(
@@ -550,4 +554,59 @@ class _ErrorBox extends StatelessWidget {
       child: Text(message, style: const TextStyle(color: AppColors.error)),
     );
   }
+}
+
+/// Board D3: dashed chrome so Actual clocks read apart from scheduled times.
+class _DashedActualBox extends StatelessWidget {
+  const _DashedActualBox({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = AppColors.textMuted.withValues(alpha: 0.55);
+    return CustomPaint(
+      painter: _DashedRRectPainter(color: color, radius: 8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _DashedRRectPainter extends CustomPainter {
+  _DashedRRectPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rrect);
+    const dash = 4.0;
+    const gap = 3.0;
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = distance + dash;
+        final end = next > metric.length ? metric.length : next;
+        canvas.drawPath(metric.extractPath(distance, end), paint);
+        distance = next + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRRectPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
 }
