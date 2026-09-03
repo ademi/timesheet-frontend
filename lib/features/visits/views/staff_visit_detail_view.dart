@@ -291,7 +291,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                           const Divider(height: 32),
                           AsyncElevatedButton(
                             onPressed: () => _recordVisit(context, controller),
-                            isLoading: controller.isSaving.value,
+                            isLoading: false,
                             child: const Text('Record visit…'),
                           ),
                           const SizedBox(height: 8),

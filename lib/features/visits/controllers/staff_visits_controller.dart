@@ -1232,7 +1232,8 @@ class StaffVisitsController extends GetxController {
   }) async {
     final visit = selected.value;
     if (visit == null || !canRecordVisit) return false;
-    isSaving.value = true;
+    // Dialog owns its own loading state; leave detail isSaving alone so
+    // Reschedule/Cancel behind the sheet stay idle.
     errorMessage.value = null;
     try {
       await _repository.recordVisit(
@@ -1248,8 +1249,6 @@ class StaffVisitsController extends GetxController {
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
       return false;
-    } finally {
-      isSaving.value = false;
     }
   }
 
