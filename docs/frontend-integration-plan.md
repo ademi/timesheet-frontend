@@ -19,7 +19,7 @@
 | **A — Foundation** (models, API paths, errors, permissions) | Yes | ~0% | P0 — blocks everything |
 | **B — Roster correctness** (tenant TZ, recurrence defaults, validation) | Yes | ~70% core, gaps in TZ/UX | P1 |
 | **C — NDIS support items** (T14) | Yes | 0% | P2 |
-| **D — Billing / invoice export** (T15 + T21) | Yes | 0% | P2 |
+| **D — Billing / invoice export** (T15 + T21) | Yes | 100% | Done (2026-09-03 close-loop) |
 | **E — Unified support UX** (T12 + T20 partial) | Partial | Separate flows | P2 |
 | **F — Registration hardening** | Yes | Partial | P2 |
 | **G — Follow-ups** (backend-dependent) | Partial | N/A | P3 |
