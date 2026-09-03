@@ -58,7 +58,10 @@ void main() {
       branchId: 'branch-1',
       branchName: 'Head Office',
     );
-    await storage.persistTokens(accessToken: 'new-access', refreshToken: 'new-refresh');
+    await storage.persistTokens(
+      accessToken: 'new-access',
+      refreshToken: 'new-refresh',
+    );
 
     expect(storage.branchId, 'branch-1');
     expect(storage.branchName, 'Head Office');
@@ -132,10 +135,11 @@ void main() {
 
   test('needsProactiveRefresh handles numeric exp claim', () async {
     final storage = TokenStorage();
-    final nearExpiry = DateTime.now()
-        .toUtc()
-        .add(const Duration(minutes: 2))
-        .millisecondsSinceEpoch ~/
+    final nearExpiry =
+        DateTime.now()
+            .toUtc()
+            .add(const Duration(minutes: 2))
+            .millisecondsSinceEpoch ~/
         1000;
     await storage.persistTokens(
       accessToken: _fakeJwt({'exp': nearExpiry.toDouble()}),

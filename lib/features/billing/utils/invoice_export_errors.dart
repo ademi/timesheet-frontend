@@ -37,14 +37,16 @@ List<InvoiceExportVisitError> parseInvoiceExportVisitErrors(DioException e) {
         final row = Map<String, dynamic>.from(item);
         final visitId =
             row['visit_id']?.toString() ?? row['visitId']?.toString() ?? '';
-        final code = row['code']?.toString() ??
+        final code =
+            row['code']?.toString() ??
             row['detail']?.toString() ??
             detailMap['code']?.toString() ??
             'unknown';
         addError(
           visitId: visitId,
           code: code,
-          message: row['message']?.toString() ?? invoiceExportErrorMessage(code),
+          message:
+              row['message']?.toString() ?? invoiceExportErrorMessage(code),
         );
       }
       return errors;

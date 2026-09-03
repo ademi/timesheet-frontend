@@ -7,7 +7,7 @@ import '../models/compliance_ops_models.dart';
 
 class ComplianceOpsRemoteDataSource {
   ComplianceOpsRemoteDataSource({required Dio authenticatedDio})
-      : _dio = authenticatedDio;
+    : _dio = authenticatedDio;
 
   final Dio _dio;
 
@@ -17,7 +17,11 @@ class ComplianceOpsRemoteDataSource {
         ApiPaths.rightsRequests,
         data: body.toJson(),
       );
-      return _require(response.data, RightsRequestOut.fromJson, 'rights request');
+      return _require(
+        response.data,
+        RightsRequestOut.fromJson,
+        'rights request',
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }
@@ -28,7 +32,11 @@ class ComplianceOpsRemoteDataSource {
       final response = await _dio.get<Map<String, dynamic>>(
         ApiPaths.rightsRequest(id),
       );
-      return _require(response.data, RightsRequestOut.fromJson, 'rights request');
+      return _require(
+        response.data,
+        RightsRequestOut.fromJson,
+        'rights request',
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }
@@ -65,10 +73,7 @@ class ComplianceOpsRemoteDataSource {
     try {
       final response = await _dio.get<dynamic>(
         ApiPaths.accessHistory,
-        queryParameters: {
-          'credential_id': credentialId,
-          'limit': limit,
-        },
+        queryParameters: {'credential_id': credentialId, 'limit': limit},
       );
       return _parseList(response.data, AccessHistoryEntry.fromJson);
     } on DioException catch (e) {
@@ -121,9 +126,7 @@ class ComplianceOpsRemoteDataSource {
     try {
       final response = await _dio.patch<Map<String, dynamic>>(
         ApiPaths.incident(id),
-        data: {
-          if (status != null) 'status': status,
-        },
+        data: {if (status != null) 'status': status},
       );
       return _require(response.data, IncidentOut.fromJson, 'patch incident');
     } on DioException catch (e) {
@@ -193,9 +196,7 @@ class ComplianceOpsRemoteDataSource {
     try {
       final response = await _dio.get<dynamic>(
         ApiPaths.contractorMeSharingAccessRequests,
-        queryParameters: {
-          if (status != null) 'status': status,
-        },
+        queryParameters: {if (status != null) 'status': status},
       );
       return _parseList(response.data, SharingAccessRequestOut.fromJson);
     } on DioException catch (e) {
@@ -225,11 +226,7 @@ class ComplianceOpsRemoteDataSource {
       final response = await _dio.get<Map<String, dynamic>>(
         ApiPaths.contractorMeProfilePhoto,
       );
-      return _require(
-        response.data,
-        ProfilePhotoOut.fromJson,
-        'profile photo',
-      );
+      return _require(response.data, ProfilePhotoOut.fromJson, 'profile photo');
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }
@@ -277,7 +274,8 @@ class ComplianceOpsRemoteDataSource {
           .toList(growable: false);
     }
     if (data is Map) {
-      final items = data['items'] ?? data['events'] ?? data['results'] ?? data['data'];
+      final items =
+          data['items'] ?? data['events'] ?? data['results'] ?? data['data'];
       if (items is List) return _parseList(items, fromJson);
     }
     return const [];

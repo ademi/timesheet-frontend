@@ -446,7 +446,7 @@ class StaffCredentialReviewController extends GetxController {
       _showSnack(
         'Review recorded',
         '${credentialTypeLabel(credential.credentialType)}: '
-        '${credentialStatusLabel(review.decision)}',
+            '${credentialStatusLabel(review.decision)}',
       );
       clearPendingReason();
       await load();

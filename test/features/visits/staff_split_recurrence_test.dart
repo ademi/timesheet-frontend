@@ -92,10 +92,10 @@ void main() {
       ),
     ).thenAnswer((_) async => const RosterOverlayOut(contractors: []));
     when(() => jobs.listJobs()).thenAnswer((_) async => []);
-    when(() => jobs.ensureHorizon(any())).thenAnswer((_) async => HorizonOut.empty);
     when(
-      () => engagements.listTenantEngagements(),
-    ).thenAnswer((_) async => []);
+      () => jobs.ensureHorizon(any()),
+    ).thenAnswer((_) async => HorizonOut.empty);
+    when(() => engagements.listTenantEngagements()).thenAnswer((_) async => []);
     controller = StaffVisitsController(
       repository: visits,
       shiftsRepository: shifts,

@@ -65,9 +65,7 @@ void main() {
 
   test('taskMinutesExceedVisitDuration detects over-allocation', () {
     final ok = _visit(
-      tasks: [
-        _task(supportItemCode: '01_011_0107_1_1', billableMinutes: 90),
-      ],
+      tasks: [_task(supportItemCode: '01_011_0107_1_1', billableMinutes: 90)],
     );
     final over = _visit(
       tasks: [

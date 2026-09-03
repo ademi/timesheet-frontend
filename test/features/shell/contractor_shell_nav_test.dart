@@ -33,7 +33,9 @@ void main() {
     });
   });
 
-  testWidgets('contractor phone width uses bottom NavigationBar', (tester) async {
+  testWidgets('contractor phone width uses bottom NavigationBar', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(tester.view.resetPhysicalSize);
 

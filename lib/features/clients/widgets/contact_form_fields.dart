@@ -34,7 +34,8 @@ class ContactFormFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final preset = lockRelationship ?? controller.contactRelationshipPreset.value;
+      final preset =
+          lockRelationship ?? controller.contactRelationshipPreset.value;
       final map = presets ?? ContactFormHost.kinshipPresets;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -83,7 +84,8 @@ class ContactFormFields extends StatelessWidget {
                     value: entry.key,
                     child: Text(entry.value),
                   ),
-                if (lockRelationship != null && !map.containsKey(lockRelationship))
+                if (lockRelationship != null &&
+                    !map.containsKey(lockRelationship))
                   DropdownMenuItem<String?>(
                     value: lockRelationship,
                     child: Text(lockRelationship!),
@@ -94,14 +96,15 @@ class ContactFormFields extends StatelessWidget {
                     child: Text(ContactFormHost.relationshipOtherLabel),
                   ),
               ],
-              onChanged: lockRelationship != null
-                  ? null
-                  : (v) {
-                      controller.contactRelationshipPreset.value = v;
-                      if (v != ContactFormHost.relationshipOtherKey) {
-                        controller.contactRelationshipOtherCtrl.clear();
-                      }
-                    },
+              onChanged:
+                  lockRelationship != null
+                      ? null
+                      : (v) {
+                        controller.contactRelationshipPreset.value = v;
+                        if (v != ContactFormHost.relationshipOtherKey) {
+                          controller.contactRelationshipOtherCtrl.clear();
+                        }
+                      },
             ),
             if (preset == ContactFormHost.relationshipOtherKey) ...[
               const SizedBox(height: 12),
@@ -122,7 +125,8 @@ class ContactFormFields extends StatelessWidget {
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               value: controller.contactIsEmergency.value,
-              onChanged: (v) => controller.contactIsEmergency.value = v ?? false,
+              onChanged:
+                  (v) => controller.contactIsEmergency.value = v ?? false,
               title: const Text('Emergency contact'),
               controlAffinity: ListTileControlAffinity.leading,
             ),

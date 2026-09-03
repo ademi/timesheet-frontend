@@ -64,9 +64,14 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                           _ErrorBox(err),
                           const SizedBox(height: 12),
                         ],
-                        Text(v.jobTitle ?? 'Visit', style: Get.textTheme.titleMedium),
+                        Text(
+                          v.jobTitle ?? 'Visit',
+                          style: Get.textTheme.titleMedium,
+                        ),
                         const SizedBox(height: 4),
-                        Text('Status: ${v.status} · payment: ${v.paymentStatus}'),
+                        Text(
+                          'Status: ${v.status} · payment: ${v.paymentStatus}',
+                        ),
                         Text('Start: ${_fmt(v.scheduledStart)}'),
                         Text('End: ${_fmt(v.scheduledEnd)}'),
                         if (v.locationLabel?.isNotEmpty == true)
@@ -79,7 +84,8 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                           Text('Contractor: ${v.contractorName}'),
                         Obx(() {
                           final ndis = controller.participantNdisNumber.value;
-                          if (ndis == null && !controller.isLoadingParticipantNdis.value) {
+                          if (ndis == null &&
+                              !controller.isLoadingParticipantNdis.value) {
                             return const SizedBox.shrink();
                           }
                           if (controller.isLoadingParticipantNdis.value &&
@@ -109,7 +115,10 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                           );
                         }),
                         const Divider(height: 32),
-                        Text('NDIS support item', style: Get.textTheme.titleMedium),
+                        Text(
+                          'NDIS support item',
+                          style: Get.textTheme.titleMedium,
+                        ),
                         const SizedBox(height: 8),
                         if (controller.canEditVisitSupportItem)
                           NdisSupportItemPicker(
@@ -192,17 +201,19 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                                 child: Text('Very remote'),
                               ),
                             ],
-                            onChanged: controller.isSaving.value
-                                ? null
-                                : controller.updateVisitPriceTier,
+                            onChanged:
+                                controller.isSaving.value
+                                    ? null
+                                    : controller.updateVisitPriceTier,
                           )
                         else
                           Text(
                             PriceTier.labelForOverride(v.priceTierOverride),
                             style: TextStyle(
-                              color: controller.priceTierEditBlocked.value
-                                  ? AppColors.textMuted
-                                  : null,
+                              color:
+                                  controller.priceTierEditBlocked.value
+                                      ? AppColors.textMuted
+                                      : null,
                             ),
                           ),
                         const SizedBox(height: 4),
@@ -314,10 +325,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
 }
 
 class _VisitTaskRow extends StatelessWidget {
-  const _VisitTaskRow({
-    required this.controller,
-    required this.task,
-  });
+  const _VisitTaskRow({required this.controller, required this.task});
 
   final StaffVisitsController controller;
   final VisitTaskOut task;
@@ -366,7 +374,10 @@ class _VisitTaskRow extends StatelessWidget {
               padding: const EdgeInsets.only(left: 40, bottom: 12),
               child: Text(
                 task.supportItemCode!,
-                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
               ),
             ),
           if (hasSupportItemCode && controller.canEditVisitTaskBilling)
@@ -378,11 +389,11 @@ class _VisitTaskRow extends StatelessWidget {
                 ),
                 initialMinutes: controller.taskBillableMinutesDisplay(task),
                 enabled: !controller.isSaving.value,
-                onSubmitted: (value) =>
-                    controller.updateVisitTaskBillableMinutes(
-                  task: task,
-                  rawMinutes: value,
-                ),
+                onSubmitted:
+                    (value) => controller.updateVisitTaskBillableMinutes(
+                      task: task,
+                      rawMinutes: value,
+                    ),
               ),
             )
           else if (hasSupportItemCode && task.billableMinutes != null)
@@ -390,7 +401,10 @@ class _VisitTaskRow extends StatelessWidget {
               padding: const EdgeInsets.only(left: 40, bottom: 12),
               child: Text(
                 '${task.billableMinutes} billable min',
-                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
               ),
             ),
         ],

@@ -8,7 +8,8 @@ import '../models/roster_overlay_models.dart';
 import '../models/visit_models.dart';
 
 class VisitsRemoteDataSource {
-  VisitsRemoteDataSource({required Dio authenticatedDio}) : _dio = authenticatedDio;
+  VisitsRemoteDataSource({required Dio authenticatedDio})
+    : _dio = authenticatedDio;
 
   final Dio _dio;
 
@@ -48,9 +49,7 @@ class VisitsRemoteDataSource {
 
   Future<VisitOut> getVisit(String id) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        ApiPaths.visit(id),
-      );
+      final response = await _dio.get<Map<String, dynamic>>(ApiPaths.visit(id));
       return _require(response.data, VisitOut.fromJson, 'get visit');
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
@@ -163,7 +162,11 @@ class VisitsRemoteDataSource {
         ApiPaths.visitSupportItem(visitId),
         data: body.toJson(),
       );
-      return _require(response.data, VisitOut.fromJson, 'patch visit support item');
+      return _require(
+        response.data,
+        VisitOut.fromJson,
+        'patch visit support item',
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }
@@ -178,7 +181,11 @@ class VisitsRemoteDataSource {
         ApiPaths.visitPriceTier(visitId),
         data: body.toJson(),
       );
-      return _require(response.data, VisitOut.fromJson, 'patch visit price tier');
+      return _require(
+        response.data,
+        VisitOut.fromJson,
+        'patch visit price tier',
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }
@@ -258,7 +265,11 @@ class VisitsRemoteDataSource {
           'to': to.toUtc().toIso8601String(),
         },
       );
-      return _require(response.data, RosterOverlayOut.fromJson, 'roster overlay');
+      return _require(
+        response.data,
+        RosterOverlayOut.fromJson,
+        'roster overlay',
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

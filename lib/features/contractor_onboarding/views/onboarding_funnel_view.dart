@@ -39,11 +39,13 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
       ),
       body: Column(
         children: [
-          Obx(() => _ProgressHeader(
-            stepNumber: controller.funnelStepNumber,
-            totalSteps: controller.funnelTotalSteps,
-            currentStep: controller.currentStep,
-          )),
+          Obx(
+            () => _ProgressHeader(
+              stepNumber: controller.funnelStepNumber,
+              totalSteps: controller.funnelTotalSteps,
+              currentStep: controller.currentStep,
+            ),
+          ),
           Expanded(
             child: Obx(() {
               if (controller.isLoading.value &&
@@ -60,18 +62,19 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                  if (err != null) ...[
-                    _ErrorBanner(message: err),
-                    const SizedBox(height: 12),
-                  ],
-                  switch (controller.currentStep) {
-                    OnboardingStep.legal => const _LegalStep(),
-                    OnboardingStep.notices => const _NoticesStep(),
-                    OnboardingStep.consents => const _ConsentsStep(),
-                    OnboardingStep.engagement => const EngagementAcceptPanel(),
-                    // Credentials are managed under the contractor Credentials tab.
-                    OnboardingStep.credentials => const SizedBox.shrink(),
-                  },
+                        if (err != null) ...[
+                          _ErrorBanner(message: err),
+                          const SizedBox(height: 12),
+                        ],
+                        switch (controller.currentStep) {
+                          OnboardingStep.legal => const _LegalStep(),
+                          OnboardingStep.notices => const _NoticesStep(),
+                          OnboardingStep.consents => const _ConsentsStep(),
+                          OnboardingStep.engagement =>
+                            const EngagementAcceptPanel(),
+                          // Credentials are managed under the contractor Credentials tab.
+                          OnboardingStep.credentials => const SizedBox.shrink(),
+                        },
                       ],
                     ),
                   ),

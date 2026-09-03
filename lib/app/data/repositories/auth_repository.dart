@@ -13,19 +13,19 @@ class AuthRepository {
   AuthRepository({
     required AuthRemoteDataSource remote,
     required TokenStorage storage,
-  })  : _remote = remote,
-        _storage = storage;
+  }) : _remote = remote,
+       _storage = storage;
 
   final AuthRemoteDataSource _remote;
   final TokenStorage _storage;
 
-  Future<AuthTokenModel> loginWithTokens(String identifier, String password) async {
+  Future<AuthTokenModel> loginWithTokens(
+    String identifier,
+    String password,
+  ) async {
     try {
       final tokens = await _remote.login(
-        LoginRequestModel(
-          identifier: identifier,
-          password: password,
-        ),
+        LoginRequestModel(identifier: identifier, password: password),
       );
       await _persistTokens(tokens);
       return tokens;

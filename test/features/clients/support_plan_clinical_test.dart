@@ -74,11 +74,7 @@ void main() {
       () => mock.upsertProfileFact(
         'c1',
         ClinicalKeys.bspOnFile,
-        any(
-          that: predicate<ProfileFactUpsert>(
-            (u) => u.valueJson == true,
-          ),
-        ),
+        any(that: predicate<ProfileFactUpsert>((u) => u.valueJson == true)),
       ),
     ).called(1);
   });

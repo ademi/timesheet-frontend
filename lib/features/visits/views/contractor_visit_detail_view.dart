@@ -44,9 +44,10 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<ContractorVisitsController>();
-    final briefCtrl = Get.isRegistered<VisitShiftBriefController>()
-        ? Get.find<VisitShiftBriefController>()
-        : null;
+    final briefCtrl =
+        Get.isRegistered<VisitShiftBriefController>()
+            ? Get.find<VisitShiftBriefController>()
+            : null;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Visit detail')),
@@ -77,133 +78,140 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                  if (err != null) ...[
-                    _ErrorBox(err),
-                    const SizedBox(height: 12),
-                  ],
-                  Text(
-                    v.jobTitle ?? v.tenantName ?? 'Visit',
-                    style: Get.textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text('Status: ${v.status}'),
-                  Text('${_fmt(v.scheduledStart)} → ${_fmt(v.scheduledEnd)}'),
-                  if (v.locationLabel?.isNotEmpty == true ||
-                      (v.latitude != null && v.longitude != null)) ...[
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: OutlinedButton.icon(
-                        onPressed: () => openMapLocation(
-                          latitude: v.latitude,
-                          longitude: v.longitude,
-                          label: v.locationLabel,
+                        if (err != null) ...[
+                          _ErrorBox(err),
+                          const SizedBox(height: 12),
+                        ],
+                        Text(
+                          v.jobTitle ?? v.tenantName ?? 'Visit',
+                          style: Get.textTheme.titleMedium,
                         ),
-                        icon: const Icon(Icons.map_outlined),
-                        label: const Text('Open in Maps'),
-                      ),
-                    ),
-                  ],
-                  if (gpsBlocked) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(VisitLocationService.webBlockedMessage),
-                    ),
-                  ],
-                  if (briefCtrl != null)
-                    ShiftBriefPanel(
-                      brief: brief,
-                      isLoading: briefLoading,
-                      errorMessage: briefErr,
-                    ),
-                  const Divider(height: 32),
-                  Text('Tasks', style: Get.textTheme.titleMedium),
-                  if (v.tasks.isEmpty) const Text('No tasks.'),
-                  for (final t in v.tasks)
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: t.isDone,
-                      title: Text(t.title),
-                      onChanged:
-                          controller.isSaving.value ||
-                                  (!v.isCheckedIn && !v.isScheduled)
-                              ? null
-                              : (_) => controller.toggleTask(t),
-                    ),
-                  if (v.isCheckedIn || v.isCompleted) ...[
-                    const Divider(height: 32),
-                    Text('Forms', style: Get.textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    if (reqs.isEmpty)
-                      const Text(
-                        'Contact your coordinator — form not configured.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textMuted,
+                        const SizedBox(height: 4),
+                        Text('Status: ${v.status}'),
+                        Text(
+                          '${_fmt(v.scheduledStart)} → ${_fmt(v.scheduledEnd)}',
                         ),
-                      )
-                    else
-                      for (final req in reqs)
-                        VisitSchemaForm(
-                          requirement: req,
-                          canSubmit: v.isCheckedIn,
-                          isSubmitting: controller.isSaving.value,
-                          isSubmitted:
-                              controller.isFormSubmitted(req.formTemplateId),
-                          onSubmit: (payload) => controller.submitForm(
-                            req,
-                            payloadJson: payload,
+                        if (v.locationLabel?.isNotEmpty == true ||
+                            (v.latitude != null && v.longitude != null)) ...[
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: OutlinedButton.icon(
+                              onPressed:
+                                  () => openMapLocation(
+                                    latitude: v.latitude,
+                                    longitude: v.longitude,
+                                    label: v.locationLabel,
+                                  ),
+                              icon: const Icon(Icons.map_outlined),
+                              label: const Text('Open in Maps'),
+                            ),
                           ),
-                        ),
-                    if (v.formSubmissions.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'Submissions on file: ${v.formSubmissions.length}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ],
-                  const SizedBox(height: 24),
-                  if (v.isScheduled && controller.canCheckIn)
-                    AsyncElevatedButton(
-                      onPressed: gpsBlocked ? null : controller.checkIn,
-                      isLoading: controller.isSaving.value,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.onPrimary,
-                        minimumSize: const Size.fromHeight(48),
-                      ),
-                      child: const Text('Check in'),
-                    ),
-                  if (v.isCheckedIn && controller.canComplete) ...[
-                    const SizedBox(height: 8),
-                    AsyncElevatedButton(
-                      onPressed: gpsBlocked ? null : controller.complete,
-                      isLoading: controller.isSaving.value,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.onPrimary,
-                        minimumSize: const Size.fromHeight(48),
-                      ),
-                      child: const Text('Complete'),
-                    ),
-                  ],
-                  if (v.isCompleted)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 12),
-                      child: Text('This visit is completed.'),
-                    ),
-                  if (v.isCancelled)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 12),
-                      child: Text('This visit was cancelled.'),
-                    ),
+                        ],
+                        if (gpsBlocked) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              VisitLocationService.webBlockedMessage,
+                            ),
+                          ),
+                        ],
+                        if (briefCtrl != null)
+                          ShiftBriefPanel(
+                            brief: brief,
+                            isLoading: briefLoading,
+                            errorMessage: briefErr,
+                          ),
+                        const Divider(height: 32),
+                        Text('Tasks', style: Get.textTheme.titleMedium),
+                        if (v.tasks.isEmpty) const Text('No tasks.'),
+                        for (final t in v.tasks)
+                          CheckboxListTile(
+                            contentPadding: EdgeInsets.zero,
+                            value: t.isDone,
+                            title: Text(t.title),
+                            onChanged:
+                                controller.isSaving.value ||
+                                        (!v.isCheckedIn && !v.isScheduled)
+                                    ? null
+                                    : (_) => controller.toggleTask(t),
+                          ),
+                        if (v.isCheckedIn || v.isCompleted) ...[
+                          const Divider(height: 32),
+                          Text('Forms', style: Get.textTheme.titleMedium),
+                          const SizedBox(height: 8),
+                          if (reqs.isEmpty)
+                            const Text(
+                              'Contact your coordinator — form not configured.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textMuted,
+                              ),
+                            )
+                          else
+                            for (final req in reqs)
+                              VisitSchemaForm(
+                                requirement: req,
+                                canSubmit: v.isCheckedIn,
+                                isSubmitting: controller.isSaving.value,
+                                isSubmitted: controller.isFormSubmitted(
+                                  req.formTemplateId,
+                                ),
+                                onSubmit:
+                                    (payload) => controller.submitForm(
+                                      req,
+                                      payloadJson: payload,
+                                    ),
+                              ),
+                          if (v.formSubmissions.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Submissions on file: ${v.formSubmissions.length}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ],
+                        const SizedBox(height: 24),
+                        if (v.isScheduled && controller.canCheckIn)
+                          AsyncElevatedButton(
+                            onPressed: gpsBlocked ? null : controller.checkIn,
+                            isLoading: controller.isSaving.value,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.onPrimary,
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            child: const Text('Check in'),
+                          ),
+                        if (v.isCheckedIn && controller.canComplete) ...[
+                          const SizedBox(height: 8),
+                          AsyncElevatedButton(
+                            onPressed: gpsBlocked ? null : controller.complete,
+                            isLoading: controller.isSaving.value,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: AppColors.onPrimary,
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            child: const Text('Complete'),
+                          ),
+                        ],
+                        if (v.isCompleted)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 12),
+                            child: Text('This visit is completed.'),
+                          ),
+                        if (v.isCancelled)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 12),
+                            child: Text('This visit was cancelled.'),
+                          ),
                       ],
                     ),
                   ),

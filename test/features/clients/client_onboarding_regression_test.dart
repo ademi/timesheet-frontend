@@ -70,9 +70,12 @@ void main() {
     session = _MockSessionService();
     when(() => mock.listClientTypes()).thenAnswer((_) async => [_patientType]);
     when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
-    when(() => mock.patchClient(any(), any())).thenAnswer((_) async => _fakeClient);
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mock.patchClient(any(), any()),
+    ).thenAnswer((_) async => _fakeClient);
+    when(
+      () => mock.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async {});
     when(() => mock.getClient(any())).thenAnswer((_) async => _fakeClient);
 
     c = ClientOnboardingController(

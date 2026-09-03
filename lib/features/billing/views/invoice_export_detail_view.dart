@@ -67,8 +67,8 @@ class InvoiceExportDetailView extends GetView<InvoiceExportDetailController> {
                         ),
                         if (controller.canVoid)
                           AsyncOutlinedButton(
-                            onPressed: () =>
-                                controller.confirmAndVoidExport(context),
+                            onPressed:
+                                () => controller.confirmAndVoidExport(context),
                             isLoading: controller.isVoiding.value,
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.error,
@@ -135,10 +135,7 @@ class _SummaryHeader extends StatelessWidget {
 }
 
 class _ExportLineTile extends StatelessWidget {
-  const _ExportLineTile({
-    required this.line,
-    required this.currency,
-  });
+  const _ExportLineTile({required this.line, required this.currency});
 
   final InvoiceExportLineOut line;
   final String currency;
@@ -160,7 +157,10 @@ class _ExportLineTile extends StatelessWidget {
             if (ndis != null && ndis.isNotEmpty)
               Text(
                 'NDIS: $ndis',
-                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
               ),
             const SizedBox(height: 4),
             Text(
@@ -170,9 +170,7 @@ class _ExportLineTile extends StatelessWidget {
             Text(line.supportItemName),
             const SizedBox(height: 8),
             Text('Service date: ${_fmtDate(line.serviceDate)}'),
-            Text(
-              'Tier: ${PriceTier.labelForOverride(line.priceTier)}',
-            ),
+            Text('Tier: ${PriceTier.labelForOverride(line.priceTier)}'),
             const SizedBox(height: 4),
             Text(
               '${line.quantity.toStringAsFixed(2)} ${line.unit} '

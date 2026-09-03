@@ -6,7 +6,8 @@ import '../../../billing/data/models/billing_models.dart';
 import '../models/job_models.dart';
 
 class JobsRemoteDataSource {
-  JobsRemoteDataSource({required Dio authenticatedDio}) : _dio = authenticatedDio;
+  JobsRemoteDataSource({required Dio authenticatedDio})
+    : _dio = authenticatedDio;
 
   final Dio _dio;
 
@@ -290,11 +291,7 @@ class JobsRemoteDataSource {
           if (title != null && title.trim().isNotEmpty) 'title': title.trim(),
         },
       );
-      return _require(
-        response.data,
-        JobOut.fromJson,
-        'ensure ongoing support',
-      );
+      return _require(response.data, JobOut.fromJson, 'ensure ongoing support');
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

@@ -80,9 +80,10 @@ class InvoiceExportsListView extends GetView<InvoiceExportsController> {
               const Expanded(child: Center(child: CircularProgressIndicator()))
             else
               Expanded(
-                child: tab == 0 || !controller.canManage
-                    ? _ExportsTab(controller: controller)
-                    : _CreateExportTab(controller: controller),
+                child:
+                    tab == 0 || !controller.canManage
+                        ? _ExportsTab(controller: controller)
+                        : _CreateExportTab(controller: controller),
               ),
           ],
         );
@@ -103,31 +104,32 @@ class _ExportsTab extends StatelessWidget {
       }
       return RefreshIndicator(
         onRefresh: controller.loadExports,
-        child: controller.exports.isEmpty
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 48),
-                  Center(
-                    child: Text(
-                      'No invoice exports yet.',
-                      style: TextStyle(color: AppColors.textMuted),
+        child:
+            controller.exports.isEmpty
+                ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [
+                    SizedBox(height: 48),
+                    Center(
+                      child: Text(
+                        'No invoice exports yet.',
+                        style: TextStyle(color: AppColors.textMuted),
+                      ),
                     ),
-                  ),
-                ],
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: controller.exports.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final export = controller.exports[index];
-                  return _ExportTile(
-                    export: export,
-                    onTap: () => controller.openDetail(export),
-                  );
-                },
-              ),
+                  ],
+                )
+                : ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: controller.exports.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final export = controller.exports[index];
+                    return _ExportTile(
+                      export: export,
+                      onTap: () => controller.openDetail(export),
+                    );
+                  },
+                ),
       );
     });
   }
@@ -185,15 +187,13 @@ class _CreateExportTab extends StatelessWidget {
                       style: TextStyle(color: AppColors.textMuted),
                     ),
                   for (final visit in controller.exportableVisits)
-                    _VisitExportTile(
-                      controller: controller,
-                      visit: visit,
-                    ),
+                    _VisitExportTile(controller: controller, visit: visit),
                   const SizedBox(height: 16),
                   AsyncElevatedButton(
-                    onPressed: controller.selectedVisitsReady
-                        ? controller.createExport
-                        : null,
+                    onPressed:
+                        controller.selectedVisitsReady
+                            ? controller.createExport
+                            : null,
                     isLoading: controller.isSaving.value,
                     child: Text(
                       controller.selectedVisitIds.isEmpty
@@ -212,10 +212,7 @@ class _CreateExportTab extends StatelessWidget {
 }
 
 class _VisitExportTile extends StatelessWidget {
-  const _VisitExportTile({
-    required this.controller,
-    required this.visit,
-  });
+  const _VisitExportTile({required this.controller, required this.visit});
 
   final InvoiceExportsController controller;
   final VisitOut visit;
@@ -231,9 +228,10 @@ class _VisitExportTile extends StatelessWidget {
       child: ExpansionTile(
         leading: Checkbox(
           value: selected,
-          onChanged: preflight.isReady
-              ? (_) => controller.toggleVisit(visit.id)
-              : null,
+          onChanged:
+              preflight.isReady
+                  ? (_) => controller.toggleVisit(visit.id)
+                  : null,
         ),
         title: Text(visit.jobTitle ?? 'Visit'),
         subtitle: Text(
@@ -249,8 +247,7 @@ class _VisitExportTile extends StatelessWidget {
                 style: const TextStyle(color: AppColors.error),
               ),
             ),
-          for (final check in preflight.checks)
-            _PreflightRow(check: check),
+          for (final check in preflight.checks) _PreflightRow(check: check),
         ],
       ),
     );

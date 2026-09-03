@@ -17,7 +17,10 @@ void main() {
         ),
       ),
     );
-    expect(find.byKey(const ValueKey('contractor-detail-tab-0')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('contractor-detail-tab-0')),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Credentials'));
     await tester.pump();
     expect(index, 1);

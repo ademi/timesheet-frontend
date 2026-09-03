@@ -8,17 +8,16 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: OtherTextField(isOther: false, controller: ctrl),
-        ),
+        home: Scaffold(body: OtherTextField(isOther: false, controller: ctrl)),
       ),
     );
 
     expect(find.byType(TextField), findsNothing);
   });
 
-  testWidgets('OtherTextField shows labeled field when isOther is true',
-      (tester) async {
+  testWidgets('OtherTextField shows labeled field when isOther is true', (
+    tester,
+  ) async {
     final ctrl = TextEditingController();
 
     await tester.pumpWidget(

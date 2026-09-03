@@ -6,7 +6,8 @@ import '../../../jobs/data/models/job_models.dart';
 import '../models/shift_models.dart';
 
 class ShiftsRemoteDataSource {
-  ShiftsRemoteDataSource({required Dio authenticatedDio}) : _dio = authenticatedDio;
+  ShiftsRemoteDataSource({required Dio authenticatedDio})
+    : _dio = authenticatedDio;
 
   final Dio _dio;
 

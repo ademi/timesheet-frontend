@@ -25,8 +25,7 @@ class GatewayController extends GetxController {
     try {
       final tokenStorage = Get.find<TokenStorage>();
       if (Get.isRegistered<TokenRefreshService>()) {
-        final outcome =
-            await Get.find<TokenRefreshService>().refreshIfNeeded();
+        final outcome = await Get.find<TokenRefreshService>().refreshIfNeeded();
         if (outcome == TokenRefreshOutcome.invalidRefreshToken) return;
       }
 
@@ -36,7 +35,8 @@ class GatewayController extends GetxController {
         final session = Get.find<SessionService>();
         await session.hydrateFromMeContext();
         if (Get.isRegistered<PushNotificationService>()) {
-          await Get.find<PushNotificationService>().registerCurrentDeviceToken();
+          await Get.find<PushNotificationService>()
+              .registerCurrentDeviceToken();
         }
         final route = session.resolvePostLoginRoute();
         if (route != AppRoutes.login && route != AppRoutes.gateway) {

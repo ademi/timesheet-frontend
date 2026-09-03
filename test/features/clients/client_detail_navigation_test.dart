@@ -47,9 +47,9 @@ void main() {
       () => clients.getClientProfilePhoto(any()),
     ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
     when(() => clients.listClientTypes()).thenAnswer((_) async => []);
-    when(() => clients.getClientProfile(_client.id)).thenAnswer(
-      (_) async => const ClientProfileBundle(facts: []),
-    );
+    when(
+      () => clients.getClientProfile(_client.id),
+    ).thenAnswer((_) async => const ClientProfileBundle(facts: []));
     when(() => clients.listSites(any())).thenAnswer((_) async => []);
     when(() => clients.listContacts(any())).thenAnswer((_) async => []);
     when(() => clients.listSupportPlans(any())).thenAnswer((_) async => []);

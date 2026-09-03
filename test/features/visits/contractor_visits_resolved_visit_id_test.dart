@@ -51,8 +51,9 @@ void main() {
 
   tearDown(Get.reset);
 
-  testWidgets('resolvedVisitId reads string id from schedule navigation',
-      (tester) async {
+  testWidgets('resolvedVisitId reads string id from schedule navigation', (
+    tester,
+  ) async {
     late ContractorVisitsController controller;
 
     await tester.pumpWidget(
@@ -61,11 +62,12 @@ void main() {
         getPages: [
           GetPage(
             name: '/',
-            page: () => ElevatedButton(
-              onPressed: () =>
-                  Get.toNamed('/detail', arguments: 'sched-visit-1'),
-              child: const Text('open'),
-            ),
+            page:
+                () => ElevatedButton(
+                  onPressed:
+                      () => Get.toNamed('/detail', arguments: 'sched-visit-1'),
+                  child: const Text('open'),
+                ),
           ),
           GetPage(
             name: '/detail',
@@ -86,7 +88,9 @@ void main() {
     expect(controller.resolvedVisitId, 'sched-visit-1');
   });
 
-  testWidgets('resolvedVisitId prefers selected over route args', (tester) async {
+  testWidgets('resolvedVisitId prefers selected over route args', (
+    tester,
+  ) async {
     late ContractorVisitsController controller;
     final visit = _visit(id: 'selected-visit');
 
@@ -96,11 +100,12 @@ void main() {
         getPages: [
           GetPage(
             name: '/',
-            page: () => ElevatedButton(
-              onPressed: () =>
-                  Get.toNamed('/detail', arguments: 'route-visit-id'),
-              child: const Text('open'),
-            ),
+            page:
+                () => ElevatedButton(
+                  onPressed:
+                      () => Get.toNamed('/detail', arguments: 'route-visit-id'),
+                  child: const Text('open'),
+                ),
           ),
           GetPage(
             name: '/detail',

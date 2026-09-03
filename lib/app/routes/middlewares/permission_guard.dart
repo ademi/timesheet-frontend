@@ -10,10 +10,7 @@ import '../app_routes.dart';
 
 /// Route permission check (`anyOf` or `allOf`). On failure → shell home + snackbar.
 class PermissionGuard extends GetMiddleware {
-  PermissionGuard({
-    this.anyOf = const [],
-    this.allOf = const [],
-  });
+  PermissionGuard({this.anyOf = const [], this.allOf = const []});
 
   final List<String> anyOf;
   final List<String> allOf;
@@ -38,9 +35,7 @@ class PermissionGuard extends GetMiddleware {
     }
 
     final session = Get.find<SessionService>();
-    final ok = allOf.isNotEmpty
-        ? session.hasAll(allOf)
-        : session.hasAny(anyOf);
+    final ok = allOf.isNotEmpty ? session.hasAll(allOf) : session.hasAny(anyOf);
     if (!ok) return _deny(route);
     return null;
   }
@@ -58,8 +53,7 @@ class PermissionGuard extends GetMiddleware {
     return anyOf.isEmpty;
   }
 
-  bool _isSuper(bool Function(String) has) =>
-      has('*') || has('platform.admin');
+  bool _isSuper(bool Function(String) has) => has('*') || has('platform.admin');
 
   RouteSettings _deny(String? route) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -69,9 +63,8 @@ class PermissionGuard extends GetMiddleware {
         duration: const Duration(seconds: 3),
       );
     });
-    final home = isStaffRoute(route)
-        ? AppRoutes.staffHome
-        : AppRoutes.contractorHome;
+    final home =
+        isStaffRoute(route) ? AppRoutes.staffHome : AppRoutes.contractorHome;
     return RouteSettings(name: home);
   }
 }

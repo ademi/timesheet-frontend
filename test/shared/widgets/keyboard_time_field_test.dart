@@ -71,7 +71,9 @@ void main() {
     expect(committed, const TimeOfDay(hour: 9, minute: 30));
   });
 
-  testWidgets('KeyboardTimeField shows error for invalid input', (tester) async {
+  testWidgets('KeyboardTimeField shows error for invalid input', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(

@@ -23,16 +23,17 @@ class WorkforceListView extends GetView<WorkforceController> {
         title: const Text('Workforce'),
         actions: shellAppBarActions(),
       ),
-      floatingActionButton: controller.canInvite
-          ? FloatingActionButton.extended(
-              heroTag: 'workforce-invite',
-              onPressed: () => Get.toNamed(AppRoutes.staffWorkforceInvite),
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
-              icon: const Icon(Icons.mail_outline),
-              label: const Text('Invite'),
-            )
-          : null,
+      floatingActionButton:
+          controller.canInvite
+              ? FloatingActionButton.extended(
+                heroTag: 'workforce-invite',
+                onPressed: () => Get.toNamed(AppRoutes.staffWorkforceInvite),
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                icon: const Icon(Icons.mail_outline),
+                label: const Text('Invite'),
+              )
+              : null,
       body: Obx(() {
         final err = controller.errorMessage.value;
         if (controller.isLoading.value &&
@@ -73,7 +74,9 @@ class WorkforceListView extends GetView<WorkforceController> {
                                 ),
                                 title: Text(
                                   err,
-                                  style: const TextStyle(color: AppColors.error),
+                                  style: const TextStyle(
+                                    color: AppColors.error,
+                                  ),
                                 ),
                                 trailing: IconButton(
                                   tooltip: 'Dismiss',
@@ -92,9 +95,8 @@ class WorkforceListView extends GetView<WorkforceController> {
                               margin: const EdgeInsets.only(bottom: 8),
                               child: ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: AppColors.slate600.withValues(
-                                    alpha: 0.12,
-                                  ),
+                                  backgroundColor: AppColors.slate600
+                                      .withValues(alpha: 0.12),
                                   child: const Icon(
                                     Icons.mail_outline,
                                     color: AppColors.slate600,
@@ -118,16 +120,22 @@ class WorkforceListView extends GetView<WorkforceController> {
                                         busy:
                                             controller.updatingInviteId.value ==
                                             invite.id,
-                                        onPressed: () => controller
-                                            .updatePendingInviteContact(invite),
+                                        onPressed:
+                                            () => controller
+                                                .updatePendingInviteContact(
+                                                  invite,
+                                                ),
                                       ),
                                       const SizedBox(width: 4),
                                       _ReEmailButton(
                                         busy:
-                                            controller.resendingInviteId.value ==
+                                            controller
+                                                .resendingInviteId
+                                                .value ==
                                             invite.id,
-                                        onPressed: () => controller
-                                            .resendPendingInvite(invite),
+                                        onPressed:
+                                            () => controller
+                                                .resendPendingInvite(invite),
                                       ),
                                     ],
                                     const SizedBox(width: 8),
@@ -141,8 +149,9 @@ class WorkforceListView extends GetView<WorkforceController> {
                               margin: const EdgeInsets.only(bottom: 8),
                               child: ListTile(
                                 leading: Obx(() {
-                                  final photo = controller
-                                      .photosByContractor[e.contractorId];
+                                  final photo =
+                                      controller.photosByContractor[e
+                                          .contractorId];
                                   return ProfilePhotoEditor(
                                     networkUrl: photo?.downloadUrl,
                                     documentId: photo?.documentId,
@@ -156,13 +165,17 @@ class WorkforceListView extends GetView<WorkforceController> {
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (controller.canInvite && e.isInvited) ...[
+                                    if (controller.canInvite &&
+                                        e.isInvited) ...[
                                       _ReEmailButton(
                                         busy:
-                                            controller.resendingInviteId.value ==
+                                            controller
+                                                .resendingInviteId
+                                                .value ==
                                             e.id,
-                                        onPressed: () => controller
-                                            .resendEngagementInviteEmail(e),
+                                        onPressed:
+                                            () => controller
+                                                .resendEngagementInviteEmail(e),
                                       ),
                                       const SizedBox(width: 8),
                                     ],
@@ -180,7 +193,9 @@ class WorkforceListView extends GetView<WorkforceController> {
                                   children: [
                                     Text(
                                       controller.statusFilter.value == null &&
-                                              !controller.missingDocsFilter.value
+                                              !controller
+                                                  .missingDocsFilter
+                                                  .value
                                           ? 'No contractors yet.'
                                           : 'No contractors match this filter.',
                                       style: const TextStyle(
@@ -192,9 +207,10 @@ class WorkforceListView extends GetView<WorkforceController> {
                                         controller.canInvite) ...[
                                       const SizedBox(height: 16),
                                       TextButton.icon(
-                                        onPressed: () => Get.toNamed(
-                                          AppRoutes.staffWorkforceInvite,
-                                        ),
+                                        onPressed:
+                                            () => Get.toNamed(
+                                              AppRoutes.staffWorkforceInvite,
+                                            ),
                                         icon: const Icon(Icons.mail_outline),
                                         label: const Text('Invite contractor'),
                                       ),
@@ -223,7 +239,8 @@ class _WorkforceStatusFilters extends StatefulWidget {
   final WorkforceController controller;
 
   @override
-  State<_WorkforceStatusFilters> createState() => _WorkforceStatusFiltersState();
+  State<_WorkforceStatusFilters> createState() =>
+      _WorkforceStatusFiltersState();
 }
 
 class _WorkforceStatusFiltersState extends State<_WorkforceStatusFilters> {
@@ -301,10 +318,11 @@ class _WorkforceStatusFiltersState extends State<_WorkforceStatusFilters> {
                     ],
                   ),
                   selected: controller.missingDocsFilter.value,
-                  onSelected: controller.isLoadingCredentials.value
-                      ? null
-                      : (selected) =>
-                          controller.setMissingDocsFilter(selected),
+                  onSelected:
+                      controller.isLoadingCredentials.value
+                          ? null
+                          : (selected) =>
+                              controller.setMissingDocsFilter(selected),
                 ),
               ),
               const SizedBox(width: 8),

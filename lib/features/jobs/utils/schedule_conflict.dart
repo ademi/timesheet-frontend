@@ -14,18 +14,15 @@ bool rangesOverlap(
 enum ClientConflictKind { visit, shiftHole }
 
 class ClientConflict {
-  const ClientConflict({
-    required this.kind,
-    required this.id,
-  });
+  const ClientConflict({required this.kind, required this.id});
 
   final ClientConflictKind kind;
   final String id;
 
   String get chipLabel => switch (kind) {
-        ClientConflictKind.visit => 'Overlapping visit…',
-        ClientConflictKind.shiftHole => 'Open shift hole…',
-      };
+    ClientConflictKind.visit => 'Overlapping visit…',
+    ClientConflictKind.shiftHole => 'Open shift hole…',
+  };
 }
 
 /// Client-window conflicts for the proposed schedule (warn-only).

@@ -50,100 +50,104 @@ class _FormTemplateEditorViewState extends State<FormTemplateEditorView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-            if (err != null) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.errorBackground,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  err,
-                  style: const TextStyle(color: AppColors.error),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            TextField(
-              controller: c.nameCtrl,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Template name *',
-                hintText: 'e.g. Progress notes',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Obx(
-              () => SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Active'),
-                subtitle: const Text(
-                  'Inactive templates stay in the catalog but should not be used for new visits.',
-                ),
-                value: c.isActive.value,
-                onChanged: (v) => c.isActive.value = v,
-              ),
-            ),
-            const Divider(height: 32),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Fields contractors fill in',
-                    style: Get.textTheme.titleMedium,
+                  if (err != null) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.errorBackground,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        err,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  TextField(
+                    controller: c.nameCtrl,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Template name *',
+                      hintText: 'e.g. Progress notes',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                TextButton.icon(
-                  onPressed: c.isSaving.value ? null : c.addField,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add field'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Drag to reorder. Each field needs an id, label, and type.',
-              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
-            const SizedBox(height: 12),
-            ReorderableListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: c.fields.length,
-              onReorder: c.reorderFields,
-              itemBuilder: (context, index) {
-                final field = c.fields[index];
-                return _FieldCard(
-                  key: ObjectKey(field),
-                  index: index,
-                  field: field,
-                  controller: c,
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: c.isSaving.value
-                  ? null
-                  : () async {
-                      final ok = await c.save();
-                      if (ok && mounted) Get.back(result: true);
+                  const SizedBox(height: 8),
+                  Obx(
+                    () => SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Active'),
+                      subtitle: const Text(
+                        'Inactive templates stay in the catalog but should not be used for new visits.',
+                      ),
+                      value: c.isActive.value,
+                      onChanged: (v) => c.isActive.value = v,
+                    ),
+                  ),
+                  const Divider(height: 32),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Fields contractors fill in',
+                          style: Get.textTheme.titleMedium,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: c.isSaving.value ? null : c.addField,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add field'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Drag to reorder. Each field needs an id, label, and type.',
+                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  ),
+                  const SizedBox(height: 12),
+                  ReorderableListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: c.fields.length,
+                    onReorder: c.reorderFields,
+                    itemBuilder: (context, index) {
+                      final field = c.fields[index];
+                      return _FieldCard(
+                        key: ObjectKey(field),
+                        index: index,
+                        field: field,
+                        controller: c,
+                      );
                     },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                minimumSize: const Size.fromHeight(48),
-              ),
-              child: c.isSaving.value
-                  ? const SizedBox(
-                      height: 22,
-                      width: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(c.isEditing ? 'Save template' : 'Create template'),
-            ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed:
+                        c.isSaving.value
+                            ? null
+                            : () async {
+                              final ok = await c.save();
+                              if (ok && mounted) Get.back(result: true);
+                            },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.onPrimary,
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    child:
+                        c.isSaving.value
+                            ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : Text(
+                              c.isEditing ? 'Save template' : 'Create template',
+                            ),
+                  ),
                 ],
               ),
             ),
@@ -192,9 +196,10 @@ class _FieldCard extends StatelessWidget {
                 ),
                 IconButton(
                   tooltip: 'Remove field',
-                  onPressed: controller.isSaving.value
-                      ? null
-                      : () => controller.removeField(index),
+                  onPressed:
+                      controller.isSaving.value
+                          ? null
+                          : () => controller.removeField(index),
                   icon: const Icon(Icons.delete_outline),
                 ),
               ],
@@ -232,11 +237,12 @@ class _FieldCard extends StatelessWidget {
                       child: Text(formTemplateFieldTypeLabel(t)),
                     ),
                 ],
-                onChanged: controller.isSaving.value
-                    ? null
-                    : (v) {
-                        if (v != null) field.type.value = v;
-                      },
+                onChanged:
+                    controller.isSaving.value
+                        ? null
+                        : (v) {
+                          if (v != null) field.type.value = v;
+                        },
                 decoration: const InputDecoration(
                   labelText: 'Type *',
                   border: OutlineInputBorder(),
@@ -267,9 +273,10 @@ class _FieldCard extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Required'),
                 value: field.required.value,
-                onChanged: controller.isSaving.value
-                    ? null
-                    : (v) => field.required.value = v,
+                onChanged:
+                    controller.isSaving.value
+                        ? null
+                        : (v) => field.required.value = v,
               ),
             ),
           ],

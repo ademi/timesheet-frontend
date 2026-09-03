@@ -68,8 +68,9 @@ void main() {
         contentMd: '# Consent',
       ),
     );
-    when(() => repo.acceptClientLegal(any(), any(), any()))
-        .thenAnswer((_) async {});
+    when(
+      () => repo.acceptClientLegal(any(), any(), any()),
+    ).thenAnswer((_) async {});
 
     final helper = ClientLegalUploadHelper(
       repository: repo,
@@ -82,13 +83,15 @@ void main() {
       participantOrRepName: 'Sam Parent',
     );
 
-    final captured = verify(
-      () => repo.acceptClientLegal(
-        'c1',
-        OnboardingKeys.consentAgreement,
-        captureAny(),
-      ),
-    ).captured.single as ClientLegalAcceptRequest;
+    final captured =
+        verify(
+              () => repo.acceptClientLegal(
+                'c1',
+                OnboardingKeys.consentAgreement,
+                captureAny(),
+              ),
+            ).captured.single
+            as ClientLegalAcceptRequest;
     expect(captured.documentId, 'doc-1');
     expect(captured.participantOrRepName, 'Sam Parent');
     verify(
@@ -113,10 +116,12 @@ void main() {
         ),
       ),
     );
-    verifyNever(() => pipeline.uploadEvidence(
-          request: any(named: 'request'),
-          bytes: any(named: 'bytes'),
-        ));
+    verifyNever(
+      () => pipeline.uploadEvidence(
+        request: any(named: 'request'),
+        bytes: any(named: 'bytes'),
+      ),
+    );
   });
 
   test('completeServiceAgreement upserts document_id fact', () async {
@@ -136,8 +141,9 @@ void main() {
         scanStatus: 'clean',
       ),
     );
-    when(() => repo.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((_) async {});
+    when(
+      () => repo.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async {});
 
     final helper = ClientLegalUploadHelper(
       repository: repo,
@@ -147,13 +153,15 @@ void main() {
 
     await helper.completeServiceAgreement(clientId: 'c1');
 
-    final upsert = verify(
-      () => repo.upsertProfileFact(
-        'c1',
-        OnboardingKeys.serviceAgreement,
-        captureAny(),
-      ),
-    ).captured.single as ProfileFactUpsert;
+    final upsert =
+        verify(
+              () => repo.upsertProfileFact(
+                'c1',
+                OnboardingKeys.serviceAgreement,
+                captureAny(),
+              ),
+            ).captured.single
+            as ProfileFactUpsert;
     expect(upsert.documentId, 'doc-sa');
   });
 }

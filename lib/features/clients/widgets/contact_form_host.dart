@@ -17,7 +17,8 @@ abstract class ContactFormHost {
     'spouse': 'Spouse / partner',
     'friend': 'Friend',
     'neighbour': 'Neighbour',
-    'carer': 'Carer', // CR5: kinship label only here; nominee step uses legalRolePresets
+    'carer':
+        'Carer', // CR5: kinship label only here; nominee step uses legalRolePresets
   };
 
   static const relationshipOtherLabel = 'Other';

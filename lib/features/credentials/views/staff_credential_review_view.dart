@@ -38,87 +38,89 @@ class StaffCredentialReviewView
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-            if (controller.hasReviewContext) ...[
-              RequiredDocCategoriesEditor(
-                choices: controller.categoryChoices,
-                selected: controller.requiredCategories.toSet(),
-                canEdit: controller.canEditRequiredDocs,
-                isEnded: controller.isEnded,
-                isSaving: controller.isSavingRequiredDocs.value,
-                isLoadingChoices: controller.isLoadingCatalog.value,
-                onToggle: controller.toggleRequiredCategory,
-                onSave: controller.saveRequiredDocCategories,
-              ),
-              const SizedBox(height: 16),
-            ],
-            const Text(
-              'Review each credential, then view or download its evidence '
-              'file before you accept or reject it.',
-              style: TextStyle(color: AppColors.textMuted),
-            ),
-            const SizedBox(height: 12),
-            if (!controller.hasReviewContext)
-              const Text(
-                'Open a person from Workforce to review their credentials.',
-                style: TextStyle(color: AppColors.textMuted),
-              ),
-            ElevatedButton(
-              onPressed:
-                  controller.isLoading.value || !controller.hasReviewContext
-                      ? null
-                      : controller.load,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                minimumSize: const Size.fromHeight(48),
-              ),
-              child: const Text('Load credentials'),
-            ),
-            if (err != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.errorBackground,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  err,
-                  style: const TextStyle(color: AppColors.error),
-                ),
-              ),
-            ],
-            if (controller.mfaRequired.value) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF7ED),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFDBA74)),
-                ),
-                child: const Text(
-                  'MFA required for this review. Complete multi-factor '
-                  'authentication for your staff session, then retry the decision.',
-                ),
-              ),
-            ],
-            if (controller.eligibilityReasons.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              EligibilityIncompletePanel(
-                reasons: controller.eligibilityReasons.toList(),
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (controller.isLoading.value)
-              const Center(child: CircularProgressIndicator())
-            else if (controller.needsShareRequest.value)
-              _ShareRequestEmptyState(controller: controller)
-            else if (controller.items.isEmpty)
-              const Text('No credentials loaded.')
-            else
-              for (final c in controller.items) _StaffCredentialCard(c: c),
-          ],
+                  if (controller.hasReviewContext) ...[
+                    RequiredDocCategoriesEditor(
+                      choices: controller.categoryChoices,
+                      selected: controller.requiredCategories.toSet(),
+                      canEdit: controller.canEditRequiredDocs,
+                      isEnded: controller.isEnded,
+                      isSaving: controller.isSavingRequiredDocs.value,
+                      isLoadingChoices: controller.isLoadingCatalog.value,
+                      onToggle: controller.toggleRequiredCategory,
+                      onSave: controller.saveRequiredDocCategories,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  const Text(
+                    'Review each credential, then view or download its evidence '
+                    'file before you accept or reject it.',
+                    style: TextStyle(color: AppColors.textMuted),
+                  ),
+                  const SizedBox(height: 12),
+                  if (!controller.hasReviewContext)
+                    const Text(
+                      'Open a person from Workforce to review their credentials.',
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
+                  ElevatedButton(
+                    onPressed:
+                        controller.isLoading.value ||
+                                !controller.hasReviewContext
+                            ? null
+                            : controller.load,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.onPrimary,
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    child: const Text('Load credentials'),
+                  ),
+                  if (err != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.errorBackground,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        err,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    ),
+                  ],
+                  if (controller.mfaRequired.value) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFFDBA74)),
+                      ),
+                      child: const Text(
+                        'MFA required for this review. Complete multi-factor '
+                        'authentication for your staff session, then retry the decision.',
+                      ),
+                    ),
+                  ],
+                  if (controller.eligibilityReasons.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    EligibilityIncompletePanel(
+                      reasons: controller.eligibilityReasons.toList(),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  if (controller.isLoading.value)
+                    const Center(child: CircularProgressIndicator())
+                  else if (controller.needsShareRequest.value)
+                    _ShareRequestEmptyState(controller: controller)
+                  else if (controller.items.isEmpty)
+                    const Text('No credentials loaded.')
+                  else
+                    for (final c in controller.items)
+                      _StaffCredentialCard(c: c),
+                ],
               ),
             ),
           ],
@@ -145,8 +147,7 @@ class _ShareRequestEmptyState extends StatelessWidget {
         const SizedBox(height: 12),
         ElevatedButton(
           onPressed:
-              controller.isRequestingShare.value ||
-                      !controller.hasReviewContext
+              controller.isRequestingShare.value || !controller.hasReviewContext
                   ? null
                   : () => controller.requestAccess(),
           style: ElevatedButton.styleFrom(
@@ -179,14 +180,21 @@ class _StaffCredentialCard extends StatelessWidget {
       final reviewDecision = controller.reviewDecisionFor(c.id);
       final actions = controller.reviewActionsFor(c.id);
       final evidenceBusy = controller.isEvidenceBusy(c.id);
-      final rejectReasonOpen = controller.isReasonPickerOpenFor(c.id, 'rejected');
+      final rejectReasonOpen = controller.isReasonPickerOpenFor(
+        c.id,
+        'rejected',
+      );
       final reReviewReasonOpen = controller.isReasonPickerOpenFor(
         c.id,
         're_review_required',
       );
       final reasonPanelOpen = rejectReasonOpen || reReviewReasonOpen;
       final pendingDecision =
-          rejectReasonOpen ? 'rejected' : reReviewReasonOpen ? 're_review_required' : null;
+          rejectReasonOpen
+              ? 'rejected'
+              : reReviewReasonOpen
+              ? 're_review_required'
+              : null;
 
       return Card(
         margin: const EdgeInsets.only(bottom: 8),
@@ -225,7 +233,10 @@ class _StaffCredentialCard extends StatelessWidget {
               Text(
                 'Evidence: ${c.evidencePresence} · '
                 'Provenance: ${c.provenanceState}',
-                style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textMuted,
+                ),
               ),
               const SizedBox(height: 8),
               EvidenceDocumentActions(
@@ -279,18 +290,17 @@ class _StaffCredentialCard extends StatelessWidget {
                       c.id,
                       'rejected',
                     ),
-                    onPressed:
-                        () {
-                          if (c.evidencePresence != 'present') {
-                            controller.errorMessage.value =
-                                'No certificate has been submitted to reject.';
-                            return;
-                          }
-                          controller.prepareReview(
-                            credential: c,
-                            decision: 'rejected',
-                          );
-                        },
+                    onPressed: () {
+                      if (c.evidencePresence != 'present') {
+                        controller.errorMessage.value =
+                            'No certificate has been submitted to reject.';
+                        return;
+                      }
+                      controller.prepareReview(
+                        credential: c,
+                        decision: 'rejected',
+                      );
+                    },
                   ),
                   _ReviewActionButton(
                     label: 'Re-review',
@@ -349,13 +359,15 @@ class _StaffCredentialCard extends StatelessWidget {
                             child: Text('Select a reason'),
                           ),
                           for (final option
-                              in StaffCredentialReviewController.reasonCodeOptions)
+                              in StaffCredentialReviewController
+                                  .reasonCodeOptions)
                             DropdownMenuItem<String?>(
                               value: option.$1,
                               child: Text(option.$2),
                             ),
                         ],
-                        onChanged: (v) => controller.selectedReasonCode.value = v,
+                        onChanged:
+                            (v) => controller.selectedReasonCode.value = v,
                       ),
                       const SizedBox(height: 12),
                       Wrap(
@@ -372,7 +384,9 @@ class _StaffCredentialCard extends StatelessWidget {
                               pendingDecision!,
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _reviewDecisionColor(pendingDecision),
+                              backgroundColor: _reviewDecisionColor(
+                                pendingDecision,
+                              ),
                               foregroundColor: Colors.white,
                             ),
                             child: Text(
@@ -426,9 +440,9 @@ class _ReviewActionButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: _selectedColor(decision),
           foregroundColor: Colors.white,
-          disabledBackgroundColor: _selectedColor(decision).withValues(
-            alpha: 0.6,
-          ),
+          disabledBackgroundColor: _selectedColor(
+            decision,
+          ).withValues(alpha: 0.6),
           disabledForegroundColor: Colors.white,
         ),
         child: Text(label),

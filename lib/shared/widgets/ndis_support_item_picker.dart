@@ -18,10 +18,11 @@ final RegExp ndisSupportItemCodePattern = RegExp(r'^\d{2}_\d{3}_\d{4}_\d_\d$');
 bool isValidNdisSupportItemCode(String code) =>
     ndisSupportItemCodePattern.hasMatch(code.trim());
 
-typedef NdisSupportItemChanged = void Function({
-  required String? supportItemCode,
-  required String? supportItemName,
-});
+typedef NdisSupportItemChanged =
+    void Function({
+      required String? supportItemCode,
+      required String? supportItemName,
+    });
 
 String ndisCatalogueFacetLabel(NdisCatalogueFacet facet) {
   final name = facet.name?.trim();
@@ -90,11 +91,12 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
 
   late final NdisCatalogueFilterPrefs _filterPrefs =
       widget.filterPrefs ??
-          NdisCatalogueFilterPrefs(
-            tenantId: Get.isRegistered<SessionService>()
+      NdisCatalogueFilterPrefs(
+        tenantId:
+            Get.isRegistered<SessionService>()
                 ? Get.find<SessionService>().tenantId.value
                 : null,
-          );
+      );
 
   /// True while applying a catalogue pick so blur/query side-effects are ignored.
   bool _applyingSelection = false;
@@ -102,10 +104,7 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
   bool get _hasSelection {
     final code = widget.supportItemCode?.trim();
     final name = widget.supportItemName?.trim();
-    return code != null &&
-        code.isNotEmpty &&
-        name != null &&
-        name.isNotEmpty;
+    return code != null && code.isNotEmpty && name != null && name.isNotEmpty;
   }
 
   NdisCatalogueRepository get _repository {
@@ -191,8 +190,7 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
       setState(() {
         _allItems = List<NdisCatalogueItemOut>.of(items);
         _catalogueLoaded = true;
-        _cataloguePossiblyTruncated =
-            items.length >= kNdisCatalogueFetchLimit;
+        _cataloguePossiblyTruncated = items.length >= kNdisCatalogueFetchLimit;
         _loadError = null;
         _loading = false;
         _recomputeOptions();
@@ -270,9 +268,7 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
       );
       return;
     }
-    setState(
-      () => _formatError = 'Invalid NDIS item number format.',
-    );
+    setState(() => _formatError = 'Invalid NDIS item number format.');
   }
 
   void _clear() {
@@ -297,9 +293,7 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
       _loading = false;
       _queryCtrl.value = TextEditingValue(
         text: item.supportItemName,
-        selection: TextSelection.collapsed(
-          offset: item.supportItemName.length,
-        ),
+        selection: TextSelection.collapsed(offset: item.supportItemName.length),
       );
     });
     widget.onChanged(
@@ -354,21 +348,22 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
             labelText: widget.labelText,
             hintText: widget.searchHintText,
             border: const OutlineInputBorder(),
-            suffixIcon: (query.isNotEmpty && widget.enabled)
-                ? IconButton(
-                    tooltip: 'Clear',
-                    onPressed: _clear,
-                    icon: const Icon(Icons.clear),
-                  )
-                : _loading
+            suffixIcon:
+                (query.isNotEmpty && widget.enabled)
+                    ? IconButton(
+                      tooltip: 'Clear',
+                      onPressed: _clear,
+                      icon: const Icon(Icons.clear),
+                    )
+                    : _loading
                     ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
                     : null,
           ),
         ),
@@ -425,11 +420,12 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
                   ),
                 ),
             ],
-            onChanged: widget.enabled
-                ? (value) => _onCategorySelected(
+            onChanged:
+                widget.enabled
+                    ? (value) => _onCategorySelected(
                       (value == null || value.isEmpty) ? null : value,
                     )
-                : null,
+                    : null,
           ),
         ],
         if (_catalogueLoaded) ...[
@@ -457,16 +453,17 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
                   ),
                 ),
             ],
-            onChanged: widget.enabled
-                ? (value) {
-                    setState(() {
-                      _registrationGroupNumber =
-                          (value == null || value.isEmpty) ? null : value;
-                      _recomputeOptions();
-                    });
-                    _persistFilters();
-                  }
-                : null,
+            onChanged:
+                widget.enabled
+                    ? (value) {
+                      setState(() {
+                        _registrationGroupNumber =
+                            (value == null || value.isEmpty) ? null : value;
+                        _recomputeOptions();
+                      });
+                      _persistFilters();
+                    }
+                    : null,
           ),
         ],
         if (showOptions)
@@ -485,9 +482,7 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
                   return Listener(
                     behavior: HitTestBehavior.opaque,
                     // Pointer down fires before TextField blur removes the list on web.
-                    onPointerDown: widget.enabled
-                        ? (_) => _select(item)
-                        : null,
+                    onPointerDown: widget.enabled ? (_) => _select(item) : null,
                     child: ListTile(
                       dense: true,
                       title: Text(item.supportItemName),
@@ -524,13 +519,14 @@ class _SelectedTile extends StatelessWidget {
       decoration: InputDecoration(
         labelText: labelText,
         border: const OutlineInputBorder(),
-        suffixIcon: enabled
-            ? IconButton(
-                tooltip: 'Clear support item',
-                onPressed: onClear,
-                icon: const Icon(Icons.clear),
-              )
-            : null,
+        suffixIcon:
+            enabled
+                ? IconButton(
+                  tooltip: 'Clear support item',
+                  onPressed: onClear,
+                  icon: const Icon(Icons.clear),
+                )
+                : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

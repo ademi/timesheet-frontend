@@ -466,49 +466,46 @@ void main() {
 
     tearDown(Get.reset);
 
-    test(
-      'clears NDIS catalogue cache when repository is registered',
-      () async {
-        final catalogueRepository = _MockNdisCatalogueRepository();
-        Get.put<NdisCatalogueRepository>(catalogueRepository);
+    test('clears NDIS catalogue cache when repository is registered', () async {
+      final catalogueRepository = _MockNdisCatalogueRepository();
+      Get.put<NdisCatalogueRepository>(catalogueRepository);
 
-        tokenStorage.claims = const JwtClaims(
-          sub: 'u1',
-          tenantId: 't1',
-          permissions: ['auth.session'],
+      tokenStorage.claims = const JwtClaims(
+        sub: 'u1',
+        tenantId: 't1',
+        permissions: ['auth.session'],
+        actorType: 'tenant_member',
+        iat: 1,
+        exp: 2,
+      );
+      when(() => authRepository.switchTenant('t2')).thenAnswer(
+        (_) async => const AuthTokenModel(
+          accessToken: 'a2',
+          refreshToken: 'r2',
+          tokenType: 'bearer',
           actorType: 'tenant_member',
-          iat: 1,
-          exp: 2,
-        );
-        when(() => authRepository.switchTenant('t2')).thenAnswer(
-          (_) async => const AuthTokenModel(
-            accessToken: 'a2',
-            refreshToken: 'r2',
-            tokenType: 'bearer',
-            actorType: 'tenant_member',
-            engagements: [
-              EngagementSummaryModel(
-                id: 'e2',
-                tenantId: 't2',
-                tenantName: 'Globex',
-                status: 'active',
-              ),
-            ],
-          ),
-        );
-        when(() => authRepository.getMeContext()).thenAnswer(
-          (_) async => const MeContextModel(
-            actorType: 'tenant_member',
-            tenantId: 't2',
-            tenantMemberId: 'tm2',
-          ),
-        );
+          engagements: [
+            EngagementSummaryModel(
+              id: 'e2',
+              tenantId: 't2',
+              tenantName: 'Globex',
+              status: 'active',
+            ),
+          ],
+        ),
+      );
+      when(() => authRepository.getMeContext()).thenAnswer(
+        (_) async => const MeContextModel(
+          actorType: 'tenant_member',
+          tenantId: 't2',
+          tenantMemberId: 'tm2',
+        ),
+      );
 
-        await session.switchTenant('t2');
+      await session.switchTenant('t2');
 
-        verify(() => catalogueRepository.clearCache()).called(1);
-      },
-    );
+      verify(() => catalogueRepository.clearCache()).called(1);
+    });
   });
 
   test('applyAuthTokens stores engagement selection', () async {

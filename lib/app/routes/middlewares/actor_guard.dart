@@ -16,7 +16,8 @@ class ActorGuard extends GetMiddleware {
     if (unauthenticated != null) return unauthenticated;
 
     final claims = Get.find<TokenStorage>().jwtClaims;
-    final actor = claims?.actorType ??
+    final actor =
+        claims?.actorType ??
         (Get.isRegistered<SessionService>()
             ? Get.find<SessionService>().actorType.value
             : null);

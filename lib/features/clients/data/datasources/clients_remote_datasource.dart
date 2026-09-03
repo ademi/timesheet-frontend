@@ -11,8 +11,8 @@ class ClientsRemoteDataSource {
   ClientsRemoteDataSource({
     required Dio authenticatedDio,
     required Dio plainDio,
-  })  : _dio = authenticatedDio,
-        _plain = plainDio;
+  }) : _dio = authenticatedDio,
+       _plain = plainDio;
 
   final Dio _dio;
   final Dio _plain;
@@ -122,9 +122,7 @@ class ClientsRemoteDataSource {
     try {
       final response = await _dio.get<List<dynamic>>(
         ApiPaths.formTemplates,
-        queryParameters: {
-          if (tenantLevel) 'tenant_level': true,
-        },
+        queryParameters: {if (tenantLevel) 'tenant_level': true},
       );
       return _mapList(response.data, FormTemplateSummary.fromJson);
     } on DioException catch (e) {
@@ -154,7 +152,9 @@ class ClientsRemoteDataSource {
 
   Future<ClientOut> getClient(String id) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>(ApiPaths.client(id));
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.client(id),
+      );
       return _require(response.data, ClientOut.fromJson, 'client');
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
@@ -244,8 +244,9 @@ class ClientsRemoteDataSource {
 
   Future<List<ClientSiteOut>> listSites(String clientId) async {
     try {
-      final response =
-          await _dio.get<List<dynamic>>(ApiPaths.clientSites(clientId));
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.clientSites(clientId),
+      );
       return _mapList(response.data, ClientSiteOut.fromJson);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
@@ -293,8 +294,9 @@ class ClientsRemoteDataSource {
 
   Future<List<ClientContactOut>> listContacts(String clientId) async {
     try {
-      final response =
-          await _dio.get<List<dynamic>>(ApiPaths.clientContacts(clientId));
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.clientContacts(clientId),
+      );
       return _mapList(response.data, ClientContactOut.fromJson);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
@@ -310,7 +312,11 @@ class ClientsRemoteDataSource {
         ApiPaths.clientContacts(clientId),
         data: body.toJson(),
       );
-      return _require(response.data, ClientContactOut.fromJson, 'create contact');
+      return _require(
+        response.data,
+        ClientContactOut.fromJson,
+        'create contact',
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }
@@ -326,7 +332,11 @@ class ClientsRemoteDataSource {
         ApiPaths.clientContact(clientId, contactId),
         data: body.toJson(),
       );
-      return _require(response.data, ClientContactOut.fromJson, 'patch contact');
+      return _require(
+        response.data,
+        ClientContactOut.fromJson,
+        'patch contact',
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

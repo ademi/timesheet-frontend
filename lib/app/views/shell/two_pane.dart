@@ -21,10 +21,7 @@ class TwoPane extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          width: masterWidth,
-          child: master,
-        ),
+        SizedBox(width: masterWidth, child: master),
         const VerticalDivider(width: 1, thickness: 1),
         Expanded(child: detail),
       ],

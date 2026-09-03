@@ -101,14 +101,15 @@ class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
         final scale = instance.scaleText;
         return fontSize * (scale > 1 ? 1 : scale);
       },
-      builder: (context, child) => GetMaterialApp(
-        title: 'Rostiq',
-        debugShowCheckedModeBanner: false,
-        theme: _appTheme(),
-        initialBinding: InitialBinding(),
-        initialRoute: AppPages.initial,
-        getPages: AppPages.routes,
-      ),
+      builder:
+          (context, child) => GetMaterialApp(
+            title: 'Rostiq',
+            debugShowCheckedModeBanner: false,
+            theme: _appTheme(),
+            initialBinding: InitialBinding(),
+            initialRoute: AppPages.initial,
+            getPages: AppPages.routes,
+          ),
     );
   }
 }
@@ -133,9 +134,7 @@ ThemeData _appTheme() {
     cardTheme: CardThemeData(
       color: AppColors.cardBackground,
       elevation: 1.5,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.r),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
     ),
     appBarTheme: AppBarTheme(
       centerTitle: false,
@@ -155,10 +154,7 @@ ThemeData _appTheme() {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
-        textStyle: TextStyle(
-          fontSize: 14.sp,
-          fontWeight: FontWeight.w600,
-        ),
+        textStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12.r),
         ),
@@ -170,10 +166,7 @@ ThemeData _appTheme() {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        textStyle: TextStyle(
-          fontSize: 14.sp,
-          fontWeight: FontWeight.w600,
-        ),
+        textStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12.r),
         ),
@@ -191,10 +184,7 @@ ThemeData _appTheme() {
         borderRadius: BorderRadius.circular(12.r),
         borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
       ),
-      contentPadding: EdgeInsets.symmetric(
-        horizontal: 14.r,
-        vertical: 12.r,
-      ),
+      contentPadding: EdgeInsets.symmetric(horizontal: 14.r, vertical: 12.r),
     ),
     textTheme: TextTheme(
       bodyLarge: TextStyle(

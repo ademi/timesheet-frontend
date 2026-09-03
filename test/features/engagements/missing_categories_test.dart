@@ -42,22 +42,18 @@ void main() {
   });
 
   test('excludes categories with present evidence', () {
-    final missing = missingCategories(
-      engagement(['wwcc', 'police_check']),
-      [
-        credential(type: 'wwcc'),
-      ],
-    );
+    final missing = missingCategories(engagement(['wwcc', 'police_check']), [
+      credential(type: 'wwcc'),
+    ]);
 
     expect(missing, {'police_check'});
   });
 
   test('treats none, absent, and quarantined as missing evidence', () {
     for (final presence in ['none', 'absent', 'quarantined']) {
-      final missing = missingCategories(
-        engagement(['wwcc']),
-        [credential(type: 'wwcc', evidencePresence: presence)],
-      );
+      final missing = missingCategories(engagement(['wwcc']), [
+        credential(type: 'wwcc', evidencePresence: presence),
+      ]);
 
       expect(missing, {'wwcc'}, reason: presence);
     }

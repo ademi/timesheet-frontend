@@ -14,8 +14,8 @@ class EngagementsRepository {
   Future<List<EngagementOut>> listTenantEngagements() async =>
       sortedByName(await _remote.listTenantEngagements(), (e) => e.displayName);
 
-  Future<List<ContractorRegistrationInviteOut>> listPendingContractorInvites() =>
-      _remote.listPendingContractorInvites();
+  Future<List<ContractorRegistrationInviteOut>>
+  listPendingContractorInvites() => _remote.listPendingContractorInvites();
 
   Future<ContractorRegistrationInviteOut> resendContractorInvite(
     String inviteId,
@@ -40,11 +40,10 @@ class EngagementsRepository {
     EngagementInvitePreviewRequest body,
   ) => _remote.previewInvite(body);
 
-  Future<List<EngagementOut>> listMyEngagements() async =>
-      sortedByName(
-        await _remote.listMyEngagements(),
-        (e) => e.tenantName ?? e.tenantId,
-      );
+  Future<List<EngagementOut>> listMyEngagements() async => sortedByName(
+    await _remote.listMyEngagements(),
+    (e) => e.tenantName ?? e.tenantId,
+  );
 
   Future<EngagementOut> accept({
     required String engagementId,
@@ -63,9 +62,9 @@ class EngagementsRepository {
     required String engagementId,
     required List<String> categories,
   }) => _remote.replaceRequiredDocCategories(
-        engagementId: engagementId,
-        categories: categories,
-      );
+    engagementId: engagementId,
+    categories: categories,
+  );
 
   Future<void> createSharingAccessRequest({
     required String engagementId,

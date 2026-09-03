@@ -84,6 +84,7 @@ class StaffVisitsController extends GetxController {
   bool _tenantTimezoneLoaded = false;
   final jobIdFilter = ''.obs;
   final clientIdFilter = ''.obs;
+
   /// Default Live (published) so draft/cancelled do not clutter the board.
   final statusFilter = 'published'.obs;
   bool pendingCreateShift = false;
@@ -138,6 +139,7 @@ class StaffVisitsController extends GetxController {
     if (visit == null) return false;
     return visitHasCodedTasks(visit);
   }
+
   bool get canRead =>
       _session.hasPermission(AppPermissions.shiftsRead) ||
       _session.hasPermission(AppPermissions.shiftsManage) ||
@@ -146,9 +148,12 @@ class StaffVisitsController extends GetxController {
       _session.hasPermission(AppPermissions.jobsManage);
 
   List<EngagementOut> get assignableEngagements => sortedByName(
-        engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs || e.isAwaitingApproval),
-        (e) => e.displayName,
-      );
+    engagements.where(
+      (e) =>
+          e.isActive || e.isApproved || e.isPendingDocs || e.isAwaitingApproval,
+    ),
+    (e) => e.displayName,
+  );
 
   /// Unique clients from jobs + loaded shifts for the board filter.
   List<({String id, String name})> get clientFilterOptions {
@@ -156,16 +161,24 @@ class StaffVisitsController extends GetxController {
     for (final job in jobs) {
       final id = job.clientId?.trim();
       if (id == null || id.isEmpty) continue;
-      byId.putIfAbsent(id, () => (job.clientName?.trim().isNotEmpty == true)
-          ? job.clientName!.trim()
-          : id);
+      byId.putIfAbsent(
+        id,
+        () =>
+            (job.clientName?.trim().isNotEmpty == true)
+                ? job.clientName!.trim()
+                : id,
+      );
     }
     for (final shift in shifts) {
       final id = shift.clientId?.trim();
       if (id == null || id.isEmpty) continue;
-      byId.putIfAbsent(id, () => (shift.clientName?.trim().isNotEmpty == true)
-          ? shift.clientName!.trim()
-          : id);
+      byId.putIfAbsent(
+        id,
+        () =>
+            (shift.clientName?.trim().isNotEmpty == true)
+                ? shift.clientName!.trim()
+                : id,
+      );
     }
     final list = byId.entries
         .map((e) => (id: e.key, name: e.value))
@@ -180,21 +193,23 @@ class StaffVisitsController extends GetxController {
       rangeStart.value.month,
       rangeStart.value.day,
     );
-    final people = assignableEngagements
-        .map(
-          (e) => RosterPerson(
-            contractorId: e.contractorId,
-            displayName:
-                (e.contractorName?.trim().isNotEmpty == true)
-                    ? e.contractorName!.trim()
-                    : 'Worker',
-          ),
-        )
-        .toList()
-      ..sort(
-        (a, b) =>
-            a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()),
-      );
+    final people =
+        assignableEngagements
+            .map(
+              (e) => RosterPerson(
+                contractorId: e.contractorId,
+                displayName:
+                    (e.contractorName?.trim().isNotEmpty == true)
+                        ? e.contractorName!.trim()
+                        : 'Worker',
+              ),
+            )
+            .toList()
+          ..sort(
+            (a, b) => a.displayName.toLowerCase().compareTo(
+              b.displayName.toLowerCase(),
+            ),
+          );
     return buildRosterGrid(
       rangeStart: start,
       dayCount: 7,
@@ -210,9 +225,9 @@ class StaffVisitsController extends GetxController {
       tenantCivilDateStartUtc(rangeStart.value, _effectiveTenantTimezone);
 
   DateTime get _toUtc => tenantCivilDateStartUtc(
-        rangeStart.value.add(const Duration(days: 7)),
-        _effectiveTenantTimezone,
-      );
+    rangeStart.value.add(const Duration(days: 7)),
+    _effectiveTenantTimezone,
+  );
 
   String? get _effectiveTenantTimezone {
     final sessionTz = _session.tenantTimezone.value?.trim();
@@ -222,12 +237,14 @@ class StaffVisitsController extends GetxController {
   }
 
   /// Rolling 14-day fill window from tenant civil start of today (D15).
-  DateTime get _horizonFromUtc => tenantHorizonWindowUtc(
+  DateTime get _horizonFromUtc =>
+      tenantHorizonWindowUtc(
         DateTime.now().toUtc(),
         _effectiveTenantTimezone,
       ).from;
 
-  DateTime get _horizonToUtc => tenantHorizonWindowUtc(
+  DateTime get _horizonToUtc =>
+      tenantHorizonWindowUtc(
         DateTime.now().toUtc(),
         _effectiveTenantTimezone,
       ).to;
@@ -281,7 +298,8 @@ class StaffVisitsController extends GetxController {
       return;
     }
     if (Get.isRegistered<StaffTenantSettingsController>()) {
-      final tz = Get.find<StaffTenantSettingsController>().tenant.value?.timezone;
+      final tz =
+          Get.find<StaffTenantSettingsController>().tenant.value?.timezone;
       if (tz != null && tz.trim().isNotEmpty) {
         tenantTimezone.value = tz.trim();
         return;
@@ -443,7 +461,9 @@ class StaffVisitsController extends GetxController {
 
   Future<void> loadEngagements() async {
     try {
-      engagements.assignAll(await _engagementsRepository.listTenantEngagements());
+      engagements.assignAll(
+        await _engagementsRepository.listTenantEngagements(),
+      );
     } catch (_) {
       // Assign picker may be empty without engagements.read.
     }
@@ -467,14 +487,15 @@ class StaffVisitsController extends GetxController {
 
   /// Whether the per-support sub-filter should show for the current client (D3).
   bool get showSupportFilter => shouldShowSupportFilter(
-        jobs,
-        clientId: clientIdFilter.value.isEmpty ? null : clientIdFilter.value,
-      );
+    jobs,
+    clientId: clientIdFilter.value.isEmpty ? null : clientIdFilter.value,
+  );
 
   /// Open supports for the currently selected client (empty when none selected).
-  List<JobOut> get supportsForSelectedClient => clientIdFilter.value.isEmpty
-      ? const <JobOut>[]
-      : jobsForClientFilter(jobs, clientId: clientIdFilter.value);
+  List<JobOut> get supportsForSelectedClient =>
+      clientIdFilter.value.isEmpty
+          ? const <JobOut>[]
+          : jobsForClientFilter(jobs, clientId: clientIdFilter.value);
 
   void shiftRange(int days) {
     rangeStart.value = rangeStart.value.add(Duration(days: days));
@@ -688,9 +709,10 @@ class StaffVisitsController extends GetxController {
         AppToast.success('Released', lastReleaseSnack!);
       }
     } on AppFailure catch (e) {
-      final msg = e.code == 'invalid_visit_status'
-          ? 'Already checked in — cancel the shift first.'
-          : e.message;
+      final msg =
+          e.code == 'invalid_visit_status'
+              ? 'Already checked in — cancel the shift first.'
+              : e.message;
       errorMessage.value = msg;
       lastReleaseSnack = msg;
       if (!Get.testMode) {
@@ -756,7 +778,10 @@ class StaffVisitsController extends GetxController {
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      final civil = tenantCivilFromUtc(tile.scheduledStart.toUtc(), _effectiveTenantTimezone);
+      final civil = tenantCivilFromUtc(
+        tile.scheduledStart.toUtc(),
+        _effectiveTenantTimezone,
+      );
       final fromDate = DateTime(civil.year, civil.month, civil.day);
       final horizon = tenantHorizonWindowFromCivilDate(
         fromDate,
@@ -1010,7 +1035,8 @@ class StaffVisitsController extends GetxController {
     }
     final parsed = int.tryParse(trimmed);
     if (parsed == null || parsed < 0 || parsed > maxTaskBillableMinutes) {
-      errorMessage.value = 'Billable minutes must be a whole number from 0 to 1440.';
+      errorMessage.value =
+          'Billable minutes must be a whole number from 0 to 1440.';
       return;
     }
     if (parsed == task.billableMinutes) return;
@@ -1053,9 +1079,10 @@ class StaffVisitsController extends GetxController {
     if (visit == null || !canEditVisitSupportItem) return;
 
     final clearing = supportItemCode == null && supportItemName == null;
-    final code = clearing
-        ? null
-        : _pairedSupportItemCode(supportItemCode, supportItemName);
+    final code =
+        clearing
+            ? null
+            : _pairedSupportItemCode(supportItemCode, supportItemName);
 
     // Incomplete pair (code without name) — ignore until catalogue row is picked.
     if (!clearing && code == null) return;

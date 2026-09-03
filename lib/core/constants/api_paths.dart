@@ -85,6 +85,7 @@ abstract final class ApiPaths {
   // Compliance
   static const legalDocumentsCurrent =
       '$_v1/compliance/legal-documents/current';
+
   /// Public register legal read (API-004). Query: `doc_key`.
   static const publicLegalDocumentsCurrent =
       '$_v1/public/legal-documents/current';
@@ -144,6 +145,7 @@ abstract final class ApiPaths {
       '$_v1/public/client-invites/$token';
   static String publicClientInviteAcknowledge(String token) =>
       '${publicClientInvite(token)}/acknowledge';
+
   /// Address → coordinates (Google Geocoding via backend; no auth).
   static const publicGeocode = '$_v1/public/geocode';
 

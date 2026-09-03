@@ -9,11 +9,9 @@ import '../../../../core/errors/app_failure.dart';
 
 /// Document upload / download / scan helpers (design §5.3 / §6.4).
 class DocumentsRemoteDataSource {
-  DocumentsRemoteDataSource({
-    required Dio authenticatedDio,
-    Dio? plainDio,
-  })  : _authenticatedDio = authenticatedDio,
-        _plainDio = plainDio ?? Dio();
+  DocumentsRemoteDataSource({required Dio authenticatedDio, Dio? plainDio})
+    : _authenticatedDio = authenticatedDio,
+      _plainDio = plainDio ?? Dio();
 
   final Dio _authenticatedDio;
   final Dio _plainDio;
@@ -144,9 +142,7 @@ class DocumentsRemoteDataSource {
     try {
       final response = await _authenticatedDio.post<Map<String, dynamic>>(
         ApiPaths.documentFinalize(documentId),
-        data: {
-          if (credentialId != null) 'credential_id': credentialId,
-        },
+        data: {if (credentialId != null) 'credential_id': credentialId},
       );
       final data = response.data;
       if (data == null) {

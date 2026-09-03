@@ -5,7 +5,8 @@ import '../../../../core/errors/app_failure.dart';
 import '../models/payroll_models.dart';
 
 class PayrollRemoteDataSource {
-  PayrollRemoteDataSource({required Dio authenticatedDio}) : _dio = authenticatedDio;
+  PayrollRemoteDataSource({required Dio authenticatedDio})
+    : _dio = authenticatedDio;
 
   final Dio _dio;
 

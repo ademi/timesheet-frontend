@@ -18,74 +18,74 @@ abstract final class VisitsPages {
   VisitsPages._();
 
   static List<GetPage> get routes => [
-        GetPage(
-          name: AppRoutes.staffVisits,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(
-              anyOf: [
-                AppPermissions.shiftsRead,
-                AppPermissions.shiftsManage,
-                AppPermissions.visitsRead,
-                AppPermissions.visitsManage,
-                AppPermissions.jobsManage,
-              ],
-            ),
+    GetPage(
+      name: AppRoutes.staffVisits,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [
+            AppPermissions.shiftsRead,
+            AppPermissions.shiftsManage,
+            AppPermissions.visitsRead,
+            AppPermissions.visitsManage,
+            AppPermissions.jobsManage,
           ],
-          binding: StaffVisitsBinding(),
-          page: () => staffShellPage(const StaffVisitsBoardView()),
-          transition: Transition.fadeIn,
         ),
-        GetPage(
-          name: AppRoutes.staffShiftDetail,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(
-              anyOf: [
-                AppPermissions.shiftsRead,
-                AppPermissions.shiftsManage,
-                AppPermissions.visitsRead,
-                AppPermissions.visitsManage,
-                AppPermissions.jobsManage,
-              ],
-            ),
+      ],
+      binding: StaffVisitsBinding(),
+      page: () => staffShellPage(const StaffVisitsBoardView()),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.staffShiftDetail,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [
+            AppPermissions.shiftsRead,
+            AppPermissions.shiftsManage,
+            AppPermissions.visitsRead,
+            AppPermissions.visitsManage,
+            AppPermissions.jobsManage,
           ],
-          binding: StaffVisitsBinding(),
-          page: () => const StaffShiftDetailView(),
-          transition: Transition.rightToLeft,
         ),
-        GetPage(
-          name: AppRoutes.staffVisitDetail,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(
-              anyOf: [
-                AppPermissions.visitsRead,
-                AppPermissions.visitsManage,
-                AppPermissions.jobsManage,
-              ],
-            ),
+      ],
+      binding: StaffVisitsBinding(),
+      page: () => const StaffShiftDetailView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.staffVisitDetail,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [
+            AppPermissions.visitsRead,
+            AppPermissions.visitsManage,
+            AppPermissions.jobsManage,
           ],
-          binding: StaffVisitsBinding(),
-          page: () => const StaffVisitDetailView(),
-          transition: Transition.rightToLeft,
         ),
-        GetPage(
-          name: AppRoutes.contractorVisits,
-          middlewares: [AuthGuard(), ActorGuard()],
-          binding: ContractorVisitsBinding(),
-          page: () => contractorShellPage(const ContractorVisitsListView()),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.contractorVisitDetail,
-          middlewares: [AuthGuard(), ActorGuard()],
-          binding: ContractorVisitsBinding(),
-          page: () => contractorShellPage(const ContractorVisitDetailView()),
-          transition: Transition.rightToLeft,
-        ),
-      ];
+      ],
+      binding: StaffVisitsBinding(),
+      page: () => const StaffVisitDetailView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.contractorVisits,
+      middlewares: [AuthGuard(), ActorGuard()],
+      binding: ContractorVisitsBinding(),
+      page: () => contractorShellPage(const ContractorVisitsListView()),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.contractorVisitDetail,
+      middlewares: [AuthGuard(), ActorGuard()],
+      binding: ContractorVisitsBinding(),
+      page: () => contractorShellPage(const ContractorVisitDetailView()),
+      transition: Transition.rightToLeft,
+    ),
+  ];
 }

@@ -78,9 +78,7 @@ void main() {
     final shift = await dataSource.assignShiftBatch(
       shiftId: 'shift-1',
       contractorIds: const ['c1', 'c2'],
-      taskTemplate: const [
-        TaskTemplateItem(title: 'Care', sortOrder: 0),
-      ],
+      taskTemplate: const [TaskTemplateItem(title: 'Care', sortOrder: 0)],
     );
 
     expect(shift.id, 'shift-1');
@@ -122,7 +120,9 @@ void main() {
     verify(
       () => dio.post<Map<String, dynamic>>(
         ApiPaths.shiftAssignBatch('shift-1'),
-        data: {'contractor_ids': ['c1']},
+        data: {
+          'contractor_ids': ['c1'],
+        },
       ),
     ).called(1);
   });

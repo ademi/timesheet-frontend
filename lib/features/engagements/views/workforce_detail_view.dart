@@ -53,9 +53,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
 
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: Text(current.displayName),
-        ),
+        appBar: AppBar(title: Text(current.displayName)),
         body: Column(
           children: [
             if (err != null)
@@ -227,10 +225,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
             for (var i = 0; i < qualifications.length; i++)
               if (qualifications[i] is Map) ...[
                 if (i > 0) const SizedBox(height: 8),
-                _row(
-                  'Type',
-                  _mapText(qualifications[i] as Map, 'type'),
-                ),
+                _row('Type', _mapText(qualifications[i] as Map, 'type')),
                 _row(
                   'Issue date',
                   _mapText(qualifications[i] as Map, 'issue_date'),
@@ -239,12 +234,11 @@ class WorkforceDetailView extends GetView<WorkforceController> {
                   'Expiry date',
                   _mapText(qualifications[i] as Map, 'expiry_date'),
                 ),
-              ]
-          else
-            const Text(
-              'No qualifications on file.',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-            ),
+              ] else
+                const Text(
+                  'No qualifications on file.',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                ),
           const SizedBox(height: 16),
           const Text(
             'Checks',
@@ -253,10 +247,16 @@ class WorkforceDetailView extends GetView<WorkforceController> {
           const SizedBox(height: 8),
           if (checks is Map) ...[
             _checkSection('WWCC', checks['wwcc']),
-            _checkSection('Driver licence', checks['drivers_licence'],
-                numberKey: 'number'),
-            _checkSection('Vehicle registration', checks['vehicle_registration'],
-                numberKey: 'plate'),
+            _checkSection(
+              'Driver licence',
+              checks['drivers_licence'],
+              numberKey: 'number',
+            ),
+            _checkSection(
+              'Vehicle registration',
+              checks['vehicle_registration'],
+              numberKey: 'plate',
+            ),
           ] else
             const Text(
               'No check details on file.',
@@ -271,10 +271,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
             const SizedBox(height: 8),
             _row('Account name', profile!.paymentDetails!.accountName),
             _row('BSB', profile.paymentDetails!.bsb),
-            _row(
-              'Account number',
-              profile.paymentDetails!.accountNumberMasked,
-            ),
+            _row('Account number', profile.paymentDetails!.accountNumberMasked),
           ],
         ],
       );
@@ -315,7 +312,8 @@ class WorkforceDetailView extends GetView<WorkforceController> {
   Widget _scheduleContent() {
     final availabilityErr = controller.scheduleError.value;
     final visitsErr = controller.visitsError.value;
-    final loading = controller.isLoadingVisits.value ||
+    final loading =
+        controller.isLoadingVisits.value ||
         controller.isLoadingAvailability.value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -341,9 +339,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
           ),
           const SizedBox(height: 8),
         ],
-        AvailabilityRulesReadout(
-          rules: controller.detailAvailability.toList(),
-        ),
+        AvailabilityRulesReadout(rules: controller.detailAvailability.toList()),
         const SizedBox(height: 24),
         const Text(
           'Timetable',
@@ -455,9 +451,10 @@ class WorkforceDetailView extends GetView<WorkforceController> {
           if (controller.canManage) ...[
             const SizedBox(height: 8),
             OutlinedButton(
-              onPressed: controller.isSaving.value
-                  ? null
-                  : () => controller.runAction('withdraw', current),
+              onPressed:
+                  controller.isSaving.value
+                      ? null
+                      : () => controller.runAction('withdraw', current),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
               ),
@@ -476,7 +473,8 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         ),
         _actionButton(
           label: 'Approve and activate for work',
-          onPressed: () => controller.runAction('approve_and_activate', current),
+          onPressed:
+              () => controller.runAction('approve_and_activate', current),
         ),
       ],
       if (controller.canManage && current.isApproved)
@@ -496,9 +494,10 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         ),
       if (controller.canManage && !current.isEnded && !current.isInvited)
         OutlinedButton(
-          onPressed: controller.isSaving.value
-              ? null
-              : () => controller.runAction('end', current),
+          onPressed:
+              controller.isSaving.value
+                  ? null
+                  : () => controller.runAction('end', current),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(48),
           ),
@@ -510,10 +509,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final child in actions)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: child,
-          ),
+          Padding(padding: const EdgeInsets.only(bottom: 8), child: child),
       ],
     );
   }

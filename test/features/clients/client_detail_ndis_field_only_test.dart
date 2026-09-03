@@ -86,16 +86,16 @@ void main() {
     await tester.pumpWidget(
       GetMaterialApp(
         home: Scaffold(
-          body: ClientRequirementEditor(
-            controller: controller,
-            draft: draft,
-          ),
+          body: ClientRequirementEditor(controller: controller, draft: draft),
         ),
       ),
     );
 
     expect(documentPicker(), findsOneWidget);
-    expect(find.byKey(ClientRequirementEditor.documentPickerKey), findsOneWidget);
+    expect(
+      find.byKey(ClientRequirementEditor.documentPickerKey),
+      findsOneWidget,
+    );
     expect(find.text('Upload file'), findsOneWidget);
   });
 
@@ -106,9 +106,7 @@ void main() {
       when(
         () => clients.listClientTypes(),
       ).thenAnswer((_) async => [_patientType]);
-      when(
-        () => clients.listTypeRequirements(_patientType.id),
-      ).thenAnswer(
+      when(() => clients.listTypeRequirements(_patientType.id)).thenAnswer(
         (_) async => const [
           ClientTypeRequirement(
             requirementKey: 'ndis',
@@ -133,9 +131,9 @@ void main() {
           _idReq,
         ],
       );
-      when(() => clients.getClientProfile(_client.id)).thenAnswer(
-        (_) async => const ClientProfileBundle(),
-      );
+      when(
+        () => clients.getClientProfile(_client.id),
+      ).thenAnswer((_) async => const ClientProfileBundle());
 
       await controller.loadTypeTabForSelected();
 

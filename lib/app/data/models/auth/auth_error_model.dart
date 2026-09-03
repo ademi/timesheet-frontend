@@ -15,7 +15,8 @@ class AuthErrorModel implements Exception {
     if (raw is Map) {
       final m = Map<String, dynamic>.from(raw);
       return AuthErrorModel(
-        detail: m['message'] as String? ??
+        detail:
+            m['message'] as String? ??
             m['code'] as String? ??
             'Something went wrong',
         code: m['code'] as String?,
@@ -37,7 +38,7 @@ class AuthErrorModel implements Exception {
   }
 
   Map<String, dynamic> toJson() => {
-        if (code != null) 'code': code,
-        'detail': detail,
-      };
+    if (code != null) 'code': code,
+    'detail': detail,
+  };
 }

@@ -95,10 +95,8 @@ void main() {
 
   test('selectTab open calls listOpenShifts', () async {
     when(
-      () => shifts.listOpenShifts(
-        from: any(named: 'from'),
-        to: any(named: 'to'),
-      ),
+      () =>
+          shifts.listOpenShifts(from: any(named: 'from'), to: any(named: 'to')),
     ).thenAnswer(
       (_) async => [
         OpenShiftOut(
@@ -124,10 +122,8 @@ void main() {
     expect(controller.selectedTab.value, 'open');
     expect(controller.openShifts, hasLength(1));
     verify(
-      () => shifts.listOpenShifts(
-        from: any(named: 'from'),
-        to: any(named: 'to'),
-      ),
+      () =>
+          shifts.listOpenShifts(from: any(named: 'from'), to: any(named: 'to')),
     ).called(1);
   });
 
@@ -146,12 +142,12 @@ void main() {
     );
 
     const visitId = 'visit-claimed';
-    when(() => shifts.claimShift('shift-1')).thenAnswer(
-      (_) async => _claimedShift(visitId),
-    );
-    when(() => visits.getVisit(visitId)).thenAnswer(
-      (_) async => _visit(id: visitId),
-    );
+    when(
+      () => shifts.claimShift('shift-1'),
+    ).thenAnswer((_) async => _claimedShift(visitId));
+    when(
+      () => visits.getVisit(visitId),
+    ).thenAnswer((_) async => _visit(id: visitId));
 
     final controller = ContractorVisitsController(
       repository: visits,

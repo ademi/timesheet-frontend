@@ -50,16 +50,13 @@ void main() {
     clients = _MockClientsRepository();
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
-    when(() => clients.listClients()).thenAnswer(
-      (_) async => [complete, incomplete],
-    );
-    when(() => clients.getClientProfilePhoto(any())).thenAnswer(
-      (_) async => const ProfilePhotoOut(hasPhoto: false),
-    );
-    controller = ClientsController(
-      repository: clients,
-      session: session,
-    );
+    when(
+      () => clients.listClients(),
+    ).thenAnswer((_) async => [complete, incomplete]);
+    when(
+      () => clients.getClientProfilePhoto(any()),
+    ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
+    controller = ClientsController(repository: clients, session: session);
     Get.put(controller);
   });
 
@@ -71,10 +68,7 @@ void main() {
     await tester.pumpWidget(
       GetMaterialApp(
         getPages: [
-          GetPage(
-            name: '/',
-            page: () => const ClientsListView(),
-          ),
+          GetPage(name: '/', page: () => const ClientsListView()),
           GetPage(
             name: AppRoutes.staffClientOnboarding,
             page: () => const Scaffold(body: Text('Onboarding wizard')),

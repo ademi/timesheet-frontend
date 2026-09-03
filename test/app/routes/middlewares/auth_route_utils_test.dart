@@ -23,23 +23,27 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
   });
 
-  test('redirectWhenUnauthenticated allows expired access with refresh token',
-      () async {
-    final storage = TokenStorage();
-    await storage.persistTokens(
-      accessToken: _fakeJwt({'exp': 1}),
-      refreshToken: 'refresh',
-    );
-    Get.put<TokenStorage>(storage);
+  test(
+    'redirectWhenUnauthenticated allows expired access with refresh token',
+    () async {
+      final storage = TokenStorage();
+      await storage.persistTokens(
+        accessToken: _fakeJwt({'exp': 1}),
+        refreshToken: 'refresh',
+      );
+      Get.put<TokenStorage>(storage);
 
-    expect(redirectWhenUnauthenticated(), isNull);
-  });
+      expect(redirectWhenUnauthenticated(), isNull);
+    },
+  );
 
-  test('redirectWhenUnauthenticated sends user to gateway with no credentials',
-      () async {
-    final storage = TokenStorage();
-    Get.put<TokenStorage>(storage);
+  test(
+    'redirectWhenUnauthenticated sends user to gateway with no credentials',
+    () async {
+      final storage = TokenStorage();
+      Get.put<TokenStorage>(storage);
 
-    expect(redirectWhenUnauthenticated()?.name, '/gateway');
-  });
+      expect(redirectWhenUnauthenticated()?.name, '/gateway');
+    },
+  );
 }

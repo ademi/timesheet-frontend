@@ -108,7 +108,10 @@ void main() {
       expect(model.timezone, 'Australia/Sydney');
       expect(model.engagements.single.status, 'pending_docs');
       // Permissions are JWT-only — me/context does not carry them.
-      expect(jsonEncode(model.engagements.first.toJson()), contains('tenant_name'));
+      expect(
+        jsonEncode(model.engagements.first.toJson()),
+        contains('tenant_name'),
+      );
     });
   });
 

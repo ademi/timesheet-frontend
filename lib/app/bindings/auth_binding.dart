@@ -20,10 +20,7 @@ class AuthBinding extends Bindings {
     }
 
     if (!Get.isRegistered<ApiClient>()) {
-      Get.put<ApiClient>(
-        ApiClient(Get.find<TokenStorage>()),
-        permanent: true,
-      );
+      Get.put<ApiClient>(ApiClient(Get.find<TokenStorage>()), permanent: true);
     }
     if (!Get.isRegistered<TokenRefreshService>()) {
       Get.put<TokenRefreshService>(

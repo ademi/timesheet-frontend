@@ -25,10 +25,7 @@ class OnboardingAddressStep extends StatelessWidget {
             style: TextStyle(fontSize: 13),
           ),
           const SizedBox(height: 12),
-          SiteFormFields(
-            controller: controller,
-            primaryMode: true,
-          ),
+          SiteFormFields(controller: controller, primaryMode: true),
           if (controller.primarySiteSaved.value) ...[
             const SizedBox(height: 16),
             OutlinedButton.icon(

@@ -28,15 +28,16 @@ class JobsListView extends GetView<JobsController> {
           ],
         ),
       ),
-      floatingActionButton: !controller.canManage
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: controller.openCreate,
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
-              icon: const Icon(Icons.add),
-              label: const Text('Add job'),
-            ),
+      floatingActionButton:
+          !controller.canManage
+              ? null
+              : FloatingActionButton.extended(
+                onPressed: controller.openCreate,
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                icon: const Icon(Icons.add),
+                label: const Text('Add job'),
+              ),
       body: Obx(() {
         final err = controller.errorMessage.value;
         if (controller.isLoading.value && controller.jobs.isEmpty) {
@@ -93,10 +94,7 @@ class JobsListView extends GetView<JobsController> {
         children.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              group,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            child: Text(group, style: Theme.of(context).textTheme.titleMedium),
           ),
         );
       }

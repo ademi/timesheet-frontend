@@ -41,7 +41,10 @@ class ClientDetailOverviewSection extends StatelessWidget {
               if (canEdit && !editing)
                 TextButton.icon(
                   key: editKey,
-                  onPressed: saving ? null : () => controller.overviewEditing.value = true,
+                  onPressed:
+                      saving
+                          ? null
+                          : () => controller.overviewEditing.value = true,
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   label: const Text('Edit'),
                 ),
@@ -49,17 +52,33 @@ class ClientDetailOverviewSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (!editing) ...[
-            _ReadOnlyField(label: 'Full name', value: controller.overviewNameCtrl.text),
-            _ReadOnlyField(label: 'Status', value: controller.overviewStatus.value),
-            _ReadOnlyField(label: 'Email', value: controller.overviewEmailCtrl.text),
-            _ReadOnlyField(label: 'Phone', value: controller.overviewPhoneCtrl.text),
+            _ReadOnlyField(
+              label: 'Full name',
+              value: controller.overviewNameCtrl.text,
+            ),
+            _ReadOnlyField(
+              label: 'Status',
+              value: controller.overviewStatus.value,
+            ),
+            _ReadOnlyField(
+              label: 'Email',
+              value: controller.overviewEmailCtrl.text,
+            ),
+            _ReadOnlyField(
+              label: 'Phone',
+              value: controller.overviewPhoneCtrl.text,
+            ),
             _ReadOnlyField(
               label: 'Date of birth',
-              value: controller.overviewDob.value == null
-                  ? ''
-                  : _fmt(controller.overviewDob.value!),
+              value:
+                  controller.overviewDob.value == null
+                      ? ''
+                      : _fmt(controller.overviewDob.value!),
             ),
-            _ReadOnlyField(label: 'NDIS number', value: controller.overviewNdisCtrl.text),
+            _ReadOnlyField(
+              label: 'NDIS number',
+              value: controller.overviewNdisCtrl.text,
+            ),
             if (controller.showClientTypePicker && types.isNotEmpty) ...[
               Builder(
                 builder: (context) {

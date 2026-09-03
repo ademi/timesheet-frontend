@@ -28,9 +28,9 @@ void main() {
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => clients.listClients()).thenAnswer((_) async => []);
-    when(() => clients.getClientProfilePhoto(any())).thenAnswer(
-      (_) async => const ProfilePhotoOut(hasPhoto: false),
-    );
+    when(
+      () => clients.getClientProfilePhoto(any()),
+    ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
     controller = ClientsController(
       repository: clients,
       session: session,
@@ -41,8 +41,9 @@ void main() {
 
   tearDown(Get.reset);
 
-  testWidgets('shows Relationship and hides Notify on visit complete',
-      (tester) async {
+  testWidgets('shows Relationship and hides Notify on visit complete', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const GetMaterialApp(home: ClientContactFormView()),
     );

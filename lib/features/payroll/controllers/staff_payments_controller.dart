@@ -28,7 +28,8 @@ class ContractorBatchCandidate {
   final DateTime lastVisitAt;
 
   int get visitCount => visits.length;
-  List<String> get visitIds => visits.map((visit) => visit.id).toList(growable: false);
+  List<String> get visitIds =>
+      visits.map((visit) => visit.id).toList(growable: false);
 }
 
 class StaffPaymentsController extends GetxController {
@@ -36,9 +37,9 @@ class StaffPaymentsController extends GetxController {
     required PayrollRepository payroll,
     required VisitsRepository visits,
     required SessionService session,
-  })  : _payroll = payroll,
-        _visits = visits,
-        _session = session;
+  }) : _payroll = payroll,
+       _visits = visits,
+       _session = session;
 
   final PayrollRepository _payroll;
   final VisitsRepository _visits;
@@ -64,8 +65,7 @@ class StaffPaymentsController extends GetxController {
   bool get canView =>
       _session.hasPermission(AppPermissions.paymentsView) ||
       _session.hasPermission(AppPermissions.paymentsManage);
-  bool get canManage =>
-      _session.hasPermission(AppPermissions.paymentsManage);
+  bool get canManage => _session.hasPermission(AppPermissions.paymentsManage);
 
   @override
   void onInit() {
@@ -142,9 +142,16 @@ class StaffPaymentsController extends GetxController {
 
   Future<void> _loadUnpaidVisits() async {
     final range = periodRange.value;
-    final from = DateTime.utc(range.start.year, range.start.month, range.start.day);
-    final to = DateTime.utc(range.end.year, range.end.month, range.end.day)
-        .add(const Duration(days: 1));
+    final from = DateTime.utc(
+      range.start.year,
+      range.start.month,
+      range.start.day,
+    );
+    final to = DateTime.utc(
+      range.end.year,
+      range.end.month,
+      range.end.day,
+    ).add(const Duration(days: 1));
     final list = await _visits.listVisits(
       from: from,
       to: to,
@@ -160,28 +167,38 @@ class StaffPaymentsController extends GetxController {
       grouped.putIfAbsent(visit.contractorId, () => <VisitOut>[]).add(visit);
     }
 
-    final result = grouped.entries.map((entry) {
-      final visits = [...entry.value]
-        ..sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
-      final firstVisitAt = visits.first.scheduledStart;
-      final lastVisitAt = visits.last.scheduledEnd;
-      final totalHours = visits.fold<double>(0, (sum, visit) {
-        final hours = visit.scheduledEnd.difference(visit.scheduledStart).inMinutes / 60;
-        return sum + hours;
-      });
+    final result =
+        grouped.entries.map((entry) {
+            final visits = [...entry.value]
+              ..sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
+            final firstVisitAt = visits.first.scheduledStart;
+            final lastVisitAt = visits.last.scheduledEnd;
+            final totalHours = visits.fold<double>(0, (sum, visit) {
+              final hours =
+                  visit.scheduledEnd
+                      .difference(visit.scheduledStart)
+                      .inMinutes /
+                  60;
+              return sum + hours;
+            });
 
-      return ContractorBatchCandidate(
-        contractorId: entry.key,
-        contractorName: visits.first.contractorName?.trim().isNotEmpty == true
-            ? visits.first.contractorName!.trim()
-            : entry.key,
-        visits: visits,
-        totalHours: totalHours,
-        firstVisitAt: firstVisitAt,
-        lastVisitAt: lastVisitAt,
-      );
-    }).toList()
-      ..sort((a, b) => a.contractorName.toLowerCase().compareTo(b.contractorName.toLowerCase()));
+            return ContractorBatchCandidate(
+              contractorId: entry.key,
+              contractorName:
+                  visits.first.contractorName?.trim().isNotEmpty == true
+                      ? visits.first.contractorName!.trim()
+                      : entry.key,
+              visits: visits,
+              totalHours: totalHours,
+              firstVisitAt: firstVisitAt,
+              lastVisitAt: lastVisitAt,
+            );
+          }).toList()
+          ..sort(
+            (a, b) => a.contractorName.toLowerCase().compareTo(
+              b.contractorName.toLowerCase(),
+            ),
+          );
 
     return result;
   }
@@ -190,10 +207,12 @@ class StaffPaymentsController extends GetxController {
     final query = contractorFilter.value.trim().toLowerCase();
     if (query.isEmpty) return contractorCandidates;
 
-    return contractorCandidates.where((candidate) {
-      return candidate.contractorName.toLowerCase().contains(query) ||
-          candidate.contractorId.toLowerCase().contains(query);
-    }).toList(growable: false);
+    return contractorCandidates
+        .where((candidate) {
+          return candidate.contractorName.toLowerCase().contains(query) ||
+              candidate.contractorId.toLowerCase().contains(query);
+        })
+        .toList(growable: false);
   }
 
   int get selectedVisitCount {
@@ -247,15 +266,13 @@ class StaffPaymentsController extends GetxController {
     }
 
     if (visitIds.isEmpty) {
-      errorMessage.value =
-          'Visit must be completed to add to payment batch.';
+      errorMessage.value = 'Visit must be completed to add to payment batch.';
       return;
     }
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      final key =
-          'fe-batch-${DateTime.now().toUtc().microsecondsSinceEpoch}';
+      final key = 'fe-batch-${DateTime.now().toUtc().microsecondsSinceEpoch}';
       final created = await _payroll.createBatch(
         PaymentBatchCreateRequest(
           visitIds: visitIds,

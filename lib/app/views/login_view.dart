@@ -24,173 +24,171 @@ class LoginView extends GetView<AuthController> {
               child: Form(
                 key: controller.formKey,
                 child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 16),
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 16),
 
-                  // ── Logo ──────────────────────────────────
-                  _LogoWidget(),
+                    // ── Logo ──────────────────────────────────
+                    _LogoWidget(),
 
-                  const SizedBox(height: 28),
+                    const SizedBox(height: 28),
 
-                  // ── Title ─────────────────────────────────
-                  const Text(
-                    'Rostiq',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.darkBrown,
+                    // ── Title ─────────────────────────────────
+                    const Text(
+                      'Rostiq',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.darkBrown,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Sign in',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.darkBrown,
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Sign in',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.darkBrown,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Staff or contractor account',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Staff or contractor account',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
-                  ),
 
-                  const SizedBox(height: 34),
+                    const SizedBox(height: 34),
 
-                  // ── Card ──────────────────────────────────
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBackground,
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.12),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Welcome Back',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.darkBrown,
+                    // ── Card ──────────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBackground,
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            blurRadius: 20,
+                            offset: const Offset(0, 6),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Sign in to continue',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 20),
-
-                        _InputField(
-                          controller: controller.emailController,
-                          label: 'Email or phone',
-                          hint: 'you@example.com or +614…',
-                          icon: Icons.person_outline,
-                          keyboardType: TextInputType.text,
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return 'Email or phone is required';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 14),
-
-                        Obx(
-                          () => _InputField(
-                            controller: controller.passwordController,
-                            label: 'Password',
-                            hint: '••••••••',
-                            icon: Icons.lock_outline,
-                            obscureText: !controller.isPasswordVisible.value,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                controller.isPasswordVisible.value
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                color: AppColors.primaryDark,
-                              ),
-                              onPressed: controller.togglePasswordVisibility,
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Welcome Back',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.darkBrown,
                             ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Sign in to continue',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 20),
+
+                          _InputField(
+                            controller: controller.emailController,
+                            label: 'Email or phone',
+                            hint: 'you@example.com or +614…',
+                            icon: Icons.person_outline,
+                            keyboardType: TextInputType.text,
                             validator: (v) {
-                              if (v == null || v.isEmpty) {
-                                return 'Password is required';
-                              }
-                              if (v.length < 6) {
-                                return 'Minimum 6 characters';
+                              if (v == null || v.trim().isEmpty) {
+                                return 'Email or phone is required';
                               }
                               return null;
                             },
                           ),
-                        ),
-                        const SizedBox(height: 24),
+                          const SizedBox(height: 14),
 
-                        // Login Button
-                        Obx(
-                          () => SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed:
-                                  controller.isLoading.value
-                                      ? null
-                                      : () => controller.login(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.onPrimary,
-                                disabledBackgroundColor: AppColors.primary
-                                    .withValues(alpha: 0.6),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                          Obx(
+                            () => _InputField(
+                              controller: controller.passwordController,
+                              label: 'Password',
+                              hint: '••••••••',
+                              icon: Icons.lock_outline,
+                              obscureText: !controller.isPasswordVisible.value,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  controller.isPasswordVisible.value
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: AppColors.primaryDark,
                                 ),
-                                elevation: 4,
+                                onPressed: controller.togglePasswordVisibility,
                               ),
-                              child:
-                                  controller.isLoading.value
-                                      ? const SizedBox(
-                                        width: 22,
-                                        height: 22,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.5,
-                                        ),
-                                      )
-                                      : const Text(
-                                        'Login',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 0.6,
-                                        ),
-                                      ),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) {
+                                  return 'Password is required';
+                                }
+                                if (v.length < 6) {
+                                  return 'Minimum 6 characters';
+                                }
+                                return null;
+                              },
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 24),
+
+                          // Login Button
+                          Obx(
+                            () => SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed:
+                                    controller.isLoading.value
+                                        ? null
+                                        : () => controller.login(),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: AppColors.onPrimary,
+                                  disabledBackgroundColor: AppColors.primary
+                                      .withValues(alpha: 0.6),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  elevation: 4,
+                                ),
+                                child:
+                                    controller.isLoading.value
+                                        ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2.5,
+                                          ),
+                                        )
+                                        : const Text(
+                                          'Login',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.6,
+                                          ),
+                                        ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => Get.toNamed(AppRoutes.contractorRegister),
-                    child: const Text('Register as contractor'),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed:
+                          () => Get.toNamed(AppRoutes.contractorRegister),
+                      child: const Text('Register as contractor'),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
-            ),
             ),
           ),
         ),

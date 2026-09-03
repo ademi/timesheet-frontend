@@ -13,8 +13,8 @@ class BranchGatewayController extends GetxController {
   BranchGatewayController({
     required BranchRepository branchRepository,
     required TokenStorage tokenStorage,
-  })  : _branchRepository = branchRepository,
-        _tokenStorage = tokenStorage;
+  }) : _branchRepository = branchRepository,
+       _tokenStorage = tokenStorage;
 
   final BranchRepository _branchRepository;
   final TokenStorage _tokenStorage;

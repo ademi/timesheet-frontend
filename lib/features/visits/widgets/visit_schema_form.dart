@@ -140,7 +140,9 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
       return;
     }
     if (payload.isEmpty) {
-      setState(() => _validationError = 'Enter at least one field before submit');
+      setState(
+        () => _validationError = 'Enter at least one field before submit',
+      );
       return;
     }
     setState(() => _validationError = null);
@@ -171,7 +173,10 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 2),
                       Text(
                         widget.isSubmitted
@@ -181,21 +186,23 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
                                 : 'Optional'),
                         style: TextStyle(
                           fontSize: 12,
-                          color: widget.isSubmitted
-                              ? AppColors.primary
-                              : AppColors.textMuted,
+                          color:
+                              widget.isSubmitted
+                                  ? AppColors.primary
+                                  : AppColors.textMuted,
                         ),
                       ),
                     ],
                   ),
                 ),
                 TextButton(
-                  onPressed: !widget.canSubmit ||
-                          widget.isSubmitting ||
-                          widget.isSubmitted ||
-                          fields.isEmpty
-                      ? null
-                      : _submit,
+                  onPressed:
+                      !widget.canSubmit ||
+                              widget.isSubmitting ||
+                              widget.isSubmitted ||
+                              fields.isEmpty
+                          ? null
+                          : _submit,
                   child: AsyncButtonChild(
                     isLoading: widget.isSubmitting,
                     child: const Text('Submit'),
@@ -237,10 +244,7 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
             padding: EdgeInsets.only(top: widgets.isEmpty ? 0 : 12, bottom: 8),
             child: Text(
               lastSection!,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ),
         );
@@ -265,9 +269,10 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
         value: _boolValues[field.id] ?? false,
         title: Text(label),
         controlAffinity: ListTileControlAffinity.leading,
-        onChanged: widget.isSubmitted
-            ? null
-            : (v) => setState(() => _boolValues[field.id] = v ?? false),
+        onChanged:
+            widget.isSubmitted
+                ? null
+                : (v) => setState(() => _boolValues[field.id] = v ?? false),
       );
     }
 
@@ -284,9 +289,10 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
           for (final opt in field.options)
             DropdownMenuItem(value: opt, child: Text(opt)),
         ],
-        onChanged: widget.isSubmitted
-            ? null
-            : (v) => setState(() => _selectedOptions[field.id] = v),
+        onChanged:
+            widget.isSubmitted
+                ? null
+                : (v) => setState(() => _selectedOptions[field.id] = v),
       );
     }
 
@@ -301,24 +307,25 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
           isDense: true,
           suffixIcon: const Icon(Icons.calendar_today, size: 18),
         ),
-        onTap: widget.isSubmitted
-            ? null
-            : () async {
-                final now = DateTime.now();
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: now,
-                  firstDate: DateTime(1900),
-                  lastDate: DateTime(now.year + 5),
-                );
-                if (picked != null) {
-                  final y = picked.year.toString().padLeft(4, '0');
-                  final m = picked.month.toString().padLeft(2, '0');
-                  final d = picked.day.toString().padLeft(2, '0');
-                  _controllers[field.id]!.text = '$y-$m-$d';
-                  setState(() {});
-                }
-              },
+        onTap:
+            widget.isSubmitted
+                ? null
+                : () async {
+                  final now = DateTime.now();
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: now,
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime(now.year + 5),
+                  );
+                  if (picked != null) {
+                    final y = picked.year.toString().padLeft(4, '0');
+                    final m = picked.month.toString().padLeft(2, '0');
+                    final d = picked.day.toString().padLeft(2, '0');
+                    _controllers[field.id]!.text = '$y-$m-$d';
+                    setState(() {});
+                  }
+                },
       );
     }
 
@@ -330,17 +337,18 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
       controller: _controllers[field.id],
       enabled: !widget.isSubmitted,
       maxLines: isMultiline ? 4 : 1,
-      keyboardType: isNumber
-          ? const TextInputType.numberWithOptions(decimal: true)
-          : TextInputType.text,
-      inputFormatters: isNumber
-          ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]'))]
-          : null,
+      keyboardType:
+          isNumber
+              ? const TextInputType.numberWithOptions(decimal: true)
+              : TextInputType.text,
+      inputFormatters:
+          isNumber
+              ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]'))]
+              : null,
       decoration: InputDecoration(
         labelText: label,
-        hintText: isFile
-            ? 'File name / reference (upload UI coming later)'
-            : null,
+        hintText:
+            isFile ? 'File name / reference (upload UI coming later)' : null,
         border: const OutlineInputBorder(),
         isDense: true,
       ),

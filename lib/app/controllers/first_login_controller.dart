@@ -11,7 +11,7 @@ import '../routes/app_routes.dart';
 
 class FirstLoginController extends GetxController {
   FirstLoginController({required AuthRepository authRepository})
-      : _authRepository = authRepository;
+    : _authRepository = authRepository;
 
   final AuthRepository _authRepository;
 
@@ -48,7 +48,9 @@ class FirstLoginController extends GetxController {
       final parsed = parseAuthError(e);
       AppToast.error(
         'Error',
-        parsed?.detail ?? e.message ?? 'Failed to set password. Please try again.',
+        parsed?.detail ??
+            e.message ??
+            'Failed to set password. Please try again.',
       );
     } finally {
       isLoading.value = false;

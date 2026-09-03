@@ -21,7 +21,7 @@ void _clearNdisCatalogueCacheIfRegistered() {
 
 class AuthController extends GetxController {
   AuthController({required AuthRepository authRepository})
-      : _authRepository = authRepository;
+    : _authRepository = authRepository;
 
   final AuthRepository _authRepository;
 

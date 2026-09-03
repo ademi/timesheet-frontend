@@ -36,11 +36,15 @@ void main() {
     jobsRepository = _MockJobsRepository();
     final session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
-    when(() => session.hasPermission(AppPermissions.jobsManage)).thenReturn(true);
+    when(
+      () => session.hasPermission(AppPermissions.jobsManage),
+    ).thenReturn(true);
     when(() => jobsRepository.listJobs()).thenAnswer((_) async => []);
     when(() => jobsRepository.listFormTemplates()).thenAnswer((_) async => []);
     when(() => jobsRepository.listBranches()).thenAnswer((_) async => []);
-    when(() => jobsRepository.listRecurrenceRules(any())).thenAnswer((_) async => []);
+    when(
+      () => jobsRepository.listRecurrenceRules(any()),
+    ).thenAnswer((_) async => []);
     jobsController = JobsController(
       repository: jobsRepository,
       clientsRepository: _MockClientsRepository(),
@@ -58,17 +62,17 @@ void main() {
   });
 
   RecurrenceRuleOut _ruleOut({int requiredSlots = 1}) => RecurrenceRuleOut(
-        id: 'rule-1',
-        tenantId: 'tenant-1',
-        jobId: 'job-1',
-        requiredSlots: requiredSlots,
-        rrule: 'FREQ=WEEKLY;BYDAY=MO',
-        dtstart: DateTime.utc(2026, 8, 1),
-        timeWindows: const [TimeWindow(startTime: '09:00', endTime: '12:00')],
-        isActive: true,
-        createdAt: DateTime.utc(2026, 8, 1),
-        updatedAt: DateTime.utc(2026, 8, 1),
-      );
+    id: 'rule-1',
+    tenantId: 'tenant-1',
+    jobId: 'job-1',
+    requiredSlots: requiredSlots,
+    rrule: 'FREQ=WEEKLY;BYDAY=MO',
+    dtstart: DateTime.utc(2026, 8, 1),
+    timeWindows: const [TimeWindow(startTime: '09:00', endTime: '12:00')],
+    isActive: true,
+    createdAt: DateTime.utc(2026, 8, 1),
+    updatedAt: DateTime.utc(2026, 8, 1),
+  );
 
   void _selectJob() {
     jobsController.selected.value = JobOut(
@@ -104,7 +108,10 @@ void main() {
     formController.syncAssignSlots(3);
     formController.setContractorAt(0, 'contractor-1');
     formController.setContractorAt(2, 'contractor-2');
-    expect(formController.filledContractorIds, ['contractor-1', 'contractor-2']);
+    expect(formController.filledContractorIds, [
+      'contractor-1',
+      'contractor-2',
+    ]);
   });
 
   test('save sends taskTemplate with optional support item codes', () async {
@@ -124,8 +131,9 @@ void main() {
 
     final captured =
         verify(
-          () => jobsRepository.createRecurrenceRule('job-1', captureAny()),
-        ).captured.single as RecurrenceRuleCreateRequest;
+              () => jobsRepository.createRecurrenceRule('job-1', captureAny()),
+            ).captured.single
+            as RecurrenceRuleCreateRequest;
     expect(captured.taskTemplate, hasLength(2));
     expect(captured.taskTemplate[0].title, 'Personal care');
     expect(captured.taskTemplate[0].supportItemCode, '01_011_0107_1_1');
@@ -147,8 +155,9 @@ void main() {
 
     final captured =
         verify(
-          () => jobsRepository.createRecurrenceRule('job-1', captureAny()),
-        ).captured.single as RecurrenceRuleCreateRequest;
+              () => jobsRepository.createRecurrenceRule('job-1', captureAny()),
+            ).captured.single
+            as RecurrenceRuleCreateRequest;
     expect(captured.requiredSlots, 2);
     expect(captured.contractorIds, ['contractor-1', 'contractor-2']);
   });

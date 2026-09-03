@@ -47,7 +47,8 @@ class DisabilityHealthSection {
       medicationSchedule: m['medication_schedule'] as String? ?? '',
       gpName: m['gp_name'] as String? ?? '',
       gpPhone: m['gp_phone'] as String? ?? '',
-      supportIntensity: m['support_intensity'] as String? ??
+      supportIntensity:
+          m['support_intensity'] as String? ??
           SupportPlanKeys.intensityStandard,
       limitationOtherDetail:
           m[SupportPlanKeys.limitationOtherDetail] as String? ?? '',
@@ -56,20 +57,20 @@ class DisabilityHealthSection {
   }
 
   Map<String, dynamic> toJson() => {
-        'primary_disability': primaryDisability,
-        'secondary_conditions': secondaryConditions,
-        'functional_limitations': functionalLimitations,
-        'functional_impact_summary': functionalImpactSummary,
-        'communication_methods': communicationMethods,
-        'mobility_needs': mobilityNeeds,
-        'behaviour_support_plan': behaviourSupportPlan,
-        'medication_schedule': medicationSchedule,
-        'gp_name': gpName,
-        'gp_phone': gpPhone,
-        'support_intensity': supportIntensity,
-        SupportPlanKeys.limitationOtherDetail: limitationOtherDetail,
-        SupportPlanKeys.commOtherDetail: commOtherDetail,
-      };
+    'primary_disability': primaryDisability,
+    'secondary_conditions': secondaryConditions,
+    'functional_limitations': functionalLimitations,
+    'functional_impact_summary': functionalImpactSummary,
+    'communication_methods': communicationMethods,
+    'mobility_needs': mobilityNeeds,
+    'behaviour_support_plan': behaviourSupportPlan,
+    'medication_schedule': medicationSchedule,
+    'gp_name': gpName,
+    'gp_phone': gpPhone,
+    'support_intensity': supportIntensity,
+    SupportPlanKeys.limitationOtherDetail: limitationOtherDetail,
+    SupportPlanKeys.commOtherDetail: commOtherDetail,
+  };
 }
 
 class LivingSection {
@@ -88,7 +89,8 @@ class LivingSection {
   factory LivingSection.fromJson(Map<String, dynamic>? json) {
     final m = json ?? const <String, dynamic>{};
     return LivingSection(
-      residenceType: m['residence_type'] as String? ??
+      residenceType:
+          m['residence_type'] as String? ??
           SupportPlanKeys.residencePrivateHome,
       householdMembers: m['household_members'] as String? ?? '',
       informalSupports: m['informal_supports'] as String? ?? '',
@@ -98,11 +100,11 @@ class LivingSection {
   }
 
   Map<String, dynamic> toJson() => {
-        'residence_type': residenceType,
-        'household_members': householdMembers,
-        'informal_supports': informalSupports,
-        SupportPlanKeys.residenceOtherDetail: residenceOtherDetail,
-      };
+    'residence_type': residenceType,
+    'household_members': householdMembers,
+    'informal_supports': informalSupports,
+    SupportPlanKeys.residenceOtherDetail: residenceOtherDetail,
+  };
 }
 
 class SupportPlanGoal {
@@ -134,13 +136,13 @@ class SupportPlanGoal {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'ndis_goal': ndisGoal,
-        'strategy': strategy,
-        'measure': measure,
-        'worker_instructions': workerInstructions,
-        'sort_order': sortOrder,
-      };
+    'id': id,
+    'ndis_goal': ndisGoal,
+    'strategy': strategy,
+    'measure': measure,
+    'worker_instructions': workerInstructions,
+    'sort_order': sortOrder,
+  };
 }
 
 class PreferencesSection {
@@ -167,11 +169,11 @@ class PreferencesSection {
   }
 
   Map<String, dynamic> toJson() => {
-        'preferred_support_style': preferredSupportStyle,
-        'routines': routines,
-        'interests_strengths': interestsStrengths,
-        'cultural_notes': culturalNotes,
-      };
+    'preferred_support_style': preferredSupportStyle,
+    'routines': routines,
+    'interests_strengths': interestsStrengths,
+    'cultural_notes': culturalNotes,
+  };
 }
 
 class RiskSection {
@@ -201,12 +203,12 @@ class RiskSection {
   }
 
   Map<String, dynamic> toJson() => {
-        'summary': summary,
-        'behaviours_of_concern': behavioursOfConcern,
-        'triggers': triggers,
-        'de_escalation': deEscalation,
-        'crisis_response': crisisResponse,
-      };
+    'summary': summary,
+    'behaviours_of_concern': behavioursOfConcern,
+    'triggers': triggers,
+    'de_escalation': deEscalation,
+    'crisis_response': crisisResponse,
+  };
 }
 
 class ScheduleSection {
@@ -230,10 +232,10 @@ class ScheduleSection {
   }
 
   Map<String, dynamic> toJson() => {
-        'service_days': serviceDays,
-        'typical_times': typicalTimes,
-        'recommended_hours_note': recommendedHoursNote,
-      };
+    'service_days': serviceDays,
+    'typical_times': typicalTimes,
+    'recommended_hours_note': recommendedHoursNote,
+  };
 }
 
 /// Care body for a support plan. [toJson] always emits every section (OV1).
@@ -266,12 +268,16 @@ class SupportPlanBody {
         _asMap(m[SupportPlanKeys.disabilityHealth]),
       ),
       living: LivingSection.fromJson(_asMap(m[SupportPlanKeys.living])),
-      goals: goalsRaw is List
-          ? goalsRaw
-              .whereType<Map>()
-              .map((e) => SupportPlanGoal.fromJson(Map<String, dynamic>.from(e)))
-              .toList(growable: false)
-          : const [],
+      goals:
+          goalsRaw is List
+              ? goalsRaw
+                  .whereType<Map>()
+                  .map(
+                    (e) =>
+                        SupportPlanGoal.fromJson(Map<String, dynamic>.from(e)),
+                  )
+                  .toList(growable: false)
+              : const [],
       serviceCategories: _stringList(m[SupportPlanKeys.serviceCategories]),
       preferences: PreferencesSection.fromJson(
         _asMap(m[SupportPlanKeys.preferences]),
@@ -284,15 +290,15 @@ class SupportPlanBody {
 
   /// Full nested snake_case map for PATCH body full-replace (OV1).
   Map<String, dynamic> toJson() => {
-        SupportPlanKeys.disabilityHealth: disabilityHealth.toJson(),
-        SupportPlanKeys.living: living.toJson(),
-        SupportPlanKeys.goals: goals.map((g) => g.toJson()).toList(),
-        SupportPlanKeys.serviceCategories: serviceCategories,
-        SupportPlanKeys.preferences: preferences.toJson(),
-        SupportPlanKeys.risk: risk.toJson(),
-        SupportPlanKeys.schedule: schedule.toJson(),
-        SupportPlanKeys.catOtherDetail: catOtherDetail,
-      };
+    SupportPlanKeys.disabilityHealth: disabilityHealth.toJson(),
+    SupportPlanKeys.living: living.toJson(),
+    SupportPlanKeys.goals: goals.map((g) => g.toJson()).toList(),
+    SupportPlanKeys.serviceCategories: serviceCategories,
+    SupportPlanKeys.preferences: preferences.toJson(),
+    SupportPlanKeys.risk: risk.toJson(),
+    SupportPlanKeys.schedule: schedule.toJson(),
+    SupportPlanKeys.catOtherDetail: catOtherDetail,
+  };
 }
 
 class SupportPlanDto {
@@ -348,21 +354,17 @@ class SupportPlanCreateRequest {
 }
 
 class SupportPlanUpdateRequest {
-  const SupportPlanUpdateRequest({
-    this.body,
-    this.status,
-    this.nextReviewAt,
-  });
+  const SupportPlanUpdateRequest({this.body, this.status, this.nextReviewAt});
 
   final SupportPlanBody? body;
   final String? status;
   final String? nextReviewAt;
 
   Map<String, dynamic> toJson() => {
-        if (body != null) 'body': body!.toJson(),
-        if (status != null) 'status': status,
-        if (nextReviewAt != null) 'next_review_at': nextReviewAt,
-      };
+    if (body != null) 'body': body!.toJson(),
+    if (status != null) 'status': status,
+    if (nextReviewAt != null) 'next_review_at': nextReviewAt,
+  };
 }
 
 /// Contractor / staff shift-brief projector (`ShiftBriefOut`).
@@ -426,12 +428,13 @@ class ShiftBriefDto {
       medicationSchedule: json['medication_schedule'] as String?,
       behaviourSupportPlan: json['behaviour_support_plan'] as bool?,
       serviceCategories: _stringList(json['service_categories']),
-      goals: goalsRaw is List
-          ? goalsRaw
-              .whereType<Map>()
-              .map((e) => Map<String, dynamic>.from(e))
-              .toList(growable: false)
-          : const [],
+      goals:
+          goalsRaw is List
+              ? goalsRaw
+                  .whereType<Map>()
+                  .map((e) => Map<String, dynamic>.from(e))
+                  .toList(growable: false)
+              : const [],
       routines: json['routines'] as String?,
       preferredSupportStyle: json['preferred_support_style'] as String?,
       behavioursOfConcern: json['behaviours_of_concern'] as String?,

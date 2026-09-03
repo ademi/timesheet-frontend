@@ -19,7 +19,8 @@ class RateBands {
   factory RateBands.fromJson(Map<String, dynamic> json) {
     double? n(Object? v) => v == null ? null : (v as num).toDouble();
     return RateBands(
-      base: (json['base'] as num?)?.toDouble() ??
+      base:
+          (json['base'] as num?)?.toDouble() ??
           (json['hourly_rate'] as num?)?.toDouble() ??
           0,
       evening: n(json['evening']),
@@ -31,13 +32,13 @@ class RateBands {
   }
 
   Map<String, dynamic> toJson() => {
-        'base': base,
-        if (evening != null) 'evening': evening,
-        if (night != null) 'night': night,
-        if (saturday != null) 'saturday': saturday,
-        if (sunday != null) 'sunday': sunday,
-        if (publicHoliday != null) 'public_holiday': publicHoliday,
-      };
+    'base': base,
+    if (evening != null) 'evening': evening,
+    if (night != null) 'night': night,
+    if (saturday != null) 'saturday': saturday,
+    if (sunday != null) 'sunday': sunday,
+    if (publicHoliday != null) 'public_holiday': publicHoliday,
+  };
 }
 
 class EngagementRateOut {
@@ -65,6 +66,7 @@ class EngagementRateOut {
   final String? eveningEnd;
   final String? nightStart;
   final String? nightEnd;
+
   /// Legacy single-rate field when bands absent.
   final double? hourlyRate;
 
@@ -76,17 +78,14 @@ class EngagementRateOut {
     if (bandsRaw is Map) {
       bands = RateBands.fromJson(Map<String, dynamic>.from(bandsRaw));
     } else {
-      bands = RateBands(
-        base: (json['hourly_rate'] as num?)?.toDouble() ?? 0,
-      );
+      bands = RateBands(base: (json['hourly_rate'] as num?)?.toDouble() ?? 0);
     }
     return EngagementRateOut(
       id: json['id'].toString(),
       engagementId: (json['engagement_id'] ?? '').toString(),
       effectiveFrom: _dateOnly(json['effective_from']),
-      effectiveTo: json['effective_to'] != null
-          ? _dateOnly(json['effective_to'])
-          : null,
+      effectiveTo:
+          json['effective_to'] != null ? _dateOnly(json['effective_to']) : null,
       currencyCode: json['currency_code'] as String? ?? 'AUD',
       bands: bands,
       eveningStart: json['evening_start']?.toString(),
@@ -126,16 +125,16 @@ class EngagementRateCreateRequest {
 
   /// Sends bands + `hourly_rate` (= base) for wiring-guide compatibility.
   Map<String, dynamic> toJson() => {
-        'effective_from': effectiveFrom,
-        if (effectiveTo != null) 'effective_to': effectiveTo,
-        'currency_code': currencyCode,
-        'hourly_rate': bands.base,
-        'bands': bands.toJson(),
-        'evening_start': eveningStart,
-        'evening_end': eveningEnd,
-        'night_start': nightStart,
-        'night_end': nightEnd,
-      };
+    'effective_from': effectiveFrom,
+    if (effectiveTo != null) 'effective_to': effectiveTo,
+    'currency_code': currencyCode,
+    'hourly_rate': bands.base,
+    'bands': bands.toJson(),
+    'evening_start': eveningStart,
+    'evening_end': eveningEnd,
+    'night_start': nightStart,
+    'night_end': nightEnd,
+  };
 }
 
 class PaymentBatchLineOut {
@@ -163,9 +162,8 @@ class PaymentBatchLineOut {
       hours: (json['hours'] as num?)?.toDouble() ?? 0,
       rate: (json['rate'] as num?)?.toDouble() ?? 0,
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
-      bandBreakdown: breakdown is Map
-          ? Map<String, dynamic>.from(breakdown)
-          : const {},
+      bandBreakdown:
+          breakdown is Map ? Map<String, dynamic>.from(breakdown) : const {},
     );
   }
 }
@@ -208,21 +206,23 @@ class PaymentBatchOut {
       periodLabel: json['period_label'] as String?,
       currencyCode: json['currency_code'] as String? ?? 'AUD',
       totalAmount: (json['total_amount'] as num?)?.toDouble() ?? 0,
-      postedAt: json['posted_at'] != null
-          ? DateTime.tryParse(json['posted_at'].toString())
-          : null,
+      postedAt:
+          json['posted_at'] != null
+              ? DateTime.tryParse(json['posted_at'].toString())
+              : null,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      lines: linesRaw is List
-          ? linesRaw
-              .whereType<Map>()
-              .map(
-                (e) => PaymentBatchLineOut.fromJson(
-                  Map<String, dynamic>.from(e),
-                ),
-              )
-              .toList(growable: false)
-          : const [],
+      lines:
+          linesRaw is List
+              ? linesRaw
+                  .whereType<Map>()
+                  .map(
+                    (e) => PaymentBatchLineOut.fromJson(
+                      Map<String, dynamic>.from(e),
+                    ),
+                  )
+                  .toList(growable: false)
+              : const [],
     );
   }
 }
@@ -239,11 +239,11 @@ class PaymentBatchCreateRequest {
   final String currencyCode;
 
   Map<String, dynamic> toJson() => {
-        'visit_ids': visitIds,
-        if (periodLabel != null && periodLabel!.isNotEmpty)
-          'period_label': periodLabel,
-        'currency_code': currencyCode,
-      };
+    'visit_ids': visitIds,
+    if (periodLabel != null && periodLabel!.isNotEmpty)
+      'period_label': periodLabel,
+    'currency_code': currencyCode,
+  };
 }
 
 class TenantSettingsOut {
@@ -264,8 +264,7 @@ class TenantSettingsOut {
       id: json['id'].toString(),
       name: json['name'] as String? ?? json['display_name'] as String?,
       timezone: json['timezone'] as String?,
-      publicHolidayJurisdiction:
-          json['public_holiday_jurisdiction'] as String?,
+      publicHolidayJurisdiction: json['public_holiday_jurisdiction'] as String?,
     );
   }
 }

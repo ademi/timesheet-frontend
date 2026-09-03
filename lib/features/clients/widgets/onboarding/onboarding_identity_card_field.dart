@@ -28,7 +28,8 @@ class OnboardingIdentityCardField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final pending = attachment.pending.value;
-      final onFile = attachment.existingDocumentLabel.value ??
+      final onFile =
+          attachment.existingDocumentLabel.value ??
           (attachment.existingDocumentId.value != null
               ? 'Document on file'
               : null);
@@ -54,7 +55,11 @@ class OnboardingIdentityCardField extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: enabled ? onPick : null,
             icon: const Icon(Icons.upload_file_outlined),
-            label: Text(pending != null || onFile != null ? 'Replace file' : 'Attach file'),
+            label: Text(
+              pending != null || onFile != null
+                  ? 'Replace file'
+                  : 'Attach file',
+            ),
           ),
           if (onFile != null && pending == null) ...[
             const SizedBox(height: 6),

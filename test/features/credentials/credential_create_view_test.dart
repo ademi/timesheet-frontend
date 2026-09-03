@@ -10,7 +10,8 @@ import 'package:rostiq/features/credentials/views/credential_create_view.dart';
 import 'package:rostiq/features/documents/data/document_pipeline.dart';
 import 'package:rostiq/core/services/session_service.dart';
 
-class _MockCredentialsRepository extends Mock implements CredentialsRepository {}
+class _MockCredentialsRepository extends Mock
+    implements CredentialsRepository {}
 
 class _MockDocumentPipeline extends Mock implements DocumentPipeline {}
 
@@ -32,8 +33,12 @@ void main() {
     compliance = _MockComplianceRepository();
     session = _MockSessionService();
 
-    when(() => session.hasPermission(AppPermissions.credentialsRead)).thenReturn(true);
-    when(() => session.hasPermission(AppPermissions.credentialsManage)).thenReturn(true);
+    when(
+      () => session.hasPermission(AppPermissions.credentialsRead),
+    ).thenReturn(true);
+    when(
+      () => session.hasPermission(AppPermissions.credentialsManage),
+    ).thenReturn(true);
     when(() => session.contractorId).thenReturn(RxnString('contractor-1'));
     when(() => session.claims).thenReturn(null);
     when(() => repository.listMine()).thenAnswer((_) async => []);
@@ -67,9 +72,7 @@ void main() {
     final controller = _controller()..selectedType.value = 'wwcc';
     Get.put(controller);
 
-    await tester.pumpWidget(
-      const GetMaterialApp(home: CredentialCreateView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: CredentialCreateView()));
     await tester.pump();
 
     expect(find.text('Get this credential'), findsNothing);
@@ -93,9 +96,7 @@ void main() {
     final controller = _controller()..selectedType.value = 'passport_id';
     Get.put(controller);
 
-    await tester.pumpWidget(
-      const GetMaterialApp(home: CredentialCreateView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: CredentialCreateView()));
     await tester.pumpAndSettle();
 
     expect(find.text('Get this credential'), findsNothing);

@@ -29,9 +29,10 @@ class SupportPlanProfessionalSection extends StatelessWidget {
         initiallyExpanded: expanded.value,
         onExpansionChanged: (v) => expanded.value = v,
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: subtitle == null
-            ? null
-            : Text(subtitle!, style: const TextStyle(fontSize: 12)),
+        subtitle:
+            subtitle == null
+                ? null
+                : Text(subtitle!, style: const TextStyle(fontSize: 12)),
         children: [
           TextField(
             controller: fields.nameCtrl,

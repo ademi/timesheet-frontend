@@ -83,9 +83,14 @@ class SupportPlanClinicalStore {
     hazardChecklistOnFile.value =
         _boolFact(bundle, ClinicalKeys.hazardChecklistOnFile) ?? false;
 
-    bspPdfOnFile.value = _hasDocument(bundle, ClinicalKeys.behaviourSupportPlanDoc);
-    nutritionPdfOnFile.value =
-        _hasDocument(bundle, ClinicalKeys.nutritionChecklist);
+    bspPdfOnFile.value = _hasDocument(
+      bundle,
+      ClinicalKeys.behaviourSupportPlanDoc,
+    );
+    nutritionPdfOnFile.value = _hasDocument(
+      bundle,
+      ClinicalKeys.nutritionChecklist,
+    );
     hazardPdfOnFile.value = _hasDocument(bundle, ClinicalKeys.hazardChecklist);
     medicalPdfOnFile.value = _hasDocument(bundle, ClinicalKeys.medicalReport);
 
@@ -213,12 +218,12 @@ class SupportPlanClinicalStore {
   }
 
   Future<bool> uploadBspPdf({required String clientId}) => uploadClinicalPdf(
-        clientId: clientId,
-        requirementKey: ClinicalKeys.behaviourSupportPlanDoc,
-        category: ClinicalKeys.documentCategoryBsp,
-        setOnFileFlag: (v) => bspOnFile.value = v,
-        pdfOnFile: bspPdfOnFile,
-      );
+    clientId: clientId,
+    requirementKey: ClinicalKeys.behaviourSupportPlanDoc,
+    category: ClinicalKeys.documentCategoryBsp,
+    setOnFileFlag: (v) => bspOnFile.value = v,
+    pdfOnFile: bspPdfOnFile,
+  );
 
   Future<bool> uploadNutritionPdf({required String clientId}) =>
       uploadClinicalPdf(
@@ -230,14 +235,15 @@ class SupportPlanClinicalStore {
       );
 
   Future<bool> uploadHazardPdf({required String clientId}) => uploadClinicalPdf(
-        clientId: clientId,
-        requirementKey: ClinicalKeys.hazardChecklist,
-        category: ClinicalKeys.documentCategoryHazard,
-        setOnFileFlag: (v) => hazardChecklistOnFile.value = v,
-        pdfOnFile: hazardPdfOnFile,
-      );
+    clientId: clientId,
+    requirementKey: ClinicalKeys.hazardChecklist,
+    category: ClinicalKeys.documentCategoryHazard,
+    setOnFileFlag: (v) => hazardChecklistOnFile.value = v,
+    pdfOnFile: hazardPdfOnFile,
+  );
 
-  Future<bool> uploadMedicalPdf({required String clientId}) => uploadClinicalPdf(
+  Future<bool> uploadMedicalPdf({required String clientId}) =>
+      uploadClinicalPdf(
         clientId: clientId,
         requirementKey: ClinicalKeys.medicalReport,
         category: ClinicalKeys.documentCategoryMedical,

@@ -35,10 +35,7 @@ class RequiredDocCategoriesEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          helperText,
-          style: TextStyle(color: AppColors.textMuted),
-        ),
+        const Text(helperText, style: TextStyle(color: AppColors.textMuted)),
         const SizedBox(height: 12),
         if (canEdit && !isEnded) ...[
           if (isLoadingChoices && choices.isEmpty)
@@ -55,8 +52,7 @@ class RequiredDocCategoriesEditor extends StatelessWidget {
                   FilterChip(
                     label: Text(cat.label),
                     selected: selected.contains(cat.code),
-                    onSelected:
-                        isSaving ? null : (_) => onToggle(cat.code),
+                    onSelected: isSaving ? null : (_) => onToggle(cat.code),
                   ),
               ],
             ),
@@ -90,14 +86,12 @@ class RequiredDocCategoriesEditor extends StatelessWidget {
   String _readOnlyLabels(Set<String> codes) {
     if (codes.isEmpty) return 'None required';
     final labels =
-        codes
-            .map((code) {
-              for (final choice in choices) {
-                if (choice.code == code) return choice.label;
-              }
-              return credentialTypeLabel(code);
-            })
-            .toList();
+        codes.map((code) {
+          for (final choice in choices) {
+            if (choice.code == code) return choice.label;
+          }
+          return credentialTypeLabel(code);
+        }).toList();
     return labels.join(', ');
   }
 }

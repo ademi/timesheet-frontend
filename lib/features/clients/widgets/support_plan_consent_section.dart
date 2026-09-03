@@ -49,9 +49,10 @@ class SupportPlanConsentSection extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             OutlinedButton(
-              onPressed: busy
-                  ? null
-                  : () => store.markConsentComplete(clientId: clientId),
+              onPressed:
+                  busy
+                      ? null
+                      : () => store.markConsentComplete(clientId: clientId),
               child: const Text('Upload Consent PDF'),
             ),
           ],
@@ -63,9 +64,12 @@ class SupportPlanConsentSection extends StatelessWidget {
           if (!store.serviceAgreementComplete.value) ...[
             const SizedBox(height: 8),
             OutlinedButton(
-              onPressed: busy
-                  ? null
-                  : () => store.markServiceAgreementComplete(clientId: clientId),
+              onPressed:
+                  busy
+                      ? null
+                      : () => store.markServiceAgreementComplete(
+                        clientId: clientId,
+                      ),
               child: const Text('Upload Service Agreement PDF'),
             ),
           ],
@@ -77,9 +81,11 @@ class SupportPlanConsentSection extends StatelessWidget {
           if (!store.acknowledgementComplete.value) ...[
             const SizedBox(height: 8),
             OutlinedButton(
-              onPressed: busy
-                  ? null
-                  : () => store.markAcknowledgementComplete(clientId: clientId),
+              onPressed:
+                  busy
+                      ? null
+                      : () =>
+                          store.markAcknowledgementComplete(clientId: clientId),
               child: const Text('Upload Acknowledgement PDF'),
             ),
           ],
@@ -96,9 +102,7 @@ class SupportPlanConsentSection extends StatelessWidget {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Specific supports'),
-            subtitle: const Text(
-              'Consented to specific supports in this plan',
-            ),
+            subtitle: const Text('Consented to specific supports in this plan'),
             value: store.specificSupportsConsent.value,
             onChanged: (v) => store.specificSupportsConsent.value = v,
           ),

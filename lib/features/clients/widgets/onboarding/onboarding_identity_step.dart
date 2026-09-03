@@ -17,7 +17,7 @@ class OnboardingIdentityStep extends StatelessWidget {
     'Male',
     'Female',
     'Non-binary',
-    'Prefer not to say'
+    'Prefer not to say',
   ];
   static const atsiOptions = [
     'Aboriginal',
@@ -113,14 +113,15 @@ class OnboardingIdentityStep extends StatelessWidget {
                 child: Text(otherPresetKey),
               ),
             ],
-            onChanged: enabled
-                ? (v) {
-                    controller.sexGender.value = v;
-                    if (v != otherPresetKey) {
-                      controller.sexGenderOtherCtrl.clear();
+            onChanged:
+                enabled
+                    ? (v) {
+                      controller.sexGender.value = v;
+                      if (v != otherPresetKey) {
+                        controller.sexGenderOtherCtrl.clear();
+                      }
                     }
-                  }
-                : null,
+                    : null,
           ),
           OtherTextField(
             isOther: controller.sexGender.value == otherPresetKey,
@@ -136,19 +137,20 @@ class OnboardingIdentityStep extends StatelessWidget {
                   : 'DOB: ${_fmt(controller.dob.value!)}',
             ),
             trailing: const Icon(Icons.calendar_today),
-            onTap: enabled
-                ? () async {
-                    final now = DateTime.now();
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate:
-                          controller.dob.value ?? DateTime(now.year - 30),
-                      firstDate: DateTime(1900),
-                      lastDate: now,
-                    );
-                    if (picked != null) controller.dob.value = picked;
-                  }
-                : null,
+            onTap:
+                enabled
+                    ? () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate:
+                            controller.dob.value ?? DateTime(now.year - 30),
+                        firstDate: DateTime(1900),
+                        lastDate: now,
+                      );
+                      if (picked != null) controller.dob.value = picked;
+                    }
+                    : null,
           ),
           const SizedBox(height: 12),
           TextField(
@@ -175,12 +177,14 @@ class OnboardingIdentityStep extends StatelessWidget {
             numberLabel: 'Medicare number (optional)',
             attachment: controller.medicareCardAttachment,
             enabled: enabled,
-            onPick: () => controller.pickIdentityCard(
-              controller.medicareCardAttachment,
-            ),
-            onClearPending: () => controller.clearIdentityCardPending(
-              controller.medicareCardAttachment,
-            ),
+            onPick:
+                () => controller.pickIdentityCard(
+                  controller.medicareCardAttachment,
+                ),
+            onClearPending:
+                () => controller.clearIdentityCardPending(
+                  controller.medicareCardAttachment,
+                ),
           ),
           OnboardingIdentityCardField(
             label: 'Participant Companion card (optional)',
@@ -188,23 +192,27 @@ class OnboardingIdentityStep extends StatelessWidget {
             numberLabel: 'Companion card number (optional)',
             attachment: controller.companionCardAttachment,
             enabled: enabled,
-            onPick: () => controller.pickIdentityCard(
-              controller.companionCardAttachment,
-            ),
-            onClearPending: () => controller.clearIdentityCardPending(
-              controller.companionCardAttachment,
-            ),
+            onPick:
+                () => controller.pickIdentityCard(
+                  controller.companionCardAttachment,
+                ),
+            onClearPending:
+                () => controller.clearIdentityCardPending(
+                  controller.companionCardAttachment,
+                ),
           ),
           OnboardingIdentityCardField(
             label: 'Participant Disability card (optional)',
             attachment: controller.disabilityCardAttachment,
             enabled: enabled,
-            onPick: () => controller.pickIdentityCard(
-              controller.disabilityCardAttachment,
-            ),
-            onClearPending: () => controller.clearIdentityCardPending(
-              controller.disabilityCardAttachment,
-            ),
+            onPick:
+                () => controller.pickIdentityCard(
+                  controller.disabilityCardAttachment,
+                ),
+            onClearPending:
+                () => controller.clearIdentityCardPending(
+                  controller.disabilityCardAttachment,
+                ),
           ),
           OnboardingIdentityCardField(
             label: 'Participant Pension card (optional)',
@@ -212,12 +220,14 @@ class OnboardingIdentityStep extends StatelessWidget {
             numberLabel: 'Pension card number (optional)',
             attachment: controller.pensionCardAttachment,
             enabled: enabled,
-            onPick: () => controller.pickIdentityCard(
-              controller.pensionCardAttachment,
-            ),
-            onClearPending: () => controller.clearIdentityCardPending(
-              controller.pensionCardAttachment,
-            ),
+            onPick:
+                () => controller.pickIdentityCard(
+                  controller.pensionCardAttachment,
+                ),
+            onClearPending:
+                () => controller.clearIdentityCardPending(
+                  controller.pensionCardAttachment,
+                ),
           ),
           OnboardingIdentityCardField(
             label: 'Participant photo ID / passport (optional)',
@@ -225,12 +235,12 @@ class OnboardingIdentityStep extends StatelessWidget {
             numberLabel: 'ID number (optional)',
             attachment: controller.photoIdAttachment,
             enabled: enabled,
-            onPick: () => controller.pickIdentityCard(
-              controller.photoIdAttachment,
-            ),
-            onClearPending: () => controller.clearIdentityCardPending(
-              controller.photoIdAttachment,
-            ),
+            onPick:
+                () => controller.pickIdentityCard(controller.photoIdAttachment),
+            onClearPending:
+                () => controller.clearIdentityCardPending(
+                  controller.photoIdAttachment,
+                ),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
@@ -247,14 +257,15 @@ class OnboardingIdentityStep extends StatelessWidget {
               for (final o in referralOptions)
                 DropdownMenuItem(value: o, child: Text(o)),
             ],
-            onChanged: enabled
-                ? (v) {
-                    controller.referralSource.value = v;
-                    if (v != otherPresetKey) {
-                      controller.referralOtherCtrl.clear();
+            onChanged:
+                enabled
+                    ? (v) {
+                      controller.referralSource.value = v;
+                      if (v != otherPresetKey) {
+                        controller.referralOtherCtrl.clear();
+                      }
                     }
-                  }
-                : null,
+                    : null,
           ),
           OtherTextField(
             isOther: controller.referralSource.value == otherPresetKey,

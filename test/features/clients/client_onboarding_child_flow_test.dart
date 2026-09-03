@@ -72,14 +72,16 @@ void main() {
     contactCreates = [];
     finishedId = null;
 
-    when(() => mock.listFormTemplates(tenantLevel: any(named: 'tenantLevel')))
-        .thenAnswer((_) async => <FormTemplateSummary>[]);
+    when(
+      () => mock.listFormTemplates(tenantLevel: any(named: 'tenantLevel')),
+    ).thenAnswer((_) async => <FormTemplateSummary>[]);
     when(() => mock.listClientTypes()).thenAnswer((_) async => [_patientType]);
 
     when(() => mock.createClient(any())).thenAnswer((_) async => _childClient);
 
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mock.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async {});
 
     when(() => mock.geocode(any())).thenAnswer(
       (_) async => const GeocodeResponse(
@@ -248,10 +250,7 @@ void main() {
         containsAll(['mother', 'mother']),
       );
       expect(
-        contactCreates
-            .map((r) => r.legalRole)
-            .whereType<String>()
-            .toList(),
+        contactCreates.map((r) => r.legalRole).whereType<String>().toList(),
         contains(OnboardingKeys.relChildRepresentative),
       );
     },

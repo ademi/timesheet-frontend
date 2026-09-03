@@ -51,9 +51,9 @@ void main() {
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => clients.listClients()).thenAnswer((_) async => [_client]);
-    when(() => clients.getClientProfilePhoto(any())).thenAnswer(
-      (_) async => const ProfilePhotoOut(hasPhoto: false),
-    );
+    when(
+      () => clients.getClientProfilePhoto(any()),
+    ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
     controller = ClientsController(
       repository: clients,
       session: session,
@@ -93,10 +93,7 @@ void main() {
         GetMaterialApp(
           home: Scaffold(
             body: SingleChildScrollView(
-              child: SiteFormFields(
-                controller: controller,
-                primaryMode: true,
-              ),
+              child: SiteFormFields(controller: controller, primaryMode: true),
             ),
           ),
         ),
@@ -109,8 +106,9 @@ void main() {
   });
 
   group('geocode confirm flow', () {
-    testWidgets('lookup shows formatted address with Confirm and Edit',
-        (tester) async {
+    testWidgets('lookup shows formatted address with Confirm and Edit', (
+      tester,
+    ) async {
       when(() => clients.geocode(any())).thenAnswer(
         (_) async => const GeocodeResponse(
           latitude: -33.86,
@@ -187,10 +185,7 @@ void main() {
       expect(find.text('Confirm'), findsNothing);
       expect(controller.geocodeFormattedAddress.value, isNull);
       expect(controller.addressConfirmed.value, isFalse);
-      expect(
-        controller.errorMessage.value,
-        contains('low confidence'),
-      );
+      expect(controller.errorMessage.value, contains('low confidence'));
       expect(find.text('Look up address'), findsOneWidget);
     });
 

@@ -131,8 +131,11 @@ class _TimetableTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final start = controller.rangeStart.value;
-      final end = DateTime(start.year, start.month, start.day)
-          .add(const Duration(days: 6));
+      final end = DateTime(
+        start.year,
+        start.month,
+        start.day,
+      ).add(const Duration(days: 6));
       final today = DateTime.now();
       final days = controller.agendaDays();
 
@@ -174,7 +177,10 @@ class _TimetableTab extends StatelessWidget {
                       padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
                       child: Text(
                         'No visits',
-                        style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     )
                   else
@@ -246,10 +252,7 @@ class _AgendaDayHeader extends StatelessWidget {
           if (visitCount > 0)
             Text(
               '$visitCount',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textMuted,
-              ),
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
         ],
       ),
@@ -318,7 +321,11 @@ class _AvailabilityTab extends StatelessWidget {
                                     ? (v) => controller.toggleDay(i, v)
                                     : null,
                           ),
-                          for (var j = 0; j < controller.draftWindows[i].length; j++)
+                          for (
+                            var j = 0;
+                            j < controller.draftWindows[i].length;
+                            j++
+                          )
                             Padding(
                               padding: const EdgeInsets.only(bottom: 8),
                               child: Row(
@@ -326,7 +333,9 @@ class _AvailabilityTab extends StatelessWidget {
                                   Expanded(
                                     child: TextFormField(
                                       initialValue:
-                                          controller.draftWindows[i][j].startTime,
+                                          controller
+                                              .draftWindows[i][j]
+                                              .startTime,
                                       decoration: const InputDecoration(
                                         labelText: 'Start (HH:MM)',
                                         border: OutlineInputBorder(),
@@ -350,16 +359,22 @@ class _AvailabilityTab extends StatelessWidget {
                                         border: OutlineInputBorder(),
                                       ),
                                       onChanged:
-                                          (v) =>
-                                              controller.setDraftWindow(i, j, end: v),
+                                          (v) => controller.setDraftWindow(
+                                            i,
+                                            j,
+                                            end: v,
+                                          ),
                                       enabled: controller.canManage,
                                     ),
                                   ),
                                   if (controller.canManage)
                                     IconButton(
                                       tooltip: 'Remove window',
-                                      onPressed: () => controller.removeWindow(i, j),
-                                      icon: const Icon(Icons.remove_circle_outline),
+                                      onPressed:
+                                          () => controller.removeWindow(i, j),
+                                      icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                      ),
                                     ),
                                 ],
                               ),
@@ -441,7 +456,10 @@ class _LeaveTab extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 6),
                       child: Text(
                         controller.leaveValidationMessage.value!,
-                        style: const TextStyle(color: AppColors.error, fontSize: 12),
+                        style: const TextStyle(
+                          color: AppColors.error,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   const SizedBox(height: 8),
@@ -480,7 +498,8 @@ class _LeaveTab extends StatelessWidget {
                   ),
                   const Divider(height: 32),
                 ],
-                if (controller.leaveItems.isEmpty) const Text('No leave recorded.'),
+                if (controller.leaveItems.isEmpty)
+                  const Text('No leave recorded.'),
                 for (final leave in controller.leaveItems)
                   Card(
                     margin: const EdgeInsets.only(bottom: 8),
@@ -493,7 +512,8 @@ class _LeaveTab extends StatelessWidget {
                           controller.canManage
                               ? AsyncIconButton(
                                 tooltip: 'Delete',
-                                onPressed: () => controller.deleteLeave(leave.id),
+                                onPressed:
+                                    () => controller.deleteLeave(leave.id),
                                 isLoading: controller.isSaving.value,
                                 icon: const Icon(Icons.delete_outline),
                               )

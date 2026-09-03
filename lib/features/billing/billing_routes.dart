@@ -14,37 +14,31 @@ abstract final class BillingPages {
   BillingPages._();
 
   static List<GetPage> get routes => [
-        GetPage(
-          name: AppRoutes.staffBillingExports,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(
-              anyOf: [
-                AppPermissions.billingView,
-                AppPermissions.billingManage,
-              ],
-            ),
-          ],
-          binding: StaffInvoiceExportsBinding(),
-          page: () => staffShellPage(const InvoiceExportsListView()),
-          transition: Transition.fadeIn,
+    GetPage(
+      name: AppRoutes.staffBillingExports,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [AppPermissions.billingView, AppPermissions.billingManage],
         ),
-        GetPage(
-          name: AppRoutes.staffBillingExportDetail,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(
-              anyOf: [
-                AppPermissions.billingView,
-                AppPermissions.billingManage,
-              ],
-            ),
-          ],
-          binding: StaffInvoiceExportDetailBinding(),
-          page: () => const InvoiceExportDetailView(),
-          transition: Transition.rightToLeft,
+      ],
+      binding: StaffInvoiceExportsBinding(),
+      page: () => staffShellPage(const InvoiceExportsListView()),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.staffBillingExportDetail,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [AppPermissions.billingView, AppPermissions.billingManage],
         ),
-      ];
+      ],
+      binding: StaffInvoiceExportDetailBinding(),
+      page: () => const InvoiceExportDetailView(),
+      transition: Transition.rightToLeft,
+    ),
+  ];
 }

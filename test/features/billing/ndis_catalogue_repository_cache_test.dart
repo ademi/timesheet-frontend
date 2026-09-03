@@ -7,7 +7,10 @@ import 'package:rostiq/features/billing/data/repositories/ndis_catalogue_reposit
 
 class MockDio extends Mock implements Dio {}
 
-Map<String, dynamic> _cataloguePayload({required int itemCount, int limit = 2000}) {
+Map<String, dynamic> _cataloguePayload({
+  required int itemCount,
+  int limit = 2000,
+}) {
   return {
     'q': '',
     'limit': limit,

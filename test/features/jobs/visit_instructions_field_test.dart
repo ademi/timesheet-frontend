@@ -9,9 +9,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: VisitInstructionsField(controller: controller),
-        ),
+        home: Scaffold(body: VisitInstructionsField(controller: controller)),
       ),
     );
 

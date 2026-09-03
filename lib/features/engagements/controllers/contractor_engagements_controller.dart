@@ -38,8 +38,10 @@ class ContractorEngagementsController extends GetxController {
   final understoodWithdrawEffects = false.obs;
   final authorisationRecorded = false.obs;
 
-  List<EngagementOut> get invited =>
-      sortedByName(items.where((e) => e.isInvited), (e) => e.tenantName ?? e.tenantId);
+  List<EngagementOut> get invited => sortedByName(
+    items.where((e) => e.isInvited),
+    (e) => e.tenantName ?? e.tenantId,
+  );
 
   @override
   void onInit() {

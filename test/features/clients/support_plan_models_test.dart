@@ -17,7 +17,7 @@ void main() {
             'measure': 'M',
             'worker_instructions': 'W',
             'sort_order': 0,
-          }
+          },
         ],
       };
       final body = SupportPlanBody.fromJson(json);
@@ -36,7 +36,7 @@ void main() {
             'measure': 'M',
             'worker_instructions': 'W',
             'sort_order': 0,
-          }
+          },
         ],
       });
       final json = body.toJson();
@@ -51,33 +51,27 @@ void main() {
         'schedule',
         'cat_other_detail',
       });
-      expect(
-        (json['disability_health'] as Map).keys.toSet(),
-        {
-          'primary_disability',
-          'secondary_conditions',
-          'functional_limitations',
-          'functional_impact_summary',
-          'communication_methods',
-          'mobility_needs',
-          'behaviour_support_plan',
-          'medication_schedule',
-          'gp_name',
-          'gp_phone',
-          'support_intensity',
-          'limitation_other_detail',
-          'comm_other_detail',
-        },
-      );
-      expect(
-        (json['living'] as Map).keys.toSet(),
-        {
-          'residence_type',
-          'household_members',
-          'informal_supports',
-          'residence_other_detail',
-        },
-      );
+      expect((json['disability_health'] as Map).keys.toSet(), {
+        'primary_disability',
+        'secondary_conditions',
+        'functional_limitations',
+        'functional_impact_summary',
+        'communication_methods',
+        'mobility_needs',
+        'behaviour_support_plan',
+        'medication_schedule',
+        'gp_name',
+        'gp_phone',
+        'support_intensity',
+        'limitation_other_detail',
+        'comm_other_detail',
+      });
+      expect((json['living'] as Map).keys.toSet(), {
+        'residence_type',
+        'household_members',
+        'informal_supports',
+        'residence_other_detail',
+      });
       expect(json['disability_health']['primary_disability'], 'ASD');
       expect(json['living']['residence_type'], 'private_home');
       expect(json['living']['residence_other_detail'], '');

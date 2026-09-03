@@ -108,9 +108,7 @@ void main() {
       ),
     ).thenAnswer((_) async => const RosterOverlayOut(contractors: []));
     when(() => jobs.listJobs()).thenAnswer((_) async => []);
-    when(
-      () => engagements.listTenantEngagements(),
-    ).thenAnswer((_) async => []);
+    when(() => engagements.listTenantEngagements()).thenAnswer((_) async => []);
     controller = _controller(
       visits: visits,
       shifts: shifts,
@@ -297,7 +295,9 @@ void main() {
       if (tz == 'Pacific/Honolulu') return const Duration(hours: -10);
       return Duration.zero;
     };
-    when(() => session.tenantTimezone).thenReturn(RxnString('Pacific/Honolulu'));
+    when(
+      () => session.tenantTimezone,
+    ).thenReturn(RxnString('Pacific/Honolulu'));
     when(
       () => jobs.ensureHorizon(any()),
     ).thenAnswer((_) async => HorizonOut.empty);

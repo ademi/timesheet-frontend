@@ -11,8 +11,8 @@ class ContractorPaymentsController extends GetxController {
   ContractorPaymentsController({
     required VisitsRepository visits,
     required SessionService session,
-  })  : _visits = visits,
-        _session = session;
+  }) : _visits = visits,
+       _session = session;
 
   final VisitsRepository _visits;
   final SessionService _session;

@@ -3,7 +3,7 @@ import '../models/compliance_models.dart';
 
 class ComplianceRepository {
   ComplianceRepository({required ComplianceRemoteDataSource remote})
-      : _remote = remote;
+    : _remote = remote;
 
   final ComplianceRemoteDataSource _remote;
 
@@ -13,15 +13,13 @@ class ComplianceRepository {
   Future<List<CollectionNotice>> listCollectionNotices({
     String? credentialType,
     String? jurisdiction,
-  }) =>
-      _remote.listCollectionNotices(
-        credentialType: credentialType,
-        jurisdiction: jurisdiction,
-      );
+  }) => _remote.listCollectionNotices(
+    credentialType: credentialType,
+    jurisdiction: jurisdiction,
+  );
 
   Future<LegalEventResult> createLegalEvent(
     LegalEventCreate body, {
     String? idempotencyKey,
-  }) =>
-      _remote.createLegalEvent(body, idempotencyKey: idempotencyKey);
+  }) => _remote.createLegalEvent(body, idempotencyKey: idempotencyKey);
 }

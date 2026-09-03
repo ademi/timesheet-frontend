@@ -21,7 +21,11 @@ class MarkdownViewer extends StatelessWidget {
       selectable: true,
       padding: padding,
       styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-        p: const TextStyle(fontSize: 14, height: 1.45, color: AppColors.textDark),
+        p: const TextStyle(
+          fontSize: 14,
+          height: 1.45,
+          color: AppColors.textDark,
+        ),
         h1: const TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w700,

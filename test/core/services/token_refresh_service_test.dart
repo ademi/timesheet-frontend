@@ -99,26 +99,34 @@ void main() {
       expect(storage.refreshToken, 'refresh');
     });
 
-    test('refreshIfNeeded returns invalidRefreshToken when refresh missing',
-        () async {
-      await storage.persistTokens(
-        accessToken: _fakeJwt({'exp': _pastExp()}),
-        refreshToken: '',
-      );
+    test(
+      'refreshIfNeeded returns invalidRefreshToken when refresh missing',
+      () async {
+        await storage.persistTokens(
+          accessToken: _fakeJwt({'exp': _pastExp()}),
+          refreshToken: '',
+        );
 
-      final outcome = await service.refreshIfNeeded();
+        final outcome = await service.refreshIfNeeded();
 
-      expect(outcome, TokenRefreshOutcome.invalidRefreshToken);
-    });
+        expect(outcome, TokenRefreshOutcome.invalidRefreshToken);
+      },
+    );
   });
 }
 
 int _futureExp() =>
-    DateTime.now().toUtc().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+    DateTime.now()
+        .toUtc()
+        .add(const Duration(hours: 1))
+        .millisecondsSinceEpoch ~/
     1000;
 
 int _pastExp() =>
-    DateTime.now().toUtc().subtract(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+    DateTime.now()
+        .toUtc()
+        .subtract(const Duration(hours: 1))
+        .millisecondsSinceEpoch ~/
     1000;
 
 class _RefreshAdapter implements HttpClientAdapter {
@@ -136,9 +144,13 @@ class _RefreshAdapter implements HttpClientAdapter {
       'refresh_token': 'new-refresh',
       'token_type': 'bearer',
     });
-    return ResponseBody.fromString(body, 200, headers: {
-      Headers.contentTypeHeader: [Headers.jsonContentType],
-    });
+    return ResponseBody.fromString(
+      body,
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
   }
 }
 
@@ -152,9 +164,13 @@ class _RejectRefreshAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    return ResponseBody.fromString('{"detail":"invalid"}', 401, headers: {
-      Headers.contentTypeHeader: [Headers.jsonContentType],
-    });
+    return ResponseBody.fromString(
+      '{"detail":"invalid"}',
+      401,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
   }
 }
 
@@ -168,9 +184,13 @@ class _ForbiddenRefreshAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    return ResponseBody.fromString('{"detail":"forbidden"}', 403, headers: {
-      Headers.contentTypeHeader: [Headers.jsonContentType],
-    });
+    return ResponseBody.fromString(
+      '{"detail":"forbidden"}',
+      403,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
   }
 }
 

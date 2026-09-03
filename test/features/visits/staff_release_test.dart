@@ -108,10 +108,10 @@ void main() {
       ),
     ).thenAnswer((_) async => const RosterOverlayOut(contractors: []));
     when(() => jobs.listJobs()).thenAnswer((_) async => []);
-    when(() => jobs.ensureHorizon(any())).thenAnswer((_) async => HorizonOut.empty);
     when(
-      () => engagements.listTenantEngagements(),
-    ).thenAnswer((_) async => []);
+      () => jobs.ensureHorizon(any()),
+    ).thenAnswer((_) async => HorizonOut.empty);
+    when(() => engagements.listTenantEngagements()).thenAnswer((_) async => []);
     controller = StaffVisitsController(
       repository: visits,
       shiftsRepository: shifts,
@@ -124,32 +124,32 @@ void main() {
 
   tearDown(Get.reset);
 
-  test('releaseAssignment calls unassignShift and sets success snack', () async {
-    final assigned = _shift(
-      openSlots: 0,
-      assignments: [_assignment()],
-    );
-    final after = _shift(openSlots: 1);
-    controller.selectedShift.value = assigned;
-    when(
-      () => shifts.unassignShift('shift-1', 'contractor-1'),
-    ).thenAnswer((_) async => after);
+  test(
+    'releaseAssignment calls unassignShift and sets success snack',
+    () async {
+      final assigned = _shift(openSlots: 0, assignments: [_assignment()]);
+      final after = _shift(openSlots: 1);
+      controller.selectedShift.value = assigned;
+      when(
+        () => shifts.unassignShift('shift-1', 'contractor-1'),
+      ).thenAnswer((_) async => after);
 
-    await controller.releaseAssignment(
-      shiftId: 'shift-1',
-      contractorId: 'contractor-1',
-      workerName: 'Jane',
-      skipConfirm: true,
-    );
+      await controller.releaseAssignment(
+        shiftId: 'shift-1',
+        contractorId: 'contractor-1',
+        workerName: 'Jane',
+        skipConfirm: true,
+      );
 
-    verify(() => shifts.unassignShift('shift-1', 'contractor-1')).called(1);
-    expect(
-      controller.lastReleaseSnack,
-      'Hole opened — eligible workers notified.',
-    );
-    expect(controller.selectedShift.value?.openSlots, 1);
-    expect(controller.errorMessage.value, isNull);
-  });
+      verify(() => shifts.unassignShift('shift-1', 'contractor-1')).called(1);
+      expect(
+        controller.lastReleaseSnack,
+        'Hole opened — eligible workers notified.',
+      );
+      expect(controller.selectedShift.value?.openSlots, 1);
+      expect(controller.errorMessage.value, isNull);
+    },
+  );
 
   test(
     'releaseAssignment maps invalid_visit_status to checked-in copy',

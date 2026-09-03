@@ -24,7 +24,8 @@ const _monthLabels = <String>[
 
 String notificationTitle(String eventType, Map<String, dynamic> payload) {
   final base = _knownTitles[eventType] ?? _fallbackTitle(eventType);
-  final detail = payload['job_title'] ??
+  final detail =
+      payload['job_title'] ??
       payload['client_name'] ??
       payload['credential_type'];
   if (detail != null && detail.toString().trim().isNotEmpty) {
@@ -57,18 +58,20 @@ String formatNotificationTime(DateTime createdAt) {
 }
 
 String _dedupeKey(NotificationEventOut event) {
-  final entity = event.payload['visit_id']?.toString() ??
+  final entity =
+      event.payload['visit_id']?.toString() ??
       event.payload['job_title']?.toString() ??
       '';
   final at = event.createdAt.toLocal();
-  final second = DateTime(
-    at.year,
-    at.month,
-    at.day,
-    at.hour,
-    at.minute,
-    at.second,
-  ).toIso8601String();
+  final second =
+      DateTime(
+        at.year,
+        at.month,
+        at.day,
+        at.hour,
+        at.minute,
+        at.second,
+      ).toIso8601String();
   return '${event.eventType}|$entity|$second';
 }
 

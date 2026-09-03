@@ -51,6 +51,7 @@ class SessionService extends GetxController {
   final needsOnboarding = false.obs;
   final needsPlatformCompliance = false.obs;
   final needsEngagementWork = false.obs;
+
   /// True when contractor ABN is missing (Complete your account).
   final needsProfileCompletion = false.obs;
   Future<void>? _hydratingMeContext;
@@ -280,8 +281,8 @@ class SessionService extends GetxController {
 
   /// True when at least one engagement proves platform onboarding is done.
   bool get hasPostInviteEngagement => engagements.any(
-        (e) => _platformOnboardingSatisfiedStatuses.contains(e.status),
-      );
+    (e) => _platformOnboardingSatisfiedStatuses.contains(e.status),
+  );
 
   void _recomputeOnboarding() {
     if (!isContractor) {

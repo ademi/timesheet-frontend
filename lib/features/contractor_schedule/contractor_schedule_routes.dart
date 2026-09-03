@@ -11,12 +11,12 @@ abstract final class ContractorSchedulePages {
   ContractorSchedulePages._();
 
   static List<GetPage> get routes => [
-        GetPage(
-          name: AppRoutes.contractorSchedule,
-          middlewares: [AuthGuard(), ActorGuard()],
-          binding: ContractorScheduleBinding(),
-          page: () => contractorShellPage(const ContractorScheduleView()),
-          transition: Transition.fadeIn,
-        ),
-      ];
+    GetPage(
+      name: AppRoutes.contractorSchedule,
+      middlewares: [AuthGuard(), ActorGuard()],
+      binding: ContractorScheduleBinding(),
+      page: () => contractorShellPage(const ContractorScheduleView()),
+      transition: Transition.fadeIn,
+    ),
+  ];
 }

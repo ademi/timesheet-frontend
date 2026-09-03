@@ -11,13 +11,13 @@ void main() {
     const channel = MethodChannel('plugins.flutter.io/path_provider');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (MethodCall call) async {
-      switch (call.method) {
-        case 'getApplicationDocumentsDirectory':
-          return '.';
-        default:
-          return null;
-      }
-    });
+          switch (call.method) {
+            case 'getApplicationDocumentsDirectory':
+              return '.';
+            default:
+              return null;
+          }
+        });
     await GetStorage.init();
   });
 

@@ -67,13 +67,17 @@ void main() {
     when(() => session.tenantTimezone).thenReturn(RxnString());
     when(() => clients.listClients()).thenAnswer((_) async => [client]);
     when(() => clients.listSites(any())).thenAnswer((_) async => []);
-    when(() => clients.getClientProfile(any())).thenAnswer(
-      (_) async => const ClientProfileBundle(),
-    );
-    when(() => jobs.listFormTemplates(tenantLevel: true))
-        .thenAnswer((_) async => []);
     when(
-      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
+      () => clients.getClientProfile(any()),
+    ).thenAnswer((_) async => const ClientProfileBundle());
+    when(
+      () => jobs.listFormTemplates(tenantLevel: true),
+    ).thenAnswer((_) async => []);
+    when(
+      () => visits.fetchRosterOverlay(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
     ).thenAnswer((_) async => const RosterOverlayOut(contractors: []));
     when(
       () => shifts.listShifts(
@@ -111,150 +115,166 @@ void main() {
       shiftsRepository: shifts,
       visitsRepository: visits,
       session: session,
-      args: UnifiedSupportArgs.forClient(
-        client,
-        mode: mode,
-      ),
+      args: UnifiedSupportArgs.forClient(client, mode: mode),
     );
   }
 
-  test('ensureAssignAvailabilityLoaded fetches overlay and shifts for window',
-      () async {
-    final controller = build();
-    await controller.load();
-    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
-    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
-    controller.step.value = UnifiedSupportController.assignStep;
+  test(
+    'ensureAssignAvailabilityLoaded fetches overlay and shifts for window',
+    () async {
+      final controller = build();
+      await controller.load();
+      controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+      controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+      controller.step.value = UnifiedSupportController.assignStep;
 
-    await controller.ensureAssignAvailabilityLoaded();
+      await controller.ensureAssignAvailabilityLoaded();
 
-    verify(
-      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
-    ).called(1);
-    verify(
-      () => shifts.listShifts(
-        from: any(named: 'from'),
-        to: any(named: 'to'),
-        limit: any(named: 'limit'),
-      ),
-    ).called(1);
-  });
-
-  test('availabilityLabelForContractor returns Free when overlay empty', () async {
-    final controller = build();
-    await controller.load();
-    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
-    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
-    controller.step.value = UnifiedSupportController.assignStep;
-
-    await controller.ensureAssignAvailabilityLoaded();
-
-    expect(
-      controller.availabilityLabelForContractor('contractor-1'),
-      'Free',
-    );
-  });
-
-  test('availabilityLabelForContractor returns Busy for overlapping shift',
-      () async {
-    final shiftStart = DateTime(2026, 8, 13, 9);
-    final shiftEnd = DateTime(2026, 8, 13, 12);
-    when(
-      () => shifts.listShifts(
-        from: any(named: 'from'),
-        to: any(named: 'to'),
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer(
-      (_) async => [
-        ShiftOut(
-          id: 'shift-busy',
-          tenantId: 'tenant-1',
-          jobId: 'job-2',
-          jobTitle: 'Other',
-          clientId: 'client-2',
-          clientName: 'Other',
-          scheduledStart: shiftStart,
-          scheduledEnd: shiftEnd,
-          requiredSlots: 1,
-          openSlots: 0,
-          status: 'published',
-          assignments: [
-            ShiftAssignmentOut(
-              id: 'a-1',
-              contractorId: 'contractor-busy',
-              contractorName: 'Busy Worker',
-              visitId: 'visit-1',
-              source: 'staff_assign',
-              status: 'active',
-            ),
-          ],
-          createdAt: shiftStart,
-          updatedAt: shiftStart,
+      verify(
+        () => visits.fetchRosterOverlay(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
         ),
-      ],
-    );
+      ).called(1);
+      verify(
+        () => shifts.listShifts(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          limit: any(named: 'limit'),
+        ),
+      ).called(1);
+    },
+  );
 
-    final controller = build();
-    await controller.load();
-    controller.oneSessionStart.value = shiftStart;
-    controller.oneSessionEnd.value = shiftEnd;
-    controller.step.value = UnifiedSupportController.assignStep;
+  test(
+    'availabilityLabelForContractor returns Free when overlay empty',
+    () async {
+      final controller = build();
+      await controller.load();
+      controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+      controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+      controller.step.value = UnifiedSupportController.assignStep;
 
-    await controller.ensureAssignAvailabilityLoaded();
+      await controller.ensureAssignAvailabilityLoaded();
 
-    expect(
-      controller.availabilityLabelForContractor('contractor-busy'),
-      'Busy',
-    );
-    expect(
-      controller.availabilityLabelForContractor('contractor-free'),
-      'Free',
-    );
-  });
+      expect(controller.availabilityLabelForContractor('contractor-1'), 'Free');
+    },
+  );
 
-  test('nextStep loads assign availability when entering assign step', () async {
-    when(() => engagements.listTenantEngagements())
-        .thenAnswer((_) async => []);
-    final controller = build();
-    await controller.load();
-    controller.step.value = UnifiedSupportController.detailsStep;
+  test(
+    'availabilityLabelForContractor returns Busy for overlapping shift',
+    () async {
+      final shiftStart = DateTime(2026, 8, 13, 9);
+      final shiftEnd = DateTime(2026, 8, 13, 12);
+      when(
+        () => shifts.listShifts(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          ShiftOut(
+            id: 'shift-busy',
+            tenantId: 'tenant-1',
+            jobId: 'job-2',
+            jobTitle: 'Other',
+            clientId: 'client-2',
+            clientName: 'Other',
+            scheduledStart: shiftStart,
+            scheduledEnd: shiftEnd,
+            requiredSlots: 1,
+            openSlots: 0,
+            status: 'published',
+            assignments: [
+              ShiftAssignmentOut(
+                id: 'a-1',
+                contractorId: 'contractor-busy',
+                contractorName: 'Busy Worker',
+                visitId: 'visit-1',
+                source: 'staff_assign',
+                status: 'active',
+              ),
+            ],
+            createdAt: shiftStart,
+            updatedAt: shiftStart,
+          ),
+        ],
+      );
 
-    controller.nextStep();
+      final controller = build();
+      await controller.load();
+      controller.oneSessionStart.value = shiftStart;
+      controller.oneSessionEnd.value = shiftEnd;
+      controller.step.value = UnifiedSupportController.assignStep;
 
-    await Future<void>.delayed(Duration.zero);
-    verify(
-      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
-    ).called(1);
-  });
+      await controller.ensureAssignAvailabilityLoaded();
 
-  test('concurrent ensureAssignAvailabilityLoaded coalesces to one fetch', () async {
-    final controller = build();
-    await controller.load();
-    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
-    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
-    controller.step.value = UnifiedSupportController.assignStep;
+      expect(
+        controller.availabilityLabelForContractor('contractor-busy'),
+        'Busy',
+      );
+      expect(
+        controller.availabilityLabelForContractor('contractor-free'),
+        'Free',
+      );
+    },
+  );
 
-    await Future.wait([
-      controller.ensureAssignAvailabilityLoaded(),
-      controller.ensureAssignAvailabilityLoaded(),
-    ]);
+  test(
+    'nextStep loads assign availability when entering assign step',
+    () async {
+      when(
+        () => engagements.listTenantEngagements(),
+      ).thenAnswer((_) async => []);
+      final controller = build();
+      await controller.load();
+      controller.step.value = UnifiedSupportController.detailsStep;
 
-    verify(
-      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
-    ).called(1);
-    verify(
-      () => shifts.listShifts(
-        from: any(named: 'from'),
-        to: any(named: 'to'),
-        limit: any(named: 'limit'),
-      ),
-    ).called(1);
-  });
+      controller.nextStep();
+
+      await Future<void>.delayed(Duration.zero);
+      verify(
+        () => visits.fetchRosterOverlay(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'concurrent ensureAssignAvailabilityLoaded coalesces to one fetch',
+    () async {
+      final controller = build();
+      await controller.load();
+      controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+      controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+      controller.step.value = UnifiedSupportController.assignStep;
+
+      await Future.wait([
+        controller.ensureAssignAvailabilityLoaded(),
+        controller.ensureAssignAvailabilityLoaded(),
+      ]);
+
+      verify(
+        () => visits.fetchRosterOverlay(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).called(1);
+      verify(
+        () => shifts.listShifts(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          limit: any(named: 'limit'),
+        ),
+      ).called(1);
+    },
+  );
 
   test('concurrent ensureEngagementsLoaded coalesces to one fetch', () async {
-    when(() => engagements.listTenantEngagements())
-        .thenAnswer((_) async => []);
+    when(() => engagements.listTenantEngagements()).thenAnswer((_) async => []);
     final controller = build();
 
     await Future.wait([
@@ -283,53 +303,55 @@ void main() {
     ).called(1);
   });
 
-  test('availabilityLabelForContractor returns Busy for overlapping visit',
-      () async {
-    final start = DateTime(2026, 8, 13, 9);
-    final end = DateTime(2026, 8, 13, 12);
-    when(
-      () => visits.listVisits(
-        from: any(named: 'from'),
-        to: any(named: 'to'),
-        includeNested: any(named: 'includeNested'),
-      ),
-    ).thenAnswer(
-      (_) async => [
-        VisitOut(
-          id: 'v-busy',
-          tenantId: 'tenant-1',
-          jobId: 'job-other',
-          contractorId: 'contractor-busy',
-          scheduledStart: start,
-          scheduledEnd: end,
-          status: 'scheduled',
-          source: 'manual',
-          geofenceRadiusM: 100,
-          geofenceMode: 'informational',
-          paymentStatus: 'unpaid',
-          createdAt: start,
-          updatedAt: start,
+  test(
+    'availabilityLabelForContractor returns Busy for overlapping visit',
+    () async {
+      final start = DateTime(2026, 8, 13, 9);
+      final end = DateTime(2026, 8, 13, 12);
+      when(
+        () => visits.listVisits(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          includeNested: any(named: 'includeNested'),
         ),
-      ],
-    );
+      ).thenAnswer(
+        (_) async => [
+          VisitOut(
+            id: 'v-busy',
+            tenantId: 'tenant-1',
+            jobId: 'job-other',
+            contractorId: 'contractor-busy',
+            scheduledStart: start,
+            scheduledEnd: end,
+            status: 'scheduled',
+            source: 'manual',
+            geofenceRadiusM: 100,
+            geofenceMode: 'informational',
+            paymentStatus: 'unpaid',
+            createdAt: start,
+            updatedAt: start,
+          ),
+        ],
+      );
 
-    final controller = build();
-    await controller.load();
-    controller.oneSessionStart.value = start;
-    controller.oneSessionEnd.value = end;
-    controller.step.value = UnifiedSupportController.assignStep;
+      final controller = build();
+      await controller.load();
+      controller.oneSessionStart.value = start;
+      controller.oneSessionEnd.value = end;
+      controller.step.value = UnifiedSupportController.assignStep;
 
-    await controller.ensureAssignAvailabilityLoaded();
+      await controller.ensureAssignAvailabilityLoaded();
 
-    expect(
-      controller.availabilityLabelForContractor('contractor-busy'),
-      'Busy',
-    );
-    expect(
-      controller.availabilityLabelForContractor('contractor-free'),
-      'Free',
-    );
-  });
+      expect(
+        controller.availabilityLabelForContractor('contractor-busy'),
+        'Busy',
+      );
+      expect(
+        controller.availabilityLabelForContractor('contractor-free'),
+        'Free',
+      );
+    },
+  );
 
   test('clientConflicts includes unfilled shift overlapping window', () async {
     final start = DateTime(2026, 8, 13, 9);
@@ -387,46 +409,54 @@ void main() {
     expect(controller.canGoNext(), isTrue);
   });
 
-  test('availabilityLabelForContractor returns Outside hours for preferred mismatch',
-      () async {
-    when(
-      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
-    ).thenAnswer(
-      (_) async => RosterOverlayOut(
-        contractors: [
-          ContractorRosterOverlay(
-            contractorId: 'contractor-1',
-            displayName: 'Alex',
-            availability: [
-              AvailabilityRuleOut(
-                dayOfWeek: DateTime(2026, 8, 13).weekday - DateTime.monday,
-                startTime: '09:00:00',
-                endTime: '12:00:00',
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  test(
+    'availabilityLabelForContractor returns Outside hours for preferred mismatch',
+    () async {
+      when(
+        () => visits.fetchRosterOverlay(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).thenAnswer(
+        (_) async => RosterOverlayOut(
+          contractors: [
+            ContractorRosterOverlay(
+              contractorId: 'contractor-1',
+              displayName: 'Alex',
+              availability: [
+                AvailabilityRuleOut(
+                  dayOfWeek: DateTime(2026, 8, 13).weekday - DateTime.monday,
+                  startTime: '09:00:00',
+                  endTime: '12:00:00',
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
 
-    final controller = build();
-    await controller.load();
-    controller.oneSessionStart.value = DateTime(2026, 8, 13, 18);
-    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 20);
-    controller.step.value = UnifiedSupportController.assignStep;
+      final controller = build();
+      await controller.load();
+      controller.oneSessionStart.value = DateTime(2026, 8, 13, 18);
+      controller.oneSessionEnd.value = DateTime(2026, 8, 13, 20);
+      controller.step.value = UnifiedSupportController.assignStep;
 
-    await controller.ensureAssignAvailabilityLoaded();
+      await controller.ensureAssignAvailabilityLoaded();
 
-    expect(
-      controller.availabilityLabelForContractor('contractor-1'),
-      'Outside hours',
-    );
-    expect(controller.assignOverlayWarning.value, isNull);
-  });
+      expect(
+        controller.availabilityLabelForContractor('contractor-1'),
+        'Outside hours',
+      );
+      expect(controller.assignOverlayWarning.value, isNull);
+    },
+  );
 
   test('overlay failure sets leave warning; shifts still load', () async {
     when(
-      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
+      () => visits.fetchRosterOverlay(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
     ).thenThrow(Exception('overlay down'));
 
     final controller = build();
@@ -442,10 +472,7 @@ void main() {
       controller.assignOverlayWarning.value,
       'Could not load leave and preferred hours',
     );
-    expect(
-      controller.availabilityLabelForContractor('contractor-1'),
-      'Free',
-    );
+    expect(controller.availabilityLabelForContractor('contractor-1'), 'Free');
   });
 
   test('shift failure does not present workers as Free', () async {
@@ -517,83 +544,85 @@ void main() {
 
     await controller.ensureAssignAvailabilityLoaded();
 
-    final captured = verify(
-      () => shifts.listShifts(
-        from: any(named: 'from'),
-        to: any(named: 'to'),
-        limit: captureAny(named: 'limit'),
-      ),
-    ).captured;
+    final captured =
+        verify(
+          () => shifts.listShifts(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            limit: captureAny(named: 'limit'),
+          ),
+        ).captured;
     expect(captured.single, 2000);
   });
 
   test(
-      'ongoing display label appends on first date; base status stays Busy',
-      () async {
-    final shiftStart = DateTime(2026, 8, 13, 9);
-    final shiftEnd = DateTime(2026, 8, 13, 12);
-    when(
-      () => shifts.listShifts(
-        from: any(named: 'from'),
-        to: any(named: 'to'),
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer(
-      (_) async => [
-        ShiftOut(
-          id: 'shift-busy',
-          tenantId: 'tenant-1',
-          jobId: 'job-2',
-          jobTitle: 'Other',
-          clientId: 'client-2',
-          clientName: 'Other',
-          scheduledStart: shiftStart,
-          scheduledEnd: shiftEnd,
-          requiredSlots: 1,
-          openSlots: 0,
-          status: 'published',
-          assignments: [
-            ShiftAssignmentOut(
-              id: 'a-1',
-              contractorId: 'contractor-busy',
-              contractorName: 'Busy Worker',
-              visitId: 'visit-1',
-              source: 'staff_assign',
-              status: 'active',
-            ),
-          ],
-          createdAt: shiftStart,
-          updatedAt: shiftStart,
+    'ongoing display label appends on first date; base status stays Busy',
+    () async {
+      final shiftStart = DateTime(2026, 8, 13, 9);
+      final shiftEnd = DateTime(2026, 8, 13, 12);
+      when(
+        () => shifts.listShifts(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          limit: any(named: 'limit'),
         ),
-      ],
-    );
+      ).thenAnswer(
+        (_) async => [
+          ShiftOut(
+            id: 'shift-busy',
+            tenantId: 'tenant-1',
+            jobId: 'job-2',
+            jobTitle: 'Other',
+            clientId: 'client-2',
+            clientName: 'Other',
+            scheduledStart: shiftStart,
+            scheduledEnd: shiftEnd,
+            requiredSlots: 1,
+            openSlots: 0,
+            status: 'published',
+            assignments: [
+              ShiftAssignmentOut(
+                id: 'a-1',
+                contractorId: 'contractor-busy',
+                contractorName: 'Busy Worker',
+                visitId: 'visit-1',
+                source: 'staff_assign',
+                status: 'active',
+              ),
+            ],
+            createdAt: shiftStart,
+            updatedAt: shiftStart,
+          ),
+        ],
+      );
 
-    final controller = build(mode: UnifiedSupportMode.ongoing);
-    await controller.load();
-    controller.startDate.value = DateTime(2026, 8, 13);
-    controller.weekdays
-      ..clear()
-      ..add(DateTime.thursday);
-    controller.startTime.value = const TimeOfDay(hour: 9, minute: 0);
-    controller.endTime.value = const TimeOfDay(hour: 12, minute: 0);
-    controller.selectContractorForSlot(0, 'contractor-busy');
-    controller.step.value = UnifiedSupportController.assignStep;
+      final controller = build(mode: UnifiedSupportMode.ongoing);
+      await controller.load();
+      controller.startDate.value = DateTime(2026, 8, 13);
+      controller.weekdays
+        ..clear()
+        ..add(DateTime.thursday);
+      controller.startTime.value = const TimeOfDay(hour: 9, minute: 0);
+      controller.endTime.value = const TimeOfDay(hour: 12, minute: 0);
+      controller.selectContractorForSlot(0, 'contractor-busy');
+      controller.step.value = UnifiedSupportController.assignStep;
 
-    await controller.ensureAssignAvailabilityLoaded();
+      await controller.ensureAssignAvailabilityLoaded();
 
-    expect(
-      controller.availabilityStatusForContractor('contractor-busy'),
-      'Busy',
-    );
-    expect(
-      controller.availabilityDisplayLabelForContractor('contractor-busy'),
-      'Busy on first date',
-    );
-    expect(
-      controller.busyAssignedWorkers.map((e) => e.contractorId),
-      contains('contractor-busy'),
-    );
-  });
+      expect(
+        controller.availabilityStatusForContractor('contractor-busy'),
+        'Busy',
+      );
+      expect(
+        controller.availabilityDisplayLabelForContractor('contractor-busy'),
+        'Busy on first date',
+      );
+      expect(
+        controller.busyAssignedWorkers.map((e) => e.contractorId),
+        contains('contractor-busy'),
+      );
+    },
+  );
 
   test('changing endDate invalidates assign availability cache', () async {
     final controller = build(mode: UnifiedSupportMode.ongoing);

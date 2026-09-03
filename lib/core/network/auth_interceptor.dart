@@ -17,9 +17,9 @@ class AuthInterceptor extends Interceptor {
     required TokenStorage storage,
     required TokenRefreshService refreshService,
     required Dio authenticatedDio,
-  })  : _storage = storage,
-        _refreshService = refreshService,
-        _authenticatedDio = authenticatedDio;
+  }) : _storage = storage,
+       _refreshService = refreshService,
+       _authenticatedDio = authenticatedDio;
 
   final TokenStorage _storage;
   final TokenRefreshService _refreshService;
@@ -110,9 +110,7 @@ class AuthInterceptor extends Interceptor {
       if (e is DioException) {
         return handler.reject(e);
       }
-      return handler.reject(
-        DioException(requestOptions: retry, error: e),
-      );
+      return handler.reject(DioException(requestOptions: retry, error: e));
     }
   }
 }

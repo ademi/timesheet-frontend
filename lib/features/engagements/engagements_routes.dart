@@ -16,51 +16,49 @@ abstract final class EngagementsPages {
   EngagementsPages._();
 
   static List<GetPage> get routes => [
-        GetPage(
-          name: AppRoutes.staffWorkforce,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(anyOf: [AppPermissions.contractorsRead]),
-          ],
-          binding: EngagementsBinding(),
-          page: () => staffShellPage(const WorkforceListView()),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.staffWorkforceInvite,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(anyOf: [AppPermissions.contractorsInvite]),
-          ],
-          binding: EngagementsBinding(),
-          page: () => const WorkforceInviteView(),
-          transition: Transition.rightToLeft,
-        ),
-        GetPage(
-          name: AppRoutes.staffWorkforceDetail,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(anyOf: [AppPermissions.contractorsRead]),
-          ],
-          binding: EngagementsBinding(),
-          page: () => const WorkforceDetailView(),
-          transition: Transition.rightToLeft,
-        ),
-        GetPage(
-          name: AppRoutes.staffWorkforceRateForm,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(
-              anyOf: [AppPermissions.paymentsManage],
-            ),
-          ],
-          binding: EngagementsBinding(),
-          page: () => const EngagementRateFormView(),
-          transition: Transition.rightToLeft,
-        ),
-      ];
+    GetPage(
+      name: AppRoutes.staffWorkforce,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(anyOf: [AppPermissions.contractorsRead]),
+      ],
+      binding: EngagementsBinding(),
+      page: () => staffShellPage(const WorkforceListView()),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.staffWorkforceInvite,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(anyOf: [AppPermissions.contractorsInvite]),
+      ],
+      binding: EngagementsBinding(),
+      page: () => const WorkforceInviteView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.staffWorkforceDetail,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(anyOf: [AppPermissions.contractorsRead]),
+      ],
+      binding: EngagementsBinding(),
+      page: () => const WorkforceDetailView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.staffWorkforceRateForm,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(anyOf: [AppPermissions.paymentsManage]),
+      ],
+      binding: EngagementsBinding(),
+      page: () => const EngagementRateFormView(),
+      transition: Transition.rightToLeft,
+    ),
+  ];
 }

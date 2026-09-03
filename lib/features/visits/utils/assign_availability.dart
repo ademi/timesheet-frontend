@@ -24,8 +24,9 @@ bool windowMatchesAvailabilityRules({
   required List<AvailabilityRuleOut> rules,
 }) {
   final dow = day.weekday - DateTime.monday; // 0=Mon .. 6=Sun
-  final dayRules =
-      rules.where((rule) => rule.dayOfWeek == dow).toList(growable: false);
+  final dayRules = rules
+      .where((rule) => rule.dayOfWeek == dow)
+      .toList(growable: false);
   if (dayRules.isEmpty) return true;
 
   final winStart = windowStart.hour * 60 + windowStart.minute;
@@ -79,12 +80,14 @@ String assignAvailabilityLabel({
 
   if (contractor != null) {
     for (final leave in contractor.leave) {
-      final leaveStartCivil = isTenantTimezoneConversionApplied(tenantTimezone)
-          ? tenantCivilFromUtc(leave.startDate.toUtc(), tenantTimezone)
-          : leave.startDate.toLocal();
-      final leaveEndCivil = isTenantTimezoneConversionApplied(tenantTimezone)
-          ? tenantCivilFromUtc(leave.endDate.toUtc(), tenantTimezone)
-          : leave.endDate.toLocal();
+      final leaveStartCivil =
+          isTenantTimezoneConversionApplied(tenantTimezone)
+              ? tenantCivilFromUtc(leave.startDate.toUtc(), tenantTimezone)
+              : leave.startDate.toLocal();
+      final leaveEndCivil =
+          isTenantTimezoneConversionApplied(tenantTimezone)
+              ? tenantCivilFromUtc(leave.endDate.toUtc(), tenantTimezone)
+              : leave.endDate.toLocal();
       final start = DateTime(
         leaveStartCivil.year,
         leaveStartCivil.month,
@@ -102,12 +105,7 @@ String assignAvailabilityLabel({
   for (final v in visits) {
     if (v.isCancelled) continue;
     if (v.contractorId != contractorId) continue;
-    if (rangesOverlap(
-      v.scheduledStart,
-      v.scheduledEnd,
-      shiftStart,
-      shiftEnd,
-    )) {
+    if (rangesOverlap(v.scheduledStart, v.scheduledEnd, shiftStart, shiftEnd)) {
       return 'Busy';
     }
   }

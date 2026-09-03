@@ -87,13 +87,10 @@ void main() {
       ];
       final entries = SupportPlanSpecialistsCodec.fromLegacyFacts(facts);
       expect(entries, hasLength(2));
-      expect(
-        entries.map((e) => e.type).toSet(),
-        {
-          SupportPlanSpecialistTypes.supportCoordinator,
-          SupportPlanSpecialistTypes.physiotherapist,
-        },
-      );
+      expect(entries.map((e) => e.type).toSet(), {
+        SupportPlanSpecialistTypes.supportCoordinator,
+        SupportPlanSpecialistTypes.physiotherapist,
+      });
       for (final e in entries) {
         e.dispose();
       }
@@ -120,7 +117,10 @@ void main() {
 
       final json = SupportPlanSpecialistsCodec.toFactValue([empty, filled]);
       expect(json, hasLength(1));
-      expect(json.single['type'], SupportPlanSpecialistTypes.behaviouralTherapist);
+      expect(
+        json.single['type'],
+        SupportPlanSpecialistTypes.behaviouralTherapist,
+      );
 
       empty.dispose();
       filled.dispose();

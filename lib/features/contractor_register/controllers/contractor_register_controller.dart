@@ -9,7 +9,8 @@ import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/australian_states.dart';
 import '../../../core/constants/feature_flags.dart';
 import '../../../core/errors/app_failure.dart';
-import '../../../features/clients/data/models/client_models.dart' as client_models;
+import '../../../features/clients/data/models/client_models.dart'
+    as client_models;
 import '../../../features/clients/utils/site_geocode_apply.dart';
 import '../../../features/contractor_onboarding/data/onboarding_progress_store.dart';
 import '../../../shared/utils/abn_utils.dart';
@@ -260,12 +261,14 @@ class ContractorRegisterController extends GetxController {
         GeocodeRequest(
           addressLine1: line1,
           city: city,
-          country: countryController.text.trim().isEmpty
-              ? 'AU'
-              : countryController.text.trim(),
-          state: stateController.text.trim().isEmpty
-              ? null
-              : stateController.text.trim(),
+          country:
+              countryController.text.trim().isEmpty
+                  ? 'AU'
+                  : countryController.text.trim(),
+          state:
+              stateController.text.trim().isEmpty
+                  ? null
+                  : stateController.text.trim(),
         ),
       );
       final outcome = applyGeocodeResponse(
@@ -392,7 +395,8 @@ class ContractorRegisterController extends GetxController {
     final wwcc = <String, dynamic>{
       if (wwccNumberCtrl.text.trim().isNotEmpty)
         'number': wwccNumberCtrl.text.trim(),
-      if (wwccStateCtrl.text.trim().isNotEmpty) 'state': wwccStateCtrl.text.trim(),
+      if (wwccStateCtrl.text.trim().isNotEmpty)
+        'state': wwccStateCtrl.text.trim(),
       if (wwccExpiryCtrl.text.trim().isNotEmpty)
         'expiry_date': wwccExpiryCtrl.text.trim(),
     };
@@ -478,7 +482,9 @@ class ContractorRegisterController extends GetxController {
           privacyVersion: privacyVersion,
         ),
       );
-      await OnboardingProgressStore().markPlatformComplete(response.contractorId);
+      await OnboardingProgressStore().markPlatformComplete(
+        response.contractorId,
+      );
       AppToast.success(
         'Account created',
         'Sign in with your new contractor account.',
@@ -497,7 +503,11 @@ class ContractorRegisterController extends GetxController {
 
   void _showError(String message) {
     errorMessage.value = message;
-    AppToast.error('Registration failed', message, duration: const Duration(seconds: 5));
+    AppToast.error(
+      'Registration failed',
+      message,
+      duration: const Duration(seconds: 5),
+    );
   }
 
   @override

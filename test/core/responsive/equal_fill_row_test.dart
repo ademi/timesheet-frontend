@@ -49,9 +49,7 @@ void main() {
 
   testWidgets('empty children render nothing', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: EqualFillRow(children: []),
-      ),
+      const MaterialApp(home: EqualFillRow(children: [])),
     );
     expect(find.byType(Row), findsNothing);
   });

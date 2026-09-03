@@ -78,7 +78,9 @@ void main() {
     verify(
       () => dio.post<Map<String, dynamic>>(
         ApiPaths.invoiceExports,
-        data: {'visit_ids': ['visit-1']},
+        data: {
+          'visit_ids': ['visit-1'],
+        },
       ),
     ).called(1);
   });
@@ -91,7 +93,9 @@ void main() {
       ),
     ).thenAnswer(
       (_) async => Response<String>(
-        requestOptions: RequestOptions(path: ApiPaths.invoiceExportCsv(exportId)),
+        requestOptions: RequestOptions(
+          path: ApiPaths.invoiceExportCsv(exportId),
+        ),
         data: 'participant_ndis_number,service_date\n',
       ),
     );
@@ -104,9 +108,7 @@ void main() {
         ApiPaths.invoiceExportCsv(exportId),
         options: any(
           named: 'options',
-          that: predicate<Options>(
-            (o) => o.responseType == ResponseType.plain,
-          ),
+          that: predicate<Options>((o) => o.responseType == ResponseType.plain),
         ),
       ),
     ).called(1);
@@ -114,9 +116,8 @@ void main() {
 
   test('voidInvoiceExport posts void path', () async {
     when(
-      () => dio.post<Map<String, dynamic>>(
-        ApiPaths.invoiceExportVoid(exportId),
-      ),
+      () =>
+          dio.post<Map<String, dynamic>>(ApiPaths.invoiceExportVoid(exportId)),
     ).thenAnswer(
       (_) async => Response<Map<String, dynamic>>(
         requestOptions: RequestOptions(

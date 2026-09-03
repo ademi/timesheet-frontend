@@ -65,12 +65,15 @@ bool _matchesRecurrenceDay({
   )) {
     return false;
   }
-  final matchesDay = frequency == RecurrenceFrequency.daily ||
+  final matchesDay =
+      frequency == RecurrenceFrequency.daily ||
       frequency == RecurrenceFrequency.monthly ||
       weekdays.contains(civilDay.weekday);
-  final fortnight = frequency != RecurrenceFrequency.fortnightly ||
+  final fortnight =
+      frequency != RecurrenceFrequency.fortnightly ||
       civilDay.difference(patternStart).inDays ~/ 7 % 2 == 0;
-  final monthly = frequency != RecurrenceFrequency.monthly ||
+  final monthly =
+      frequency != RecurrenceFrequency.monthly ||
       civilDay.day == patternStart.day;
   return matchesDay && fortnight && monthly;
 }
@@ -106,11 +109,7 @@ List<ScheduleOccurrence> expandUnifiedSupportOccurrences({
     ];
   }
 
-  final patternStart = DateTime(
-    startDate.year,
-    startDate.month,
-    startDate.day,
-  );
+  final patternStart = DateTime(startDate.year, startDate.month, startDate.day);
   final patternEnd = DateTime(endDate.year, endDate.month, endDate.day);
   var civilDay = tenantCivilFromUtc(horizonFromUtc, tenantTimezone);
   civilDay = DateTime(civilDay.year, civilDay.month, civilDay.day);

@@ -93,17 +93,20 @@ class StaffContractorOut {
             ? Map<String, dynamic>.from(json['address'] as Map)
             : null,
       ),
-      compliance: json['compliance'] is Map
-          ? Map<String, dynamic>.from(json['compliance'] as Map)
-          : const {},
-      metadata: json['metadata'] is Map
-          ? Map<String, dynamic>.from(json['metadata'] as Map)
-          : const {},
-      paymentDetails: payment is Map
-          ? StaffContractorPaymentDetailsOut.fromJson(
-              Map<String, dynamic>.from(payment),
-            )
-          : null,
+      compliance:
+          json['compliance'] is Map
+              ? Map<String, dynamic>.from(json['compliance'] as Map)
+              : const {},
+      metadata:
+          json['metadata'] is Map
+              ? Map<String, dynamic>.from(json['metadata'] as Map)
+              : const {},
+      paymentDetails:
+          payment is Map
+              ? StaffContractorPaymentDetailsOut.fromJson(
+                Map<String, dynamic>.from(payment),
+              )
+              : null,
     );
   }
 }

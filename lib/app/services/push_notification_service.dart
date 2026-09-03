@@ -8,7 +8,7 @@ import '../../core/constants/api_paths.dart';
 /// Registers FCM/APNs device tokens for both staff and contractor sessions.
 class PushNotificationService {
   PushNotificationService({required Dio authenticatedDio})
-      : _authenticatedDio = authenticatedDio;
+    : _authenticatedDio = authenticatedDio;
 
   final Dio _authenticatedDio;
   bool _initialized = false;
@@ -30,9 +30,10 @@ class PushNotificationService {
       final messaging = FirebaseMessaging.instance;
       final token = await messaging.getToken();
       if (token == null || token.length < 16) return;
-      final platform = kIsWeb
-          ? 'web'
-          : defaultTargetPlatform == TargetPlatform.iOS
+      final platform =
+          kIsWeb
+              ? 'web'
+              : defaultTargetPlatform == TargetPlatform.iOS
               ? 'ios'
               : 'android';
       await _authenticatedDio.post<Map<String, dynamic>>(
@@ -49,9 +50,7 @@ class PushNotificationService {
       await initialize();
       final token = await FirebaseMessaging.instance.getToken();
       if (token == null || token.isEmpty) return;
-      await _authenticatedDio.delete<void>(
-        ApiPaths.notificationDevice(token),
-      );
+      await _authenticatedDio.delete<void>(ApiPaths.notificationDevice(token));
     } catch (_) {
       // Non-fatal.
     }

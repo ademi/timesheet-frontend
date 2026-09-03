@@ -24,43 +24,46 @@ void main() {
     );
   });
 
-  test('switchTenant posts tenant_id and parses new tokens + engagements', () async {
-    const request = SwitchTenantRequestModel(
-      tenantId: '22222222-2222-2222-2222-222222222222',
-    );
-    when(
-      () => authenticatedDio.post<Map<String, dynamic>>(
-        '/v1/auth/switch-tenant',
-        data: request.toJson(),
-      ),
-    ).thenAnswer(
-      (_) async => Response<Map<String, dynamic>>(
-        requestOptions: RequestOptions(path: '/v1/auth/switch-tenant'),
-        statusCode: 200,
-        data: {
-          'access_token': 'new-access',
-          'refresh_token': 'new-refresh',
-          'token_type': 'bearer',
-          'actor_type': 'contractor',
-          'engagements': [
-            {
-              'id': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-              'tenant_id': '22222222-2222-2222-2222-222222222222',
-              'tenant_name': 'Acme Care',
-              'status': 'active',
-            },
-          ],
-        },
-      ),
-    );
+  test(
+    'switchTenant posts tenant_id and parses new tokens + engagements',
+    () async {
+      const request = SwitchTenantRequestModel(
+        tenantId: '22222222-2222-2222-2222-222222222222',
+      );
+      when(
+        () => authenticatedDio.post<Map<String, dynamic>>(
+          '/v1/auth/switch-tenant',
+          data: request.toJson(),
+        ),
+      ).thenAnswer(
+        (_) async => Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: '/v1/auth/switch-tenant'),
+          statusCode: 200,
+          data: {
+            'access_token': 'new-access',
+            'refresh_token': 'new-refresh',
+            'token_type': 'bearer',
+            'actor_type': 'contractor',
+            'engagements': [
+              {
+                'id': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+                'tenant_id': '22222222-2222-2222-2222-222222222222',
+                'tenant_name': 'Acme Care',
+                'status': 'active',
+              },
+            ],
+          },
+        ),
+      );
 
-    final result = await dataSource.switchTenant(request);
+      final result = await dataSource.switchTenant(request);
 
-    expect(result.accessToken, 'new-access');
-    expect(result.refreshToken, 'new-refresh');
-    expect(result.actorType, 'contractor');
-    expect(result.engagements.single.tenantName, 'Acme Care');
-  });
+      expect(result.accessToken, 'new-access');
+      expect(result.refreshToken, 'new-refresh');
+      expect(result.actorType, 'contractor');
+      expect(result.engagements.single.tenantName, 'Acme Care');
+    },
+  );
 
   test('getMeContext hits /v1/auth/me/context', () async {
     when(

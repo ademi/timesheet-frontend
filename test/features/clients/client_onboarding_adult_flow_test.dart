@@ -80,8 +80,9 @@ void main() {
     contactCreates = [];
     finishedId = null;
 
-    when(() => mock.listFormTemplates(tenantLevel: any(named: 'tenantLevel')))
-        .thenAnswer((_) async => <FormTemplateSummary>[]);
+    when(
+      () => mock.listFormTemplates(tenantLevel: any(named: 'tenantLevel')),
+    ).thenAnswer((_) async => <FormTemplateSummary>[]);
     when(() => mock.listClientTypes()).thenAnswer((_) async => [_patientType]);
 
     when(() => mock.createClient(any())).thenAnswer((inv) async {
@@ -90,8 +91,9 @@ void main() {
       return _adultClient;
     });
 
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((inv) async {
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((
+      inv,
+    ) async {
       factUpserts.add((
         inv.positionalArguments[0] as String,
         inv.positionalArguments[1] as String,
@@ -179,118 +181,111 @@ void main() {
     c.dispose();
   });
 
-  test(
-    'adult happy path: Identity→Address→Preferences→Contacts→skip nominee→'
-    'Funding→Legal→Finish',
-    () async {
-      // ── Identity (adult DOB) ──────────────────────────────────────────
-      c.fullName.text = 'Alex Adult';
-      c.email.text = 'alex@example.com';
-      c.phone.text = '+61422222222';
-      c.dob.value = DateTime(1990, 5, 15);
+  test('adult happy path: Identity→Address→Preferences→Contacts→skip nominee→'
+      'Funding→Legal→Finish', () async {
+    // ── Identity (adult DOB) ──────────────────────────────────────────
+    c.fullName.text = 'Alex Adult';
+    c.email.text = 'alex@example.com';
+    c.phone.text = '+61422222222';
+    c.dob.value = DateTime(1990, 5, 15);
 
-      expect(await c.submitIdentity(), isTrue);
-      expect(c.step.value, 1);
-      expect(createCalls, hasLength(1));
-      expect(createCalls.first.metadata?['onboarding_incomplete'], isTrue);
-      expect(
-        factUpserts.any((e) => e.$2 == OnboardingKeys.ndis),
-        isFalse,
-      );
+    expect(await c.submitIdentity(), isTrue);
+    expect(c.step.value, 1);
+    expect(createCalls, hasLength(1));
+    expect(createCalls.first.metadata?['onboarding_incomplete'], isTrue);
+    expect(factUpserts.any((e) => e.$2 == OnboardingKeys.ndis), isFalse);
 
-      // ── Address ───────────────────────────────────────────────────────
-      c.siteNameCtrl.text = 'Home';
-      c.siteAddressCtrl.text = '1 George St';
-      c.siteCityCtrl.text = 'Sydney';
-      c.siteState.value = 'NSW';
-      c.sitePostalCtrl.text = '2000';
-      c.siteAccessNotesCtrl.text = 'Key under mat';
+    // ── Address ───────────────────────────────────────────────────────
+    c.siteNameCtrl.text = 'Home';
+    c.siteAddressCtrl.text = '1 George St';
+    c.siteCityCtrl.text = 'Sydney';
+    c.siteState.value = 'NSW';
+    c.sitePostalCtrl.text = '2000';
+    c.siteAccessNotesCtrl.text = 'Key under mat';
 
-      await c.lookupSiteAddress();
-      expect(c.geocodeFormattedAddress.value, isNotNull);
-      c.confirmSiteAddress();
-      expect(c.addressConfirmed.value, isTrue);
+    await c.lookupSiteAddress();
+    expect(c.geocodeFormattedAddress.value, isNotNull);
+    c.confirmSiteAddress();
+    expect(c.addressConfirmed.value, isTrue);
 
-      expect(await c.submitAddress(), isTrue);
-      expect(c.step.value, 2);
-      expect(siteCreates, hasLength(1));
-      expect(siteCreates.first.postalCode, '2000');
-      expect(siteCreates.first.isPrimary, isTrue);
-      expect(siteCreates.first.accessNotes, 'Key under mat');
+    expect(await c.submitAddress(), isTrue);
+    expect(c.step.value, 2);
+    expect(siteCreates, hasLength(1));
+    expect(siteCreates.first.postalCode, '2000');
+    expect(siteCreates.first.isPrimary, isTrue);
+    expect(siteCreates.first.accessNotes, 'Key under mat');
 
-      // ── Preferences ───────────────────────────────────────────────────
-      c.preferredLanguageCtrl.text = 'English';
-      c.homeVisitConsent.value = true;
-      c.preferredContactMethod.value = 'phone';
+    // ── Preferences ───────────────────────────────────────────────────
+    c.preferredLanguageCtrl.text = 'English';
+    c.homeVisitConsent.value = true;
+    c.preferredContactMethod.value = 'phone';
 
-      expect(await c.submitPreferences(), isTrue);
-      expect(c.step.value, 3);
+    expect(await c.submitPreferences(), isTrue);
+    expect(c.step.value, 3);
 
-      // ── Emergency contact (kinship + flag) ────────────────────────────
-      c.contactNameCtrl.text = 'Sam Emergency';
-      c.contactPhoneCtrl.text = '+61433333333';
-      c.contactRelationshipPreset.value = 'mother';
-      c.contactIsEmergency.value = true;
-      c.contactIsPrimary.value = true;
+    // ── Emergency contact (kinship + flag) ────────────────────────────
+    c.contactNameCtrl.text = 'Sam Emergency';
+    c.contactPhoneCtrl.text = '+61433333333';
+    c.contactRelationshipPreset.value = 'mother';
+    c.contactIsEmergency.value = true;
+    c.contactIsPrimary.value = true;
 
-      expect(await c.submitContacts(), isTrue);
-      expect(c.step.value, 4);
-      expect(c.emergencySaved.value, isTrue);
-      expect(
-        contactCreates.any((r) => r.relationship == 'mother' && r.isEmergency == true),
-        isTrue,
-      );
-      final emergency = contactCreates
-          .firstWhere((r) => r.relationship == 'mother' && r.isEmergency == true);
-      expect(emergency.name, 'Sam Emergency');
-      expect(emergency.phone, '+61433333333');
+    expect(await c.submitContacts(), isTrue);
+    expect(c.step.value, 4);
+    expect(c.emergencySaved.value, isTrue);
+    expect(
+      contactCreates.any(
+        (r) => r.relationship == 'mother' && r.isEmergency == true,
+      ),
+      isTrue,
+    );
+    final emergency = contactCreates.firstWhere(
+      (r) => r.relationship == 'mother' && r.isEmergency == true,
+    );
+    expect(emergency.name, 'Sam Emergency');
+    expect(emergency.phone, '+61433333333');
 
-      // ── Skip nominee (adult) ──────────────────────────────────────────
-      expect(c.requiresChildRepresentative, isFalse);
-      expect(c.nomineeOptional, isTrue);
-      expect(await c.submitRepresentative(), isTrue);
-      expect(c.nomineeSkipped.value, isTrue);
-      expect(c.step.value, 5);
-      expect(
-        contactCreates
-            .any((r) => r.relationship == OnboardingKeys.relNominee),
-        isFalse,
-      );
+    // ── Skip nominee (adult) ──────────────────────────────────────────
+    expect(c.requiresChildRepresentative, isFalse);
+    expect(c.nomineeOptional, isTrue);
+    expect(await c.submitRepresentative(), isTrue);
+    expect(c.nomineeSkipped.value, isTrue);
+    expect(c.step.value, 5);
+    expect(
+      contactCreates.any((r) => r.relationship == OnboardingKeys.relNominee),
+      isFalse,
+    );
 
-      // ── Support Plan self_managed ─────────────────────────────────────
-      c.ndisCtrl.text = '431234567';
-      c.planManagementType.value = 'self_managed';
-      expect(await c.submitSupportPlan(), isTrue);
-      expect(c.step.value, 6);
-      expect(
-        factUpserts.any(
-          (e) =>
-              e.$2 == OnboardingKeys.planManagementType &&
-              e.$3.valueJson == 'self_managed',
-        ),
-        isTrue,
-      );
+    // ── Support Plan self_managed ─────────────────────────────────────
+    c.ndisCtrl.text = '431234567';
+    c.planManagementType.value = 'self_managed';
+    expect(await c.submitSupportPlan(), isTrue);
+    expect(c.step.value, 6);
+    expect(
+      factUpserts.any(
+        (e) =>
+            e.$2 == OnboardingKeys.planManagementType &&
+            e.$3.valueJson == 'self_managed',
+      ),
+      isTrue,
+    );
 
-      // ── Legal complete (mock uploads) ─────────────────────────────────
-      c.consentComplete.value = true;
-      c.serviceAgreementComplete.value = true;
+    // ── Legal complete (mock uploads) ─────────────────────────────────
+    c.consentComplete.value = true;
+    c.serviceAgreementComplete.value = true;
 
-      // ── Finish ────────────────────────────────────────────────────────
-      expect(await c.finishOnboarding(), isTrue);
-      expect(finishedId, 'client-adult-1');
-      expect(patchCalls, isNotEmpty);
-      expect(
-        patchCalls.last.metadata?['onboarding_incomplete'],
-        isFalse,
-      );
-      expect(c.client.value?.metadata?['onboarding_incomplete'], isFalse);
+    // ── Finish ────────────────────────────────────────────────────────
+    expect(await c.finishOnboarding(), isTrue);
+    expect(finishedId, 'client-adult-1');
+    expect(patchCalls, isNotEmpty);
+    expect(patchCalls.last.metadata?['onboarding_incomplete'], isFalse);
+    expect(c.client.value?.metadata?['onboarding_incomplete'], isFalse);
 
-      // Create still had incomplete=true; finish cleared it.
-      expect(createCalls.first.metadata?['onboarding_incomplete'], isTrue);
-      verify(() => mock.createClient(any())).called(1);
-      verify(() => mock.createSite('client-adult-1', any())).called(1);
-      verify(() => mock.createContact('client-adult-1', any())).called(1);
-      verify(() => mock.patchClient('client-adult-1', any())).called(1);
-    },
-  );
+    // Create still had incomplete=true; finish cleared it.
+    expect(createCalls.first.metadata?['onboarding_incomplete'], isTrue);
+    verify(() => mock.createClient(any())).called(1);
+    verify(() => mock.createSite('client-adult-1', any())).called(1);
+    verify(() => mock.createContact('client-adult-1', any())).called(1);
+    verify(() => mock.patchClient('client-adult-1', any())).called(1);
+  });
 }

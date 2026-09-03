@@ -24,7 +24,8 @@ class EngagementsRemoteDataSource {
     }
   }
 
-  Future<List<ContractorRegistrationInviteOut>> listPendingContractorInvites() async {
+  Future<List<ContractorRegistrationInviteOut>>
+  listPendingContractorInvites() async {
     try {
       final response = await _dio.get<List<dynamic>>(
         ApiPaths.tenantContractorInvites,

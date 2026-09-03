@@ -24,10 +24,7 @@ class VisitInstructionsField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Instructions for workers',
-          style: Get.textTheme.titleSmall,
-        ),
+        Text('Instructions for workers', style: Get.textTheme.titleSmall),
         if (helperText != null) ...[
           const SizedBox(height: 4),
           Text(

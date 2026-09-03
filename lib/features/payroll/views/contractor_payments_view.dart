@@ -80,39 +80,40 @@ class ContractorPaymentsView extends GetView<ContractorPaymentsController> {
                 ),
               ),
             Expanded(
-              child: controller.isLoading.value && controller.visits.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : RefreshIndicator(
-                      onRefresh: controller.load,
-                      child: ListView(
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          PageContent(
-                            width: PageContentWidth.narrow,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                if (controller.visits.isEmpty)
-                                  const Text('No visits for this filter.'),
-                                for (final v in controller.visits)
-                                  Card(
-                                    margin: const EdgeInsets.only(bottom: 8),
-                                    child: ListTile(
-                                      title: Text(
-                                        v.jobTitle ?? v.tenantName ?? 'Visit',
-                                      ),
-                                      subtitle: Text(
-                                        '${_fmt(v.scheduledStart)} · ${v.status} · '
-                                        '${v.paymentStatus}',
+              child:
+                  controller.isLoading.value && controller.visits.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : RefreshIndicator(
+                        onRefresh: controller.load,
+                        child: ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            PageContent(
+                              width: PageContentWidth.narrow,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  if (controller.visits.isEmpty)
+                                    const Text('No visits for this filter.'),
+                                  for (final v in controller.visits)
+                                    Card(
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      child: ListTile(
+                                        title: Text(
+                                          v.jobTitle ?? v.tenantName ?? 'Visit',
+                                        ),
+                                        subtitle: Text(
+                                          '${_fmt(v.scheduledStart)} · ${v.status} · '
+                                          '${v.paymentStatus}',
+                                        ),
                                       ),
                                     ),
-                                  ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
             ),
           ],
         );

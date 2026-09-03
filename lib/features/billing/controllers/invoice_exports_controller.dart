@@ -56,10 +56,11 @@ class InvoiceExportsController extends GetxController {
     super.onInit();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    periodRange = DateTimeRange(
-      start: today.subtract(const Duration(days: 13)),
-      end: today,
-    ).obs;
+    periodRange =
+        DateTimeRange(
+          start: today.subtract(const Duration(days: 13)),
+          end: today,
+        ).obs;
     loadExports();
   }
 
@@ -84,9 +85,16 @@ class InvoiceExportsController extends GetxController {
   Future<void> loadExportableVisits() async {
     if (!canManage) return;
     final range = periodRange.value;
-    final from = DateTime.utc(range.start.year, range.start.month, range.start.day);
-    final to = DateTime.utc(range.end.year, range.end.month, range.end.day)
-        .add(const Duration(days: 1));
+    final from = DateTime.utc(
+      range.start.year,
+      range.start.month,
+      range.start.day,
+    );
+    final to = DateTime.utc(
+      range.end.year,
+      range.end.month,
+      range.end.day,
+    ).add(const Duration(days: 1));
     isLoading.value = true;
     errorMessage.value = null;
     try {
@@ -188,7 +196,7 @@ class InvoiceExportsController extends GetxController {
         AppToast.success(
           'Export created',
           '${created.lineCount} line${created.lineCount == 1 ? '' : 's'} · '
-          '${created.currencyCode} ${created.totalAmount.toStringAsFixed(2)}',
+              '${created.currencyCode} ${created.totalAmount.toStringAsFixed(2)}',
         );
       }
       openDetail(created);
@@ -210,7 +218,8 @@ class InvoiceExportsController extends GetxController {
             (row) => InvoiceExportVisitError(
               visitId: row['visit_id'] ?? '',
               code: row['code'] ?? 'unknown',
-              message: row['message'] ??
+              message:
+                  row['message'] ??
                   invoiceExportErrorMessage(row['code'] ?? 'unknown'),
             ),
           )

@@ -63,7 +63,9 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                           4 => OnboardingRepresentativeStep(
                             controller: controller,
                           ),
-                          5 => OnboardingSupportPlanStep(controller: controller),
+                          5 => OnboardingSupportPlanStep(
+                            controller: controller,
+                          ),
                           _ => OnboardingLegalPackStep(controller: controller),
                         },
                       ],

@@ -4,14 +4,14 @@ import 'package:rostiq/app/data/models/document/document_models.dart';
 import 'package:rostiq/features/credentials/widgets/evidence_document_actions.dart';
 
 DocumentOut _doc() => const DocumentOut(
-      id: 'doc-1',
-      ownerType: 'contractor',
-      ownerId: 'c1',
-      filename: 'cert.pdf',
-      contentType: 'application/pdf',
-      sizeBytes: 10,
-      scanStatus: 'clean',
-    );
+  id: 'doc-1',
+  ownerType: 'contractor',
+  ownerId: 'c1',
+  filename: 'cert.pdf',
+  contentType: 'application/pdf',
+  sizeBytes: 10,
+  scanStatus: 'clean',
+);
 
 void main() {
   testWidgets('hides View when showView is false', (tester) async {
@@ -65,8 +65,9 @@ void main() {
       ),
     );
     final view = tester.getSize(find.widgetWithText(OutlinedButton, 'View'));
-    final download =
-        tester.getSize(find.widgetWithText(OutlinedButton, 'Download'));
+    final download = tester.getSize(
+      find.widgetWithText(OutlinedButton, 'Download'),
+    );
     expect((view.width - download.width).abs() < 1, true);
     expect(view.width > 140, true);
   });

@@ -107,9 +107,7 @@ void main() {
     when(
       () => jobs.ensureHorizon(any()),
     ).thenAnswer((_) async => HorizonOut.empty);
-    when(
-      () => engagements.listTenantEngagements(),
-    ).thenAnswer((_) async => []);
+    when(() => engagements.listTenantEngagements()).thenAnswer((_) async => []);
   });
 
   tearDown(Get.reset);

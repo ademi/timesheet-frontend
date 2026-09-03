@@ -8,13 +8,18 @@ void main() {
     ResponsiveDestination(icon: Icons.home_outlined, label: 'Home'),
     ResponsiveDestination(icon: Icons.groups_outlined, label: 'Workforce'),
     ResponsiveDestination(icon: Icons.people_outline, label: 'Clients'),
-    ResponsiveDestination(icon: Icons.event_available_outlined, label: 'Roster'),
+    ResponsiveDestination(
+      icon: Icons.event_available_outlined,
+      label: 'Roster',
+    ),
     ResponsiveDestination(icon: Icons.payments_outlined, label: 'Payments'),
     ResponsiveDestination(icon: Icons.receipt_long_outlined, label: 'Billing'),
     ResponsiveDestination(icon: Icons.settings_outlined, label: 'Settings'),
   ];
 
-  testWidgets('narrow width uses bottom NavigationBar not rail', (tester) async {
+  testWidgets('narrow width uses bottom NavigationBar not rail', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(tester.view.resetPhysicalSize);
 
@@ -53,7 +58,9 @@ void main() {
     expect(find.byType(NavigationBar), findsNothing);
   });
 
-  testWidgets('narrow width shows every destination without More', (tester) async {
+  testWidgets('narrow width shows every destination without More', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(tester.view.resetPhysicalSize);
 
@@ -74,7 +81,9 @@ void main() {
     }
   });
 
-  testWidgets('wide width shows every destination without More', (tester) async {
+  testWidgets('wide width shows every destination without More', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(1280, 900));
     addTearDown(tester.view.resetPhysicalSize);
 

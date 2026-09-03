@@ -149,10 +149,7 @@ class _LegalItem extends StatelessWidget {
               ),
             ],
           ),
-          if (!complete) ...[
-            const SizedBox(height: 12),
-            child,
-          ],
+          if (!complete) ...[const SizedBox(height: 12), child],
         ],
       ),
     );

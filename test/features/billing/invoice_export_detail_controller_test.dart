@@ -23,10 +23,7 @@ InvoiceExportOut _export({
     tenantId: 'tenant-1',
     status: status,
     lineCount: lines.length,
-    totalAmount: lines.fold<double>(
-      0,
-      (sum, line) => sum + line.lineAmount,
-    ),
+    totalAmount: lines.fold<double>(0, (sum, line) => sum + line.lineAmount),
     currencyCode: 'AUD',
     createdAt: _now,
     updatedAt: _now,
@@ -87,8 +84,10 @@ void main() {
       await controller.load();
 
       expect(controller.selected.value?.id, 'export-42');
-      expect(controller.selected.value?.lines.single.participantNdisNumber,
-          '430000000');
+      expect(
+        controller.selected.value?.lines.single.participantNdisNumber,
+        '430000000',
+      );
       verify(() => repository.getInvoiceExport('export-42')).called(1);
     });
 
@@ -147,8 +146,10 @@ void main() {
 
       await controller.voidExport();
 
-      expect(controller.errorMessage.value,
-          'Only finalized exports can be voided.');
+      expect(
+        controller.errorMessage.value,
+        'Only finalized exports can be voided.',
+      );
     });
 
     test('canVoid is false when export already void', () {

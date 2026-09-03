@@ -48,9 +48,17 @@ void main() {
       'Leave',
     );
 
-    final dayLocal = DateTime(day.toLocal().year, day.toLocal().month, day.toLocal().day);
+    final dayLocal = DateTime(
+      day.toLocal().year,
+      day.toLocal().month,
+      day.toLocal().day,
+    );
     final leaveLocal = leaveStartUtc.toLocal();
-    final leaveCivil = DateTime(leaveLocal.year, leaveLocal.month, leaveLocal.day);
+    final leaveCivil = DateTime(
+      leaveLocal.year,
+      leaveLocal.month,
+      leaveLocal.day,
+    );
     final deviceExpectsLeave =
         !dayLocal.isBefore(leaveCivil) && !dayLocal.isAfter(leaveCivil);
     // On UTC devices leave UTC instant falls on prior civil day without tenant TZ.
@@ -155,11 +163,7 @@ void main() {
           contractorId: 'jane',
           displayName: 'Jane',
           leave: [
-            LeaveIntervalOut(
-              startDate: day,
-              endDate: day,
-              leaveType: 'sick',
-            ),
+            LeaveIntervalOut(startDate: day, endDate: day, leaveType: 'sick'),
           ],
           availability: const [],
         ),

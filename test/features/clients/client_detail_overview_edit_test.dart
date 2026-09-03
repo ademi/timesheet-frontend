@@ -121,14 +121,16 @@ void main() {
     when(
       () => clients.getClientProfilePhoto(any()),
     ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
-    when(() => clients.listClientTypes()).thenAnswer((_) async => [_patientType]);
+    when(
+      () => clients.listClientTypes(),
+    ).thenAnswer((_) async => [_patientType]);
     when(
       () => clients.listTypeRequirements(_patientType.id),
     ).thenAnswer((_) async => const [_ndisReq, _dobReq, _idReq]);
     when(() => clients.getClient(_client.id)).thenAnswer((_) async => _client);
-    when(() => clients.getClientProfile(_client.id)).thenAnswer(
-      (_) async => const ClientProfileBundle(facts: []),
-    );
+    when(
+      () => clients.getClientProfile(_client.id),
+    ).thenAnswer((_) async => const ClientProfileBundle(facts: []));
     when(() => clients.listSites(any())).thenAnswer((_) async => []);
     when(() => clients.listContacts(any())).thenAnswer((_) async => []);
     when(() => clients.listSupportPlans(any())).thenAnswer((_) async => []);
@@ -150,7 +152,9 @@ void main() {
 
   Finder documentPicker() => find.byIcon(Icons.upload_file_outlined);
 
-  testWidgets('Overview shows identity fields read-only by default', (tester) async {
+  testWidgets('Overview shows identity fields read-only by default', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       GetMaterialApp(
         home: Scaffold(
@@ -293,34 +297,45 @@ void main() {
     expect(find.byKey(ClientDetailOverviewSection.typeKey), findsOneWidget);
   });
 
-  test('saveOverviewProfile uses patchClient and upsertProfileFact only', () async {
-    controller.overviewNameCtrl.text = 'Updated Name';
-    controller.overviewEmailCtrl.text = 'new@example.com';
-    controller.overviewNdisCtrl.text = '430999888';
-    controller.overviewDob.value = DateTime(1991, 6, 20);
-    controller.tabIndex.value = ClientsController.tabOverview;
+  test(
+    'saveOverviewProfile uses patchClient and upsertProfileFact only',
+    () async {
+      controller.overviewNameCtrl.text = 'Updated Name';
+      controller.overviewEmailCtrl.text = 'new@example.com';
+      controller.overviewNdisCtrl.text = '430999888';
+      controller.overviewDob.value = DateTime(1991, 6, 20);
+      controller.tabIndex.value = ClientsController.tabOverview;
 
-    when(() => clients.patchClient(any(), any())).thenAnswer((_) async => _client);
-    when(
-      () => clients.upsertProfileFact(any(), OnboardingKeys.ndis, any()),
-    ).thenAnswer((_) async {});
+      when(
+        () => clients.patchClient(any(), any()),
+      ).thenAnswer((_) async => _client);
+      when(
+        () => clients.upsertProfileFact(any(), OnboardingKeys.ndis, any()),
+      ).thenAnswer((_) async {});
 
-    await controller.saveOverviewProfile();
+      await controller.saveOverviewProfile();
 
-    verify(() => clients.patchClient(_client.id, any())).called(1);
-    verify(
-      () => clients.upsertProfileFact(
-        _client.id,
-        OnboardingKeys.ndis,
-        any(that: predicate<ProfileFactUpsert>((p) => p.valueJson == '430999888')),
-      ),
-    ).called(1);
-    expect(controller.tabIndex.value, ClientsController.tabOverview);
-  });
+      verify(() => clients.patchClient(_client.id, any())).called(1);
+      verify(
+        () => clients.upsertProfileFact(
+          _client.id,
+          OnboardingKeys.ndis,
+          any(
+            that: predicate<ProfileFactUpsert>(
+              (p) => p.valueJson == '430999888',
+            ),
+          ),
+        ),
+      ).called(1);
+      expect(controller.tabIndex.value, ClientsController.tabOverview);
+    },
+  );
 
   test('saveOverviewProfile never calls saveClientTypeProfile path', () async {
     controller.overviewEmailCtrl.text = 'patch@example.com';
-    when(() => clients.patchClient(any(), any())).thenAnswer((_) async => _client);
+    when(
+      () => clients.patchClient(any(), any()),
+    ).thenAnswer((_) async => _client);
 
     await controller.saveOverviewProfile();
 
@@ -340,7 +355,9 @@ void main() {
     controller.clientTypes.assignAll([_patientType]);
     controller.requirementDrafts.clear();
 
-    when(() => clients.patchClient(any(), any())).thenAnswer((_) async => _client);
+    when(
+      () => clients.patchClient(any(), any()),
+    ).thenAnswer((_) async => _client);
     when(() => clients.listSites(any())).thenAnswer((_) async => []);
     when(() => clients.listContacts(any())).thenAnswer((_) async => []);
 
@@ -365,16 +382,20 @@ void main() {
     controller.selectedClientTypeId.value = _patientType.id;
     controller.clientTypes.assignAll([_patientType]);
 
-    when(() => clients.patchClient(any(), any())).thenAnswer((_) async => _client);
+    when(
+      () => clients.patchClient(any(), any()),
+    ).thenAnswer((_) async => _client);
     when(() => clients.listSites(any())).thenAnswer((_) async => []);
     when(() => clients.listContacts(any())).thenAnswer((_) async => []);
 
     await controller.saveClientTypeProfile();
     await tester.pumpAndSettle();
 
-    final captured = verify(
-      () => clients.patchClient(_client.id, captureAny()),
-    ).captured.single as ClientUpdateRequest;
+    final captured =
+        verify(
+              () => clients.patchClient(_client.id, captureAny()),
+            ).captured.single
+            as ClientUpdateRequest;
     expect(captured.dob, isNull);
   });
 
@@ -411,12 +432,16 @@ void main() {
     controller.hydrateOverviewDrafts();
     controller.overviewEmailCtrl.text = '';
     controller.overviewPhoneCtrl.text = '+61400000100';
-    when(() => clients.patchClient(any(), any())).thenAnswer((_) async => _client);
+    when(
+      () => clients.patchClient(any(), any()),
+    ).thenAnswer((_) async => _client);
 
     await controller.saveOverviewProfile();
 
     final captured =
-        verify(() => clients.patchClient(_client.id, captureAny())).captured.single
+        verify(
+              () => clients.patchClient(_client.id, captureAny()),
+            ).captured.single
             as ClientUpdateRequest;
     expect(captured.email, 'demo@example.com');
     expect(controller.overviewEmailCtrl.text, 'demo@example.com');
@@ -425,12 +450,16 @@ void main() {
   test('saveOverviewProfile null DOB keeps existing (I3)', () async {
     controller.hydrateOverviewDrafts();
     controller.overviewDob.value = null;
-    when(() => clients.patchClient(any(), any())).thenAnswer((_) async => _client);
+    when(
+      () => clients.patchClient(any(), any()),
+    ).thenAnswer((_) async => _client);
 
     await controller.saveOverviewProfile();
 
     final captured =
-        verify(() => clients.patchClient(_client.id, captureAny())).captured.single
+        verify(
+              () => clients.patchClient(_client.id, captureAny()),
+            ).captured.single
             as ClientUpdateRequest;
     expect(captured.dob, '1990-05-15');
   });

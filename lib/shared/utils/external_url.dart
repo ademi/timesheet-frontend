@@ -16,16 +16,16 @@ Future<bool> openMapLocation({
   String? label,
 }) async {
   final hasCoords = latitude != null && longitude != null;
-  final query = hasCoords
-      ? '$latitude,$longitude'
-      : (label?.trim().isNotEmpty == true ? label!.trim() : null);
+  final query =
+      hasCoords
+          ? '$latitude,$longitude'
+          : (label?.trim().isNotEmpty == true ? label!.trim() : null);
   if (query == null) return false;
 
-  final https = Uri.https(
-    'www.google.com',
-    '/maps/search/',
-    {'api': '1', 'query': query},
-  );
+  final https = Uri.https('www.google.com', '/maps/search/', {
+    'api': '1',
+    'query': query,
+  });
 
   // geo: is for native map apps; browsers open a useless blank tab.
   if (!kIsWeb && hasCoords) {

@@ -38,8 +38,7 @@ class RegisterStepIndicator extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 10,
-                    color:
-                        i <= step ? AppColors.textDark : AppColors.textMuted,
+                    color: i <= step ? AppColors.textDark : AppColors.textMuted,
                   ),
                 ),
               ],
@@ -88,7 +87,10 @@ class RegisterInviteBanner extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 'After signup you will need to upload: ${categories.join(', ')}.',
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                ),
               ),
             ],
           ],
@@ -345,20 +347,17 @@ class RegisterScreeningStep extends StatelessWidget {
           context: context,
           controller: controller.screeningIssueCtrl,
           label: 'Issue date',
-          onPick: () => controller.pickDate(
-            context,
-            controller.screeningIssueCtrl,
-          ),
+          onPick:
+              () => controller.pickDate(context, controller.screeningIssueCtrl),
         ),
         const SizedBox(height: 12),
         _dateField(
           context: context,
           controller: controller.screeningExpiryCtrl,
           label: 'Expiry date',
-          onPick: () => controller.pickDate(
-            context,
-            controller.screeningExpiryCtrl,
-          ),
+          onPick:
+              () =>
+                  controller.pickDate(context, controller.screeningExpiryCtrl),
         ),
         const SizedBox(height: 12),
         _field(
@@ -432,9 +431,12 @@ class _QualRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DropdownButtonFormField<String>(
-              value: ContractorRegisterController.qualTypeOptions.contains(row.type)
-                  ? row.type
-                  : ContractorRegisterController.qualTypeOptions.first,
+              value:
+                  ContractorRegisterController.qualTypeOptions.contains(
+                        row.type,
+                      )
+                      ? row.type
+                      : ContractorRegisterController.qualTypeOptions.first,
               decoration: const InputDecoration(
                 labelText: 'Type',
                 border: OutlineInputBorder(),
@@ -516,7 +518,8 @@ class RegisterChecksStep extends StatelessWidget {
           context: context,
           controller: controller.policeIssueCtrl,
           label: 'Police check issue date',
-          onPick: () => controller.pickDate(context, controller.policeIssueCtrl),
+          onPick:
+              () => controller.pickDate(context, controller.policeIssueCtrl),
         ),
         const SizedBox(height: 16),
         _field(
@@ -535,8 +538,8 @@ class RegisterChecksStep extends StatelessWidget {
           context: context,
           controller: controller.licenceExpiryCtrl,
           label: 'Licence expiry',
-          onPick: () =>
-              controller.pickDate(context, controller.licenceExpiryCtrl),
+          onPick:
+              () => controller.pickDate(context, controller.licenceExpiryCtrl),
         ),
         const SizedBox(height: 16),
         _field(
@@ -555,8 +558,8 @@ class RegisterChecksStep extends StatelessWidget {
           context: context,
           controller: controller.vehicleExpiryCtrl,
           label: 'Registration expiry',
-          onPick: () =>
-              controller.pickDate(context, controller.vehicleExpiryCtrl),
+          onPick:
+              () => controller.pickDate(context, controller.vehicleExpiryCtrl),
         ),
       ],
     );
@@ -629,18 +632,16 @@ class _LegalBlock extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
             child: Text(
               title,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
             ),
           ),
           SizedBox(
             height: 180,
             child: Obx(
-              () => markdown.value.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : MarkdownViewer(markdown: markdown.value),
+              () =>
+                  markdown.value.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : MarkdownViewer(markdown: markdown.value),
             ),
           ),
           const Divider(height: 1),

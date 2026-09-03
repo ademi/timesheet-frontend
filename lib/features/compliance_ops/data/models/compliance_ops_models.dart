@@ -28,7 +28,8 @@ class RightsRequestOut {
   factory RightsRequestOut.fromJson(Map<String, dynamic> json) {
     return RightsRequestOut(
       id: json['id'].toString(),
-      requestType: json['request_type'] as String? ??
+      requestType:
+          json['request_type'] as String? ??
           json['type'] as String? ??
           'access',
       status: json['status'] as String? ?? 'submitted',
@@ -37,26 +38,24 @@ class RightsRequestOut {
         (json['created_at'] ?? DateTime.now().toUtc().toIso8601String())
             as String,
       ),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'].toString())
-          : null,
+      updatedAt:
+          json['updated_at'] != null
+              ? DateTime.tryParse(json['updated_at'].toString())
+              : null,
     );
   }
 }
 
 class RightsRequestCreate {
-  const RightsRequestCreate({
-    required this.requestType,
-    this.notes,
-  });
+  const RightsRequestCreate({required this.requestType, this.notes});
 
   final String requestType;
   final String? notes;
 
   Map<String, dynamic> toJson() => {
-        'request_type': requestType,
-        if (notes != null && notes!.trim().isNotEmpty) 'notes': notes!.trim(),
-      };
+    'request_type': requestType,
+    if (notes != null && notes!.trim().isNotEmpty) 'notes': notes!.trim(),
+  };
 }
 
 class AccessHistoryEntry {
@@ -80,10 +79,13 @@ class AccessHistoryEntry {
     return AccessHistoryEntry(
       id: (json['id'] ?? json['event_id'] ?? '').toString(),
       createdAt: DateTime.parse(
-        (json['created_at'] ?? json['occurred_at'] ?? DateTime.now().toIso8601String())
+        (json['created_at'] ??
+                json['occurred_at'] ??
+                DateTime.now().toIso8601String())
             as String,
       ),
-      actorLabel: json['actor_label'] as String? ??
+      actorLabel:
+          json['actor_label'] as String? ??
           json['actor_email'] as String? ??
           json['user_email'] as String?,
       action: json['action'] as String? ?? json['event_type'] as String?,
@@ -160,12 +162,12 @@ class IncidentCreate {
   final DateTime? discoveredAt;
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        if (description != null && description!.trim().isNotEmpty)
-          'description': description!.trim(),
-        if (discoveredAt != null)
-          'discovered_at': discoveredAt!.toUtc().toIso8601String(),
-      };
+    'title': title,
+    if (description != null && description!.trim().isNotEmpty)
+      'description': description!.trim(),
+    if (discoveredAt != null)
+      'discovered_at': discoveredAt!.toUtc().toIso8601String(),
+  };
 }
 
 class PrivacyExportResult {
@@ -209,9 +211,7 @@ class NotificationEventOut {
       createdAt: DateTime.parse(
         (json['created_at'] ?? DateTime.now().toIso8601String()) as String,
       ),
-      payload: payload is Map
-          ? Map<String, dynamic>.from(payload)
-          : const {},
+      payload: payload is Map ? Map<String, dynamic>.from(payload) : const {},
     );
   }
 
@@ -234,9 +234,10 @@ class SubscriptionStatusOut {
 
   factory SubscriptionStatusOut.fromJson(Map<String, dynamic> json) {
     final nested = json['subscription'];
-    final map = nested is Map
-        ? Map<String, dynamic>.from(nested)
-        : Map<String, dynamic>.from(json);
+    final map =
+        nested is Map
+            ? Map<String, dynamic>.from(nested)
+            : Map<String, dynamic>.from(json);
     return SubscriptionStatusOut(
       status: (map['status'] ?? json['status'] ?? 'unknown').toString(),
       planName: map['plan_name'] as String? ?? map['plan'] as String?,

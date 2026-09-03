@@ -19,7 +19,12 @@ void main() {
     });
 
     test('uses IANA zone when available', () {
-      final utc = DateTime.utc(2026, 8, 9, 14); // 00:00 Sydney (+10, no DST Aug)
+      final utc = DateTime.utc(
+        2026,
+        8,
+        9,
+        14,
+      ); // 00:00 Sydney (+10, no DST Aug)
       final civil = tenantCivilFromUtc(utc, 'Australia/Sydney');
       expect(civil.year, 2026);
       expect(civil.month, 8);

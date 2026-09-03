@@ -57,90 +57,97 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                  if (err != null) ...[
-                    _ErrorBox(err),
-                    const SizedBox(height: 12),
-                  ],
-                  Text(shift.jobTitle, style: Get.textTheme.titleMedium),
-                  if (shift.clientName?.isNotEmpty == true)
-                    Text('Client: ${shift.clientName}'),
-                  const SizedBox(height: 4),
-                  Text('Status: ${shift.status}'),
-                  Text('Start: ${_fmt(shift.scheduledStart)}'),
-                  Text('End: ${_fmt(shift.scheduledEnd)}'),
-                  if (shift.locationLabel?.isNotEmpty == true)
-                    Text('Location: ${shift.locationLabel}'),
-                  const SizedBox(height: 8),
-                  ShiftSlotPips(
-                    requiredSlots: shift.requiredSlots,
-                    filledSlots: shift.filledSlots,
-                  ),
-                  Text(
-                    '${shift.filledSlots} of ${shift.requiredSlots} filled · '
-                    '${shift.openSlots} open',
-                  ),
-                  const Divider(height: 32),
-                  Text('Assignments', style: Get.textTheme.titleMedium),
-                  if (shift.assignments.isEmpty)
-                    const Text('No workers assigned yet.'),
-                  for (final a in shift.assignments)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(a.contractorName),
-                      subtitle: Text(
-                        '${a.source} · ${a.status}'
-                        '${a.visitStatus != null ? ' · ${a.visitStatus}' : ''}',
-                      ),
-                      trailing:
-                          controller.canManage && a.status == 'active'
-                              ? TextButton(
-                                onPressed:
-                                    controller.isSaving.value
-                                        ? null
-                                        : () => controller.releaseAssignment(
-                                          shiftId: shift.id,
-                                          contractorId: a.contractorId,
-                                          workerName: a.contractorName,
-                                        ),
-                                child: const Text('Release'),
-                              )
-                              : const Icon(Icons.chevron_right),
-                      onTap: () => controller.openAssignmentVisit(a.visitId),
-                    ),
-                  if (controller.canManage &&
-                      shift.status != 'cancelled' &&
-                      shift.openSlots > 0) ...[
-                    const Divider(height: 32),
-                    Text('Assign worker', style: Get.textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed:
-                          controller.isSaving.value
-                              ? null
-                              : () => _showAssignPicker(
-                                context,
-                                controller,
-                                shift,
-                              ),
-                      icon: const Icon(Icons.person_add_outlined),
-                      label: const Text('Choose contractor'),
-                    ),
-                  ],
-                  if (controller.canManage) ...[
-                    const Divider(height: 32),
-                    if (shift.status == 'draft')
-                      AsyncElevatedButton(
-                        onPressed: controller.publishSelectedShift,
-                        isLoading: controller.isSaving.value,
-                        child: const Text('Publish shift'),
-                      ),
-                    if (shift.status == 'published')
-                      AsyncOutlinedButton(
-                        onPressed: controller.cancelSelectedShift,
-                        isLoading: controller.isSaving.value,
-                        child: const Text('Cancel shift'),
-                      ),
-                  ],
+                        if (err != null) ...[
+                          _ErrorBox(err),
+                          const SizedBox(height: 12),
+                        ],
+                        Text(shift.jobTitle, style: Get.textTheme.titleMedium),
+                        if (shift.clientName?.isNotEmpty == true)
+                          Text('Client: ${shift.clientName}'),
+                        const SizedBox(height: 4),
+                        Text('Status: ${shift.status}'),
+                        Text('Start: ${_fmt(shift.scheduledStart)}'),
+                        Text('End: ${_fmt(shift.scheduledEnd)}'),
+                        if (shift.locationLabel?.isNotEmpty == true)
+                          Text('Location: ${shift.locationLabel}'),
+                        const SizedBox(height: 8),
+                        ShiftSlotPips(
+                          requiredSlots: shift.requiredSlots,
+                          filledSlots: shift.filledSlots,
+                        ),
+                        Text(
+                          '${shift.filledSlots} of ${shift.requiredSlots} filled · '
+                          '${shift.openSlots} open',
+                        ),
+                        const Divider(height: 32),
+                        Text('Assignments', style: Get.textTheme.titleMedium),
+                        if (shift.assignments.isEmpty)
+                          const Text('No workers assigned yet.'),
+                        for (final a in shift.assignments)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(a.contractorName),
+                            subtitle: Text(
+                              '${a.source} · ${a.status}'
+                              '${a.visitStatus != null ? ' · ${a.visitStatus}' : ''}',
+                            ),
+                            trailing:
+                                controller.canManage && a.status == 'active'
+                                    ? TextButton(
+                                      onPressed:
+                                          controller.isSaving.value
+                                              ? null
+                                              : () =>
+                                                  controller.releaseAssignment(
+                                                    shiftId: shift.id,
+                                                    contractorId:
+                                                        a.contractorId,
+                                                    workerName:
+                                                        a.contractorName,
+                                                  ),
+                                      child: const Text('Release'),
+                                    )
+                                    : const Icon(Icons.chevron_right),
+                            onTap:
+                                () => controller.openAssignmentVisit(a.visitId),
+                          ),
+                        if (controller.canManage &&
+                            shift.status != 'cancelled' &&
+                            shift.openSlots > 0) ...[
+                          const Divider(height: 32),
+                          Text(
+                            'Assign worker',
+                            style: Get.textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed:
+                                controller.isSaving.value
+                                    ? null
+                                    : () => _showAssignPicker(
+                                      context,
+                                      controller,
+                                      shift,
+                                    ),
+                            icon: const Icon(Icons.person_add_outlined),
+                            label: const Text('Choose contractor'),
+                          ),
+                        ],
+                        if (controller.canManage) ...[
+                          const Divider(height: 32),
+                          if (shift.status == 'draft')
+                            AsyncElevatedButton(
+                              onPressed: controller.publishSelectedShift,
+                              isLoading: controller.isSaving.value,
+                              child: const Text('Publish shift'),
+                            ),
+                          if (shift.status == 'published')
+                            AsyncOutlinedButton(
+                              onPressed: controller.cancelSelectedShift,
+                              isLoading: controller.isSaving.value,
+                              child: const Text('Cancel shift'),
+                            ),
+                        ],
                       ],
                     ),
                   ),

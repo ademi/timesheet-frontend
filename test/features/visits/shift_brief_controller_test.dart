@@ -41,8 +41,9 @@ void main() {
   });
 
   test('loads shift brief for visit', () async {
-    when(() => mock.getVisitShiftBrief('v1'))
-        .thenAnswer((_) async => sampleBrief);
+    when(
+      () => mock.getVisitShiftBrief('v1'),
+    ).thenAnswer((_) async => sampleBrief);
     await c.load('v1');
     expect(c.brief.value?.routines, 'Breakfast 8am');
     expect(c.isLoading.value, isFalse);
@@ -64,20 +65,25 @@ void main() {
     expect(c.isLoading.value, isFalse);
   });
 
-  test('loads plan_body_invalid brief with allergies preserved (CR1)', () async {
-    const invalid = ShiftBriefDto(
-      clientId: 'c1',
-      clientName: 'Ada',
-      planBodyInvalid: true,
-      allergies: 'Peanuts',
-      accessNotes: 'Gate code 1234',
-      supportPlanId: 'plan-1',
-    );
-    when(() => mock.getVisitShiftBrief('v1')).thenAnswer((_) async => invalid);
-    await c.load('v1');
-    expect(c.brief.value?.planBodyInvalid, isTrue);
-    expect(c.brief.value?.allergies, 'Peanuts');
-    expect(c.brief.value?.accessNotes, 'Gate code 1234');
-    expect(c.brief.value?.routines, isNull);
-  });
+  test(
+    'loads plan_body_invalid brief with allergies preserved (CR1)',
+    () async {
+      const invalid = ShiftBriefDto(
+        clientId: 'c1',
+        clientName: 'Ada',
+        planBodyInvalid: true,
+        allergies: 'Peanuts',
+        accessNotes: 'Gate code 1234',
+        supportPlanId: 'plan-1',
+      );
+      when(
+        () => mock.getVisitShiftBrief('v1'),
+      ).thenAnswer((_) async => invalid);
+      await c.load('v1');
+      expect(c.brief.value?.planBodyInvalid, isTrue);
+      expect(c.brief.value?.allergies, 'Peanuts');
+      expect(c.brief.value?.accessNotes, 'Gate code 1234');
+      expect(c.brief.value?.routines, isNull);
+    },
+  );
 }

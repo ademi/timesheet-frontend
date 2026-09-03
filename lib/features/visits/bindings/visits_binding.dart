@@ -85,9 +85,10 @@ class StaffVisitsBinding extends Bindings {
           engagementsRepository: Get.find<EngagementsRepository>(),
           clientsRepository: Get.find<ClientsRepository>(),
           session: Get.find<SessionService>(),
-          payroll: Get.isRegistered<PayrollRepository>()
-              ? Get.find<PayrollRepository>()
-              : null,
+          payroll:
+              Get.isRegistered<PayrollRepository>()
+                  ? Get.find<PayrollRepository>()
+                  : null,
         ),
       );
     }
@@ -110,9 +111,7 @@ class ContractorVisitsBinding extends Bindings {
       );
     }
     if (!Get.isRegistered<VisitShiftBriefController>()) {
-      Get.put(
-        VisitShiftBriefController(repo: Get.find<VisitsRepository>()),
-      );
+      Get.put(VisitShiftBriefController(repo: Get.find<VisitsRepository>()));
     }
   }
 }

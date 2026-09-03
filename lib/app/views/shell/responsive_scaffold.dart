@@ -5,10 +5,7 @@ import '../../themes/app_colors.dart';
 
 /// A top-level navigation destination shown in [ResponsiveScaffold]'s rail.
 class ResponsiveDestination {
-  const ResponsiveDestination({
-    required this.icon,
-    required this.label,
-  });
+  const ResponsiveDestination({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -36,9 +33,10 @@ class ResponsiveScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final index = selectedIndex < 0
-            ? 0
-            : selectedIndex.clamp(0, destinations.length - 1);
+        final index =
+            selectedIndex < 0
+                ? 0
+                : selectedIndex.clamp(0, destinations.length - 1);
         final compact = constraints.maxWidth < Breakpoints.tablet;
 
         return Row(
@@ -47,9 +45,10 @@ class ResponsiveScaffold extends StatelessWidget {
             NavigationRail(
               selectedIndex: index,
               onDestinationSelected: onDestinationSelected,
-              labelType: compact
-                  ? NavigationRailLabelType.selected
-                  : NavigationRailLabelType.all,
+              labelType:
+                  compact
+                      ? NavigationRailLabelType.selected
+                      : NavigationRailLabelType.all,
               groupAlignment: -1,
               backgroundColor: AppColors.cardBackground,
               indicatorColor: AppColors.primary.withValues(alpha: 0.18),

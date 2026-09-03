@@ -56,8 +56,7 @@ class OnboardingContactsStep extends StatelessWidget {
             const Divider(),
           ],
           if (!emergencyDone || mode == 'emergency') ...[
-            if (!emergencyDone)
-              ContactFormFields(controller: controller),
+            if (!emergencyDone) ContactFormFields(controller: controller),
             if (!emergencyDone) ...[
               const SizedBox(height: 12),
               AsyncOutlinedButton(

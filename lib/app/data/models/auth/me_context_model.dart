@@ -35,12 +35,13 @@ class MeContextModel {
       contractorId: json['contractor_id'] as String?,
       tenantMemberId: json['tenant_member_id'] as String?,
       timezone: json['timezone'] as String?,
-      engagements: rawEngagements is List
-          ? rawEngagements
-              .whereType<Map<String, dynamic>>()
-              .map(EngagementSummaryModel.fromJson)
-              .toList(growable: false)
-          : const [],
+      engagements:
+          rawEngagements is List
+              ? rawEngagements
+                  .whereType<Map<String, dynamic>>()
+                  .map(EngagementSummaryModel.fromJson)
+                  .toList(growable: false)
+              : const [],
       platformComplianceAccepted:
           json['platform_compliance_accepted'] as bool? ?? false,
     );

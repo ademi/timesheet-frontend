@@ -165,7 +165,9 @@ class ClientDetailView extends GetView<ClientsController> {
             ),
             Expanded(child: _tabContent(tab)),
             if (errorNotice != null && overviewSelected) errorNotice,
-            if (overviewSelected && canEditOverview && controller.overviewEditing.value)
+            if (overviewSelected &&
+                canEditOverview &&
+                controller.overviewEditing.value)
               FormStickyActions(
                 onCancel: controller.discardOverviewDrafts,
                 primaryLabel: 'Save',

@@ -53,10 +53,10 @@ void main() {
       tenantTimezone: 'UTC',
     );
     expect(occurrences.length, 4);
-    expect(
-      occurrences.map((o) => o.civilDay.weekday).toSet(),
-      {DateTime.monday, DateTime.wednesday},
-    );
+    expect(occurrences.map((o) => o.civilDay.weekday).toSet(), {
+      DateTime.monday,
+      DateTime.wednesday,
+    });
   });
 
   test('buildPartialAssignPreview lists busy dates per worker', () {
@@ -96,9 +96,6 @@ void main() {
   });
 
   test('formatPartialAssignDate uses short weekday label', () {
-    expect(
-      formatPartialAssignDate(DateTime(2026, 8, 26)),
-      'Wed 26 Aug',
-    );
+    expect(formatPartialAssignDate(DateTime(2026, 8, 26)), 'Wed 26 Aug');
   });
 }

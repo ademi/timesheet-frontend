@@ -6,7 +6,8 @@ import '../../../app/data/models/document/document_models.dart';
 import '../../../core/constants/australian_states.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
-import '../../../features/clients/data/models/client_models.dart' as client_models;
+import '../../../features/clients/data/models/client_models.dart'
+    as client_models;
 import '../../../features/clients/utils/site_geocode_apply.dart';
 import '../../../features/contractor_register/data/models/contractor_register_models.dart';
 import '../../../features/contractor_register/models/contractor_qual_row.dart';
@@ -26,10 +27,10 @@ class ContractorProfileController extends GetxController {
     required SessionService session,
     DocumentPipeline? documentPipeline,
     ContractorMeRepository? meRepository,
-  })  : _repository = repository,
-        _session = session,
-        _pipeline = documentPipeline,
-        _meRepository = meRepository;
+  }) : _repository = repository,
+       _session = session,
+       _pipeline = documentPipeline,
+       _meRepository = meRepository;
 
   final ComplianceOpsRepository _repository;
   final SessionService _session;
@@ -329,7 +330,8 @@ class ContractorProfileController extends GetxController {
         GeocodeRequest(
           addressLine1: line1,
           city: city,
-          country: countryCtrl.text.trim().isEmpty ? 'AU' : countryCtrl.text.trim(),
+          country:
+              countryCtrl.text.trim().isEmpty ? 'AU' : countryCtrl.text.trim(),
           state: stateCtrl.text.trim().isEmpty ? null : stateCtrl.text.trim(),
         ),
       );
@@ -539,7 +541,8 @@ class ContractorProfileController extends GetxController {
       final name = accountNameCtrl.text.trim();
       final bsb = AbnUtils.digitsOnly(bsbCtrl.text);
       final account = AbnUtils.digitsOnly(accountNumberCtrl.text);
-      final anyPayment = name.isNotEmpty || bsb.isNotEmpty || account.isNotEmpty;
+      final anyPayment =
+          name.isNotEmpty || bsb.isNotEmpty || account.isNotEmpty;
       if (anyPayment) {
         if (name.isEmpty || bsb.isEmpty || account.isEmpty) {
           errorMessage.value =

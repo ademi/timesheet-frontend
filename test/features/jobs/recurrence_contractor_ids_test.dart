@@ -25,13 +25,14 @@ RecurrenceRuleOut _rule({
 
 void main() {
   test('recurrence create request sends contractor_ids list', () {
-    final json = RecurrenceRuleCreateRequest(
-      contractorIds: const ['worker-a', 'worker-b'],
-      requiredSlots: 2,
-      rrule: 'FREQ=WEEKLY;BYDAY=MO',
-      dtstart: DateTime.utc(2026, 8, 3, 9),
-      timeWindows: const [TimeWindow(startTime: '09:00', endTime: '12:00')],
-    ).toJson();
+    final json =
+        RecurrenceRuleCreateRequest(
+          contractorIds: const ['worker-a', 'worker-b'],
+          requiredSlots: 2,
+          rrule: 'FREQ=WEEKLY;BYDAY=MO',
+          dtstart: DateTime.utc(2026, 8, 3, 9),
+          timeWindows: const [TimeWindow(startTime: '09:00', endTime: '12:00')],
+        ).toJson();
 
     expect(json['contractor_ids'], ['worker-a', 'worker-b']);
     expect(json.containsKey('contractor_id'), isFalse);
@@ -39,29 +40,31 @@ void main() {
   });
 
   test('ongoing support and split requests send contractor_ids list', () {
-    final ongoing = OngoingSupportCreateRequest(
-      clientId: 'client-1',
-      title: 'Sam support',
-      clientSiteId: 'site-1',
-      contractorIds: const ['worker-a'],
-      rrule: 'FREQ=WEEKLY;BYDAY=MO',
-      dtstart: DateTime.utc(2026, 8, 3, 9),
-      requiredSlots: 3,
-      timeWindows: const [TimeWindow(startTime: '09:00', endTime: '12:00')],
-      horizonFrom: DateTime.utc(2026, 8, 3),
-      horizonTo: DateTime.utc(2026, 8, 17),
-    ).toJson();
+    final ongoing =
+        OngoingSupportCreateRequest(
+          clientId: 'client-1',
+          title: 'Sam support',
+          clientSiteId: 'site-1',
+          contractorIds: const ['worker-a'],
+          rrule: 'FREQ=WEEKLY;BYDAY=MO',
+          dtstart: DateTime.utc(2026, 8, 3, 9),
+          requiredSlots: 3,
+          timeWindows: const [TimeWindow(startTime: '09:00', endTime: '12:00')],
+          horizonFrom: DateTime.utc(2026, 8, 3),
+          horizonTo: DateTime.utc(2026, 8, 17),
+        ).toJson();
     expect(ongoing['contractor_ids'], ['worker-a']);
     expect(ongoing.containsKey('contractor_id'), isFalse);
 
-    final split = SplitRecurrenceRequest(
-      fromDate: DateTime.utc(2026, 8, 17),
-      timeWindows: const [TimeWindow(startTime: '10:00', endTime: '13:00')],
-      contractorIds: const ['worker-b'],
-      requiredSlots: 2,
-      horizonFrom: DateTime.utc(2026, 8, 17),
-      horizonTo: DateTime.utc(2026, 8, 24),
-    ).toJson();
+    final split =
+        SplitRecurrenceRequest(
+          fromDate: DateTime.utc(2026, 8, 17),
+          timeWindows: const [TimeWindow(startTime: '10:00', endTime: '13:00')],
+          contractorIds: const ['worker-b'],
+          requiredSlots: 2,
+          horizonFrom: DateTime.utc(2026, 8, 17),
+          horizonTo: DateTime.utc(2026, 8, 24),
+        ).toJson();
     expect(split['contractor_ids'], ['worker-b']);
     expect(split.containsKey('contractor_id'), isFalse);
   });

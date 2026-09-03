@@ -16,9 +16,9 @@ class StaffTenantSettingsController extends GetxController {
     required PayrollRepository payroll,
     required ComplianceOpsRepository complianceOps,
     required SessionService session,
-  })  : _payroll = payroll,
-        _complianceOps = complianceOps,
-        _session = session;
+  }) : _payroll = payroll,
+       _complianceOps = complianceOps,
+       _session = session;
 
   final PayrollRepository _payroll;
   final ComplianceOpsRepository _complianceOps;
@@ -34,8 +34,7 @@ class StaffTenantSettingsController extends GetxController {
   final timezoneCtrl = TextEditingController();
   final jurisdictionCtrl = TextEditingController();
 
-  bool get canManage =>
-      _session.hasPermission(AppPermissions.tenantsManage);
+  bool get canManage => _session.hasPermission(AppPermissions.tenantsManage);
   bool get canViewMembers =>
       _session.hasPermission(AppPermissions.tenantMembersRead) ||
       _session.hasPermission(AppPermissions.tenantMembersManage);
@@ -98,12 +97,12 @@ class StaffTenantSettingsController extends GetxController {
     try {
       final updated = await _payroll.patchTenant(
         id,
-        timezone: timezoneCtrl.text.trim().isEmpty
-            ? null
-            : timezoneCtrl.text.trim(),
-        publicHolidayJurisdiction: jurisdictionCtrl.text.trim().isEmpty
-            ? null
-            : jurisdictionCtrl.text.trim(),
+        timezone:
+            timezoneCtrl.text.trim().isEmpty ? null : timezoneCtrl.text.trim(),
+        publicHolidayJurisdiction:
+            jurisdictionCtrl.text.trim().isEmpty
+                ? null
+                : jurisdictionCtrl.text.trim(),
       );
       tenant.value = updated;
       AppToast.success(

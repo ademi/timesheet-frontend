@@ -106,22 +106,29 @@ assignAvailabilityQueryWindow({
 }) {
   final tzId = tenantTimezone?.trim();
   final hasTenantTz = tzId != null && tzId.isNotEmpty;
-  final shiftStart = hasTenantTz
-      ? tenantCivilInstantUtc(window.startCivil, tzId)
-      : window.startCivil;
-  final shiftEnd = hasTenantTz
-      ? tenantCivilInstantUtc(window.endCivil, tzId)
-      : window.endCivil;
-  final overlayFrom = hasTenantTz
-      ? startOfTenantCivilDayUtc(shiftStart, tzId)
-      : DateTime(
-          window.dayCivil.year,
-          window.dayCivil.month,
-          window.dayCivil.day,
-        );
-  final overlayTo = hasTenantTz
-      ? startOfTenantCivilDayUtc(shiftEnd, tzId).add(const Duration(days: 1))
-      : overlayFrom.add(const Duration(days: 1));
+  final shiftStart =
+      hasTenantTz
+          ? tenantCivilInstantUtc(window.startCivil, tzId)
+          : window.startCivil;
+  final shiftEnd =
+      hasTenantTz
+          ? tenantCivilInstantUtc(window.endCivil, tzId)
+          : window.endCivil;
+  final overlayFrom =
+      hasTenantTz
+          ? startOfTenantCivilDayUtc(shiftStart, tzId)
+          : DateTime(
+            window.dayCivil.year,
+            window.dayCivil.month,
+            window.dayCivil.day,
+          );
+  final overlayTo =
+      hasTenantTz
+          ? startOfTenantCivilDayUtc(
+            shiftEnd,
+            tzId,
+          ).add(const Duration(days: 1))
+          : overlayFrom.add(const Duration(days: 1));
   return (
     from: overlayFrom,
     to: overlayTo,

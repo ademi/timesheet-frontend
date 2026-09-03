@@ -83,9 +83,9 @@ void main() {
       () => clients.getClientProfilePhoto(any()),
     ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
     when(() => clients.getClient(_client.id)).thenAnswer((_) async => _client);
-    when(() => clients.getClientProfile(_client.id)).thenAnswer(
-      (_) async => const ClientProfileBundle(facts: []),
-    );
+    when(
+      () => clients.getClientProfile(_client.id),
+    ).thenAnswer((_) async => const ClientProfileBundle(facts: []));
     when(() => clients.listSites(any())).thenAnswer((_) async => []);
     when(() => clients.listContacts(any())).thenAnswer((_) async => []);
     when(() => clients.listSupportPlans(any())).thenAnswer((_) async => []);
@@ -119,13 +119,19 @@ void main() {
       GetMaterialApp(
         home: Scaffold(
           body: SingleChildScrollView(
-            child: ClientRequirementEditor(controller: controller, draft: draft),
+            child: ClientRequirementEditor(
+              controller: controller,
+              draft: draft,
+            ),
           ),
         ),
       ),
     );
 
-    expect(find.byKey(ClientRequirementEditor.legalUploadPdfKey), findsOneWidget);
+    expect(
+      find.byKey(ClientRequirementEditor.legalUploadPdfKey),
+      findsOneWidget,
+    );
     expect(find.text('Upload PDF'), findsOneWidget);
     expect(find.text('Consent agreement'), findsOneWidget);
   });
@@ -155,7 +161,9 @@ void main() {
         const GetMaterialApp(home: Scaffold(body: SizedBox.shrink())),
       );
 
-      when(() => clients.patchClient(any(), any())).thenAnswer((_) async => _client);
+      when(
+        () => clients.patchClient(any(), any()),
+      ).thenAnswer((_) async => _client);
       when(() => clients.listClientTypes()).thenAnswer((_) async => []);
       when(
         () => clients.listTypeRequirements(any()),
@@ -176,8 +184,9 @@ void main() {
           scanStatus: 'clean',
         ),
       );
-      when(() => clients.acceptClientLegal(any(), any(), any()))
-          .thenAnswer((_) async {});
+      when(
+        () => clients.acceptClientLegal(any(), any(), any()),
+      ).thenAnswer((_) async {});
 
       final draft = RequirementDraft(_consentReq);
       draft.legalDoc.value = const ClientLegalDocumentCurrent(

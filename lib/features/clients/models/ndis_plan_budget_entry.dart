@@ -15,10 +15,10 @@ class NdisPlanBudgetEntry {
   final String? label;
 
   Map<String, dynamic> toJson() => {
-        'type': type,
-        'amount_dollars': amountDollars,
-        if (label != null && label!.trim().isNotEmpty) 'label': label!.trim(),
-      };
+    'type': type,
+    'amount_dollars': amountDollars,
+    if (label != null && label!.trim().isNotEmpty) 'label': label!.trim(),
+  };
 
   factory NdisPlanBudgetEntry.fromJson(Map<String, dynamic> json) {
     final type = json['type']?.toString() ?? '';

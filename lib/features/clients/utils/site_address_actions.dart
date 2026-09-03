@@ -12,14 +12,11 @@ Future<void> openSiteInMaps(ClientSiteOut site) async {
   );
 }
 
-Future<void> copySiteAddress(
-  BuildContext context,
-  ClientSiteOut site,
-) async {
+Future<void> copySiteAddress(BuildContext context, ClientSiteOut site) async {
   final text = site.displayAddress;
   await Clipboard.setData(ClipboardData(text: text));
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Address copied')),
-  );
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(const SnackBar(content: Text('Address copied')));
 }

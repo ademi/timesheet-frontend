@@ -20,9 +20,7 @@ class ClientRequirementEditor extends StatelessWidget {
     'client-requirement-document-picker',
   );
 
-  static const legalUploadPdfKey = ValueKey<String>(
-    'legal-consent-upload-pdf',
-  );
+  static const legalUploadPdfKey = ValueKey<String>('legal-consent-upload-pdf');
 
   final ClientsController controller;
   final RequirementDraft draft;
@@ -151,9 +149,8 @@ class _FieldInput extends StatelessWidget {
       case 'date':
         return Obx(() {
           final d = draft.dateValue.value;
-          final label = d == null
-              ? 'Select date'
-              : RequirementDraft.formatDate(d);
+          final label =
+              d == null ? 'Select date' : RequirementDraft.formatDate(d);
           return OutlinedButton.icon(
             onPressed: () => controller.pickDateForRequirement(draft),
             icon: const Icon(Icons.calendar_today_outlined, size: 18),
@@ -183,10 +180,7 @@ class _FieldInput extends StatelessWidget {
           ),
         );
       case 'select':
-        return _SelectRequirementField(
-          draft: draft,
-          placeholder: placeholder,
-        );
+        return _SelectRequirementField(draft: draft, placeholder: placeholder);
       case 'textarea':
         return TextField(
           controller: draft.textCtrl,
@@ -241,22 +235,23 @@ class _DocumentPicker extends StatelessWidget {
         children: [
           OutlinedButton.icon(
             key: buttonKey,
-            onPressed: controller.isSaving.value
-                ? null
-                : () => controller.pickFilesForRequirement(draft),
+            onPressed:
+                controller.isSaving.value
+                    ? null
+                    : () => controller.pickFilesForRequirement(draft),
             icon: const Icon(Icons.upload_file_outlined),
             label: Text(
               uploadLabel ??
                   (draft.requirement.maxFiles > 1
                       ? 'Add file(s)'
                       : (draft.requirement.acceptMimeTypes.any(
-                              (m) => m.toLowerCase().startsWith('image'),
-                            ) ||
-                            draft.requirement.acceptMimeTypes.any(
-                              (m) => m.toLowerCase().contains('image/*'),
-                            ))
-                          ? 'Choose from photos'
-                          : 'Upload file'),
+                            (m) => m.toLowerCase().startsWith('image'),
+                          ) ||
+                          draft.requirement.acceptMimeTypes.any(
+                            (m) => m.toLowerCase().contains('image/*'),
+                          ))
+                      ? 'Choose from photos'
+                      : 'Upload file'),
             ),
           ),
           if (existing != null) ...[
@@ -264,17 +259,16 @@ class _DocumentPicker extends StatelessWidget {
             Text(
               draft.existingDocumentFilename.value ??
                   'Current document on file',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textMuted,
-              ),
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
-                onPressed: controller.isSaving.value
-                    ? null
-                    : () => controller.openExistingRequirementDocument(draft),
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : () =>
+                            controller.openExistingRequirementDocument(draft),
                 icon: const Icon(Icons.download_outlined, size: 18),
                 label: const Text('Download'),
               ),
@@ -412,10 +406,7 @@ class _LegalBlock extends StatelessWidget {
                 padding: EdgeInsets.only(top: 4),
                 child: Text(
                   'Counsel review pending',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textMuted,
-                  ),
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                 ),
               ),
             const SizedBox(height: 8),
@@ -432,8 +423,9 @@ class _LegalBlock extends StatelessWidget {
                   child: MarkdownBody(
                     data: doc.contentMd,
                     selectable: true,
-                    styleSheet:
-                        MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+                    styleSheet: MarkdownStyleSheet.fromTheme(
+                      Theme.of(context),
+                    ).copyWith(
                       p: const TextStyle(
                         fontSize: 14,
                         height: 1.45,

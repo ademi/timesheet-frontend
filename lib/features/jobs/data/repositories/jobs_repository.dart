@@ -20,6 +20,7 @@ class JobsRepository {
     });
     return jobs;
   }
+
   Future<JobOut> getJob(String jobId) => _remote.getJob(jobId);
   Future<JobOut> createJob(JobCreateRequest body) => _remote.createJob(body);
   Future<JobOut> updateJobStatus(String jobId, String status) =>
@@ -36,47 +37,40 @@ class JobsRepository {
   Future<RecurrenceRuleOut> createRecurrenceRule(
     String jobId,
     RecurrenceRuleCreateRequest body,
-  ) =>
-      _remote.createRecurrenceRule(jobId, body);
+  ) => _remote.createRecurrenceRule(jobId, body);
   Future<RecurrenceRuleOut> patchRecurrenceRule({
     required String jobId,
     required String ruleId,
     required bool isActive,
-  }) =>
-      _remote.patchRecurrenceRule(
-        jobId: jobId,
-        ruleId: ruleId,
-        isActive: isActive,
-      );
+  }) => _remote.patchRecurrenceRule(
+    jobId: jobId,
+    ruleId: ruleId,
+    isActive: isActive,
+  );
   Future<GenerateVisitsResponse> generateVisits({
     required String jobId,
     required String ruleId,
     required GenerateVisitsRequest body,
     required String idempotencyKey,
-  }) =>
-      _remote.generateVisits(
-        jobId: jobId,
-        ruleId: ruleId,
-        body: body,
-        idempotencyKey: idempotencyKey,
-      );
-  Future<void> createManualVisit(
-    String jobId,
-    ManualVisitCreateRequest body,
-  ) =>
+  }) => _remote.generateVisits(
+    jobId: jobId,
+    ruleId: ruleId,
+    body: body,
+    idempotencyKey: idempotencyKey,
+  );
+  Future<void> createManualVisit(String jobId, ManualVisitCreateRequest body) =>
       _remote.createManualVisit(jobId, body);
 
   Future<List<FormTemplateOut>> listFormTemplates({
     String? clientId,
     bool tenantLevel = false,
-  }) async =>
-      sortedByName(
-        await _remote.listFormTemplates(
-          clientId: clientId,
-          tenantLevel: tenantLevel,
-        ),
-        (t) => t.name,
-      );
+  }) async => sortedByName(
+    await _remote.listFormTemplates(
+      clientId: clientId,
+      tenantLevel: tenantLevel,
+    ),
+    (t) => t.name,
+  );
   Future<FormTemplateOut> createFormTemplate(FormTemplateCreateRequest body) =>
       _remote.createFormTemplate(body);
   Future<FormTemplateOut> patchFormTemplate(
@@ -84,15 +78,13 @@ class JobsRepository {
     String? name,
     bool? isActive,
     Map<String, dynamic>? schemaJson,
-  }) =>
-      _remote.patchFormTemplate(
-        id,
-        name: name,
-        isActive: isActive,
-        schemaJson: schemaJson,
-      );
-  Future<void> deleteFormTemplate(String id) =>
-      _remote.deleteFormTemplate(id);
+  }) => _remote.patchFormTemplate(
+    id,
+    name: name,
+    isActive: isActive,
+    schemaJson: schemaJson,
+  );
+  Future<void> deleteFormTemplate(String id) => _remote.deleteFormTemplate(id);
 
   Future<List<BranchOut>> listBranches() async =>
       sortedByName(await _remote.listBranches(), (b) => b.name);
@@ -102,8 +94,7 @@ class JobsRepository {
 
   Future<OngoingSupportOut> createOngoingSupport(
     OngoingSupportCreateRequest body,
-  ) =>
-      _remote.createOngoingSupport(body);
+  ) => _remote.createOngoingSupport(body);
 
   Future<JobOut> getOngoingSupport(String clientId) =>
       _remote.getOngoingSupport(clientId);
@@ -115,6 +106,5 @@ class JobsRepository {
     required String jobId,
     required String ruleId,
     required SplitRecurrenceRequest body,
-  }) =>
-      _remote.splitRecurrenceFrom(jobId: jobId, ruleId: ruleId, body: body);
+  }) => _remote.splitRecurrenceFrom(jobId: jobId, ruleId: ruleId, body: body);
 }

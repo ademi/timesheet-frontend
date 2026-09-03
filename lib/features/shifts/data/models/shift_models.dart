@@ -103,9 +103,10 @@ class ShiftOut {
           .whereType<Map>()
           .map((e) => ShiftAssignmentOut.fromJson(Map<String, dynamic>.from(e)))
           .toList(growable: false),
-      publishedAt: json['published_at'] != null
-          ? DateTime.tryParse(json['published_at'].toString())
-          : null,
+      publishedAt:
+          json['published_at'] != null
+              ? DateTime.tryParse(json['published_at'].toString())
+              : null,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -170,13 +171,13 @@ class ShiftCreateRequest {
   final List<TaskTemplateItem> taskTemplate;
 
   Map<String, dynamic> toJson() => {
-        'job_id': jobId,
-        'scheduled_start': scheduledStart.toUtc().toIso8601String(),
-        'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
-        'required_slots': requiredSlots,
-        'status': status,
-        if (contractorIds.isNotEmpty) 'contractor_ids': contractorIds,
-        if (taskTemplate.isNotEmpty)
-          'task_template': [for (final t in taskTemplate) t.toJson()],
-      };
+    'job_id': jobId,
+    'scheduled_start': scheduledStart.toUtc().toIso8601String(),
+    'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
+    'required_slots': requiredSlots,
+    'status': status,
+    if (contractorIds.isNotEmpty) 'contractor_ids': contractorIds,
+    if (taskTemplate.isNotEmpty)
+      'task_template': [for (final t in taskTemplate) t.toJson()],
+  };
 }

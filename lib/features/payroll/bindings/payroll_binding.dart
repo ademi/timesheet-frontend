@@ -27,10 +27,7 @@ class PayrollBinding extends Bindings {
       Get.put<TokenStorage>(TokenStorage(), permanent: true);
     }
     if (!Get.isRegistered<ApiClient>()) {
-      Get.put<ApiClient>(
-        ApiClient(Get.find<TokenStorage>()),
-        permanent: true,
-      );
+      Get.put<ApiClient>(ApiClient(Get.find<TokenStorage>()), permanent: true);
     }
     if (!Get.isRegistered<PayrollRemoteDataSource>()) {
       Get.lazyPut<PayrollRemoteDataSource>(

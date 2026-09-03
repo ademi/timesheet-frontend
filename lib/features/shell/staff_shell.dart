@@ -74,20 +74,21 @@ abstract final class StaffShellNav {
   ];
 
   static List<_StaffDest> _visible() {
-    final filtered = Get.isRegistered<SessionService>()
-        ? _all
-            .where(
-              (d) => d.showInNav && Get.find<SessionService>().hasAny(d.anyOf),
-            )
-            .toList(growable: false)
-        : <_StaffDest>[];
+    final filtered =
+        Get.isRegistered<SessionService>()
+            ? _all
+                .where(
+                  (d) =>
+                      d.showInNav && Get.find<SessionService>().hasAny(d.anyOf),
+                )
+                .toList(growable: false)
+            : <_StaffDest>[];
 
     final hasHome = filtered.any((d) => d.route == AppRoutes.staffHome);
     if (filtered.isEmpty || !hasHome) {
       return _all
           .where(
-            (d) =>
-                d.showInNav && d.anyOf.contains(AppPermissions.authSession),
+            (d) => d.showInNav && d.anyOf.contains(AppPermissions.authSession),
           )
           .toList(growable: false);
     }

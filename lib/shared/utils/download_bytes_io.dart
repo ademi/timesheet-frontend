@@ -10,13 +10,7 @@ Future<void> downloadBytesAsFile({
 }) {
   return SharePlus.instance.share(
     ShareParams(
-      files: [
-        XFile.fromData(
-          bytes,
-          mimeType: mimeType,
-          name: filename,
-        ),
-      ],
+      files: [XFile.fromData(bytes, mimeType: mimeType, name: filename)],
       fileNameOverrides: [filename],
     ),
   );

@@ -88,9 +88,9 @@ void main() {
 
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => repository.listTenantEngagements()).thenAnswer((_) async => []);
-    when(() => repository.getContractorProfilePhoto(any())).thenAnswer(
-      (_) async => const ProfilePhotoOut(hasPhoto: false),
-    );
+    when(
+      () => repository.getContractorProfilePhoto(any()),
+    ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
     when(() => repository.listAvailability(any())).thenAnswer((_) async => []);
     when(() => payroll.listRates(any())).thenAnswer((_) async => []);
     when(
@@ -109,12 +109,7 @@ void main() {
       visits: visits,
     );
     controller.selected = _engagement;
-    Get.put(
-      EngagementRateBandsController(
-        payroll: payroll,
-        session: session,
-      ),
-    );
+    Get.put(EngagementRateBandsController(payroll: payroll, session: session));
     Get.put(controller);
     controller.onInit();
   });
@@ -166,42 +161,39 @@ void main() {
     },
   );
 
-  testWidgets(
-    'availability 403 shows error and still lists visits',
-    (tester) async {
-      final futureVisit = _visit(
-        id: 'future',
-        title: 'Future support session',
-        start: _now.add(const Duration(days: 2)),
-        status: 'scheduled',
-      );
-      when(
-        () => visits.listVisits(
-          contractorId: any(named: 'contractorId'),
-          from: any(named: 'from'),
-          to: any(named: 'to'),
-          limit: any(named: 'limit'),
-        ),
-      ).thenAnswer((_) async => [futureVisit]);
-      when(() => repository.listAvailability(any())).thenThrow(
-        const AppFailure(
-          code: 'forbidden',
-          message: 'Missing contractors.read permission.',
-          presentation: AppFailurePresentation.inline,
-          statusCode: 403,
-        ),
-      );
+  testWidgets('availability 403 shows error and still lists visits', (
+    tester,
+  ) async {
+    final futureVisit = _visit(
+      id: 'future',
+      title: 'Future support session',
+      start: _now.add(const Duration(days: 2)),
+      status: 'scheduled',
+    );
+    when(
+      () => visits.listVisits(
+        contractorId: any(named: 'contractorId'),
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => [futureVisit]);
+    when(() => repository.listAvailability(any())).thenThrow(
+      const AppFailure(
+        code: 'forbidden',
+        message: 'Missing contractors.read permission.',
+        presentation: AppFailurePresentation.inline,
+        statusCode: 403,
+      ),
+    );
 
-      Get.routing.args = _engagement;
-      await tester.pumpWidget(
-        const GetMaterialApp(home: WorkforceDetailView()),
-      );
+    Get.routing.args = _engagement;
+    await tester.pumpWidget(const GetMaterialApp(home: WorkforceDetailView()));
 
-      await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-3')));
-      await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-3')));
+    await tester.pumpAndSettle();
 
-      expect(find.text('Missing contractors.read permission.'), findsOneWidget);
-      expect(find.text('Future support session'), findsOneWidget);
-    },
-  );
+    expect(find.text('Missing contractors.read permission.'), findsOneWidget);
+    expect(find.text('Future support session'), findsOneWidget);
+  });
 }

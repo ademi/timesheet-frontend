@@ -46,10 +46,7 @@ class EligibilityIncompletePanel extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 4),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('• '),
-                  Expanded(child: Text(r)),
-                ],
+                children: [const Text('• '), Expanded(child: Text(r))],
               ),
             ),
         ],

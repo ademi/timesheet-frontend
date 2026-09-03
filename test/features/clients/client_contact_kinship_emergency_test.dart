@@ -97,9 +97,9 @@ void main() {
       session = _MockSessionService();
       when(() => session.hasPermission(any())).thenReturn(true);
       when(() => clients.listClients()).thenAnswer((_) async => []);
-      when(() => clients.getClientProfilePhoto(any())).thenAnswer(
-        (_) async => const ProfilePhotoOut(hasPhoto: false),
-      );
+      when(
+        () => clients.getClientProfilePhoto(any()),
+      ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
       controller = ClientsController(
         repository: clients,
         session: session,
@@ -111,24 +111,28 @@ void main() {
 
     tearDown(Get.reset);
 
-    testWidgets('shows Emergency contact checkbox and kinship, not Emergency preset',
-        (tester) async {
-      await tester.pumpWidget(
-        const GetMaterialApp(home: ClientContactFormView()),
-      );
+    testWidgets(
+      'shows Emergency contact checkbox and kinship, not Emergency preset',
+      (tester) async {
+        await tester.pumpWidget(
+          const GetMaterialApp(home: ClientContactFormView()),
+        );
 
-      expect(find.text('Emergency contact'), findsOneWidget);
-      expect(find.text('Relationship'), findsOneWidget);
+        expect(find.text('Emergency contact'), findsOneWidget);
+        expect(find.text('Relationship'), findsOneWidget);
 
-      await tester.tap(find.byType(DropdownButtonFormField<String?>));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byType(DropdownButtonFormField<String?>));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Mother').hitTestable(), findsWidgets);
-      expect(find.text('Carer').hitTestable(), findsWidgets);
-      expect(find.text('Emergency'), findsNothing);
-    });
+        expect(find.text('Mother').hitTestable(), findsWidgets);
+        expect(find.text('Carer').hitTestable(), findsWidgets);
+        expect(find.text('Emergency'), findsNothing);
+      },
+    );
 
-    testWidgets('Other requires non-empty free text before save', (tester) async {
+    testWidgets('Other requires non-empty free text before save', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const GetMaterialApp(home: ClientContactFormView()),
       );
@@ -141,7 +145,10 @@ void main() {
       await tester.tap(find.text('Create contact'));
       await tester.pumpAndSettle();
 
-      expect(controller.errorMessage.value, contains('Specify the relationship'));
+      expect(
+        controller.errorMessage.value,
+        contains('Specify the relationship'),
+      );
       verifyNever(() => clients.createContact(any(), any()));
     });
 
@@ -154,7 +161,9 @@ void main() {
       expect(controller.resolvedContactRelationship, isNot('other'));
     });
 
-    testWidgets('custom Other reopens with sentinel and free text', (tester) async {
+    testWidgets('custom Other reopens with sentinel and free text', (
+      tester,
+    ) async {
       final hydrated = ContactFormHost.hydrateRelationship('Godparent');
       controller.contactRelationshipPreset.value = hydrated.preset;
       controller.contactRelationshipOtherCtrl.text = hydrated.otherText;
@@ -168,8 +177,9 @@ void main() {
       expect(controller.contactRelationshipOtherCtrl.text, 'Godparent');
     });
 
-    testWidgets('stored other hydrates to Other sentinel with empty text',
-        (tester) async {
+    testWidgets('stored other hydrates to Other sentinel with empty text', (
+      tester,
+    ) async {
       final hydrated = ContactFormHost.hydrateRelationship('other');
       controller.contactRelationshipPreset.value = hydrated.preset;
       controller.contactRelationshipOtherCtrl.text = hydrated.otherText;
@@ -218,8 +228,9 @@ void main() {
 
     tearDown(Get.reset);
 
-    testWidgets('contacts step uses kinship dropdown, not locked Emergency',
-        (tester) async {
+    testWidgets('contacts step uses kinship dropdown, not locked Emergency', (
+      tester,
+    ) async {
       final c = Get.find<ClientOnboardingController>();
       c.step.value = 3;
 
@@ -235,8 +246,9 @@ void main() {
       expect(find.text('Emergency'), findsNothing);
     });
 
-    testWidgets('representative shows also-emergency and pick existing',
-        (tester) async {
+    testWidgets('representative shows also-emergency and pick existing', (
+      tester,
+    ) async {
       final c = Get.find<ClientOnboardingController>();
       c.dob.value = DateTime(1990, 1, 1);
       c.step.value = 4;
@@ -271,8 +283,9 @@ void main() {
     });
   });
 
-  testWidgets('detail contacts section shows Emergency chip when isEmergency',
-      (tester) async {
+  testWidgets('detail contacts section shows Emergency chip when isEmergency', (
+    tester,
+  ) async {
     const emergency = ClientContactOut(
       id: 'c1',
       tenantId: 't',

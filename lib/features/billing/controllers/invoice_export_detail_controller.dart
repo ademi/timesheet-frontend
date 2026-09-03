@@ -13,8 +13,7 @@ import '../data/models/billing_models.dart';
 import '../data/repositories/billing_repository.dart';
 
 String invoiceExportCsvFilename(String exportId) {
-  final short =
-      exportId.length <= 8 ? exportId : exportId.substring(0, 8);
+  final short = exportId.length <= 8 ? exportId : exportId.substring(0, 8);
   return 'invoice-export-$short.csv';
 }
 
@@ -109,24 +108,25 @@ class InvoiceExportDetailController extends GetxController {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Void this export?'),
-        content: const Text(
-          'Visits in this export will become billable again and can be included '
-          'in a new export. This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Void this export?'),
+            content: const Text(
+              'Visits in this export will become billable again and can be included '
+              'in a new export. This cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                child: const Text('Void export'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Void export'),
-          ),
-        ],
-      ),
     );
     if (confirmed != true) return;
     await voidExport();

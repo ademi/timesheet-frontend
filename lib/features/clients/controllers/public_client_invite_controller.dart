@@ -6,7 +6,7 @@ import '../data/repositories/clients_repository.dart';
 
 class PublicClientInviteController extends GetxController {
   PublicClientInviteController({required ClientsRepository repository})
-      : _repository = repository;
+    : _repository = repository;
 
   final ClientsRepository _repository;
 

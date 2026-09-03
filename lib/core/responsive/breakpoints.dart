@@ -1,11 +1,7 @@
 /// Width-based breakpoints for structural layout decisions.
 ///
 /// Always branch on [LayoutBuilder] `constraints.maxWidth`, not [MediaQuery].
-enum DeviceClass {
-  phone,
-  tablet,
-  desktop,
-}
+enum DeviceClass { phone, tablet, desktop }
 
 class Breakpoints {
   Breakpoints._();

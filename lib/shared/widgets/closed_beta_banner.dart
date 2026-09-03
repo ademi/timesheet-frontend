@@ -17,9 +17,9 @@ class ClosedBetaBanner extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Text(
             message,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: scheme.onSecondaryContainer,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: scheme.onSecondaryContainer),
           ),
         ),
       ),

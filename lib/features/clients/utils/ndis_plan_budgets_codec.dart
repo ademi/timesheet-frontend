@@ -75,9 +75,7 @@ abstract final class NdisPlanBudgetsCodec {
     for (final item in rawList) {
       if (item is! Map) continue;
       try {
-        out.add(
-          NdisPlanBudgetEntry.fromJson(Map<String, dynamic>.from(item)),
-        );
+        out.add(NdisPlanBudgetEntry.fromJson(Map<String, dynamic>.from(item)));
       } catch (_) {
         // skip corrupt row
       }
@@ -208,8 +206,6 @@ abstract final class NdisPlanBudgetsCodec {
 
   static Map<String, dynamic>? toFactValue(List<NdisPlanBudgetEntry> entries) {
     if (entries.isEmpty) return null;
-    return {
-      budgetsKey: entries.map((e) => e.toJson()).toList(),
-    };
+    return {budgetsKey: entries.map((e) => e.toJson()).toList()};
   }
 }

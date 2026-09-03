@@ -8,9 +8,9 @@ import '../auth/jwt_claims.dart';
 /// Uses flutter_secure_storage (iOS Keychain / Android Keystore).
 class TokenStorage {
   TokenStorage()
-      : _storage = const FlutterSecureStorage(
-          aOptions: AndroidOptions(encryptedSharedPreferences: true),
-        );
+    : _storage = const FlutterSecureStorage(
+        aOptions: AndroidOptions(encryptedSharedPreferences: true),
+      );
 
   final FlutterSecureStorage _storage;
 
@@ -123,8 +123,8 @@ class TokenStorage {
     final expiresAt = accessTokenExpiresAt;
     if (expiresAt == null) return false;
     return DateTime.now().toUtc().isAfter(
-          expiresAt.subtract(Duration(seconds: thresholdSeconds)),
-        );
+      expiresAt.subtract(Duration(seconds: thresholdSeconds)),
+    );
   }
 
   int? _readExpSeconds(Object? exp) {

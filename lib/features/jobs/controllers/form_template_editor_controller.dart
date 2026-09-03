@@ -25,12 +25,13 @@ class FormTemplateFieldDraft {
       label: json['label'] as String? ?? '',
       type: json['type'] as String? ?? 'text',
       required: json['required'] as bool? ?? false,
-      accept: acceptRaw is List
-          ? acceptRaw
-              .map((e) => e.toString())
-              .where((s) => s.isNotEmpty)
-              .toList()
-          : const <String>[],
+      accept:
+          acceptRaw is List
+              ? acceptRaw
+                  .map((e) => e.toString())
+                  .where((s) => s.isNotEmpty)
+                  .toList()
+              : const <String>[],
     );
   }
 
@@ -53,11 +54,12 @@ class FormTemplateFieldDraft {
   }
 
   Map<String, dynamic> toJson() {
-    final accept = acceptCtrl.text
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
+    final accept =
+        acceptCtrl.text
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
     return {
       'id': idCtrl.text.trim(),
       'type': type.value,
@@ -108,11 +110,8 @@ class FormTemplateEditorController extends GetxController {
     }
     if (fields.isEmpty) {
       fields.add(
-        FormTemplateFieldDraft(
-          id: 'notes',
-          label: 'Notes',
-          type: 'textarea',
-        )..syncIdFromLabel = false,
+        FormTemplateFieldDraft(id: 'notes', label: 'Notes', type: 'textarea')
+          ..syncIdFromLabel = false,
       );
     }
   }

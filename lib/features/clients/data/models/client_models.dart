@@ -45,16 +45,18 @@ class ClientOut {
       serviceAgreementNotes: json['service_agreement_notes'] as String?,
       clientTypeId: json['client_type_id']?.toString(),
       dob: json['dob'] as String?,
-      metadata: meta is Map
-          ? Map<String, dynamic>.from(meta)
-          : const <String, dynamic>{},
+      metadata:
+          meta is Map
+              ? Map<String, dynamic>.from(meta)
+              : const <String, dynamic>{},
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      primarySite: siteRaw is Map
-          ? ClientPrimarySiteSummary.fromJson(
-              Map<String, dynamic>.from(siteRaw),
-            )
-          : null,
+      primarySite:
+          siteRaw is Map
+              ? ClientPrimarySiteSummary.fromJson(
+                Map<String, dynamic>.from(siteRaw),
+              )
+              : null,
     );
   }
 }
@@ -131,17 +133,17 @@ class ClientCreateRequest {
   final Map<String, dynamic>? metadata;
 
   Map<String, dynamic> toJson() => {
-        'full_name': fullName,
-        'status': status,
-        if (email != null && email!.trim().isNotEmpty) 'email': email!.trim(),
-        if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
-        if (serviceAgreementNotes != null)
-          'service_agreement_notes': serviceAgreementNotes,
-        if (clientTypeId != null && clientTypeId!.isNotEmpty)
-          'client_type_id': clientTypeId,
-        if (dob != null && dob!.isNotEmpty) 'dob': dob,
-        if (metadata != null) 'metadata': metadata,
-      };
+    'full_name': fullName,
+    'status': status,
+    if (email != null && email!.trim().isNotEmpty) 'email': email!.trim(),
+    if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
+    if (serviceAgreementNotes != null)
+      'service_agreement_notes': serviceAgreementNotes,
+    if (clientTypeId != null && clientTypeId!.isNotEmpty)
+      'client_type_id': clientTypeId,
+    if (dob != null && dob!.isNotEmpty) 'dob': dob,
+    if (metadata != null) 'metadata': metadata,
+  };
 }
 
 class ClientUpdateRequest {
@@ -166,16 +168,16 @@ class ClientUpdateRequest {
   final Map<String, dynamic>? metadata;
 
   Map<String, dynamic> toJson() => {
-        if (fullName != null) 'full_name': fullName,
-        if (status != null) 'status': status,
-        if (email != null) 'email': email,
-        if (phone != null) 'phone': phone,
-        if (serviceAgreementNotes != null)
-          'service_agreement_notes': serviceAgreementNotes,
-        if (clientTypeId != null) 'client_type_id': clientTypeId,
-        if (dob != null) 'dob': dob,
-        if (metadata != null) 'metadata': metadata,
-      };
+    if (fullName != null) 'full_name': fullName,
+    if (status != null) 'status': status,
+    if (email != null) 'email': email,
+    if (phone != null) 'phone': phone,
+    if (serviceAgreementNotes != null)
+      'service_agreement_notes': serviceAgreementNotes,
+    if (clientTypeId != null) 'client_type_id': clientTypeId,
+    if (dob != null) 'dob': dob,
+    if (metadata != null) 'metadata': metadata,
+  };
 }
 
 class ClientSiteOut {
@@ -272,11 +274,11 @@ class GeocodeRequest {
   final String? state;
 
   Map<String, dynamic> toJson() => {
-        'address_line1': addressLine1,
-        'city': city,
-        'country': country,
-        if (state != null && state!.isNotEmpty) 'state': state,
-      };
+    'address_line1': addressLine1,
+    'city': city,
+    'country': country,
+    if (state != null && state!.isNotEmpty) 'state': state,
+  };
 }
 
 class GeocodeResponse {
@@ -330,18 +332,18 @@ class ClientSiteWriteRequest {
   final String? accessNotes;
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        if (addressLine1 != null) 'address_line1': addressLine1,
-        if (city != null) 'city': city,
-        if (state != null) 'state': state,
-        if (country != null) 'country': country,
-        if (postalCode != null) 'postal_code': postalCode,
-        'latitude': latitude,
-        'longitude': longitude,
-        'geofence_radius_m': geofenceRadiusM,
-        'is_primary': isPrimary,
-        if (accessNotes != null) 'access_notes': accessNotes,
-      };
+    'name': name,
+    if (addressLine1 != null) 'address_line1': addressLine1,
+    if (city != null) 'city': city,
+    if (state != null) 'state': state,
+    if (country != null) 'country': country,
+    if (postalCode != null) 'postal_code': postalCode,
+    'latitude': latitude,
+    'longitude': longitude,
+    'geofence_radius_m': geofenceRadiusM,
+    'is_primary': isPrimary,
+    if (accessNotes != null) 'access_notes': accessNotes,
+  };
 }
 
 class ClientContactOut {
@@ -410,16 +412,16 @@ class ClientContactWriteRequest {
   final bool? isEmergency;
 
   Map<String, dynamic> toJson() => {
-        if (name != null) 'name': name,
-        if (email != null) 'email': email,
-        if (phone != null) 'phone': phone,
-        if (relationship != null) 'relationship': relationship,
-        if (legalRole != null) 'legal_role': legalRole,
-        if (isPrimary != null) 'is_primary': isPrimary,
-        if (notifyVisitComplete != null)
-          'notify_visit_complete': notifyVisitComplete,
-        if (isEmergency != null) 'is_emergency': isEmergency,
-      };
+    if (name != null) 'name': name,
+    if (email != null) 'email': email,
+    if (phone != null) 'phone': phone,
+    if (relationship != null) 'relationship': relationship,
+    if (legalRole != null) 'legal_role': legalRole,
+    if (isPrimary != null) 'is_primary': isPrimary,
+    if (notifyVisitComplete != null)
+      'notify_visit_complete': notifyVisitComplete,
+    if (isEmergency != null) 'is_emergency': isEmergency,
+  };
 }
 
 class ClientInviteCreateResponse {
@@ -469,9 +471,10 @@ class ClientInviteOut {
     return ClientInviteOut(
       id: json['id'].toString(),
       expiresAt: DateTime.parse(json['expires_at'] as String),
-      consumedAt: json['consumed_at'] != null
-          ? DateTime.tryParse(json['consumed_at'].toString())
-          : null,
+      consumedAt:
+          json['consumed_at'] != null
+              ? DateTime.tryParse(json['consumed_at'].toString())
+              : null,
       createdAt: DateTime.parse(json['created_at'] as String),
       createdByUserId: json['created_by_user_id']?.toString(),
     );
@@ -513,8 +516,7 @@ class ClientInviteAcknowledgeResponse {
   factory ClientInviteAcknowledgeResponse.fromJson(Map<String, dynamic> json) {
     return ClientInviteAcknowledgeResponse(
       message: json['message'] as String? ?? 'Acknowledged',
-      consentAcknowledgedAt:
-          json['consent_acknowledged_at']?.toString() ?? '',
+      consentAcknowledgedAt: json['consent_acknowledged_at']?.toString() ?? '',
     );
   }
 }

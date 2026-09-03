@@ -12,7 +12,8 @@ import '../network/api_failure.dart';
 /// For credential evidence + proxy download, see
 /// `features/documents/data/document_pipeline.dart`.
 class DocumentService {
-  DocumentService({required DocumentRemoteDataSource remote}) : _remote = remote;
+  DocumentService({required DocumentRemoteDataSource remote})
+    : _remote = remote;
 
   final DocumentRemoteDataSource _remote;
 
@@ -32,10 +33,7 @@ class DocumentService {
     );
   }
 
-  Future<DocumentOut> finalize(
-    String documentId, {
-    String? credentialId,
-  }) {
+  Future<DocumentOut> finalize(String documentId, {String? credentialId}) {
     return _remote.finalize(documentId, credentialId: credentialId);
   }
 

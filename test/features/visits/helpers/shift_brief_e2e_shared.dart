@@ -86,8 +86,9 @@ void declareShiftBriefContractorE2e() {
   setUp(() {
     Get.reset();
     mock = MockVisitsRepositoryForShiftBriefE2e();
-    when(() => mock.getVisitShiftBrief('v1'))
-        .thenAnswer((_) async => sampleShiftBriefForE2e);
+    when(
+      () => mock.getVisitShiftBrief('v1'),
+    ).thenAnswer((_) async => sampleShiftBriefForE2e);
     Get.put(VisitShiftBriefController(repo: mock));
   });
 
@@ -95,9 +96,7 @@ void declareShiftBriefContractorE2e() {
 
   testWidgets('contractor visit shows shift brief', (tester) async {
     await tester.pumpWidget(
-      const GetMaterialApp(
-        home: VisitShiftBriefSlice(visitId: 'v1'),
-      ),
+      const GetMaterialApp(home: VisitShiftBriefSlice(visitId: 'v1')),
     );
     await tester.pumpAndSettle();
 

@@ -109,9 +109,7 @@ void main() {
 
     expect(controller.pendingSharingRequests, isEmpty);
     verifyNever(
-      () => repository.listSharingAccessRequests(
-        status: any(named: 'status'),
-      ),
+      () => repository.listSharingAccessRequests(status: any(named: 'status')),
     );
   });
 
@@ -230,10 +228,7 @@ void main() {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day, 10);
     when(
-      () => visits.listVisits(
-        from: any(named: 'from'),
-        to: any(named: 'to'),
-      ),
+      () => visits.listVisits(from: any(named: 'from'), to: any(named: 'to')),
     ).thenAnswer(
       (_) async => [
         VisitOut(
@@ -312,45 +307,48 @@ void main() {
     ).called(greaterThanOrEqualTo(1));
   });
 
-  test('approveSharingRequest posts approve and refreshes pending list', () async {
-    engagements.assignAll([
-      const EngagementSummaryModel(
-        id: 'engagement-1',
-        tenantId: 'tenant-1',
-        tenantName: 'Acme Care',
-        status: 'active',
-      ),
-    ]);
-    final req = pendingRequest();
-    when(
-      () => repository.listSharingAccessRequests(status: 'pending'),
-    ).thenAnswer((_) async => [req]);
-    when(
-      () => repository.approveSharingAccessRequest('req-1'),
-    ).thenAnswer((_) async => req.copyWith(status: 'approved'));
+  test(
+    'approveSharingRequest posts approve and refreshes pending list',
+    () async {
+      engagements.assignAll([
+        const EngagementSummaryModel(
+          id: 'engagement-1',
+          tenantId: 'tenant-1',
+          tenantName: 'Acme Care',
+          status: 'active',
+        ),
+      ]);
+      final req = pendingRequest();
+      when(
+        () => repository.listSharingAccessRequests(status: 'pending'),
+      ).thenAnswer((_) async => [req]);
+      when(
+        () => repository.approveSharingAccessRequest('req-1'),
+      ).thenAnswer((_) async => req.copyWith(status: 'approved'));
 
-    final snacks = <String>[];
-    final controller = HomeAlertsController(
-      repository: repository,
-      session: session,
-      showSnack: (title, message) => snacks.add('$title|$message'),
-    );
-    await controller.load();
+      final snacks = <String>[];
+      final controller = HomeAlertsController(
+        repository: repository,
+        session: session,
+        showSnack: (title, message) => snacks.add('$title|$message'),
+      );
+      await controller.load();
 
-    when(
-      () => repository.listSharingAccessRequests(status: 'pending'),
-    ).thenAnswer((_) async => []);
+      when(
+        () => repository.listSharingAccessRequests(status: 'pending'),
+      ).thenAnswer((_) async => []);
 
-    final ok = await controller.approveSharingRequest(req);
+      final ok = await controller.approveSharingRequest(req);
 
-    expect(ok, isTrue);
-    verify(() => repository.approveSharingAccessRequest('req-1')).called(1);
-    expect(controller.pendingSharingRequests, isEmpty);
-    expect(
-      snacks.single,
-      'Access approved|Credentials shared with Acme Care.',
-    );
-  });
+      expect(ok, isTrue);
+      verify(() => repository.approveSharingAccessRequest('req-1')).called(1);
+      expect(controller.pendingSharingRequests, isEmpty);
+      expect(
+        snacks.single,
+        'Access approved|Credentials shared with Acme Care.',
+      );
+    },
+  );
 
   test('tenantLabelFor resolves tenant name from session engagements', () {
     engagements.assignAll([

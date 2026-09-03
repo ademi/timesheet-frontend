@@ -13,7 +13,8 @@ class PendingInviteContactDialog extends StatefulWidget {
       _PendingInviteContactDialogState();
 }
 
-class _PendingInviteContactDialogState extends State<PendingInviteContactDialog> {
+class _PendingInviteContactDialogState
+    extends State<PendingInviteContactDialog> {
   late final TextEditingController _emailCtrl;
   late final TextEditingController _phoneCtrl;
   final _formKey = GlobalKey<FormState>();
@@ -37,10 +38,9 @@ class _PendingInviteContactDialogState extends State<PendingInviteContactDialog>
     final email = EmailUtils.normalize(_emailCtrl.text);
     final phoneRaw = _phoneCtrl.text.trim();
     final phone = phoneRaw.isEmpty ? '' : phoneRaw;
-    Navigator.of(context).pop(<String, String?>{
-      'email': email,
-      'phone': phone,
-    });
+    Navigator.of(
+      context,
+    ).pop(<String, String?>{'email': email, 'phone': phone});
   }
 
   @override
@@ -83,10 +83,7 @@ class _PendingInviteContactDialogState extends State<PendingInviteContactDialog>
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('Save'),
-        ),
+        FilledButton(onPressed: _submit, child: const Text('Save')),
       ],
     );
   }

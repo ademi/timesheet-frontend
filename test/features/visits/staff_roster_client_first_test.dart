@@ -63,7 +63,10 @@ void main() {
 
     test('shouldShowSupportFilter true when two open jobs same client', () {
       final twoJobsSameClient = [_job(id: 'j1'), _job(id: 'j2')];
-      expect(shouldShowSupportFilter(twoJobsSameClient, clientId: 'c1'), isTrue);
+      expect(
+        shouldShowSupportFilter(twoJobsSameClient, clientId: 'c1'),
+        isTrue,
+      );
     });
 
     test('jobsForClientFilter excludes other clients and closed supports', () {
@@ -88,7 +91,7 @@ void main() {
     late _MockShiftsRepository shifts;
     late _MockJobsRepository jobs;
     late _MockEngagementsRepository engagements;
-  late _MockClientsRepository clients;
+    late _MockClientsRepository clients;
     late _MockSessionService session;
     late StaffVisitsController controller;
 
@@ -105,7 +108,7 @@ void main() {
       shifts = _MockShiftsRepository();
       jobs = _MockJobsRepository();
       engagements = _MockEngagementsRepository();
-    clients = _MockClientsRepository();
+      clients = _MockClientsRepository();
       session = _MockSessionService();
       when(() => session.hasPermission(any())).thenReturn(true);
       when(() => session.tenantId).thenReturn(RxnString());
@@ -124,10 +127,12 @@ void main() {
         ),
       ).thenAnswer((_) async => const RosterOverlayOut(contractors: []));
       when(() => jobs.listJobs()).thenAnswer((_) async => []);
-      when(() => jobs.ensureHorizon(any()))
-          .thenAnswer((_) async => HorizonOut.empty);
-      when(() => engagements.listTenantEngagements())
-          .thenAnswer((_) async => []);
+      when(
+        () => jobs.ensureHorizon(any()),
+      ).thenAnswer((_) async => HorizonOut.empty);
+      when(
+        () => engagements.listTenantEngagements(),
+      ).thenAnswer((_) async => []);
       controller = StaffVisitsController(
         repository: visits,
         shiftsRepository: shifts,
@@ -155,8 +160,9 @@ void main() {
         createdAt: _now,
         updatedAt: _now,
       );
-      when(() => jobs.ensureOngoingSupport('c1'))
-          .thenAnswer((_) async => support);
+      when(
+        () => jobs.ensureOngoingSupport('c1'),
+      ).thenAnswer((_) async => support);
       when(() => shifts.createShift(any())).thenAnswer((_) async => created);
 
       final ok = await controller.bookOneForClient(
@@ -167,8 +173,9 @@ void main() {
 
       expect(ok, isTrue);
       verify(() => jobs.ensureOngoingSupport('c1')).called(1);
-      final req = verify(() => shifts.createShift(captureAny())).captured.single
-          as ShiftCreateRequest;
+      final req =
+          verify(() => shifts.createShift(captureAny())).captured.single
+              as ShiftCreateRequest;
       expect(req.jobId, support.id);
       expect(req.status, 'published');
       expect(controller.errorMessage.value, isNull);
@@ -178,7 +185,8 @@ void main() {
       when(() => jobs.ensureOngoingSupport('c1')).thenThrow(
         const AppFailure(
           code: 'site_or_branch_required',
-          message: 'Add a site or branch for this client before booking support.',
+          message:
+              'Add a site or branch for this client before booking support.',
           presentation: AppFailurePresentation.inline,
         ),
       );
@@ -216,8 +224,10 @@ void main() {
       controller.clientIdFilter.value = 'c1';
 
       expect(controller.showSupportFilter, isTrue);
-      expect(controller.supportsForSelectedClient.map((j) => j.id),
-          containsAll(['j1', 'j2']));
+      expect(
+        controller.supportsForSelectedClient.map((j) => j.id),
+        containsAll(['j1', 'j2']),
+      );
     });
   });
 }

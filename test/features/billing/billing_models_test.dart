@@ -33,22 +33,18 @@ void main() {
         'support_item_name': 'Self care',
       },
     );
-    expect(
-      const SupportItemPatch().toJson(),
-      {'support_item_code': null, 'support_item_name': null},
-    );
+    expect(const SupportItemPatch().toJson(), {
+      'support_item_code': null,
+      'support_item_name': null,
+    });
     expect(
       const VisitPriceTierPatch(priceTierOverride: PriceTier.remote).toJson(),
       {'price_tier_override': 'remote'},
     );
-    expect(
-      const VisitPriceTierPatch().toJson(),
-      {'price_tier_override': null},
-    );
-    expect(
-      const VisitTaskBillingPatch(billableMinutes: 90).toJson(),
-      {'billable_minutes': 90},
-    );
+    expect(const VisitPriceTierPatch().toJson(), {'price_tier_override': null});
+    expect(const VisitTaskBillingPatch(billableMinutes: 90).toJson(), {
+      'billable_minutes': 90,
+    });
   });
 
   test('parses invoice export with lines', () {

@@ -54,9 +54,10 @@ class WorkerSlotPicker extends StatelessWidget {
             value: slots[i],
             isExpanded: true,
             decoration: InputDecoration(
-              labelText: slots.length == 1
-                  ? 'Worker (optional)'
-                  : 'Worker ${i + 1} (optional)',
+              labelText:
+                  slots.length == 1
+                      ? 'Worker (optional)'
+                      : 'Worker ${i + 1} (optional)',
               border: const OutlineInputBorder(),
             ),
             items: [
@@ -78,11 +79,12 @@ class WorkerSlotPicker extends StatelessWidget {
                   child: Text(slots[i]!),
                 ),
             ],
-            onChanged: enabled
-                ? (value) {
-                    onChanged(i, value);
-                  }
-                : null,
+            onChanged:
+                enabled
+                    ? (value) {
+                      onChanged(i, value);
+                    }
+                    : null,
           ),
         ],
       ],
@@ -91,10 +93,7 @@ class WorkerSlotPicker extends StatelessWidget {
 }
 
 class _EngagementItem extends StatelessWidget {
-  const _EngagementItem({
-    required this.displayName,
-    this.trailing,
-  });
+  const _EngagementItem({required this.displayName, this.trailing});
 
   final String displayName;
   final Widget? trailing;
@@ -102,11 +101,7 @@ class _EngagementItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (trailing == null) {
-      return Text(
-        displayName,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      );
+      return Text(displayName, maxLines: 1, overflow: TextOverflow.ellipsis);
     }
     return Row(
       children: [

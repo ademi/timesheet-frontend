@@ -42,7 +42,8 @@ class CredentialsListView extends GetView<CredentialsController> {
       final pendingDocsEngagements = engagementList
           .where((e) => e.isPendingDocs || e.isAwaitingApproval)
           .toList(growable: false);
-      final hasRequestedDocs = pendingDocsEngagements.isNotEmpty ||
+      final hasRequestedDocs =
+          pendingDocsEngagements.isNotEmpty ||
           (Get.isRegistered<SessionService>() &&
               (Get.find<SessionService>().needsDocsAttention ||
                   Get.find<SessionService>().needsApprovalWait));
@@ -61,83 +62,89 @@ class CredentialsListView extends GetView<CredentialsController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-            if (err != null) ...[
-              _Banner(message: err, error: true),
-              const SizedBox(height: 12),
-            ],
-            if (controller.lastScanStatus.value != null) ...[
-              _Banner(
-                message:
-                    'Last evidence scan: ${controller.lastScanStatus.value}',
-                error: controller.lastScanStatus.value == 'blocked',
-              ),
-              const SizedBox(height: 12),
-            ],
-            Text(
-              embedded
-                  ? 'Add required credentials and attach evidence. '
-                      'Scan must be clean before staff review.'
-                  : 'Your credentials and evidence files.',
-              style: const TextStyle(color: AppColors.textMuted),
-            ),
-            const SizedBox(height: 12),
-            if (engagements != null && hasRequestedDocs) ...[
-              const Text(
-                'Engagement document checklist',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
-                ),
-              ),
-              const SizedBox(height: 8),
-              for (final engagement in pendingDocsEngagements)
-                EngagementDocsChecklist(
-                  engagement: engagement,
-                  credentials: controller.items,
-                  onAddMissing:
-                      controller.canManage
-                          ? (categories) {
-                            controller.selectedType.value = categories.first;
-                            Get.toNamed(AppRoutes.contractorCredentialCreate);
-                          }
-                          : null,
-                ),
-              const SizedBox(height: 4),
-            ],
-            if (canAdd)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: ElevatedButton.icon(
-                  onPressed:
-                      () => Get.toNamed(AppRoutes.contractorCredentialCreate),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add credential'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.onPrimary,
+                  if (err != null) ...[
+                    _Banner(message: err, error: true),
+                    const SizedBox(height: 12),
+                  ],
+                  if (controller.lastScanStatus.value != null) ...[
+                    _Banner(
+                      message:
+                          'Last evidence scan: ${controller.lastScanStatus.value}',
+                      error: controller.lastScanStatus.value == 'blocked',
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  Text(
+                    embedded
+                        ? 'Add required credentials and attach evidence. '
+                            'Scan must be clean before staff review.'
+                        : 'Your credentials and evidence files.',
+                    style: const TextStyle(color: AppColors.textMuted),
                   ),
-                ),
-              ),
-            const SizedBox(height: 12),
-            if (controller.items.isEmpty) ...[
-              if (!hasEngagements)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: _NoEngagementNotice(),
-                )
-              else if (!hasRequestedDocs)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: _NoDocRequestNotice(),
-                )
-              else
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Text('No credentials yet.'),
-                ),
-            ],
-            for (final c in controller.items) _CredentialTile(credential: c),
+                  const SizedBox(height: 12),
+                  if (engagements != null && hasRequestedDocs) ...[
+                    const Text(
+                      'Engagement document checklist',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    for (final engagement in pendingDocsEngagements)
+                      EngagementDocsChecklist(
+                        engagement: engagement,
+                        credentials: controller.items,
+                        onAddMissing:
+                            controller.canManage
+                                ? (categories) {
+                                  controller.selectedType.value =
+                                      categories.first;
+                                  Get.toNamed(
+                                    AppRoutes.contractorCredentialCreate,
+                                  );
+                                }
+                                : null,
+                      ),
+                    const SizedBox(height: 4),
+                  ],
+                  if (canAdd)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: ElevatedButton.icon(
+                        onPressed:
+                            () => Get.toNamed(
+                              AppRoutes.contractorCredentialCreate,
+                            ),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add credential'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.onPrimary,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                  if (controller.items.isEmpty) ...[
+                    if (!hasEngagements)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: _NoEngagementNotice(),
+                      )
+                    else if (!hasRequestedDocs)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: _NoDocRequestNotice(),
+                      )
+                    else
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Text('No credentials yet.'),
+                      ),
+                  ],
+                  for (final c in controller.items)
+                    _CredentialTile(credential: c),
                 ],
               ),
             ),

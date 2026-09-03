@@ -8,7 +8,8 @@ import 'package:rostiq/features/engagements/controllers/workforce_controller.dar
 import 'package:rostiq/features/engagements/data/models/engagement_models.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 
-class _MockEngagementsRepository extends Mock implements EngagementsRepository {}
+class _MockEngagementsRepository extends Mock
+    implements EngagementsRepository {}
 
 class _MockCredentialsRepository extends Mock
     implements CredentialsRepository {}
@@ -38,8 +39,9 @@ void main() {
     credentials = _MockCredentialsRepository();
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(false);
-    when(() => session.hasPermission(AppPermissions.contractorsInvite))
-        .thenReturn(true);
+    when(
+      () => session.hasPermission(AppPermissions.contractorsInvite),
+    ).thenReturn(true);
     controller = WorkforceController(
       repository: repository,
       credentialsRepository: credentials,
@@ -53,9 +55,7 @@ void main() {
     controller.emailCtrl.text = 'Sam.Example@Provider.COM';
     controller.selectedCategories.add('ndis_worker_screening');
 
-    when(
-      () => repository.previewInvite(any()),
-    ).thenAnswer(
+    when(() => repository.previewInvite(any())).thenAnswer(
       (_) async => const EngagementInvitePreviewOut(
         outcome: 'existing_contractor',
         message: 'ok',

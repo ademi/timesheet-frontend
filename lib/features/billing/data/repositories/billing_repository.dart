@@ -2,7 +2,8 @@ import '../datasources/billing_remote_datasource.dart';
 import '../models/billing_models.dart';
 
 class BillingRepository {
-  BillingRepository({required BillingRemoteDataSource remote}) : _remote = remote;
+  BillingRepository({required BillingRemoteDataSource remote})
+    : _remote = remote;
 
   final BillingRemoteDataSource _remote;
 
@@ -11,8 +12,7 @@ class BillingRepository {
 
   Future<InvoiceExportOut> createInvoiceExport(
     InvoiceExportCreateRequest body,
-  ) =>
-      _remote.createInvoiceExport(body);
+  ) => _remote.createInvoiceExport(body);
 
   Future<InvoiceExportOut> getInvoiceExport(String exportId) =>
       _remote.getInvoiceExport(exportId);

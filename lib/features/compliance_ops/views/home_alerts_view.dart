@@ -236,16 +236,16 @@ class HomeAlertsController extends GetxController {
       }
 
       final todayEnd = today.add(const Duration(days: 1));
-      final visitsToday = upcoming
-          .where((v) {
+      final visitsToday =
+          upcoming.where((v) {
             final s = v.scheduledStart.toLocal();
             return !v.isCancelled && !s.isBefore(today) && s.isBefore(todayEnd);
-          })
-          .length;
+          }).length;
       final visitsUpcoming = upcoming.where((v) => !v.isCancelled).length;
-      final allCompleted = [...upcoming, ...pastVisits]
-          .where((v) => v.isCompleted)
-          .toList(growable: false);
+      final allCompleted = [
+        ...upcoming,
+        ...pastVisits,
+      ].where((v) => v.isCompleted).toList(growable: false);
       final visitsPaid =
           allCompleted.where((v) => v.paymentStatus == 'paid').length;
       final visitsUnpaid =
@@ -356,11 +356,12 @@ class HomeAlertsController extends GetxController {
         to: dayStart.add(const Duration(days: 7)).toUtc(),
       );
       final week = visits.where((v) => !v.isCancelled).length;
-      final today =
-          visits.where((v) {
+      final today = visits
+          .where((v) {
             final start = v.scheduledStart.toLocal();
             return !start.isBefore(dayStart) && start.isBefore(dayEnd);
-          }).toList(growable: false);
+          })
+          .toList(growable: false);
       return (
         today.where((v) => !v.isCancelled).length,
         today.where((v) => v.isScheduled).length,
@@ -461,152 +462,173 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-              if (controller.shouldShowProfileBanner) ...[
-                MaterialBanner(
-                  content: const Text(
-                    'Complete your account — add your ABN so providers can '
-                    'verify and pay you.',
-                  ),
-                  leading: const Icon(Icons.badge_outlined),
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.08),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Get.toNamed(AppRoutes.contractorProfile),
-                      child: const Text('Complete profile'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-              if (controller.shouldShowDocsBanner) ...[
-                MaterialBanner(
-                  content: const Text(
-                    'Documents still needed for an engagement. '
-                    'Upload required credentials to continue.',
-                  ),
-                  leading: const Icon(Icons.description_outlined),
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.08),
-                  actions: [
-                    TextButton(
-                      onPressed:
-                          () => Get.toNamed(AppRoutes.contractorCredentials),
-                      child: const Text('Upload credentials'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-              if (controller.shouldShowAwaitingApprovalBanner) ...[
-                MaterialBanner(
-                  content: const Text(
-                    'Your documents are uploaded and waiting for provider '
-                    'approval.',
-                  ),
-                  leading: const Icon(Icons.hourglass_top_outlined),
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.08),
-                  actions: [
-                    TextButton(
-                      onPressed:
-                          () => Get.toNamed(AppRoutes.contractorCredentials),
-                      child: const Text('View credentials'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-              for (final request in controller.pendingSharingRequests) ...[
-                MaterialBanner(
-                  content: Text(
-                    '${controller.tenantLabelFor(request)} requested access '
-                    'to your credentials for compliance review.',
-                  ),
-                  leading: const Icon(Icons.shield_outlined),
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.08),
-                  actions: [
-                    TextButton(
-                      onPressed:
-                          controller.approvingRequestId.value == request.id
-                              ? null
-                              : () => controller.approveSharingRequest(request),
-                      child:
-                          controller.approvingRequestId.value == request.id
-                              ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                    if (controller.shouldShowProfileBanner) ...[
+                      MaterialBanner(
+                        content: const Text(
+                          'Complete your account — add your ABN so providers can '
+                          'verify and pay you.',
+                        ),
+                        leading: const Icon(Icons.badge_outlined),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.08,
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed:
+                                () => Get.toNamed(AppRoutes.contractorProfile),
+                            child: const Text('Complete profile'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (controller.shouldShowDocsBanner) ...[
+                      MaterialBanner(
+                        content: const Text(
+                          'Documents still needed for an engagement. '
+                          'Upload required credentials to continue.',
+                        ),
+                        leading: const Icon(Icons.description_outlined),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.08,
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed:
+                                () => Get.toNamed(
+                                  AppRoutes.contractorCredentials,
                                 ),
-                              )
-                              : const Text('Approve'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-              if (err != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.errorBackground,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    err,
-                    style: const TextStyle(color: AppColors.error),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              if (sub != null) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
+                            child: const Text('Upload credentials'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (controller.shouldShowAwaitingApprovalBanner) ...[
+                      MaterialBanner(
+                        content: const Text(
+                          'Your documents are uploaded and waiting for provider '
+                          'approval.',
+                        ),
+                        leading: const Icon(Icons.hourglass_top_outlined),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.08,
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed:
+                                () => Get.toNamed(
+                                  AppRoutes.contractorCredentials,
+                                ),
+                            child: const Text('View credentials'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    for (final request
+                        in controller.pendingSharingRequests) ...[
+                      MaterialBanner(
+                        content: Text(
+                          '${controller.tenantLabelFor(request)} requested access '
+                          'to your credentials for compliance review.',
+                        ),
+                        leading: const Icon(Icons.shield_outlined),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.08,
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed:
+                                controller.approvingRequestId.value ==
+                                        request.id
+                                    ? null
+                                    : () => controller.approveSharingRequest(
+                                      request,
+                                    ),
+                            child:
+                                controller.approvingRequestId.value ==
+                                        request.id
+                                    ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                    : const Text('Approve'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (err != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.errorBackground,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: Text(
-                          'Subscription: ${sub.status}'
-                          '${sub.planName != null ? ' · ${sub.planName}' : ''}',
+                          err,
+                          style: const TextStyle(color: AppColors.error),
                         ),
                       ),
-                      TextButton(
-                        onPressed: BillingGate.openBillingUrl,
-                        child: const Text('Billing'),
-                      ),
+                      const SizedBox(height: 12),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              if (controller.showDashboard) ...[
-                Text('Overview', style: Get.textTheme.titleMedium),
-                const SizedBox(height: 8),
-                if (controller.isLoadingStats.value && stats == null)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (stats != null)
-                  _StaffDashboardGrid(stats: stats, controller: controller),
-              ] else if (controller.isContractor) ...[
-                if (controller.isLoadingStats.value &&
-                    controller.contractorStats.value == null)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else
-                  _ContractorDashboard(
-                    stats:
-                        controller.contractorStats.value ??
-                        ContractorHomeStats.empty,
-                    controller: controller,
-                  ),
-              ],
+                    if (sub != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Subscription: ${sub.status}'
+                                '${sub.planName != null ? ' · ${sub.planName}' : ''}',
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: BillingGate.openBillingUrl,
+                              child: const Text('Billing'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (controller.showDashboard) ...[
+                      Text('Overview', style: Get.textTheme.titleMedium),
+                      const SizedBox(height: 8),
+                      if (controller.isLoadingStats.value && stats == null)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (stats != null)
+                        _StaffDashboardGrid(
+                          stats: stats,
+                          controller: controller,
+                        ),
+                    ] else if (controller.isContractor) ...[
+                      if (controller.isLoadingStats.value &&
+                          controller.contractorStats.value == null)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 48),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else
+                        _ContractorDashboard(
+                          stats:
+                              controller.contractorStats.value ??
+                              ContractorHomeStats.empty,
+                          controller: controller,
+                        ),
+                    ],
                   ],
                 ),
               ),
@@ -619,10 +641,7 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
 }
 
 class _StaffDashboardGrid extends StatelessWidget {
-  const _StaffDashboardGrid({
-    required this.stats,
-    required this.controller,
-  });
+  const _StaffDashboardGrid({required this.stats, required this.controller});
 
   final StaffHomeStats stats;
   final HomeAlertsController controller;
@@ -728,10 +747,7 @@ class _StaffDashboardGrid extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ContractorDashboard extends StatelessWidget {
-  const _ContractorDashboard({
-    required this.stats,
-    required this.controller,
-  });
+  const _ContractorDashboard({required this.stats, required this.controller});
 
   final ContractorHomeStats stats;
   final HomeAlertsController controller;
@@ -754,9 +770,10 @@ class _ContractorDashboard extends StatelessWidget {
             icon: Icons.event_available_outlined,
             label: 'Upcoming visits',
             value: '${stats.visitsUpcoming}',
-            detail: stats.visitsToday > 0
-                ? '${stats.visitsToday} today'
-                : 'Next 14 days',
+            detail:
+                stats.visitsToday > 0
+                    ? '${stats.visitsToday} today'
+                    : 'Next 14 days',
             accent: stats.visitsToday > 0 ? AppColors.primary : null,
             onTap: () => controller.openRoute(AppRoutes.contractorVisits),
           ),
@@ -804,10 +821,11 @@ class _ContractorDashboard extends StatelessWidget {
             label: 'Credentials',
             value: '${stats.credentialsApproved}/${stats.credentialsTotal}',
             detail: 'Approved',
-            accent: stats.credentialsApproved == stats.credentialsTotal &&
-                    stats.credentialsTotal > 0
-                ? AppColors.success
-                : null,
+            accent:
+                stats.credentialsApproved == stats.credentialsTotal &&
+                        stats.credentialsTotal > 0
+                    ? AppColors.success
+                    : null,
             onTap: () => controller.openRoute(AppRoutes.contractorCredentials),
           ),
           if (stats.credentialsMissingEvidence > 0)
@@ -817,8 +835,8 @@ class _ContractorDashboard extends StatelessWidget {
               value: '${stats.credentialsMissingEvidence}',
               detail: 'Needs upload',
               accent: AppColors.error,
-              onTap: () =>
-                  controller.openRoute(AppRoutes.contractorCredentials),
+              onTap:
+                  () => controller.openRoute(AppRoutes.contractorCredentials),
             ),
           if (stats.credentialsPendingReview > 0)
             _StatTile(
@@ -826,8 +844,8 @@ class _ContractorDashboard extends StatelessWidget {
               label: 'Pending review',
               value: '${stats.credentialsPendingReview}',
               detail: 'Awaiting staff check',
-              onTap: () =>
-                  controller.openRoute(AppRoutes.contractorCredentials),
+              onTap:
+                  () => controller.openRoute(AppRoutes.contractorCredentials),
             ),
         ];
 
@@ -863,8 +881,7 @@ class _ContractorDashboard extends StatelessWidget {
             section('VISITS', visitTiles),
             section('PAYMENTS', paymentTiles),
             section('ENGAGEMENTS', [engagementTile]),
-            if (stats.credentialsTotal > 0)
-              section('CREDENTIALS', credTiles),
+            if (stats.credentialsTotal > 0) section('CREDENTIALS', credTiles),
           ],
         );
       },
@@ -896,9 +913,10 @@ class _StatTile extends StatelessWidget {
     final iconColor = accent ?? AppColors.slate600;
     final valueColor = accent ?? AppColors.textDark;
     return Material(
-      color: accent != null
-          ? accent!.withValues(alpha: 0.07)
-          : AppColors.cardBackground,
+      color:
+          accent != null
+              ? accent!.withValues(alpha: 0.07)
+              : AppColors.cardBackground,
       elevation: accent != null ? 0 : 1,
       shadowColor: AppColors.primary.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(14),

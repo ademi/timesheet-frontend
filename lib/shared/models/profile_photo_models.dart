@@ -17,7 +17,8 @@ class ProfilePhotoOut {
       documentId: json['document_id']?.toString(),
       downloadUrl: json['download_url'] as String?,
       expiresInSeconds: json['expires_in_seconds'] as int?,
-      hasPhoto: json['has_photo'] as bool? ??
+      hasPhoto:
+          json['has_photo'] as bool? ??
           (json['document_id'] != null || json['download_url'] != null),
     );
   }

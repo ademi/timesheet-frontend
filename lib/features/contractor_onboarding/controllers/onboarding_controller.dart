@@ -68,8 +68,7 @@ class OnboardingController extends GetxController with PendingActionMixin {
   List<OnboardingStep> get funnelSteps {
     final needsCompliance =
         _sessionService?.needsPlatformCompliance.value ?? true;
-    final needsEngagement =
-        _sessionService?.needsEngagementWork.value ?? false;
+    final needsEngagement = _sessionService?.needsEngagementWork.value ?? false;
     if (needsCompliance) {
       return [
         OnboardingStep.legal,

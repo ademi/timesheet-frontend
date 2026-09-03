@@ -64,17 +64,16 @@ class ContractorRosterOverlay {
           .toList(growable: false),
       availability: (json['availability'] as List? ?? const [])
           .whereType<Map>()
-          .map((e) => AvailabilityRuleOut.fromJson(Map<String, dynamic>.from(e)))
+          .map(
+            (e) => AvailabilityRuleOut.fromJson(Map<String, dynamic>.from(e)),
+          )
           .toList(growable: false),
     );
   }
 }
 
 class RosterOverlayOut {
-  const RosterOverlayOut({
-    this.contractors = const [],
-    this.truncated = false,
-  });
+  const RosterOverlayOut({this.contractors = const [], this.truncated = false});
 
   final List<ContractorRosterOverlay> contractors;
   final bool truncated;
@@ -83,7 +82,10 @@ class RosterOverlayOut {
     return RosterOverlayOut(
       contractors: (json['contractors'] as List? ?? const [])
           .whereType<Map>()
-          .map((e) => ContractorRosterOverlay.fromJson(Map<String, dynamic>.from(e)))
+          .map(
+            (e) =>
+                ContractorRosterOverlay.fromJson(Map<String, dynamic>.from(e)),
+          )
           .toList(growable: false),
       truncated: json['truncated'] as bool? ?? false,
     );

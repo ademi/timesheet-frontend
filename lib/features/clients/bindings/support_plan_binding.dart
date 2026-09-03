@@ -30,9 +30,10 @@ class SupportPlanBinding extends Bindings {
           planId: planId,
           clientName: clientName,
           ndisNumber: ndisNumber,
-          documentPipeline: Get.isRegistered<DocumentPipeline>()
-              ? Get.find<DocumentPipeline>()
-              : null,
+          documentPipeline:
+              Get.isRegistered<DocumentPipeline>()
+                  ? Get.find<DocumentPipeline>()
+                  : null,
         ),
       );
     }

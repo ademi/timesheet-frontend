@@ -12,13 +12,15 @@ Set<String> missingCategories(
   EngagementOut engagement,
   List<CredentialOut> credentials,
 ) {
-  final required = engagement.requiredDocCategories
-      .where((c) => c.isRequired)
-      .map((c) => c.category)
-      .toSet();
-  final have = credentials
-      .where(credentialHasPresentEvidence)
-      .map((c) => c.credentialType)
-      .toSet();
+  final required =
+      engagement.requiredDocCategories
+          .where((c) => c.isRequired)
+          .map((c) => c.category)
+          .toSet();
+  final have =
+      credentials
+          .where(credentialHasPresentEvidence)
+          .map((c) => c.credentialType)
+          .toSet();
   return required.where((c) => !have.contains(c)).toSet();
 }

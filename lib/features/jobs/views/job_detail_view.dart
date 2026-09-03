@@ -52,189 +52,208 @@ class _JobDetailViewState extends State<JobDetailView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-            if (err != null) ...[_ErrorBox(err), const SizedBox(height: 12)],
-            Text(
-              '${kindLabel(job.kind)} · ${jobStatusLabel(job.status)}',
-              style: Get.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Location: ${job.locationLabel ?? job.clientSiteName ?? job.branchName ?? 'Location not set'}',
-            ),
-            Text('Geofence: ${job.geofenceMode} / ${job.geofenceRadiusM}m'),
-            const SizedBox(height: 16),
-            Text('Default NDIS support item', style: Get.textTheme.titleSmall),
-            const SizedBox(height: 8),
-            if (controller.canManage && job.isOpen)
-              NdisSupportItemPicker(
-                supportItemCode: controller.editingSupportItemCode.value,
-                supportItemName: controller.editingSupportItemName.value,
-                enabled: !controller.isSaving.value,
-                labelText: 'NDIS support item',
-                onChanged: ({
-                  required String? supportItemCode,
-                  required String? supportItemName,
-                }) {
-                  controller.updateJobSupportItem(
-                    supportItemCode: supportItemCode,
-                    supportItemName: supportItemName,
-                  );
-                },
-              )
-            else if (job.supportItemCode != null &&
-                job.supportItemName != null)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(job.supportItemName!),
+                  if (err != null) ...[
+                    _ErrorBox(err),
+                    const SizedBox(height: 12),
+                  ],
                   Text(
-                    job.supportItemCode!,
+                    '${kindLabel(job.kind)} · ${jobStatusLabel(job.status)}',
+                    style: Get.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Location: ${job.locationLabel ?? job.clientSiteName ?? job.branchName ?? 'Location not set'}',
+                  ),
+                  Text(
+                    'Geofence: ${job.geofenceMode} / ${job.geofenceRadiusM}m',
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Default NDIS support item',
+                    style: Get.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  if (controller.canManage && job.isOpen)
+                    NdisSupportItemPicker(
+                      supportItemCode: controller.editingSupportItemCode.value,
+                      supportItemName: controller.editingSupportItemName.value,
+                      enabled: !controller.isSaving.value,
+                      labelText: 'NDIS support item',
+                      onChanged: ({
+                        required String? supportItemCode,
+                        required String? supportItemName,
+                      }) {
+                        controller.updateJobSupportItem(
+                          supportItemCode: supportItemCode,
+                          supportItemName: supportItemName,
+                        );
+                      },
+                    )
+                  else if (job.supportItemCode != null &&
+                      job.supportItemName != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(job.supportItemName!),
+                        Text(
+                          job.supportItemCode!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    const Text(
+                      'None set.',
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Updates propagate to visits that still use the previous default.',
+                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  ),
+                  if (controller.canManage && job.isOpen) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        AsyncOutlinedButton(
+                          onPressed: () => controller.setStatus('closed'),
+                          isLoading: controller.isSaving.value,
+                          child: const Text('Close'),
+                        ),
+                        AsyncOutlinedButton(
+                          onPressed: () => controller.setStatus('cancelled'),
+                          isLoading: controller.isSaving.value,
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed:
+                              controller.isSaving.value
+                                  ? null
+                                  : () => Get.toNamed(
+                                    AppRoutes.staffUnifiedSupport,
+                                    arguments: UnifiedSupportArgs(
+                                      clientId: job.clientId,
+                                      initialMode:
+                                          UnifiedSupportMode.oneSession,
+                                    ),
+                                  ),
+                          icon: const Icon(Icons.event_outlined),
+                          label: const Text('Book one session'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.onPrimary,
+                          ),
+                        ),
+                        if (controller.canFillHorizon)
+                          AsyncOutlinedButton(
+                            onPressed: controller.fillNext14Days,
+                            isLoading: controller.isFillingHorizon.value,
+                            child: const Text('Fill next 14 days'),
+                          ),
+                      ],
+                    ),
+                  ],
+                  const Divider(height: 32),
+                  Text('Templates', style: Get.textTheme.titleMedium),
+                  const SizedBox(height: 4),
+                  Text(
+                    controller.formCatalog.isEmpty
+                        ? 'No templates attached to this job yet.'
+                        : '${controller.formCatalog.length} template'
+                            '${controller.formCatalog.length == 1 ? '' : 's'} '
+                            'attached to this job.',
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textMuted,
                     ),
                   ),
-                ],
-              )
-            else
-              const Text(
-                'None set.',
-                style: TextStyle(color: AppColors.textMuted),
-              ),
-            const SizedBox(height: 4),
-            const Text(
-              'Updates propagate to visits that still use the previous default.',
-              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
-            if (controller.canManage && job.isOpen) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  AsyncOutlinedButton(
-                    onPressed: () => controller.setStatus('closed'),
-                    isLoading: controller.isSaving.value,
-                    child: const Text('Close'),
-                  ),
-                  AsyncOutlinedButton(
-                    onPressed: () => controller.setStatus('cancelled'),
-                    isLoading: controller.isSaving.value,
-                    child: const Text('Cancel'),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: controller.isSaving.value
-                        ? null
-                        : () => Get.toNamed(
-                              AppRoutes.staffUnifiedSupport,
-                              arguments: UnifiedSupportArgs(
-                                clientId: job.clientId,
-                                initialMode: UnifiedSupportMode.oneSession,
-                              ),
-                            ),
-                    icon: const Icon(Icons.event_outlined),
-                    label: const Text('Book one session'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.onPrimary,
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: ElevatedButton.icon(
+                      onPressed:
+                          controller.isSaving.value
+                              ? null
+                              : controller.openManageTemplatesAndRefresh,
+                      icon: const Icon(Icons.description_outlined),
+                      label: const Text('Manage templates'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.onPrimary,
+                      ),
                     ),
                   ),
-                  if (controller.canFillHorizon)
-                    AsyncOutlinedButton(
-                      onPressed: controller.fillNext14Days,
-                      isLoading: controller.isFillingHorizon.value,
-                      child: const Text('Fill next 14 days'),
-                    ),
-                ],
-              ),
-            ],
-            const Divider(height: 32),
-            Text('Templates', style: Get.textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(
-              controller.formCatalog.isEmpty
-                  ? 'No templates attached to this job yet.'
-                  : '${controller.formCatalog.length} template'
-                      '${controller.formCatalog.length == 1 ? '' : 's'} '
-                      'attached to this job.',
-              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ElevatedButton.icon(
-                onPressed:
-                    controller.isSaving.value
-                        ? null
-                        : controller.openManageTemplatesAndRefresh,
-                icon: const Icon(Icons.description_outlined),
-                label: const Text('Manage templates'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                ),
-              ),
-            ),
-            const Divider(height: 32),
-            Text('Patterns', style: Get.textTheme.titleMedium),
-            if (!job.isStanding)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text('Patterns need ongoing support.'),
-              )
-            else ...[
-              const SizedBox(height: 8),
-              if (controller.canManage)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: ElevatedButton.icon(
-                    onPressed:
-                        controller.isSaving.value
-                            ? null
-                            : () =>
-                                Get.toNamed(AppRoutes.staffRecurrenceRuleForm),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add recurrence rule'),
-                  ),
-                ),
-              const SizedBox(height: 12),
-              for (final rule in controller.rules)
-                Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          recurrenceLabel(rule),
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                  const Divider(height: 32),
+                  Text('Patterns', style: Get.textTheme.titleMedium),
+                  if (!job.isStanding)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Text('Patterns need ongoing support.'),
+                    )
+                  else ...[
+                    const SizedBox(height: 8),
+                    if (controller.canManage)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              controller.isSaving.value
+                                  ? null
+                                  : () => Get.toNamed(
+                                    AppRoutes.staffRecurrenceRuleForm,
+                                  ),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add recurrence rule'),
                         ),
-                        Text(
-                          '${rule.isActive ? 'Active' : 'Paused'} · '
-                          '${recurrenceWorkersLabel(rule)}',
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            if (controller.canManage)
-                              AsyncOutlinedButton(
-                                onPressed: () =>
-                                    controller.toggleRuleActive(rule),
-                                isLoading: controller.isSaving.value,
-                                child: Text(
-                                  rule.isActive ? 'Deactivate' : 'Activate',
+                      ),
+                    const SizedBox(height: 12),
+                    for (final rule in controller.rules)
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                recurrenceLabel(rule),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                          ],
+                              Text(
+                                '${rule.isActive ? 'Active' : 'Paused'} · '
+                                '${recurrenceWorkersLabel(rule)}',
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                children: [
+                                  if (controller.canManage)
+                                    AsyncOutlinedButton(
+                                      onPressed:
+                                          () =>
+                                              controller.toggleRuleActive(rule),
+                                      isLoading: controller.isSaving.value,
+                                      child: Text(
+                                        rule.isActive
+                                            ? 'Deactivate'
+                                            : 'Activate',
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
-          ],
+                      ),
+                  ],
+                ],
               ),
             ),
           ],

@@ -39,9 +39,8 @@ class SupportPlanClinicalSection extends StatelessWidget {
             onFile: store.bspOnFile.value,
             pdfOnFile: store.bspPdfOnFile.value,
             onToggle: (v) => store.bspOnFile.value = v,
-            onUpload: busy
-                ? null
-                : () => store.uploadBspPdf(clientId: clientId),
+            onUpload:
+                busy ? null : () => store.uploadBspPdf(clientId: clientId),
           ),
           const SizedBox(height: 12),
           _ClinicalDocRow(
@@ -49,9 +48,8 @@ class SupportPlanClinicalSection extends StatelessWidget {
             onFile: store.medicalPdfOnFile.value,
             pdfOnFile: store.medicalPdfOnFile.value,
             onToggle: null,
-            onUpload: busy
-                ? null
-                : () => store.uploadMedicalPdf(clientId: clientId),
+            onUpload:
+                busy ? null : () => store.uploadMedicalPdf(clientId: clientId),
           ),
           const SizedBox(height: 12),
           _ClinicalDocRow(
@@ -59,9 +57,10 @@ class SupportPlanClinicalSection extends StatelessWidget {
             onFile: store.nutritionChecklistOnFile.value,
             pdfOnFile: store.nutritionPdfOnFile.value,
             onToggle: (v) => store.nutritionChecklistOnFile.value = v,
-            onUpload: busy
-                ? null
-                : () => store.uploadNutritionPdf(clientId: clientId),
+            onUpload:
+                busy
+                    ? null
+                    : () => store.uploadNutritionPdf(clientId: clientId),
           ),
           const SizedBox(height: 12),
           _ClinicalDocRow(
@@ -69,9 +68,8 @@ class SupportPlanClinicalSection extends StatelessWidget {
             onFile: store.hazardChecklistOnFile.value,
             pdfOnFile: store.hazardPdfOnFile.value,
             onToggle: (v) => store.hazardChecklistOnFile.value = v,
-            onUpload: busy
-                ? null
-                : () => store.uploadHazardPdf(clientId: clientId),
+            onUpload:
+                busy ? null : () => store.uploadHazardPdf(clientId: clientId),
           ),
         ],
       );
@@ -105,9 +103,10 @@ class _ClinicalDocRow extends StatelessWidget {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(label),
-            subtitle: helper != null
-                ? Text(helper!, style: const TextStyle(fontSize: 12))
-                : null,
+            subtitle:
+                helper != null
+                    ? Text(helper!, style: const TextStyle(fontSize: 12))
+                    : null,
             value: onFile,
             onChanged: onToggle,
           )

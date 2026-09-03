@@ -88,7 +88,8 @@ class SupportPlanFundingSection extends StatelessWidget {
               for (final e in planTypes.entries)
                 DropdownMenuItem(value: e.key, child: Text(e.value)),
             ],
-            onChanged: enabled ? (v) => store.planManagementType.value = v : null,
+            onChanged:
+                enabled ? (v) => store.planManagementType.value = v : null,
           ),
           if (isPlanManaged) ...[
             const SizedBox(height: 16),
@@ -192,18 +193,21 @@ class SupportPlanFundingSection extends StatelessWidget {
                   : 'Start: ${_fmt(store.planStartDate.value!)}',
             ),
             trailing: const Icon(Icons.calendar_today),
-            onTap: enabled
-                ? () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate:
-                          store.planStartDate.value ?? DateTime.now(),
-                      firstDate: DateTime(2013),
-                      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-                    );
-                    if (picked != null) store.onPlanStartPicked(picked);
-                  }
-                : null,
+            onTap:
+                enabled
+                    ? () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate:
+                            store.planStartDate.value ?? DateTime.now(),
+                        firstDate: DateTime(2013),
+                        lastDate: DateTime.now().add(
+                          const Duration(days: 365 * 5),
+                        ),
+                      );
+                      if (picked != null) store.onPlanStartPicked(picked);
+                    }
+                    : null,
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -213,18 +217,22 @@ class SupportPlanFundingSection extends StatelessWidget {
                   : 'End: ${_fmt(store.planEndDate.value!)}',
             ),
             trailing: const Icon(Icons.calendar_today),
-            onTap: enabled
-                ? () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: store.planEndDate.value ??
-                          DateTime.now().add(const Duration(days: 365)),
-                      firstDate: DateTime(2013),
-                      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-                    );
-                    if (picked != null) store.planEndDate.value = picked;
-                  }
-                : null,
+            onTap:
+                enabled
+                    ? () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate:
+                            store.planEndDate.value ??
+                            DateTime.now().add(const Duration(days: 365)),
+                        firstDate: DateTime(2013),
+                        lastDate: DateTime.now().add(
+                          const Duration(days: 365 * 5),
+                        ),
+                      );
+                      if (picked != null) store.planEndDate.value = picked;
+                    }
+                    : null,
           ),
           const SizedBox(height: 8),
           const Text(
@@ -310,10 +318,11 @@ class SupportPlanFundingSection extends StatelessWidget {
           SupportPlanSpecialistsPanel(
             specialists: store.supportSpecialists,
             enabled: enabled,
-            onAdd: (context) => SupportPlanSpecialistsPanel.showTypePicker(
-              context,
-              onSelected: store.addSupportSpecialist,
-            ),
+            onAdd:
+                (context) => SupportPlanSpecialistsPanel.showTypePicker(
+                  context,
+                  onSelected: store.addSupportSpecialist,
+                ),
             onRemove: store.removeSupportSpecialist,
           ),
           const SizedBox(height: 16),
@@ -364,9 +373,10 @@ class SupportPlanFundingSection extends StatelessWidget {
               ),
             ),
           OutlinedButton.icon(
-            onPressed: enabled
-                ? () => store.uploadNdisPlanPdf(clientId: clientId)
-                : null,
+            onPressed:
+                enabled
+                    ? () => store.uploadNdisPlanPdf(clientId: clientId)
+                    : null,
             icon: const Icon(Icons.upload_file_outlined),
             label: Text(
               store.ndisPdfOnFile.value

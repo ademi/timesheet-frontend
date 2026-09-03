@@ -72,8 +72,7 @@ bool shouldWarnAtypicalOngoingSchedule({
   }
 
   final sampleWeekday = switch (frequency) {
-    RecurrenceFrequency.weekly ||
-    RecurrenceFrequency.fortnightly =>
+    RecurrenceFrequency.weekly || RecurrenceFrequency.fortnightly =>
       weekdays.isNotEmpty ? weekdays.first : DateTime.monday,
     RecurrenceFrequency.monthly => startDate.weekday,
     RecurrenceFrequency.daily => startDate.weekday,

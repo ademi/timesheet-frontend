@@ -93,12 +93,15 @@ void main() {
         ),
       ),
     );
-    when(() => jobs.listFormTemplates(tenantLevel: true))
-        .thenAnswer((_) async => []);
-    when(() => engagements.listTenantEngagements())
-        .thenAnswer((_) async => []);
     when(
-      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
+      () => jobs.listFormTemplates(tenantLevel: true),
+    ).thenAnswer((_) async => []);
+    when(() => engagements.listTenantEngagements()).thenAnswer((_) async => []);
+    when(
+      () => visits.fetchRosterOverlay(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
     ).thenAnswer((_) async => const RosterOverlayOut(contractors: []));
     when(
       () => shifts.listShifts(
@@ -132,15 +135,11 @@ void main() {
 
   tearDown(Get.reset);
 
-  testWidgets('shows client name at top when client selected', (
-    tester,
-  ) async {
+  testWidgets('shows client name at top when client selected', (tester) async {
     await controller.load();
     controller.step.value = 2;
 
-    await tester.pumpWidget(
-      const GetMaterialApp(home: UnifiedSupportView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: UnifiedSupportView()));
     await tester.pumpAndSettle();
 
     expect(find.text('Sam Lee'), findsOneWidget);
@@ -155,9 +154,7 @@ void main() {
     controller.step.value = 2;
     controller.frequency.value = RecurrenceFrequency.daily;
 
-    await tester.pumpWidget(
-      const GetMaterialApp(home: UnifiedSupportView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: UnifiedSupportView()));
     await tester.pumpAndSettle();
 
     expect(find.text(kAtypicalScheduleHoursMessage), findsOneWidget);
@@ -169,9 +166,7 @@ void main() {
     await controller.load();
     controller.step.value = 2;
 
-    await tester.pumpWidget(
-      const GetMaterialApp(home: UnifiedSupportView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: UnifiedSupportView()));
     await tester.pumpAndSettle();
 
     expect(find.text('09:00'), findsOneWidget);
@@ -187,9 +182,11 @@ void main() {
     await tester.pump();
 
     expect(
-      find.text(MaterialLocalizations.of(
-        tester.element(find.byType(UnifiedSupportView)),
-      ).formatMediumDate(DateTime(2027, 3, 15))),
+      find.text(
+        MaterialLocalizations.of(
+          tester.element(find.byType(UnifiedSupportView)),
+        ).formatMediumDate(DateTime(2027, 3, 15)),
+      ),
       findsOneWidget,
     );
 
@@ -241,16 +238,16 @@ void main() {
     ]);
     controller.step.value = UnifiedSupportController.assignStep;
 
-    await tester.pumpWidget(
-      const GetMaterialApp(home: UnifiedSupportView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: UnifiedSupportView()));
     await tester.pumpAndSettle();
 
     expect(find.text('Worker 1 (optional)'), findsOneWidget);
     expect(find.text('Worker 2 (optional)'), findsOneWidget);
     expect(find.text('Unfilled'), findsNWidgets(2));
-    expect(find.text('Worker assignment will be available in the next update.'),
-        findsNothing);
+    expect(
+      find.text('Worker assignment will be available in the next update.'),
+      findsNothing,
+    );
   });
 
   testWidgets('ongoing assign dropdown shows Free on first date', (
@@ -265,8 +262,9 @@ void main() {
       createdAt: now,
       updatedAt: now,
     );
-    when(() => engagements.listTenantEngagements())
-        .thenAnswer((_) async => [engagement]);
+    when(
+      () => engagements.listTenantEngagements(),
+    ).thenAnswer((_) async => [engagement]);
     await controller.load();
     controller.startDate.value = DateTime(2026, 8, 13);
     controller.weekdays
@@ -274,9 +272,7 @@ void main() {
       ..add(DateTime.thursday);
     controller.step.value = UnifiedSupportController.assignStep;
 
-    await tester.pumpWidget(
-      const GetMaterialApp(home: UnifiedSupportView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: UnifiedSupportView()));
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.byKey(const ValueKey('assign-slot-0')));
@@ -299,17 +295,16 @@ void main() {
       createdAt: now,
       updatedAt: now,
     );
-    when(() => engagements.listTenantEngagements())
-        .thenAnswer((_) async => [engagement]);
+    when(
+      () => engagements.listTenantEngagements(),
+    ).thenAnswer((_) async => [engagement]);
     await controller.load();
     controller.setMode(UnifiedSupportMode.oneSession);
     controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
     controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
     controller.step.value = UnifiedSupportController.assignStep;
 
-    await tester.pumpWidget(
-      const GetMaterialApp(home: UnifiedSupportView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: UnifiedSupportView()));
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.byKey(const ValueKey('assign-slot-0')));
@@ -320,152 +315,163 @@ void main() {
     expect(find.textContaining('Free'), findsOneWidget);
   });
 
-  testWidgets('assign step dropdown shows Busy beside worker with overlapping shift', (
-    tester,
-  ) async {
-    final shiftStart = DateTime(2026, 8, 13, 9);
-    final shiftEnd = DateTime(2026, 8, 13, 12);
-    final engagement = EngagementOut(
-      id: 'eng-1',
-      tenantId: 'tenant-1',
-      contractorId: 'contractor-busy',
-      contractorName: 'Busy Worker',
-      status: 'active',
-      createdAt: now,
-      updatedAt: now,
-    );
-    when(() => engagements.listTenantEngagements())
-        .thenAnswer((_) async => [engagement]);
-    when(
-      () => shifts.listShifts(
-        from: any(named: 'from'),
-        to: any(named: 'to'),
-        limit: any(named: 'limit'),
-      ),
-    ).thenAnswer(
-      (_) async => [
+  testWidgets(
+    'assign step dropdown shows Busy beside worker with overlapping shift',
+    (tester) async {
+      final shiftStart = DateTime(2026, 8, 13, 9);
+      final shiftEnd = DateTime(2026, 8, 13, 12);
+      final engagement = EngagementOut(
+        id: 'eng-1',
+        tenantId: 'tenant-1',
+        contractorId: 'contractor-busy',
+        contractorName: 'Busy Worker',
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+      );
+      when(
+        () => engagements.listTenantEngagements(),
+      ).thenAnswer((_) async => [engagement]);
+      when(
+        () => shifts.listShifts(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          ShiftOut(
+            id: 'shift-busy',
+            tenantId: 'tenant-1',
+            jobId: 'job-2',
+            jobTitle: 'Other',
+            clientId: 'client-2',
+            clientName: 'Other',
+            scheduledStart: shiftStart,
+            scheduledEnd: shiftEnd,
+            requiredSlots: 1,
+            openSlots: 0,
+            status: 'published',
+            assignments: [
+              ShiftAssignmentOut(
+                id: 'a-1',
+                contractorId: 'contractor-busy',
+                contractorName: 'Busy Worker',
+                visitId: 'visit-1',
+                source: 'staff_assign',
+                status: 'active',
+              ),
+            ],
+            createdAt: shiftStart,
+            updatedAt: shiftStart,
+          ),
+        ],
+      );
+      await controller.load();
+      controller.setMode(UnifiedSupportMode.oneSession);
+      controller.oneSessionStart.value = shiftStart;
+      controller.oneSessionEnd.value = shiftEnd;
+      controller.step.value = UnifiedSupportController.assignStep;
+
+      await tester.pumpWidget(const GetMaterialApp(home: UnifiedSupportView()));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.byKey(const ValueKey('assign-slot-0')));
+      await tester.tap(find.byKey(const ValueKey('assign-slot-0')));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Busy Worker'), findsWidgets);
+      expect(find.textContaining(' · Busy'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'two slot picks survive availability rebuild and stay in controller',
+    (tester) async {
+      when(() => engagements.listTenantEngagements()).thenAnswer(
+        (_) async => [
+          EngagementOut(
+            id: 'eng-1',
+            tenantId: 'tenant-1',
+            contractorId: 'contractor-1',
+            contractorName: 'Alex Worker',
+            status: 'active',
+            createdAt: now,
+            updatedAt: now,
+          ),
+          EngagementOut(
+            id: 'eng-2',
+            tenantId: 'tenant-1',
+            contractorId: 'contractor-2',
+            contractorName: 'Blair Worker',
+            status: 'active',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ],
+      );
+      await controller.load();
+      controller.setMode(UnifiedSupportMode.oneSession);
+      controller.requiredSlots.value = 2;
+      controller.syncAssignSlots(controller.requiredSlots.value);
+      controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
+      controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
+      controller.step.value = UnifiedSupportController.assignStep;
+
+      await tester.pumpWidget(const GetMaterialApp(home: UnifiedSupportView()));
+      await tester.pumpAndSettle();
+
+      Future<void> pick(int slot, String name) async {
+        await tester.ensureVisible(find.byKey(ValueKey('assign-slot-$slot')));
+        await tester.tap(find.byKey(ValueKey('assign-slot-$slot')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.textContaining(name).last);
+        await tester.pumpAndSettle();
+      }
+
+      await pick(0, 'Alex Worker');
+      await pick(1, 'Blair Worker');
+      expect(controller.selectedContractorIds, [
+        'contractor-1',
+        'contractor-2',
+      ]);
+      expect(
+        find.textContaining('Selected: Alex Worker, Blair Worker'),
+        findsOneWidget,
+      );
+
+      // Simulate late availability reload that used to desync FormField display.
+      controller.assignShifts.add(
         ShiftOut(
-          id: 'shift-busy',
+          id: 'shift-noise',
           tenantId: 'tenant-1',
           jobId: 'job-2',
           jobTitle: 'Other',
           clientId: 'client-2',
           clientName: 'Other',
-          scheduledStart: shiftStart,
-          scheduledEnd: shiftEnd,
+          scheduledStart: DateTime(2026, 8, 13, 9),
+          scheduledEnd: DateTime(2026, 8, 13, 12),
           requiredSlots: 1,
-          openSlots: 0,
+          openSlots: 1,
           status: 'published',
-          assignments: [
-            ShiftAssignmentOut(
-              id: 'a-1',
-              contractorId: 'contractor-busy',
-              contractorName: 'Busy Worker',
-              visitId: 'visit-1',
-              source: 'staff_assign',
-              status: 'active',
-            ),
-          ],
-          createdAt: shiftStart,
-          updatedAt: shiftStart,
-        ),
-      ],
-    );
-    await controller.load();
-    controller.setMode(UnifiedSupportMode.oneSession);
-    controller.oneSessionStart.value = shiftStart;
-    controller.oneSessionEnd.value = shiftEnd;
-    controller.step.value = UnifiedSupportController.assignStep;
-
-    await tester.pumpWidget(
-      const GetMaterialApp(home: UnifiedSupportView()),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.ensureVisible(find.byKey(const ValueKey('assign-slot-0')));
-    await tester.tap(find.byKey(const ValueKey('assign-slot-0')));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('Busy Worker'), findsWidgets);
-    expect(find.textContaining(' · Busy'), findsOneWidget);
-  });
-
-  testWidgets('two slot picks survive availability rebuild and stay in controller', (
-    tester,
-  ) async {
-    when(() => engagements.listTenantEngagements()).thenAnswer(
-      (_) async => [
-        EngagementOut(
-          id: 'eng-1',
-          tenantId: 'tenant-1',
-          contractorId: 'contractor-1',
-          contractorName: 'Alex Worker',
-          status: 'active',
+          assignments: const [],
           createdAt: now,
           updatedAt: now,
         ),
-        EngagementOut(
-          id: 'eng-2',
-          tenantId: 'tenant-1',
-          contractorId: 'contractor-2',
-          contractorName: 'Blair Worker',
-          status: 'active',
-          createdAt: now,
-          updatedAt: now,
-        ),
-      ],
-    );
-    await controller.load();
-    controller.setMode(UnifiedSupportMode.oneSession);
-    controller.requiredSlots.value = 2;
-    controller.syncAssignSlots(controller.requiredSlots.value);
-    controller.oneSessionStart.value = DateTime(2026, 8, 13, 9);
-    controller.oneSessionEnd.value = DateTime(2026, 8, 13, 12);
-    controller.step.value = UnifiedSupportController.assignStep;
-
-    await tester.pumpWidget(
-      const GetMaterialApp(home: UnifiedSupportView()),
-    );
-    await tester.pumpAndSettle();
-
-    Future<void> pick(int slot, String name) async {
-      await tester.ensureVisible(find.byKey(ValueKey('assign-slot-$slot')));
-      await tester.tap(find.byKey(ValueKey('assign-slot-$slot')));
+      );
       await tester.pumpAndSettle();
-      await tester.tap(find.textContaining(name).last);
-      await tester.pumpAndSettle();
-    }
 
-    await pick(0, 'Alex Worker');
-    await pick(1, 'Blair Worker');
-    expect(controller.selectedContractorIds, ['contractor-1', 'contractor-2']);
-    expect(find.textContaining('Selected: Alex Worker, Blair Worker'), findsOneWidget);
-
-    // Simulate late availability reload that used to desync FormField display.
-    controller.assignShifts.add(
-      ShiftOut(
-        id: 'shift-noise',
-        tenantId: 'tenant-1',
-        jobId: 'job-2',
-        jobTitle: 'Other',
-        clientId: 'client-2',
-        clientName: 'Other',
-        scheduledStart: DateTime(2026, 8, 13, 9),
-        scheduledEnd: DateTime(2026, 8, 13, 12),
-        requiredSlots: 1,
-        openSlots: 1,
-        status: 'published',
-        assignments: const [],
-        createdAt: now,
-        updatedAt: now,
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(controller.selectedContractorIds, ['contractor-1', 'contractor-2']);
-    expect(controller.filledContractorIds, ['contractor-1', 'contractor-2']);
-    expect(find.textContaining('Selected: Alex Worker, Blair Worker'), findsOneWidget);
-  });
+      expect(controller.selectedContractorIds, [
+        'contractor-1',
+        'contractor-2',
+      ]);
+      expect(controller.filledContractorIds, ['contractor-1', 'contractor-2']);
+      expect(
+        find.textContaining('Selected: Alex Worker, Blair Worker'),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('schedule step shows overlapping visit chip', (tester) async {
     final start = DateTime(2026, 8, 13, 9);
@@ -502,9 +508,7 @@ void main() {
     controller.oneSessionEnd.value = end;
     controller.step.value = UnifiedSupportController.scheduleStep;
 
-    await tester.pumpWidget(
-      const GetMaterialApp(home: UnifiedSupportView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: UnifiedSupportView()));
     await tester.pumpAndSettle();
 
     expect(find.text('Overlapping visit…'), findsOneWidget);

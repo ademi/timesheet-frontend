@@ -19,7 +19,8 @@ class IdentityCardAttachment {
   final Rxn<PendingIdentityCardFile> pending = Rxn();
 
   bool get hasAttachment =>
-      (existingDocumentId.value != null && existingDocumentId.value!.isNotEmpty) ||
+      (existingDocumentId.value != null &&
+          existingDocumentId.value!.isNotEmpty) ||
       pending.value != null;
 
   void reset() {

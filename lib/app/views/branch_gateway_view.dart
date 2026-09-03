@@ -55,26 +55,26 @@ class BranchGatewayView extends GetView<BranchGatewayController> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                     children: [
-                    const Text(
-                      'Which branch would you like to manage?',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ...controller.branches.map(
-                      (branch) => Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: _BranchCard(
-                          branch: branch,
-                          onTap: () => controller.selectBranch(branch),
+                      const Text(
+                        'Which branch would you like to manage?',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryDark,
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(height: 16),
+                      ...controller.branches.map(
+                        (branch) => Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: _BranchCard(
+                            branch: branch,
+                            onTap: () => controller.selectBranch(branch),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               }),
             ),

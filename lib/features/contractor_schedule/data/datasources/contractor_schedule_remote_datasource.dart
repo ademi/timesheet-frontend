@@ -6,7 +6,7 @@ import '../models/schedule_models.dart';
 
 class ContractorScheduleRemoteDataSource {
   ContractorScheduleRemoteDataSource({required Dio authenticatedDio})
-      : _dio = authenticatedDio;
+    : _dio = authenticatedDio;
 
   final Dio _dio;
 
@@ -38,7 +38,9 @@ class ContractorScheduleRemoteDataSource {
 
   Future<List<AvailabilityRuleOut>> listAvailability() async {
     try {
-      final response = await _dio.get<dynamic>(ApiPaths.contractorMeAvailability);
+      final response = await _dio.get<dynamic>(
+        ApiPaths.contractorMeAvailability,
+      );
       return _parseAvailability(response.data);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
@@ -63,7 +65,9 @@ class ContractorScheduleRemoteDataSource {
 
   Future<List<LeaveOut>> listLeave() async {
     try {
-      final response = await _dio.get<List<dynamic>>(ApiPaths.contractorMeLeave);
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.contractorMeLeave,
+      );
       return _mapList(response.data, LeaveOut.fromJson);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);

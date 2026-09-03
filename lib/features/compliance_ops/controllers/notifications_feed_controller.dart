@@ -11,9 +11,8 @@ import '../data/repositories/compliance_ops_repository.dart';
 
 /// App-wide notification events feed (AppBar bell).
 class NotificationsFeedController extends GetxController {
-  NotificationsFeedController({
-    required ComplianceOpsRepository repository,
-  }) : _repository = repository;
+  NotificationsFeedController({required ComplianceOpsRepository repository})
+    : _repository = repository;
 
   final ComplianceOpsRepository _repository;
 

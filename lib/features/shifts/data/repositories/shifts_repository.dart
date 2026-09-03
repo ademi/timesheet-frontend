@@ -12,13 +12,9 @@ class ShiftsRepository {
     DateTime? to,
     String? jobId,
     int limit = 200,
-  }) =>
-      _remote.listShifts(from: from, to: to, jobId: jobId, limit: limit);
+  }) => _remote.listShifts(from: from, to: to, jobId: jobId, limit: limit);
 
-  Future<List<OpenShiftOut>> listOpenShifts({
-    DateTime? from,
-    DateTime? to,
-  }) =>
+  Future<List<OpenShiftOut>> listOpenShifts({DateTime? from, DateTime? to}) =>
       _remote.listOpenShifts(from: from, to: to);
 
   Future<ShiftOut> getShift(String id) => _remote.getShift(id);
@@ -32,23 +28,21 @@ class ShiftsRepository {
     required String shiftId,
     required String contractorId,
     List<TaskTemplateItem>? taskTemplate,
-  }) =>
-      _remote.assignShift(
-        shiftId: shiftId,
-        contractorId: contractorId,
-        taskTemplate: taskTemplate,
-      );
+  }) => _remote.assignShift(
+    shiftId: shiftId,
+    contractorId: contractorId,
+    taskTemplate: taskTemplate,
+  );
 
   Future<ShiftOut> assignShiftBatch({
     required String shiftId,
     required List<String> contractorIds,
     List<TaskTemplateItem>? taskTemplate,
-  }) =>
-      _remote.assignShiftBatch(
-        shiftId: shiftId,
-        contractorIds: contractorIds,
-        taskTemplate: taskTemplate,
-      );
+  }) => _remote.assignShiftBatch(
+    shiftId: shiftId,
+    contractorIds: contractorIds,
+    taskTemplate: taskTemplate,
+  );
 
   Future<ShiftOut> unassignShift(String shiftId, String contractorId) =>
       _remote.unassignShift(shiftId, contractorId);

@@ -49,7 +49,9 @@ void main() {
   });
 
   group('Phase 7 — layout widgets', () {
-    testWidgets('MaxWidthBox caps page content at maxContent (7.6)', (tester) async {
+    testWidgets('MaxWidthBox caps page content at maxContent (7.6)', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1920, 1080));
       addTearDown(tester.view.resetPhysicalSize);
 
@@ -95,7 +97,9 @@ void main() {
       expect(captured.maxWidth, Breakpoints.formMaxWidth);
     });
 
-    testWidgets('ResponsiveScaffold shows rail at 1280px (7.5)', (tester) async {
+    testWidgets('ResponsiveScaffold shows rail at 1280px (7.5)', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1280, 900));
       addTearDown(tester.view.resetPhysicalSize);
 
@@ -114,46 +118,54 @@ void main() {
       expect(find.text('Content'), findsOneWidget);
     });
 
-    testWidgets('ResponsiveScaffold always shows rail (adaptive shell handles narrow)', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 1200));
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'ResponsiveScaffold always shows rail (adaptive shell handles narrow)',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: ResponsiveScaffold(
-            selectedIndex: 0,
-            onDestinationSelected: (_) {},
-            destinations: sampleDestinations,
-            child: const Text('Content'),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ResponsiveScaffold(
+              selectedIndex: 0,
+              onDestinationSelected: (_) {},
+              destinations: sampleDestinations,
+              child: const Text('Content'),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(NavigationRail), findsOneWidget);
-      expect(find.text('Content'), findsOneWidget);
-    });
+        expect(find.byType(NavigationRail), findsOneWidget);
+        expect(find.text('Content'), findsOneWidget);
+      },
+    );
 
-    testWidgets('AdaptiveNavigationShell uses bottom bar below tablet bp (7.4)', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 1200));
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'AdaptiveNavigationShell uses bottom bar below tablet bp (7.4)',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: AdaptiveNavigationShell(
-            selectedIndex: 0,
-            onDestinationSelected: (_) {},
-            destinations: sampleDestinations,
-            child: const Text('PhoneContent'),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: AdaptiveNavigationShell(
+              selectedIndex: 0,
+              onDestinationSelected: (_) {},
+              destinations: sampleDestinations,
+              child: const Text('PhoneContent'),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(NavigationBar), findsOneWidget);
-      expect(find.byType(NavigationRail), findsNothing);
-      expect(find.text('PhoneContent'), findsOneWidget);
-    });
+        expect(find.byType(NavigationBar), findsOneWidget);
+        expect(find.byType(NavigationRail), findsNothing);
+        expect(find.text('PhoneContent'), findsOneWidget);
+      },
+    );
 
-    testWidgets('TwoPane renders master and detail at 1280px (7.5)', (tester) async {
+    testWidgets('TwoPane renders master and detail at 1280px (7.5)', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1280, 900));
       addTearDown(tester.view.resetPhysicalSize);
 
@@ -208,9 +220,7 @@ void main() {
           ensureScreenSize: true,
           builder: (context, child) {
             fontSize = 14.sp;
-            return const MaterialApp(
-              home: Scaffold(body: Text('density')),
-            );
+            return const MaterialApp(home: Scaffold(body: Text('density')));
           },
         ),
       );
@@ -218,7 +228,9 @@ void main() {
       return fontSize;
     }
 
-    testWidgets('7.1–7.3 sp scales proportionally across phone widths', (tester) async {
+    testWidgets('7.1–7.3 sp scales proportionally across phone widths', (
+      tester,
+    ) async {
       final at360 = await scaledSp(tester, 360);
       final at390 = await scaledSp(tester, 390);
       final at430 = await scaledSp(tester, 430);
@@ -240,9 +252,9 @@ void main() {
           child: ScreenUtilInit(
             designSize: const Size(390, 844),
             minTextAdapt: true,
-            builder: (context, child) => const MaterialApp(
-              home: Scaffold(body: Text('large font')),
-            ),
+            builder:
+                (context, child) =>
+                    const MaterialApp(home: Scaffold(body: Text('large font'))),
           ),
         ),
       );

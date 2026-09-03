@@ -100,8 +100,7 @@ class EngagementOut {
   /// Prefer a real name; fall back to email (never raw UUID).
   String get displayName {
     final name = contractorName?.trim() ?? '';
-    if (name.isNotEmpty &&
-        name.toLowerCase() != 'demo free contractor') {
+    if (name.isNotEmpty && name.toLowerCase() != 'demo free contractor') {
       return name;
     }
     final email = contractorEmail?.trim() ?? '';

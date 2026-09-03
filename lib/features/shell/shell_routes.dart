@@ -28,40 +28,40 @@ abstract final class ShellPages {
   ShellPages._();
 
   static List<GetPage> get routes => [
-        GetPage(
-          name: AppRoutes.wrongActor,
-          page: () => const WrongActorView(),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.staffHome,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(anyOf: [AppPermissions.authSession]),
-          ],
-          binding: HomeAlertsBinding(),
-          page: () => staffShellPage(const HomeAlertsView()),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.contractorHome,
-          middlewares: [AuthGuard(), ActorGuard()],
-          binding: HomeAlertsBinding(),
-          page: () => contractorShellPage(const HomeAlertsView()),
-          transition: Transition.fadeIn,
-        ),
-        ...EngagementsPages.routes,
-        ...ClientsPages.routes,
-        ...JobsPages.routes,
-        ...VisitsPages.routes,
-        ...ContractorSchedulePages.routes,
-        ...PayrollPages.routes,
-        ...BillingPages.routes,
-        ...ComplianceOpsPages.routes,
-        ...CredentialsPages.routes,
-        ...ContractorOnboardingPages.routes,
-        ...ContractorMePages.routes,
-        ...ContractorRegisterPages.pages,
-      ];
+    GetPage(
+      name: AppRoutes.wrongActor,
+      page: () => const WrongActorView(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.staffHome,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(anyOf: [AppPermissions.authSession]),
+      ],
+      binding: HomeAlertsBinding(),
+      page: () => staffShellPage(const HomeAlertsView()),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.contractorHome,
+      middlewares: [AuthGuard(), ActorGuard()],
+      binding: HomeAlertsBinding(),
+      page: () => contractorShellPage(const HomeAlertsView()),
+      transition: Transition.fadeIn,
+    ),
+    ...EngagementsPages.routes,
+    ...ClientsPages.routes,
+    ...JobsPages.routes,
+    ...VisitsPages.routes,
+    ...ContractorSchedulePages.routes,
+    ...PayrollPages.routes,
+    ...BillingPages.routes,
+    ...ComplianceOpsPages.routes,
+    ...CredentialsPages.routes,
+    ...ContractorOnboardingPages.routes,
+    ...ContractorMePages.routes,
+    ...ContractorRegisterPages.pages,
+  ];
 }

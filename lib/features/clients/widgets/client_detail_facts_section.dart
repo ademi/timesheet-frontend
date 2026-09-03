@@ -48,12 +48,7 @@ Widget _row(String label, String value) {
             style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
         ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 13),
-          ),
-        ),
+        Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
       ],
     ),
   );

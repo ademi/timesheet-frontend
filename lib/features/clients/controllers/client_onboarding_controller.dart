@@ -40,17 +40,17 @@ class ClientOnboardingController extends GetxController
     Future<PendingIdentityCardFile?> Function()? pickCardFile,
     this.softGateConfirm,
     this.onFinished,
-  })  : _repository = repository,
-        _session = session,
-        _pipeline = documentPipeline,
-        _pickPdfBytesOverride = pickPdfBytes,
-        _pickCardFileOverride = pickCardFile;
+  }) : _repository = repository,
+       _session = session,
+       _pipeline = documentPipeline,
+       _pickPdfBytesOverride = pickPdfBytes,
+       _pickCardFileOverride = pickCardFile;
 
   final ClientsRepository _repository;
   final SessionService _session;
   final DocumentPipeline? _pipeline;
   final Future<({String name, List<int> bytes})?> Function()?
-      _pickPdfBytesOverride;
+  _pickPdfBytesOverride;
   final Future<PendingIdentityCardFile?> Function()? _pickCardFileOverride;
 
   /// Requirement keys loaded from the server (D10: skip empty clears).
@@ -252,13 +252,13 @@ class ClientOnboardingController extends GetxController
 
   bool get nomineeOptional => !requiresChildRepresentative;
 
-  String get representativeStepTitle => requiresChildRepresentative
-      ? 'Representative'
-      : 'Representative (optional)';
+  String get representativeStepTitle =>
+      requiresChildRepresentative
+          ? 'Representative'
+          : 'Representative (optional)';
 
-  String get representativeRoleChipLabel => requiresChildRepresentative
-      ? 'Representative'
-      : 'Nominee';
+  String get representativeRoleChipLabel =>
+      requiresChildRepresentative ? 'Representative' : 'Nominee';
 
   bool get showSkipCarer =>
       step.value == 3 &&
@@ -396,9 +396,8 @@ class ClientOnboardingController extends GetxController
     email.text = existing.email ?? '';
     phone.text = existing.phone ?? '';
     final rawDob = existing.dob?.trim();
-    dob.value = (rawDob == null || rawDob.isEmpty)
-        ? null
-        : DateTime.tryParse(rawDob);
+    dob.value =
+        (rawDob == null || rawDob.isEmpty) ? null : DateTime.tryParse(rawDob);
     step.value = 0;
   }
 
@@ -474,9 +473,8 @@ class ClientOnboardingController extends GetxController
   /// Applies stored profile facts to Support Plan fields (legacy Other fallback).
   void hydrateSupportPlanFromFacts(Iterable<ClientProfileFactOut> facts) {
     _recordPresentFacts(facts);
-    final factsList = facts is List<ClientProfileFactOut>
-        ? facts
-        : facts.toList();
+    final factsList =
+        facts is List<ClientProfileFactOut> ? facts : facts.toList();
     String? otherText;
     String? legacyOther;
     for (final fact in facts) {
@@ -522,9 +520,8 @@ class ClientOnboardingController extends GetxController
     replaceSupportSpecialists(
       SupportPlanSpecialistsCodec.resolveFromFacts(factsList),
     );
-    final resolvedOther = (otherText != null && otherText.isNotEmpty)
-        ? otherText
-        : legacyOther;
+    final resolvedOther =
+        (otherText != null && otherText.isNotEmpty) ? otherText : legacyOther;
     if (resolvedOther != null && resolvedOther.isNotEmpty) {
       supportPlanOtherCtrl.text = resolvedOther;
     }
@@ -537,8 +534,7 @@ class ClientOnboardingController extends GetxController
 
   Future<void> pickIdentityCard(IdentityCardAttachment attachment) async {
     final override = _pickCardFileOverride;
-    final picked =
-        override != null ? await override() : await _pickCardFile();
+    final picked = override != null ? await override() : await _pickCardFile();
     if (picked != null) {
       attachment.pending.value = picked;
     }
@@ -550,8 +546,7 @@ class ClientOnboardingController extends GetxController
 
   Future<void> pickNdisPlanPdf() async {
     final override = _pickPdfBytesOverride;
-    final picked =
-        override != null ? await override() : await _pickPdfBytes();
+    final picked = override != null ? await override() : await _pickPdfBytes();
     if (picked != null) {
       ndisPdfAttachment.pending.value = PendingIdentityCardFile(
         name: picked.name,
@@ -1027,7 +1022,8 @@ class ClientOnboardingController extends GetxController
     }
 
     final relationship = resolvedContactRelationship;
-    if (contactRelationshipPreset.value == ContactFormHost.relationshipOtherKey &&
+    if (contactRelationshipPreset.value ==
+            ContactFormHost.relationshipOtherKey &&
         (relationship == null || relationship.isEmpty)) {
       errorMessage.value = 'Specify the relationship.';
       return false;
@@ -1213,7 +1209,8 @@ class ClientOnboardingController extends GetxController
 
     if (requiresChildRepresentative) {
       if (!representativeSaved.value) {
-        final hasDraft = contactNameCtrl.text.trim().isNotEmpty ||
+        final hasDraft =
+            contactNameCtrl.text.trim().isNotEmpty ||
             contactPhoneCtrl.text.trim().isNotEmpty ||
             contactEmailCtrl.text.trim().isNotEmpty;
         if (hasDraft) {
@@ -1227,7 +1224,8 @@ class ClientOnboardingController extends GetxController
         return false;
       }
     } else if (!representativeSaved.value && !nomineeSkipped.value) {
-      final hasDraft = contactNameCtrl.text.trim().isNotEmpty ||
+      final hasDraft =
+          contactNameCtrl.text.trim().isNotEmpty ||
           contactPhoneCtrl.text.trim().isNotEmpty ||
           contactEmailCtrl.text.trim().isNotEmpty;
       if (hasDraft) {
@@ -1339,10 +1337,7 @@ class ClientOnboardingController extends GetxController
         await _repository.upsertProfileFact(
           id,
           OnboardingKeys.ndis,
-          ProfileFactUpsert(
-            valueJson: ndis,
-            documentId: ndisDocId,
-          ),
+          ProfileFactUpsert(valueJson: ndis, documentId: ndisDocId),
         );
       } on AppFailure catch (e) {
         if (e.code == 'ndis_number_in_use') {
@@ -1427,8 +1422,9 @@ class ClientOnboardingController extends GetxController
         _presentKeys.add(OnboardingKeys.ndisPlanBudgets);
         await _clearLegacyBudgetFacts(id);
       }
-      final specialistJson =
-          SupportPlanSpecialistsCodec.toFactValue(supportSpecialists);
+      final specialistJson = SupportPlanSpecialistsCodec.toFactValue(
+        supportSpecialists,
+      );
       if (specialistJson.isEmpty) {
         await _clearFactIfPresent(id, OnboardingKeys.supportPlanSpecialists);
       } else {
@@ -1472,11 +1468,11 @@ class ClientOnboardingController extends GetxController
   }
 
   ClientLegalUploadHelper get _legalUploadHelper => ClientLegalUploadHelper(
-        repository: _repository,
-        pipeline: _pipeline,
-        pickPdfBytes: _pickPdfBytes,
-        canUploadDocs: () => canUploadDocs,
-      );
+    repository: _repository,
+    pipeline: _pipeline,
+    pickPdfBytes: _pickPdfBytes,
+    canUploadDocs: () => canUploadDocs,
+  );
 
   Future<bool> markConsentComplete() async {
     errorMessage.value = null;

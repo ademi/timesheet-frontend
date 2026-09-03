@@ -20,10 +20,12 @@ abstract class AppRoutes {
   static const staffClientSupportPlan = '/staff/clients/support-plan';
   static const staffClientSiteForm = '/staff/clients/site-form';
   static const staffClientContactForm = '/staff/clients/contact-form';
+
   /// Advanced Supports list (demoted from staff shell nav; entry via Settings).
   static const staffJobs = '/staff/jobs';
   static const staffJobForm = '/staff/jobs/form';
   static const staffOngoingSupport = '/staff/jobs/ongoing-support';
+
   /// Unified one-session / ongoing support stepped composer (Phase 6.1).
   static const staffUnifiedSupport = '/staff/support/compose';
   static const staffJobDetail = '/staff/jobs/detail';
@@ -43,6 +45,7 @@ abstract class AppRoutes {
 
   // ContractorShell + public / onboarding
   static const contractorRegister = '/contractor/register';
+
   /// Path-token registration link from invitation email (`/contractor/register/{token}`).
   static const contractorRegisterWithToken = '/contractor/register/:token';
   static const contractorOnboarding = '/contractor/onboarding';

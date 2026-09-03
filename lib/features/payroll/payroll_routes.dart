@@ -16,39 +16,36 @@ abstract final class PayrollPages {
   PayrollPages._();
 
   static List<GetPage> get routes => [
-        GetPage(
-          name: AppRoutes.staffPayments,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(
-              anyOf: [
-                AppPermissions.paymentsView,
-                AppPermissions.paymentsManage,
-              ],
-            ),
-          ],
-          binding: StaffPaymentsBinding(),
-          page: () => staffShellPage(const StaffPaymentsView()),
-          transition: Transition.fadeIn,
+    GetPage(
+      name: AppRoutes.staffPayments,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [AppPermissions.paymentsView, AppPermissions.paymentsManage],
         ),
-        GetPage(
-          name: AppRoutes.staffSettings,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(anyOf: [AppPermissions.authSession]),
-          ],
-          binding: StaffTenantSettingsBinding(),
-          page: () => staffShellPage(const StaffTenantSettingsView()),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.contractorPayments,
-          middlewares: [AuthGuard(), ActorGuard()],
-          binding: ContractorPaymentsBinding(),
-          page: () => contractorShellPage(const ContractorPaymentsView()),
-          transition: Transition.fadeIn,
-        ),
-      ];
+      ],
+      binding: StaffPaymentsBinding(),
+      page: () => staffShellPage(const StaffPaymentsView()),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.staffSettings,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(anyOf: [AppPermissions.authSession]),
+      ],
+      binding: StaffTenantSettingsBinding(),
+      page: () => staffShellPage(const StaffTenantSettingsView()),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.contractorPayments,
+      middlewares: [AuthGuard(), ActorGuard()],
+      binding: ContractorPaymentsBinding(),
+      page: () => contractorShellPage(const ContractorPaymentsView()),
+      transition: Transition.fadeIn,
+    ),
+  ];
 }

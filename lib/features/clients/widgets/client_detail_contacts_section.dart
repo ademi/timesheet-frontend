@@ -106,18 +106,23 @@ class ClientDetailContactsSection extends StatelessWidget {
                     ),
                 ],
               ),
-              trailing: canManage
-                  ? PopupMenuButton<String>(
-                      onSelected: (v) {
-                        if (v == 'edit') onEdit(contact);
-                        if (v == 'delete') onDelete(contact);
-                      },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'edit', child: Text('Edit')),
-                        PopupMenuItem(value: 'delete', child: Text('Delete')),
-                      ],
-                    )
-                  : null,
+              trailing:
+                  canManage
+                      ? PopupMenuButton<String>(
+                        onSelected: (v) {
+                          if (v == 'edit') onEdit(contact);
+                          if (v == 'delete') onDelete(contact);
+                        },
+                        itemBuilder:
+                            (_) => const [
+                              PopupMenuItem(value: 'edit', child: Text('Edit')),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Delete'),
+                              ),
+                            ],
+                      )
+                      : null,
             ),
           ),
       ],

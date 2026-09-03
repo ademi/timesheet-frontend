@@ -37,15 +37,11 @@ class SupportPlanSpecialistsPanel extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SupportPlanSpecialistSection(
-                    entry: entry,
-                    enabled: enabled,
-                  ),
+                  SupportPlanSpecialistSection(entry: entry, enabled: enabled),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
-                      onPressed:
-                          enabled ? () => onRemove(entry.id) : null,
+                      onPressed: enabled ? () => onRemove(entry.id) : null,
                       icon: const Icon(Icons.delete_outline, size: 18),
                       label: const Text('Remove'),
                     ),

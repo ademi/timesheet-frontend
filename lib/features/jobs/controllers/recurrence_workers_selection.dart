@@ -8,9 +8,9 @@ mixin RecurrenceWorkersSelection {
   final selectedContractorIds = <String?>[].obs;
 
   List<String> get filledContractorIds => [
-        for (final id in selectedContractorIds)
-          if (id != null && id.isNotEmpty) id,
-      ];
+    for (final id in selectedContractorIds)
+      if (id != null && id.isNotEmpty) id,
+  ];
 
   String? get soleContractorId {
     for (final id in selectedContractorIds) {

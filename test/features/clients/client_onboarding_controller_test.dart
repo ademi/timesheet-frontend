@@ -113,8 +113,9 @@ void main() {
     mock = _MockClientsRepository();
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
-    when(() => mock.listFormTemplates(tenantLevel: any(named: 'tenantLevel')))
-        .thenAnswer((_) async => <FormTemplateSummary>[]);
+    when(
+      () => mock.listFormTemplates(tenantLevel: any(named: 'tenantLevel')),
+    ).thenAnswer((_) async => <FormTemplateSummary>[]);
     when(() => mock.listClientTypes()).thenAnswer((_) async => [_patientType]);
     c = _buildController();
   });
@@ -156,8 +157,9 @@ void main() {
       captured = inv.positionalArguments.first as ClientCreateRequest;
       return _fakeClient;
     });
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mock.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async {});
 
     _fillValidIdentity(c);
 
@@ -191,18 +193,22 @@ void main() {
     expect(c.ndisFieldError.value, contains('NDIS'));
   });
 
-  test('submitSupportPlan blocks plan_managed without manager fields', () async {
-    c.client.value = _fakeClient;
-    c.step.value = 5;
-    c.ndisCtrl.text = '431234567';
-    c.planManagementType.value = 'plan_managed';
-    expect(await c.submitSupportPlan(), isFalse);
-    expect(c.errorMessage.value, contains('Plan manager'));
-  });
+  test(
+    'submitSupportPlan blocks plan_managed without manager fields',
+    () async {
+      c.client.value = _fakeClient;
+      c.step.value = 5;
+      c.ndisCtrl.text = '431234567';
+      c.planManagementType.value = 'plan_managed';
+      expect(await c.submitSupportPlan(), isFalse);
+      expect(c.errorMessage.value, contains('Plan manager'));
+    },
+  );
 
   test('submitSupportPlan accepts self_managed with NDIS', () async {
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mock.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async {});
     c.client.value = _fakeClient;
     c.step.value = 5;
     c.ndisCtrl.text = '431234567';
@@ -214,9 +220,7 @@ void main() {
         'client-1',
         OnboardingKeys.ndis,
         any(
-          that: predicate<ProfileFactUpsert>(
-            (u) => u.valueJson == '431234567',
-          ),
+          that: predicate<ProfileFactUpsert>((u) => u.valueJson == '431234567'),
         ),
       ),
     ).called(1);
@@ -236,43 +240,46 @@ void main() {
     );
   });
 
-  test('submitSupportPlan clears legacy budget keys when saving JSON', () async {
-    final clearedKeys = <String>[];
-    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((inv) {
-      final key = inv.positionalArguments[1] as String;
-      final body = inv.positionalArguments[2] as ProfileFactUpsert;
-      if (body.clearValue == true) {
-        clearedKeys.add(key);
-      }
-      return Future.value();
-    });
+  test(
+    'submitSupportPlan clears legacy budget keys when saving JSON',
+    () async {
+      final clearedKeys = <String>[];
+      when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((inv) {
+        final key = inv.positionalArguments[1] as String;
+        final body = inv.positionalArguments[2] as ProfileFactUpsert;
+        if (body.clearValue == true) {
+          clearedKeys.add(key);
+        }
+        return Future.value();
+      });
 
-    c.hydrateSupportPlanFromFacts([
-      const ClientProfileFactOut(
-        requirementKey: OnboardingKeys.budgetCore,
-        valueJson: 5000,
-      ),
-    ]);
-    c.client.value = _fakeClient;
-    c.step.value = 5;
-    c.ndisCtrl.text = '431234567';
-    c.planManagementType.value = 'self_managed';
-    c.budgetCoreCtrl.text = '1000';
+      c.hydrateSupportPlanFromFacts([
+        const ClientProfileFactOut(
+          requirementKey: OnboardingKeys.budgetCore,
+          valueJson: 5000,
+        ),
+      ]);
+      c.client.value = _fakeClient;
+      c.step.value = 5;
+      c.ndisCtrl.text = '431234567';
+      c.planManagementType.value = 'self_managed';
+      c.budgetCoreCtrl.text = '1000';
 
-    expect(await c.submitSupportPlan(), isTrue);
-    expect(clearedKeys, contains(OnboardingKeys.budgetCore));
-    verify(
-      () => mock.upsertProfileFact(
-        'client-1',
-        OnboardingKeys.ndisPlanBudgets,
-        any(
-          that: predicate<ProfileFactUpsert>(
-            (u) => u.valueJson != null && u.clearValue != true,
+      expect(await c.submitSupportPlan(), isTrue);
+      expect(clearedKeys, contains(OnboardingKeys.budgetCore));
+      verify(
+        () => mock.upsertProfileFact(
+          'client-1',
+          OnboardingKeys.ndisPlanBudgets,
+          any(
+            that: predicate<ProfileFactUpsert>(
+              (u) => u.valueJson != null && u.clearValue != true,
+            ),
           ),
         ),
-      ),
-    ).called(1);
-  });
+      ).called(1);
+    },
+  );
 
   test('submitSupportPlan rejects negative budget values', () async {
     c.client.value = _fakeClient;
@@ -284,9 +291,12 @@ void main() {
     expect(c.budgetFieldError.value, contains('negative'));
   });
 
-  test('submitSupportPlan surfaces ndis_number_in_use on field error', () async {
-    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer(
-      (inv) async {
+  test(
+    'submitSupportPlan surfaces ndis_number_in_use on field error',
+    () async {
+      when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((
+        inv,
+      ) async {
         if (inv.positionalArguments[1] == OnboardingKeys.ndis) {
           throw const AppFailure(
             code: 'ndis_number_in_use',
@@ -294,135 +304,141 @@ void main() {
             presentation: AppFailurePresentation.inline,
           );
         }
-      },
-    );
-    c.client.value = _fakeClient;
-    c.step.value = 5;
-    c.ndisCtrl.text = '431234567';
-    c.planManagementType.value = 'self_managed';
-    expect(await c.submitSupportPlan(), isFalse);
-    expect(c.ndisFieldError.value, contains('already used'));
-    expect(c.step.value, 5);
-  });
+      });
+      c.client.value = _fakeClient;
+      c.step.value = 5;
+      c.ndisCtrl.text = '431234567';
+      c.planManagementType.value = 'self_managed';
+      expect(await c.submitSupportPlan(), isFalse);
+      expect(c.ndisFieldError.value, contains('already used'));
+      expect(c.step.value, 5);
+    },
+  );
 
-  test('submitSupportPlan upserts plan manager expanded fields when plan_managed',
-      () async {
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((_) async {});
-    c.client.value = _fakeClient;
-    c.step.value = 5;
-    c.ndisCtrl.text = '431234567';
-    c.planManagementType.value = 'plan_managed';
-    c.planManagerNameCtrl.text = 'Acme PM';
-    c.planManagerCompanyCtrl.text = 'Acme Co';
-    c.planManagerPhoneCtrl.text = '+61400000001';
-    expect(await c.submitSupportPlan(), isTrue);
-    verify(
-      () => mock.upsertProfileFact(
-        'client-1',
-        OnboardingKeys.planManagerCompany,
-        any(
-          that: predicate<ProfileFactUpsert>(
-            (u) => u.valueJson == 'Acme Co',
+  test(
+    'submitSupportPlan upserts plan manager expanded fields when plan_managed',
+    () async {
+      when(
+        () => mock.upsertProfileFact(any(), any(), any()),
+      ).thenAnswer((_) async {});
+      c.client.value = _fakeClient;
+      c.step.value = 5;
+      c.ndisCtrl.text = '431234567';
+      c.planManagementType.value = 'plan_managed';
+      c.planManagerNameCtrl.text = 'Acme PM';
+      c.planManagerCompanyCtrl.text = 'Acme Co';
+      c.planManagerPhoneCtrl.text = '+61400000001';
+      expect(await c.submitSupportPlan(), isTrue);
+      verify(
+        () => mock.upsertProfileFact(
+          'client-1',
+          OnboardingKeys.planManagerCompany,
+          any(
+            that: predicate<ProfileFactUpsert>((u) => u.valueJson == 'Acme Co'),
           ),
         ),
-      ),
-    ).called(1);
-  });
+      ).called(1);
+    },
+  );
 
-  test('finishOnboarding soft gate warns then clears incomplete flag', () async {
-    var softGateCalled = false;
-    ClientUpdateRequest? patch;
-    when(() => mock.getClient('client-1')).thenAnswer((_) async => _fakeClient);
-    when(() => mock.patchClient(any(), any())).thenAnswer((inv) async {
-      patch = inv.positionalArguments[1] as ClientUpdateRequest;
-      return ClientOut(
-        id: _fakeClient.id,
-        tenantId: _fakeClient.tenantId,
-        fullName: _fakeClient.fullName,
-        status: _fakeClient.status,
-        metadata: patch?.metadata ?? {},
-        createdAt: _now,
-        updatedAt: _now,
+  test(
+    'finishOnboarding soft gate warns then clears incomplete flag',
+    () async {
+      var softGateCalled = false;
+      ClientUpdateRequest? patch;
+      when(
+        () => mock.getClient('client-1'),
+      ).thenAnswer((_) async => _fakeClient);
+      when(() => mock.patchClient(any(), any())).thenAnswer((inv) async {
+        patch = inv.positionalArguments[1] as ClientUpdateRequest;
+        return ClientOut(
+          id: _fakeClient.id,
+          tenantId: _fakeClient.tenantId,
+          fullName: _fakeClient.fullName,
+          status: _fakeClient.status,
+          metadata: patch?.metadata ?? {},
+          createdAt: _now,
+          updatedAt: _now,
+        );
+      });
+
+      String? finishedId;
+      c.dispose();
+      c = _buildController(
+        softGateConfirm: (missing) async {
+          softGateCalled = true;
+          expect(missing, containsAll(['Consent', 'Service Agreement']));
+          return true;
+        },
+        onFinished: (id) => finishedId = id,
       );
-    });
+      c.client.value = _fakeClient;
+      c.step.value = 6;
 
-    String? finishedId;
-    c.dispose();
-    c = _buildController(
-      softGateConfirm: (missing) async {
-        softGateCalled = true;
-        expect(missing, containsAll(['Consent', 'Service Agreement']));
-        return true;
-      },
-      onFinished: (id) => finishedId = id,
-    );
-    c.client.value = _fakeClient;
-    c.step.value = 6;
-
-    expect(await c.finishOnboarding(), isTrue);
-    expect(softGateCalled, isTrue);
-    expect(patch?.metadata?['onboarding_incomplete'], isFalse);
-    expect(finishedId, 'client-1');
-  });
+      expect(await c.finishOnboarding(), isTrue);
+      expect(softGateCalled, isTrue);
+      expect(patch?.metadata?['onboarding_incomplete'], isFalse);
+      expect(finishedId, 'client-1');
+    },
+  );
 
   test('finishOnboarding aborts when soft gate declined', () async {
     c.dispose();
-    c = _buildController(
-      softGateConfirm: (_) async => false,
-    );
+    c = _buildController(softGateConfirm: (_) async => false);
     c.client.value = _fakeClient;
     c.step.value = 6;
     expect(await c.finishOnboarding(), isFalse);
     verifyNever(() => mock.patchClient(any(), any()));
   });
 
-  test('finishOnboarding re-fetches client so photo_document_id is not wiped',
-      () async {
-    // Local client is stale: only onboarding_incomplete (simulates post-_persistPhoto
-    // before metadata refresh).
-    when(() => mock.getClient('client-1')).thenAnswer(
-      (_) async => ClientOut(
-        id: 'client-1',
-        tenantId: 'tenant-1',
-        fullName: 'Sam Parent',
-        status: 'active',
-        metadata: const {
-          'onboarding_incomplete': true,
-          'photo_document_id': 'doc-photo-1',
-        },
-        createdAt: _now,
-        updatedAt: _now,
-      ),
-    );
-
-    ClientUpdateRequest? patch;
-    when(() => mock.patchClient(any(), any())).thenAnswer((inv) async {
-      patch = inv.positionalArguments[1] as ClientUpdateRequest;
-      return ClientOut(
-        id: 'client-1',
-        tenantId: 'tenant-1',
-        fullName: 'Sam Parent',
-        status: 'active',
-        metadata: patch?.metadata ?? {},
-        createdAt: _now,
-        updatedAt: _now,
+  test(
+    'finishOnboarding re-fetches client so photo_document_id is not wiped',
+    () async {
+      // Local client is stale: only onboarding_incomplete (simulates post-_persistPhoto
+      // before metadata refresh).
+      when(() => mock.getClient('client-1')).thenAnswer(
+        (_) async => ClientOut(
+          id: 'client-1',
+          tenantId: 'tenant-1',
+          fullName: 'Sam Parent',
+          status: 'active',
+          metadata: const {
+            'onboarding_incomplete': true,
+            'photo_document_id': 'doc-photo-1',
+          },
+          createdAt: _now,
+          updatedAt: _now,
+        ),
       );
-    });
 
-    c.dispose();
-    c = _buildController(
-      softGateConfirm: (_) async => true,
-      onFinished: (_) {},
-    );
-    c.client.value = _fakeClient;
-    c.step.value = 6;
+      ClientUpdateRequest? patch;
+      when(() => mock.patchClient(any(), any())).thenAnswer((inv) async {
+        patch = inv.positionalArguments[1] as ClientUpdateRequest;
+        return ClientOut(
+          id: 'client-1',
+          tenantId: 'tenant-1',
+          fullName: 'Sam Parent',
+          status: 'active',
+          metadata: patch?.metadata ?? {},
+          createdAt: _now,
+          updatedAt: _now,
+        );
+      });
 
-    expect(await c.finishOnboarding(), isTrue);
-    verify(() => mock.getClient('client-1')).called(1);
-    expect(patch?.metadata?['onboarding_incomplete'], isFalse);
-    expect(patch?.metadata?['photo_document_id'], 'doc-photo-1');
-  });
+      c.dispose();
+      c = _buildController(
+        softGateConfirm: (_) async => true,
+        onFinished: (_) {},
+      );
+      c.client.value = _fakeClient;
+      c.step.value = 6;
+
+      expect(await c.finishOnboarding(), isTrue);
+      verify(() => mock.getClient('client-1')).called(1);
+      expect(patch?.metadata?['onboarding_incomplete'], isFalse);
+      expect(patch?.metadata?['photo_document_id'], 'doc-photo-1');
+    },
+  );
 
   test('finishOnboarding does not patch when getClient fails', () async {
     c.dispose();
@@ -446,30 +462,32 @@ void main() {
     verifyNever(() => mock.patchClient(any(), any()));
   });
 
-  test('finishOnboarding maps unexpected errors to a generic message',
-      () async {
-    c.dispose();
-    c = _buildController(
-      softGateConfirm: (_) async => true,
-      onFinished: (_) {},
-    );
-    c.client.value = _fakeClient;
-    c.step.value = 6;
+  test(
+    'finishOnboarding maps unexpected errors to a generic message',
+    () async {
+      c.dispose();
+      c = _buildController(
+        softGateConfirm: (_) async => true,
+        onFinished: (_) {},
+      );
+      c.client.value = _fakeClient;
+      c.step.value = 6;
 
-    when(() => mock.getClient('client-1')).thenThrow(StateError('secret-stack'));
+      when(
+        () => mock.getClient('client-1'),
+      ).thenThrow(StateError('secret-stack'));
 
-    expect(await c.finishOnboarding(), isFalse);
-    expect(c.errorMessage.value, isNot(contains('secret-stack')));
-    expect(c.errorMessage.value, isNot(contains('StateError')));
-    expect(
-      c.errorMessage.value,
-      'Something went wrong. Please try again.',
-    );
-    verifyNever(() => mock.patchClient(any(), any()));
-  });
+      expect(await c.finishOnboarding(), isFalse);
+      expect(c.errorMessage.value, isNot(contains('secret-stack')));
+      expect(c.errorMessage.value, isNot(contains('StateError')));
+      expect(c.errorMessage.value, 'Something went wrong. Please try again.');
+      verifyNever(() => mock.patchClient(any(), any()));
+    },
+  );
 
-  testWidgets('finishOnboarding replaces stack with client detail route',
-      (tester) async {
+  testWidgets('finishOnboarding replaces stack with client detail route', (
+    tester,
+  ) async {
     Get.testMode = true;
     Get.reset();
     await tester.pumpWidget(
@@ -500,8 +518,8 @@ void main() {
         tenantId: _fakeClient.tenantId,
         fullName: _fakeClient.fullName,
         status: _fakeClient.status,
-        metadata: (inv.positionalArguments[1] as ClientUpdateRequest).metadata ??
-            {},
+        metadata:
+            (inv.positionalArguments[1] as ClientUpdateRequest).metadata ?? {},
         createdAt: _now,
         updatedAt: _now,
       ),
@@ -517,27 +535,29 @@ void main() {
     expect(Get.currentRoute, AppRoutes.staffClientDetail);
   });
 
-  test('lookupSiteAddress rejects low confidence like ClientsController',
-      () async {
-    when(() => mock.geocode(any())).thenAnswer(
-      (_) async => const GeocodeResponse(
-        latitude: -33.86,
-        longitude: 151.2,
-        formattedAddress: 'Somewhere vague',
-        confidence: 'low',
-      ),
-    );
-    c.siteAddressCtrl.text = '1 Test St';
-    c.siteCityCtrl.text = 'Sydney';
+  test(
+    'lookupSiteAddress rejects low confidence like ClientsController',
+    () async {
+      when(() => mock.geocode(any())).thenAnswer(
+        (_) async => const GeocodeResponse(
+          latitude: -33.86,
+          longitude: 151.2,
+          formattedAddress: 'Somewhere vague',
+          confidence: 'low',
+        ),
+      );
+      c.siteAddressCtrl.text = '1 Test St';
+      c.siteCityCtrl.text = 'Sydney';
 
-    await c.lookupSiteAddress();
+      await c.lookupSiteAddress();
 
-    expect(c.siteLatCtrl.text, isEmpty);
-    expect(c.siteLngCtrl.text, isEmpty);
-    expect(c.geocodeFormattedAddress.value, isNull);
-    expect(c.addressConfirmed.value, isFalse);
-    expect(c.errorMessage.value, contains('low confidence'));
-  });
+      expect(c.siteLatCtrl.text, isEmpty);
+      expect(c.siteLngCtrl.text, isEmpty);
+      expect(c.geocodeFormattedAddress.value, isNull);
+      expect(c.addressConfirmed.value, isFalse);
+      expect(c.errorMessage.value, contains('low confidence'));
+    },
+  );
 
   test('submitContacts allows advancing with no contacts', () async {
     c.client.value = _fakeClient;
@@ -549,34 +569,37 @@ void main() {
     expect(c.contactDraftMode.value, 'nominee');
   });
 
-  test('saveContactDraft sends custom relationship for Other free-text', () async {
-    ClientContactWriteRequest? captured;
-    when(() => mock.createContact(any(), any())).thenAnswer((inv) async {
-      captured = inv.positionalArguments[1] as ClientContactWriteRequest;
-      return ClientContactOut(
-        id: 'c-custom',
-        tenantId: 'tenant-1',
-        clientId: 'client-1',
-        name: captured!.name,
-        phone: captured!.phone,
-        relationship: captured!.relationship,
-        isPrimary: captured!.isPrimary ?? false,
-        notifyVisitComplete: captured!.notifyVisitComplete ?? false,
-        isEmergency: captured!.isEmergency ?? false,
-      );
-    });
+  test(
+    'saveContactDraft sends custom relationship for Other free-text',
+    () async {
+      ClientContactWriteRequest? captured;
+      when(() => mock.createContact(any(), any())).thenAnswer((inv) async {
+        captured = inv.positionalArguments[1] as ClientContactWriteRequest;
+        return ClientContactOut(
+          id: 'c-custom',
+          tenantId: 'tenant-1',
+          clientId: 'client-1',
+          name: captured!.name,
+          phone: captured!.phone,
+          relationship: captured!.relationship,
+          isPrimary: captured!.isPrimary ?? false,
+          notifyVisitComplete: captured!.notifyVisitComplete ?? false,
+          isEmergency: captured!.isEmergency ?? false,
+        );
+      });
 
-    c.client.value = _fakeClient;
-    c.contactNameCtrl.text = 'Alex Cousin';
-    c.contactPhoneCtrl.text = '+61400000022';
-    c.contactRelationshipPreset.value = ContactFormHost.relationshipOtherKey;
-    c.contactRelationshipOtherCtrl.text = 'Cousin';
-    c.contactIsEmergency.value = true;
+      c.client.value = _fakeClient;
+      c.contactNameCtrl.text = 'Alex Cousin';
+      c.contactPhoneCtrl.text = '+61400000022';
+      c.contactRelationshipPreset.value = ContactFormHost.relationshipOtherKey;
+      c.contactRelationshipOtherCtrl.text = 'Cousin';
+      c.contactIsEmergency.value = true;
 
-    expect(await c.saveContactDraft(), isTrue);
-    expect(captured!.relationship, 'Cousin');
-    expect(captured!.relationship, isNot('other'));
-  });
+      expect(await c.saveContactDraft(), isTrue);
+      expect(captured!.relationship, 'Cousin');
+      expect(captured!.relationship, isNot('other'));
+    },
+  );
 
   test('saveContactDraft rejects Other without free-text', () async {
     c.client.value = _fakeClient;
@@ -637,40 +660,42 @@ void main() {
     expect(c.step.value, 4);
   });
 
-  test('nominee also-emergency creates one contact with role and flag',
-      () async {
-    ClientContactWriteRequest? captured;
-    when(() => mock.createContact(any(), any())).thenAnswer((inv) async {
-      captured = inv.positionalArguments[1] as ClientContactWriteRequest;
-      return ClientContactOut(
-        id: 'c-nom',
-        tenantId: 'tenant-1',
-        clientId: 'client-1',
-        name: captured!.name,
-        phone: captured!.phone,
-        relationship: captured!.relationship,
-        legalRole: captured!.legalRole,
-        isPrimary: captured!.isPrimary ?? false,
-        notifyVisitComplete: captured!.notifyVisitComplete ?? false,
-        isEmergency: captured!.isEmergency ?? false,
-      );
-    });
+  test(
+    'nominee also-emergency creates one contact with role and flag',
+    () async {
+      ClientContactWriteRequest? captured;
+      when(() => mock.createContact(any(), any())).thenAnswer((inv) async {
+        captured = inv.positionalArguments[1] as ClientContactWriteRequest;
+        return ClientContactOut(
+          id: 'c-nom',
+          tenantId: 'tenant-1',
+          clientId: 'client-1',
+          name: captured!.name,
+          phone: captured!.phone,
+          relationship: captured!.relationship,
+          legalRole: captured!.legalRole,
+          isPrimary: captured!.isPrimary ?? false,
+          notifyVisitComplete: captured!.notifyVisitComplete ?? false,
+          isEmergency: captured!.isEmergency ?? false,
+        );
+      });
 
-    c.client.value = _fakeClient;
-    c.dob.value = DateTime(2000, 1, 1);
-    c.step.value = 4;
-    c.contactDraftMode.value = 'nominee';
-    c.contactNameCtrl.text = 'Pat Nominee';
-    c.contactPhoneCtrl.text = '+61400000033';
-    c.contactRelationshipPreset.value = 'mother';
-    c.contactIsEmergency.value = true;
+      c.client.value = _fakeClient;
+      c.dob.value = DateTime(2000, 1, 1);
+      c.step.value = 4;
+      c.contactDraftMode.value = 'nominee';
+      c.contactNameCtrl.text = 'Pat Nominee';
+      c.contactPhoneCtrl.text = '+61400000033';
+      c.contactRelationshipPreset.value = 'mother';
+      c.contactIsEmergency.value = true;
 
-    expect(await c.saveContactDraft(), isTrue);
-    expect(captured!.relationship, 'mother');
-    expect(captured!.legalRole, OnboardingKeys.relNominee);
-    expect(captured!.isEmergency, isTrue);
-    expect(c.representativeSaved.value, isTrue);
-  });
+      expect(await c.saveContactDraft(), isTrue);
+      expect(captured!.relationship, 'mother');
+      expect(captured!.legalRole, OnboardingKeys.relNominee);
+      expect(captured!.isEmergency, isTrue);
+      expect(c.representativeSaved.value, isTrue);
+    },
+  );
 
   test('useExistingAsEmergency patches isEmergency true', () async {
     when(() => mock.patchContact(any(), any(), any())).thenAnswer((inv) async {
@@ -701,9 +726,11 @@ void main() {
     );
 
     expect(await c.useExistingAsEmergency('c-existing'), isTrue);
-    final body = verify(
-      () => mock.patchContact('client-1', 'c-existing', captureAny()),
-    ).captured.single as ClientContactWriteRequest;
+    final body =
+        verify(
+              () => mock.patchContact('client-1', 'c-existing', captureAny()),
+            ).captured.single
+            as ClientContactWriteRequest;
     expect(body.isEmergency, isTrue);
     expect(body.toJson().containsKey('is_primary'), isFalse);
     expect(c.contactsCreated.single.isEmergency, isTrue);
@@ -755,136 +782,145 @@ void main() {
     expect(c.step.value, 5);
   });
 
-  test('markConsentComplete fetches legal doc with patient.consent_agreement',
-      () async {
-    final pipeline = _MockDocumentPipeline();
-    when(
-      () => pipeline.uploadEvidence(
-        request: any(named: 'request'),
-        bytes: any(named: 'bytes'),
-      ),
-    ).thenAnswer(
-      (_) async => const DocumentOut(
-        id: 'doc-consent-1',
-        ownerType: 'client',
-        ownerId: 'client-1',
-        filename: 'consent.pdf',
-        contentType: 'application/pdf',
-        sizeBytes: 3,
-        scanStatus: 'clean',
-      ),
-    );
-    when(() => mock.getLegalDocumentCurrent(any())).thenAnswer(
-      (_) async => const ClientLegalDocumentCurrent(
-        id: 'legal-v1',
-        title: 'Consent',
-        contentMd: '# Consent',
-      ),
-    );
-    when(() => mock.acceptClientLegal(any(), any(), any()))
-        .thenAnswer((_) async {});
+  test(
+    'markConsentComplete fetches legal doc with patient.consent_agreement',
+    () async {
+      final pipeline = _MockDocumentPipeline();
+      when(
+        () => pipeline.uploadEvidence(
+          request: any(named: 'request'),
+          bytes: any(named: 'bytes'),
+        ),
+      ).thenAnswer(
+        (_) async => const DocumentOut(
+          id: 'doc-consent-1',
+          ownerType: 'client',
+          ownerId: 'client-1',
+          filename: 'consent.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 3,
+          scanStatus: 'clean',
+        ),
+      );
+      when(() => mock.getLegalDocumentCurrent(any())).thenAnswer(
+        (_) async => const ClientLegalDocumentCurrent(
+          id: 'legal-v1',
+          title: 'Consent',
+          contentMd: '# Consent',
+        ),
+      );
+      when(
+        () => mock.acceptClientLegal(any(), any(), any()),
+      ).thenAnswer((_) async {});
 
-    c.dispose();
-    c = _buildController(
-      documentPipeline: pipeline,
-      pickPdfBytes: () async => (name: 'consent.pdf', bytes: [1, 2, 3]),
-    );
-    c.client.value = _fakeClient;
-    c.consentSignerNameCtrl.text = 'Sam Parent';
+      c.dispose();
+      c = _buildController(
+        documentPipeline: pipeline,
+        pickPdfBytes: () async => (name: 'consent.pdf', bytes: [1, 2, 3]),
+      );
+      c.client.value = _fakeClient;
+      c.consentSignerNameCtrl.text = 'Sam Parent';
 
-    expect(await c.markConsentComplete(), isTrue);
-    expect(c.consentComplete.value, isTrue);
-    verify(
-      () => mock.getLegalDocumentCurrent(OnboardingKeys.consentAgreementDocKey),
-    ).called(1);
-    verify(
-      () => mock.acceptClientLegal(
-        'client-1',
-        OnboardingKeys.consentAgreement,
-        any(),
-      ),
-    ).called(1);
-  });
+      expect(await c.markConsentComplete(), isTrue);
+      expect(c.consentComplete.value, isTrue);
+      verify(
+        () =>
+            mock.getLegalDocumentCurrent(OnboardingKeys.consentAgreementDocKey),
+      ).called(1);
+      verify(
+        () => mock.acceptClientLegal(
+          'client-1',
+          OnboardingKeys.consentAgreement,
+          any(),
+        ),
+      ).called(1);
+    },
+  );
 
-  test('markConsentComplete shows friendly message when legal doc missing',
-      () async {
-    final pipeline = _MockDocumentPipeline();
-    when(
-      () => pipeline.uploadEvidence(
-        request: any(named: 'request'),
-        bytes: any(named: 'bytes'),
-      ),
-    ).thenAnswer(
-      (_) async => const DocumentOut(
-        id: 'doc-consent-1',
-        ownerType: 'client',
-        ownerId: 'client-1',
-        filename: 'consent.pdf',
-        contentType: 'application/pdf',
-        sizeBytes: 3,
-        scanStatus: 'clean',
-      ),
-    );
-    when(() => mock.getLegalDocumentCurrent(any())).thenThrow(
-      const AppFailure(
-        code: 'legal_document_unavailable',
-        message: 'This legal document is not available yet.',
-        presentation: AppFailurePresentation.inline,
-        statusCode: 404,
-      ),
-    );
+  test(
+    'markConsentComplete shows friendly message when legal doc missing',
+    () async {
+      final pipeline = _MockDocumentPipeline();
+      when(
+        () => pipeline.uploadEvidence(
+          request: any(named: 'request'),
+          bytes: any(named: 'bytes'),
+        ),
+      ).thenAnswer(
+        (_) async => const DocumentOut(
+          id: 'doc-consent-1',
+          ownerType: 'client',
+          ownerId: 'client-1',
+          filename: 'consent.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 3,
+          scanStatus: 'clean',
+        ),
+      );
+      when(() => mock.getLegalDocumentCurrent(any())).thenThrow(
+        const AppFailure(
+          code: 'legal_document_unavailable',
+          message: 'This legal document is not available yet.',
+          presentation: AppFailurePresentation.inline,
+          statusCode: 404,
+        ),
+      );
 
-    c.dispose();
-    c = _buildController(
-      documentPipeline: pipeline,
-      pickPdfBytes: () async => (name: 'consent.pdf', bytes: [1, 2, 3]),
-    );
-    c.client.value = _fakeClient;
-    c.consentSignerNameCtrl.text = 'Sam Parent';
+      c.dispose();
+      c = _buildController(
+        documentPipeline: pipeline,
+        pickPdfBytes: () async => (name: 'consent.pdf', bytes: [1, 2, 3]),
+      );
+      c.client.value = _fakeClient;
+      c.consentSignerNameCtrl.text = 'Sam Parent';
 
-    expect(await c.markConsentComplete(), isFalse);
-    expect(c.consentComplete.value, isFalse);
-    expect(
-      c.errorMessage.value,
-      'Consent legal text is not published for this tenant — contact support.',
-    );
-    verifyNever(() => mock.acceptClientLegal(any(), any(), any()));
-  });
+      expect(await c.markConsentComplete(), isFalse);
+      expect(c.consentComplete.value, isFalse);
+      expect(
+        c.errorMessage.value,
+        'Consent legal text is not published for this tenant — contact support.',
+      );
+      verifyNever(() => mock.acceptClientLegal(any(), any(), any()));
+    },
+  );
 
-  test('upload fails closed without documents.upload / clients.docs.manage',
-      () async {
-    final deniedSession = _MockSessionService();
-    final pipeline = _MockDocumentPipeline();
-    when(() => deniedSession.hasPermission(any())).thenReturn(false);
+  test(
+    'upload fails closed without documents.upload / clients.docs.manage',
+    () async {
+      final deniedSession = _MockSessionService();
+      final pipeline = _MockDocumentPipeline();
+      when(() => deniedSession.hasPermission(any())).thenReturn(false);
 
-    c.dispose();
-    c = _buildController(
-      documentPipeline: pipeline,
-      sessionOverride: deniedSession,
-    );
-    c.pendingPhoto.value = const PickedProfilePhoto(
-      name: 'a.jpg',
-      contentType: 'image/jpeg',
-      bytes: [1, 2, 3],
-    );
-    when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((_) async {});
+      c.dispose();
+      c = _buildController(
+        documentPipeline: pipeline,
+        sessionOverride: deniedSession,
+      );
+      c.pendingPhoto.value = const PickedProfilePhoto(
+        name: 'a.jpg',
+        contentType: 'image/jpeg',
+        bytes: [1, 2, 3],
+      );
+      when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
+      when(
+        () => mock.upsertProfileFact(any(), any(), any()),
+      ).thenAnswer((_) async {});
 
-    c.fullName.text = 'Sam';
-    c.email.text = 'sam@example.com';
-    c.phone.text = '+61411111111';
-    c.dob.value = DateTime(1990, 1, 1);
+      c.fullName.text = 'Sam';
+      c.email.text = 'sam@example.com';
+      c.phone.text = '+61411111111';
+      c.dob.value = DateTime(1990, 1, 1);
 
-    expect(await c.submitIdentity(), isFalse);
-    expect(c.errorMessage.value, contains('documents.upload'));
-    verifyNever(
-      () => pipeline.uploadEvidence(
-        request: any(named: 'request'),
-        bytes: any(named: 'bytes'),
-      ),
-    );
-  });
+      expect(await c.submitIdentity(), isFalse);
+      expect(c.errorMessage.value, contains('documents.upload'));
+      verifyNever(
+        () => pipeline.uploadEvidence(
+          request: any(named: 'request'),
+          bytes: any(named: 'bytes'),
+        ),
+      );
+    },
+  );
 
   test('hydrateFromClient prefills Identity, sets client, step 0', () {
     c.step.value = 4;
@@ -934,9 +970,12 @@ void main() {
   });
 
   test('submitIdentity after hydrate patches instead of creates', () async {
-    when(() => mock.patchClient(any(), any())).thenAnswer((_) async => _fakeClient);
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mock.patchClient(any(), any()),
+    ).thenAnswer((_) async => _fakeClient);
+    when(
+      () => mock.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async {});
 
     c.hydrateFromClient(_fakeClient);
     c.dob.value = DateTime(1990, 5, 1);
@@ -962,7 +1001,9 @@ void main() {
 
   group('referral Other (CR5)', () {
     test('hydrateReferral maps custom text to Other preset', () {
-      final hydrated = OnboardingIdentityStep.hydrateReferral('Community Centre');
+      final hydrated = OnboardingIdentityStep.hydrateReferral(
+        'Community Centre',
+      );
       expect(hydrated.preset, OnboardingIdentityStep.otherPresetKey);
       expect(hydrated.otherText, 'Community Centre');
     });
@@ -987,8 +1028,9 @@ void main() {
     test('submitIdentity saves typed referral string for Other', () async {
       ProfileFactUpsert? captured;
       when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
-      when(() => mock.upsertProfileFact(any(), any(), any()))
-          .thenAnswer((inv) async {
+      when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((
+        inv,
+      ) async {
         final key = inv.positionalArguments[1] as String;
         if (key == OnboardingKeys.referralSource) {
           captured = inv.positionalArguments[2] as ProfileFactUpsert;
@@ -1032,8 +1074,9 @@ void main() {
     test('submitIdentity saves typed sex string for Other', () async {
       ProfileFactUpsert? captured;
       when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
-      when(() => mock.upsertProfileFact(any(), any(), any()))
-          .thenAnswer((inv) async {
+      when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((
+        inv,
+      ) async {
         final key = inv.positionalArguments[1] as String;
         if (key == OnboardingKeys.sexGender) {
           captured = inv.positionalArguments[2] as ProfileFactUpsert;
@@ -1053,8 +1096,9 @@ void main() {
   test('submitIdentity uploads optional identity card attachments', () async {
     final pipeline = _MockDocumentPipeline();
     when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mock.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async {});
     when(
       () => pipeline.uploadEvidence(
         request: any(named: 'request'),
@@ -1076,11 +1120,12 @@ void main() {
     c.dispose();
     c = _buildController(
       documentPipeline: pipeline,
-      pickCardFile: () async => const PendingIdentityCardFile(
-        name: 'companion.pdf',
-        bytes: [1, 2, 3],
-        contentType: 'application/pdf',
-      ),
+      pickCardFile:
+          () async => const PendingIdentityCardFile(
+            name: 'companion.pdf',
+            bytes: [1, 2, 3],
+            contentType: 'application/pdf',
+          ),
     );
 
     _fillValidIdentity(c);
@@ -1116,78 +1161,89 @@ void main() {
     expect(c.pensionCardAttachment.existingDocumentLabel.value, isNotEmpty);
   });
 
-  test('hydrateIdentityFromFacts maps unknown referral and sex to Other + text',
-      () {
-    c.hydrateIdentityFromFacts([
-      const ClientProfileFactOut(
-        requirementKey: OnboardingKeys.referralSource,
-        valueJson: 'Community Centre',
-      ),
-      const ClientProfileFactOut(
-        requirementKey: OnboardingKeys.sexGender,
-        valueJson: 'Agender',
-      ),
-    ]);
+  test(
+    'hydrateIdentityFromFacts maps unknown referral and sex to Other + text',
+    () {
+      c.hydrateIdentityFromFacts([
+        const ClientProfileFactOut(
+          requirementKey: OnboardingKeys.referralSource,
+          valueJson: 'Community Centre',
+        ),
+        const ClientProfileFactOut(
+          requirementKey: OnboardingKeys.sexGender,
+          valueJson: 'Agender',
+        ),
+      ]);
 
-    expect(c.referralSource.value, OnboardingIdentityStep.otherPresetKey);
-    expect(c.referralOtherCtrl.text, 'Community Centre');
-    expect(c.sexGender.value, OnboardingIdentityStep.otherPresetKey);
-    expect(c.sexGenderOtherCtrl.text, 'Agender');
-  });
+      expect(c.referralSource.value, OnboardingIdentityStep.otherPresetKey);
+      expect(c.referralOtherCtrl.text, 'Community Centre');
+      expect(c.sexGender.value, OnboardingIdentityStep.otherPresetKey);
+      expect(c.sexGenderOtherCtrl.text, 'Agender');
+    },
+  );
 
-  test('hydrateSupportPlanFromFacts restores NDIS and legacy Other fallback', () {
-    c.hydrateSupportPlanFromFacts([
-      const ClientProfileFactOut(
-        requirementKey: OnboardingKeys.ndis,
-        valueJson: '431234567',
-        documentId: 'doc-ndis-1',
-      ),
-      const ClientProfileFactOut(
-        requirementKey: OnboardingKeys.fundingNotToExceed,
-        valueJson: '5000',
-      ),
-    ]);
+  test(
+    'hydrateSupportPlanFromFacts restores NDIS and legacy Other fallback',
+    () {
+      c.hydrateSupportPlanFromFacts([
+        const ClientProfileFactOut(
+          requirementKey: OnboardingKeys.ndis,
+          valueJson: '431234567',
+          documentId: 'doc-ndis-1',
+        ),
+        const ClientProfileFactOut(
+          requirementKey: OnboardingKeys.fundingNotToExceed,
+          valueJson: '5000',
+        ),
+      ]);
 
-    expect(c.ndisCtrl.text, '431234567');
-    expect(c.ndisPdfAttachment.existingDocumentId.value, 'doc-ndis-1');
-    expect(c.supportPlanOtherCtrl.text, '5000');
-  });
+      expect(c.ndisCtrl.text, '431234567');
+      expect(c.ndisPdfAttachment.existingDocumentId.value, 'doc-ndis-1');
+      expect(c.supportPlanOtherCtrl.text, '5000');
+    },
+  );
 
-  test('hydrateSupportPlanFromFacts prefers support_plan_other over legacy', () {
-    c.hydrateSupportPlanFromFacts([
-      const ClientProfileFactOut(
-        requirementKey: OnboardingKeys.supportPlanOther,
-        valueJson: 'Custom note',
-      ),
-      const ClientProfileFactOut(
-        requirementKey: OnboardingKeys.fundingNotToExceed,
-        valueJson: '5000',
-      ),
-    ]);
+  test(
+    'hydrateSupportPlanFromFacts prefers support_plan_other over legacy',
+    () {
+      c.hydrateSupportPlanFromFacts([
+        const ClientProfileFactOut(
+          requirementKey: OnboardingKeys.supportPlanOther,
+          valueJson: 'Custom note',
+        ),
+        const ClientProfileFactOut(
+          requirementKey: OnboardingKeys.fundingNotToExceed,
+          valueJson: '5000',
+        ),
+      ]);
 
-    expect(c.supportPlanOtherCtrl.text, 'Custom note');
-  });
+      expect(c.supportPlanOtherCtrl.text, 'Custom note');
+    },
+  );
 
-  test('submitPreferences requires interpreter language when interpreter on',
-      () async {
-    c.client.value = _fakeClient;
-    c.step.value = 2;
-    c.interpreterRequired.value = true;
-    expect(await c.submitPreferences(), isFalse);
-    expect(c.errorMessage.value, contains('interpreter language'));
+  test(
+    'submitPreferences requires interpreter language when interpreter on',
+    () async {
+      c.client.value = _fakeClient;
+      c.step.value = 2;
+      c.interpreterRequired.value = true;
+      expect(await c.submitPreferences(), isFalse);
+      expect(c.errorMessage.value, contains('interpreter language'));
 
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((_) async {});
-    c.interpreterLanguageCtrl.text = 'Arabic';
-    expect(await c.submitPreferences(), isTrue);
-    verify(
-      () => mock.upsertProfileFact(
-        'client-1',
-        OnboardingKeys.interpreterLanguage,
-        any(),
-      ),
-    ).called(1);
-  });
+      when(
+        () => mock.upsertProfileFact(any(), any(), any()),
+      ).thenAnswer((_) async {});
+      c.interpreterLanguageCtrl.text = 'Arabic';
+      expect(await c.submitPreferences(), isTrue);
+      verify(
+        () => mock.upsertProfileFact(
+          'client-1',
+          OnboardingKeys.interpreterLanguage,
+          any(),
+        ),
+      ).called(1);
+    },
+  );
 
   test('addSupportSpecialist allows duplicate types and expands details', () {
     c.addSupportSpecialist(SupportPlanSpecialistTypes.speechTherapist);
@@ -1198,8 +1254,9 @@ void main() {
   });
 
   test('submitSupportPlan upserts support_plan_specialists JSON', () async {
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mock.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async {});
     c.client.value = _fakeClient;
     c.step.value = 5;
     c.ndisCtrl.text = '431234567';
@@ -1209,13 +1266,15 @@ void main() {
 
     expect(await c.submitSupportPlan(), isTrue);
 
-    final captured = verify(
-      () => mock.upsertProfileFact(
-        'client-1',
-        OnboardingKeys.supportPlanSpecialists,
-        captureAny(),
-      ),
-    ).captured.single as ProfileFactUpsert;
+    final captured =
+        verify(
+              () => mock.upsertProfileFact(
+                'client-1',
+                OnboardingKeys.supportPlanSpecialists,
+                captureAny(),
+              ),
+            ).captured.single
+            as ProfileFactUpsert;
     final value = captured.valueJson as List;
     expect(value, hasLength(1));
     expect(value.first['type'], SupportPlanSpecialistTypes.supportCoordinator);
@@ -1233,16 +1292,18 @@ void main() {
     expect(c.budgetFieldError.value, contains('dollar amounts'));
   });
 
-  test('previousStep from representative resets kinship preset for contacts',
-      () {
-    c.step.value = 4;
-    c.contactDraftMode.value = 'representative';
-    c.contactRelationshipPreset.value = 'mother';
-    c.previousStep();
-    expect(c.step.value, 3);
-    expect(c.contactRelationshipPreset.value, isNull);
-    expect(c.contactDraftMode.value, 'emergency');
-  });
+  test(
+    'previousStep from representative resets kinship preset for contacts',
+    () {
+      c.step.value = 4;
+      c.contactDraftMode.value = 'representative';
+      c.contactRelationshipPreset.value = 'mother';
+      c.previousStep();
+      expect(c.step.value, 3);
+      expect(c.contactRelationshipPreset.value, isNull);
+      expect(c.contactDraftMode.value, 'emergency');
+    },
+  );
 
   test('legal upload flags are independent per document', () async {
     c.client.value = _fakeClient;
@@ -1255,8 +1316,9 @@ void main() {
   test('submitIdentity persists companion and pension card numbers', () async {
     final captured = <String, ProfileFactUpsert>{};
     when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((inv) async {
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((
+      inv,
+    ) async {
       captured[inv.positionalArguments[1] as String] =
           inv.positionalArguments[2] as ProfileFactUpsert;
     });
@@ -1273,8 +1335,9 @@ void main() {
   test('submitIdentity persists photo_id number as plain text', () async {
     ProfileFactUpsert? photoFact;
     when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
-    when(() => mock.upsertProfileFact(any(), any(), any()))
-        .thenAnswer((inv) async {
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((
+      inv,
+    ) async {
       final key = inv.positionalArguments[1] as String;
       if (key == OnboardingKeys.photoId) {
         photoFact = inv.positionalArguments[2] as ProfileFactUpsert;
@@ -1288,16 +1351,19 @@ void main() {
     expect(photoFact?.valueJson, 'P1234567');
   });
 
-  test('hydrateIdentityFromFacts restores photo_id number from legacy JSON', () {
-    c.hydrateIdentityFromFacts([
-      const ClientProfileFactOut(
-        requirementKey: OnboardingKeys.photoId,
-        valueJson: '{"number":"P99","id_type":"Photo card"}',
-      ),
-    ]);
+  test(
+    'hydrateIdentityFromFacts restores photo_id number from legacy JSON',
+    () {
+      c.hydrateIdentityFromFacts([
+        const ClientProfileFactOut(
+          requirementKey: OnboardingKeys.photoId,
+          valueJson: '{"number":"P99","id_type":"Photo card"}',
+        ),
+      ]);
 
-    expect(c.photoIdNumberCtrl.text, 'P99');
-  });
+      expect(c.photoIdNumberCtrl.text, 'P99');
+    },
+  );
 
   test('saveExistingContactAsRepresentative patches legal_role', () async {
     when(() => mock.patchContact(any(), any(), any())).thenAnswer((inv) async {
@@ -1335,9 +1401,11 @@ void main() {
 
     expect(await c.saveExistingContactAsRepresentative(), isTrue);
     expect(c.representativeSaved.value, isTrue);
-    final body = verify(
-      () => mock.patchContact('client-1', 'c-mother', captureAny()),
-    ).captured.single as ClientContactWriteRequest;
+    final body =
+        verify(
+              () => mock.patchContact('client-1', 'c-mother', captureAny()),
+            ).captured.single
+            as ClientContactWriteRequest;
     expect(body.legalRole, OnboardingKeys.relChildRepresentative);
   });
 

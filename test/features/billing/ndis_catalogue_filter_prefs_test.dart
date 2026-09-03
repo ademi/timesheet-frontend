@@ -2,17 +2,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rostiq/features/billing/data/ndis_catalogue_filter_prefs.dart';
 
 void main() {
-  test('NdisCatalogueFilterPrefs round-trips category and registration group', () {
-    final box = <String, dynamic>{};
-    final prefs = NdisCatalogueFilterPrefs(
-      read: (k) => box[k],
-      write: (k, v) => box[k] = v,
-      remove: (k) => box.remove(k),
-    );
-    prefs.save(categoryNumber: '01', registrationGroupNumber: '0107');
-    expect(prefs.load().categoryNumber, '01');
-    expect(prefs.load().registrationGroupNumber, '0107');
-  });
+  test(
+    'NdisCatalogueFilterPrefs round-trips category and registration group',
+    () {
+      final box = <String, dynamic>{};
+      final prefs = NdisCatalogueFilterPrefs(
+        read: (k) => box[k],
+        write: (k, v) => box[k] = v,
+        remove: (k) => box.remove(k),
+      );
+      prefs.save(categoryNumber: '01', registrationGroupNumber: '0107');
+      expect(prefs.load().categoryNumber, '01');
+      expect(prefs.load().registrationGroupNumber, '0107');
+    },
+  );
 
   test('save with null values clears stored keys', () {
     final box = <String, dynamic>{};
@@ -50,14 +53,12 @@ void main() {
           remove: (k) => box.remove(k),
         );
 
-    prefsFor('tenant-a').save(
-      categoryNumber: '1',
-      registrationGroupNumber: '0107',
-    );
-    prefsFor('tenant-b').save(
-      categoryNumber: '4',
-      registrationGroupNumber: '0125',
-    );
+    prefsFor(
+      'tenant-a',
+    ).save(categoryNumber: '1', registrationGroupNumber: '0107');
+    prefsFor(
+      'tenant-b',
+    ).save(categoryNumber: '4', registrationGroupNumber: '0125');
 
     expect(prefsFor('tenant-a').load().categoryNumber, '1');
     expect(prefsFor('tenant-a').load().registrationGroupNumber, '0107');

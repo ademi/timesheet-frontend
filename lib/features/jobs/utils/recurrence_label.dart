@@ -28,9 +28,10 @@ String recurrenceLabel(RecurrenceRuleOut rule) {
 
 /// Pre-filled workers plus any slots still open, e.g. "Jane, Ali · 1 open".
 String recurrenceWorkersLabel(RecurrenceRuleOut rule) {
-  final names = rule.contractorNames.isNotEmpty
-      ? rule.contractorNames
-      : rule.contractorIds;
+  final names =
+      rule.contractorNames.isNotEmpty
+          ? rule.contractorNames
+          : rule.contractorIds;
   final open = rule.requiredSlots - rule.contractorIds.length;
   if (names.isEmpty) return 'Unfilled';
   if (open <= 0) return names.join(', ');

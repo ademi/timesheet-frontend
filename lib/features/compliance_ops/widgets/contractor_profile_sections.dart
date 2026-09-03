@@ -156,16 +156,20 @@ class ContractorProfileSections extends StatelessWidget {
             context: context,
             controller: controller.screeningIssueCtrl,
             label: 'Issue date',
-            onPick: () =>
-                controller.pickDate(context, controller.screeningIssueCtrl),
+            onPick:
+                () =>
+                    controller.pickDate(context, controller.screeningIssueCtrl),
           ),
           const SizedBox(height: 12),
           _dateField(
             context: context,
             controller: controller.screeningExpiryCtrl,
             label: 'Expiry date',
-            onPick: () =>
-                controller.pickDate(context, controller.screeningExpiryCtrl),
+            onPick:
+                () => controller.pickDate(
+                  context,
+                  controller.screeningExpiryCtrl,
+                ),
           ),
           const SizedBox(height: 12),
           _field(
@@ -208,16 +212,16 @@ class ContractorProfileSections extends StatelessWidget {
             context: context,
             controller: controller.wwccExpiryCtrl,
             label: 'WWCC expiry',
-            onPick: () =>
-                controller.pickDate(context, controller.wwccExpiryCtrl),
+            onPick:
+                () => controller.pickDate(context, controller.wwccExpiryCtrl),
           ),
           const SizedBox(height: 16),
           _dateField(
             context: context,
             controller: controller.policeIssueCtrl,
             label: 'Police check issue date',
-            onPick: () =>
-                controller.pickDate(context, controller.policeIssueCtrl),
+            onPick:
+                () => controller.pickDate(context, controller.policeIssueCtrl),
           ),
           const SizedBox(height: 16),
           _field(
@@ -236,8 +240,9 @@ class ContractorProfileSections extends StatelessWidget {
             context: context,
             controller: controller.licenceExpiryCtrl,
             label: 'Licence expiry',
-            onPick: () =>
-                controller.pickDate(context, controller.licenceExpiryCtrl),
+            onPick:
+                () =>
+                    controller.pickDate(context, controller.licenceExpiryCtrl),
           ),
           const SizedBox(height: 16),
           _field(
@@ -256,8 +261,9 @@ class ContractorProfileSections extends StatelessWidget {
             context: context,
             controller: controller.vehicleExpiryCtrl,
             label: 'Registration expiry',
-            onPick: () =>
-                controller.pickDate(context, controller.vehicleExpiryCtrl),
+            onPick:
+                () =>
+                    controller.pickDate(context, controller.vehicleExpiryCtrl),
           ),
         ],
       ),
@@ -273,9 +279,10 @@ class ContractorProfileSections extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DropdownButtonFormField<String>(
-              value: ContractorProfileController.qualTypeOptions.contains(row.type)
-                  ? row.type
-                  : ContractorProfileController.qualTypeOptions.first,
+              value:
+                  ContractorProfileController.qualTypeOptions.contains(row.type)
+                      ? row.type
+                      : ContractorProfileController.qualTypeOptions.first,
               decoration: const InputDecoration(
                 labelText: 'Type',
                 border: OutlineInputBorder(),

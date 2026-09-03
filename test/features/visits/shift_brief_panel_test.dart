@@ -4,16 +4,13 @@ import 'package:rostiq/features/clients/data/models/support_plan_models.dart';
 import 'package:rostiq/features/visits/widgets/shift_brief_panel.dart';
 
 Widget _wrap(Widget child) {
-  return MaterialApp(
-    home: Scaffold(
-      body: SingleChildScrollView(child: child),
-    ),
-  );
+  return MaterialApp(home: Scaffold(body: SingleChildScrollView(child: child)));
 }
 
 void main() {
-  testWidgets('valid brief shows alerts, goals, access; no budget labels',
-      (tester) async {
+  testWidgets('valid brief shows alerts, goals, access; no budget labels', (
+    tester,
+  ) async {
     const brief = ShiftBriefDto(
       clientId: 'c1',
       clientName: 'Ada',
@@ -47,32 +44,33 @@ void main() {
   });
 
   testWidgets(
-      'planBodyInvalid shows unavailable + allergies/access; hides care body',
-      (tester) async {
-    const brief = ShiftBriefDto(
-      clientId: 'c1',
-      clientName: 'Ada',
-      planBodyInvalid: true,
-      allergies: 'Peanuts',
-      accessNotes: 'Gate code 1234',
-      // Care fields must not render when invalid even if present locally
-      routines: 'Breakfast 8am',
-      medicationSchedule: '8am meds',
-      goals: [
-        {'worker_instructions': 'Use visual card'},
-      ],
-    );
+    'planBodyInvalid shows unavailable + allergies/access; hides care body',
+    (tester) async {
+      const brief = ShiftBriefDto(
+        clientId: 'c1',
+        clientName: 'Ada',
+        planBodyInvalid: true,
+        allergies: 'Peanuts',
+        accessNotes: 'Gate code 1234',
+        // Care fields must not render when invalid even if present locally
+        routines: 'Breakfast 8am',
+        medicationSchedule: '8am meds',
+        goals: [
+          {'worker_instructions': 'Use visual card'},
+        ],
+      );
 
-    await tester.pumpWidget(_wrap(const ShiftBriefPanel(brief: brief)));
+      await tester.pumpWidget(_wrap(const ShiftBriefPanel(brief: brief)));
 
-    expect(
-      find.text('Support plan unavailable — contact coordinator'),
-      findsOneWidget,
-    );
-    expect(find.textContaining('Allergies: Peanuts'), findsOneWidget);
-    expect(find.text('Gate code 1234'), findsOneWidget);
-    expect(find.text('Breakfast 8am'), findsNothing);
-    expect(find.text('Use visual card'), findsNothing);
-    expect(find.textContaining('Medication:'), findsNothing);
-  });
+      expect(
+        find.text('Support plan unavailable — contact coordinator'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Allergies: Peanuts'), findsOneWidget);
+      expect(find.text('Gate code 1234'), findsOneWidget);
+      expect(find.text('Breakfast 8am'), findsNothing);
+      expect(find.text('Use visual card'), findsNothing);
+      expect(find.textContaining('Medication:'), findsNothing);
+    },
+  );
 }

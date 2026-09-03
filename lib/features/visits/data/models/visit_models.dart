@@ -55,9 +55,10 @@ class VisitTaskOut {
       title: json['title'] as String? ?? '',
       sortOrder: json['sort_order'] as int? ?? 0,
       isDone: json['is_done'] as bool? ?? false,
-      doneAt: json['done_at'] != null
-          ? DateTime.tryParse(json['done_at'].toString())
-          : null,
+      doneAt:
+          json['done_at'] != null
+              ? DateTime.tryParse(json['done_at'].toString())
+              : null,
       supportItemCode: json['support_item_code'] as String?,
       billableMinutes: json['billable_minutes'] as int?,
     );
@@ -112,9 +113,10 @@ class VisitFormRequirement {
       formTemplateId: (json['form_template_id'] ?? json['id']).toString(),
       isRequired: json['is_required'] as bool? ?? true,
       name: json['name'] as String? ?? json['form_template_name'] as String?,
-      schemaJson: schema is Map
-          ? Map<String, dynamic>.from(schema)
-          : const <String, dynamic>{},
+      schemaJson:
+          schema is Map
+              ? Map<String, dynamic>.from(schema)
+              : const <String, dynamic>{},
     );
   }
 }
@@ -146,13 +148,21 @@ class VisitFormFieldSchema {
       type: json['type'] as String? ?? 'text',
       label: json['label'] as String? ?? '',
       required: json['required'] as bool? ?? false,
-      options: optionsRaw is List
-          ? optionsRaw.map((e) => e.toString()).where((s) => s.isNotEmpty).toList()
-          : const <String>[],
+      options:
+          optionsRaw is List
+              ? optionsRaw
+                  .map((e) => e.toString())
+                  .where((s) => s.isNotEmpty)
+                  .toList()
+              : const <String>[],
       section: json['section']?.toString(),
-      accept: acceptRaw is List
-          ? acceptRaw.map((e) => e.toString()).where((s) => s.isNotEmpty).toList()
-          : const <String>[],
+      accept:
+          acceptRaw is List
+              ? acceptRaw
+                  .map((e) => e.toString())
+                  .where((s) => s.isNotEmpty)
+                  .toList()
+              : const <String>[],
     );
   }
 }
@@ -177,15 +187,16 @@ class VisitFormSubmissionOut {
     return VisitFormSubmissionOut(
       id: json['id'].toString(),
       formTemplateId: json['form_template_id'].toString(),
-      payloadJson: payload is Map
-          ? Map<String, dynamic>.from(payload)
-          : const {},
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString())
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'].toString())
-          : null,
+      payloadJson:
+          payload is Map ? Map<String, dynamic>.from(payload) : const {},
+      createdAt:
+          json['created_at'] != null
+              ? DateTime.tryParse(json['created_at'].toString())
+              : null,
+      updatedAt:
+          json['updated_at'] != null
+              ? DateTime.tryParse(json['updated_at'].toString())
+              : null,
     );
   }
 }
@@ -287,9 +298,10 @@ class VisitOut {
       geofenceRadiusM: json['geofence_radius_m'] as int? ?? 100,
       geofenceMode: json['geofence_mode'] as String? ?? 'informational',
       paymentStatus: json['payment_status'] as String? ?? 'unpaid',
-      completedAt: json['completed_at'] != null
-          ? DateTime.tryParse(json['completed_at'].toString())
-          : null,
+      completedAt:
+          json['completed_at'] != null
+              ? DateTime.tryParse(json['completed_at'].toString())
+              : null,
       jobTitle: json['job_title'] as String?,
       tenantName: json['tenant_name'] as String?,
       contractorName: json['contractor_name'] as String?,
@@ -355,21 +367,17 @@ class VisitOut {
 }
 
 class VisitGpsBody {
-  const VisitGpsBody({
-    required this.lat,
-    required this.lng,
-    this.accuracyM,
-  });
+  const VisitGpsBody({required this.lat, required this.lng, this.accuracyM});
 
   final double lat;
   final double lng;
   final double? accuracyM;
 
   Map<String, dynamic> toJson() => {
-        'lat': lat,
-        'lng': lng,
-        if (accuracyM != null) 'accuracy_m': accuracyM,
-      };
+    'lat': lat,
+    'lng': lng,
+    if (accuracyM != null) 'accuracy_m': accuracyM,
+  };
 }
 
 class VisitCheckInOut {
@@ -407,9 +415,10 @@ class VisitCompleteOut {
     return VisitCompleteOut(
       visitId: json['visit_id'].toString(),
       status: json['status'] as String? ?? 'completed',
-      completedAt: json['completed_at'] != null
-          ? DateTime.tryParse(json['completed_at'].toString())
-          : null,
+      completedAt:
+          json['completed_at'] != null
+              ? DateTime.tryParse(json['completed_at'].toString())
+              : null,
     );
   }
 }
@@ -424,7 +433,7 @@ class VisitFormSubmitRequest {
   final Map<String, dynamic> payloadJson;
 
   Map<String, dynamic> toJson() => {
-        'form_template_id': formTemplateId,
-        'payload_json': payloadJson,
-      };
+    'form_template_id': formTemplateId,
+    'payload_json': payloadJson,
+  };
 }

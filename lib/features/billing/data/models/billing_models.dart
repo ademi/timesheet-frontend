@@ -27,18 +27,15 @@ abstract final class PriceTier {
 
 /// PATCH body for job or visit support item (both null clears).
 class SupportItemPatch {
-  const SupportItemPatch({
-    this.supportItemCode,
-    this.supportItemName,
-  });
+  const SupportItemPatch({this.supportItemCode, this.supportItemName});
 
   final String? supportItemCode;
   final String? supportItemName;
 
   Map<String, dynamic> toJson() => {
-        'support_item_code': supportItemCode,
-        'support_item_name': supportItemName,
-      };
+    'support_item_code': supportItemCode,
+    'support_item_name': supportItemName,
+  };
 }
 
 class VisitPriceTierPatch {
@@ -46,9 +43,7 @@ class VisitPriceTierPatch {
 
   final String? priceTierOverride;
 
-  Map<String, dynamic> toJson() => {
-        'price_tier_override': priceTierOverride,
-      };
+  Map<String, dynamic> toJson() => {'price_tier_override': priceTierOverride};
 }
 
 class VisitTaskBillingPatch {
@@ -56,9 +51,7 @@ class VisitTaskBillingPatch {
 
   final int billableMinutes;
 
-  Map<String, dynamic> toJson() => {
-        'billable_minutes': billableMinutes,
-      };
+  Map<String, dynamic> toJson() => {'billable_minutes': billableMinutes};
 }
 
 /// PATCH body for visit task NDIS code (`null` clears).
@@ -67,9 +60,7 @@ class VisitTaskSupportItemPatch {
 
   final String? supportItemCode;
 
-  Map<String, dynamic> toJson() => {
-        'support_item_code': supportItemCode,
-      };
+  Map<String, dynamic> toJson() => {'support_item_code': supportItemCode};
 }
 
 class NdisCatalogueItemOut {
@@ -133,7 +124,9 @@ class NdisCatalogueSearchResponse {
       limit: json['limit'] as int? ?? 20,
       items: (json['items'] as List? ?? const [])
           .whereType<Map>()
-          .map((e) => NdisCatalogueItemOut.fromJson(Map<String, dynamic>.from(e)))
+          .map(
+            (e) => NdisCatalogueItemOut.fromJson(Map<String, dynamic>.from(e)),
+          )
           .toList(growable: false),
     );
   }
@@ -144,9 +137,7 @@ class InvoiceExportCreateRequest {
 
   final List<String> visitIds;
 
-  Map<String, dynamic> toJson() => {
-        'visit_ids': visitIds,
-      };
+  Map<String, dynamic> toJson() => {'visit_ids': visitIds};
 }
 
 class InvoiceExportVisitError {
@@ -256,14 +247,17 @@ class InvoiceExportOut {
       currencyCode: json['currency_code'] as String? ?? 'AUD',
       catalogueReleaseId: json['catalogue_release_id']?.toString(),
       createdByUserId: json['created_by_user_id']?.toString(),
-      finalizedAt: json['finalized_at'] != null
-          ? DateTime.tryParse(json['finalized_at'].toString())
-          : null,
+      finalizedAt:
+          json['finalized_at'] != null
+              ? DateTime.tryParse(json['finalized_at'].toString())
+              : null,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       lines: (json['lines'] as List? ?? const [])
           .whereType<Map>()
-          .map((e) => InvoiceExportLineOut.fromJson(Map<String, dynamic>.from(e)))
+          .map(
+            (e) => InvoiceExportLineOut.fromJson(Map<String, dynamic>.from(e)),
+          )
           .toList(growable: false),
     );
   }

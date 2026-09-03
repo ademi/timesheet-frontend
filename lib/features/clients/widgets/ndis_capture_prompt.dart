@@ -4,10 +4,7 @@ import '../../../app/themes/app_colors.dart';
 
 /// Soft prompt when a Patient client has no NDIS number on file.
 class NdisCapturePrompt extends StatelessWidget {
-  const NdisCapturePrompt({
-    super.key,
-    this.onAddDetails,
-  });
+  const NdisCapturePrompt({super.key, this.onAddDetails});
 
   final VoidCallback? onAddDetails;
 

@@ -93,8 +93,9 @@ String? _availabilityHintForDay(
   List<AvailabilityRuleOut> availability,
 ) {
   final dow = _dowFromDate(day);
-  final rules =
-      availability.where((rule) => rule.dayOfWeek == dow).toList(growable: false);
+  final rules = availability
+      .where((rule) => rule.dayOfWeek == dow)
+      .toList(growable: false);
   if (rules.isEmpty) return null;
 
   String trimTime(String value) {
@@ -135,10 +136,12 @@ RosterGrid buildRosterGrid({
   );
 
   // Controller owns status filtering; include every shift passed in.
-  final filteredShifts = shifts.where((shift) {
-    if (clientIdFilter == null || clientIdFilter.isEmpty) return true;
-    return shift.clientId == clientIdFilter;
-  }).toList(growable: false);
+  final filteredShifts = shifts
+      .where((shift) {
+        if (clientIdFilter == null || clientIdFilter.isEmpty) return true;
+        return shift.clientId == clientIdFilter;
+      })
+      .toList(growable: false);
 
   final unfilledCells = _emptyCells(dayCount);
   final unfilledTileCells = List<RosterCell>.from(unfilledCells);
@@ -164,8 +167,10 @@ RosterGrid buildRosterGrid({
     );
   }
 
-  final sortedPeople = [...people]
-    ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+  final sortedPeople = [...people]..sort(
+    (a, b) =>
+        a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()),
+  );
 
   final personRows = <RosterRow>[];
   for (final person in sortedPeople) {
@@ -174,11 +179,12 @@ RosterGrid buildRosterGrid({
 
     for (var dayIndex = 0; dayIndex < dayCount; dayIndex++) {
       final day = dayStarts[dayIndex];
-      final onLeave = contractorOverlay != null &&
-          _isOnLeave(day, contractorOverlay.leave);
-      final availabilityHint = contractorOverlay == null || onLeave
-          ? null
-          : _availabilityHintForDay(day, contractorOverlay.availability);
+      final onLeave =
+          contractorOverlay != null && _isOnLeave(day, contractorOverlay.leave);
+      final availabilityHint =
+          contractorOverlay == null || onLeave
+              ? null
+              : _availabilityHintForDay(day, contractorOverlay.availability);
 
       final tiles = <RosterTile>[];
       for (final shift in filteredShifts) {

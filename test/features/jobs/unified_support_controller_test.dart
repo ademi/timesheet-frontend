@@ -173,7 +173,10 @@ void main() {
       () => jobs.listFormTemplates(tenantLevel: true),
     ).thenAnswer((_) async => []);
     when(
-      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
+      () => visits.fetchRosterOverlay(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
     ).thenAnswer((_) async => const RosterOverlayOut(contractors: []));
     when(
       () => shifts.listShifts(
@@ -204,9 +207,7 @@ void main() {
     Get.reset();
   });
 
-  UnifiedSupportController build({
-    UnifiedSupportArgs? args,
-  }) {
+  UnifiedSupportController build({UnifiedSupportArgs? args}) {
     return UnifiedSupportController(
       jobsRepository: jobs,
       clientsRepository: clients,
@@ -214,7 +215,8 @@ void main() {
       shiftsRepository: shifts,
       visitsRepository: visits,
       session: session,
-      args: args ??
+      args:
+          args ??
           UnifiedSupportArgs.forClient(
             _client,
             mode: UnifiedSupportMode.ongoing,
@@ -226,8 +228,9 @@ void main() {
   }
 
   test('bootstrap does not load engagements until assign step', () async {
-    when(() => engagements.listTenantEngagements())
-        .thenAnswer((_) async => [_eng]);
+    when(
+      () => engagements.listTenantEngagements(),
+    ).thenAnswer((_) async => [_eng]);
     final c = build();
     await c.load();
     verifyNever(() => engagements.listTenantEngagements());
@@ -238,7 +241,10 @@ void main() {
   });
 
   test('formatSupportTimeOfDay pads hours and minutes', () {
-    expect(formatSupportTimeOfDay(const TimeOfDay(hour: 9, minute: 5)), '09:05');
+    expect(
+      formatSupportTimeOfDay(const TimeOfDay(hour: 9, minute: 5)),
+      '09:05',
+    );
   });
 
   test('step validation requires mode and client', () async {
@@ -254,36 +260,41 @@ void main() {
     expect(controller.errorMessage.value, contains('Select a client'));
   });
 
-  test('ongoing submit posts create and navigates to roster with client_id',
-      () async {
-    when(() => jobs.createOngoingSupport(any())).thenAnswer((_) async => _ongoingOut);
+  test(
+    'ongoing submit posts create and navigates to roster with client_id',
+    () async {
+      when(
+        () => jobs.createOngoingSupport(any()),
+      ).thenAnswer((_) async => _ongoingOut);
 
-    final controller = build();
-    await controller.load();
+      final controller = build();
+      await controller.load();
 
-    expect(controller.client.value?.id, 'client-1');
-    expect(controller.selectedSiteId.value, 'site-1');
-    expect(controller.titleCtrl.text, defaultOngoingTitle('Sam Lee'));
+      expect(controller.client.value?.id, 'client-1');
+      expect(controller.selectedSiteId.value, 'site-1');
+      expect(controller.titleCtrl.text, defaultOngoingTitle('Sam Lee'));
 
-    controller.step.value = UnifiedSupportController.assignStep;
-    await controller.submit();
+      controller.step.value = UnifiedSupportController.assignStep;
+      await controller.submit();
 
-    final captured = verify(
-      () => jobs.createOngoingSupport(captureAny()),
-    ).captured.single as OngoingSupportCreateRequest;
-    expect(captured.clientId, 'client-1');
-    expect(captured.clientSiteId, 'site-1');
-    expect(captured.timeWindows.single.startTime, '09:00');
-    expect(navigations, hasLength(1));
-    expect(navigations.single.route, AppRoutes.staffVisits);
-    final args = navigations.single.arguments as Map;
-    expect(args['client_id'], 'client-1');
-    expect(args['job_id'], 'job-1');
-  });
+      final captured =
+          verify(() => jobs.createOngoingSupport(captureAny())).captured.single
+              as OngoingSupportCreateRequest;
+      expect(captured.clientId, 'client-1');
+      expect(captured.clientSiteId, 'site-1');
+      expect(captured.timeWindows.single.startTime, '09:00');
+      expect(navigations, hasLength(1));
+      expect(navigations.single.route, AppRoutes.staffVisits);
+      final args = navigations.single.arguments as Map;
+      expect(args['client_id'], 'client-1');
+      expect(args['job_id'], 'job-1');
+    },
+  );
 
   test('one session submit ensures support then creates shift', () async {
-    when(() => jobs.ensureOngoingSupport('client-1'))
-        .thenAnswer((_) async => _job);
+    when(
+      () => jobs.ensureOngoingSupport('client-1'),
+    ).thenAnswer((_) async => _job);
     when(() => shifts.createShift(any())).thenAnswer(
       (_) async => ShiftOut(
         id: 'shift-1',
@@ -312,73 +323,78 @@ void main() {
     await controller.submit();
 
     verify(() => jobs.ensureOngoingSupport('client-1')).called(1);
-    final shiftReq = verify(() => shifts.createShift(captureAny()))
-        .captured
-        .single as ShiftCreateRequest;
+    final shiftReq =
+        verify(() => shifts.createShift(captureAny())).captured.single
+            as ShiftCreateRequest;
     expect(shiftReq.jobId, 'job-1');
     expect(shiftReq.status, 'published');
     expect(navigations.single.route, AppRoutes.staffVisits);
   });
 
   test(
-      'one session create converts civil times with tenant TZ when device differs',
-      () async {
-    tenantUtcOffsetOverride = (tz, _) {
-      if (tz == 'Pacific/Honolulu') return const Duration(hours: -10);
-      return Duration.zero;
-    };
-    when(() => session.tenantTimezone)
-        .thenReturn(RxnString('Pacific/Honolulu'));
-    when(() => jobs.ensureOngoingSupport('client-1'))
-        .thenAnswer((_) async => _job);
-    when(() => shifts.createShift(any())).thenAnswer(
-      (_) async => ShiftOut(
-        id: 'shift-1',
-        tenantId: 'tenant-1',
-        jobId: 'job-1',
-        jobTitle: 'Sam Lee support',
-        scheduledStart: _now,
-        scheduledEnd: _now.add(const Duration(hours: 2)),
-        requiredSlots: 1,
-        openSlots: 1,
-        status: 'published',
-        createdAt: _now,
-        updatedAt: _now,
-      ),
-    );
+    'one session create converts civil times with tenant TZ when device differs',
+    () async {
+      tenantUtcOffsetOverride = (tz, _) {
+        if (tz == 'Pacific/Honolulu') return const Duration(hours: -10);
+        return Duration.zero;
+      };
+      when(
+        () => session.tenantTimezone,
+      ).thenReturn(RxnString('Pacific/Honolulu'));
+      when(
+        () => jobs.ensureOngoingSupport('client-1'),
+      ).thenAnswer((_) async => _job);
+      when(() => shifts.createShift(any())).thenAnswer(
+        (_) async => ShiftOut(
+          id: 'shift-1',
+          tenantId: 'tenant-1',
+          jobId: 'job-1',
+          jobTitle: 'Sam Lee support',
+          scheduledStart: _now,
+          scheduledEnd: _now.add(const Duration(hours: 2)),
+          requiredSlots: 1,
+          openSlots: 1,
+          status: 'published',
+          createdAt: _now,
+          updatedAt: _now,
+        ),
+      );
 
-    final civilStart = DateTime(2026, 8, 13, 9);
-    final civilEnd = DateTime(2026, 8, 13, 12);
-    final expectedStart =
-        tenantCivilInstantUtc(civilStart, 'Pacific/Honolulu');
-    final expectedEnd = tenantCivilInstantUtc(civilEnd, 'Pacific/Honolulu');
+      final civilStart = DateTime(2026, 8, 13, 9);
+      final civilEnd = DateTime(2026, 8, 13, 12);
+      final expectedStart = tenantCivilInstantUtc(
+        civilStart,
+        'Pacific/Honolulu',
+      );
+      final expectedEnd = tenantCivilInstantUtc(civilEnd, 'Pacific/Honolulu');
 
-    final controller = build(
-      args: UnifiedSupportArgs.forClient(
-        _client,
-        mode: UnifiedSupportMode.oneSession,
-      ),
-    );
-    await controller.load();
-    controller.oneSessionStart.value = civilStart;
-    controller.oneSessionEnd.value = civilEnd;
-    controller.step.value = UnifiedSupportController.assignStep;
-    await controller.submit();
+      final controller = build(
+        args: UnifiedSupportArgs.forClient(
+          _client,
+          mode: UnifiedSupportMode.oneSession,
+        ),
+      );
+      await controller.load();
+      controller.oneSessionStart.value = civilStart;
+      controller.oneSessionEnd.value = civilEnd;
+      controller.step.value = UnifiedSupportController.assignStep;
+      await controller.submit();
 
-    final shiftReq = verify(() => shifts.createShift(captureAny()))
-        .captured
-        .single as ShiftCreateRequest;
-    expect(shiftReq.scheduledStart.toUtc(), expectedStart);
-    expect(shiftReq.scheduledEnd.toUtc(), expectedEnd);
-    // Payload ISO must match tenant civil conversion, not device .toUtc().
-    final json = shiftReq.toJson();
-    expect(json['scheduled_start'], expectedStart.toIso8601String());
-    expect(json['scheduled_end'], expectedEnd.toIso8601String());
-    expect(
-      json['scheduled_start'],
-      isNot(civilStart.toUtc().toIso8601String()),
-    );
-  });
+      final shiftReq =
+          verify(() => shifts.createShift(captureAny())).captured.single
+              as ShiftCreateRequest;
+      expect(shiftReq.scheduledStart.toUtc(), expectedStart);
+      expect(shiftReq.scheduledEnd.toUtc(), expectedEnd);
+      // Payload ISO must match tenant civil conversion, not device .toUtc().
+      final json = shiftReq.toJson();
+      expect(json['scheduled_start'], expectedStart.toIso8601String());
+      expect(json['scheduled_end'], expectedEnd.toIso8601String());
+      expect(
+        json['scheduled_start'],
+        isNot(civilStart.toUtc().toIso8601String()),
+      );
+    },
+  );
 
   test('blocks submit when client has no sites', () async {
     when(() => clients.listSites('client-1')).thenAnswer((_) async => []);
@@ -421,7 +437,9 @@ void main() {
   });
 
   test('ongoing submit includes instructions as task template', () async {
-    when(() => jobs.createOngoingSupport(any())).thenAnswer((_) async => _ongoingOut);
+    when(
+      () => jobs.createOngoingSupport(any()),
+    ).thenAnswer((_) async => _ongoingOut);
 
     final controller = build();
     await controller.load();
@@ -429,17 +447,22 @@ void main() {
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
-    final captured = verify(
-      () => jobs.createOngoingSupport(captureAny()),
-    ).captured.single as OngoingSupportCreateRequest;
+    final captured =
+        verify(() => jobs.createOngoingSupport(captureAny())).captured.single
+            as OngoingSupportCreateRequest;
     expect(captured.taskTemplate, hasLength(2));
     expect(captured.taskTemplate[0].title, 'Personal care');
     expect(captured.taskTemplate[1].title, 'Meal prep');
-    expect(captured.taskTemplate.every((t) => t.supportItemCode == null), isTrue);
+    expect(
+      captured.taskTemplate.every((t) => t.supportItemCode == null),
+      isTrue,
+    );
   });
 
   test('schedule warn prefers session tenantTimezone', () async {
-    when(() => session.tenantTimezone).thenReturn(RxnString('Australia/Sydney'));
+    when(
+      () => session.tenantTimezone,
+    ).thenReturn(RxnString('Australia/Sydney'));
     final controller = build(
       args: UnifiedSupportArgs.forClient(
         _client,
@@ -460,17 +483,21 @@ void main() {
       if (tz == 'Pacific/Honolulu') return const Duration(hours: -10);
       return Duration.zero;
     };
-    when(() => session.tenantTimezone).thenReturn(RxnString('Pacific/Honolulu'));
-    when(() => jobs.createOngoingSupport(any())).thenAnswer((_) async => _ongoingOut);
+    when(
+      () => session.tenantTimezone,
+    ).thenReturn(RxnString('Pacific/Honolulu'));
+    when(
+      () => jobs.createOngoingSupport(any()),
+    ).thenAnswer((_) async => _ongoingOut);
 
     final controller = build();
     await controller.load();
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
-    final captured = verify(
-      () => jobs.createOngoingSupport(captureAny()),
-    ).captured.single as OngoingSupportCreateRequest;
+    final captured =
+        verify(() => jobs.createOngoingSupport(captureAny())).captured.single
+            as OngoingSupportCreateRequest;
     final now = DateTime.now().toUtc();
     final expected = tenantHorizonWindowUtc(now, 'Pacific/Honolulu');
     final deviceLocal = tenantHorizonWindowUtc(now, null);
@@ -554,8 +581,9 @@ void main() {
   });
 
   test('nextStep loads engagements when entering assign step', () async {
-    when(() => engagements.listTenantEngagements())
-        .thenAnswer((_) async => [_eng]);
+    when(
+      () => engagements.listTenantEngagements(),
+    ).thenAnswer((_) async => [_eng]);
     final controller = build();
     await controller.load();
     controller.step.value = UnifiedSupportController.detailsStep;
@@ -619,8 +647,9 @@ void main() {
   });
 
   test('submit ongoing sends all selected contractor_ids', () async {
-    when(() => jobs.createOngoingSupport(any()))
-        .thenAnswer((_) async => _ongoingOut);
+    when(
+      () => jobs.createOngoingSupport(any()),
+    ).thenAnswer((_) async => _ongoingOut);
 
     final controller = build();
     await controller.load();
@@ -631,17 +660,18 @@ void main() {
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
-    final captured = verify(
-      () => jobs.createOngoingSupport(captureAny()),
-    ).captured.single as OngoingSupportCreateRequest;
+    final captured =
+        verify(() => jobs.createOngoingSupport(captureAny())).captured.single
+            as OngoingSupportCreateRequest;
     expect(captured.requiredSlots, 2);
     expect(captured.contractorIds, ['contractor-1', 'contractor-2']);
     expect(navigations, hasLength(1));
   });
 
   test('submit ongoing omits unfilled slots from contractor_ids', () async {
-    when(() => jobs.createOngoingSupport(any()))
-        .thenAnswer((_) async => _ongoingOut);
+    when(
+      () => jobs.createOngoingSupport(any()),
+    ).thenAnswer((_) async => _ongoingOut);
 
     final controller = build();
     await controller.load();
@@ -651,68 +681,73 @@ void main() {
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
-    final captured = verify(
-      () => jobs.createOngoingSupport(captureAny()),
-    ).captured.single as OngoingSupportCreateRequest;
+    final captured =
+        verify(() => jobs.createOngoingSupport(captureAny())).captured.single
+            as OngoingSupportCreateRequest;
     expect(captured.requiredSlots, 2);
     expect(captured.contractorIds, ['contractor-1']);
   });
 
   test(
-      'one session createShift includes contractorIds; never assignShift/batch',
-      () async {
-    when(() => jobs.ensureOngoingSupport('client-1'))
-        .thenAnswer((_) async => _job);
-    when(() => shifts.createShift(any()))
-        .thenAnswer((_) async => _publishedShift());
+    'one session createShift includes contractorIds; never assignShift/batch',
+    () async {
+      when(
+        () => jobs.ensureOngoingSupport('client-1'),
+      ).thenAnswer((_) async => _job);
+      when(
+        () => shifts.createShift(any()),
+      ).thenAnswer((_) async => _publishedShift());
 
-    final controller = build(
-      args: UnifiedSupportArgs.forClient(
-        _client,
-        mode: UnifiedSupportMode.oneSession,
-      ),
-    );
-    await controller.load();
-    controller.requiredSlots.value = 2;
-    controller.syncAssignSlots(controller.requiredSlots.value);
-    controller.selectContractorForSlot(0, 'contractor-1');
-    controller.selectContractorForSlot(1, 'contractor-2');
-    controller.instructionsCtrl.text = 'Personal care';
-    controller.step.value = UnifiedSupportController.assignStep;
-    await controller.submit();
+      final controller = build(
+        args: UnifiedSupportArgs.forClient(
+          _client,
+          mode: UnifiedSupportMode.oneSession,
+        ),
+      );
+      await controller.load();
+      controller.requiredSlots.value = 2;
+      controller.syncAssignSlots(controller.requiredSlots.value);
+      controller.selectContractorForSlot(0, 'contractor-1');
+      controller.selectContractorForSlot(1, 'contractor-2');
+      controller.instructionsCtrl.text = 'Personal care';
+      controller.step.value = UnifiedSupportController.assignStep;
+      await controller.submit();
 
-    verify(() => jobs.ensureOngoingSupport('client-1')).called(1);
-    final shiftReq = verify(() => shifts.createShift(captureAny()))
-        .captured
-        .single as ShiftCreateRequest;
-    expect(shiftReq.requiredSlots, 2);
-    expect(shiftReq.status, 'published');
-    expect(shiftReq.contractorIds, ['contractor-1', 'contractor-2']);
-    expect(shiftReq.taskTemplate.map((t) => t.title), ['Personal care']);
-    verifyNever(
-      () => shifts.assignShift(
-        shiftId: any(named: 'shiftId'),
-        contractorId: any(named: 'contractorId'),
-        taskTemplate: any(named: 'taskTemplate'),
-      ),
-    );
-    verifyNever(
-      () => shifts.assignShiftBatch(
-        shiftId: any(named: 'shiftId'),
-        contractorIds: any(named: 'contractorIds'),
-        taskTemplate: any(named: 'taskTemplate'),
-      ),
-    );
-    verifyNever(() => shifts.cancelShift(any()));
-    verifyNever(() => jobs.createManualVisit(any(), any()));
-    expect(navigations, hasLength(1));
-  });
+      verify(() => jobs.ensureOngoingSupport('client-1')).called(1);
+      final shiftReq =
+          verify(() => shifts.createShift(captureAny())).captured.single
+              as ShiftCreateRequest;
+      expect(shiftReq.requiredSlots, 2);
+      expect(shiftReq.status, 'published');
+      expect(shiftReq.contractorIds, ['contractor-1', 'contractor-2']);
+      expect(shiftReq.taskTemplate.map((t) => t.title), ['Personal care']);
+      verifyNever(
+        () => shifts.assignShift(
+          shiftId: any(named: 'shiftId'),
+          contractorId: any(named: 'contractorId'),
+          taskTemplate: any(named: 'taskTemplate'),
+        ),
+      );
+      verifyNever(
+        () => shifts.assignShiftBatch(
+          shiftId: any(named: 'shiftId'),
+          contractorIds: any(named: 'contractorIds'),
+          taskTemplate: any(named: 'taskTemplate'),
+        ),
+      );
+      verifyNever(() => shifts.cancelShift(any()));
+      verifyNever(() => jobs.createManualVisit(any(), any()));
+      expect(navigations, hasLength(1));
+    },
+  );
 
   test('one session createShift sends task_template from task list', () async {
-    when(() => jobs.ensureOngoingSupport('client-1'))
-        .thenAnswer((_) async => _job);
-    when(() => shifts.createShift(any()))
-        .thenAnswer((_) async => _publishedShift());
+    when(
+      () => jobs.ensureOngoingSupport('client-1'),
+    ).thenAnswer((_) async => _job);
+    when(
+      () => shifts.createShift(any()),
+    ).thenAnswer((_) async => _publishedShift());
 
     final controller = build(
       args: UnifiedSupportArgs.forClient(
@@ -727,11 +762,13 @@ void main() {
     controller.step.value = UnifiedSupportController.assignStep;
     await controller.submit();
 
-    final shiftReq = verify(() => shifts.createShift(captureAny()))
-        .captured
-        .single as ShiftCreateRequest;
-    expect(shiftReq.taskTemplate.map((t) => t.title),
-        ['Personal care', 'Meal prep']);
+    final shiftReq =
+        verify(() => shifts.createShift(captureAny())).captured.single
+            as ShiftCreateRequest;
+    expect(shiftReq.taskTemplate.map((t) => t.title), [
+      'Personal care',
+      'Meal prep',
+    ]);
     expect(shiftReq.taskTemplate.map((t) => t.sortOrder), [0, 1]);
     verifyNever(
       () => shifts.assignShift(
@@ -742,43 +779,48 @@ void main() {
     );
   });
 
-  test('one session with one worker passes contractorIds on createShift',
-      () async {
-    when(() => jobs.ensureOngoingSupport('client-1'))
-        .thenAnswer((_) async => _job);
-    when(() => shifts.createShift(any()))
-        .thenAnswer((_) async => _publishedShift());
+  test(
+    'one session with one worker passes contractorIds on createShift',
+    () async {
+      when(
+        () => jobs.ensureOngoingSupport('client-1'),
+      ).thenAnswer((_) async => _job);
+      when(
+        () => shifts.createShift(any()),
+      ).thenAnswer((_) async => _publishedShift());
 
-    final controller = build(
-      args: UnifiedSupportArgs.forClient(
-        _client,
-        mode: UnifiedSupportMode.oneSession,
-      ),
-    );
-    await controller.load();
-    controller.syncAssignSlots(controller.requiredSlots.value);
-    controller.selectContractorForSlot(0, 'contractor-1');
-    controller.instructionsCtrl.text = 'Meal prep';
-    controller.step.value = UnifiedSupportController.assignStep;
-    await controller.submit();
+      final controller = build(
+        args: UnifiedSupportArgs.forClient(
+          _client,
+          mode: UnifiedSupportMode.oneSession,
+        ),
+      );
+      await controller.load();
+      controller.syncAssignSlots(controller.requiredSlots.value);
+      controller.selectContractorForSlot(0, 'contractor-1');
+      controller.instructionsCtrl.text = 'Meal prep';
+      controller.step.value = UnifiedSupportController.assignStep;
+      await controller.submit();
 
-    final shiftReq = verify(() => shifts.createShift(captureAny()))
-        .captured
-        .single as ShiftCreateRequest;
-    expect(shiftReq.contractorIds, ['contractor-1']);
-    verifyNever(
-      () => shifts.assignShift(
-        shiftId: any(named: 'shiftId'),
-        contractorId: any(named: 'contractorId'),
-        taskTemplate: any(named: 'taskTemplate'),
-      ),
-    );
-    verifyNever(() => jobs.createManualVisit(any(), any()));
-  });
+      final shiftReq =
+          verify(() => shifts.createShift(captureAny())).captured.single
+              as ShiftCreateRequest;
+      expect(shiftReq.contractorIds, ['contractor-1']);
+      verifyNever(
+        () => shifts.assignShift(
+          shiftId: any(named: 'shiftId'),
+          contractorId: any(named: 'contractorId'),
+          taskTemplate: any(named: 'taskTemplate'),
+        ),
+      );
+      verifyNever(() => jobs.createManualVisit(any(), any()));
+    },
+  );
 
   test('one session surfaces createShift failure without cancel', () async {
-    when(() => jobs.ensureOngoingSupport('client-1'))
-        .thenAnswer((_) async => _job);
+    when(
+      () => jobs.ensureOngoingSupport('client-1'),
+    ).thenAnswer((_) async => _job);
     when(() => shifts.createShift(any())).thenThrow(
       const AppFailure(
         code: 'busy',
@@ -805,8 +847,9 @@ void main() {
   });
 
   test('support item stamp failure blocks navigate and skip roster', () async {
-    when(() => jobs.ensureOngoingSupport('client-1'))
-        .thenAnswer((_) async => _job);
+    when(
+      () => jobs.ensureOngoingSupport('client-1'),
+    ).thenAnswer((_) async => _job);
     when(() => jobs.patchJobSupportItem(any(), any())).thenThrow(
       const AppFailure(
         code: 'support_item_not_in_catalogue',
@@ -851,9 +894,9 @@ void main() {
   });
 
   test('selectClient prefills support item from standing job', () async {
-    when(() => jobs.getOngoingSupport('client-1')).thenAnswer(
-      (_) async => _jobWithSupport,
-    );
+    when(
+      () => jobs.getOngoingSupport('client-1'),
+    ).thenAnswer((_) async => _jobWithSupport);
     final c = build();
     await c.selectClient(_client);
     expect(c.supportItemCode.value, '01_011_0107_1_1');
@@ -878,9 +921,9 @@ void main() {
   });
 
   test('selectClient does not overwrite user-changed support item', () async {
-    when(() => jobs.getOngoingSupport('client-1')).thenAnswer(
-      (_) async => _jobWithSupport,
-    );
+    when(
+      () => jobs.getOngoingSupport('client-1'),
+    ).thenAnswer((_) async => _jobWithSupport);
     final c = build();
     c.setSupportItem(
       supportItemCode: 'user-code',
@@ -896,8 +939,9 @@ void main() {
   test('buildPartialAssignPreview lists horizon dates with overlaps', () async {
     tenantUtcOffsetOverride = (_, __) => Duration.zero;
     when(() => session.tenantTimezone).thenReturn(RxnString('UTC'));
-    when(() => engagements.listTenantEngagements())
-        .thenAnswer((_) async => [_eng]);
+    when(
+      () => engagements.listTenantEngagements(),
+    ).thenAnswer((_) async => [_eng]);
 
     final monStart = DateTime.utc(2026, 8, 31, 9);
     final monEnd = DateTime.utc(2026, 8, 31, 12);

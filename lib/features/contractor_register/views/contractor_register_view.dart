@@ -104,15 +104,17 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                         children: [
                           if (controller.step.value > 0)
                             OutlinedButton(
-                              onPressed: controller.isLoading.value
-                                  ? null
-                                  : controller.previousStep,
+                              onPressed:
+                                  controller.isLoading.value
+                                      ? null
+                                      : controller.previousStep,
                               child: const Text('Back'),
                             ),
                           const Spacer(),
                           AsyncElevatedButton(
                             onPressed: controller.nextStep,
-                            isLoading: controller.isLoading.value ||
+                            isLoading:
+                                controller.isLoading.value ||
                                 controller.isInviteLoading.value,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,

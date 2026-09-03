@@ -16,7 +16,10 @@ void main() {
     });
 
     test('maps engagement.accepted', () {
-      expect(notificationTitle('engagement.accepted', {}), 'Contractor accepted');
+      expect(
+        notificationTitle('engagement.accepted', {}),
+        'Contractor accepted',
+      );
     });
 
     test('maps sharing.access_requested', () {

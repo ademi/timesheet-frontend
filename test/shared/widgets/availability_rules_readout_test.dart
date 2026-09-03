@@ -7,9 +7,7 @@ void main() {
   testWidgets('empty rules show muted copy', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(
-          body: AvailabilityRulesReadout(rules: []),
-        ),
+        home: Scaffold(body: AvailabilityRulesReadout(rules: [])),
       ),
     );
     expect(find.text('No weekly availability set.'), findsOneWidget);

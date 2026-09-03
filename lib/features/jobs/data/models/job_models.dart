@@ -153,10 +153,10 @@ class TaskTemplateItem {
   }
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        'sort_order': sortOrder,
-        if (supportItemCode != null) 'support_item_code': supportItemCode,
-      };
+    'title': title,
+    'sort_order': sortOrder,
+    if (supportItemCode != null) 'support_item_code': supportItemCode,
+  };
 }
 
 class RecurrenceRuleOut {
@@ -281,9 +281,7 @@ class RecurrenceRuleCreateRequest {
     'dtstart': dtstart.toUtc().toIso8601String(),
     if (until != null) 'until': until!.toUtc().toIso8601String(),
     'time_windows': [for (final window in timeWindows) window.toJson()],
-    'task_template': [
-      for (final task in _resolvedTaskTemplate) task.toJson(),
-    ],
+    'task_template': [for (final task in _resolvedTaskTemplate) task.toJson()],
     'form_requirements': [
       for (final id in formTemplateIds)
         {'form_template_id': id, 'is_required': true},
@@ -362,11 +360,7 @@ class GenerateVisitsResponse {
 }
 
 class HorizonRequest {
-  const HorizonRequest({
-    required this.from,
-    required this.to,
-    this.ruleIds,
-  });
+  const HorizonRequest({required this.from, required this.to, this.ruleIds});
 
   final DateTime from;
   final DateTime to;
@@ -638,10 +632,10 @@ class VisitTaskCreateItem {
   final String? supportItemCode;
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        'sort_order': sortOrder,
-        if (supportItemCode != null) 'support_item_code': supportItemCode,
-      };
+    'title': title,
+    'sort_order': sortOrder,
+    if (supportItemCode != null) 'support_item_code': supportItemCode,
+  };
 }
 
 class FormTemplateOut {

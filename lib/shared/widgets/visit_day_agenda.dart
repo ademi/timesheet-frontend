@@ -153,10 +153,7 @@ class _DayHeader extends StatelessWidget {
           if (visitCount > 0)
             Text(
               '$visitCount',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textMuted,
-              ),
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
         ],
       ),

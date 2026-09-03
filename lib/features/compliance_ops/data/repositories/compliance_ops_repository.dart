@@ -5,7 +5,7 @@ import '../models/compliance_ops_models.dart';
 
 class ComplianceOpsRepository {
   ComplianceOpsRepository({required ComplianceOpsRemoteDataSource remote})
-      : _remote = remote;
+    : _remote = remote;
 
   final ComplianceOpsRemoteDataSource _remote;
 
@@ -23,13 +23,9 @@ class ComplianceOpsRepository {
   Future<List<AccessHistoryEntry>> listAccessHistory({
     required String credentialId,
     int limit = 100,
-  }) =>
-      _remote.listAccessHistory(credentialId: credentialId, limit: limit);
+  }) => _remote.listAccessHistory(credentialId: credentialId, limit: limit);
 
-  Future<List<IncidentOut>> listIncidents({
-    int limit = 100,
-    String? status,
-  }) =>
+  Future<List<IncidentOut>> listIncidents({int limit = 100, String? status}) =>
       _remote.listIncidents(limit: limit, status: status);
 
   Future<IncidentOut> getIncident(String id) => _remote.getIncident(id);
@@ -43,30 +39,25 @@ class ComplianceOpsRepository {
   Future<List<NotificationEventOut>> listNotificationEvents({int limit = 50}) =>
       _remote.listNotificationEvents(limit: limit);
 
-  Future<SubscriptionStatusOut> getSubscription() =>
-      _remote.getSubscription();
+  Future<SubscriptionStatusOut> getSubscription() => _remote.getSubscription();
 
-  Future<List<TenantMemberOut>> listTenantMembers() async =>
-      sortedByName(
-        await _remote.listTenantMembers(),
-        (m) => m.fullName ?? m.email,
-      );
+  Future<List<TenantMemberOut>> listTenantMembers() async => sortedByName(
+    await _remote.listTenantMembers(),
+    (m) => m.fullName ?? m.email,
+  );
 
   Future<void> withdrawConsent({
     required String credentialType,
     String? notes,
-  }) =>
-      _remote.withdrawConsent(credentialType: credentialType, notes: notes);
+  }) => _remote.withdrawConsent(credentialType: credentialType, notes: notes);
 
   Future<List<SharingAccessRequestOut>> listSharingAccessRequests({
     String? status,
-  }) =>
-      _remote.listSharingAccessRequests(status: status);
+  }) => _remote.listSharingAccessRequests(status: status);
 
   Future<SharingAccessRequestOut> approveSharingAccessRequest(
     String requestId,
-  ) =>
-      _remote.approveSharingAccessRequest(requestId);
+  ) => _remote.approveSharingAccessRequest(requestId);
 
   Future<ProfilePhotoOut> getContractorProfilePhoto() =>
       _remote.getContractorProfilePhoto();

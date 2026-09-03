@@ -24,10 +24,7 @@ class _FakeJobCreateRequest extends Fake implements JobCreateRequest {}
 
 final _now = DateTime.utc(2026, 8, 13, 9);
 
-JobOut _job({
-  String? supportItemCode,
-  String? supportItemName,
-}) {
+JobOut _job({String? supportItemCode, String? supportItemName}) {
   return JobOut(
     id: 'job-1',
     tenantId: 'tenant-1',
@@ -67,7 +64,9 @@ void main() {
     engagements = _MockEngagementsRepository();
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
-    when(() => session.hasPermission(AppPermissions.jobsManage)).thenReturn(true);
+    when(
+      () => session.hasPermission(AppPermissions.jobsManage),
+    ).thenReturn(true);
     when(() => jobs.listJobs()).thenAnswer((_) async => []);
     when(() => jobs.listFormTemplates()).thenAnswer((_) async => []);
     when(() => clients.listClients()).thenAnswer((_) async => []);
@@ -114,10 +113,7 @@ void main() {
     controller.editingSupportItemName.value = initial.supportItemName;
 
     when(
-      () => jobs.patchJobSupportItem(
-        'job-1',
-        any(),
-      ),
+      () => jobs.patchJobSupportItem('job-1', any()),
     ).thenAnswer((_) async => updated);
 
     await controller.updateJobSupportItem(

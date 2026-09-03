@@ -49,7 +49,9 @@ void main() {
       ),
     ).thenAnswer(
       (_) async => Response<Map<String, dynamic>>(
-        requestOptions: RequestOptions(path: ApiPaths.visitSupportItem(visitId)),
+        requestOptions: RequestOptions(
+          path: ApiPaths.visitSupportItem(visitId),
+        ),
         data: {
           ...visitJson,
           'support_item_code': '01_011_0107_1_1',
@@ -132,7 +134,9 @@ void main() {
       ),
     ).thenAnswer(
       (_) async => Response<Map<String, dynamic>>(
-        requestOptions: RequestOptions(path: ApiPaths.visitTask(visitId, taskId)),
+        requestOptions: RequestOptions(
+          path: ApiPaths.visitTask(visitId, taskId),
+        ),
         data: {
           'id': taskId,
           'tenant_id': 'tenant-1',
@@ -150,9 +154,7 @@ void main() {
     final task = await dataSource.patchVisitTaskSupportItem(
       visitId: visitId,
       taskId: taskId,
-      body: const VisitTaskSupportItemPatch(
-        supportItemCode: '01_011_0107_1_1',
-      ),
+      body: const VisitTaskSupportItemPatch(supportItemCode: '01_011_0107_1_1'),
     );
 
     expect(task.supportItemCode, '01_011_0107_1_1');
@@ -173,12 +175,14 @@ void main() {
 
     await dataSource.listVisits(includeNested: false, limit: 5);
 
-    final captured = verify(
-      () => dio.get<List<dynamic>>(
-        ApiPaths.visits,
-        queryParameters: captureAny(named: 'queryParameters'),
-      ),
-    ).captured.single as Map;
+    final captured =
+        verify(
+              () => dio.get<List<dynamic>>(
+                ApiPaths.visits,
+                queryParameters: captureAny(named: 'queryParameters'),
+              ),
+            ).captured.single
+            as Map;
     expect(captured['include_nested'], isFalse);
   });
 }

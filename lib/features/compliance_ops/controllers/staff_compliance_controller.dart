@@ -259,7 +259,10 @@ class StaffComplianceController extends GetxController {
       incidentTitleCtrl.clear();
       incidentDescCtrl.clear();
       incidents.assignAll(await _repository.listIncidents());
-      AppToast.success('Incident created', 'Recorded for compliance follow-up.');
+      AppToast.success(
+        'Incident created',
+        'Recorded for compliance follow-up.',
+      );
     } on AppFailure catch (e) {
       await BillingGate.showIfNeeded(e);
       incidentsError.value = e.message;

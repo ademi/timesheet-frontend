@@ -12,9 +12,9 @@ class SupportPlanSpecialistEntry {
     String? customLabel,
     SupportPlanProfessionalFields? fields,
     bool expanded = false,
-  })  : customLabelCtrl = TextEditingController(text: customLabel ?? ''),
-        fields = fields ?? SupportPlanProfessionalFields(),
-        expanded = expanded.obs;
+  }) : customLabelCtrl = TextEditingController(text: customLabel ?? ''),
+       fields = fields ?? SupportPlanProfessionalFields(),
+       expanded = expanded.obs;
 
   static int _idSeq = 0;
 
@@ -61,28 +61,27 @@ class SupportPlanSpecialistEntry {
   String get title {
     revision.value;
     return SupportPlanSpecialistTypes.label(
-        type,
-        customLabel: customLabelCtrl.text,
-      );
+      type,
+      customLabel: customLabelCtrl.text,
+    );
   }
 
-  String get nameFieldLabel =>
-      SupportPlanSpecialistTypes.nameFieldLabel(type);
+  String get nameFieldLabel => SupportPlanSpecialistTypes.nameFieldLabel(type);
 
   bool get isOther => type == SupportPlanSpecialistTypes.other;
 
   Map<String, dynamic> toJson() => {
-        'type': type,
-        if (isOther && customLabelCtrl.text.trim().isNotEmpty)
-          'custom_label': customLabelCtrl.text.trim(),
-        'name': fields.nameCtrl.text.trim(),
-        'company': fields.companyCtrl.text.trim(),
-        'abn_acn': fields.abnAcnCtrl.text.trim(),
-        'org_id': fields.orgIdCtrl.text.trim(),
-        'phone': fields.phoneCtrl.text.trim(),
-        'email': fields.emailCtrl.text.trim(),
-        'address': fields.addressCtrl.text.trim(),
-      };
+    'type': type,
+    if (isOther && customLabelCtrl.text.trim().isNotEmpty)
+      'custom_label': customLabelCtrl.text.trim(),
+    'name': fields.nameCtrl.text.trim(),
+    'company': fields.companyCtrl.text.trim(),
+    'abn_acn': fields.abnAcnCtrl.text.trim(),
+    'org_id': fields.orgIdCtrl.text.trim(),
+    'phone': fields.phoneCtrl.text.trim(),
+    'email': fields.emailCtrl.text.trim(),
+    'address': fields.addressCtrl.text.trim(),
+  };
 
   factory SupportPlanSpecialistEntry.fromJson(Map<String, dynamic> json) {
     final type = json['type']?.toString() ?? '';

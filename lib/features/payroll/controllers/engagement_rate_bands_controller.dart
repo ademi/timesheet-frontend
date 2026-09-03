@@ -12,8 +12,8 @@ class EngagementRateBandsController extends GetxController {
   EngagementRateBandsController({
     required PayrollRepository payroll,
     required SessionService session,
-  })  : _payroll = payroll,
-        _session = session;
+  }) : _payroll = payroll,
+       _session = session;
 
   final PayrollRepository _payroll;
   final SessionService _session;
@@ -39,8 +39,7 @@ class EngagementRateBandsController extends GetxController {
   bool get canView =>
       _session.hasPermission(AppPermissions.paymentsView) ||
       _session.hasPermission(AppPermissions.paymentsManage);
-  bool get canManage =>
-      _session.hasPermission(AppPermissions.paymentsManage);
+  bool get canManage => _session.hasPermission(AppPermissions.paymentsManage);
 
   @override
   void onInit() {

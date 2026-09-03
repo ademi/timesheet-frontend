@@ -23,9 +23,7 @@ class ShiftSlotPips extends StatelessWidget {
             padding: const EdgeInsets.only(right: 4),
             child: Icon(
               i < filledSlots ? Icons.circle : Icons.circle_outlined,
-              key: Key(
-                i < filledSlots ? 'slot-pip-filled' : 'slot-pip-open',
-              ),
+              key: Key(i < filledSlots ? 'slot-pip-filled' : 'slot-pip-open'),
               size: 12,
               color: i < filledSlots ? AppColors.success : AppColors.openSlot,
             ),

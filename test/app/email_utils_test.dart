@@ -16,7 +16,9 @@ void main() {
     });
   });
 
-  testWidgets('PendingInviteContactDialog rejects invalid email', (tester) async {
+  testWidgets('PendingInviteContactDialog rejects invalid email', (
+    tester,
+  ) async {
     final invite = ContractorRegistrationInviteOut(
       id: 'invite-1',
       email: 'contractor@example.com',

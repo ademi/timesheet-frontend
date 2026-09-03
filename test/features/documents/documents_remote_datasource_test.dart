@@ -50,16 +50,19 @@ void main() {
     ).called(1);
   });
 
-  test('listDocuments rejects empty owner params before network call', () async {
-    await expectLater(
-      dataSource.listDocuments(ownerType: '', ownerId: 'id'),
-      throwsA(isA<AppFailure>()),
-    );
-    verifyNever(
-      () => dio.get<List<dynamic>>(
-        any(),
-        queryParameters: any(named: 'queryParameters'),
-      ),
-    );
-  });
+  test(
+    'listDocuments rejects empty owner params before network call',
+    () async {
+      await expectLater(
+        dataSource.listDocuments(ownerType: '', ownerId: 'id'),
+        throwsA(isA<AppFailure>()),
+      );
+      verifyNever(
+        () => dio.get<List<dynamic>>(
+          any(),
+          queryParameters: any(named: 'queryParameters'),
+        ),
+      );
+    },
+  );
 }

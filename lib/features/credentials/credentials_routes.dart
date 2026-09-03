@@ -16,42 +16,42 @@ abstract final class CredentialsPages {
   CredentialsPages._();
 
   static List<GetPage> get routes => [
-        GetPage(
-          name: AppRoutes.contractorCredentials,
-          middlewares: [AuthGuard(), ActorGuard()],
-          binding: CredentialsBinding(),
-          page: () => contractorShellPage(const CredentialsListView()),
-          transition: Transition.fadeIn,
-        ),
-        GetPage(
-          name: AppRoutes.contractorCredentialCreate,
-          middlewares: [AuthGuard(), ActorGuard()],
-          binding: CredentialsBinding(),
-          page: () => const CredentialCreateView(),
-          transition: Transition.rightToLeft,
-        ),
-        GetPage(
-          name: AppRoutes.contractorCredentialDetail,
-          middlewares: [AuthGuard(), ActorGuard()],
-          binding: CredentialsBinding(),
-          page: () => const CredentialDetailView(),
-          transition: Transition.rightToLeft,
-        ),
-        GetPage(
-          name: AppRoutes.staffCredentialReview,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(
-              anyOf: [
-                AppPermissions.credentialsRead,
-                AppPermissions.credentialsReview,
-              ],
-            ),
+    GetPage(
+      name: AppRoutes.contractorCredentials,
+      middlewares: [AuthGuard(), ActorGuard()],
+      binding: CredentialsBinding(),
+      page: () => contractorShellPage(const CredentialsListView()),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.contractorCredentialCreate,
+      middlewares: [AuthGuard(), ActorGuard()],
+      binding: CredentialsBinding(),
+      page: () => const CredentialCreateView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.contractorCredentialDetail,
+      middlewares: [AuthGuard(), ActorGuard()],
+      binding: CredentialsBinding(),
+      page: () => const CredentialDetailView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.staffCredentialReview,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [
+            AppPermissions.credentialsRead,
+            AppPermissions.credentialsReview,
           ],
-          binding: StaffCredentialReviewBinding(),
-          page: () => const StaffCredentialReviewView(),
-          transition: Transition.fadeIn,
         ),
-      ];
+      ],
+      binding: StaffCredentialReviewBinding(),
+      page: () => const StaffCredentialReviewView(),
+      transition: Transition.fadeIn,
+    ),
+  ];
 }

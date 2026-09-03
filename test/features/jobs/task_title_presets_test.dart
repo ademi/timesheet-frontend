@@ -3,10 +3,10 @@ import 'package:rostiq/features/jobs/utils/task_title_presets.dart';
 
 void main() {
   test('parseTaskTitles trims and drops blank lines', () {
-    expect(
-      parseTaskTitles('Personal care\n  \nTransport\n'),
-      ['Personal care', 'Transport'],
-    );
+    expect(parseTaskTitles('Personal care\n  \nTransport\n'), [
+      'Personal care',
+      'Transport',
+    ]);
   });
 
   test('appendTaskTitleLine adds newline-separated titles', () {

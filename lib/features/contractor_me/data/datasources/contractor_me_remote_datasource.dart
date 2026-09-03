@@ -9,8 +9,8 @@ class ContractorMeRemoteDataSource {
   ContractorMeRemoteDataSource({
     required Dio authenticatedDio,
     required Dio plainDio,
-  })  : _dio = authenticatedDio,
-        _plainDio = plainDio;
+  }) : _dio = authenticatedDio,
+       _plainDio = plainDio;
 
   final Dio _dio;
   final Dio _plainDio;

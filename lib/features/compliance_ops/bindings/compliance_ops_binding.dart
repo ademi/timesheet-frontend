@@ -101,9 +101,10 @@ class ContractorProfileOpsBinding extends Bindings {
         ContractorProfileController(
           repository: Get.find<ComplianceOpsRepository>(),
           session: Get.find<SessionService>(),
-          documentPipeline: Get.isRegistered<DocumentPipeline>()
-              ? Get.find<DocumentPipeline>()
-              : null,
+          documentPipeline:
+              Get.isRegistered<DocumentPipeline>()
+                  ? Get.find<DocumentPipeline>()
+                  : null,
           meRepository: Get.find<ContractorMeRepository>(),
         ),
       );

@@ -92,16 +92,17 @@ class WorkforceController extends GetxController {
 
   /// Invite multi-select options (catalog when loaded, else allowlist fallback).
   List<CredentialCategory> get inviteCategoryChoices {
-    final choices = catalogCategories.isNotEmpty
-        ? catalogCategories.toList()
-        : credentialTypesAllowlist
-            .map(
-              (code) => CredentialCategory(
-                code: code,
-                label: credentialTypeLabel(code),
-              ),
-            )
-            .toList();
+    final choices =
+        catalogCategories.isNotEmpty
+            ? catalogCategories.toList()
+            : credentialTypesAllowlist
+                .map(
+                  (code) => CredentialCategory(
+                    code: code,
+                    label: credentialTypeLabel(code),
+                  ),
+                )
+                .toList();
     return sortedByName(choices, (c) => c.label);
   }
 
@@ -135,8 +136,10 @@ class WorkforceController extends GetxController {
     if (missingDocsFilter.value) return const [];
     final f = statusFilter.value;
     if (f != null && f.isNotEmpty && f != 'invited') return const [];
-    final list = pendingInvites.toList()
-      ..sort((a, b) => a.email.toLowerCase().compareTo(b.email.toLowerCase()));
+    final list =
+        pendingInvites.toList()..sort(
+          (a, b) => a.email.toLowerCase().compareTo(b.email.toLowerCase()),
+        );
     return list;
   }
 
@@ -169,10 +172,7 @@ class WorkforceController extends GetxController {
   Future<void> _ensureDetailExtrasLoaded() async {
     if (_detailExtrasLoaded || selected == null) return;
     _detailExtrasLoaded = true;
-    await Future.wait([
-      loadDetailVisits(),
-      loadDetailAvailability(),
-    ]);
+    await Future.wait([loadDetailVisits(), loadDetailAvailability()]);
   }
 
   @override
@@ -333,10 +333,7 @@ class WorkforceController extends GetxController {
   void openVisitDetail(VisitOut visit) {
     Get.toNamed(
       AppRoutes.staffVisitDetail,
-      arguments: <String, dynamic>{
-        'visit': visit,
-        'skipBoardLoad': true,
-      },
+      arguments: <String, dynamic>{'visit': visit, 'skipBoardLoad': true},
     );
   }
 
@@ -344,8 +341,9 @@ class WorkforceController extends GetxController {
     if (contractorId.isEmpty || !canRead) return;
     isDetailPhotoLoading.value = true;
     try {
-      detailPhoto.value =
-          await _repository.getContractorProfilePhoto(contractorId);
+      detailPhoto.value = await _repository.getContractorProfilePhoto(
+        contractorId,
+      );
     } on AppFailure {
       detailPhoto.value = null;
     } catch (_) {
@@ -489,7 +487,9 @@ class WorkforceController extends GetxController {
     }
   }
 
-  Future<void> resendPendingInvite(ContractorRegistrationInviteOut invite) async {
+  Future<void> resendPendingInvite(
+    ContractorRegistrationInviteOut invite,
+  ) async {
     if (!canInvite) {
       _setError('Missing contractors.invite permission.');
       return;
@@ -503,7 +503,10 @@ class WorkforceController extends GetxController {
         pendingInvites.removeAt(idx);
       }
       pendingInvites.insert(0, updated);
-      AppToast.success('Invite re-sent', 'Invitation email sent to ${updated.email}.');
+      AppToast.success(
+        'Invite re-sent',
+        'Invitation email sent to ${updated.email}.',
+      );
       await _showInviteSentConfirmation(expiresAt: updated.expiresAt);
     } on AppFailure catch (e) {
       _setError(e.message);
@@ -552,7 +555,10 @@ class WorkforceController extends GetxController {
         );
         await _showInviteSentConfirmation(expiresAt: updated.expiresAt);
       } else {
-        AppToast.success('Contact updated', 'Phone number saved for this invite.');
+        AppToast.success(
+          'Contact updated',
+          'Phone number saved for this invite.',
+        );
       }
     } on AppFailure catch (e) {
       _setError(e.message);
@@ -586,10 +592,10 @@ class WorkforceController extends GetxController {
     }
   }
 
-  Future<void> _showInviteSentConfirmation({required DateTime expiresAt}) async {
-    await Get.dialog<void>(
-      InviteSentDialog(expiresAt: expiresAt),
-    );
+  Future<void> _showInviteSentConfirmation({
+    required DateTime expiresAt,
+  }) async {
+    await Get.dialog<void>(InviteSentDialog(expiresAt: expiresAt));
   }
 
   Future<void> runAction(String action, EngagementOut engagement) async {
@@ -640,10 +646,7 @@ class WorkforceController extends GetxController {
       } else {
         await load();
       }
-      AppToast.success(
-        'Updated',
-        'Engagement is now ${updated.status}.',
-      );
+      AppToast.success('Updated', 'Engagement is now ${updated.status}.');
     } on AppFailure catch (e) {
       _setError(e.message);
       if (e.isEligibilityIncomplete) {
@@ -661,7 +664,9 @@ class WorkforceController extends GetxController {
     final contractorIds =
         items.map((e) => e.contractorId).where((id) => id.isNotEmpty).toSet();
     final pending =
-        contractorIds.where((id) => !photosByContractor.containsKey(id)).toList();
+        contractorIds
+            .where((id) => !photosByContractor.containsKey(id))
+            .toList();
     if (pending.isEmpty) return;
 
     final results = await Future.wait(

@@ -149,9 +149,11 @@ DateTime startOfTenantCivilDayUtc(DateTime utc, String? tenantTimezone) {
 }) {
   final from = startOfTenantCivilDayUtc(utcNow, tenantTimezone);
   final civil = tenantCivilFromUtc(utcNow, tenantTimezone);
-  final endCivil = DateTime(civil.year, civil.month, civil.day).add(
-    Duration(days: days),
-  );
+  final endCivil = DateTime(
+    civil.year,
+    civil.month,
+    civil.day,
+  ).add(Duration(days: days));
   return (from: from, to: tenantCivilDateStartUtc(endCivil, tenantTimezone));
 }
 

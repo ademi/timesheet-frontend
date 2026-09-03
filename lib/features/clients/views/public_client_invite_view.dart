@@ -29,72 +29,78 @@ class PublicClientInviteView extends GetView<PublicClientInviteController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-            if (err != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.errorBackground,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(err, style: const TextStyle(color: AppColors.error)),
-              ),
-              const SizedBox(height: 16),
-            ],
-            if (done != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(done),
-              ),
-              const SizedBox(height: 16),
-            ],
-            if (invite != null) ...[
-              Text(
-                invite.tenantName,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Hello ${invite.clientFirstName},\n\n'
-                'Please acknowledge this invite from your care provider.',
-                style: const TextStyle(color: AppColors.textMuted, height: 1.4),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Expires: ${invite.expiresAt.toLocal()}',
-                style: const TextStyle(fontSize: 13),
-              ),
-              if (invite.consentAcknowledged) ...[
-                const SizedBox(height: 12),
-                const Text(
-                  'Already acknowledged.',
-                  style: TextStyle(
-                    color: AppColors.success,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ] else ...[
-                const SizedBox(height: 24),
-                AsyncElevatedButton(
-                  onPressed: () => controller.acknowledge(accept: true),
-                  isLoading: controller.isSaving.value,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.onPrimary,
-                    minimumSize: const Size.fromHeight(48),
-                  ),
-                  child: const Text('Acknowledge'),
-                ),
-              ],
-            ] else if (err == null)
-              const Text('Invite not found.'),
+                  if (err != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.errorBackground,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        err,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  if (done != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(done),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  if (invite != null) ...[
+                    Text(
+                      invite.tenantName,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Hello ${invite.clientFirstName},\n\n'
+                      'Please acknowledge this invite from your care provider.',
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Expires: ${invite.expiresAt.toLocal()}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    if (invite.consentAcknowledged) ...[
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Already acknowledged.',
+                        style: TextStyle(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 24),
+                      AsyncElevatedButton(
+                        onPressed: () => controller.acknowledge(accept: true),
+                        isLoading: controller.isSaving.value,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.onPrimary,
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                        child: const Text('Acknowledge'),
+                      ),
+                    ],
+                  ] else if (err == null)
+                    const Text('Invite not found.'),
                 ],
               ),
             ),

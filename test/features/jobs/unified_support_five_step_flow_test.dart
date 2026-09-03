@@ -135,10 +135,12 @@ void main() {
         ),
       ),
     );
-    when(() => jobs.listFormTemplates(tenantLevel: true))
-        .thenAnswer((_) async => []);
-    when(() => jobs.createOngoingSupport(any()))
-        .thenAnswer((_) async => ongoingOut);
+    when(
+      () => jobs.listFormTemplates(tenantLevel: true),
+    ).thenAnswer((_) async => []);
+    when(
+      () => jobs.createOngoingSupport(any()),
+    ).thenAnswer((_) async => ongoingOut);
     when(() => ndisCatalogue.fetchAllActiveItems()).thenAnswer(
       (_) async => const [
         NdisCatalogueItemOut(
@@ -172,7 +174,10 @@ void main() {
       ],
     );
     when(
-      () => visits.fetchRosterOverlay(from: any(named: 'from'), to: any(named: 'to')),
+      () => visits.fetchRosterOverlay(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
     ).thenAnswer((_) async => const RosterOverlayOut(contractors: []));
     when(
       () => shifts.listShifts(
@@ -213,9 +218,7 @@ void main() {
 
   Future<void> pumpView(WidgetTester tester) async {
     await controller.load();
-    await tester.pumpWidget(
-      const GetMaterialApp(home: UnifiedSupportView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: UnifiedSupportView()));
     await tester.pumpAndSettle();
   }
 
@@ -277,15 +280,17 @@ void main() {
     );
     await tester.pumpAndSettle();
     controller.syncTaskTemplateFromInstructions();
-    expect(
-      controller.taskTemplate.map((t) => t.title),
-      ['Personal care', 'Community access'],
-    );
+    expect(controller.taskTemplate.map((t) => t.title), [
+      'Personal care',
+      'Community access',
+    ]);
     await tapNext(tester);
 
     // Step 4 — Workers (assign two contractors, then submit)
-    expect(find.text('Assign up to 2 workers for this support (optional).'),
-        findsOneWidget);
+    expect(
+      find.text('Assign up to 2 workers for this support (optional).'),
+      findsOneWidget,
+    );
     expect(find.text('Worker 1 (optional)'), findsOneWidget);
     expect(find.text('Worker 2 (optional)'), findsOneWidget);
     await selectWorker(tester, slot: 0, workerName: 'Alex Worker');
@@ -294,9 +299,9 @@ void main() {
     await tester.tap(find.text('Save and fill roster'));
     await tester.pumpAndSettle();
 
-    final captured = verify(
-      () => jobs.createOngoingSupport(captureAny()),
-    ).captured.single as OngoingSupportCreateRequest;
+    final captured =
+        verify(() => jobs.createOngoingSupport(captureAny())).captured.single
+            as OngoingSupportCreateRequest;
 
     expect(captured.contractorIds, hasLength(2));
     expect(captured.contractorIds, ['contractor-1', 'contractor-2']);
@@ -309,98 +314,104 @@ void main() {
       'Personal care',
       'Community access',
     ]);
-    expect(captured.taskTemplate.every((t) => t.supportItemCode == null), isTrue);
+    expect(
+      captured.taskTemplate.every((t) => t.supportItemCode == null),
+      isTrue,
+    );
 
     expect(navigations, hasLength(1));
   });
 
   testWidgets(
-      'walks five-step flow and submits one session via createShift contractorIds',
-      (tester) async {
-    tester.view.physicalSize = const Size(800, 1200);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+    'walks five-step flow and submits one session via createShift contractorIds',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    when(() => jobs.ensureOngoingSupport('client-1')).thenAnswer((_) async => job);
-    when(() => shifts.createShift(any())).thenAnswer(
-      (_) async => ShiftOut(
-        id: 'shift-1',
-        tenantId: 'tenant-1',
-        jobId: 'job-1',
-        jobTitle: 'Sam Lee support',
-        scheduledStart: now,
-        scheduledEnd: now.add(const Duration(hours: 3)),
-        requiredSlots: 2,
-        openSlots: 0,
-        status: 'published',
-        createdAt: now,
-        updatedAt: now,
-      ),
-    );
+      when(
+        () => jobs.ensureOngoingSupport('client-1'),
+      ).thenAnswer((_) async => job);
+      when(() => shifts.createShift(any())).thenAnswer(
+        (_) async => ShiftOut(
+          id: 'shift-1',
+          tenantId: 'tenant-1',
+          jobId: 'job-1',
+          jobTitle: 'Sam Lee support',
+          scheduledStart: now,
+          scheduledEnd: now.add(const Duration(hours: 3)),
+          requiredSlots: 2,
+          openSlots: 0,
+          status: 'published',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
 
-    Get.delete<UnifiedSupportController>();
-    controller = UnifiedSupportController(
-      jobsRepository: jobs,
-      clientsRepository: clients,
-      engagementsRepository: engagements,
-      shiftsRepository: shifts,
-      visitsRepository: visits,
-      session: session,
-      args: UnifiedSupportArgs.forClient(
-        client,
-        mode: UnifiedSupportMode.oneSession,
-      ),
-      onNavigate: (route, arguments) {
-        navigations.add((route: route, arguments: arguments));
-      },
-    );
-    Get.put(controller);
+      Get.delete<UnifiedSupportController>();
+      controller = UnifiedSupportController(
+        jobsRepository: jobs,
+        clientsRepository: clients,
+        engagementsRepository: engagements,
+        shiftsRepository: shifts,
+        visitsRepository: visits,
+        session: session,
+        args: UnifiedSupportArgs.forClient(
+          client,
+          mode: UnifiedSupportMode.oneSession,
+        ),
+        onNavigate: (route, arguments) {
+          navigations.add((route: route, arguments: arguments));
+        },
+      );
+      Get.put(controller);
 
-    await pumpView(tester);
+      await pumpView(tester);
 
-    expect(find.text('One session'), findsOneWidget);
-    await tapNext(tester);
+      expect(find.text('One session'), findsOneWidget);
+      await tapNext(tester);
 
-    expect(find.text('Where will this support happen?'), findsOneWidget);
-    await tapNext(tester);
+      expect(find.text('Where will this support happen?'), findsOneWidget);
+      await tapNext(tester);
 
-    expect(find.text('Start date'), findsOneWidget);
-    final slotsField = find.descendant(
-      of: find.widgetWithText(InputDecorator, 'Required workers'),
-      matching: find.byType(TextField),
-    );
-    await tester.ensureVisible(slotsField);
-    await tester.enterText(slotsField, '2');
-    await tester.pumpAndSettle();
-    await tapNext(tester);
+      expect(find.text('Start date'), findsOneWidget);
+      final slotsField = find.descendant(
+        of: find.widgetWithText(InputDecorator, 'Required workers'),
+        matching: find.byType(TextField),
+      );
+      await tester.ensureVisible(slotsField);
+      await tester.enterText(slotsField, '2');
+      await tester.pumpAndSettle();
+      await tapNext(tester);
 
-    await tester.enterText(
-      find.byKey(const Key('visit-instructions-field')),
-      'Personal care',
-    );
-    await tester.pumpAndSettle();
-    await tapNext(tester);
+      await tester.enterText(
+        find.byKey(const Key('visit-instructions-field')),
+        'Personal care',
+      );
+      await tester.pumpAndSettle();
+      await tapNext(tester);
 
-    await selectWorker(tester, slot: 0, workerName: 'Alex Worker');
-    await selectWorker(tester, slot: 1, workerName: 'Blair Worker');
+      await selectWorker(tester, slot: 0, workerName: 'Alex Worker');
+      await selectWorker(tester, slot: 1, workerName: 'Blair Worker');
 
-    await tester.tap(find.text('Book session'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Book session'));
+      await tester.pumpAndSettle();
 
-    final shiftReq = verify(() => shifts.createShift(captureAny()))
-        .captured
-        .single as ShiftCreateRequest;
-    expect(shiftReq.contractorIds, ['contractor-1', 'contractor-2']);
-    expect(shiftReq.taskTemplate.map((t) => t.title), ['Personal care']);
-    verifyNever(
-      () => shifts.assignShift(
-        shiftId: any(named: 'shiftId'),
-        contractorId: any(named: 'contractorId'),
-        taskTemplate: any(named: 'taskTemplate'),
-      ),
-    );
-    verifyNever(() => shifts.cancelShift(any()));
-    expect(navigations, hasLength(1));
-  });
+      final shiftReq =
+          verify(() => shifts.createShift(captureAny())).captured.single
+              as ShiftCreateRequest;
+      expect(shiftReq.contractorIds, ['contractor-1', 'contractor-2']);
+      expect(shiftReq.taskTemplate.map((t) => t.title), ['Personal care']);
+      verifyNever(
+        () => shifts.assignShift(
+          shiftId: any(named: 'shiftId'),
+          contractorId: any(named: 'contractorId'),
+          taskTemplate: any(named: 'taskTemplate'),
+        ),
+      );
+      verifyNever(() => shifts.cancelShift(any()));
+      expect(navigations, hasLength(1));
+    },
+  );
 }

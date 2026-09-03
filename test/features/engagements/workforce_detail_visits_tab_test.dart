@@ -88,9 +88,9 @@ void main() {
 
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => repository.listTenantEngagements()).thenAnswer((_) async => []);
-    when(() => repository.getContractorProfilePhoto(any())).thenAnswer(
-      (_) async => const ProfilePhotoOut(hasPhoto: false),
-    );
+    when(
+      () => repository.getContractorProfilePhoto(any()),
+    ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
     when(() => payroll.listRates(any())).thenAnswer((_) async => []);
     when(() => repository.listAvailability(any())).thenAnswer((_) async => []);
 
@@ -101,12 +101,7 @@ void main() {
       visits: visits,
     );
     controller.selected = _engagement;
-    Get.put(
-      EngagementRateBandsController(
-        payroll: payroll,
-        session: session,
-      ),
-    );
+    Get.put(EngagementRateBandsController(payroll: payroll, session: session));
     Get.put(controller);
     controller.onInit();
   });
@@ -137,9 +132,7 @@ void main() {
     ).thenAnswer((_) async => [futureVisit, pastVisit]);
 
     Get.routing.args = _engagement;
-    await tester.pumpWidget(
-      const GetMaterialApp(home: WorkforceDetailView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: WorkforceDetailView()));
 
     await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-2')));
     await tester.pump();
@@ -160,17 +153,22 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('missing visits.read shows permission message without fetch',
-      (tester) async {
+  testWidgets('missing visits.read shows permission message without fetch', (
+    tester,
+  ) async {
     when(() => session.hasPermission(any())).thenReturn(true);
-    when(() => session.hasPermission(AppPermissions.visitsRead)).thenReturn(false);
-    when(() => session.hasPermission(AppPermissions.visitsManage)).thenReturn(false);
-    when(() => session.hasPermission(AppPermissions.jobsManage)).thenReturn(false);
+    when(
+      () => session.hasPermission(AppPermissions.visitsRead),
+    ).thenReturn(false);
+    when(
+      () => session.hasPermission(AppPermissions.visitsManage),
+    ).thenReturn(false);
+    when(
+      () => session.hasPermission(AppPermissions.jobsManage),
+    ).thenReturn(false);
 
     Get.routing.args = _engagement;
-    await tester.pumpWidget(
-      const GetMaterialApp(home: WorkforceDetailView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: WorkforceDetailView()));
 
     await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-2')));
     await tester.pumpAndSettle();

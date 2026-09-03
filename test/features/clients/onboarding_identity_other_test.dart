@@ -32,8 +32,9 @@ void main() {
     Get.reset();
   });
 
-  testWidgets('hydrated unknown referral builds without dropdown crash',
-      (tester) async {
+  testWidgets('hydrated unknown referral builds without dropdown crash', (
+    tester,
+  ) async {
     final hydrated = OnboardingIdentityStep.hydrateReferral('Community Centre');
     c.referralSource.value = hydrated.preset;
     c.referralOtherCtrl.text = hydrated.otherText;
@@ -53,8 +54,9 @@ void main() {
     expect(c.referralOtherCtrl.text, 'Community Centre');
   });
 
-  testWidgets('hydrated unknown sex builds without dropdown crash',
-      (tester) async {
+  testWidgets('hydrated unknown sex builds without dropdown crash', (
+    tester,
+  ) async {
     final hydrated = OnboardingIdentityStep.hydrateSexGender('Agender');
     c.sexGender.value = hydrated.preset;
     c.sexGenderOtherCtrl.text = hydrated.otherText;

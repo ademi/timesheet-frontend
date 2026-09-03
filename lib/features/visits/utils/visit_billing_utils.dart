@@ -4,8 +4,7 @@ const int maxTaskBillableMinutes = 1440;
 
 /// Scheduled visit window length in whole minutes.
 int visitScheduledDurationMinutes(VisitOut visit) {
-  final minutes =
-      visit.scheduledEnd.difference(visit.scheduledStart).inMinutes;
+  final minutes = visit.scheduledEnd.difference(visit.scheduledStart).inMinutes;
   return minutes < 0 ? 0 : minutes;
 }
 
@@ -20,10 +19,8 @@ int codedTaskBillableMinutesTotal(VisitOut visit) {
   return total;
 }
 
-bool visitHasCodedTasks(VisitOut visit) => visit.tasks.any(
-      (task) => task.supportItemCode?.trim().isNotEmpty == true,
-    );
+bool visitHasCodedTasks(VisitOut visit) =>
+    visit.tasks.any((task) => task.supportItemCode?.trim().isNotEmpty == true);
 
 bool taskMinutesExceedVisitDuration(VisitOut visit) =>
-    codedTaskBillableMinutesTotal(visit) >
-    visitScheduledDurationMinutes(visit);
+    codedTaskBillableMinutesTotal(visit) > visitScheduledDurationMinutes(visit);

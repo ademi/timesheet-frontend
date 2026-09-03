@@ -116,7 +116,8 @@ abstract final class SupportPlanSpecialistsCodec {
       fields.phoneCtrl.text = _readFact(facts, def.phoneKey) ?? '';
       fields.emailCtrl.text = _readFact(facts, def.emailKey) ?? '';
       fields.addressCtrl.text = _readFact(facts, def.addressKey) ?? '';
-      final hasData = fields.nameCtrl.text.isNotEmpty ||
+      final hasData =
+          fields.nameCtrl.text.isNotEmpty ||
           fields.companyCtrl.text.isNotEmpty ||
           fields.abnAcnCtrl.text.isNotEmpty ||
           fields.orgIdCtrl.text.isNotEmpty ||
@@ -128,10 +129,7 @@ abstract final class SupportPlanSpecialistsCodec {
         continue;
       }
       out.add(
-        SupportPlanSpecialistEntry.fromLegacy(
-          type: def.type,
-          fields: fields,
-        ),
+        SupportPlanSpecialistEntry.fromLegacy(type: def.type, fields: fields),
       );
     }
     return out;

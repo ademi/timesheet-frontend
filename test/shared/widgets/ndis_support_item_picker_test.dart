@@ -14,7 +14,8 @@ class _MockNdisCatalogueRepository extends Mock
 
 const _item = NdisCatalogueItemOut(
   supportItemNumber: '01_011_0107_1_1',
-  supportItemName: 'Assistance With Self-Care Activities - Standard - Weekday Daytime',
+  supportItemName:
+      'Assistance With Self-Care Activities - Standard - Weekday Daytime',
   unit: 'H',
 );
 
@@ -52,9 +53,9 @@ const _liveCatalogue = [
 ];
 
 NdisCatalogueFacet _categoryFacet(String number) =>
-    NdisCatalogueLocalFilter.facets(_liveCatalogue).supportCategories.singleWhere(
-      (facet) => facet.number == number,
-    );
+    NdisCatalogueLocalFilter.facets(
+      _liveCatalogue,
+    ).supportCategories.singleWhere((facet) => facet.number == number);
 
 class _Harness extends StatefulWidget {
   const _Harness({
@@ -125,10 +126,10 @@ void main() {
   });
 
   NdisCatalogueFilterPrefs isolatedFilterPrefs() => NdisCatalogueFilterPrefs(
-        read: (key) => filterBox[key],
-        write: (key, value) => filterBox[key] = value,
-        remove: (key) => filterBox.remove(key),
-      );
+    read: (key) => filterBox[key],
+    write: (key, value) => filterBox[key] = value,
+    remove: (key) => filterBox.remove(key),
+  );
 
   Widget isolatedHarness({
     String? initialCode,
@@ -182,7 +183,9 @@ void main() {
     expect(find.byType(TextField), findsOneWidget);
   });
 
-  testWidgets('debounced search selects code and canonical name', (tester) async {
+  testWidgets('debounced search selects code and canonical name', (
+    tester,
+  ) async {
     when(
       () => repository.fetchAllActiveItems(),
     ).thenAnswer((_) async => const [_item]);
@@ -215,7 +218,10 @@ void main() {
     expect(find.byTooltip('Clear support item'), findsOneWidget);
     verify(() => repository.fetchAllActiveItems()).called(1);
     verifyNever(
-      () => repository.searchItems(q: any(named: 'q'), limit: any(named: 'limit')),
+      () => repository.searchItems(
+        q: any(named: 'q'),
+        limit: any(named: 'limit'),
+      ),
     );
   });
 
@@ -258,7 +264,10 @@ void main() {
     expect(pickedName, _item.supportItemName);
     expect(find.byTooltip('Clear support item'), findsOneWidget);
     verifyNever(
-      () => repository.searchItems(q: any(named: 'q'), limit: any(named: 'limit')),
+      () => repository.searchItems(
+        q: any(named: 'q'),
+        limit: any(named: 'limit'),
+      ),
     );
   });
 
@@ -283,15 +292,17 @@ void main() {
     expect(clearedCode, isNull);
     expect(clearedName, isNull);
     verifyNever(
-      () => repository.searchItems(q: any(named: 'q'), limit: any(named: 'limit')),
+      () => repository.searchItems(
+        q: any(named: 'q'),
+        limit: any(named: 'limit'),
+      ),
     );
   });
 
-  testWidgets('shows format error for invalid typed code on blur', (tester) async {
-    await tester.pumpWidget(
-      isolatedHarness(
-      ),
-    );
+  testWidgets('shows format error for invalid typed code on blur', (
+    tester,
+  ) async {
+    await tester.pumpWidget(isolatedHarness());
 
     // Digits/underscores only but not a full NDIS item number.
     await tester.enterText(find.byType(TextField), '01_011');
@@ -303,11 +314,10 @@ void main() {
     expect(find.text('Invalid NDIS item number format.'), findsOneWidget);
   });
 
-  testWidgets('shows pick-row hint for name-like typed text on blur', (tester) async {
-    await tester.pumpWidget(
-      isolatedHarness(
-      ),
-    );
+  testWidgets('shows pick-row hint for name-like typed text on blur', (
+    tester,
+  ) async {
+    await tester.pumpWidget(isolatedHarness());
 
     await tester.enterText(
       find.byType(TextField),
@@ -345,9 +355,7 @@ void main() {
 
       await tester.tap(find.byKey(ndisCategoryKey));
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.textContaining('Assistance with Daily Life').last,
-      );
+      await tester.tap(find.textContaining('Assistance with Daily Life').last);
       await tester.pump();
 
       expect(fetches, 1);
@@ -384,49 +392,44 @@ void main() {
     },
   );
 
-  testWidgets(
-    'registration group options cascade from selected category',
-    (tester) async {
-      when(
-        () => repository.fetchAllActiveItems(),
-      ).thenAnswer((_) async => _liveCatalogue);
+  testWidgets('registration group options cascade from selected category', (
+    tester,
+  ) async {
+    when(
+      () => repository.fetchAllActiveItems(),
+    ).thenAnswer((_) async => _liveCatalogue);
 
-      await tester.pumpWidget(isolatedHarness());
-      await tester.pump();
-      await tester.pump();
+    await tester.pumpWidget(isolatedHarness());
+    await tester.pump();
+    await tester.pump();
 
-      await tester.tap(find.byKey(ndisCategoryKey));
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.textContaining('Assistance with Daily Life').last,
-      );
-      await tester.pump();
+    await tester.tap(find.byKey(ndisCategoryKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Assistance with Daily Life').last);
+    await tester.pump();
 
-      await tester.tap(find.byKey(ndisRegistrationGroupKey));
-      await tester.pumpAndSettle();
+    await tester.tap(find.byKey(ndisRegistrationGroupKey));
+    await tester.pumpAndSettle();
 
-      expect(find.textContaining('0107'), findsWidgets);
-      expect(find.textContaining('0120'), findsWidgets);
-      expect(find.textContaining('0125'), findsNothing);
+    expect(find.textContaining('0107'), findsWidgets);
+    expect(find.textContaining('0120'), findsWidgets);
+    expect(find.textContaining('0125'), findsNothing);
 
-      await tester.tap(find.textContaining('0107').last);
-      await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('0107').last);
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(ndisCategoryKey));
-      await tester.pumpAndSettle();
-      await tester.tap(
-        find.textContaining('Community Participation').last,
-      );
-      await tester.pump();
+    await tester.tap(find.byKey(ndisCategoryKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Community Participation').last);
+    await tester.pump();
 
-      expect(find.textContaining('0107'), findsNothing);
-      await tester.tap(find.byKey(ndisRegistrationGroupKey));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('0125'), findsWidgets);
-      expect(find.textContaining('0107'), findsNothing);
-      expect(find.textContaining('0120'), findsNothing);
-    },
-  );
+    expect(find.textContaining('0107'), findsNothing);
+    await tester.tap(find.byKey(ndisRegistrationGroupKey));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('0125'), findsWidgets);
+    expect(find.textContaining('0107'), findsNothing);
+    expect(find.textContaining('0120'), findsNothing);
+  });
 
   testWidgets('shows Filtered locally (N of M) helper', (tester) async {
     when(
@@ -441,9 +444,7 @@ void main() {
 
     await tester.tap(find.byKey(ndisCategoryKey));
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.textContaining('Assistance with Daily Life').last,
-    );
+    await tester.tap(find.textContaining('Assistance with Daily Life').last);
     await tester.pump();
 
     expect(find.text('Filtered locally (2 of 3)'), findsOneWidget);
@@ -475,40 +476,39 @@ void main() {
     expect(find.textContaining('may be incomplete'), findsOneWidget);
   });
 
-  testWidgets(
-    'catalogue fetch failure shows muted error; field still usable',
-    (tester) async {
-      const failure = AppFailure(
-        code: 'network_error',
-        message: 'Could not reach the API.',
-        presentation: AppFailurePresentation.inline,
-      );
-      when(
-        () => repository.fetchAllActiveItems(),
-      ).thenAnswer((_) async => throw failure);
+  testWidgets('catalogue fetch failure shows muted error; field still usable', (
+    tester,
+  ) async {
+    const failure = AppFailure(
+      code: 'network_error',
+      message: 'Could not reach the API.',
+      presentation: AppFailurePresentation.inline,
+    );
+    when(
+      () => repository.fetchAllActiveItems(),
+    ).thenAnswer((_) async => throw failure);
 
-      await tester.pumpWidget(isolatedHarness());
-      await tester.pump();
-      await tester.pump();
+    await tester.pumpWidget(isolatedHarness());
+    await tester.pump();
+    await tester.pump();
 
-      expect(tester.takeException(), isNull);
-      expect(find.text('Could not reach the API.'), findsOneWidget);
-      expect(
-        tester.widget<Text>(find.text('Could not reach the API.')).style?.color,
-        AppColors.textMuted,
-      );
-      expect(find.byType(TextField), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    expect(find.text('Could not reach the API.'), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.text('Could not reach the API.')).style?.color,
+      AppColors.textMuted,
+    );
+    expect(find.byType(TextField), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField), '01_011');
-      await tester.pump();
+    await tester.enterText(find.byType(TextField), '01_011');
+    await tester.pump();
 
-      expect(find.byType(TextField), findsOneWidget);
-      verifyNever(
-        () => repository.searchItems(
-          q: any(named: 'q'),
-          limit: any(named: 'limit'),
-        ),
-      );
-    },
-  );
+    expect(find.byType(TextField), findsOneWidget);
+    verifyNever(
+      () => repository.searchItems(
+        q: any(named: 'q'),
+        limit: any(named: 'limit'),
+      ),
+    );
+  });
 }

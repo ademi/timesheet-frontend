@@ -29,11 +29,12 @@ class GatewayView extends GetView<GatewayController> {
                         'assets/images/logo.png',
                         height: 56,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.schedule_rounded,
-                          size: 56,
-                          color: AppColors.primary,
-                        ),
+                        errorBuilder:
+                            (_, __, ___) => const Icon(
+                              Icons.schedule_rounded,
+                              size: 56,
+                              color: AppColors.primary,
+                            ),
                       ),
                       const SizedBox(height: 28),
                       const Text(
@@ -113,26 +114,27 @@ class GatewayView extends GetView<GatewayController> {
             ),
           ),
           Obx(
-            () => controller.isRestoringSession.value
-                ? const ColoredBox(
-                    color: Color(0x33000000),
-                    child: Center(
-                      child: Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CircularProgressIndicator(),
-                              SizedBox(height: 16),
-                              Text('Restoring your session…'),
-                            ],
+            () =>
+                controller.isRestoringSession.value
+                    ? const ColoredBox(
+                      color: Color(0x33000000),
+                      child: Center(
+                        child: Card(
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(height: 16),
+                                Text('Restoring your session…'),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  )
-                : const SizedBox.shrink(),
+                    )
+                    : const SizedBox.shrink(),
           ),
         ],
       ),

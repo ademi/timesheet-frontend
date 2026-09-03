@@ -35,10 +35,12 @@ class ProfilePhotoEditor extends StatefulWidget {
 
   final List<int>? localBytes;
   final String? networkUrl;
+
   /// Document id for web content-proxy fallback (avoids GCS CORS).
   final String? documentId;
   final bool isLoading;
   final bool enabled;
+
   /// When true, shows avatar only (no camera / change controls).
   final bool readOnly;
   final double size;
@@ -260,9 +262,9 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
         if (widget.showLabel && !widget.readOnly) ...[
           Text(
             widget.label,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
         ],
@@ -272,21 +274,23 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: !widget.readOnly && widget.enabled && !showLoading
-                    ? () => _pick(context)
-                    : null,
+                onTap:
+                    !widget.readOnly && widget.enabled && !showLoading
+                        ? () => _pick(context)
+                        : null,
                 customBorder: const CircleBorder(),
                 child: CircleAvatar(
                   radius: radius,
                   backgroundColor: AppColors.primaryLight,
                   backgroundImage: provider,
-                  child: provider == null
-                      ? Icon(
-                          Icons.person,
-                          size: widget.size * 0.45,
-                          color: AppColors.textMuted,
-                        )
-                      : null,
+                  child:
+                      provider == null
+                          ? Icon(
+                            Icons.person,
+                            size: widget.size * 0.45,
+                            color: AppColors.textMuted,
+                          )
+                          : null,
                 ),
               ),
             ),
@@ -327,15 +331,16 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
             children: [
               TextButton.icon(
                 onPressed:
-                    widget.enabled && !showLoading ? () => _pick(context) : null,
+                    widget.enabled && !showLoading
+                        ? () => _pick(context)
+                        : null,
                 icon: const Icon(Icons.photo_library_outlined, size: 18),
                 label: Text(_hasImage ? 'Change photo' : 'Add photo'),
               ),
               if (_hasImage && widget.onRemove != null)
                 TextButton.icon(
-                  onPressed: widget.enabled && !showLoading
-                      ? widget.onRemove
-                      : null,
+                  onPressed:
+                      widget.enabled && !showLoading ? widget.onRemove : null,
                   icon: const Icon(Icons.delete_outline, size: 18),
                   label: const Text('Remove'),
                 ),

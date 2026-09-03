@@ -82,11 +82,11 @@ class SupportPlanFundingConsentStore {
   final consentSignerNameCtrl = TextEditingController();
 
   ClientLegalUploadHelper get _legalHelper => ClientLegalUploadHelper(
-        repository: _repository,
-        pipeline: _pipeline,
-        pickPdfBytes: _resolvePickPdfBytes,
-        canUploadDocs: _canUploadDocs,
-      );
+    repository: _repository,
+    pipeline: _pipeline,
+    pickPdfBytes: _resolvePickPdfBytes,
+    canUploadDocs: _canUploadDocs,
+  );
 
   Future<({String name, List<int> bytes})?> _resolvePickPdfBytes() async {
     final override = _pickPdfBytes;
@@ -117,7 +117,10 @@ class SupportPlanFundingConsentStore {
 
     ndisFieldError.value = null;
     ndisCtrl.text = _stringFact(bundle, OnboardingKeys.ndis) ?? '';
-    planManagementType.value = _stringFact(bundle, OnboardingKeys.planManagementType);
+    planManagementType.value = _stringFact(
+      bundle,
+      OnboardingKeys.planManagementType,
+    );
     planManagerNameCtrl.text =
         _stringFact(bundle, OnboardingKeys.planManagerName) ?? '';
     planManagerCompanyCtrl.text =
@@ -146,8 +149,10 @@ class SupportPlanFundingConsentStore {
     replaceSupportSpecialists(
       SupportPlanSpecialistsCodec.resolveFromFacts(bundle.facts),
     );
-    preferredClaimingMethod.value =
-        _stringFact(bundle, OnboardingKeys.preferredClaimingMethod);
+    preferredClaimingMethod.value = _stringFact(
+      bundle,
+      OnboardingKeys.preferredClaimingMethod,
+    );
     preferredClaimingOtherCtrl.text =
         _stringFact(bundle, OnboardingKeys.preferredClaimingOtherDetail) ?? '';
 
@@ -160,15 +165,17 @@ class SupportPlanFundingConsentStore {
     specificSupportsConsent.value =
         _boolFact(bundle, OnboardingKeys.specificSupportsConsent) ?? false;
 
-    final legalKeys = bundle.legalAcceptances.map((a) => a.requirementKey).toSet();
-    consentAgreementComplete.value =
-        legalKeys.contains(OnboardingKeys.consentAgreement);
+    final legalKeys =
+        bundle.legalAcceptances.map((a) => a.requirementKey).toSet();
+    consentAgreementComplete.value = legalKeys.contains(
+      OnboardingKeys.consentAgreement,
+    );
     serviceAgreementComplete.value =
         legalKeys.contains(OnboardingKeys.serviceAgreement) ||
-            _fact(bundle, OnboardingKeys.serviceAgreement)?.documentId != null;
+        _fact(bundle, OnboardingKeys.serviceAgreement)?.documentId != null;
     acknowledgementComplete.value =
         legalKeys.contains(OnboardingKeys.acknowledgement) ||
-            _fact(bundle, OnboardingKeys.acknowledgement)?.documentId != null;
+        _fact(bundle, OnboardingKeys.acknowledgement)?.documentId != null;
 
     hasHydrated = true;
   }
@@ -235,10 +242,7 @@ class SupportPlanFundingConsentStore {
           future: _repository.upsertProfileFact(
             clientId,
             key,
-            ProfileFactUpsert(
-              clearValue: true,
-              expectedUpdatedAt: expected,
-            ),
+            ProfileFactUpsert(clearValue: true, expectedUpdatedAt: expected),
           ),
         ));
         return;
@@ -249,10 +253,7 @@ class SupportPlanFundingConsentStore {
         future: _repository.upsertProfileFact(
           clientId,
           key,
-          ProfileFactUpsert(
-            valueJson: value,
-            expectedUpdatedAt: expected,
-          ),
+          ProfileFactUpsert(valueJson: value, expectedUpdatedAt: expected),
         ),
       ));
     }
@@ -262,11 +263,7 @@ class SupportPlanFundingConsentStore {
       putValue(OnboardingKeys.planManagementType, 'Plan management', planType);
     }
 
-    putValue(
-      OnboardingKeys.ndis,
-      'NDIS number',
-      ndisCtrl.text.trim(),
-    );
+    putValue(OnboardingKeys.ndis, 'NDIS number', ndisCtrl.text.trim());
     putValue(
       OnboardingKeys.supportPlanOther,
       'Other',
@@ -363,8 +360,9 @@ class SupportPlanFundingConsentStore {
         legacyKeys: NdisPlanBudgetsCodec.legacyFactKeys,
       );
     }
-    final specialistJson =
-        SupportPlanSpecialistsCodec.toFactValue(supportSpecialists);
+    final specialistJson = SupportPlanSpecialistsCodec.toFactValue(
+      supportSpecialists,
+    );
     if (specialistJson.isEmpty) {
       if (_presentKeys.contains(OnboardingKeys.supportPlanSpecialists)) {
         jobs.add((
@@ -436,8 +434,7 @@ class SupportPlanFundingConsentStore {
           await j.future;
           return null;
         } on AppFailure catch (e) {
-          if (e.code == 'ndis_number_in_use' &&
-              j.key == OnboardingKeys.ndis) {
+          if (e.code == 'ndis_number_in_use' && j.key == OnboardingKeys.ndis) {
             ndisFieldError.value = e.message;
           }
           if (e.code == 'profile_fact_conflict' || e.statusCode == 409) {

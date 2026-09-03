@@ -31,8 +31,8 @@ Future<AuthTokenModel> executeRefreshRequest(
 
 class AuthRemoteDataSource {
   AuthRemoteDataSource({required Dio plainDio, required Dio authenticatedDio})
-      : _plainDio = plainDio,
-        _authenticatedDio = authenticatedDio;
+    : _plainDio = plainDio,
+      _authenticatedDio = authenticatedDio;
 
   final Dio _plainDio;
   final Dio _authenticatedDio;

@@ -61,9 +61,8 @@ class OptionalAuStateDropdown extends StatelessWidget {
     final items = australianStateItems(current.isEmpty ? null : current);
 
     return DropdownButtonFormField<String?>(
-      value: current.isEmpty
-          ? null
-          : (items.contains(current) ? current : null),
+      value:
+          current.isEmpty ? null : (items.contains(current) ? current : null),
       decoration: decoration ?? _decoration(label, profileStyle: profileStyle),
       hint: const Text('Select state'),
       items: [

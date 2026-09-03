@@ -97,9 +97,7 @@ void main() {
       () => jobs.ensureHorizon(any()),
     ).thenAnswer((_) async => HorizonOut.empty);
     when(() => jobs.listJobs()).thenAnswer((_) async => []);
-    when(
-      () => engagements.listTenantEngagements(),
-    ).thenAnswer((_) async => []);
+    when(() => engagements.listTenantEngagements()).thenAnswer((_) async => []);
   });
 
   tearDown(Get.reset);
@@ -179,9 +177,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     putController();
-    await tester.pumpWidget(
-      const GetMaterialApp(home: StaffVisitsBoardView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: StaffVisitsBoardView()));
     await tester.pump();
     await tester.pump();
 

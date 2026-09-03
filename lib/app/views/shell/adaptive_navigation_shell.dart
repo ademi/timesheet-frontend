@@ -78,7 +78,10 @@ class _NarrowNavigationShell extends StatelessWidget {
         destinations: [
           for (final destination in destinations)
             NavigationDestination(
-              icon: Icon(destination.icon, size: destinations.length > 5 ? 22 : 24),
+              icon: Icon(
+                destination.icon,
+                size: destinations.length > 5 ? 22 : 24,
+              ),
               label: destination.label,
             ),
         ],

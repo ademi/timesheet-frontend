@@ -57,19 +57,21 @@ void main() {
         dayCount: 5,
         shifts: const [],
         people: const [RosterPerson(contractorId: 'jane', displayName: 'Jane')],
-        overlay: RosterOverlayOut(contractors: [
-          ContractorRosterOverlay(
-            contractorId: 'jane',
-            displayName: 'Jane',
-            leave: [
-              LeaveIntervalOut(
-                startDate: DateTime(2026, 8, 13),
-                endDate: DateTime(2026, 8, 13),
-                leaveType: 'sick',
-              ),
-            ],
-          ),
-        ]),
+        overlay: RosterOverlayOut(
+          contractors: [
+            ContractorRosterOverlay(
+              contractorId: 'jane',
+              displayName: 'Jane',
+              leave: [
+                LeaveIntervalOut(
+                  startDate: DateTime(2026, 8, 13),
+                  endDate: DateTime(2026, 8, 13),
+                  leaveType: 'sick',
+                ),
+              ],
+            ),
+          ],
+        ),
       );
       final jane = grid.rows.firstWhere((r) => r.id == 'jane');
       expect(jane.cells[3].onLeave, isTrue); // Thu 13
@@ -121,54 +123,56 @@ void main() {
       expect(unfilled.cells[0].tiles.single.shiftId, 's-a');
     });
 
-    test('includes draft/cancelled shifts passed in and sorts people by name',
-        () {
-      final monday = DateTime(2026, 8, 10, 9);
-      final draft = ShiftOut(
-        id: 'draft',
-        tenantId: 't',
-        jobId: 'j',
-        jobTitle: 'Draft',
-        clientId: 'cl',
-        clientName: 'Unpublished',
-        scheduledStart: monday,
-        scheduledEnd: monday.add(const Duration(hours: 1)),
-        requiredSlots: 1,
-        openSlots: 1,
-        status: 'draft',
-        createdAt: monday,
-        updatedAt: monday,
-      );
-      final cancelled = ShiftOut(
-        id: 'cancelled',
-        tenantId: 't',
-        jobId: 'j',
-        jobTitle: 'Cancelled',
-        clientId: 'cl',
-        clientName: 'Cancelled Client',
-        scheduledStart: monday.add(const Duration(days: 1)),
-        scheduledEnd: monday.add(const Duration(days: 1, hours: 1)),
-        requiredSlots: 1,
-        openSlots: 1,
-        status: 'cancelled',
-        createdAt: monday,
-        updatedAt: monday,
-      );
-      final grid = buildRosterGrid(
-        rangeStart: DateTime(2026, 8, 10),
-        dayCount: 3,
-        shifts: [draft, cancelled],
-        people: const [
-          RosterPerson(contractorId: 'zoe', displayName: 'Zoe'),
-          RosterPerson(contractorId: 'ali', displayName: 'Ali'),
-        ],
-        overlay: const RosterOverlayOut(contractors: []),
-      );
-      expect(grid.rows.first.id, 'unfilled');
-      expect(grid.rows.first.cells[0].tiles.single.shiftId, 'draft');
-      expect(grid.rows.first.cells[1].tiles.single.shiftId, 'cancelled');
-      expect(grid.rows.skip(1).map((r) => r.id).toList(), ['ali', 'zoe']);
-    });
+    test(
+      'includes draft/cancelled shifts passed in and sorts people by name',
+      () {
+        final monday = DateTime(2026, 8, 10, 9);
+        final draft = ShiftOut(
+          id: 'draft',
+          tenantId: 't',
+          jobId: 'j',
+          jobTitle: 'Draft',
+          clientId: 'cl',
+          clientName: 'Unpublished',
+          scheduledStart: monday,
+          scheduledEnd: monday.add(const Duration(hours: 1)),
+          requiredSlots: 1,
+          openSlots: 1,
+          status: 'draft',
+          createdAt: monday,
+          updatedAt: monday,
+        );
+        final cancelled = ShiftOut(
+          id: 'cancelled',
+          tenantId: 't',
+          jobId: 'j',
+          jobTitle: 'Cancelled',
+          clientId: 'cl',
+          clientName: 'Cancelled Client',
+          scheduledStart: monday.add(const Duration(days: 1)),
+          scheduledEnd: monday.add(const Duration(days: 1, hours: 1)),
+          requiredSlots: 1,
+          openSlots: 1,
+          status: 'cancelled',
+          createdAt: monday,
+          updatedAt: monday,
+        );
+        final grid = buildRosterGrid(
+          rangeStart: DateTime(2026, 8, 10),
+          dayCount: 3,
+          shifts: [draft, cancelled],
+          people: const [
+            RosterPerson(contractorId: 'zoe', displayName: 'Zoe'),
+            RosterPerson(contractorId: 'ali', displayName: 'Ali'),
+          ],
+          overlay: const RosterOverlayOut(contractors: []),
+        );
+        expect(grid.rows.first.id, 'unfilled');
+        expect(grid.rows.first.cells[0].tiles.single.shiftId, 'draft');
+        expect(grid.rows.first.cells[1].tiles.single.shiftId, 'cancelled');
+        expect(grid.rows.skip(1).map((r) => r.id).toList(), ['ali', 'zoe']);
+      },
+    );
 
     test('sets availability hint from overlay day-of-week', () {
       final grid = buildRosterGrid(
@@ -176,70 +180,69 @@ void main() {
         dayCount: 5,
         shifts: const [],
         people: const [RosterPerson(contractorId: 'jane', displayName: 'Jane')],
-        overlay: RosterOverlayOut(contractors: [
-          ContractorRosterOverlay(
-            contractorId: 'jane',
-            displayName: 'Jane',
-            availability: const [
-              AvailabilityRuleOut(
-                dayOfWeek: 0,
-                startTime: '09:00:00',
-                endTime: '17:00:00',
-              ),
-            ],
-          ),
-        ]),
+        overlay: RosterOverlayOut(
+          contractors: [
+            ContractorRosterOverlay(
+              contractorId: 'jane',
+              displayName: 'Jane',
+              availability: const [
+                AvailabilityRuleOut(
+                  dayOfWeek: 0,
+                  startTime: '09:00:00',
+                  endTime: '17:00:00',
+                ),
+              ],
+            ),
+          ],
+        ),
       );
       final jane = grid.rows.firstWhere((r) => r.id == 'jane');
       expect(jane.cells[0].availabilityHint, '09:00–17:00');
       expect(jane.cells[1].availabilityHint, isNull);
     });
 
-    test(
-      'UTC Sunday evening shift buckets to Monday local column',
-      () {
-        // Mon 09:00 AEST = Sun 23:00Z. API payloads are UTC; week chrome is local.
-        final utcSundayEvening = DateTime.utc(2026, 8, 9, 23);
-        final localMonday = DateTime(2026, 8, 10);
-        expect(
-          DateTime(
-            utcSundayEvening.toLocal().year,
-            utcSundayEvening.toLocal().month,
-            utcSundayEvening.toLocal().day,
-          ),
-          localMonday,
-          reason: 'device TZ must place Sun 23:00Z on local Monday',
-        );
+    test('UTC Sunday evening shift buckets to Monday local column', () {
+      // Mon 09:00 AEST = Sun 23:00Z. API payloads are UTC; week chrome is local.
+      final utcSundayEvening = DateTime.utc(2026, 8, 9, 23);
+      final localMonday = DateTime(2026, 8, 10);
+      expect(
+        DateTime(
+          utcSundayEvening.toLocal().year,
+          utcSundayEvening.toLocal().month,
+          utcSundayEvening.toLocal().day,
+        ),
+        localMonday,
+        reason: 'device TZ must place Sun 23:00Z on local Monday',
+      );
 
-        final shift = ShiftOut(
-          id: 's-utc',
-          tenantId: 't',
-          jobId: 'j',
-          jobTitle: 'Morning',
-          clientId: 'cl',
-          clientName: 'Sam',
-          scheduledStart: utcSundayEvening,
-          scheduledEnd: utcSundayEvening.add(const Duration(hours: 3)),
-          requiredSlots: 1,
-          openSlots: 1,
-          status: 'published',
-          createdAt: utcSundayEvening,
-          updatedAt: utcSundayEvening,
-        );
-        final grid = buildRosterGrid(
-          rangeStart: localMonday,
-          dayCount: 5,
-          shifts: [shift],
-          people: const [],
-          overlay: const RosterOverlayOut(contractors: []),
-        );
-        final unfilled = grid.rows.first;
-        expect(unfilled.cells[0].tiles, hasLength(1));
-        expect(unfilled.cells[0].tiles.single.shiftId, 's-utc');
-        for (var i = 1; i < 5; i++) {
-          expect(unfilled.cells[i].tiles, isEmpty);
-        }
-      },
-    );
+      final shift = ShiftOut(
+        id: 's-utc',
+        tenantId: 't',
+        jobId: 'j',
+        jobTitle: 'Morning',
+        clientId: 'cl',
+        clientName: 'Sam',
+        scheduledStart: utcSundayEvening,
+        scheduledEnd: utcSundayEvening.add(const Duration(hours: 3)),
+        requiredSlots: 1,
+        openSlots: 1,
+        status: 'published',
+        createdAt: utcSundayEvening,
+        updatedAt: utcSundayEvening,
+      );
+      final grid = buildRosterGrid(
+        rangeStart: localMonday,
+        dayCount: 5,
+        shifts: [shift],
+        people: const [],
+        overlay: const RosterOverlayOut(contractors: []),
+      );
+      final unfilled = grid.rows.first;
+      expect(unfilled.cells[0].tiles, hasLength(1));
+      expect(unfilled.cells[0].tiles.single.shiftId, 's-utc');
+      for (var i = 1; i < 5; i++) {
+        expect(unfilled.cells[i].tiles, isEmpty);
+      }
+    });
   });
 }

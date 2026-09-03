@@ -24,10 +24,7 @@ void main() {
       );
       final json = entry.toJson();
       expect(json['label'], 'Transport top-up');
-      expect(
-        NdisPlanBudgetEntry.fromJson(json).label,
-        'Transport top-up',
-      );
+      expect(NdisPlanBudgetEntry.fromJson(json).label, 'Transport top-up');
     });
   });
 
@@ -42,10 +39,7 @@ void main() {
           requirementKey: OnboardingKeys.ndisPlanBudgets,
           valueJson: {
             'budgets': [
-              {
-                'type': NdisBudgetType.core,
-                'amount_dollars': 200,
-              },
+              {'type': NdisBudgetType.core, 'amount_dollars': 200},
             ],
           },
         ),
@@ -81,10 +75,7 @@ void main() {
     });
 
     test('validateDollarText rejects abc', () {
-      expect(
-        NdisPlanBudgetsCodec.validateDollarText('abc'),
-        isNotNull,
-      );
+      expect(NdisPlanBudgetsCodec.validateDollarText('abc'), isNotNull);
     });
 
     test('validateDollarText rejects negative amounts', () {

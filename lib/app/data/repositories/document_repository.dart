@@ -5,8 +5,8 @@ class DocumentRepository {
   DocumentRepository({
     required DocumentRemoteDataSource remote,
     required TokenStorage tokenStorage,
-  })  : _remote = remote,
-        _tokenStorage = tokenStorage;
+  }) : _remote = remote,
+       _tokenStorage = tokenStorage;
 
   final DocumentRemoteDataSource _remote;
   // ignore: unused_field

@@ -90,25 +90,20 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
       if (!mounted) return;
       if (c.consumePendingCreateShift()) {
         _openUnifiedSupport(
-          clientId: c.clientIdFilter.value.trim().isEmpty
-              ? null
-              : c.clientIdFilter.value.trim(),
+          clientId:
+              c.clientIdFilter.value.trim().isEmpty
+                  ? null
+                  : c.clientIdFilter.value.trim(),
           mode: UnifiedSupportMode.oneSession,
         );
       }
     });
   }
 
-  void _openUnifiedSupport({
-    String? clientId,
-    UnifiedSupportMode? mode,
-  }) {
+  void _openUnifiedSupport({String? clientId, UnifiedSupportMode? mode}) {
     Get.toNamed(
       AppRoutes.staffUnifiedSupport,
-      arguments: UnifiedSupportArgs(
-        clientId: clientId,
-        initialMode: mode,
-      ),
+      arguments: UnifiedSupportArgs(clientId: clientId, initialMode: mode),
     );
   }
 
@@ -124,11 +119,13 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
       floatingActionButton:
           controller.canManage
               ? FloatingActionButton(
-                onPressed: () => _openUnifiedSupport(
-                  clientId: controller.clientIdFilter.value.trim().isEmpty
-                      ? null
-                      : controller.clientIdFilter.value.trim(),
-                ),
+                onPressed:
+                    () => _openUnifiedSupport(
+                      clientId:
+                          controller.clientIdFilter.value.trim().isEmpty
+                              ? null
+                              : controller.clientIdFilter.value.trim(),
+                    ),
                 child: const Icon(Icons.add),
               )
               : null,
@@ -324,9 +321,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                   tile.clientName.isEmpty ? 'Shift' : tile.clientName,
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: Text(
-                  '${_fmt(tile.start)} – ${_fmt(tile.end)}',
-                ),
+                subtitle: Text('${_fmt(tile.start)} – ${_fmt(tile.end)}'),
               ),
               const Divider(height: 1),
               ListTile(
@@ -501,8 +496,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
               ),
               actions: [
                 TextButton(
-                  onPressed:
-                      isSubmitting ? null : () => Navigator.pop(ctx),
+                  onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(

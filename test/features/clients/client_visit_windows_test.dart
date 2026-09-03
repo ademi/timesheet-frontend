@@ -50,10 +50,12 @@ void main() {
       status: 'cancelled',
     );
 
-    final parts = partitionClientVisits(
-      [upcoming, checkedIn, past, cancelled],
-      now: now,
-    );
+    final parts = partitionClientVisits([
+      upcoming,
+      checkedIn,
+      past,
+      cancelled,
+    ], now: now);
     expect(parts.upcoming.map((e) => e.id), ['ci', 'u']); // start asc
     expect(parts.past.map((e) => e.id), ['p']); // start desc preferred
     expect(parts.past.every((e) => e.id != 'x'), isTrue);

@@ -1173,7 +1173,9 @@ class ClientsController extends GetxController
     for (final draft in requirementDrafts) {
       if (isOverviewOwnedRequirement(draft.requirement.requirementKey) ||
           isCarePlanOwnedFundingRequirement(draft.requirement.requirementKey) ||
-          isCarePlanOwnedClinicalRequirement(draft.requirement.requirementKey)) {
+          isCarePlanOwnedClinicalRequirement(
+            draft.requirement.requirementKey,
+          )) {
         continue;
       }
       if (!draft.hasAnyContent) continue;

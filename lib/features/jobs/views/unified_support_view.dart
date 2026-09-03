@@ -89,31 +89,33 @@ class UnifiedSupportView extends GetView<UnifiedSupportController> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: PageContent(
                   width: PageContentWidth.narrow,
-                  child: controller.step.value ==
-                          UnifiedSupportController.maxStep
-                      ? _AssignStepActions(controller: controller)
-                      : Row(
-                          children: [
-                            if (controller.step.value > 0)
-                              OutlinedButton(
-                                onPressed: controller.isSaving.value
-                                    ? null
-                                    : controller.previousStep,
-                                child: const Text('Back'),
+                  child:
+                      controller.step.value == UnifiedSupportController.maxStep
+                          ? _AssignStepActions(controller: controller)
+                          : Row(
+                            children: [
+                              if (controller.step.value > 0)
+                                OutlinedButton(
+                                  onPressed:
+                                      controller.isSaving.value
+                                          ? null
+                                          : controller.previousStep,
+                                  child: const Text('Back'),
+                                ),
+                              const Spacer(),
+                              ElevatedButton(
+                                onPressed:
+                                    controller.isSaving.value
+                                        ? null
+                                        : controller.nextStep,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: AppColors.onPrimary,
+                                ),
+                                child: const Text('Next'),
                               ),
-                            const Spacer(),
-                            ElevatedButton(
-                              onPressed: controller.isSaving.value
-                                  ? null
-                                  : controller.nextStep,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.onPrimary,
-                              ),
-                              child: const Text('Next'),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
                 ),
               ),
             ),
@@ -133,53 +135,54 @@ class _AssignStepActions extends StatelessWidget {
     if (partial.isNotEmpty) {
       final proceed = await showDialog<bool>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Partial assignment'),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  controller.isOneSession
-                      ? 'Some selected workers already have a visit at this time. '
-                          'The shift may be created with open slots.'
-                      : 'Some selected workers already have visits on dates below. '
-                          'Those occurrences may be partially filled in the roster horizon.',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 12),
-                for (final worker in partial) ...[
-                  Text(
-                    worker.displayName,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  for (final date in worker.skipDates)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8, bottom: 2),
-                      child: Text('• ${formatPartialAssignDate(date)}'),
+        builder:
+            (dialogContext) => AlertDialog(
+              title: const Text('Partial assignment'),
+              content: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      controller.isOneSession
+                          ? 'Some selected workers already have a visit at this time. '
+                              'The shift may be created with open slots.'
+                          : 'Some selected workers already have visits on dates below. '
+                              'Those occurrences may be partially filled in the roster horizon.',
+                      style: const TextStyle(fontSize: 14),
                     ),
-                  const SizedBox(height: 8),
-                ],
-                const Text(
-                  'Continue anyway?',
-                  style: TextStyle(fontSize: 14),
+                    const SizedBox(height: 12),
+                    for (final worker in partial) ...[
+                      Text(
+                        worker.displayName,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      for (final date in worker.skipDates)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8, bottom: 2),
+                          child: Text('• ${formatPartialAssignDate(date)}'),
+                        ),
+                      const SizedBox(height: 8),
+                    ],
+                    const Text(
+                      'Continue anyway?',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Go back'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text('Continue'),
                 ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Go back'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Continue'),
-            ),
-          ],
-        ),
       );
       if (proceed != true) return;
     }
@@ -189,9 +192,8 @@ class _AssignStepActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final label = controller.isOneSession
-          ? 'Book session'
-          : 'Save and fill roster';
+      final label =
+          controller.isOneSession ? 'Book session' : 'Save and fill roster';
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -242,9 +244,7 @@ class _StepIndicator extends StatelessWidget {
                   labels[i],
                   style: TextStyle(
                     fontSize: 11,
-                    color: i <= step
-                        ? AppColors.textDark
-                        : AppColors.textMuted,
+                    color: i <= step ? AppColors.textDark : AppColors.textMuted,
                   ),
                 ),
               ],
@@ -278,10 +278,7 @@ class _ClientBanner extends StatelessWidget {
           children: [
             Text(
               client.fullName,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
             ),
             if (controller.clientNdisNumber != null) ...[
               const SizedBox(height: 2),
@@ -375,7 +372,9 @@ class _TypeStep extends StatelessWidget {
             ),
           if (controller.showNdisCapturePrompt) ...[
             const SizedBox(height: 12),
-            NdisCapturePrompt(onAddDetails: controller.openClientDetailsForNdis),
+            NdisCapturePrompt(
+              onAddDetails: controller.openClientDetailsForNdis,
+            ),
           ],
         ],
       );
@@ -401,9 +400,10 @@ class _ModeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected
-          ? AppColors.primary.withValues(alpha: 0.08)
-          : AppColors.surface,
+      color:
+          selected
+              ? AppColors.primary.withValues(alpha: 0.08)
+              : AppColors.surface,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -739,9 +739,10 @@ class _SlotsStepperState extends State<_SlotsStepper> {
         child: Row(
           children: [
             IconButton(
-              onPressed: widget.controller.requiredSlots.value > 1
-                  ? widget.controller.decrementSlots
-                  : null,
+              onPressed:
+                  widget.controller.requiredSlots.value > 1
+                      ? widget.controller.decrementSlots
+                      : null,
               icon: const Icon(Icons.remove_circle_outline),
             ),
             SizedBox(
@@ -764,9 +765,10 @@ class _SlotsStepperState extends State<_SlotsStepper> {
               ),
             ),
             IconButton(
-              onPressed: widget.controller.requiredSlots.value < kRequiredSlotsUiMax
-                  ? widget.controller.incrementSlots
-                  : null,
+              onPressed:
+                  widget.controller.requiredSlots.value < kRequiredSlotsUiMax
+                      ? widget.controller.incrementSlots
+                      : null,
               icon: const Icon(Icons.add_circle_outline),
             ),
           ],
@@ -797,13 +799,12 @@ class _DetailsStep extends StatelessWidget {
             const SizedBox(height: 12),
           ],
           if (controller.showNdisCapturePrompt) ...[
-            NdisCapturePrompt(onAddDetails: controller.openClientDetailsForNdis),
+            NdisCapturePrompt(
+              onAddDetails: controller.openClientDetailsForNdis,
+            ),
             const SizedBox(height: 16),
           ],
-          Text(
-            'NDIS support item',
-            style: Get.textTheme.titleSmall,
-          ),
+          Text('NDIS support item', style: Get.textTheme.titleSmall),
           const SizedBox(height: 4),
           const Text(
             'Optional default billing line for this support.',
@@ -836,9 +837,10 @@ class _DetailsStep extends StatelessWidget {
           const SizedBox(height: 20),
           VisitInstructionsField(
             controller: controller.instructionsCtrl,
-            helperText: controller.isOngoing
-                ? 'One task per line. Copied onto generated visits.'
-                : 'One task per line. Copied onto the booked visit.',
+            helperText:
+                controller.isOngoing
+                    ? 'One task per line. Copied onto generated visits.'
+                    : 'One task per line. Copied onto the booked visit.',
           ),
           const SizedBox(height: 20),
           const Text(
@@ -864,8 +866,7 @@ class _DetailsStep extends StatelessWidget {
                 for (final t in controller.formTemplates)
                   FilterChip(
                     label: Text(t.name),
-                    selected:
-                        controller.selectedFormTemplateIds.contains(t.id),
+                    selected: controller.selectedFormTemplateIds.contains(t.id),
                     onSelected: (_) => controller.toggleFormTemplate(t.id),
                   ),
               ],
@@ -921,9 +922,7 @@ class _WorkersStepState extends State<_WorkersStep> {
         for (final e in controller.assignableEngagements)
           if (seen.add(e.contractorId)) e,
       ];
-      final nameById = {
-        for (final e in workers) e.contractorId: e.displayName,
-      };
+      final nameById = {for (final e in workers) e.contractorId: e.displayName};
       final loading = controller.isAssignAvailabilityLoading.value;
       return Stack(
         children: [
@@ -975,8 +974,9 @@ class _WorkersStepState extends State<_WorkersStep> {
                       if (contractorId == null) return null;
                       final label = controller
                           .availabilityDisplayLabelForContractor(contractorId);
-                      final status = controller
-                          .availabilityStatusForContractor(contractorId);
+                      final status = controller.availabilityStatusForContractor(
+                        contractorId,
+                      );
                       return Text(
                         ' · $label',
                         style: TextStyle(
@@ -989,11 +989,8 @@ class _WorkersStepState extends State<_WorkersStep> {
                   if (slots.any((id) => id != null && id.isNotEmpty)) ...[
                     const SizedBox(height: 12),
                     Text(
-                      'Selected: ${[
-                        for (final id in slots)
-                          if (id != null && id.isNotEmpty)
-                            (nameById[id] ?? id),
-                      ].join(', ')}',
+                      'Selected: ${[for (final id in slots)
+                        if (id != null && id.isNotEmpty) (nameById[id] ?? id)].join(', ')}',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textMuted,
@@ -1041,9 +1038,7 @@ class _ConflictStrip extends StatelessWidget {
       controller.conflictVisits.length;
       controller.conflictShifts.length;
       controller.isConflictsLoading.value;
-      final labels = {
-        for (final c in controller.clientConflicts) c.chipLabel,
-      };
+      final labels = {for (final c in controller.clientConflicts) c.chipLabel};
       if (labels.isEmpty) return const SizedBox.shrink();
       return Padding(
         padding: const EdgeInsets.only(bottom: 12),
@@ -1103,19 +1098,18 @@ class _DateTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(label),
-        subtitle: Text(MaterialLocalizations.of(context).formatMediumDate(value)),
-        trailing: const Icon(Icons.calendar_today),
-        onTap: () async {
-          final picked = await showDatePicker(
-            context: context,
-            initialDate: value,
-            firstDate: DateTime(2020),
-            lastDate: DateTime(2100),
-          );
-          if (picked != null) onSelected(picked);
-        },
+    contentPadding: EdgeInsets.zero,
+    title: Text(label),
+    subtitle: Text(MaterialLocalizations.of(context).formatMediumDate(value)),
+    trailing: const Icon(Icons.calendar_today),
+    onTap: () async {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: value,
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2100),
       );
+      if (picked != null) onSelected(picked);
+    },
+  );
 }
-

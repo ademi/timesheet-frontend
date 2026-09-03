@@ -50,21 +50,16 @@ void main() {
     payroll = _MockPayrollRepository();
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
-    when(() => repository.getContractorProfilePhoto(any())).thenAnswer(
-      (_) async => const ProfilePhotoOut(hasPhoto: false),
-    );
+    when(
+      () => repository.getContractorProfilePhoto(any()),
+    ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
     when(() => payroll.listRates(any())).thenAnswer((_) async => []);
     controller = WorkforceController(
       repository: repository,
       credentialsRepository: credentials,
       session: session,
     );
-    Get.put(
-      EngagementRateBandsController(
-        payroll: payroll,
-        session: session,
-      ),
-    );
+    Get.put(EngagementRateBandsController(payroll: payroll, session: session));
     controller.selected = _engagement;
     Get.put(controller);
   });
@@ -73,14 +68,24 @@ void main() {
 
   testWidgets('shows subject tabs and Overview first', (tester) async {
     Get.routing.args = _engagement;
-    await tester.pumpWidget(
-      const GetMaterialApp(home: WorkforceDetailView()),
-    );
+    await tester.pumpWidget(const GetMaterialApp(home: WorkforceDetailView()));
 
-    expect(find.byKey(const ValueKey('contractor-detail-tab-0')), findsOneWidget);
-    expect(find.byKey(const ValueKey('contractor-detail-tab-1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('contractor-detail-tab-2')), findsOneWidget);
-    expect(find.byKey(const ValueKey('contractor-detail-tab-3')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('contractor-detail-tab-0')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('contractor-detail-tab-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('contractor-detail-tab-2')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('contractor-detail-tab-3')),
+      findsOneWidget,
+    );
     expect(find.text('Overview'), findsWidgets);
     expect(find.text('Lifecycle'), findsOneWidget);
     expect(find.text('No upcoming visits.'), findsNothing);

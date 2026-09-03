@@ -94,9 +94,8 @@ void main() {
 
   test('requestAccess posts sharing-access-request for engagement', () async {
     when(
-      () => engagements.createSharingAccessRequest(
-        engagementId: 'engagement-1',
-      ),
+      () =>
+          engagements.createSharingAccessRequest(engagementId: 'engagement-1'),
     ).thenAnswer((_) async {});
     when(
       () => credentials.listForTenantContractor(
@@ -126,9 +125,8 @@ void main() {
 
     expect(ok, isTrue);
     verify(
-      () => engagements.createSharingAccessRequest(
-        engagementId: 'engagement-1',
-      ),
+      () =>
+          engagements.createSharingAccessRequest(engagementId: 'engagement-1'),
     ).called(1);
     expect(
       snacks.single,
@@ -165,49 +163,52 @@ void main() {
     );
   });
 
-  test('load seeds reviewDecisionsByCredentialId from credential status', () async {
-    final accepted = CredentialOut(
-      id: 'cred-accepted',
-      contractorId: 'contractor-1',
-      credentialType: 'first_aid',
-      status: 'accepted',
-      provenanceState: 'reviewer_sighted',
-      evidencePresence: 'present',
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
-    final pending = CredentialOut(
-      id: 'cred-pending',
-      contractorId: 'contractor-1',
-      credentialType: 'insurance',
-      status: 'pending',
-      provenanceState: 'contractor_asserted',
-      evidencePresence: 'present',
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
-    when(
-      () => credentials.listForTenantContractor(
-        'contractor-1',
-        engagementId: 'engagement-1',
-      ),
-    ).thenAnswer((_) async => [accepted, pending]);
-    when(
-      () => pipeline.listEvidenceForContractor('contractor-1'),
-    ).thenAnswer((_) async => const []);
+  test(
+    'load seeds reviewDecisionsByCredentialId from credential status',
+    () async {
+      final accepted = CredentialOut(
+        id: 'cred-accepted',
+        contractorId: 'contractor-1',
+        credentialType: 'first_aid',
+        status: 'accepted',
+        provenanceState: 'reviewer_sighted',
+        evidencePresence: 'present',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+      final pending = CredentialOut(
+        id: 'cred-pending',
+        contractorId: 'contractor-1',
+        credentialType: 'insurance',
+        status: 'pending',
+        provenanceState: 'contractor_asserted',
+        evidencePresence: 'present',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+      when(
+        () => credentials.listForTenantContractor(
+          'contractor-1',
+          engagementId: 'engagement-1',
+        ),
+      ).thenAnswer((_) async => [accepted, pending]);
+      when(
+        () => pipeline.listEvidenceForContractor('contractor-1'),
+      ).thenAnswer((_) async => const []);
 
-    final controller = buildController();
-    await controller.load();
+      final controller = buildController();
+      await controller.load();
 
-    expect(
-      controller.reviewDecisionsByCredentialId['cred-accepted'],
-      'accepted',
-    );
-    expect(
-      controller.reviewDecisionsByCredentialId['cred-pending'],
-      'pending',
-    );
-  });
+      expect(
+        controller.reviewDecisionsByCredentialId['cred-accepted'],
+        'accepted',
+      );
+      expect(
+        controller.reviewDecisionsByCredentialId['cred-pending'],
+        'pending',
+      );
+    },
+  );
 
   test('prepareReview opens reason picker for reject decisions', () async {
     final controller = buildController();
@@ -224,48 +225,51 @@ void main() {
     expect(controller.selectedReasonCode.value, isNull);
   });
 
-  test('prepareReview submits accept immediately without reason picker', () async {
-    when(
-      () => credentials.createReview(
-        engagementId: 'engagement-1',
-        body: any(named: 'body'),
-      ),
-    ).thenAnswer(
-      (_) async => CredentialReviewOut(
-        id: 'review-1',
-        tenantId: 'tenant-1',
-        engagementId: 'engagement-1',
-        credentialId: sampleCredential().id,
-        requirementCategory: sampleCredential().credentialType,
+  test(
+    'prepareReview submits accept immediately without reason picker',
+    () async {
+      when(
+        () => credentials.createReview(
+          engagementId: 'engagement-1',
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer(
+        (_) async => CredentialReviewOut(
+          id: 'review-1',
+          tenantId: 'tenant-1',
+          engagementId: 'engagement-1',
+          credentialId: sampleCredential().id,
+          requirementCategory: sampleCredential().credentialType,
+          decision: 'accepted',
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        ),
+      );
+      when(
+        () => credentials.listForTenantContractor(
+          'contractor-1',
+          engagementId: 'engagement-1',
+        ),
+      ).thenAnswer((_) async => [sampleCredential()]);
+      when(
+        () => pipeline.listEvidenceForContractor('contractor-1'),
+      ).thenAnswer((_) async => const []);
+
+      final controller = buildController();
+      controller.prepareReview(
+        credential: sampleCredential(),
         decision: 'accepted',
-        createdAt: DateTime(2026),
-        updatedAt: DateTime(2026),
-      ),
-    );
-    when(
-      () => credentials.listForTenantContractor(
-        'contractor-1',
-        engagementId: 'engagement-1',
-      ),
-    ).thenAnswer((_) async => [sampleCredential()]);
-    when(
-      () => pipeline.listEvidenceForContractor('contractor-1'),
-    ).thenAnswer((_) async => const []);
+      );
+      await Future<void>.delayed(Duration.zero);
 
-    final controller = buildController();
-    controller.prepareReview(
-      credential: sampleCredential(),
-      decision: 'accepted',
-    );
-    await Future<void>.delayed(Duration.zero);
-
-    verify(
-      () => credentials.createReview(
-        engagementId: 'engagement-1',
-        body: any(named: 'body'),
-      ),
-    ).called(1);
-    expect(controller.reasonCredentialId.value, isNull);
-    expect(controller.pendingReasonDecision.value, isNull);
-  });
+      verify(
+        () => credentials.createReview(
+          engagementId: 'engagement-1',
+          body: any(named: 'body'),
+        ),
+      ).called(1);
+      expect(controller.reasonCredentialId.value, isNull);
+      expect(controller.pendingReasonDecision.value, isNull);
+    },
+  );
 }

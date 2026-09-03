@@ -15,30 +15,30 @@ abstract final class ComplianceOpsPages {
   ComplianceOpsPages._();
 
   static List<GetPage> get routes => [
-        GetPage(
-          name: AppRoutes.staffCompliance,
-          middlewares: [
-            AuthGuard(),
-            ActorGuard(),
-            PermissionGuard(
-              anyOf: [
-                AppPermissions.credentialsReview,
-                AppPermissions.complianceRightsManage,
-                AppPermissions.complianceIncidentsManage,
-                AppPermissions.complianceAuditView,
-              ],
-            ),
+    GetPage(
+      name: AppRoutes.staffCompliance,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [
+            AppPermissions.credentialsReview,
+            AppPermissions.complianceRightsManage,
+            AppPermissions.complianceIncidentsManage,
+            AppPermissions.complianceAuditView,
           ],
-          binding: StaffComplianceBinding(),
-          page: () => staffShellPage(const StaffComplianceView()),
-          transition: Transition.fadeIn,
         ),
-        GetPage(
-          name: AppRoutes.contractorProfile,
-          middlewares: [AuthGuard(), ActorGuard()],
-          binding: ContractorProfileOpsBinding(),
-          page: () => contractorShellPage(const ContractorProfileOpsView()),
-          transition: Transition.fadeIn,
-        ),
-      ];
+      ],
+      binding: StaffComplianceBinding(),
+      page: () => staffShellPage(const StaffComplianceView()),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.contractorProfile,
+      middlewares: [AuthGuard(), ActorGuard()],
+      binding: ContractorProfileOpsBinding(),
+      page: () => contractorShellPage(const ContractorProfileOpsView()),
+      transition: Transition.fadeIn,
+    ),
+  ];
 }

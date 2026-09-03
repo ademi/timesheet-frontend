@@ -10,12 +10,12 @@ abstract final class ContractorMePages {
   ContractorMePages._();
 
   static List<GetPage> get routes => [
-        GetPage(
-          name: AppRoutes.contractorCompleteAccount,
-          middlewares: [AuthGuard(), ActorGuard()],
-          binding: CompleteAccountBinding(),
-          page: () => const CompleteAccountView(),
-          transition: Transition.fadeIn,
-        ),
-      ];
+    GetPage(
+      name: AppRoutes.contractorCompleteAccount,
+      middlewares: [AuthGuard(), ActorGuard()],
+      binding: CompleteAccountBinding(),
+      page: () => const CompleteAccountView(),
+      transition: Transition.fadeIn,
+    ),
+  ];
 }

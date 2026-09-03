@@ -43,32 +43,31 @@ class ContractorRegisterRequest {
   final String privacyVersion;
 
   Map<String, dynamic> toJson() => {
-        if (fullName != null && fullName!.trim().isNotEmpty)
-          'full_name': fullName!.trim(),
-        'email': email,
-        'password': password,
-        if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
-        if (dob != null && dob!.isNotEmpty) 'dob': dob,
-        if (abn != null && abn!.isNotEmpty) 'abn': abn,
-        if (addressLine1 != null && addressLine1!.trim().isNotEmpty)
-          'address_line1': addressLine1!.trim(),
-        if (addressLine2 != null && addressLine2!.trim().isNotEmpty)
-          'address_line2': addressLine2!.trim(),
-        if (suburb != null && suburb!.trim().isNotEmpty) 'suburb': suburb!.trim(),
-        if (state != null && state!.trim().isNotEmpty) 'state': state!.trim(),
-        if (postcode != null && postcode!.trim().isNotEmpty)
-          'postcode': postcode!.trim(),
-        if (country != null && country!.trim().isNotEmpty)
-          'country': country!.trim(),
-        if (compliance != null && compliance!.isNotEmpty)
-          'compliance': compliance,
-        if (metadata != null && metadata!.isNotEmpty) 'metadata': metadata,
-        if (paymentDetails != null) 'payment_details': paymentDetails!.toJson(),
-        if (inviteToken != null && inviteToken!.trim().isNotEmpty)
-          'invite_token': inviteToken!.trim(),
-        'terms_version': termsVersion,
-        'privacy_version': privacyVersion,
-      };
+    if (fullName != null && fullName!.trim().isNotEmpty)
+      'full_name': fullName!.trim(),
+    'email': email,
+    'password': password,
+    if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
+    if (dob != null && dob!.isNotEmpty) 'dob': dob,
+    if (abn != null && abn!.isNotEmpty) 'abn': abn,
+    if (addressLine1 != null && addressLine1!.trim().isNotEmpty)
+      'address_line1': addressLine1!.trim(),
+    if (addressLine2 != null && addressLine2!.trim().isNotEmpty)
+      'address_line2': addressLine2!.trim(),
+    if (suburb != null && suburb!.trim().isNotEmpty) 'suburb': suburb!.trim(),
+    if (state != null && state!.trim().isNotEmpty) 'state': state!.trim(),
+    if (postcode != null && postcode!.trim().isNotEmpty)
+      'postcode': postcode!.trim(),
+    if (country != null && country!.trim().isNotEmpty)
+      'country': country!.trim(),
+    if (compliance != null && compliance!.isNotEmpty) 'compliance': compliance,
+    if (metadata != null && metadata!.isNotEmpty) 'metadata': metadata,
+    if (paymentDetails != null) 'payment_details': paymentDetails!.toJson(),
+    if (inviteToken != null && inviteToken!.trim().isNotEmpty)
+      'invite_token': inviteToken!.trim(),
+    'terms_version': termsVersion,
+    'privacy_version': privacyVersion,
+  };
 }
 
 class ContractorRegisterPaymentDetails {
@@ -83,10 +82,10 @@ class ContractorRegisterPaymentDetails {
   final String accountNumber;
 
   Map<String, dynamic> toJson() => {
-        'account_name': accountName,
-        'bsb': bsb,
-        'account_number': accountNumber,
-      };
+    'account_name': accountName,
+    'bsb': bsb,
+    'account_number': accountNumber,
+  };
 }
 
 /// `POST /v1/public/geocode`
@@ -104,11 +103,11 @@ class GeocodeRequest {
   final String? state;
 
   Map<String, dynamic> toJson() => {
-        'address_line1': addressLine1,
-        'city': city,
-        'country': country,
-        if (state != null && state!.isNotEmpty) 'state': state,
-      };
+    'address_line1': addressLine1,
+    'city': city,
+    'country': country,
+    if (state != null && state!.isNotEmpty) 'state': state,
+  };
 }
 
 class GeocodeResponse {

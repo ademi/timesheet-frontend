@@ -22,26 +22,27 @@ abstract final class BillingGate {
     if (error is! AppFailure || !error.isBillingGate) return;
     await showDialog(
       context: Get.context!,
-      builder: (context) => AlertDialog(
-        title: const Text('Subscription inactive'),
-        content: const Text(
-          'Your organisation subscription is inactive or expired. '
-          'Open billing to renew. Checkout is not available in the app.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Subscription inactive'),
+            content: const Text(
+              'Your organisation subscription is inactive or expired. '
+              'Open billing to renew. Checkout is not available in the app.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await openBillingUrl();
+                },
+                child: const Text('Open billing'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              await openBillingUrl();
-            },
-            child: const Text('Open billing'),
-          ),
-        ],
-      ),
     );
   }
 }

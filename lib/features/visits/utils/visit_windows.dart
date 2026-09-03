@@ -1,10 +1,7 @@
 import '../data/models/visit_models.dart';
 
 class ClientVisitPartition {
-  const ClientVisitPartition({
-    required this.upcoming,
-    required this.past,
-  });
+  const ClientVisitPartition({required this.upcoming, required this.past});
   final List<VisitOut> upcoming;
   final List<VisitOut> past;
 }

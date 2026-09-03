@@ -18,7 +18,10 @@ String _fakeJwt(Map<String, dynamic> payload) {
 }
 
 int _futureExp() =>
-    DateTime.now().toUtc().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+    DateTime.now()
+        .toUtc()
+        .add(const Duration(hours: 1))
+        .millisecondsSinceEpoch ~/
     1000;
 
 void main() {
@@ -112,8 +115,9 @@ void main() {
       );
 
       authenticatedDio.httpClientAdapter = _InterceptorTestAdapter(
-        onFetch: (_) async =>
-            ResponseBody.fromString('{"detail":"unauthorized"}', 401),
+        onFetch:
+            (_) async =>
+                ResponseBody.fromString('{"detail":"unauthorized"}', 401),
       );
       plainDio.httpClientAdapter = _InterceptorTestAdapter(
         onFetch: (_) async {
@@ -140,17 +144,19 @@ void main() {
       );
 
       authenticatedDio.httpClientAdapter = _InterceptorTestAdapter(
-        onFetch: (_) async =>
-            ResponseBody.fromString('{"detail":"unauthorized"}', 401),
+        onFetch:
+            (_) async =>
+                ResponseBody.fromString('{"detail":"unauthorized"}', 401),
       );
       plainDio.httpClientAdapter = _InterceptorTestAdapter(
-        onFetch: (_) async => ResponseBody.fromString(
-          '{"detail":"invalid"}',
-          401,
-          headers: {
-            Headers.contentTypeHeader: [Headers.jsonContentType],
-          },
-        ),
+        onFetch:
+            (_) async => ResponseBody.fromString(
+              '{"detail":"invalid"}',
+              401,
+              headers: {
+                Headers.contentTypeHeader: [Headers.jsonContentType],
+              },
+            ),
       );
 
       await expectLater(

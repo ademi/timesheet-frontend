@@ -23,15 +23,16 @@ class ClientsListView extends GetView<ClientsController> {
         title: const Text('Clients'),
         actions: shellAppBarActions(),
       ),
-      floatingActionButton: !controller.canManage
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: controller.openCreate,
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
-              icon: const Icon(Icons.add),
-              label: const Text('Add client'),
-            ),
+      floatingActionButton:
+          !controller.canManage
+              ? null
+              : FloatingActionButton.extended(
+                onPressed: controller.openCreate,
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                icon: const Icon(Icons.add),
+                label: const Text('Add client'),
+              ),
       body: Obx(() {
         final err = controller.errorMessage.value;
         final visible = controller.visibleItems;
@@ -56,8 +57,9 @@ class ClientsListView extends GetView<ClientsController> {
                       child: FilterChip(
                         label: const Text('Show incomplete'),
                         selected: controller.showIncompleteOnboarding.value,
-                        onSelected: (v) =>
-                            controller.showIncompleteOnboarding.value = v,
+                        onSelected:
+                            (v) =>
+                                controller.showIncompleteOnboarding.value = v,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -152,17 +154,16 @@ class _ClientCard extends StatelessWidget {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  client.status + (contact.isEmpty ? '' : ' · $contact'),
-                ),
+                Text(client.status + (contact.isEmpty ? '' : ' · $contact')),
                 if (address.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   InkWell(
-                    onTap: () => openMapLocation(
-                      latitude: site?.latitude,
-                      longitude: site?.longitude,
-                      label: address,
-                    ),
+                    onTap:
+                        () => openMapLocation(
+                          latitude: site?.latitude,
+                          longitude: site?.longitude,
+                          label: address,
+                        ),
                     onLongPress: () async {
                       await Clipboard.setData(ClipboardData(text: address));
                       AppToast.info('Copied', address);
@@ -190,12 +191,13 @@ class _ClientCard extends StatelessWidget {
             isThreeLine: address.isNotEmpty,
             trailing: const Icon(Icons.chevron_right),
             onTap: onOpen,
-            onLongPress: address.isEmpty
-                ? null
-                : () async {
-                    await Clipboard.setData(ClipboardData(text: address));
-                    AppToast.info('Copied', address);
-                  },
+            onLongPress:
+                address.isEmpty
+                    ? null
+                    : () async {
+                      await Clipboard.setData(ClipboardData(text: address));
+                      AppToast.info('Copied', address);
+                    },
           ),
           if (onContinueOnboarding != null)
             Padding(

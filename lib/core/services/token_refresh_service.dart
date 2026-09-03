@@ -21,11 +21,9 @@ enum TokenRefreshOutcome {
 
 /// Shared silent refresh used on app start, resume, gateway restore, and 401 retry.
 class TokenRefreshService {
-  TokenRefreshService({
-    required TokenStorage storage,
-    required Dio plainDio,
-  })  : _storage = storage,
-        _plainDio = plainDio;
+  TokenRefreshService({required TokenStorage storage, required Dio plainDio})
+    : _storage = storage,
+      _plainDio = plainDio;
 
   final TokenStorage _storage;
   final Dio _plainDio;

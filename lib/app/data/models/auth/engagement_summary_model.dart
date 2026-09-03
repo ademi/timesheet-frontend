@@ -22,9 +22,9 @@ class EngagementSummaryModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'tenant_id': tenantId,
-        'tenant_name': tenantName,
-        'status': status,
-      };
+    'id': id,
+    'tenant_id': tenantId,
+    'tenant_name': tenantName,
+    'status': status,
+  };
 }

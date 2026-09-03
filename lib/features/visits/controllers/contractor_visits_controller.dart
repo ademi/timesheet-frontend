@@ -18,10 +18,10 @@ class ContractorVisitsController extends GetxController {
     required ShiftsRepository shiftsRepository,
     required SessionService session,
     VisitLocationService location = const VisitLocationService(),
-  })  : _repository = repository,
-        _shiftsRepository = shiftsRepository,
-        _session = session,
-        _location = location;
+  }) : _repository = repository,
+       _shiftsRepository = shiftsRepository,
+       _session = session,
+       _location = location;
 
   final VisitsRepository _repository;
   final ShiftsRepository _shiftsRepository;
@@ -44,12 +44,9 @@ class ContractorVisitsController extends GetxController {
 
   bool get isWeb => _location.isWeb;
 
-  bool get canCheckIn =>
-      _session.hasPermission(AppPermissions.visitsCheckIn);
-  bool get canComplete =>
-      _session.hasPermission(AppPermissions.visitsComplete);
-  bool get canClaimShifts =>
-      _session.hasPermission(AppPermissions.shiftsClaim);
+  bool get canCheckIn => _session.hasPermission(AppPermissions.visitsCheckIn);
+  bool get canComplete => _session.hasPermission(AppPermissions.visitsComplete);
+  bool get canClaimShifts => _session.hasPermission(AppPermissions.shiftsClaim);
   bool get canRead =>
       _session.hasPermission(AppPermissions.visitsRead) ||
       canCheckIn ||
@@ -62,8 +59,7 @@ class ContractorVisitsController extends GetxController {
     if (submittedTemplateIds.contains(formTemplateId)) return true;
     final visit = selected.value;
     if (visit == null) return false;
-    return visit.formSubmissions
-        .any((s) => s.formTemplateId == formTemplateId);
+    return visit.formSubmissions.any((s) => s.formTemplateId == formTemplateId);
   }
 
   @override
@@ -308,11 +304,12 @@ class ContractorVisitsController extends GetxController {
     } on AppFailure catch (e) {
       if (e.code == 'forms_incomplete' ||
           e.code == 'required_forms_incomplete') {
-        errorMessage.value = effectiveFormRequirements.isEmpty
-            ? 'Required forms are incomplete. Submit the progress form '
-                'listed above (or ask staff to attach form requirements '
-                'to the visit), then Complete again.'
-            : e.message;
+        errorMessage.value =
+            effectiveFormRequirements.isEmpty
+                ? 'Required forms are incomplete. Submit the progress form '
+                    'listed above (or ask staff to attach form requirements '
+                    'to the visit), then Complete again.'
+                : e.message;
       } else {
         errorMessage.value = e.message;
       }

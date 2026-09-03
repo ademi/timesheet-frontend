@@ -97,8 +97,7 @@ class UnifiedSupportController extends GetxController
   final startTime = const TimeOfDay(hour: 9, minute: 0).obs;
   final endTime = const TimeOfDay(hour: 12, minute: 0).obs;
   final oneSessionStart = DateTime.now().add(const Duration(hours: 1)).obs;
-  final oneSessionEnd =
-      DateTime.now().add(const Duration(hours: 3)).obs;
+  final oneSessionEnd = DateTime.now().add(const Duration(hours: 3)).obs;
   final publishImmediately = true.obs;
 
   final selectedSiteId = RxnString();
@@ -169,15 +168,20 @@ class UnifiedSupportController extends GetxController
     );
   }
 
-  List<String> get carePlanTaskTitles =>
-      [for (final task in taskTemplate) task.title];
+  List<String> get carePlanTaskTitles => [
+    for (final task in taskTemplate) task.title,
+  ];
 
-  bool get supportItemPrefilledFromStanding => _supportItemPrefilledFromStanding;
+  bool get supportItemPrefilledFromStanding =>
+      _supportItemPrefilledFromStanding;
 
   List<EngagementOut> get assignableEngagements => sortedByName(
-        engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs || e.isAwaitingApproval),
-        (e) => e.displayName,
-      );
+    engagements.where(
+      (e) =>
+          e.isActive || e.isApproved || e.isPendingDocs || e.isAwaitingApproval,
+    ),
+    (e) => e.displayName,
+  );
 
   @override
   void onInit() {
@@ -361,7 +365,8 @@ class UnifiedSupportController extends GetxController
       DateTime day,
       DateTime startCivil,
       DateTime endCivil,
-    }) query,
+    })
+    query,
     String key, {
     required DateTime fetchFrom,
     required DateTime fetchTo,
@@ -398,10 +403,7 @@ class UnifiedSupportController extends GetxController
       }();
       final overlayFuture = () async {
         try {
-          return await _visits.fetchRosterOverlay(
-            from: fetchFrom,
-            to: fetchTo,
-          );
+          return await _visits.fetchRosterOverlay(from: fetchFrom, to: fetchTo);
         } catch (_) {
           overlayFailed = true;
           return null;
@@ -425,11 +427,9 @@ class UnifiedSupportController extends GetxController
 
       assignShifts.assignAll(shifts);
       assignVisits.assignAll(visits);
-      assignOverlay.value =
-          overlay ?? const RosterOverlayOut(contractors: []);
+      assignOverlay.value = overlay ?? const RosterOverlayOut(contractors: []);
       if (overlayFailed) {
-        assignOverlayWarning.value =
-            'Could not load leave and preferred hours';
+        assignOverlayWarning.value = 'Could not load leave and preferred hours';
       }
       _assignAvailabilityWindow = query;
       _assignAvailabilityKey = key;
@@ -493,7 +493,8 @@ class UnifiedSupportController extends GetxController
       DateTime day,
       DateTime startCivil,
       DateTime endCivil,
-    }) query,
+    })
+    query,
     String key,
     String clientId,
   ) async {
@@ -617,10 +618,11 @@ class UnifiedSupportController extends GetxController
     final seen = <String>{};
     for (final id in filledContractorIds) {
       if (seen.add(id) && availabilityStatusForContractor(id) == 'Busy') {
-        final name = assignableEngagements
-            .where((e) => e.contractorId == id)
-            .map((e) => e.displayName)
-            .firstOrNull;
+        final name =
+            assignableEngagements
+                .where((e) => e.contractorId == id)
+                .map((e) => e.displayName)
+                .firstOrNull;
         results.add((contractorId: id, displayName: name ?? id));
       }
     }
@@ -645,7 +647,7 @@ class UnifiedSupportController extends GetxController
 
   /// Dates in the fill horizon where a selected worker would be skipped (overlap).
   Future<List<partial_preview.PartialAssignWorkerPreview>>
-      buildPartialAssignPreview() async {
+  buildPartialAssignPreview() async {
     if (filledContractorIds.isEmpty || !assignAvailabilityLoaded) {
       return const [];
     }
@@ -775,10 +777,7 @@ class UnifiedSupportController extends GetxController
       _standingJobClientId = clientId;
       final code = job.supportItemCode?.trim();
       final name = job.supportItemName?.trim();
-      if (code != null &&
-          code.isNotEmpty &&
-          name != null &&
-          name.isNotEmpty) {
+      if (code != null && code.isNotEmpty && name != null && name.isNotEmpty) {
         supportItemCode.value = code;
         supportItemName.value = name;
         _supportItemPrefilledFromStanding = true;
@@ -1102,9 +1101,10 @@ class UnifiedSupportController extends GetxController
         scheduledEnd: endUtc,
         requiredSlots: requiredSlots.value,
         // D6 intentional: assigned workers ⇒ published even if toggle off.
-        status: (publishImmediately.value || ids.isNotEmpty)
-            ? 'published'
-            : 'draft',
+        status:
+            (publishImmediately.value || ids.isNotEmpty)
+                ? 'published'
+                : 'draft',
         contractorIds: ids,
         taskTemplate: tasks,
       ),

@@ -81,14 +81,12 @@ class JobsController extends GetxController {
 
   bool get canManage => _session.hasPermission(AppPermissions.jobsManage);
   bool get canRead => _session.hasPermission(AppPermissions.jobsRead);
-  bool get canFillHorizon =>
-      canManage && rules.any((rule) => rule.isActive);
+  bool get canFillHorizon => canManage && rules.any((rule) => rule.isActive);
 
-  List<String> get _activeRuleIds =>
-      rules
-          .where((rule) => rule.isActive)
-          .map((rule) => rule.id)
-          .toList(growable: false);
+  List<String> get _activeRuleIds => rules
+      .where((rule) => rule.isActive)
+      .map((rule) => rule.id)
+      .toList(growable: false);
 
   bool get canManageVisits =>
       _session.hasPermission(AppPermissions.visitsManage);
@@ -96,9 +94,12 @@ class JobsController extends GetxController {
       _session.hasPermission(AppPermissions.clientsManage);
 
   List<EngagementOut> get assignableEngagements => sortedByName(
-        engagements.where((e) => e.isActive || e.isApproved || e.isPendingDocs || e.isAwaitingApproval),
-        (e) => e.displayName,
-      );
+    engagements.where(
+      (e) =>
+          e.isActive || e.isApproved || e.isPendingDocs || e.isAwaitingApproval,
+    ),
+    (e) => e.displayName,
+  );
 
   @override
   void onInit() {
@@ -219,10 +220,7 @@ class JobsController extends GetxController {
 
   Future<void> openFormTemplateEditor({FormTemplateOut? existing}) async {
     errorMessage.value = null;
-    await Get.toNamed(
-      AppRoutes.staffFormTemplateEditor,
-      arguments: existing,
-    );
+    await Get.toNamed(AppRoutes.staffFormTemplateEditor, arguments: existing);
     await _refreshTemplatesAndCatalog();
   }
 

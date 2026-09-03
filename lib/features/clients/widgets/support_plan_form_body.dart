@@ -176,7 +176,8 @@ class SupportPlanFormBody extends StatelessWidget {
         ),
         Obx(
           () => OtherTextField(
-            isOther: controller.residenceType.value ==
+            isOther:
+                controller.residenceType.value ==
                 SupportPlanKeys.residenceOther,
             controller: controller.residenceOtherCtrl,
             label: 'Residence type (other)',

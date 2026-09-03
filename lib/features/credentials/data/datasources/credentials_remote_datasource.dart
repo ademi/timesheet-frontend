@@ -6,7 +6,7 @@ import '../models/credential_models.dart';
 
 class CredentialsRemoteDataSource {
   CredentialsRemoteDataSource({required Dio authenticatedDio})
-      : _dio = authenticatedDio;
+    : _dio = authenticatedDio;
 
   final Dio _dio;
 
@@ -18,9 +18,7 @@ class CredentialsRemoteDataSource {
       final list = response.data ?? const [];
       return list
           .whereType<Map>()
-          .map(
-            (e) => CredentialCategory.fromJson(Map<String, dynamic>.from(e)),
-          )
+          .map((e) => CredentialCategory.fromJson(Map<String, dynamic>.from(e)))
           .toList(growable: false);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
@@ -58,10 +56,7 @@ class CredentialsRemoteDataSource {
     }
   }
 
-  Future<CredentialOut> patch(
-    String id,
-    CredentialUpdateRequest body,
-  ) async {
+  Future<CredentialOut> patch(String id, CredentialUpdateRequest body) async {
     try {
       final response = await _dio.patch<Map<String, dynamic>>(
         ApiPaths.contractorMeCredential(id),

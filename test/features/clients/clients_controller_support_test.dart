@@ -61,9 +61,9 @@ void main() {
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => clients.listClients()).thenAnswer((_) async => [_client]);
-    when(() => clients.getClientProfilePhoto(any())).thenAnswer(
-      (_) async => const ProfilePhotoOut(hasPhoto: false),
-    );
+    when(
+      () => clients.getClientProfilePhoto(any()),
+    ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
     controller = ClientsController(
       repository: clients,
       session: session,
@@ -73,34 +73,38 @@ void main() {
 
   tearDown(Get.reset);
 
-  test('loadStandingJob keeps open standing job for the selected client',
-      () async {
-    controller.selected.value = _client;
-    when(() => jobs.listJobs()).thenAnswer(
-      (_) async => [
-        _job(id: 'other', clientId: 'client-2'),
-        _job(id: 'adhoc', kind: 'ad_hoc'),
-        _job(id: 'closed', status: 'closed'),
-        _job(id: 'standing-1'),
-      ],
-    );
+  test(
+    'loadStandingJob keeps open standing job for the selected client',
+    () async {
+      controller.selected.value = _client;
+      when(() => jobs.listJobs()).thenAnswer(
+        (_) async => [
+          _job(id: 'other', clientId: 'client-2'),
+          _job(id: 'adhoc', kind: 'ad_hoc'),
+          _job(id: 'closed', status: 'closed'),
+          _job(id: 'standing-1'),
+        ],
+      );
 
-    await controller.loadStandingJob();
+      await controller.loadStandingJob();
 
-    expect(controller.standingJob.value?.id, 'standing-1');
-    expect(controller.hasOngoing, isTrue);
-  });
+      expect(controller.standingJob.value?.id, 'standing-1');
+      expect(controller.hasOngoing, isTrue);
+    },
+  );
 
-  test('loadStandingJob clears when this client has no open standing job',
-      () async {
-    controller.selected.value = _client;
-    when(() => jobs.listJobs()).thenAnswer(
-      (_) async => [_job(id: 'other', clientId: 'client-2')],
-    );
+  test(
+    'loadStandingJob clears when this client has no open standing job',
+    () async {
+      controller.selected.value = _client;
+      when(
+        () => jobs.listJobs(),
+      ).thenAnswer((_) async => [_job(id: 'other', clientId: 'client-2')]);
 
-    await controller.loadStandingJob();
+      await controller.loadStandingJob();
 
-    expect(controller.standingJob.value, isNull);
-    expect(controller.hasOngoing, isFalse);
-  });
+      expect(controller.standingJob.value, isNull);
+      expect(controller.hasOngoing, isFalse);
+    },
+  );
 }

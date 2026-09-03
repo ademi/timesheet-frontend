@@ -16,10 +16,7 @@ class VisitExportCheck {
 }
 
 class VisitExportPreflight {
-  const VisitExportPreflight({
-    required this.visit,
-    required this.checks,
-  });
+  const VisitExportPreflight({required this.visit, required this.checks});
 
   final VisitOut visit;
   final List<VisitExportCheck> checks;
@@ -53,10 +50,13 @@ VisitExportPreflight buildVisitExportPreflight(VisitOut visit) {
 
   final coded = visitHasCodedTasks(visit);
   if (coded) {
-    final missingMinutes = visit.tasks.where((task) {
-      final code = task.supportItemCode?.trim();
-      return code != null && code.isNotEmpty && task.billableMinutes == null;
-    }).toList();
+    final missingMinutes =
+        visit.tasks.where((task) {
+          final code = task.supportItemCode?.trim();
+          return code != null &&
+              code.isNotEmpty &&
+              task.billableMinutes == null;
+        }).toList();
     if (missingMinutes.isNotEmpty) {
       checks.add(
         VisitExportCheck(

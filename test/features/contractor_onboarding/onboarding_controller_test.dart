@@ -188,49 +188,40 @@ void main() {
     },
   );
 
-  test(
-    'resolveFirstIncompleteStep never returns credentials',
-    () async {
-      await progressStore.markAcceptedDocument(
-        'contractor-a',
-        docKey: 'platform_terms',
-        version: 'v1',
-      );
-      await progressStore.markAcceptedDocument(
-        'contractor-a',
-        docKey: 'privacy_policy',
-        version: 'v1',
-      );
-      setEngagementStatus('invited');
-      final controller = OnboardingController(
-        repository: _MockComplianceRepository(),
-        progressStore: progressStore,
-      );
-      // Notices/consents empty → advanceable; platform flag still false.
-      expect(
-        controller.resolveFirstIncompleteStep(),
-        OnboardingStep.engagement,
-      );
-      expect(
-        controller.resolveFirstIncompleteStep(),
-        isNot(OnboardingStep.credentials),
-      );
-    },
-  );
+  test('resolveFirstIncompleteStep never returns credentials', () async {
+    await progressStore.markAcceptedDocument(
+      'contractor-a',
+      docKey: 'platform_terms',
+      version: 'v1',
+    );
+    await progressStore.markAcceptedDocument(
+      'contractor-a',
+      docKey: 'privacy_policy',
+      version: 'v1',
+    );
+    setEngagementStatus('invited');
+    final controller = OnboardingController(
+      repository: _MockComplianceRepository(),
+      progressStore: progressStore,
+    );
+    // Notices/consents empty → advanceable; platform flag still false.
+    expect(controller.resolveFirstIncompleteStep(), OnboardingStep.engagement);
+    expect(
+      controller.resolveFirstIncompleteStep(),
+      isNot(OnboardingStep.credentials),
+    );
+  });
 
-  test(
-    'active engagement without local flag skips platform funnel',
-    () async {
-      setEngagementStatus('active');
-      final controller = OnboardingController(
-        repository: _MockComplianceRepository(),
-        progressStore: progressStore,
-      );
+  test('active engagement without local flag skips platform funnel', () async {
+    setEngagementStatus('active');
+    final controller = OnboardingController(
+      repository: _MockComplianceRepository(),
+      progressStore: progressStore,
+    );
 
-      expect(controller.resolveFirstIncompleteStep(), isNull);
-      expect(progressStore.isPlatformComplete('contractor-a'), isTrue);
-    },
-  );
+    expect(controller.resolveFirstIncompleteStep(), isNull);
+    expect(progressStore.isPlatformComplete('contractor-a'), isTrue);
+  });
 
   test('clears a previous error when navigating to another step', () {
     final controller = OnboardingController(
@@ -264,18 +255,18 @@ void main() {
   });
 
   CollectionNotice notice(String key) => CollectionNotice(
-        noticeKey: key,
-        version: '1',
-        contentMd: 'Body',
-        contentHash: 'hash',
-        purpose: 'eligibility',
-        legalOrPolicyBasis: 'policy',
-        consequencesOfRefusal: 'cannot proceed',
-        retentionSummary: 'kept',
-        counselPending: false,
-        effectiveAt: DateTime.utc(2026, 1, 1),
-        jurisdiction: 'AU',
-      );
+    noticeKey: key,
+    version: '1',
+    contentMd: 'Body',
+    contentHash: 'hash',
+    purpose: 'eligibility',
+    legalOrPolicyBasis: 'policy',
+    consequencesOfRefusal: 'cannot proceed',
+    retentionSummary: 'kept',
+    counselPending: false,
+    effectiveAt: DateTime.utc(2026, 1, 1),
+    jurisdiction: 'AU',
+  );
 
   test(
     'when 2 of 4 notices acknowledged, counts and canAdvanceNotices reflect N-of-M',

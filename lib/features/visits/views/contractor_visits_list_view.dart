@@ -34,15 +34,15 @@ class ContractorVisitsListView extends GetView<ContractorVisitsController> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: PageContent(
                   child: SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'mine', label: Text('Mine')),
-                    ButtonSegment(value: 'open', label: Text('Open')),
-                  ],
-                  selected: {controller.selectedTab.value},
-                  onSelectionChanged: (values) {
-                    controller.selectTab(values.first);
-                  },
-                ),
+                    segments: const [
+                      ButtonSegment(value: 'mine', label: Text('Mine')),
+                      ButtonSegment(value: 'open', label: Text('Open')),
+                    ],
+                    selected: {controller.selectedTab.value},
+                    onSelectionChanged: (values) {
+                      controller.selectTab(values.first);
+                    },
+                  ),
                 ),
               ),
             if (err != null)
@@ -83,29 +83,29 @@ class _MineVisitsList extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-          if (controller.isWeb)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Check-in / complete require the mobile app with location enabled.',
-                style: TextStyle(fontSize: 13),
-              ),
-            ),
-          if (controller.visits.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 32),
-              child: Text('No upcoming visits.'),
-            ),
-          for (final v in controller.visits)
-            Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                title: Text(v.jobTitle ?? v.tenantName ?? 'Visit'),
-                subtitle: Text('${_fmt(v.scheduledStart)} · ${v.status}'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => controller.openDetail(v),
-              ),
-            ),
+                if (controller.isWeb)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      'Check-in / complete require the mobile app with location enabled.',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                  ),
+                if (controller.visits.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Text('No upcoming visits.'),
+                  ),
+                for (final v in controller.visits)
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      title: Text(v.jobTitle ?? v.tenantName ?? 'Visit'),
+                      subtitle: Text('${_fmt(v.scheduledStart)} · ${v.status}'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => controller.openDetail(v),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -130,44 +130,44 @@ class _OpenShiftsList extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-          if (controller.openShifts.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 32),
-              child: Text('No open shifts available.'),
-            ),
-          for (final shift in controller.openShifts)
-            Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              color: AppColors.openSlotBackground,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      shift.jobTitle,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                if (controller.openShifts.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Text('No open shifts available.'),
+                  ),
+                for (final shift in controller.openShifts)
+                  Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    color: AppColors.openSlotBackground,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            shift.jobTitle,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          if (shift.clientName?.isNotEmpty == true)
+                            Text(shift.clientName!),
+                          Text(
+                            '${_fmt(shift.scheduledStart)}'
+                            '${shift.suburb != null ? ' · ${shift.suburb}' : ''}',
+                          ),
+                          Text(
+                            '${shift.openSlots} of ${shift.requiredSlots} open',
+                            style: const TextStyle(color: AppColors.openSlot),
+                          ),
+                          const SizedBox(height: 8),
+                          AsyncElevatedButton(
+                            onPressed: () => controller.claimShift(shift.id),
+                            isLoading: controller.isSaving.value,
+                            child: const Text('Claim'),
+                          ),
+                        ],
+                      ),
                     ),
-                    if (shift.clientName?.isNotEmpty == true)
-                      Text(shift.clientName!),
-                    Text(
-                      '${_fmt(shift.scheduledStart)}'
-                      '${shift.suburb != null ? ' · ${shift.suburb}' : ''}',
-                    ),
-                    Text(
-                      '${shift.openSlots} of ${shift.requiredSlots} open',
-                      style: const TextStyle(color: AppColors.openSlot),
-                    ),
-                    const SizedBox(height: 8),
-                    AsyncElevatedButton(
-                      onPressed: () => controller.claimShift(shift.id),
-                      isLoading: controller.isSaving.value,
-                      child: const Text('Claim'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
               ],
             ),
           ),

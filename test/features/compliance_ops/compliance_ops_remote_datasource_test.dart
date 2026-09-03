@@ -19,30 +19,30 @@ void main() {
     dataSource = ComplianceOpsRemoteDataSource(authenticatedDio: dio);
   });
 
-  test('listAccessHistory uses compliance path and credential_id query', () async {
-    when(
-      () => dio.get<dynamic>(
-        ApiPaths.accessHistory,
-        queryParameters: any(named: 'queryParameters'),
-      ),
-    ).thenAnswer(
-      (_) async => Response<dynamic>(
-        requestOptions: RequestOptions(path: ApiPaths.accessHistory),
-        data: const [],
-      ),
-    );
+  test(
+    'listAccessHistory uses compliance path and credential_id query',
+    () async {
+      when(
+        () => dio.get<dynamic>(
+          ApiPaths.accessHistory,
+          queryParameters: any(named: 'queryParameters'),
+        ),
+      ).thenAnswer(
+        (_) async => Response<dynamic>(
+          requestOptions: RequestOptions(path: ApiPaths.accessHistory),
+          data: const [],
+        ),
+      );
 
-    await dataSource.listAccessHistory(credentialId: 'cred-1');
+      await dataSource.listAccessHistory(credentialId: 'cred-1');
 
-    verify(
-      () => dio.get<dynamic>(
-        ApiPaths.accessHistory,
-        queryParameters: {
-          'credential_id': 'cred-1',
-          'limit': 100,
-        },
-      ),
-    ).called(1);
-    expect(ApiPaths.accessHistory, '/v1/compliance/access-history');
-  });
+      verify(
+        () => dio.get<dynamic>(
+          ApiPaths.accessHistory,
+          queryParameters: {'credential_id': 'cred-1', 'limit': 100},
+        ),
+      ).called(1);
+      expect(ApiPaths.accessHistory, '/v1/compliance/access-history');
+    },
+  );
 }

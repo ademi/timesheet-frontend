@@ -16,9 +16,10 @@ class ClientDetailProfileSection extends StatelessWidget {
       final drafts =
           controller.requirementDrafts
               .where(
-                (d) => !ClientsController.isOverviewOwnedRequirement(
-                  d.requirement.requirementKey,
-                ),
+                (d) =>
+                    !ClientsController.isOverviewOwnedRequirement(
+                      d.requirement.requirementKey,
+                    ),
               )
               .toList();
       final progress = controller.profileSaveProgress.value;

@@ -105,7 +105,9 @@ void main() {
       if (tz == 'Australia/Sydney') return const Duration(hours: 10);
       return Duration.zero;
     };
-    when(() => session.tenantTimezone).thenReturn(RxnString('Australia/Sydney'));
+    when(
+      () => session.tenantTimezone,
+    ).thenReturn(RxnString('Australia/Sydney'));
     // Sun 16:00Z = Mon 02:00 AEST — session TZ only (cached obs empty).
     controller.alignRangeToTenantWeek(DateTime.utc(2026, 8, 9, 16));
     expect(controller.rangeStart.value.weekday, DateTime.monday);
@@ -127,7 +129,9 @@ void main() {
   });
 
   test('loadTenantTimezone prefers session over payroll', () async {
-    when(() => session.tenantTimezone).thenReturn(RxnString('Australia/Sydney'));
+    when(
+      () => session.tenantTimezone,
+    ).thenReturn(RxnString('Australia/Sydney'));
     when(() => payroll.getTenant('tenant-1')).thenAnswer(
       (_) async => TenantSettingsOut(
         id: 'tenant-1',
@@ -145,7 +149,9 @@ void main() {
       if (tz == 'Australia/Sydney') return const Duration(hours: 10);
       return Duration.zero;
     };
-    when(() => session.tenantTimezone).thenReturn(RxnString('Australia/Sydney'));
+    when(
+      () => session.tenantTimezone,
+    ).thenReturn(RxnString('Australia/Sydney'));
 
     final day = DateTime(2026, 8, 13);
     final leaveStartUtc = tenantCivilDateStartUtc(day, 'Australia/Sydney');
@@ -184,10 +190,7 @@ void main() {
     controller.selectedShift.value = shift;
 
     expect(
-      controller.availabilityLabelForAssign(
-        contractorId: 'jane',
-        shift: shift,
-      ),
+      controller.availabilityLabelForAssign(contractorId: 'jane', shift: shift),
       'Leave',
     );
   });

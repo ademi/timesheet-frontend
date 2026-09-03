@@ -24,13 +24,15 @@ class SupportPlanController extends GetxController {
   }) : _repository = repository,
        clientId = clientId ?? '',
        _initialPlanId = planId,
-       fundingConsent = fundingConsent ??
+       fundingConsent =
+           fundingConsent ??
            SupportPlanFundingConsentStore(
              repository: repository,
              documentPipeline: documentPipeline,
              pickPdfBytes: pickPdfBytes,
            ),
-       clinical = clinical ??
+       clinical =
+           clinical ??
            SupportPlanClinicalStore(
              repository: repository,
              documentPipeline: documentPipeline,
@@ -391,12 +393,14 @@ class SupportPlanController extends GetxController {
         functionalLimitations.contains(SupportPlanKeys.limitationOther)
             ? limitationOtherCtrl.text.trim()
             : '';
-    final commDetail = communicationMethods.contains(SupportPlanKeys.commOther)
-        ? commOtherCtrl.text.trim()
-        : '';
-    final catDetail = serviceCategories.contains(SupportPlanKeys.catOther)
-        ? catOtherCtrl.text.trim()
-        : '';
+    final commDetail =
+        communicationMethods.contains(SupportPlanKeys.commOther)
+            ? commOtherCtrl.text.trim()
+            : '';
+    final catDetail =
+        serviceCategories.contains(SupportPlanKeys.catOther)
+            ? catOtherCtrl.text.trim()
+            : '';
     final residenceDetail =
         residenceType.value == SupportPlanKeys.residenceOther
             ? residenceOtherCtrl.text.trim()
@@ -495,15 +499,15 @@ class SupportPlanController extends GetxController {
     activateSoftWarning.value = null;
     try {
       if (clinical.hasHydrated) {
-        final clinicalFailed =
-            await clinical.persistFacts(clientId: clientId);
+        final clinicalFailed = await clinical.persistFacts(clientId: clientId);
         if (clinicalFailed.isNotEmpty) {
           final isConflict = clinicalFailed.contains(
             SupportPlanClinicalStore.conflictMessage,
           );
-          errorMessage.value = isConflict
-              ? SupportPlanClinicalStore.conflictMessage
-              : 'Could not save clinical documents: ${clinicalFailed.join(', ')}';
+          errorMessage.value =
+              isConflict
+                  ? SupportPlanClinicalStore.conflictMessage
+                  : 'Could not save clinical documents: ${clinicalFailed.join(', ')}';
           await clinical.reload(clientId);
           return;
         }
@@ -515,9 +519,10 @@ class SupportPlanController extends GetxController {
           final isConflict = failed.contains(
             SupportPlanFundingConsentStore.conflictMessage,
           );
-          errorMessage.value = isConflict
-              ? SupportPlanFundingConsentStore.conflictMessage
-              : 'Could not save funding/consent: ${failed.join(', ')}';
+          errorMessage.value =
+              isConflict
+                  ? SupportPlanFundingConsentStore.conflictMessage
+                  : 'Could not save funding/consent: ${failed.join(', ')}';
           await fundingConsent.reload(clientId);
           await clinical.reload(clientId);
           return;

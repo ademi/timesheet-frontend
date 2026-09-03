@@ -21,9 +21,7 @@ class RecurrenceRuleFormController extends GetxController
   final frequency = RecurrenceFrequency.weekly.obs;
   final weekdays = <int>{DateTime.monday}.obs;
   final startDate = DateTime.now().obs;
-  final endDate = Rx<DateTime>(
-    defaultRecurrenceEndDate(DateTime.now()),
-  );
+  final endDate = Rx<DateTime>(defaultRecurrenceEndDate(DateTime.now()));
   final windows =
       <TimeWindow>[const TimeWindow(startTime: '09:00', endTime: '12:00')].obs;
   final taskTitlesCtrl = TextEditingController();
@@ -134,19 +132,13 @@ class RecurrenceRuleFormController extends GetxController
 
   void setWindowStartTime(int index, String startTime) {
     final window = windows[index];
-    windows[index] = TimeWindow(
-      startTime: startTime,
-      endTime: window.endTime,
-    );
+    windows[index] = TimeWindow(startTime: startTime, endTime: window.endTime);
     _syncWindowError(index);
   }
 
   void setWindowEndTime(int index, String endTime) {
     final window = windows[index];
-    windows[index] = TimeWindow(
-      startTime: window.startTime,
-      endTime: endTime,
-    );
+    windows[index] = TimeWindow(startTime: window.startTime, endTime: endTime);
     _syncWindowError(index);
   }
 
@@ -207,8 +199,8 @@ class RecurrenceRuleFormController extends GetxController
       error.value = windowError;
       return false;
     }
-    final sorted = windows.toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final sorted =
+        windows.toList()..sort((a, b) => a.startTime.compareTo(b.startTime));
     if (preview.isEmpty) {
       error.value = 'This rule has no occurrences in the next 90 days.';
       return false;

@@ -69,7 +69,9 @@ class ClientTypeRequirement {
   final bool isRequired;
 
   bool get capturesField =>
-      captureModes.contains('field') || kind == 'field' || kind == 'sharing_flag';
+      captureModes.contains('field') ||
+      kind == 'field' ||
+      kind == 'sharing_flag';
 
   bool get capturesDocument =>
       captureModes.contains('document') || kind == 'document';
@@ -103,19 +105,24 @@ class ClientTypeRequirement {
     if (raw is! List) return const [];
     return raw
         .whereType<Map>()
-        .map((e) => ClientFormFieldSchema.fromJson(Map<String, dynamic>.from(e)))
+        .map(
+          (e) => ClientFormFieldSchema.fromJson(Map<String, dynamic>.from(e)),
+        )
         .toList(growable: false);
   }
 
   List<String> get selectOptions {
     final raw = fieldSchemaJson['options'] ?? fieldSchemaJson['choices'];
     if (raw is! List) return const [];
-    return raw.map((e) {
-      if (e is Map) {
-        return (e['label'] ?? e['value'] ?? e['id'] ?? '').toString();
-      }
-      return e.toString();
-    }).where((s) => s.isNotEmpty).toList(growable: false);
+    return raw
+        .map((e) {
+          if (e is Map) {
+            return (e['label'] ?? e['value'] ?? e['id'] ?? '').toString();
+          }
+          return e.toString();
+        })
+        .where((s) => s.isNotEmpty)
+        .toList(growable: false);
   }
 
   String? get placeholder => fieldSchemaJson['placeholder']?.toString();
@@ -129,13 +136,15 @@ class ClientTypeRequirement {
       helpText: json['help_text'] as String?,
       sortOrder: json['sort_order'] as int? ?? 0,
       kind: json['kind'] as String? ?? 'field',
-      captureModes: modes is List
-          ? modes.map((e) => e.toString()).toList(growable: false)
-          : const <String>[],
+      captureModes:
+          modes is List
+              ? modes.map((e) => e.toString()).toList(growable: false)
+              : const <String>[],
       valueType: json['value_type'] as String?,
-      fieldSchemaJson: schema is Map
-          ? Map<String, dynamic>.from(schema)
-          : const <String, dynamic>{},
+      fieldSchemaJson:
+          schema is Map
+              ? Map<String, dynamic>.from(schema)
+              : const <String, dynamic>{},
       documentCategory: json['document_category'] as String?,
       legalDocKey: json['legal_doc_key'] as String?,
       sensitivityClass: json['sensitivity_class'] as String?,
@@ -183,13 +192,13 @@ class ProfileFactUpsert {
   final DateTime? expectedUpdatedAt;
 
   Map<String, dynamic> toJson() => {
-        if (valueJson != null) 'value_json': valueJson,
-        if (documentId != null) 'document_id': documentId,
-        if (clearValue) 'clear_value': true,
-        if (clearDocument) 'clear_document': true,
-        if (expectedUpdatedAt != null)
-          'expected_updated_at': expectedUpdatedAt!.toUtc().toIso8601String(),
-      };
+    if (valueJson != null) 'value_json': valueJson,
+    if (documentId != null) 'document_id': documentId,
+    if (clearValue) 'clear_value': true,
+    if (clearDocument) 'clear_document': true,
+    if (expectedUpdatedAt != null)
+      'expected_updated_at': expectedUpdatedAt!.toUtc().toIso8601String(),
+  };
 }
 
 class ClientLegalDocumentCurrent {
@@ -211,12 +220,14 @@ class ClientLegalDocumentCurrent {
 
   factory ClientLegalDocumentCurrent.fromJson(Map<String, dynamic> json) {
     return ClientLegalDocumentCurrent(
-      id: (json['id'] ??
-              json['legal_document_version_id'] ??
-              json['version_id'] ??
-              '')
-          .toString(),
-      title: json['title'] as String? ?? json['doc_key']?.toString() ?? 'Consent',
+      id:
+          (json['id'] ??
+                  json['legal_document_version_id'] ??
+                  json['version_id'] ??
+                  '')
+              .toString(),
+      title:
+          json['title'] as String? ?? json['doc_key']?.toString() ?? 'Consent',
       contentMd: json['content_md'] as String? ?? '',
       docKey: json['doc_key'] as String?,
       version: json['version']?.toString(),
@@ -247,17 +258,16 @@ class ClientLegalAcceptRequest {
   final String? documentId;
 
   Map<String, dynamic> toJson() => {
-        'event_type': eventType,
-        'legal_document_version_id': legalDocumentVersionId,
-        'participant_or_rep_name': participantOrRepName,
-        if (relationship != null && relationship!.isNotEmpty)
-          'relationship': relationship,
-        'method': method,
-        'signed_at': (signedAt ?? DateTime.now().toUtc()).toIso8601String(),
-        if (note != null) 'note': note,
-        if (documentId != null && documentId!.isNotEmpty)
-          'document_id': documentId,
-      };
+    'event_type': eventType,
+    'legal_document_version_id': legalDocumentVersionId,
+    'participant_or_rep_name': participantOrRepName,
+    if (relationship != null && relationship!.isNotEmpty)
+      'relationship': relationship,
+    'method': method,
+    'signed_at': (signedAt ?? DateTime.now().toUtc()).toIso8601String(),
+    if (note != null) 'note': note,
+    if (documentId != null && documentId!.isNotEmpty) 'document_id': documentId,
+  };
 }
 
 class ClientFormSubmitRequest {
@@ -270,9 +280,9 @@ class ClientFormSubmitRequest {
   final Map<String, dynamic> payloadJson;
 
   Map<String, dynamic> toJson() => {
-        'status': status,
-        'payload_json': payloadJson,
-      };
+    'status': status,
+    'payload_json': payloadJson,
+  };
 }
 
 class ClientProfileFactOut {
@@ -291,13 +301,11 @@ class ClientProfileFactOut {
   factory ClientProfileFactOut.fromJson(Map<String, dynamic> json) {
     final updatedRaw = json['updated_at'];
     return ClientProfileFactOut(
-      requirementKey:
-          (json['requirement_key'] ?? json['key'] ?? '').toString(),
+      requirementKey: (json['requirement_key'] ?? json['key'] ?? '').toString(),
       valueJson: json['value_json'],
       documentId: json['document_id']?.toString(),
-      updatedAt: updatedRaw == null
-          ? null
-          : DateTime.tryParse(updatedRaw.toString()),
+      updatedAt:
+          updatedRaw == null ? null : DateTime.tryParse(updatedRaw.toString()),
     );
   }
 }
@@ -316,15 +324,14 @@ class ClientFormSubmissionOut {
   factory ClientFormSubmissionOut.fromJson(Map<String, dynamic> json) {
     final payload = json['payload_json'];
     return ClientFormSubmissionOut(
-      requirementKey: (json['requirement_key'] ??
-              json['form_key'] ??
-              json['key'] ??
-              '')
-          .toString(),
+      requirementKey:
+          (json['requirement_key'] ?? json['form_key'] ?? json['key'] ?? '')
+              .toString(),
       status: json['status'] as String? ?? 'submitted',
-      payloadJson: payload is Map
-          ? Map<String, dynamic>.from(payload)
-          : const <String, dynamic>{},
+      payloadJson:
+          payload is Map
+              ? Map<String, dynamic>.from(payload)
+              : const <String, dynamic>{},
     );
   }
 }
@@ -350,14 +357,11 @@ class ClientLegalAcceptanceOut {
 
   factory ClientLegalAcceptanceOut.fromJson(Map<String, dynamic> json) {
     return ClientLegalAcceptanceOut(
-      requirementKey: (json['requirement_key'] ??
-              json['legal_key'] ??
-              json['key'] ??
-              '')
-          .toString(),
+      requirementKey:
+          (json['requirement_key'] ?? json['legal_key'] ?? json['key'] ?? '')
+              .toString(),
       eventType: json['event_type'] as String?,
-      legalDocumentVersionId:
-          json['legal_document_version_id']?.toString(),
+      legalDocumentVersionId: json['legal_document_version_id']?.toString(),
       participantOrRepName: json['participant_or_rep_name'] as String?,
       relationship: json['relationship'] as String?,
       method: json['method'] as String?,
@@ -391,24 +395,20 @@ class ClientProfileBundle {
     final legal = json['legal_acceptances'];
     final readiness = json['readiness'];
     return ClientProfileBundle(
-      clientType: typeRaw is Map
-          ? ClientTypeOut.fromJson(Map<String, dynamic>.from(typeRaw))
-          : null,
+      clientType:
+          typeRaw is Map
+              ? ClientTypeOut.fromJson(Map<String, dynamic>.from(typeRaw))
+              : null,
       requirements: _mapList(reqs, ClientTypeRequirement.fromJson),
       facts: _mapList(facts, ClientProfileFactOut.fromJson),
       formSubmissions: _mapList(forms, ClientFormSubmissionOut.fromJson),
       legalAcceptances: _mapList(legal, ClientLegalAcceptanceOut.fromJson),
-      readiness: readiness is Map
-          ? Map<String, dynamic>.from(readiness)
-          : null,
+      readiness: readiness is Map ? Map<String, dynamic>.from(readiness) : null,
     );
   }
 }
 
-List<T> _mapList<T>(
-  dynamic raw,
-  T Function(Map<String, dynamic>) fromJson,
-) {
+List<T> _mapList<T>(dynamic raw, T Function(Map<String, dynamic>) fromJson) {
   if (raw is! List) return const [];
   return raw
       .whereType<Map>()
@@ -459,9 +459,10 @@ class FormTemplateSummary {
     return FormTemplateSummary(
       id: json['id'].toString(),
       name: json['name'] as String? ?? '',
-      schemaJson: schema is Map
-          ? Map<String, dynamic>.from(schema)
-          : const <String, dynamic>{},
+      schemaJson:
+          schema is Map
+              ? Map<String, dynamic>.from(schema)
+              : const <String, dynamic>{},
       isActive: json['is_active'] as bool? ?? true,
     );
   }

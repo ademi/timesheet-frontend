@@ -50,7 +50,10 @@ abstract final class AbnUtils {
     return null;
   }
 
-  static String? accountNumberValidator(String? value, {bool required = false}) {
+  static String? accountNumberValidator(
+    String? value, {
+    bool required = false,
+  }) {
     final digits = digitsOnly(value);
     if (digits.isEmpty) {
       return required ? 'Account number is required' : null;

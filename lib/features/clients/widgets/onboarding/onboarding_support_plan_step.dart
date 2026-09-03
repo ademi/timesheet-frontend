@@ -75,10 +75,7 @@ class OnboardingSupportPlanStep extends StatelessWidget {
               dense: true,
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.insert_drive_file_outlined, size: 20),
-              title: Text(
-                ndisPending.name,
-                overflow: TextOverflow.ellipsis,
-              ),
+              title: Text(ndisPending.name, overflow: TextOverflow.ellipsis),
               trailing: IconButton(
                 icon: const Icon(Icons.close, size: 18),
                 onPressed: enabled ? controller.clearNdisPlanPdfPending : null,
@@ -100,7 +97,8 @@ class OnboardingSupportPlanStep extends StatelessWidget {
               for (final e in planTypes.entries)
                 DropdownMenuItem(value: e.key, child: Text(e.value)),
             ],
-            onChanged: enabled ? (v) => controller.planManagementType.value = v : null,
+            onChanged:
+                enabled ? (v) => controller.planManagementType.value = v : null,
           ),
           if (isPlanManaged) ...[
             const SizedBox(height: 16),
@@ -190,18 +188,21 @@ class OnboardingSupportPlanStep extends StatelessWidget {
                   : 'Start: ${_fmt(controller.planStartDate.value!)}',
             ),
             trailing: const Icon(Icons.calendar_today),
-            onTap: enabled
-                ? () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate:
-                          controller.planStartDate.value ?? DateTime.now(),
-                      firstDate: DateTime(2013),
-                      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-                    );
-                    if (picked != null) controller.onPlanStartPicked(picked);
-                  }
-                : null,
+            onTap:
+                enabled
+                    ? () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate:
+                            controller.planStartDate.value ?? DateTime.now(),
+                        firstDate: DateTime(2013),
+                        lastDate: DateTime.now().add(
+                          const Duration(days: 365 * 5),
+                        ),
+                      );
+                      if (picked != null) controller.onPlanStartPicked(picked);
+                    }
+                    : null,
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -211,18 +212,22 @@ class OnboardingSupportPlanStep extends StatelessWidget {
                   : 'End: ${_fmt(controller.planEndDate.value!)}',
             ),
             trailing: const Icon(Icons.calendar_today),
-            onTap: enabled
-                ? () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: controller.planEndDate.value ??
-                          DateTime.now().add(const Duration(days: 365)),
-                      firstDate: DateTime(2013),
-                      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-                    );
-                    if (picked != null) controller.planEndDate.value = picked;
-                  }
-                : null,
+            onTap:
+                enabled
+                    ? () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate:
+                            controller.planEndDate.value ??
+                            DateTime.now().add(const Duration(days: 365)),
+                        firstDate: DateTime(2013),
+                        lastDate: DateTime.now().add(
+                          const Duration(days: 365 * 5),
+                        ),
+                      );
+                      if (picked != null) controller.planEndDate.value = picked;
+                    }
+                    : null,
           ),
           const SizedBox(height: 8),
           const Text(
@@ -302,10 +307,11 @@ class OnboardingSupportPlanStep extends StatelessWidget {
           SupportPlanSpecialistsPanel(
             specialists: controller.supportSpecialists,
             enabled: enabled,
-            onAdd: (context) => SupportPlanSpecialistsPanel.showTypePicker(
-              context,
-              onSelected: controller.addSupportSpecialist,
-            ),
+            onAdd:
+                (context) => SupportPlanSpecialistsPanel.showTypePicker(
+                  context,
+                  onSelected: controller.addSupportSpecialist,
+                ),
             onRemove: controller.removeSupportSpecialist,
           ),
         ],

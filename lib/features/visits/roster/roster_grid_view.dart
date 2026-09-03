@@ -122,10 +122,7 @@ class _RosterGridViewState extends State<RosterGridView> {
         SliverPersistentHeader(
           pinned: true,
           delegate: _RosterHeaderDelegate(
-            header: _RosterHeaderRow(
-              grid: grid,
-              headerHScroll: _headerHScroll,
-            ),
+            header: _RosterHeaderRow(grid: grid, headerHScroll: _headerHScroll),
           ),
         ),
         SliverList.builder(
@@ -161,10 +158,7 @@ class _RosterHeaderDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return ColoredBox(
-      color: AppColors.background,
-      child: header,
-    );
+    return ColoredBox(color: AppColors.background, child: header);
   }
 
   @override
@@ -174,10 +168,7 @@ class _RosterHeaderDelegate extends SliverPersistentHeaderDelegate {
 }
 
 class _RosterHeaderRow extends StatelessWidget {
-  const _RosterHeaderRow({
-    required this.grid,
-    required this.headerHScroll,
-  });
+  const _RosterHeaderRow({required this.grid, required this.headerHScroll});
 
   final RosterGrid grid;
   final ScrollController headerHScroll;
@@ -297,11 +288,7 @@ class _HeaderCell extends StatelessWidget {
 }
 
 class _NameCell extends StatelessWidget {
-  const _NameCell({
-    super.key,
-    required this.label,
-    required this.isUnfilled,
-  });
+  const _NameCell({super.key, required this.label, required this.isUnfilled});
 
   final String label;
   final bool isUnfilled;
@@ -385,9 +372,7 @@ class _DayCell extends StatelessWidget {
               emphasizeOpen: isUnfilledRow || tile.openSlots > 0,
               onTap: () => onTileTap(tile),
               onLongPress:
-                  onTileLongPress == null
-                      ? null
-                      : () => onTileLongPress!(tile),
+                  onTileLongPress == null ? null : () => onTileLongPress!(tile),
             ),
         ],
       ),
@@ -415,9 +400,10 @@ class _ShiftTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Material(
-        color: emphasizeOpen && tile.openSlots > 0
-            ? AppColors.openSlotBackground
-            : AppColors.background,
+        color:
+            emphasizeOpen && tile.openSlots > 0
+                ? AppColors.openSlotBackground
+                : AppColors.background,
         borderRadius: BorderRadius.circular(4),
         child: InkWell(
           onTap: onTap,

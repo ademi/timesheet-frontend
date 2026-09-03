@@ -62,10 +62,7 @@ class _BriefBody extends StatelessWidget {
         if (brief.clientName.trim().isNotEmpty) ...[
           Text(
             brief.clientName.trim(),
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
           const SizedBox(height: 8),
         ],
@@ -82,9 +79,7 @@ class _BriefBody extends StatelessWidget {
           const SizedBox(height: 8),
         ],
         if (!invalid && hasBsp) ...[
-          const _AmberNotice(
-            message: 'Behaviour support plan (BSP) in place',
-          ),
+          const _AmberNotice(message: 'Behaviour support plan (BSP) in place'),
           const SizedBox(height: 8),
         ],
         if (!invalid) ...[

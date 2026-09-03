@@ -292,7 +292,8 @@ void main() {
             'This shift can’t be changed in its current state.',
         'contractor_on_leave': 'You’re on leave for this day.',
         'shift_not_found': 'Shift not found.',
-        'shift_overlap': 'A shift for this job already exists in that time window.',
+        'shift_overlap':
+            'A shift for this job already exists in that time window.',
       };
 
       for (final entry in expectedMessages.entries) {

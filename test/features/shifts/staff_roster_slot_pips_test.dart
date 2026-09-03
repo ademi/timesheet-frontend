@@ -7,9 +7,7 @@ void main() {
   testWidgets('shows filled and open slot pips', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(
-          body: ShiftSlotPips(requiredSlots: 2, filledSlots: 1),
-        ),
+        home: Scaffold(body: ShiftSlotPips(requiredSlots: 2, filledSlots: 1)),
       ),
     );
 

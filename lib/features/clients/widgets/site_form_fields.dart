@@ -49,31 +49,28 @@ class _SiteFormFieldsState extends State<SiteFormFields> {
   Widget build(BuildContext context) {
     return Obx(() {
       final stateValue = controller.siteState.value;
-      final isPrimary =
-          widget.primaryMode || controller.siteIsPrimary.value;
+      final isPrimary = widget.primaryMode || controller.siteIsPrimary.value;
       final postalRequired = isPrimary;
       final formatted = controller.geocodeFormattedAddress.value;
       final confirmed = controller.addressConfirmed.value;
       final lookingUp = controller.isGeocoding.value;
 
-      final nameField = widget.showNameField
-          ? TextField(
-              controller: controller.siteNameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Address Reference Name ( Home / Work) *',
-                hintText: 'Home / Work',
-                border: OutlineInputBorder(),
-              ),
-            )
-          : null;
+      final nameField =
+          widget.showNameField
+              ? TextField(
+                controller: controller.siteNameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Address Reference Name ( Home / Work) *',
+                  hintText: 'Home / Work',
+                  border: OutlineInputBorder(),
+                ),
+              )
+              : null;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (nameField != null) ...[
-            nameField,
-            const SizedBox(height: 12),
-          ],
+          if (nameField != null) ...[nameField, const SizedBox(height: 12)],
           TextField(
             controller: controller.siteAddressCtrl,
             onChanged: (_) => controller.invalidateSiteAddressConfirm(),
@@ -111,9 +108,10 @@ class _SiteFormFieldsState extends State<SiteFormFields> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             value: isPrimary,
-            onChanged: widget.primaryMode
-                ? null
-                : (v) => controller.siteIsPrimary.value = v,
+            onChanged:
+                widget.primaryMode
+                    ? null
+                    : (v) => controller.siteIsPrimary.value = v,
             title: const Text('Primary site'),
           ),
           const SizedBox(height: 12),
@@ -139,14 +137,13 @@ class _SiteFormFieldsState extends State<SiteFormFields> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: confirmed
-                    ? AppColors.primaryLight
-                    : AppColors.surface,
+                color: confirmed ? AppColors.primaryLight : AppColors.surface,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: confirmed
-                      ? AppColors.primary
-                      : AppColors.slate500.withValues(alpha: 0.4),
+                  color:
+                      confirmed
+                          ? AppColors.primary
+                          : AppColors.slate500.withValues(alpha: 0.4),
                 ),
               ),
               child: Column(

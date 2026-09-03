@@ -6,7 +6,7 @@ import '../models/compliance_models.dart';
 
 class ComplianceRemoteDataSource {
   ComplianceRemoteDataSource({required Dio authenticatedDio})
-      : _dio = authenticatedDio;
+    : _dio = authenticatedDio;
 
   final Dio _dio;
 
@@ -63,7 +63,8 @@ class ComplianceRemoteDataSource {
     LegalEventCreate body, {
     String? idempotencyKey,
   }) async {
-    final key = idempotencyKey ??
+    final key =
+        idempotencyKey ??
         body.idempotencyKey ??
         newIdempotencyKey(body.eventType);
     final payload = LegalEventCreate(

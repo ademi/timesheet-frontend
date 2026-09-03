@@ -59,34 +59,37 @@ void main() {
     ).called(1);
   });
 
-  test('ensureOngoingSupport posts to ensure path with optional title', () async {
-    when(
-      () => dio.post<Map<String, dynamic>>(
-        ApiPaths.clientOngoingSupportEnsure(clientId),
-        data: any(named: 'data'),
-      ),
-    ).thenAnswer(
-      (_) async => Response<Map<String, dynamic>>(
-        requestOptions: RequestOptions(
-          path: ApiPaths.clientOngoingSupportEnsure(clientId),
+  test(
+    'ensureOngoingSupport posts to ensure path with optional title',
+    () async {
+      when(
+        () => dio.post<Map<String, dynamic>>(
+          ApiPaths.clientOngoingSupportEnsure(clientId),
+          data: any(named: 'data'),
         ),
-        data: jobJson,
-      ),
-    );
+      ).thenAnswer(
+        (_) async => Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(
+            path: ApiPaths.clientOngoingSupportEnsure(clientId),
+          ),
+          data: jobJson,
+        ),
+      );
 
-    final job = await dataSource.ensureOngoingSupport(
-      clientId,
-      title: '  Custom title  ',
-    );
+      final job = await dataSource.ensureOngoingSupport(
+        clientId,
+        title: '  Custom title  ',
+      );
 
-    expect(job.title, 'Sam Lee support');
-    verify(
-      () => dio.post<Map<String, dynamic>>(
-        ApiPaths.clientOngoingSupportEnsure(clientId),
-        data: {'title': 'Custom title'},
-      ),
-    ).called(1);
-  });
+      expect(job.title, 'Sam Lee support');
+      verify(
+        () => dio.post<Map<String, dynamic>>(
+          ApiPaths.clientOngoingSupportEnsure(clientId),
+          data: {'title': 'Custom title'},
+        ),
+      ).called(1);
+    },
+  );
 
   test('ensureOngoingSupport omits title when blank', () async {
     when(

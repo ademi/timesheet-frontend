@@ -107,8 +107,8 @@ class OnboardingRepresentativeStep extends StatelessWidget {
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
                 value: controller.contactIsEmergency.value,
-                onChanged: (v) =>
-                    controller.contactIsEmergency.value = v ?? false,
+                onChanged:
+                    (v) => controller.contactIsEmergency.value = v ?? false,
                 title: const Text('Also emergency contact'),
                 controlAffinity: ListTileControlAffinity.leading,
               ),
@@ -174,10 +174,7 @@ class _ExistingEmergencySummary extends StatelessWidget {
 }
 
 class _RepresentativeSummary extends StatelessWidget {
-  const _RepresentativeSummary({
-    required this.contact,
-    required this.onEdit,
-  });
+  const _RepresentativeSummary({required this.contact, required this.onEdit});
 
   final ClientContactOut contact;
   final VoidCallback onEdit;
@@ -185,9 +182,10 @@ class _RepresentativeSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rel = contact.relationship?.trim();
-    final relLabel = rel == null || rel.isEmpty
-        ? null
-        : ContactFormHost.relationshipPresets[rel] ?? rel;
+    final relLabel =
+        rel == null || rel.isEmpty
+            ? null
+            : ContactFormHost.relationshipPresets[rel] ?? rel;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -204,8 +202,7 @@ class _RepresentativeSummary extends StatelessWidget {
               if (contact.email?.trim().isNotEmpty == true)
                 Text(contact.email!),
               if (relLabel != null) Text('Relationship: $relLabel'),
-              if (contact.isEmergency)
-                const Text('Also emergency contact'),
+              if (contact.isEmergency) const Text('Also emergency contact'),
             ],
           ),
         ),

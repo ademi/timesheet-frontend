@@ -23,7 +23,8 @@ class SupportPlanView extends GetView<SupportPlanController> {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
-        final err = controller.errorMessage.value ??
+        final err =
+            controller.errorMessage.value ??
             controller.fundingConsent.errorMessage.value ??
             controller.clinical.errorMessage.value;
         final soft = controller.activateSoftWarning.value;

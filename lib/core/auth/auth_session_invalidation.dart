@@ -8,9 +8,11 @@ Future<void> invalidateStoredAuthSession({
   TokenStorage? tokenStorage,
   SessionService? sessionService,
 }) async {
-  final session = sessionService ??
+  final session =
+      sessionService ??
       (Get.isRegistered<SessionService>() ? Get.find<SessionService>() : null);
-  final storage = tokenStorage ??
+  final storage =
+      tokenStorage ??
       (Get.isRegistered<TokenStorage>() ? Get.find<TokenStorage>() : null);
   await session?.clear();
   await storage?.clear();

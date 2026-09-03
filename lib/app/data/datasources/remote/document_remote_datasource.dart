@@ -8,11 +8,9 @@ import '../../../../core/errors/app_failure.dart';
 
 /// Document upload flow: upload-url → PUT signed URL → finalize.
 class DocumentRemoteDataSource {
-  DocumentRemoteDataSource({
-    required Dio authenticatedDio,
-    Dio? plainDio,
-  })  : _authenticatedDio = authenticatedDio,
-        _plainDio = plainDio ?? Dio();
+  DocumentRemoteDataSource({required Dio authenticatedDio, Dio? plainDio})
+    : _authenticatedDio = authenticatedDio,
+      _plainDio = plainDio ?? Dio();
 
   final Dio _authenticatedDio;
   final Dio _plainDio;
@@ -75,9 +73,7 @@ class DocumentRemoteDataSource {
     try {
       final response = await _authenticatedDio.post<Map<String, dynamic>>(
         ApiPaths.documentFinalize(documentId),
-        data: {
-          if (credentialId != null) 'credential_id': credentialId,
-        },
+        data: {if (credentialId != null) 'credential_id': credentialId},
       );
       final data = response.data;
       if (data == null) {

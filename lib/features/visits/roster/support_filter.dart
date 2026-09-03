@@ -8,19 +8,15 @@ import '../../jobs/data/models/job_models.dart';
 List<JobOut> jobsForClientFilter(
   List<JobOut> jobs, {
   required String clientId,
-}) =>
-    sortedByName(
-      jobs.where((j) => j.clientId == clientId && j.status == 'open'),
-      (j) => j.title,
-    );
+}) => sortedByName(
+  jobs.where((j) => j.clientId == clientId && j.status == 'open'),
+  (j) => j.title,
+);
 
 /// Whether to surface the support/job sub-filter for the selected client.
 ///
 /// Hidden unless a client is selected and that client has >1 open support (D3).
-bool shouldShowSupportFilter(
-  List<JobOut> jobs, {
-  required String? clientId,
-}) {
+bool shouldShowSupportFilter(List<JobOut> jobs, {required String? clientId}) {
   if (clientId == null || clientId.isEmpty) return false;
   return jobsForClientFilter(jobs, clientId: clientId).length > 1;
 }

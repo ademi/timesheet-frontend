@@ -92,9 +92,7 @@ void main() {
     registerFallbackValue(
       const VisitPriceTierPatch(priceTierOverride: PriceTier.remote),
     );
-    registerFallbackValue(
-      const VisitTaskBillingPatch(billableMinutes: 90),
-    );
+    registerFallbackValue(const VisitTaskBillingPatch(billableMinutes: 90));
   });
 
   setUp(() {
@@ -106,15 +104,18 @@ void main() {
     clients = _MockClientsRepository();
     session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
-    when(() => session.hasPermission(AppPermissions.shiftsManage)).thenReturn(true);
-    when(() => session.hasPermission(AppPermissions.shiftsRead)).thenReturn(true);
-    when(() => session.tenantTimezone).thenReturn(RxnString());
-    when(() => shifts.listShifts(from: any(named: 'from'), to: any(named: 'to')))
-        .thenAnswer((_) async => []);
-    when(() => jobs.listJobs()).thenAnswer((_) async => []);
     when(
-      () => engagements.listTenantEngagements(),
+      () => session.hasPermission(AppPermissions.shiftsManage),
+    ).thenReturn(true);
+    when(
+      () => session.hasPermission(AppPermissions.shiftsRead),
+    ).thenReturn(true);
+    when(() => session.tenantTimezone).thenReturn(RxnString());
+    when(
+      () => shifts.listShifts(from: any(named: 'from'), to: any(named: 'to')),
     ).thenAnswer((_) async => []);
+    when(() => jobs.listJobs()).thenAnswer((_) async => []);
+    when(() => engagements.listTenantEngagements()).thenAnswer((_) async => []);
     controller = StaffVisitsController(
       repository: visits,
       shiftsRepository: shifts,
@@ -177,27 +178,30 @@ void main() {
     expect(controller.editingVisitSupportItemCode.value, '01_011_0107_1_1');
   });
 
-  test('updateVisitSupportItem reverts editor on invalid_visit_status', () async {
-    controller.selected.value = _visit();
-    controller.editingVisitSupportItemCode.value = null;
-    controller.editingVisitSupportItemName.value = null;
+  test(
+    'updateVisitSupportItem reverts editor on invalid_visit_status',
+    () async {
+      controller.selected.value = _visit();
+      controller.editingVisitSupportItemCode.value = null;
+      controller.editingVisitSupportItemName.value = null;
 
-    when(() => visits.patchVisitSupportItem(any(), any())).thenThrow(
-      const AppFailure(
-        code: 'invalid_visit_status',
-        message: 'Cannot change support item after check-in or payment.',
-        presentation: AppFailurePresentation.inline,
-      ),
-    );
+      when(() => visits.patchVisitSupportItem(any(), any())).thenThrow(
+        const AppFailure(
+          code: 'invalid_visit_status',
+          message: 'Cannot change support item after check-in or payment.',
+          presentation: AppFailurePresentation.inline,
+        ),
+      );
 
-    await controller.updateVisitSupportItem(
-      supportItemCode: '01_011_0107_1_1',
-      supportItemName: 'Self care',
-    );
+      await controller.updateVisitSupportItem(
+        supportItemCode: '01_011_0107_1_1',
+        supportItemName: 'Self care',
+      );
 
-    expect(controller.editingVisitSupportItemCode.value, isNull);
-    expect(controller.errorMessage.value, contains('check-in'));
-  });
+      expect(controller.editingVisitSupportItemCode.value, isNull);
+      expect(controller.errorMessage.value, contains('check-in'));
+    },
+  );
 
   test('updateVisitTaskSupportItem patches task in visit list', () async {
     final task = _task();
@@ -234,29 +238,32 @@ void main() {
     ).called(1);
   });
 
-  test('updateVisitTaskSupportItem keeps name when code already saved', () async {
-    final task = _task(supportItemCode: '01_011_0107_1_1');
-    controller.selected.value = _visit(tasks: [task]);
+  test(
+    'updateVisitTaskSupportItem keeps name when code already saved',
+    () async {
+      final task = _task(supportItemCode: '01_011_0107_1_1');
+      controller.selected.value = _visit(tasks: [task]);
 
-    await controller.updateVisitTaskSupportItem(
-      task: task,
-      supportItemCode: '01_011_0107_1_1',
-      supportItemName: 'Assistance With Self-Care Activities',
-    );
+      await controller.updateVisitTaskSupportItem(
+        task: task,
+        supportItemCode: '01_011_0107_1_1',
+        supportItemName: 'Assistance With Self-Care Activities',
+      );
 
-    expect(controller.editingTaskSupportCodes[task.id], '01_011_0107_1_1');
-    expect(
-      controller.editingTaskSupportNames[task.id],
-      'Assistance With Self-Care Activities',
-    );
-    verifyNever(
-      () => visits.patchVisitTaskSupportItem(
-        visitId: any(named: 'visitId'),
-        taskId: any(named: 'taskId'),
-        body: any(named: 'body'),
-      ),
-    );
-  });
+      expect(controller.editingTaskSupportCodes[task.id], '01_011_0107_1_1');
+      expect(
+        controller.editingTaskSupportNames[task.id],
+        'Assistance With Self-Care Activities',
+      );
+      verifyNever(
+        () => visits.patchVisitTaskSupportItem(
+          visitId: any(named: 'visitId'),
+          taskId: any(named: 'taskId'),
+          body: any(named: 'body'),
+        ),
+      );
+    },
+  );
 
   test('updateVisitPriceTier patches and syncs editor', () async {
     final updated = _visit();
@@ -291,24 +298,28 @@ void main() {
     expect(controller.editingPriceTierOverride.value, PriceTier.remote);
   });
 
-  test('updateVisitPriceTier blocks further edits after visit_already_exported', () async {
-    controller.selected.value = _visit();
-    controller.editingPriceTierOverride.value = null;
+  test(
+    'updateVisitPriceTier blocks further edits after visit_already_exported',
+    () async {
+      controller.selected.value = _visit();
+      controller.editingPriceTierOverride.value = null;
 
-    when(() => visits.patchVisitPriceTier(any(), any())).thenThrow(
-      const AppFailure(
-        code: 'visit_already_exported',
-        message: 'Already included in an export — void that export to rebill.',
-        presentation: AppFailurePresentation.inline,
-      ),
-    );
+      when(() => visits.patchVisitPriceTier(any(), any())).thenThrow(
+        const AppFailure(
+          code: 'visit_already_exported',
+          message:
+              'Already included in an export — void that export to rebill.',
+          presentation: AppFailurePresentation.inline,
+        ),
+      );
 
-    await controller.updateVisitPriceTier(PriceTier.national);
+      await controller.updateVisitPriceTier(PriceTier.national);
 
-    expect(controller.priceTierEditBlocked.value, isTrue);
-    expect(controller.canEditVisitPriceTier, isFalse);
-    expect(controller.errorMessage.value, contains('export'));
-  });
+      expect(controller.priceTierEditBlocked.value, isTrue);
+      expect(controller.canEditVisitPriceTier, isFalse);
+      expect(controller.errorMessage.value, contains('export'));
+    },
+  );
 
   test('updateVisitTaskBillableMinutes patches task billing', () async {
     final task = _task(supportItemCode: '01_011_0107_1_1');
@@ -337,10 +348,7 @@ void main() {
       rawMinutes: '90',
     );
 
-    expect(
-      controller.selected.value?.tasks.single.billableMinutes,
-      90,
-    );
+    expect(controller.selected.value?.tasks.single.billableMinutes, 90);
     verify(
       () => visits.patchVisitTaskBilling(
         visitId: 'visit-1',

@@ -19,18 +19,17 @@ class VisitsRepository {
     String? paymentStatus,
     int limit = 100,
     bool includeNested = true,
-  }) =>
-      _remote.listVisits(
-        from: from,
-        to: to,
-        jobId: jobId,
-        clientId: clientId,
-        contractorId: contractorId,
-        status: status,
-        paymentStatus: paymentStatus,
-        limit: limit,
-        includeNested: includeNested,
-      );
+  }) => _remote.listVisits(
+    from: from,
+    to: to,
+    jobId: jobId,
+    clientId: clientId,
+    contractorId: contractorId,
+    status: status,
+    paymentStatus: paymentStatus,
+    limit: limit,
+    includeNested: includeNested,
+  );
 
   Future<VisitOut> getVisit(String id) => _remote.getVisit(id);
 
@@ -38,12 +37,11 @@ class VisitsRepository {
     required String id,
     required DateTime scheduledStart,
     required DateTime scheduledEnd,
-  }) =>
-      _remote.reschedule(
-        id: id,
-        scheduledStart: scheduledStart,
-        scheduledEnd: scheduledEnd,
-      );
+  }) => _remote.reschedule(
+    id: id,
+    scheduledStart: scheduledStart,
+    scheduledEnd: scheduledEnd,
+  );
 
   Future<void> cancel(String id) => _remote.cancel(id);
 
@@ -51,62 +49,54 @@ class VisitsRepository {
     required String id,
     required VisitGpsBody body,
     required String idempotencyKey,
-  }) =>
-      _remote.checkIn(id: id, body: body, idempotencyKey: idempotencyKey);
+  }) => _remote.checkIn(id: id, body: body, idempotencyKey: idempotencyKey);
 
   Future<VisitCompleteOut> complete({
     required String id,
     required VisitGpsBody body,
     required String idempotencyKey,
-  }) =>
-      _remote.complete(id: id, body: body, idempotencyKey: idempotencyKey);
+  }) => _remote.complete(id: id, body: body, idempotencyKey: idempotencyKey);
 
   Future<VisitTaskOut> patchTask({
     required String visitId,
     required String taskId,
     required bool isDone,
-  }) =>
-      _remote.patchTask(visitId: visitId, taskId: taskId, isDone: isDone);
+  }) => _remote.patchTask(visitId: visitId, taskId: taskId, isDone: isDone);
 
   Future<VisitTaskOut> patchVisitTaskSupportItem({
     required String visitId,
     required String taskId,
     required VisitTaskSupportItemPatch body,
-  }) =>
-      _remote.patchVisitTaskSupportItem(
-        visitId: visitId,
-        taskId: taskId,
-        body: body,
-      );
+  }) => _remote.patchVisitTaskSupportItem(
+    visitId: visitId,
+    taskId: taskId,
+    body: body,
+  );
 
   Future<VisitOut> patchVisitSupportItem(
     String visitId,
     SupportItemPatch body,
-  ) =>
-      _remote.patchVisitSupportItem(visitId, body);
+  ) => _remote.patchVisitSupportItem(visitId, body);
 
   Future<VisitOut> patchVisitPriceTier(
     String visitId,
     VisitPriceTierPatch body,
-  ) =>
-      _remote.patchVisitPriceTier(visitId, body);
+  ) => _remote.patchVisitPriceTier(visitId, body);
 
   Future<VisitTaskOut> patchVisitTaskBilling({
     required String visitId,
     required String taskId,
     required VisitTaskBillingPatch body,
-  }) =>
-      _remote.patchVisitTaskBilling(
-        visitId: visitId,
-        taskId: taskId,
-        body: body,
-      );
+  }) => _remote.patchVisitTaskBilling(
+    visitId: visitId,
+    taskId: taskId,
+    body: body,
+  );
 
   Future<void> submitForm({
     required String visitId,
     required VisitFormSubmitRequest body,
-  }) =>
-      _remote.submitForm(visitId: visitId, body: body);
+  }) => _remote.submitForm(visitId: visitId, body: body);
 
   Future<List<JobFormCatalogItem>> listJobFormCatalog(String jobId) =>
       _remote.listJobFormCatalog(jobId);
@@ -117,6 +107,5 @@ class VisitsRepository {
   Future<RosterOverlayOut> fetchRosterOverlay({
     required DateTime from,
     required DateTime to,
-  }) =>
-      _remote.fetchRosterOverlay(from: from, to: to);
+  }) => _remote.fetchRosterOverlay(from: from, to: to);
 }

@@ -24,13 +24,13 @@ class AuthTokenModel {
   final List<EngagementSummaryModel> engagements;
 
   Map<String, dynamic> toJson() => {
-        'access_token': accessToken,
-        'refresh_token': refreshToken,
-        'token_type': tokenType,
-        if (actorType != null) 'actor_type': actorType,
-        if (engagements.isNotEmpty)
-          'engagements': engagements.map((e) => e.toJson()).toList(),
-      };
+    'access_token': accessToken,
+    'refresh_token': refreshToken,
+    'token_type': tokenType,
+    if (actorType != null) 'actor_type': actorType,
+    if (engagements.isNotEmpty)
+      'engagements': engagements.map((e) => e.toJson()).toList(),
+  };
 
   factory AuthTokenModel.fromJson(Map<String, dynamic> json) {
     final rawEngagements = json['engagements'];
@@ -41,12 +41,13 @@ class AuthTokenModel {
       mustChangePassword: json['must_change_password'] as bool? ?? false,
       defaultBranchId: json['branch_id'] as String?,
       actorType: json['actor_type'] as String?,
-      engagements: rawEngagements is List
-          ? rawEngagements
-              .whereType<Map<String, dynamic>>()
-              .map(EngagementSummaryModel.fromJson)
-              .toList(growable: false)
-          : const [],
+      engagements:
+          rawEngagements is List
+              ? rawEngagements
+                  .whereType<Map<String, dynamic>>()
+                  .map(EngagementSummaryModel.fromJson)
+                  .toList(growable: false)
+              : const [],
     );
   }
 }

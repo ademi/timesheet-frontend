@@ -78,9 +78,10 @@ class UnifiedSupportBinding extends Bindings {
         shiftsRepository: Get.find<ShiftsRepository>(),
         visitsRepository: Get.find<VisitsRepository>(),
         session: Get.find<SessionService>(),
-        payroll: Get.isRegistered<PayrollRepository>()
-            ? Get.find<PayrollRepository>()
-            : null,
+        payroll:
+            Get.isRegistered<PayrollRepository>()
+                ? Get.find<PayrollRepository>()
+                : null,
       ),
     );
   }

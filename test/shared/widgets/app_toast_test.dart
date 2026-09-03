@@ -17,8 +17,9 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('AppToast.success shows check_circle icon with success tokens',
-      (tester) async {
+  testWidgets('AppToast.success shows check_circle icon with success tokens', (
+    tester,
+  ) async {
     await tester.pumpWidget(GetMaterialApp(home: Scaffold(body: Container())));
     AppToast.success('Saved', 'Client updated.');
     await tester.pump();
@@ -27,8 +28,9 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('AppToast.info shows info_outline icon with primary tokens',
-      (tester) async {
+  testWidgets('AppToast.info shows info_outline icon with primary tokens', (
+    tester,
+  ) async {
     await tester.pumpWidget(GetMaterialApp(home: Scaffold(body: Container())));
     AppToast.info('Copied', 'Address copied to clipboard.');
     await tester.pump();

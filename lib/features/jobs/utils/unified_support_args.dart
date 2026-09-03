@@ -4,11 +4,7 @@ enum UnifiedSupportMode { oneSession, ongoing }
 
 /// Arguments for [UnifiedSupportController] / route navigation.
 class UnifiedSupportArgs {
-  const UnifiedSupportArgs({
-    this.client,
-    this.clientId,
-    this.initialMode,
-  });
+  const UnifiedSupportArgs({this.client, this.clientId, this.initialMode});
 
   final ClientOut? client;
   final String? clientId;
@@ -18,6 +14,9 @@ class UnifiedSupportArgs {
   factory UnifiedSupportArgs.forClient(
     ClientOut client, {
     UnifiedSupportMode? mode,
-  }) =>
-      UnifiedSupportArgs(client: client, clientId: client.id, initialMode: mode);
+  }) => UnifiedSupportArgs(
+    client: client,
+    clientId: client.id,
+    initialMode: mode,
+  );
 }

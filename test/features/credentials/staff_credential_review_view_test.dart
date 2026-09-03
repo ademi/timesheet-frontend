@@ -62,205 +62,200 @@ void main() {
 
   tearDown(Get.reset);
 
-  testWidgets(
-    'shows required doc editor when canEditRequiredDocs',
-    (tester) async {
-      when(() => credentials.listCredentialCategories()).thenAnswer(
-        (_) async => const [
-          CredentialCategory(code: 'first_aid', label: 'First aid'),
-          CredentialCategory(code: 'cpr', label: 'CPR'),
-        ],
-      );
-      when(
-        () => credentials.listForTenantContractor(
-          'contractor-1',
-          engagementId: 'engagement-1',
-        ),
-      ).thenAnswer((_) async => []);
-      when(
-        () => pipeline.listEvidenceForContractor('contractor-1'),
-      ).thenAnswer((_) async => const []);
+  testWidgets('shows required doc editor when canEditRequiredDocs', (
+    tester,
+  ) async {
+    when(() => credentials.listCredentialCategories()).thenAnswer(
+      (_) async => const [
+        CredentialCategory(code: 'first_aid', label: 'First aid'),
+        CredentialCategory(code: 'cpr', label: 'CPR'),
+      ],
+    );
+    when(
+      () => credentials.listForTenantContractor(
+        'contractor-1',
+        engagementId: 'engagement-1',
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => pipeline.listEvidenceForContractor('contractor-1'),
+    ).thenAnswer((_) async => const []);
 
-      Get.put(
-        StaffCredentialReviewController(
-          repository: credentials,
-          engagementsRepository: engagements,
-          session: session,
-          documentPipeline: pipeline,
+    Get.put(
+      StaffCredentialReviewController(
+        repository: credentials,
+        engagementsRepository: engagements,
+        session: session,
+        documentPipeline: pipeline,
+        contractorId: 'contractor-1',
+        engagementId: 'engagement-1',
+        initialRequiredCategories: const ['first_aid'],
+        canEditRequiredDocs: true,
+      ),
+    );
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: StaffCredentialReviewView()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(RequiredDocCategoriesEditor.helperText), findsOneWidget);
+    expect(find.text('Save certificates'), findsOneWidget);
+  });
+
+  testWidgets('shows read-only required doc labels when cannot edit', (
+    tester,
+  ) async {
+    when(
+      () => credentials.listForTenantContractor(
+        'contractor-1',
+        engagementId: 'engagement-1',
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => pipeline.listEvidenceForContractor('contractor-1'),
+    ).thenAnswer((_) async => const []);
+
+    Get.put(
+      StaffCredentialReviewController(
+        repository: credentials,
+        engagementsRepository: engagements,
+        session: session,
+        documentPipeline: pipeline,
+        contractorId: 'contractor-1',
+        engagementId: 'engagement-1',
+        initialRequiredCategories: const ['first_aid'],
+        canEditRequiredDocs: false,
+      ),
+    );
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: StaffCredentialReviewView()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('First aid'), findsOneWidget);
+    expect(find.text('Save certificates'), findsNothing);
+  });
+
+  testWidgets('shows share-request empty state instead of raw 403 detail', (
+    tester,
+  ) async {
+    final controller = StaffCredentialReviewController(
+      repository: credentials,
+      engagementsRepository: engagements,
+      session: session,
+      documentPipeline: pipeline,
+      contractorId: 'contractor-1',
+      engagementId: 'engagement-1',
+    );
+    Get.put(controller);
+    await controller.load();
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: StaffCredentialReviewView()),
+    );
+    await tester.pump();
+
+    expect(
+      find.text(
+        'This contractor has not shared credentials with your organisation yet.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Request access'), findsOneWidget);
+    expect(find.text('sharing_grant_required'), findsNothing);
+    expect(find.textContaining('403'), findsNothing);
+  });
+
+  testWidgets('shows reason picker only after reject is tapped', (
+    tester,
+  ) async {
+    when(
+      () => credentials.listForTenantContractor(
+        'contractor-1',
+        engagementId: 'engagement-1',
+      ),
+    ).thenAnswer((_) async => [_sampleCredential()]);
+    when(
+      () => pipeline.listEvidenceForContractor('contractor-1'),
+    ).thenAnswer((_) async => const []);
+
+    final controller = StaffCredentialReviewController(
+      repository: credentials,
+      engagementsRepository: engagements,
+      session: session,
+      documentPipeline: pipeline,
+      contractorId: 'contractor-1',
+      engagementId: 'engagement-1',
+    );
+    Get.put(controller);
+    await controller.load();
+
+    await tester.pumpWidget(
+      const GetMaterialApp(home: StaffCredentialReviewView()),
+    );
+    await tester.pump();
+
+    expect(find.text('Reason code'), findsNothing);
+
+    await tester.tap(find.text('Reject'));
+    await tester.pump();
+
+    expect(find.text('Why are you rejecting this credential?'), findsOneWidget);
+    expect(find.text('Reason code'), findsOneWidget);
+    expect(find.text('Confirm reject'), findsOneWidget);
+  });
+
+  testWidgets('reject without submitted certificate shows error', (
+    tester,
+  ) async {
+    when(
+      () => credentials.listForTenantContractor(
+        'contractor-1',
+        engagementId: 'engagement-1',
+      ),
+    ).thenAnswer(
+      (_) async => [
+        CredentialOut(
+          id: 'credential-1',
           contractorId: 'contractor-1',
-          engagementId: 'engagement-1',
-          initialRequiredCategories: const ['first_aid'],
-          canEditRequiredDocs: true,
+          credentialType: 'first_aid',
+          status: 'active',
+          provenanceState: 'contractor_asserted',
+          evidencePresence: 'none',
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
         ),
-      );
+      ],
+    );
+    when(
+      () => pipeline.listEvidenceForContractor('contractor-1'),
+    ).thenAnswer((_) async => const []);
 
-      await tester.pumpWidget(
-        const GetMaterialApp(home: StaffCredentialReviewView()),
-      );
-      await tester.pumpAndSettle();
+    final controller = StaffCredentialReviewController(
+      repository: credentials,
+      engagementsRepository: engagements,
+      session: session,
+      documentPipeline: pipeline,
+      contractorId: 'contractor-1',
+      engagementId: 'engagement-1',
+    );
+    Get.put(controller);
+    await controller.load();
 
-      expect(find.text(RequiredDocCategoriesEditor.helperText), findsOneWidget);
-      expect(find.text('Save certificates'), findsOneWidget);
-    },
-  );
+    await tester.pumpWidget(
+      const GetMaterialApp(home: StaffCredentialReviewView()),
+    );
+    await tester.pump();
 
-  testWidgets(
-    'shows read-only required doc labels when cannot edit',
-    (tester) async {
-      when(
-        () => credentials.listForTenantContractor(
-          'contractor-1',
-          engagementId: 'engagement-1',
-        ),
-      ).thenAnswer((_) async => []);
-      when(
-        () => pipeline.listEvidenceForContractor('contractor-1'),
-      ).thenAnswer((_) async => const []);
+    await tester.tap(find.text('Reject'));
+    await tester.pump();
 
-      Get.put(
-        StaffCredentialReviewController(
-          repository: credentials,
-          engagementsRepository: engagements,
-          session: session,
-          documentPipeline: pipeline,
-          contractorId: 'contractor-1',
-          engagementId: 'engagement-1',
-          initialRequiredCategories: const ['first_aid'],
-          canEditRequiredDocs: false,
-        ),
-      );
-
-      await tester.pumpWidget(
-        const GetMaterialApp(home: StaffCredentialReviewView()),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('First aid'), findsOneWidget);
-      expect(find.text('Save certificates'), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'shows share-request empty state instead of raw 403 detail',
-    (tester) async {
-      final controller = StaffCredentialReviewController(
-        repository: credentials,
-        engagementsRepository: engagements,
-        session: session,
-        documentPipeline: pipeline,
-        contractorId: 'contractor-1',
-        engagementId: 'engagement-1',
-      );
-      Get.put(controller);
-      await controller.load();
-
-      await tester.pumpWidget(
-        const GetMaterialApp(home: StaffCredentialReviewView()),
-      );
-      await tester.pump();
-
-      expect(
-        find.text(
-          'This contractor has not shared credentials with your organisation yet.',
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('Request access'), findsOneWidget);
-      expect(find.text('sharing_grant_required'), findsNothing);
-      expect(find.textContaining('403'), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'shows reason picker only after reject is tapped',
-    (tester) async {
-      when(
-        () => credentials.listForTenantContractor(
-          'contractor-1',
-          engagementId: 'engagement-1',
-        ),
-      ).thenAnswer((_) async => [_sampleCredential()]);
-      when(
-        () => pipeline.listEvidenceForContractor('contractor-1'),
-      ).thenAnswer((_) async => const []);
-
-      final controller = StaffCredentialReviewController(
-        repository: credentials,
-        engagementsRepository: engagements,
-        session: session,
-        documentPipeline: pipeline,
-        contractorId: 'contractor-1',
-        engagementId: 'engagement-1',
-      );
-      Get.put(controller);
-      await controller.load();
-
-      await tester.pumpWidget(
-        const GetMaterialApp(home: StaffCredentialReviewView()),
-      );
-      await tester.pump();
-
-      expect(find.text('Reason code'), findsNothing);
-
-      await tester.tap(find.text('Reject'));
-      await tester.pump();
-
-      expect(find.text('Why are you rejecting this credential?'), findsOneWidget);
-      expect(find.text('Reason code'), findsOneWidget);
-      expect(find.text('Confirm reject'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'reject without submitted certificate shows error',
-    (tester) async {
-      when(
-        () => credentials.listForTenantContractor(
-          'contractor-1',
-          engagementId: 'engagement-1',
-        ),
-      ).thenAnswer(
-        (_) async => [
-          CredentialOut(
-            id: 'credential-1',
-            contractorId: 'contractor-1',
-            credentialType: 'first_aid',
-            status: 'active',
-            provenanceState: 'contractor_asserted',
-            evidencePresence: 'none',
-            createdAt: DateTime(2026),
-            updatedAt: DateTime(2026),
-          ),
-        ],
-      );
-      when(
-        () => pipeline.listEvidenceForContractor('contractor-1'),
-      ).thenAnswer((_) async => const []);
-
-      final controller = StaffCredentialReviewController(
-        repository: credentials,
-        engagementsRepository: engagements,
-        session: session,
-        documentPipeline: pipeline,
-        contractorId: 'contractor-1',
-        engagementId: 'engagement-1',
-      );
-      Get.put(controller);
-      await controller.load();
-
-      await tester.pumpWidget(
-        const GetMaterialApp(home: StaffCredentialReviewView()),
-      );
-      await tester.pump();
-
-      await tester.tap(find.text('Reject'));
-      await tester.pump();
-
-      expect(
-        find.text('No certificate has been submitted to reject.'),
-        findsOneWidget,
-      );
-      expect(find.text('Why are you rejecting this credential?'), findsNothing);
-    },
-  );
+    expect(
+      find.text('No certificate has been submitted to reject.'),
+      findsOneWidget,
+    );
+    expect(find.text('Why are you rejecting this credential?'), findsNothing);
+  });
 }

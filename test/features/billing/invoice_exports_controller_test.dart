@@ -19,7 +19,10 @@ final _now = DateTime.utc(2026, 8, 13, 10);
 final _visitStart = DateTime.utc(2026, 8, 13, 9);
 final _visitEnd = DateTime.utc(2026, 8, 13, 11);
 
-InvoiceExportOut _export({String id = 'export-1', String status = 'finalized'}) {
+InvoiceExportOut _export({
+  String id = 'export-1',
+  String status = 'finalized',
+}) {
   return InvoiceExportOut(
     id: id,
     tenantId: 'tenant-1',
@@ -113,20 +116,25 @@ void main() {
       verify(() => repository.listInvoiceExports(limit: 100)).called(1);
     });
 
-    test('loadExports surfaces permission error when billing.view missing', () async {
-      when(() => session.canViewBilling).thenReturn(false);
+    test(
+      'loadExports surfaces permission error when billing.view missing',
+      () async {
+        when(() => session.canViewBilling).thenReturn(false);
 
-      final controller = _controller(
-        repository: repository,
-        visitsRepository: visitsRepository,
-        session: session,
-      );
-      await controller.loadExports();
+        final controller = _controller(
+          repository: repository,
+          visitsRepository: visitsRepository,
+          session: session,
+        );
+        await controller.loadExports();
 
-      expect(controller.exports, isEmpty);
-      expect(controller.errorMessage.value, contains('billing.view'));
-      verifyNever(() => repository.listInvoiceExports(limit: any(named: 'limit')));
-    });
+        expect(controller.exports, isEmpty);
+        expect(controller.errorMessage.value, contains('billing.view'));
+        verifyNever(
+          () => repository.listInvoiceExports(limit: any(named: 'limit')),
+        );
+      },
+    );
 
     test('loadExportableVisits loads completed visits for period', () async {
       when(() => session.canManageBilling).thenReturn(true);
@@ -151,91 +159,100 @@ void main() {
       expect(controller.exportableVisits.single.id, 'visit-1');
     });
 
-    test('createExport posts visit ids and clears selection on success', () async {
-      when(() => session.canManageBilling).thenReturn(true);
-      when(
-        () => visitsRepository.listVisits(
-          from: any(named: 'from'),
-          to: any(named: 'to'),
-          status: 'completed',
-          limit: 200,
-        ),
-      ).thenAnswer((_) async => [_exportableVisit()]);
-      when(
-        () => repository.createInvoiceExport(any()),
-      ).thenAnswer((_) async => _export(id: 'export-new'));
-      when(
-        () => repository.listInvoiceExports(limit: any(named: 'limit')),
-      ).thenAnswer((_) async => [_export(id: 'export-new')]);
+    test(
+      'createExport posts visit ids and clears selection on success',
+      () async {
+        when(() => session.canManageBilling).thenReturn(true);
+        when(
+          () => visitsRepository.listVisits(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            status: 'completed',
+            limit: 200,
+          ),
+        ).thenAnswer((_) async => [_exportableVisit()]);
+        when(
+          () => repository.createInvoiceExport(any()),
+        ).thenAnswer((_) async => _export(id: 'export-new'));
+        when(
+          () => repository.listInvoiceExports(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [_export(id: 'export-new')]);
 
-      final controller = _controller(
-        repository: repository,
-        visitsRepository: visitsRepository,
-        session: session,
-        init: true,
-      );
-      await controller.loadExportableVisits();
-      controller.selectedVisitIds.add('visit-1');
-      expect(controller.selectedVisitsReady, isTrue);
+        final controller = _controller(
+          repository: repository,
+          visitsRepository: visitsRepository,
+          session: session,
+          init: true,
+        );
+        await controller.loadExportableVisits();
+        controller.selectedVisitIds.add('visit-1');
+        expect(controller.selectedVisitsReady, isTrue);
 
-      await controller.createExport();
+        await controller.createExport();
 
-      final captured = verify(
-        () => repository.createInvoiceExport(captureAny()),
-      ).captured.single as InvoiceExportCreateRequest;
-      expect(captured.visitIds, ['visit-1']);
-      expect(controller.selectedVisitIds, isEmpty);
-      expect(controller.lastVisitErrors, isEmpty);
-      expect(controller.tabIndex.value, 0);
-    });
+        final captured =
+            verify(
+                  () => repository.createInvoiceExport(captureAny()),
+                ).captured.single
+                as InvoiceExportCreateRequest;
+        expect(captured.visitIds, ['visit-1']);
+        expect(controller.selectedVisitIds, isEmpty);
+        expect(controller.lastVisitErrors, isEmpty);
+        expect(controller.tabIndex.value, 0);
+      },
+    );
 
-    test('createExport maps visit_errors and excludes already exported visits', () async {
-      when(() => session.canManageBilling).thenReturn(true);
-      when(
-        () => visitsRepository.listVisits(
-          from: any(named: 'from'),
-          to: any(named: 'to'),
-          status: 'completed',
-          limit: 200,
-        ),
-      ).thenAnswer(
-        (_) async => [
-          _exportableVisit(id: 'visit-1'),
-          _exportableVisit(id: 'visit-2'),
-        ],
-      );
-      when(() => repository.createInvoiceExport(any())).thenThrow(
-        const AppFailure(
-          code: 'batch_export_failed',
-          message: 'Some visits could not be exported.',
-          presentation: AppFailurePresentation.inline,
-          visitErrors: [
-            {
-              'visit_id': 'visit-1',
-              'code': 'visit_already_exported',
-              'message': 'Already included in an export — void that export to rebill.',
-            },
+    test(
+      'createExport maps visit_errors and excludes already exported visits',
+      () async {
+        when(() => session.canManageBilling).thenReturn(true);
+        when(
+          () => visitsRepository.listVisits(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            status: 'completed',
+            limit: 200,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _exportableVisit(id: 'visit-1'),
+            _exportableVisit(id: 'visit-2'),
           ],
-        ),
-      );
+        );
+        when(() => repository.createInvoiceExport(any())).thenThrow(
+          const AppFailure(
+            code: 'batch_export_failed',
+            message: 'Some visits could not be exported.',
+            presentation: AppFailurePresentation.inline,
+            visitErrors: [
+              {
+                'visit_id': 'visit-1',
+                'code': 'visit_already_exported',
+                'message':
+                    'Already included in an export — void that export to rebill.',
+              },
+            ],
+          ),
+        );
 
-      final controller = _controller(
-        repository: repository,
-        visitsRepository: visitsRepository,
-        session: session,
-        init: true,
-      );
-      await controller.loadExportableVisits();
-      controller.selectedVisitIds.addAll(['visit-1', 'visit-2']);
+        final controller = _controller(
+          repository: repository,
+          visitsRepository: visitsRepository,
+          session: session,
+          init: true,
+        );
+        await controller.loadExportableVisits();
+        controller.selectedVisitIds.addAll(['visit-1', 'visit-2']);
 
-      await controller.createExport();
+        await controller.createExport();
 
-      expect(controller.lastVisitErrors, hasLength(1));
-      expect(controller.lastVisitErrors.single.visitId, 'visit-1');
-      expect(controller.excludedVisitIds, contains('visit-1'));
-      expect(controller.exportableVisits.map((v) => v.id), ['visit-2']);
-      expect(controller.selectedVisitIds, ['visit-2']);
-    });
+        expect(controller.lastVisitErrors, hasLength(1));
+        expect(controller.lastVisitErrors.single.visitId, 'visit-1');
+        expect(controller.excludedVisitIds, contains('visit-1'));
+        expect(controller.exportableVisits.map((v) => v.id), ['visit-2']);
+        expect(controller.selectedVisitIds, ['visit-2']);
+      },
+    );
   });
 
   test('invoiceExportStatusLabel formats known statuses', () {

@@ -26,8 +26,9 @@ void main() {
     visits = _MockVisitsRepository();
     final session = _MockSessionService();
     when(() => session.hasPermission(any())).thenReturn(true);
-    when(() => payroll.listBatches(status: any(named: 'status')))
-        .thenAnswer((_) async => <PaymentBatchOut>[]);
+    when(
+      () => payroll.listBatches(status: any(named: 'status')),
+    ).thenAnswer((_) async => <PaymentBatchOut>[]);
     when(
       () => visits.listVisits(
         from: any(named: 'from'),
@@ -46,12 +47,14 @@ void main() {
 
   tearDown(Get.reset);
 
-  test('createBatch without completed visits shows completed-visit error',
-      () async {
-    await controller.createBatch();
-    expect(
-      controller.errorMessage.value,
-      'Visit must be completed to add to payment batch.',
-    );
-  });
+  test(
+    'createBatch without completed visits shows completed-visit error',
+    () async {
+      await controller.createBatch();
+      expect(
+        controller.errorMessage.value,
+        'Visit must be completed to add to payment batch.',
+      );
+    },
+  );
 }

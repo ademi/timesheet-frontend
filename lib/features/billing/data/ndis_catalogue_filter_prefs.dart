@@ -22,9 +22,11 @@ class NdisCatalogueFilterPrefs {
     void Function(String key, dynamic value)? write,
     void Function(String key)? remove,
     GetStorage? storage,
-  })  : _read = read ?? ((key) => (storage ?? GetStorage()).read(key)),
-        _write = write ?? ((key, value) => (storage ?? GetStorage()).write(key, value)),
-        _remove = remove ?? ((key) => (storage ?? GetStorage()).remove(key));
+  }) : _read = read ?? ((key) => (storage ?? GetStorage()).read(key)),
+       _write =
+           write ??
+           ((key, value) => (storage ?? GetStorage()).write(key, value)),
+       _remove = remove ?? ((key) => (storage ?? GetStorage()).remove(key));
 
   static const categoryKeyBase = 'ndis_filter_category';
   static const regGroupKeyBase = 'ndis_filter_reg_group';
@@ -57,10 +59,7 @@ class NdisCatalogueFilterPrefs {
     );
   }
 
-  void save({
-    String? categoryNumber,
-    String? registrationGroupNumber,
-  }) {
+  void save({String? categoryNumber, String? registrationGroupNumber}) {
     _writeString(_categoryKey, categoryNumber);
     _writeString(_regGroupKey, registrationGroupNumber);
   }

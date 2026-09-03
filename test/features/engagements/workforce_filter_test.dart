@@ -45,15 +45,11 @@ void main() {
         RequiredDocCategory(category: 'wwcc', isRequired: true),
       ],
     );
+    expect(missingCategories(engagement, const []).isNotEmpty, isTrue);
     expect(
-      missingCategories(engagement, const []).isNotEmpty,
-      isTrue,
-    );
-    expect(
-      missingCategories(
-        engagement,
-        [_credential(contractorId: 'p1', type: 'wwcc')],
-      ).isEmpty,
+      missingCategories(engagement, [
+        _credential(contractorId: 'p1', type: 'wwcc'),
+      ]).isEmpty,
       isTrue,
     );
   });
