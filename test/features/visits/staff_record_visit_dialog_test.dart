@@ -114,10 +114,13 @@ void main() {
     );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byType(TextField).last,
-      'Paper timesheet',
+    final reasonField = find.byWidgetPredicate(
+      (w) =>
+          w is TextField &&
+          w.decoration?.labelText == 'Reason (required)',
     );
+    expect(reasonField, findsOneWidget);
+    await tester.enterText(reasonField, 'Paper timesheet');
     await tester.tap(find.text('Record visit').last);
     await tester.pumpAndSettle();
     expect(captured?.reason, 'Paper timesheet');
