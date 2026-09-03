@@ -93,6 +93,7 @@ class StaffInvoiceExportDetailBinding extends Bindings {
         InvoiceExportDetailController(
           repository: Get.find<BillingRepository>(),
           session: Get.find<SessionService>(),
+          exportedVisitIds: Get.find<ExportedVisitIdsStore>(),
         ),
       );
     }

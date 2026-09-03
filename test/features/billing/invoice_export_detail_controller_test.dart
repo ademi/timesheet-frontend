@@ -4,14 +4,22 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/billing/controllers/invoice_export_detail_controller.dart';
+import 'package:rostiq/features/billing/controllers/invoice_exports_controller.dart';
+import 'package:rostiq/features/billing/data/exported_visit_ids_store.dart';
 import 'package:rostiq/features/billing/data/models/billing_models.dart';
 import 'package:rostiq/features/billing/data/repositories/billing_repository.dart';
+import 'package:rostiq/features/visits/data/models/visit_models.dart';
+import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
 
 class _MockBillingRepository extends Mock implements BillingRepository {}
+
+class _MockVisitsRepository extends Mock implements VisitsRepository {}
 
 class _MockSessionService extends Mock implements SessionService {}
 
 final _now = DateTime.utc(2026, 8, 13, 10);
+final _visitStart = DateTime.utc(2026, 8, 13, 9);
+final _visitEnd = DateTime.utc(2026, 8, 13, 11);
 
 InvoiceExportOut _export({
   String id = 'export-1',
@@ -49,6 +57,28 @@ InvoiceExportLineOut _line() {
   );
 }
 
+VisitOut _exportableVisit({String id = 'visit-1'}) {
+  return VisitOut(
+    id: id,
+    tenantId: 'tenant-1',
+    jobId: 'job-1',
+    contractorId: 'contractor-1',
+    scheduledStart: _visitStart,
+    scheduledEnd: _visitEnd,
+    status: 'completed',
+    source: 'manual',
+    latitude: 0,
+    longitude: 0,
+    geofenceRadiusM: 100,
+    geofenceMode: 'informational',
+    paymentStatus: 'unpaid',
+    createdAt: _visitStart,
+    updatedAt: _visitStart,
+    supportItemCode: '01_011_0107_1_1',
+    priceTierOverride: PriceTier.national,
+  );
+}
+
 void main() {
   late _MockBillingRepository repository;
   late _MockSessionService session;
@@ -80,6 +110,7 @@ void main() {
       final controller = InvoiceExportDetailController(
         repository: repository,
         session: session,
+        exportedVisitIds: ExportedVisitIdsStore(),
       );
       await controller.load();
 
@@ -100,6 +131,7 @@ void main() {
       final controller = InvoiceExportDetailController(
         repository: repository,
         session: session,
+        exportedVisitIds: ExportedVisitIdsStore(),
       );
       await controller.downloadCsv();
 
@@ -117,6 +149,7 @@ void main() {
       final controller = InvoiceExportDetailController(
         repository: repository,
         session: session,
+        exportedVisitIds: ExportedVisitIdsStore(),
       );
       controller.selected.value = _export(id: 'export-1');
       expect(controller.canVoid, isTrue);
@@ -126,6 +159,81 @@ void main() {
       expect(controller.selected.value?.isVoid, isTrue);
       verify(() => repository.voidInvoiceExport('export-1')).called(1);
     });
+
+    test('voidExport releases visit ids on ExportedVisitIdsStore', () async {
+      when(() => session.canManageBilling).thenReturn(true);
+      when(() => repository.voidInvoiceExport('export-1')).thenAnswer(
+        (_) async => _export(id: 'export-1', status: 'void', lines: [_line()]),
+      );
+
+      final store = ExportedVisitIdsStore()..mark(['visit-1']);
+      Get.parameters = {'id': 'export-1'};
+      final detail = InvoiceExportDetailController(
+        repository: repository,
+        session: session,
+        exportedVisitIds: store,
+      );
+      detail.selected.value = _export(id: 'export-1', lines: [_line()]);
+
+      await detail.voidExport();
+
+      expect(store.contains('visit-1'), isFalse);
+    });
+
+    test(
+      'voidExport reloads Create list when InvoiceExportsController registered',
+      () async {
+        when(() => session.canManageBilling).thenReturn(true);
+        when(() => session.canViewBilling).thenReturn(true);
+        when(() => repository.voidInvoiceExport('export-1')).thenAnswer(
+          (_) async =>
+              _export(id: 'export-1', status: 'void', lines: [_line()]),
+        );
+        final visitsRepository = _MockVisitsRepository();
+        when(
+          () => visitsRepository.listVisits(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            status: 'completed',
+            limit: 200,
+          ),
+        ).thenAnswer((_) async => [_exportableVisit()]);
+
+        final store = ExportedVisitIdsStore()..mark(['visit-1']);
+        when(
+          () => repository.listInvoiceExports(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => <InvoiceExportOut>[]);
+        final listController = InvoiceExportsController(
+          repository: repository,
+          visitsRepository: visitsRepository,
+          session: session,
+          exportedVisitIds: store,
+        );
+        Get.put(listController);
+        await Future<void>.delayed(Duration.zero);
+
+        Get.parameters = {'id': 'export-1'};
+        final detail = InvoiceExportDetailController(
+          repository: repository,
+          session: session,
+          exportedVisitIds: store,
+        );
+        detail.selected.value = _export(id: 'export-1', lines: [_line()]);
+
+        await detail.voidExport();
+
+        expect(store.contains('visit-1'), isFalse);
+        verify(
+          () => visitsRepository.listVisits(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            status: 'completed',
+            limit: 200,
+          ),
+        ).called(1);
+        expect(listController.exportableVisits.map((v) => v.id), ['visit-1']);
+      },
+    );
 
     test('voidExport surfaces AppFailure message', () async {
       when(() => session.canManageBilling).thenReturn(true);
@@ -141,6 +249,7 @@ void main() {
       final controller = InvoiceExportDetailController(
         repository: repository,
         session: session,
+        exportedVisitIds: ExportedVisitIdsStore(),
       );
       controller.selected.value = _export(id: 'export-1');
 
@@ -157,6 +266,7 @@ void main() {
       final controller = InvoiceExportDetailController(
         repository: repository,
         session: session,
+        exportedVisitIds: ExportedVisitIdsStore(),
       );
       controller.selected.value = _export(status: 'void');
 

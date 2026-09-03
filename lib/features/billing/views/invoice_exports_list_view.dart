@@ -248,6 +248,20 @@ class _VisitExportTile extends StatelessWidget {
               ),
             ),
           for (final check in preflight.checks) _PreflightRow(check: check),
+          if (!preflight.isReady ||
+              (serverErr != null &&
+                  serverErr.code != 'visit_already_exported'))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => controller.openVisitForFix(visit),
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: const Text('Fix on visit'),
+                ),
+              ),
+            ),
         ],
       ),
     );

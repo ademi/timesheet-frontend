@@ -9,8 +9,10 @@ import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/utils/download_bytes.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../data/exported_visit_ids_store.dart';
 import '../data/models/billing_models.dart';
 import '../data/repositories/billing_repository.dart';
+import 'invoice_exports_controller.dart';
 
 String invoiceExportCsvFilename(String exportId) {
   final short = exportId.length <= 8 ? exportId : exportId.substring(0, 8);
@@ -21,11 +23,14 @@ class InvoiceExportDetailController extends GetxController {
   InvoiceExportDetailController({
     required BillingRepository repository,
     required SessionService session,
+    required ExportedVisitIdsStore exportedVisitIds,
   }) : _repository = repository,
-       _session = session;
+       _session = session,
+       _exportedVisitIds = exportedVisitIds;
 
   final BillingRepository _repository;
   final SessionService _session;
+  final ExportedVisitIdsStore _exportedVisitIds;
 
   final selected = Rxn<InvoiceExportOut>();
   final isLoading = false.obs;
@@ -141,6 +146,13 @@ class InvoiceExportDetailController extends GetxController {
     errorMessage.value = null;
     try {
       selected.value = await _repository.voidInvoiceExport(id);
+      _exportedVisitIds.release([
+        for (final line in selected.value?.lines ?? const <InvoiceExportLineOut>[])
+          line.visitId,
+      ]);
+      if (Get.isRegistered<InvoiceExportsController>()) {
+        await Get.find<InvoiceExportsController>().loadExportableVisits();
+      }
       if (!Get.testMode) {
         AppToast.success('Export voided', 'Visits can be exported again.');
       }

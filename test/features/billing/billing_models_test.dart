@@ -91,4 +91,31 @@ void main() {
     expect(PriceTier.labelForOverride(PriceTier.remote), 'Remote');
     expect(PriceTier.labelForOverride(PriceTier.veryRemote), 'Very remote');
   });
+
+  test('PriceTier.sourceHint names staff override', () {
+    expect(
+      PriceTier.sourceHint(
+        priceTierOverride: PriceTier.remote,
+        lockedExported: false,
+      ),
+      contains('staff override'),
+    );
+  });
+
+  test('PriceTier.sourceHint names Auto MMM when no override', () {
+    expect(
+      PriceTier.sourceHint(priceTierOverride: null, lockedExported: false),
+      contains('Auto (MMM'),
+    );
+  });
+
+  test('PriceTier.sourceHint locked when exported', () {
+    expect(
+      PriceTier.sourceHint(
+        priceTierOverride: PriceTier.national,
+        lockedExported: true,
+      ),
+      startsWith('Locked'),
+    );
+  });
 }

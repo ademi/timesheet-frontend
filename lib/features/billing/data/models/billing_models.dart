@@ -23,6 +23,20 @@ abstract final class PriceTier {
         return tier;
     }
   }
+
+  static String sourceHint({
+    required String? priceTierOverride,
+    required bool lockedExported,
+  }) {
+    if (lockedExported) {
+      return 'Locked — already included in an export.';
+    }
+    final override = priceTierOverride?.trim();
+    if (override != null && override.isNotEmpty) {
+      return 'Tier source: staff override (${labelForOverride(override)}). Wins over MMM postcode.';
+    }
+    return 'Tier source: Auto (MMM postcode at export). Set an override if the job location postcode is missing or wrong.';
+  }
 }
 
 /// PATCH body for job or visit support item (both null clears).

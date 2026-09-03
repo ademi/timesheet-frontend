@@ -218,9 +218,10 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                           ),
                         const SizedBox(height: 4),
                         Text(
-                          controller.priceTierEditBlocked.value
-                              ? 'Locked — already included in an export.'
-                              : 'Staff override wins over MMM postcode. Without an override, export still needs a job location postcode.',
+                          PriceTier.sourceHint(
+                            priceTierOverride: v.priceTierOverride,
+                            lockedExported: controller.priceTierEditBlocked.value,
+                          ),
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textMuted,
