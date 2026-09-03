@@ -252,34 +252,34 @@ class _StaffRecordVisitPageState extends State<_StaffRecordVisitPage> {
                             ),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Before you record',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.openSlot,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              for (final name in missingForms)
-                                Text(
-                                  '• Still missing: $name — visit will complete anyway',
-                                  style: const TextStyle(
-                                    color: AppColors.openSlot,
-                                    fontSize: 13,
+                          child: Builder(
+                            builder: (context) {
+                              final warnBody = Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(color: AppColors.openSlot);
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Before you record',
+                                    style: (warnBody ?? const TextStyle())
+                                        .copyWith(fontWeight: FontWeight.w700),
                                   ),
-                                ),
-                              if (missingSupport)
-                                const Text(
-                                  '• No NDIS support item — set it on visit detail or invoice export will fail',
-                                  style: TextStyle(
-                                    color: AppColors.openSlot,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                            ],
+                                  const SizedBox(height: 6),
+                                  for (final name in missingForms)
+                                    Text(
+                                      '• Still missing: $name — visit will complete anyway',
+                                      style: warnBody,
+                                    ),
+                                  if (missingSupport)
+                                    Text(
+                                      '• No NDIS support item — set it on visit detail or invoice export will fail',
+                                      style: warnBody,
+                                    ),
+                                ],
+                              );
+                            },
                           ),
                         ),
                       ),
