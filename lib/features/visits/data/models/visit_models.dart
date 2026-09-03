@@ -220,6 +220,8 @@ class VisitOut {
     this.latitude,
     this.longitude,
     this.completedAt,
+    this.clockInAt,
+    this.clockOutAt,
     this.jobTitle,
     this.tenantName,
     this.contractorName,
@@ -251,6 +253,8 @@ class VisitOut {
   final String geofenceMode;
   final String paymentStatus;
   final DateTime? completedAt;
+  final DateTime? clockInAt;
+  final DateTime? clockOutAt;
   final String? jobTitle;
   final String? tenantName;
   final String? contractorName;
@@ -302,6 +306,14 @@ class VisitOut {
           json['completed_at'] != null
               ? DateTime.tryParse(json['completed_at'].toString())
               : null,
+      clockInAt:
+          json['clock_in_at'] != null
+              ? DateTime.tryParse(json['clock_in_at'].toString())
+              : null,
+      clockOutAt:
+          json['clock_out_at'] != null
+              ? DateTime.tryParse(json['clock_out_at'].toString())
+              : null,
       jobTitle: json['job_title'] as String?,
       tenantName: json['tenant_name'] as String?,
       contractorName: json['contractor_name'] as String?,
@@ -326,6 +338,8 @@ class VisitOut {
   VisitOut copyWith({
     String? status,
     DateTime? completedAt,
+    DateTime? clockInAt,
+    DateTime? clockOutAt,
     List<VisitTaskOut>? tasks,
     List<VisitFormRequirement>? formRequirements,
     List<VisitFormSubmissionOut>? formSubmissions,
@@ -350,6 +364,8 @@ class VisitOut {
       geofenceMode: geofenceMode,
       paymentStatus: paymentStatus,
       completedAt: completedAt ?? this.completedAt,
+      clockInAt: clockInAt ?? this.clockInAt,
+      clockOutAt: clockOutAt ?? this.clockOutAt,
       jobTitle: jobTitle,
       tenantName: tenantName,
       contractorName: contractorName,
@@ -436,4 +452,52 @@ class VisitFormSubmitRequest {
     'form_template_id': formTemplateId,
     'payload_json': payloadJson,
   };
+}
+
+class AdminRecordVisitRequest {
+  const AdminRecordVisitRequest({
+    required this.visitId,
+    required this.clockInAt,
+    required this.clockOutAt,
+    required this.reason,
+  });
+
+  final String visitId;
+  final DateTime clockInAt;
+  final DateTime clockOutAt;
+  final String reason;
+
+  Map<String, dynamic> toJson() => {
+    'visit_id': visitId,
+    'action': 'admin_record_visit',
+    'clock_in_at': clockInAt.toUtc().toIso8601String(),
+    'clock_out_at': clockOutAt.toUtc().toIso8601String(),
+    'reason': reason,
+  };
+}
+
+class AdminRecordVisitOut {
+  const AdminRecordVisitOut({
+    required this.adjustmentId,
+    required this.timeEntryId,
+    required this.visitId,
+    required this.status,
+    required this.visitStatus,
+  });
+
+  final String adjustmentId;
+  final String timeEntryId;
+  final String visitId;
+  final String status;
+  final String visitStatus;
+
+  factory AdminRecordVisitOut.fromJson(Map<String, dynamic> json) {
+    return AdminRecordVisitOut(
+      adjustmentId: json['adjustment_id'].toString(),
+      timeEntryId: json['time_entry_id'].toString(),
+      visitId: json['visit_id'].toString(),
+      status: json['status'] as String? ?? 'closed',
+      visitStatus: json['visit_status'] as String? ?? '',
+    );
+  }
 }

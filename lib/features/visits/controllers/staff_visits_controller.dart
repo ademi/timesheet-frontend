@@ -102,8 +102,15 @@ class StaffVisitsController extends GetxController {
     final visit = selected.value;
     return visit != null &&
         canManage &&
-        visit.isScheduled &&
+        (visit.isScheduled || visit.isCheckedIn) &&
         visit.paymentStatus == 'unpaid';
+  }
+
+  bool get canRecordVisit {
+    final visit = selected.value;
+    if (visit == null) return false;
+    if (!_session.hasPermission(AppPermissions.attendanceAdjust)) return false;
+    return visit.isScheduled || visit.isCheckedIn;
   }
 
   bool get canEditVisitPriceTier {
@@ -1213,6 +1220,34 @@ class StaffVisitsController extends GetxController {
       await refreshSelected();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<bool> recordVisit({
+    required DateTime clockInAt,
+    required DateTime clockOutAt,
+    required String reason,
+  }) async {
+    final visit = selected.value;
+    if (visit == null || !canRecordVisit) return false;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      await _repository.recordVisit(
+        AdminRecordVisitRequest(
+          visitId: visit.id,
+          clockInAt: clockInAt,
+          clockOutAt: clockOutAt,
+          reason: reason,
+        ),
+      );
+      await refreshSelected();
+      return true;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      return false;
     } finally {
       isSaving.value = false;
     }

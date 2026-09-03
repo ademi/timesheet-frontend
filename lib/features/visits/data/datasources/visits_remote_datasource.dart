@@ -275,6 +275,22 @@ class VisitsRemoteDataSource {
     }
   }
 
+  Future<AdminRecordVisitOut> recordVisit(AdminRecordVisitRequest body) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.attendanceAdjustments,
+        data: body.toJson(),
+      );
+      return _require(
+        response.data,
+        AdminRecordVisitOut.fromJson,
+        'record visit',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   List<T> _mapList<T>(
     List<dynamic>? raw,
     T Function(Map<String, dynamic>) fromJson,

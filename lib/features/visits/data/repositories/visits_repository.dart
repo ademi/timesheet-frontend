@@ -108,4 +108,7 @@ class VisitsRepository {
     required DateTime from,
     required DateTime to,
   }) => _remote.fetchRosterOverlay(from: from, to: to);
+
+  Future<AdminRecordVisitOut> recordVisit(AdminRecordVisitRequest body) =>
+      _remote.recordVisit(body);
 }

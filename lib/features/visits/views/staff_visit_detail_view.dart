@@ -8,11 +8,19 @@ import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/staff_visits_controller.dart';
 import '../data/models/visit_models.dart';
+import 'staff_record_visit_dialog.dart';
 
 String _fmt(DateTime dt) {
   final l = dt.toLocal();
   String two(int n) => n.toString().padLeft(2, '0');
   return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
+}
+
+String _fmtClock(DateTime? dt) {
+  if (dt == null) return '—';
+  final l = dt.toLocal();
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(l.hour)}:${two(l.minute)}';
 }
 
 class StaffVisitDetailView extends StatefulWidget {
@@ -74,6 +82,15 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                         ),
                         Text('Start: ${_fmt(v.scheduledStart)}'),
                         Text('End: ${_fmt(v.scheduledEnd)}'),
+                        if (v.clockInAt != null || v.clockOutAt != null)
+                          Semantics(
+                            label:
+                                'Actual attendance: in ${_fmtClock(v.clockInAt)}, '
+                                'out ${v.clockOutAt == null ? 'not recorded' : _fmtClock(v.clockOutAt)}',
+                            child: Text(
+                              'Actual: in ${_fmtClock(v.clockInAt)} · out ${_fmtClock(v.clockOutAt)}',
+                            ),
+                          ),
                         if (v.locationLabel?.isNotEmpty == true)
                           Text('Location: ${v.locationLabel}'),
                         Text(
@@ -166,8 +183,8 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                         const SizedBox(height: 4),
                         Text(
                           controller.canEditVisitSupportItem
-                              ? 'Editable while scheduled and unpaid.'
-                              : 'Locked after check-in or payment.',
+                              ? 'Editable while scheduled or checked in and unpaid.'
+                              : 'Locked after completed or when paid.',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textMuted,
@@ -266,15 +283,32 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                         if (v.tasks.isEmpty) const Text('No tasks.'),
                         for (final t in v.tasks)
                           _VisitTaskRow(controller: controller, task: t),
+                        if (controller.canRecordVisit) ...[
+                          const Divider(height: 32),
+                          AsyncElevatedButton(
+                            onPressed: () => _recordVisit(context, controller),
+                            isLoading: controller.isSaving.value,
+                            child: const Text('Record visit…'),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                         if (controller.canManage &&
                             !v.isCancelled &&
                             !v.isCompleted) ...[
-                          const Divider(height: 32),
-                          AsyncElevatedButton(
-                            onPressed: () => _reschedule(context, controller),
-                            isLoading: controller.isSaving.value,
-                            child: const Text('Reschedule…'),
-                          ),
+                          if (!controller.canRecordVisit)
+                            const Divider(height: 32),
+                          if (controller.canRecordVisit)
+                            AsyncOutlinedButton(
+                              onPressed: () => _reschedule(context, controller),
+                              isLoading: controller.isSaving.value,
+                              child: const Text('Reschedule…'),
+                            )
+                          else
+                            AsyncElevatedButton(
+                              onPressed: () => _reschedule(context, controller),
+                              isLoading: controller.isSaving.value,
+                              child: const Text('Reschedule…'),
+                            ),
                           const SizedBox(height: 8),
                           AsyncOutlinedButton(
                             onPressed: controller.cancelSelected,
@@ -291,6 +325,29 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
           ],
         );
       }),
+    );
+  }
+
+  Future<void> _recordVisit(
+    BuildContext context,
+    StaffVisitsController controller,
+  ) async {
+    final v = controller.selected.value;
+    if (v == null) return;
+    await showStaffRecordVisitDialog(
+      context: context,
+      visit: v,
+      onSubmit: ({
+        required DateTime clockInAt,
+        required DateTime clockOutAt,
+        required String reason,
+      }) {
+        return controller.recordVisit(
+          clockInAt: clockInAt,
+          clockOutAt: clockOutAt,
+          reason: reason,
+        );
+      },
     );
   }
 

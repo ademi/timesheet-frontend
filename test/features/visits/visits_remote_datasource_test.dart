@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/constants/api_paths.dart';
 import 'package:rostiq/features/billing/data/models/billing_models.dart';
 import 'package:rostiq/features/visits/data/datasources/visits_remote_datasource.dart';
+import 'package:rostiq/features/visits/data/models/visit_models.dart';
 
 class MockDio extends Mock implements Dio {}
 
@@ -184,5 +185,42 @@ void main() {
             ).captured.single
             as Map;
     expect(captured['include_nested'], isFalse);
+  });
+
+  test('recordVisit posts admin_record_visit to attendance adjustments', () async {
+    when(
+      () => dio.post<Map<String, dynamic>>(
+        ApiPaths.attendanceAdjustments,
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer(
+      (_) async => Response(
+        requestOptions: RequestOptions(path: ApiPaths.attendanceAdjustments),
+        data: {
+          'adjustment_id': 'adj-1',
+          'time_entry_id': 'te-1',
+          'visit_id': visitId,
+          'status': 'closed',
+          'visit_status': 'completed',
+        },
+        statusCode: 200,
+      ),
+    );
+
+    final body = AdminRecordVisitRequest(
+      visitId: visitId,
+      clockInAt: DateTime.utc(2026, 9, 1, 9),
+      clockOutAt: DateTime.utc(2026, 9, 1, 11),
+      reason: 'Paper timesheet',
+    );
+    final out = await dataSource.recordVisit(body);
+
+    expect(out.visitStatus, 'completed');
+    verify(
+      () => dio.post<Map<String, dynamic>>(
+        ApiPaths.attendanceAdjustments,
+        data: body.toJson(),
+      ),
+    ).called(1);
   });
 }

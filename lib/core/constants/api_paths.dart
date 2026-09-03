@@ -167,6 +167,7 @@ abstract final class ApiPaths {
   static String jobVisits(String id) => '${job(id)}/visits';
   static String jobSupportItem(String id) => '${job(id)}/support-item';
   static const visits = '$_v1/visits';
+  static const attendanceAdjustments = '$_v1/attendance/adjustments';
   static String visit(String id) => '$visits/$id';
   static String visitCancel(String id) => '${visit(id)}/cancel';
   static String visitCheckIn(String id) => '${visit(id)}/check-in';
