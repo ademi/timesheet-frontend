@@ -146,6 +146,7 @@ void main() {
         () => visitsRepository.listVisits(
           from: any(named: 'from'),
           to: any(named: 'to'),
+          clientId: any(named: 'clientId'),
           status: 'completed',
           limit: 200,
         ),
@@ -171,6 +172,7 @@ void main() {
           () => visitsRepository.listVisits(
             from: any(named: 'from'),
             to: any(named: 'to'),
+            clientId: any(named: 'clientId'),
             status: 'completed',
             limit: 200,
           ),
@@ -214,6 +216,7 @@ void main() {
           () => visitsRepository.listVisits(
             from: any(named: 'from'),
             to: any(named: 'to'),
+            clientId: any(named: 'clientId'),
             status: 'completed',
             limit: 200,
           ),
@@ -257,6 +260,7 @@ void main() {
           () => visitsRepository.listVisits(
             from: any(named: 'from'),
             to: any(named: 'to'),
+            clientId: any(named: 'clientId'),
             status: 'completed',
             limit: 200,
           ),
@@ -309,6 +313,7 @@ void main() {
         () => visitsRepository.listVisits(
           from: any(named: 'from'),
           to: any(named: 'to'),
+          clientId: any(named: 'clientId'),
           status: 'completed',
           limit: 200,
         ),
@@ -337,6 +342,40 @@ void main() {
         'Morning self-care',
       );
       expect(controller.createExportHint, contains('Select ready'));
+    });
+
+    test('setClientFilter reloads visits with clientId', () async {
+      when(() => session.canManageBilling).thenReturn(true);
+      when(
+        () => visitsRepository.listVisits(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          clientId: any(named: 'clientId'),
+          status: 'completed',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => [_exportableVisit(id: 'visit-a')]);
+
+      final controller = _controller(
+        repository: repository,
+        visitsRepository: visitsRepository,
+        session: session,
+        init: true,
+      );
+      controller.tabIndex.value = 1;
+      await controller.setClientFilter('client-1');
+
+      expect(controller.clientIdFilter.value, 'client-1');
+      final captured = verify(
+        () => visitsRepository.listVisits(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          clientId: captureAny(named: 'clientId'),
+          status: 'completed',
+          limit: 200,
+        ),
+      ).captured;
+      expect(captured.last, 'client-1');
     });
   });
 

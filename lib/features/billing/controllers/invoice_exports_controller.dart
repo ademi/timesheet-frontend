@@ -5,6 +5,8 @@ import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../clients/data/models/client_models.dart';
+import '../../clients/data/repositories/clients_repository.dart';
 import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../data/exported_visit_ids_store.dart';
@@ -30,15 +32,18 @@ class InvoiceExportsController extends GetxController {
     required VisitsRepository visitsRepository,
     required SessionService session,
     required ExportedVisitIdsStore exportedVisitIds,
+    ClientsRepository? clientsRepository,
   }) : _repository = repository,
        _visitsRepository = visitsRepository,
        _session = session,
-       _exportedVisitIds = exportedVisitIds;
+       _exportedVisitIds = exportedVisitIds,
+       _clientsRepository = clientsRepository;
 
   final BillingRepository _repository;
   final VisitsRepository _visitsRepository;
   final SessionService _session;
   final ExportedVisitIdsStore _exportedVisitIds;
+  final ClientsRepository? _clientsRepository;
 
   final tabIndex = 0.obs;
   final exports = <InvoiceExportOut>[].obs;
@@ -48,6 +53,8 @@ class InvoiceExportsController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+  final clients = <ClientOut>[].obs;
+  final clientIdFilter = ''.obs;
 
   late final Rx<DateTimeRange> periodRange;
 
@@ -56,6 +63,20 @@ class InvoiceExportsController extends GetxController {
 
   /// Test/read access to the shared export exclusion set.
   ExportedVisitIdsStore get exportedVisitIds => _exportedVisitIds;
+
+  /// Active clients for the Create-tab filter dropdown.
+  List<({String id, String name})> get clientFilterOptions {
+    final list =
+        clients
+            .where((c) => c.status != 'inactive')
+            .map((c) => (id: c.id, name: c.fullName.trim()))
+            .where((c) => c.name.isNotEmpty)
+            .toList(growable: false)
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
+    return list;
+  }
 
   @override
   void onInit() {
@@ -68,6 +89,23 @@ class InvoiceExportsController extends GetxController {
           end: today,
         ).obs;
     loadExports();
+    if (canManage) {
+      loadClients();
+    }
+  }
+
+  Future<void> loadClients() async {
+    final repo = _clientsRepository;
+    if (repo == null || !canManage) return;
+    try {
+      clients.assignAll(await repo.listClients());
+      final selected = clientIdFilter.value;
+      if (selected.isNotEmpty && !clients.any((c) => c.id == selected)) {
+        clientIdFilter.value = '';
+      }
+    } catch (_) {
+      // Client filter is optional; Create still works with "All clients".
+    }
   }
 
   Future<void> loadExports() async {
@@ -104,9 +142,11 @@ class InvoiceExportsController extends GetxController {
     isLoading.value = true;
     errorMessage.value = null;
     try {
+      final clientId = clientIdFilter.value.trim();
       final list = await _visitsRepository.listVisits(
         from: from,
         to: to,
+        clientId: clientId.isEmpty ? null : clientId,
         status: 'completed',
         limit: 200,
       );
@@ -144,6 +184,17 @@ class InvoiceExportsController extends GetxController {
     selectedVisitIds.clear();
     lastVisitErrors.clear();
     await loadExportableVisits();
+  }
+
+  Future<void> setClientFilter(String? clientId) async {
+    final next = clientId?.trim() ?? '';
+    if (clientIdFilter.value == next) return;
+    clientIdFilter.value = next;
+    selectedVisitIds.clear();
+    lastVisitErrors.clear();
+    if (tabIndex.value == 1 && canManage) {
+      await loadExportableVisits();
+    }
   }
 
   VisitExportPreflight preflightFor(VisitOut visit) =>

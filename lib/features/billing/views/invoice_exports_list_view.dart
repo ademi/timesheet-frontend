@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/responsive/equal_fill_row.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
@@ -10,6 +11,30 @@ import '../controllers/invoice_exports_controller.dart';
 import '../data/models/billing_models.dart';
 import '../utils/visit_export_preflight.dart';
 import '../widgets/billing_ui.dart';
+
+String? _clientDropdownValue(
+  String? filter,
+  Iterable<({String id, String name})> clients,
+) {
+  if (filter == null || filter.isEmpty) return null;
+  for (final c in clients) {
+    if (c.id == filter) return filter;
+  }
+  return null;
+}
+
+List<DropdownMenuItem<String>> _clientDropdownItems(
+  Iterable<({String id, String name})> clients,
+) {
+  return [
+    const DropdownMenuItem(value: null, child: Text('All clients')),
+    for (final c in clients)
+      DropdownMenuItem(
+        value: c.id,
+        child: Text(c.name, overflow: TextOverflow.ellipsis),
+      ),
+  ];
+}
 
 class InvoiceExportsListView extends GetView<InvoiceExportsController> {
   const InvoiceExportsListView({super.key});
@@ -178,34 +203,58 @@ class _CreateExportTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final hint = controller.createExportHint;
+      final clients = controller.clientFilterOptions;
+      final clientFilter = controller.clientIdFilter.value;
       return Column(
         children: [
+          PageContent(
+            width: PageContentWidth.workflow,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  EqualFillRow(
+                    children: [
+                      DropdownButtonFormField<String>(
+                        value: _clientDropdownValue(clientFilter, clients),
+                        isExpanded: true,
+                        items: _clientDropdownItems(clients),
+                        onChanged: controller.setClientFilter,
+                        decoration: const InputDecoration(
+                          labelText: 'Client',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                      _PeriodFilterField(
+                        range: controller.periodRange.value,
+                        onPick: () => controller.pickPeriod(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Select completed visits to export as NDIS '
+                    'plan-manager CSV lines.',
+                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ),
           Expanded(
             child: RefreshIndicator(
               onRefresh: controller.loadExportableVisits,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 children: [
                   PageContent(
                     width: PageContentWidth.workflow,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _PeriodFilter(
-                          range: controller.periodRange.value,
-                          onPick: () => controller.pickPeriod(context),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Select completed visits to export as NDIS '
-                          'plan-manager CSV lines.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
                         if (controller.lastVisitErrors.isNotEmpty) ...[
-                          const SizedBox(height: 12),
                           const Text(
                             'Export issues',
                             style: TextStyle(fontWeight: FontWeight.w600),
@@ -219,13 +268,16 @@ class _CreateExportTab extends StatelessWidget {
                                 style: const TextStyle(color: AppColors.error),
                               ),
                             ),
+                          const SizedBox(height: 12),
                         ],
-                        const SizedBox(height: 16),
                         if (controller.exportableVisits.isEmpty &&
                             !controller.isLoading.value)
-                          const Text(
-                            'No completed visits in this period.',
-                            style: TextStyle(color: AppColors.textMuted),
+                          Text(
+                            clientFilter.isEmpty
+                                ? 'No completed visits in this period.'
+                                : 'No completed visits for this client in '
+                                    'this period.',
+                            style: const TextStyle(color: AppColors.textMuted),
                           ),
                         for (final visit in controller.exportableVisits)
                           _VisitExportTile(
@@ -301,53 +353,35 @@ class _CreateExportTab extends StatelessWidget {
   }
 }
 
-class _PeriodFilter extends StatelessWidget {
-  const _PeriodFilter({required this.range, required this.onPick});
+class _PeriodFilterField extends StatelessWidget {
+  const _PeriodFilterField({required this.range, required this.onPick});
 
   final DateTimeRange range;
   final VoidCallback onPick;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Period',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textMuted,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Material(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          child: InkWell(
-            onTap: onPick,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              decoration: billingPanelDecoration(),
-              child: Row(
-                children: [
-                  const Icon(Icons.date_range, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      '${billingFmtYmd(range.start)} – ${billingFmtYmd(range.end)}',
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                  const Icon(Icons.expand_more, color: AppColors.textMuted),
-                ],
+    return InputDecorator(
+      decoration: const InputDecoration(
+        labelText: 'Period',
+        border: OutlineInputBorder(),
+        isDense: true,
+      ),
+      child: InkWell(
+        onTap: onPick,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${billingFmtYmd(range.start)} – ${billingFmtYmd(range.end)}',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
+            const Icon(Icons.expand_more, size: 20, color: AppColors.textMuted),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

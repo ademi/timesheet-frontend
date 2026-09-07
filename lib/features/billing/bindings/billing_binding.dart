@@ -2,9 +2,11 @@ import 'package:get/get.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
+import '../../../core/services/token_storage.dart';
+import '../../clients/bindings/clients_binding.dart';
+import '../../clients/data/repositories/clients_repository.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../../visits/data/repositories/visits_repository.dart';
-import '../../../core/services/token_storage.dart';
 import '../controllers/invoice_export_detail_controller.dart';
 import '../controllers/invoice_exports_controller.dart';
 import '../data/datasources/billing_remote_datasource.dart';
@@ -69,6 +71,7 @@ class StaffInvoiceExportsBinding extends Bindings {
   void dependencies() {
     BillingBinding.ensureShared();
     VisitsBinding.ensureShared();
+    ClientsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<InvoiceExportsController>()) {
       Get.put(
@@ -77,6 +80,10 @@ class StaffInvoiceExportsBinding extends Bindings {
           visitsRepository: Get.find<VisitsRepository>(),
           session: Get.find<SessionService>(),
           exportedVisitIds: Get.find<ExportedVisitIdsStore>(),
+          clientsRepository:
+              Get.isRegistered<ClientsRepository>()
+                  ? Get.find<ClientsRepository>()
+                  : null,
         ),
       );
     }
