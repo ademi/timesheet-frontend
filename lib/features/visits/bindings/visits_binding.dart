@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
+import '../../clients/bindings/clients_binding.dart';
+import '../../clients/data/repositories/clients_repository.dart';
 import '../../engagements/bindings/engagements_binding.dart';
 import '../../payroll/bindings/payroll_binding.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
@@ -66,6 +68,7 @@ class StaffVisitsBinding extends Bindings {
   @override
   void dependencies() {
     VisitsBinding.ensureShared();
+    ClientsBinding.ensureShared();
     JobsBinding.ensureShared();
     EngagementsBinding.ensureShared();
     PayrollBinding.ensureShared();
@@ -80,6 +83,9 @@ class StaffVisitsBinding extends Bindings {
           session: Get.find<SessionService>(),
           payroll: Get.isRegistered<PayrollRepository>()
               ? Get.find<PayrollRepository>()
+              : null,
+          clientsRepository: Get.isRegistered<ClientsRepository>()
+              ? Get.find<ClientsRepository>()
               : null,
         ),
       );

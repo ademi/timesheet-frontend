@@ -10,6 +10,8 @@ import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/time/tenant_civil_time.dart';
 import '../../../shared/utils/name_sort.dart';
+import '../../clients/data/models/client_models.dart';
+import '../../clients/data/repositories/clients_repository.dart';
 import '../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../engagements/data/models/engagement_models.dart';
@@ -17,7 +19,9 @@ import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../shifts/data/models/shift_models.dart';
+import '../../shifts/data/models/shift_participant_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
+import '../../shifts/utils/allocation_math.dart';
 import '../data/models/roster_overlay_models.dart';
 import '../data/models/visit_models.dart';
 import '../data/repositories/visits_repository.dart';
@@ -75,12 +79,14 @@ class StaffVisitsController extends GetxController {
     required EngagementsRepository engagementsRepository,
     required SessionService session,
     PayrollRepository? payroll,
+    ClientsRepository? clientsRepository,
   }) : _repository = repository,
        _shiftsRepository = shiftsRepository,
        _jobsRepository = jobsRepository,
        _engagementsRepository = engagementsRepository,
        _session = session,
-       _payroll = payroll;
+       _payroll = payroll,
+       _clientsRepository = clientsRepository;
 
   final VisitsRepository _repository;
   final ShiftsRepository _shiftsRepository;
@@ -88,17 +94,22 @@ class StaffVisitsController extends GetxController {
   final EngagementsRepository _engagementsRepository;
   final SessionService _session;
   final PayrollRepository? _payroll;
+  final ClientsRepository? _clientsRepository;
 
   final shifts = <ShiftOut>[].obs;
   final jobs = <JobOut>[].obs;
   final engagements = <EngagementOut>[].obs;
+  final clientsForPicker = <ClientOut>[].obs;
+  final allocationChanges = <AllocationChangeLogOut>[].obs;
   final selected = Rxn<VisitOut>();
   final selectedShift = Rxn<ShiftOut>();
   final isLoading = false.obs;
   final isSaving = false.obs;
   final isRefreshing = false.obs;
+  final isLoadingAllocationChanges = false.obs;
   final isFillingHorizon = false.obs;
   final errorMessage = RxnString();
+  final showDraftCapacityHint = false.obs;
   final overlay = Rxn<RosterOverlayOut>();
   final overlayWarning = RxnString();
 
@@ -155,6 +166,26 @@ class StaffVisitsController extends GetxController {
         .toList(growable: false)
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return list;
+  }
+
+  Map<String, String> get participantNameMap {
+    final map = <String, String>{
+      for (final client in clientFilterOptions) client.id: client.name,
+    };
+    for (final client in clientsForPicker) {
+      map[client.id] = client.fullName;
+    }
+    return map;
+  }
+
+  Future<void> loadClientsForPicker() async {
+    final repository = _clientsRepository;
+    if (repository == null) return;
+    try {
+      clientsForPicker.assignAll(await repository.listClients());
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    }
   }
 
   RosterGrid get grid {
@@ -485,6 +516,105 @@ class StaffVisitsController extends GetxController {
     }
     if (arg is Map && arg['shift'] is ShiftOut) {
       selectedShift.value = arg['shift'] as ShiftOut;
+      final message = arg['errorMessage'];
+      if (message != null) errorMessage.value = message.toString();
+      final showHint = arg['showDraftCapacityHint'];
+      if (showHint is bool) showDraftCapacityHint.value = showHint;
+    }
+  }
+
+  bool get canPublishSelected {
+    final shift = selectedShift.value;
+    return shift != null &&
+        shift.status == 'draft' &&
+        isPublishReady(shift.participants);
+  }
+
+  Future<void> addParticipantToSelected(
+    ShiftParticipantCreateRequest body,
+  ) async {
+    final shift = selectedShift.value;
+    if (shift == null || isSaving.value) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _shiftsRepository.addParticipant(
+        shiftId: shift.id,
+        body: body,
+      );
+      if (selectedShift.value?.id == updated.id) {
+        selectedShift.value = updated;
+      }
+      await load();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> removeParticipantFromSelected({
+    required String participantId,
+    required String reason,
+  }) async {
+    final shift = selectedShift.value;
+    if (shift == null || isSaving.value) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _shiftsRepository.removeParticipant(
+        shiftId: shift.id,
+        participantId: participantId,
+        reason: reason,
+      );
+      if (selectedShift.value?.id == updated.id) {
+        selectedShift.value = updated;
+      }
+      await load();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> updateAllocationOnSelected({
+    required String participantId,
+    required ShiftParticipantAllocationUpdateRequest body,
+  }) async {
+    final shift = selectedShift.value;
+    if (shift == null || isSaving.value) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _shiftsRepository.updateParticipantAllocation(
+        shiftId: shift.id,
+        participantId: participantId,
+        body: body,
+      );
+      if (selectedShift.value?.id == updated.id) {
+        selectedShift.value = updated;
+      }
+      await load();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> loadAllocationChanges() async {
+    final shift = selectedShift.value;
+    if (shift == null || isLoadingAllocationChanges.value) return;
+    isLoadingAllocationChanges.value = true;
+    try {
+      allocationChanges.assignAll(
+        await _shiftsRepository.listAllocationChanges(shift.id),
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isLoadingAllocationChanges.value = false;
     }
   }
 
@@ -809,6 +939,73 @@ class StaffVisitsController extends GetxController {
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
       return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<bool> bookGroupShift({
+    required String hostClientId,
+    required DateTime start,
+    required DateTime end,
+    required List<ShiftParticipantCreateRequest> participants,
+    int requiredSlots = 1,
+  }) async {
+    if (isSaving.value) return false;
+    isSaving.value = true;
+    errorMessage.value = null;
+
+    try {
+      ShiftOut draft;
+      try {
+        final support = await _jobsRepository.ensureOngoingSupport(hostClientId);
+        draft = await _shiftsRepository.createShift(
+          ShiftCreateRequest(
+            jobId: support.id,
+            scheduledStart: start,
+            scheduledEnd: end,
+            requiredSlots: requiredSlots,
+            status: 'draft',
+          ),
+        );
+      } on AppFailure catch (e) {
+        errorMessage.value = e.message;
+        return false;
+      }
+
+      var latest = draft;
+      for (final participant in participants) {
+        try {
+          latest = await _shiftsRepository.addParticipant(
+            shiftId: draft.id,
+            body: participant,
+          );
+        } on AppFailure catch (e) {
+          final showHint = sumActivePercentage(latest.participants) < 99.99;
+          selectedShift.value = latest;
+          errorMessage.value = e.message;
+          showDraftCapacityHint.value = showHint;
+          Get.offNamed(
+            AppRoutes.staffShiftDetail,
+            arguments: {
+              'shift': latest,
+              'errorMessage': e.message,
+              'showDraftCapacityHint': showHint,
+            },
+          );
+          return false;
+        }
+      }
+
+      final showHint = sumActivePercentage(latest.participants) < 99.99;
+      selectedShift.value = latest;
+      showDraftCapacityHint.value = showHint;
+      Get.offNamed(
+        AppRoutes.staffShiftDetail,
+        arguments: {'shift': latest, 'showDraftCapacityHint': showHint},
+      );
+      await load();
+      return true;
     } finally {
       isSaving.value = false;
     }
