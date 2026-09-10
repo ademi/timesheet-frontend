@@ -1035,28 +1035,26 @@ class StaffVisitsController extends GetxController {
         return false;
       }
 
-      var latest = draft;
-      for (final participant in participants) {
-        try {
-          latest = await _shiftsRepository.addParticipant(
-            shiftId: draft.id,
-            body: participant,
-          );
-        } on AppFailure catch (e) {
-          final showHint = sumActivePercentage(latest.participants) < 99.99;
-          selectedShift.value = latest;
-          errorMessage.value = e.message;
-          showDraftCapacityHint.value = showHint;
-          Get.offNamed(
-            AppRoutes.staffShiftDetail,
-            arguments: {
-              'shift': latest,
-              'errorMessage': e.message,
-              'showDraftCapacityHint': showHint,
-            },
-          );
-          return false;
-        }
+      ShiftOut latest;
+      try {
+        latest = await _shiftsRepository.addParticipantsBatch(
+          shiftId: draft.id,
+          body: ShiftParticipantBatchCreateRequest(participants: participants),
+        );
+      } on AppFailure catch (e) {
+        final showHint = sumActivePercentage(draft.participants) < 99.99;
+        selectedShift.value = draft;
+        errorMessage.value = e.message;
+        showDraftCapacityHint.value = showHint;
+        Get.offNamed(
+          AppRoutes.staffShiftDetail,
+          arguments: {
+            'shift': draft,
+            'errorMessage': e.message,
+            'showDraftCapacityHint': showHint,
+          },
+        );
+        return false;
       }
 
       final showHint = sumActivePercentage(latest.participants) < 99.99;

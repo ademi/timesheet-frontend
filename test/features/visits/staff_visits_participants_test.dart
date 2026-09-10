@@ -33,6 +33,9 @@ class _FakeShiftCreateRequest extends Fake implements ShiftCreateRequest {}
 class _FakeParticipantRequest extends Fake
     implements ShiftParticipantCreateRequest {}
 
+class _FakeParticipantBatchRequest extends Fake
+    implements ShiftParticipantBatchCreateRequest {}
+
 final _now = DateTime.utc(2026, 9, 10, 9);
 
 JobOut _support() => JobOut(
@@ -101,6 +104,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_FakeShiftCreateRequest());
     registerFallbackValue(_FakeParticipantRequest());
+    registerFallbackValue(_FakeParticipantBatchRequest());
   });
 
   setUp(() {
@@ -141,7 +145,7 @@ void main() {
 
   tearDown(Get.reset);
 
-  testWidgets('keeps draft and error when second participant add fails', (
+  testWidgets('keeps draft and error when empty participants batch fails', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -157,21 +161,15 @@ void main() {
       ),
     );
     final draft = _shift();
-    final afterFirst = _shift(participants: [_participant('host-1', 60)]);
-    final requests = [
-      _request('host-1', 60),
-      _request('guest-1', 30),
-      _request('guest-2', 10),
-    ];
     when(
       () => jobs.ensureOngoingSupport('host-1'),
     ).thenAnswer((_) async => _support());
     when(() => shifts.createShift(any())).thenAnswer((_) async => draft);
     when(
-      () => shifts.addParticipant(shiftId: draft.id, body: requests.first),
-    ).thenAnswer((_) async => afterFirst);
-    when(
-      () => shifts.addParticipant(shiftId: draft.id, body: requests[1]),
+      () => shifts.addParticipantsBatch(
+        shiftId: draft.id,
+        body: any(named: 'body'),
+      ),
     ).thenThrow(
       const AppFailure(
         code: 'allocation_exceeds_100',
@@ -184,24 +182,33 @@ void main() {
       hostClientId: 'host-1',
       start: _now,
       end: _now.add(const Duration(hours: 2)),
-      participants: requests,
+      participants: const [],
     );
     await tester.pumpAndSettle();
 
     expect(ok, isFalse);
     expect(controller.errorMessage.value, 'Could not add participant.');
     expect(controller.selectedShift.value?.id, draft.id);
-    expect(controller.selectedShift.value?.participants, hasLength(1));
+    expect(controller.selectedShift.value?.participants, isEmpty);
     expect(controller.showDraftCapacityHint.value, isTrue);
     final arguments = Get.arguments as Map;
-    expect(arguments['shift'], same(afterFirst));
+    expect(arguments['shift'], same(draft));
     expect(arguments['errorMessage'], 'Could not add participant.');
     expect(arguments['showDraftCapacityHint'], isTrue);
-    verify(
-      () => shifts.addParticipant(shiftId: draft.id, body: any(named: 'body')),
-    ).called(2);
+    final batch =
+        verify(
+              () => shifts.addParticipantsBatch(
+                shiftId: draft.id,
+                body: captureAny(named: 'body'),
+              ),
+            ).captured.single
+            as ShiftParticipantBatchCreateRequest;
+    expect(batch.participants, isEmpty);
     verifyNever(
-      () => shifts.addParticipant(shiftId: draft.id, body: requests.last),
+      () => shifts.addParticipant(
+        shiftId: any(named: 'shiftId'),
+        body: any(named: 'body'),
+      ),
     );
   });
 
@@ -236,19 +243,31 @@ void main() {
         body: any(named: 'body'),
       ),
     );
+    verifyNever(
+      () => shifts.addParticipantsBatch(
+        shiftId: any(named: 'shiftId'),
+        body: any(named: 'body'),
+      ),
+    );
   });
 
-  test('double booking isSaving guard allows only one create', () async {
-    final supportCompleter = Completer<JobOut>();
+  test('double booking guard allows only one create and batch', () async {
+    final createCompleter = Completer<ShiftOut>();
+    final draft = _shift();
+    final complete = _shift(participants: [_participant('host-1', 100)]);
     when(
       () => jobs.ensureOngoingSupport('host-1'),
-    ).thenAnswer((_) => supportCompleter.future);
-    when(() => shifts.createShift(any())).thenThrow(
-      const AppFailure(
-        code: 'shift_overlap',
-        message: 'Shift overlaps.',
-        presentation: AppFailurePresentation.inline,
+    ).thenAnswer((_) async => _support());
+    when(
+      () => shifts.createShift(any()),
+    ).thenAnswer((_) => createCompleter.future);
+    when(
+      () => shifts.addParticipantsBatch(
+        shiftId: draft.id,
+        body: any(named: 'body'),
       ),
+    ).thenAnswer(
+      (_) async => complete,
     );
 
     final first = controller.bookGroupShift(
@@ -267,12 +286,24 @@ void main() {
     expect(second, isFalse);
     verify(() => jobs.ensureOngoingSupport('host-1')).called(1);
 
-    supportCompleter.complete(_support());
-    expect(await first, isFalse);
+    createCompleter.complete(draft);
+    expect(await first, isTrue);
     verify(() => shifts.createShift(any())).called(1);
+    verify(
+      () => shifts.addParticipantsBatch(
+        shiftId: draft.id,
+        body: any(named: 'body'),
+      ),
+    ).called(1);
+    verifyNever(
+      () => shifts.addParticipant(
+        shiftId: any(named: 'shiftId'),
+        body: any(named: 'body'),
+      ),
+    );
   });
 
-  testWidgets('creates draft and adds every participant sequentially', (
+  testWidgets('creates draft and adds every participant in one batch', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -288,7 +319,6 @@ void main() {
       ),
     );
     final draft = _shift();
-    final first = _shift(participants: [_participant('host-1', 60)]);
     final complete = _shift(
       participants: [_participant('host-1', 60), _participant('guest-1', 40)],
     );
@@ -297,10 +327,12 @@ void main() {
       () => jobs.ensureOngoingSupport('host-1'),
     ).thenAnswer((_) async => _support());
     when(() => shifts.createShift(any())).thenAnswer((_) async => draft);
-    var addIndex = 0;
     when(
-      () => shifts.addParticipant(shiftId: draft.id, body: any(named: 'body')),
-    ).thenAnswer((_) async => addIndex++ == 0 ? first : complete);
+      () => shifts.addParticipantsBatch(
+        shiftId: draft.id,
+        body: any(named: 'body'),
+      ),
+    ).thenAnswer((_) async => complete);
 
     final ok = await controller.bookGroupShift(
       hostClientId: 'host-1',
@@ -317,17 +349,23 @@ void main() {
             as ShiftCreateRequest;
     expect(createRequest.status, 'draft');
     expect(createRequest.requiredSlots, 2);
-    final added =
+    final batch =
         verify(
-          () => shifts.addParticipant(
+          () => shifts.addParticipantsBatch(
             shiftId: draft.id,
             body: captureAny(named: 'body'),
           ),
-        ).captured.cast<ShiftParticipantCreateRequest>();
-    expect(added.map((request) => request.participantId), [
+        ).captured.single as ShiftParticipantBatchCreateRequest;
+    expect(batch.participants.map((request) => request.participantId), [
       'host-1',
       'guest-1',
     ]);
+    verifyNever(
+      () => shifts.addParticipant(
+        shiftId: any(named: 'shiftId'),
+        body: any(named: 'body'),
+      ),
+    );
     expect(controller.selectedShift.value?.participants, hasLength(2));
     expect(controller.showDraftCapacityHint.value, isFalse);
     final arguments = Get.arguments as Map;
