@@ -10,7 +10,7 @@ import '../../shifts/data/models/shift_participant_models.dart';
 import '../controllers/staff_visits_controller.dart';
 import '../widgets/group_shift_participant_capacity_row.dart';
 
-const kMaxGroupWizardParticipants = 8;
+const kMaxGroupWizardParticipants = 32;
 
 class StaffGroupShiftBookView extends StatefulWidget {
   const StaffGroupShiftBookView({super.key});
@@ -409,7 +409,7 @@ class _StaffGroupShiftBookViewState extends State<StaffGroupShiftBookView> {
             const Padding(
               padding: EdgeInsets.only(top: 8),
               child: Text(
-                'Maximum 8 participants in this flow.',
+                'Maximum 32 participants in this flow.',
                 style: TextStyle(color: AppColors.textMuted, fontSize: 13),
               ),
             ),

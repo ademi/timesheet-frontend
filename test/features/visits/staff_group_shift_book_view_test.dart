@@ -149,8 +149,9 @@ void main() {
     expect(next.onPressed, isNull);
   });
 
-  testWidgets('add participant is disabled at eight entries', (tester) async {
-    final eightClients = List.generate(
+  testWidgets('add participant is disabled at 32 entries', (tester) async {
+    expect(kMaxGroupWizardParticipants, 32);
+    final clients = List.generate(
       kMaxGroupWizardParticipants,
       (index) => ClientOut(
         id: 'client-$index',
@@ -164,7 +165,7 @@ void main() {
     );
     when(
       () => clientsRepository.listClients(),
-    ).thenAnswer((_) async => eightClients);
+    ).thenAnswer((_) async => clients);
     await pumpWizard(tester);
 
     await tester.tap(find.byKey(const Key('group-shift-host')));
@@ -195,7 +196,7 @@ void main() {
       }
     }
 
-    expect(find.text('Maximum 8 participants in this flow.'), findsOneWidget);
+    expect(find.text('Maximum 32 participants in this flow.'), findsOneWidget);
     final addParticipant = tester.widget<DropdownButtonFormField<String>>(
       find.descendant(
         of: find.byKey(const Key('group-shift-add-participant')),
