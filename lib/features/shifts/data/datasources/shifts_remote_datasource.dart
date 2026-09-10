@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
 import '../models/shift_models.dart';
+import '../models/shift_participant_models.dart';
 
 class ShiftsRemoteDataSource {
   ShiftsRemoteDataSource({required Dio authenticatedDio}) : _dio = authenticatedDio;
@@ -76,6 +77,7 @@ class ShiftsRemoteDataSource {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         ApiPaths.shiftPublish(id),
+        data: const <String, dynamic>{},
       );
       return ShiftOut.fromJson(response.data!);
     } on DioException catch (e) {
@@ -127,6 +129,67 @@ class ShiftsRemoteDataSource {
         ApiPaths.shiftCancel(id),
       );
       return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ShiftOut> addParticipant({
+    required String shiftId,
+    required ShiftParticipantCreateRequest body,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.shiftParticipants(shiftId),
+        data: body.toJson(),
+      );
+      return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ShiftOut> removeParticipant({
+    required String shiftId,
+    required String participantId,
+    required String reason,
+  }) async {
+    // Backend: reason is a required query param (router Query min_length=1).
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        ApiPaths.shiftParticipant(shiftId, participantId),
+        queryParameters: {'reason': reason},
+      );
+      return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ShiftOut> updateParticipantAllocation({
+    required String shiftId,
+    required String participantId,
+    required ShiftParticipantAllocationUpdateRequest body,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.shiftParticipantAllocation(shiftId, participantId),
+        data: body.toJson(),
+      );
+      return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<AllocationChangeLogOut>> listAllocationChanges(
+    String shiftId,
+  ) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.shiftAllocationChanges(shiftId),
+      );
+      return _mapList(response.data, AllocationChangeLogOut.fromJson);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

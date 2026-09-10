@@ -166,6 +166,23 @@ abstract final class ApiPaths {
   static String shiftRelease(String id) => '${shift(id)}/release';
   static String shiftUnassign(String id) => '${shift(id)}/unassign';
   static String shiftCancel(String id) => '${shift(id)}/cancel';
+  static String shiftParticipants(String shiftId) =>
+      '${shift(shiftId)}/participants';
+  static String shiftParticipant(String shiftId, String participantId) =>
+      '${shiftParticipants(shiftId)}/$participantId';
+  static String shiftParticipantAllocation(
+    String shiftId,
+    String participantId,
+  ) =>
+      '${shiftParticipant(shiftId, participantId)}/allocation';
+  static String shiftAllocationChanges(String shiftId) =>
+      '${shift(shiftId)}/allocation-changes';
+
+  // Billing — invoice exports (client claims), not SaaS subscription
+  static const invoiceExports = '$_v1/billing/invoice-exports';
+  static String invoiceExport(String id) => '$invoiceExports/$id';
+  static String invoiceExportVoid(String id) => '${invoiceExport(id)}/void';
+  static String invoiceExportCsv(String id) => '${invoiceExport(id)}/csv';
 
   // Workforce / roster overlay
   static const workforceRosterOverlay = '$_v1/workforce/roster-overlay';
