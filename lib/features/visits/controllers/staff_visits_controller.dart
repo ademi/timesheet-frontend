@@ -606,6 +606,8 @@ class StaffVisitsController extends GetxController {
 
   /// The backend allocation PATCH updates percentages only. Persist edited
   /// time windows on a draft by replacing the active participant record.
+  /// If the replacement add fails after remove, re-add the original windows
+  /// so the participant is not lost.
   Future<void> replaceTimeBasedParticipantOnSelected({
     required ShiftParticipantOut participant,
     required ShiftParticipantCreateRequest replacement,
@@ -621,12 +623,41 @@ class StaffVisitsController extends GetxController {
         reason: replacement.reason,
       );
       selectedShift.value = removed;
-      final updated = await _shiftsRepository.addParticipant(
-        shiftId: shift.id,
-        body: replacement,
-      );
-      selectedShift.value = updated;
-      await load();
+      try {
+        final updated = await _shiftsRepository.addParticipant(
+          shiftId: shift.id,
+          body: replacement,
+        );
+        selectedShift.value = updated;
+        await load();
+      } on AppFailure catch (e) {
+        try {
+          final restored = await _shiftsRepository.addParticipant(
+            shiftId: shift.id,
+            body: ShiftParticipantCreateRequest(
+              participantId: participant.participantId,
+              allocationStrategy: participant.allocationStrategy,
+              allocationValue: participant.allocationValue,
+              reason: 'Restore after failed time-window edit',
+              timeWindows:
+                  participant.timeWindows
+                      ?.map(
+                        (w) => ShiftParticipantAllocationWindow(
+                          participantStartTime: w.participantStartTime,
+                          participantEndTime: w.participantEndTime,
+                        ),
+                      )
+                      .toList(growable: false),
+            ),
+          );
+          selectedShift.value = restored;
+          await load();
+        } on AppFailure {
+          // Keep the post-remove shift state; surface the original add failure.
+        }
+        // Set after load() — load clears errorMessage.
+        errorMessage.value = e.message;
+      }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {

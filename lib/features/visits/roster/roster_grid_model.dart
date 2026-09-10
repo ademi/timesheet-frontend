@@ -144,9 +144,13 @@ RosterGrid buildRosterGrid({
   );
 
   // Controller owns status filtering; include every shift passed in.
+  // Group shifts: match host job client OR any active participant.
   final filteredShifts = shifts.where((shift) {
     if (clientIdFilter == null || clientIdFilter.isEmpty) return true;
-    return shift.clientId == clientIdFilter;
+    if (shift.clientId == clientIdFilter) return true;
+    return shift.participants.any(
+      (p) => p.isActive && p.participantId == clientIdFilter,
+    );
   }).toList(growable: false);
 
   final unfilledCells = _emptyCells(dayCount);

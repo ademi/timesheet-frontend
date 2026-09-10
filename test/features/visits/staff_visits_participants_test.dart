@@ -422,4 +422,89 @@ void main() {
       () => shifts.addParticipant(shiftId: original.id, body: replacement),
     ]);
   });
+
+  test(
+    'restores original time-based participant when replacement add fails',
+    () async {
+      final window = ShiftParticipantAllocationOut(
+        id: 'window-1',
+        shiftParticipantId: 'shift-participant-host-1',
+        participantStartTime: _now,
+        participantEndTime: _now.add(const Duration(hours: 1)),
+        createdAt: _now,
+      );
+      final participant = ShiftParticipantOut(
+        id: 'shift-participant-host-1',
+        shiftId: 'shift-1',
+        participantId: 'host-1',
+        allocationStrategy: 'time_based',
+        allocationValue: 0,
+        status: 'active',
+        timeWindows: [window],
+        createdAt: _now,
+        updatedAt: _now,
+      );
+      final original = _shift(participants: [participant]);
+      final removed = _shift();
+      final restored = _shift(participants: [participant]);
+      final replacement = ShiftParticipantCreateRequest(
+        participantId: 'host-1',
+        allocationStrategy: 'time_based',
+        allocationValue: 0,
+        reason: 'Bad window edit',
+        timeWindows: [
+          ShiftParticipantAllocationWindow(
+            participantStartTime: _now.add(const Duration(minutes: 30)),
+            participantEndTime: _now.add(const Duration(hours: 2)),
+          ),
+        ],
+      );
+      controller.selectedShift.value = original;
+      when(
+        () => shifts.removeParticipant(
+          shiftId: original.id,
+          participantId: participant.participantId,
+          reason: replacement.reason,
+        ),
+      ).thenAnswer((_) async => removed);
+      when(
+        () => shifts.addParticipant(shiftId: original.id, body: any(named: 'body')),
+      ).thenAnswer((invocation) async {
+        final body =
+            invocation.namedArguments[#body] as ShiftParticipantCreateRequest;
+        if (body.reason == replacement.reason) {
+          throw const AppFailure(
+            code: 'time_windows_required',
+            message: 'Time-based participants need at least one time window.',
+            presentation: AppFailurePresentation.inline,
+          );
+        }
+        return restored;
+      });
+
+      await controller.replaceTimeBasedParticipantOnSelected(
+        participant: participant,
+        replacement: replacement,
+      );
+
+      expect(controller.selectedShift.value, same(restored));
+      expect(
+        controller.errorMessage.value,
+        'Time-based participants need at least one time window.',
+      );
+      final added =
+          verify(
+            () => shifts.addParticipant(
+              shiftId: original.id,
+              body: captureAny(named: 'body'),
+            ),
+          ).captured.cast<ShiftParticipantCreateRequest>();
+      expect(added, hasLength(2));
+      expect(added.first.reason, replacement.reason);
+      expect(added.last.participantId, 'host-1');
+      expect(added.last.allocationStrategy, 'time_based');
+      expect(added.last.timeWindows, hasLength(1));
+      expect(added.last.timeWindows!.first.participantStartTime, _now);
+    },
+  );
 }

@@ -82,4 +82,50 @@ void main() {
 
     expect(find.text('Remaining: 35%'), findsOneWidget);
   });
+
+  testWidgets('edit mode rejects percentage above remaining budget', (
+    tester,
+  ) async {
+    ShiftParticipantAllocationUpdateRequest? captured;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ParticipantAllocationForm(
+              clients: const [(id: 'client-a', name: 'Alice')],
+              excludeClientIds: const {},
+              shiftStart: shiftStart,
+              shiftEnd: shiftEnd,
+              lockStrategy: 'percentage',
+              remainingPercentage: 40,
+              submitLabel: 'Save',
+              initialParticipantId: 'client-a',
+              initialAllocationValue: 40,
+              onSubmit: (_) {},
+              onSubmitUpdate: (request) {
+                captured = request;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('participant-allocation-form-percentage')),
+      '70',
+    );
+    await tester.enterText(
+      find.byKey(const Key('participant-allocation-form-reason')),
+      'Raise share',
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('participant-allocation-form-submit')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Exceeds remaining'), findsOneWidget);
+    expect(captured, isNull);
+  });
 }

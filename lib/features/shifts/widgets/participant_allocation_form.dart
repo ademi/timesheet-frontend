@@ -191,7 +191,8 @@ class _ParticipantAllocationFormState extends State<ParticipantAllocationForm> {
     final parsed = double.tryParse(text);
     if (parsed == null) return 'Enter a valid number';
     if (parsed < 0 || parsed > 100) return 'Must be between 0 and 100';
-    if (!widget.isEditMode && parsed > widget.remainingPercentage + 0.001) {
+    // Parent passes remaining budget including this row's current share in edit mode.
+    if (parsed > widget.remainingPercentage + 0.001) {
       return 'Exceeds remaining ${widget.remainingPercentage.toStringAsFixed(0)}%';
     }
     return null;

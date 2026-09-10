@@ -126,6 +126,74 @@ void main() {
       expect(unfilled.cells[0].tiles.single.shiftId, 's-a');
     });
 
+    test('client filter keeps group shifts for non-host participants', () {
+      final monday = DateTime(2026, 8, 10, 9);
+      final groupShift = ShiftOut(
+        id: 's-group',
+        tenantId: 't',
+        jobId: 'j',
+        jobTitle: 'Group outing',
+        clientId: 'host',
+        clientName: 'Host',
+        scheduledStart: monday,
+        scheduledEnd: monday.add(const Duration(hours: 2)),
+        requiredSlots: 1,
+        openSlots: 1,
+        status: 'published',
+        participants: [
+          ShiftParticipantOut(
+            id: 'sp-host',
+            shiftId: 's-group',
+            participantId: 'host',
+            allocationStrategy: 'percentage',
+            allocationValue: 60,
+            status: 'active',
+            createdAt: monday,
+            updatedAt: monday,
+          ),
+          ShiftParticipantOut(
+            id: 'sp-guest',
+            shiftId: 's-group',
+            participantId: 'guest',
+            allocationStrategy: 'percentage',
+            allocationValue: 40,
+            status: 'active',
+            createdAt: monday,
+            updatedAt: monday,
+          ),
+        ],
+        createdAt: monday,
+        updatedAt: monday,
+      );
+      final otherShift = ShiftOut(
+        id: 's-other',
+        tenantId: 't',
+        jobId: 'j2',
+        jobTitle: 'Other',
+        clientId: 'other',
+        clientName: 'Other',
+        scheduledStart: monday,
+        scheduledEnd: monday.add(const Duration(hours: 1)),
+        requiredSlots: 1,
+        openSlots: 1,
+        status: 'published',
+        createdAt: monday,
+        updatedAt: monday,
+      );
+      final grid = buildRosterGrid(
+        rangeStart: DateTime(2026, 8, 10),
+        dayCount: 5,
+        shifts: [groupShift, otherShift],
+        people: const [],
+        overlay: const RosterOverlayOut(contractors: []),
+        clientIdFilter: 'guest',
+        idToName: const {'host': 'Host', 'guest': 'Guest'},
+      );
+      final unfilled = grid.rows.first;
+      expect(unfilled.cells[0].tiles, hasLength(1));
+      expect(unfilled.cells[0].tiles.single.shiftId, 's-group');
+    });
+
     test('includes draft/cancelled shifts passed in and sorts people by name',
         () {
       final monday = DateTime(2026, 8, 10, 9);
