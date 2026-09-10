@@ -75,6 +75,39 @@ void main() {
       expect(s.recurrenceRuleId, 'rule-1');
       expect(s.assignments.first.visitStatus, 'checked_in');
     });
+
+    test('parses participants list', () {
+      final shift = ShiftOut.fromJson({
+        'id': 'shift-1',
+        'tenant_id': 'tenant-1',
+        'job_id': 'job-1',
+        'job_title': 'Morning clean',
+        'client_id': 'client-1',
+        'client_name': 'Acme',
+        'scheduled_start': '2026-08-13T01:00:00Z',
+        'scheduled_end': '2026-08-13T05:00:00Z',
+        'required_slots': 1,
+        'open_slots': 1,
+        'status': 'draft',
+        'assignments': [],
+        'participants': [
+          {
+            'id': 'sp1',
+            'shift_id': 'shift-1',
+            'participant_id': 'client-1',
+            'allocation_strategy': 'percentage',
+            'allocation_value': 100,
+            'status': 'active',
+            'created_at': '2026-08-12T09:00:00Z',
+            'updated_at': '2026-08-12T09:00:00Z',
+          },
+        ],
+        'created_at': '2026-08-12T09:00:00Z',
+        'updated_at': '2026-08-12T10:00:00Z',
+      });
+      expect(shift.participants, hasLength(1));
+      expect(shift.participants.first.allocationValue, 100);
+    });
   });
 
   group('OpenShiftOut', () {

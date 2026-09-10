@@ -1,5 +1,7 @@
 /// Shift roster DTOs.
 
+import 'shift_participant_models.dart';
+
 class ShiftAssignmentOut {
   const ShiftAssignmentOut({
     required this.id,
@@ -50,6 +52,7 @@ class ShiftOut {
     this.suburb,
     this.postalCode,
     this.assignments = const [],
+    this.participants = const [],
     this.publishedAt,
     required this.createdAt,
     required this.updatedAt,
@@ -71,6 +74,7 @@ class ShiftOut {
   final String? suburb;
   final String? postalCode;
   final List<ShiftAssignmentOut> assignments;
+  final List<ShiftParticipantOut> participants;
   final DateTime? publishedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -97,6 +101,10 @@ class ShiftOut {
       assignments: (json['assignments'] as List? ?? const [])
           .whereType<Map>()
           .map((e) => ShiftAssignmentOut.fromJson(Map<String, dynamic>.from(e)))
+          .toList(growable: false),
+      participants: (json['participants'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => ShiftParticipantOut.fromJson(Map<String, dynamic>.from(e)))
           .toList(growable: false),
       publishedAt: json['published_at'] != null
           ? DateTime.tryParse(json['published_at'].toString())
