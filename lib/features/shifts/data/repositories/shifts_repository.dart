@@ -46,6 +46,12 @@ class ShiftsRepository {
   }) =>
       _remote.addParticipant(shiftId: shiftId, body: body);
 
+  Future<ShiftOut> addParticipantsBatch({
+    required String shiftId,
+    required ShiftParticipantBatchCreateRequest body,
+  }) =>
+      _remote.addParticipantsBatch(shiftId: shiftId, body: body);
+
   Future<ShiftOut> removeParticipant({
     required String shiftId,
     required String participantId,

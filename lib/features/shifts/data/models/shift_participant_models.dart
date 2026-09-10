@@ -136,6 +136,19 @@ class ShiftParticipantCreateRequest {
       };
 }
 
+class ShiftParticipantBatchCreateRequest {
+  const ShiftParticipantBatchCreateRequest({required this.participants});
+
+  final List<ShiftParticipantCreateRequest> participants;
+
+  Map<String, dynamic> toJson() => {
+        'participants':
+            participants.map((participant) => participant.toJson()).toList(
+                  growable: false,
+                ),
+      };
+}
+
 class ShiftParticipantAllocationUpdateRequest {
   const ShiftParticipantAllocationUpdateRequest({
     required this.allocationValue,

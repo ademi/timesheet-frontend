@@ -163,6 +163,7 @@ class AppFailure implements Exception {
       'allocation_percentages_invalid',
       'allocation_total_invalid',
       'allocation_exceeds_100',
+      'batch_too_large',
       'mixed_allocation_strategies',
       'time_windows_required',
       'shift_not_draft',
@@ -344,6 +345,8 @@ class AppFailure implements Exception {
         return 'Active percentage allocations must total 100% to publish.';
       case 'allocation_exceeds_100':
         return 'Percentage allocations cannot exceed 100%.';
+      case 'batch_too_large':
+        return 'Too many participants in one request (max 32).';
       case 'mixed_allocation_strategies':
         return 'All participants on a shift must use the same allocation strategy.';
       case 'time_windows_required':

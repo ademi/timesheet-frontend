@@ -149,6 +149,21 @@ class ShiftsRemoteDataSource {
     }
   }
 
+  Future<ShiftOut> addParticipantsBatch({
+    required String shiftId,
+    required ShiftParticipantBatchCreateRequest body,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.shiftParticipantsBatch(shiftId),
+        data: body.toJson(),
+      );
+      return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<ShiftOut> removeParticipant({
     required String shiftId,
     required String participantId,

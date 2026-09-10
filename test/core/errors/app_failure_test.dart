@@ -94,6 +94,30 @@ void main() {
       );
     });
 
+    test('maps batch_too_large to participant limit guidance', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(
+            path: '/shifts/shift-id/participants/batch',
+          ),
+          response: Response(
+            requestOptions: RequestOptions(
+              path: '/shifts/shift-id/participants/batch',
+            ),
+            statusCode: 422,
+            data: {'detail': 'batch_too_large'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      expect(failure.code, 'batch_too_large');
+      expect(
+        failure.message,
+        'Too many participants in one request (max 32).',
+      );
+    });
+
     test('maps evidence_required to credential evidence guidance', () {
       final failure = AppFailure.fromDio(
         DioException(

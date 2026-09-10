@@ -168,6 +168,8 @@ abstract final class ApiPaths {
   static String shiftCancel(String id) => '${shift(id)}/cancel';
   static String shiftParticipants(String shiftId) =>
       '${shift(shiftId)}/participants';
+  static String shiftParticipantsBatch(String shiftId) =>
+      '${shiftParticipants(shiftId)}/batch';
   static String shiftParticipant(String shiftId, String participantId) =>
       '${shiftParticipants(shiftId)}/$participantId';
   static String shiftParticipantAllocation(
