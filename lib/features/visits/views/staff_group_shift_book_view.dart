@@ -379,24 +379,30 @@ class _StaffGroupShiftBookViewState extends State<StaffGroupShiftBookView> {
                 style: TextStyle(color: AppColors.error),
               ),
             ),
-          DropdownButtonFormField<String>(
+          KeyedSubtree(
             key: const Key('group-shift-add-participant'),
-            value: null,
-            isExpanded: true,
-            items: [
-              for (final client in available)
-                DropdownMenuItem(
-                  value: client.id,
-                  child: Text(client.fullName, overflow: TextOverflow.ellipsis),
-                ),
-            ],
-            onChanged:
-                _hostId == null || atMaximum || available.isEmpty
-                    ? null
-                    : _addParticipant,
-            decoration: const InputDecoration(
-              labelText: 'Add participant',
-              border: OutlineInputBorder(),
+            child: DropdownButtonFormField<String>(
+              key: ValueKey(_participants.length),
+              value: null,
+              isExpanded: true,
+              items: [
+                for (final client in available)
+                  DropdownMenuItem(
+                    value: client.id,
+                    child: Text(
+                      client.fullName,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged:
+                  _hostId == null || atMaximum || available.isEmpty
+                      ? null
+                      : _addParticipant,
+              decoration: const InputDecoration(
+                labelText: 'Add participant',
+                border: OutlineInputBorder(),
+              ),
             ),
           ),
           if (atMaximum)

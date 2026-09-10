@@ -92,6 +92,16 @@ void main() {
     expect(find.text('Next'), findsOneWidget);
   });
 
+  testWidgets('shows helper when no clients are available', (tester) async {
+    when(
+      () => clientsRepository.listClients(),
+    ).thenAnswer((_) async => <ClientOut>[]);
+
+    await pumpWizard(tester);
+
+    expect(find.textContaining('No clients yet.'), findsOneWidget);
+  });
+
   testWidgets('selecting host seeds a 100 percent capacity row', (
     tester,
   ) async {
@@ -117,5 +127,81 @@ void main() {
     await tester.pump();
 
     expect(find.text('Sum: 60% · Remaining: 40%'), findsOneWidget);
+  });
+
+  testWidgets('capacity over 100 shows error and blocks Next', (tester) async {
+    await pumpWizard(tester);
+    await selectAliceAsHost(tester);
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Capacity (%)'),
+      '101',
+    );
+    await tester.pump();
+
+    expect(find.text('Capacity total cannot exceed 100%.'), findsOneWidget);
+    final next = tester.widget<ElevatedButton>(
+      find.descendant(
+        of: find.byKey(const Key('group-shift-primary-action')),
+        matching: find.byType(ElevatedButton),
+      ),
+    );
+    expect(next.onPressed, isNull);
+  });
+
+  testWidgets('add participant is disabled at eight entries', (tester) async {
+    final eightClients = List.generate(
+      kMaxGroupWizardParticipants,
+      (index) => ClientOut(
+        id: 'client-$index',
+        tenantId: 'tenant-1',
+        fullName: 'Client $index',
+        status: 'active',
+        metadata: const {},
+        createdAt: DateTime.utc(2026, 9, 10),
+        updatedAt: DateTime.utc(2026, 9, 10),
+      ),
+    );
+    when(
+      () => clientsRepository.listClients(),
+    ).thenAnswer((_) async => eightClients);
+    await pumpWizard(tester);
+
+    await tester.tap(find.byKey(const Key('group-shift-host')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Client 0').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Capacity (%)'),
+      '1',
+    );
+    await tester.pump();
+
+    for (var index = 1; index < kMaxGroupWizardParticipants; index++) {
+      final addFinder = find.byKey(const Key('group-shift-add-participant'));
+      await tester.ensureVisible(addFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(addFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Client $index').last);
+      await tester.pumpAndSettle();
+      if (index < kMaxGroupWizardParticipants - 1) {
+        final capacityFinder = find
+            .widgetWithText(TextFormField, 'Capacity (%)')
+            .at(index);
+        await tester.ensureVisible(capacityFinder);
+        await tester.enterText(capacityFinder, '1');
+        await tester.pump();
+      }
+    }
+
+    expect(find.text('Maximum 8 participants in this flow.'), findsOneWidget);
+    final addParticipant = tester.widget<DropdownButtonFormField<String>>(
+      find.descendant(
+        of: find.byKey(const Key('group-shift-add-participant')),
+        matching: find.byType(DropdownButtonFormField<String>),
+      ),
+    );
+    expect(addParticipant.onChanged, isNull);
   });
 }

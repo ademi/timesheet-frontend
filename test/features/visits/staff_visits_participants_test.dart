@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -234,6 +236,40 @@ void main() {
         body: any(named: 'body'),
       ),
     );
+  });
+
+  test('double booking isSaving guard allows only one create', () async {
+    final supportCompleter = Completer<JobOut>();
+    when(
+      () => jobs.ensureOngoingSupport('host-1'),
+    ).thenAnswer((_) => supportCompleter.future);
+    when(() => shifts.createShift(any())).thenThrow(
+      const AppFailure(
+        code: 'shift_overlap',
+        message: 'Shift overlaps.',
+        presentation: AppFailurePresentation.inline,
+      ),
+    );
+
+    final first = controller.bookGroupShift(
+      hostClientId: 'host-1',
+      start: _now,
+      end: _now.add(const Duration(hours: 2)),
+      participants: [_request('host-1', 100)],
+    );
+    final second = await controller.bookGroupShift(
+      hostClientId: 'host-1',
+      start: _now,
+      end: _now.add(const Duration(hours: 2)),
+      participants: [_request('host-1', 100)],
+    );
+
+    expect(second, isFalse);
+    verify(() => jobs.ensureOngoingSupport('host-1')).called(1);
+
+    supportCompleter.complete(_support());
+    expect(await first, isFalse);
+    verify(() => shifts.createShift(any())).called(1);
   });
 
   testWidgets('creates draft and adds every participant sequentially', (

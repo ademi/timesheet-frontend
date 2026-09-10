@@ -1,4 +1,4 @@
-/// Shift participant DTOs for group-shift invoicing.
+// Shift participant DTOs for group-shift invoicing.
 
 class ShiftParticipantAllocationWindow {
   const ShiftParticipantAllocationWindow({
