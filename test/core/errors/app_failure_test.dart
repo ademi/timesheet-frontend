@@ -74,6 +74,26 @@ void main() {
       expect(failure.message, 'You don’t have access to this file.');
     });
 
+    test('maps participants_required to group-shift publish guidance', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(path: '/shifts/shift-id/publish'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/shifts/shift-id/publish'),
+            statusCode: 422,
+            data: {'detail': 'participants_required'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      expect(failure.code, 'participants_required');
+      expect(
+        failure.message,
+        'Add at least one participant before publishing.',
+      );
+    });
+
     test('maps evidence_required to credential evidence guidance', () {
       final failure = AppFailure.fromDio(
         DioException(

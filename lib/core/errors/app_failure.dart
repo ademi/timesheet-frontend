@@ -159,6 +159,14 @@ class AppFailure implements Exception {
       'contractor_on_leave',
       'shift_not_found',
       'shift_overlap',
+      'participants_required',
+      'allocation_percentages_invalid',
+      'allocation_total_invalid',
+      'allocation_exceeds_100',
+      'mixed_allocation_strategies',
+      'time_windows_required',
+      'shift_not_draft',
+      'no_active_participants',
     ];
     for (final k in known) {
       if (d == k || d.contains(k)) return k;
@@ -329,6 +337,21 @@ class AppFailure implements Exception {
         return 'You’re on leave for this day.';
       case 'shift_not_found':
         return 'Shift not found.';
+      case 'participants_required':
+        return 'Add at least one participant before publishing.';
+      case 'allocation_percentages_invalid':
+      case 'allocation_total_invalid':
+        return 'Active percentage allocations must total 100% to publish.';
+      case 'allocation_exceeds_100':
+        return 'Percentage allocations cannot exceed 100%.';
+      case 'mixed_allocation_strategies':
+        return 'All participants on a shift must use the same allocation strategy.';
+      case 'time_windows_required':
+        return 'Time-based participants need at least one time window.';
+      case 'shift_not_draft':
+        return 'Only draft shifts can add or change participants.';
+      case 'no_active_participants':
+        return 'This shift has no active participants.';
       default:
         return fallback;
     }
