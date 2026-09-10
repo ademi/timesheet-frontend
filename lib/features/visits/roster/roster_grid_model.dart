@@ -1,4 +1,5 @@
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
+import 'package:rostiq/features/shifts/utils/allocation_math.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
 
 class RosterPerson {
@@ -120,12 +121,20 @@ ContractorRosterOverlay? _overlayFor(
 List<RosterCell> _emptyCells(int dayCount) =>
     List.generate(dayCount, (_) => const RosterCell());
 
+String _tileClientName(ShiftOut shift, Map<String, String> idToName) =>
+    rosterParticipantsLabel(
+      hostClientName: shift.clientName,
+      participants: shift.participants,
+      idToName: idToName,
+    );
+
 RosterGrid buildRosterGrid({
   required DateTime rangeStart,
   required int dayCount,
   required List<ShiftOut> shifts,
   required List<RosterPerson> people,
   required RosterOverlayOut overlay,
+  required Map<String, String> idToName,
   String? clientIdFilter,
 }) {
   final dayStarts = List.generate(
@@ -150,7 +159,7 @@ RosterGrid buildRosterGrid({
 
     final tile = RosterTile(
       shiftId: shift.id,
-      clientName: shift.clientName ?? '',
+      clientName: _tileClientName(shift, idToName),
       start: shift.scheduledStart,
       end: shift.scheduledEnd,
       openSlots: shift.openSlots,
@@ -190,7 +199,7 @@ RosterGrid buildRosterGrid({
           tiles.add(
             RosterTile(
               shiftId: shift.id,
-              clientName: shift.clientName ?? '',
+              clientName: _tileClientName(shift, idToName),
               start: shift.scheduledStart,
               end: shift.scheduledEnd,
               openSlots: shift.openSlots,

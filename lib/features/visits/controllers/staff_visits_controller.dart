@@ -215,6 +215,7 @@ class StaffVisitsController extends GetxController {
       shifts: shifts.toList(),
       people: people,
       overlay: overlay.value ?? const RosterOverlayOut(contractors: []),
+      idToName: participantNameMap,
       clientIdFilter:
           clientIdFilter.value.isEmpty ? null : clientIdFilter.value,
     );

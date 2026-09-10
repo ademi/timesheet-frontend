@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
+import 'package:rostiq/features/shifts/data/models/shift_participant_models.dart';
+import 'package:rostiq/features/shifts/utils/allocation_math.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
 import 'package:rostiq/features/visits/roster/roster_grid_model.dart';
 
@@ -42,6 +44,7 @@ void main() {
           RosterPerson(contractorId: 'ali', displayName: 'Ali'),
         ],
         overlay: const RosterOverlayOut(contractors: []),
+        idToName: const {},
       );
       expect(grid.rows.first.id, 'unfilled');
       expect(grid.rows.first.isUnfilled, isTrue);
@@ -70,6 +73,7 @@ void main() {
             ],
           ),
         ]),
+        idToName: const {},
       );
       final jane = grid.rows.firstWhere((r) => r.id == 'jane');
       expect(jane.cells[3].onLeave, isTrue); // Thu 13
@@ -115,6 +119,7 @@ void main() {
         people: const [],
         overlay: const RosterOverlayOut(contractors: []),
         clientIdFilter: 'cl-a',
+        idToName: const {},
       );
       final unfilled = grid.rows.first;
       expect(unfilled.cells[0].tiles, hasLength(1));
@@ -163,6 +168,7 @@ void main() {
           RosterPerson(contractorId: 'ali', displayName: 'Ali'),
         ],
         overlay: const RosterOverlayOut(contractors: []),
+        idToName: const {},
       );
       expect(grid.rows.first.id, 'unfilled');
       expect(grid.rows.first.cells[0].tiles.single.shiftId, 'draft');
@@ -189,6 +195,7 @@ void main() {
             ],
           ),
         ]),
+        idToName: const {},
       );
       final jane = grid.rows.firstWhere((r) => r.id == 'jane');
       expect(jane.cells[0].availabilityHint, '09:00–17:00');
@@ -232,6 +239,7 @@ void main() {
           shifts: [shift],
           people: const [],
           overlay: const RosterOverlayOut(contractors: []),
+          idToName: const {},
         );
         final unfilled = grid.rows.first;
         expect(unfilled.cells[0].tiles, hasLength(1));
@@ -241,5 +249,83 @@ void main() {
         }
       },
     );
+
+    test('group shift tile shows first participant plus count', () {
+      final monday = DateTime(2026, 8, 10, 9);
+      final participants = [
+        ShiftParticipantOut(
+          id: 'sp1',
+          shiftId: 's-group',
+          participantId: 'alice',
+          allocationStrategy: 'percentage',
+          allocationValue: 40,
+          status: 'active',
+          createdAt: monday,
+          updatedAt: monday,
+        ),
+        ShiftParticipantOut(
+          id: 'sp2',
+          shiftId: 's-group',
+          participantId: 'bob',
+          allocationStrategy: 'percentage',
+          allocationValue: 30,
+          status: 'active',
+          createdAt: monday,
+          updatedAt: monday,
+        ),
+        ShiftParticipantOut(
+          id: 'sp3',
+          shiftId: 's-group',
+          participantId: 'carol',
+          allocationStrategy: 'percentage',
+          allocationValue: 30,
+          status: 'active',
+          createdAt: monday,
+          updatedAt: monday,
+        ),
+      ];
+      expect(
+        rosterParticipantsLabel(
+          hostClientName: 'Alice',
+          participants: participants,
+          idToName: const {
+            'alice': 'Alice',
+            'bob': 'Bob',
+            'carol': 'Carol',
+          },
+        ),
+        'Alice +2',
+      );
+
+      final shift = ShiftOut(
+        id: 's-group',
+        tenantId: 't',
+        jobId: 'j',
+        jobTitle: 'Group outing',
+        clientId: 'alice',
+        clientName: 'Alice',
+        scheduledStart: monday,
+        scheduledEnd: monday.add(const Duration(hours: 3)),
+        requiredSlots: 1,
+        openSlots: 1,
+        status: 'published',
+        participants: participants,
+        createdAt: monday,
+        updatedAt: monday,
+      );
+      final grid = buildRosterGrid(
+        rangeStart: DateTime(2026, 8, 10),
+        dayCount: 5,
+        shifts: [shift],
+        people: const [],
+        overlay: const RosterOverlayOut(contractors: []),
+        idToName: const {
+          'alice': 'Alice',
+          'bob': 'Bob',
+          'carol': 'Carol',
+        },
+      );
+      expect(grid.rows.first.cells[0].tiles.single.clientName, 'Alice +2');
+    });
   });
 }

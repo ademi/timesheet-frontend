@@ -14,6 +14,7 @@ void main() {
       shifts: const [],
       people: const [RosterPerson(contractorId: 'jane', displayName: 'Jane')],
       overlay: const RosterOverlayOut(contractors: []),
+      idToName: const {},
     );
     await tester.pumpWidget(
       MaterialApp(
@@ -64,6 +65,7 @@ void main() {
       shifts: [shift],
       people: const [RosterPerson(contractorId: 'jane', displayName: 'Jane')],
       overlay: const RosterOverlayOut(contractors: []),
+      idToName: const {},
     );
     await tester.pumpWidget(
       MaterialApp(
@@ -116,6 +118,7 @@ void main() {
       ],
       people: const [RosterPerson(contractorId: 'jane', displayName: 'Jane')],
       overlay: const RosterOverlayOut(contractors: []),
+      idToName: const {},
     );
     await tester.pumpWidget(
       MaterialApp(
@@ -154,6 +157,7 @@ void main() {
       shifts: const [],
       people: people,
       overlay: const RosterOverlayOut(contractors: []),
+      idToName: const {},
     );
 
     await tester.pumpWidget(
