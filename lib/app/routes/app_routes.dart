@@ -18,6 +18,7 @@ abstract class AppRoutes {
   static const staffClientDetail = '/staff/clients/detail';
   static const staffClientSiteForm = '/staff/clients/site-form';
   static const staffClientContactForm = '/staff/clients/contact-form';
+
   /// Advanced Supports list (demoted from staff shell nav; entry via Settings).
   static const staffJobs = '/staff/jobs';
   static const staffJobForm = '/staff/jobs/form';
@@ -28,6 +29,7 @@ abstract class AppRoutes {
   static const staffJobManageTemplates = '/staff/jobs/manage-templates';
   static const staffFormTemplateEditor = '/staff/jobs/form-template-editor';
   static const staffVisits = '/staff/visits';
+  static const staffGroupShiftBook = '/staff/visits/book-group';
   static const staffVisitDetail = '/staff/visits/detail';
   static const staffShiftDetail = '/staff/visits/shift-detail';
   static const staffPayments = '/staff/payments';

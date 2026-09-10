@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/equal_fill_row.dart';
 import '../../../core/responsive/page_content.dart';
@@ -142,13 +143,6 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
         title: const Text('Roster'),
         actions: shellAppBarActions(),
       ),
-      floatingActionButton:
-          controller.canManage
-              ? FloatingActionButton(
-                onPressed: () => _showBookOneDialog(context, controller),
-                child: const Icon(Icons.add),
-              )
-              : null,
       body: Obx(() {
         final err = controller.errorMessage.value;
         final overlayWarn = controller.overlayWarning.value;
@@ -163,6 +157,25 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Column(
                   children: [
+                    if (controller.canManage)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed:
+                                () => _showBookOneDialog(context, controller),
+                            child: const Text('Book one'),
+                          ),
+                          const SizedBox(width: 8),
+                          TextButton(
+                            key: const Key('book-group-shift'),
+                            onPressed:
+                                () =>
+                                    Get.toNamed(AppRoutes.staffGroupShiftBook),
+                            child: const Text('Group shift'),
+                          ),
+                        ],
+                      ),
                     Row(
                       children: [
                         IconButton(
@@ -341,9 +354,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                   tile.clientName.isEmpty ? 'Shift' : tile.clientName,
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: Text(
-                  '${_fmt(tile.start)} – ${_fmt(tile.end)}',
-                ),
+                subtitle: Text('${_fmt(tile.start)} – ${_fmt(tile.end)}'),
               ),
               const Divider(height: 1),
               ListTile(
@@ -518,8 +529,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
               ),
               actions: [
                 TextButton(
-                  onPressed:
-                      isSubmitting ? null : () => Navigator.pop(ctx),
+                  onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
