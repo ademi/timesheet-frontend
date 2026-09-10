@@ -124,6 +124,19 @@ void main() {
     expect(labels, contains('Settings'));
   });
 
+  test('destinations include Invoices when billing.view present', () {
+    tokenStorage.claims = const JwtClaims(
+      sub: 'u1',
+      tenantId: 't1',
+      permissions: ['auth.session', 'billing.view'],
+      actorType: 'tenant_member',
+      iat: 1,
+      exp: 2,
+    );
+    final labels = StaffShellNav.destinations().map((d) => d.label).toList();
+    expect(labels, contains('Invoices'));
+  });
+
   test('destinations fall back to Home+Settings when no claims', () {
     tokenStorage.claims = null;
     final labels = StaffShellNav.destinations().map((d) => d.label).toList();

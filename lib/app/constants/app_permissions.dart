@@ -58,10 +58,13 @@ abstract final class AppPermissions {
   static const auditView = 'audit.view';
   static const rbacManage = 'rbac.manage';
 
-  /// Landing-page billing only — do not build Flutter subscription UI.
+  /// SaaS subscription (landing-page only — do not build Flutter subscription UI).
   static const subscriptionView = 'subscription.view';
   static const subscriptionManage = 'subscription.manage';
+
+  /// Client invoice export (NDIS claim lines). Not SaaS subscription billing.
   static const billingView = 'billing.view';
+  static const billingManage = 'billing.manage';
 
   static const credentialsRead = 'credentials.read';
   static const credentialsManage = 'credentials.manage';

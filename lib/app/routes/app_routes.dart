@@ -33,6 +33,8 @@ abstract class AppRoutes {
   static const staffVisitDetail = '/staff/visits/detail';
   static const staffShiftDetail = '/staff/visits/shift-detail';
   static const staffPayments = '/staff/payments';
+  static const staffInvoices = '/staff/invoices';
+  static const staffInvoiceDetail = '/staff/invoices/detail';
   static const staffCompliance = '/staff/compliance';
   static const staffSettings = '/staff/settings';
   static const staffCredentialReview = '/staff/credentials-review';
