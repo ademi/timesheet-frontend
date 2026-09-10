@@ -317,4 +317,73 @@ void main() {
     );
     expect(controller.canPublishSelected, isFalse);
   });
+
+  test('replaces time-based participant to persist edited windows', () async {
+    final participant = ShiftParticipantOut(
+      id: 'shift-participant-host-1',
+      shiftId: 'shift-1',
+      participantId: 'host-1',
+      allocationStrategy: 'time_based',
+      allocationValue: 0,
+      status: 'active',
+      timeWindows: const [],
+      createdAt: _now,
+      updatedAt: _now,
+    );
+    final original = _shift(participants: [participant]);
+    final removed = _shift();
+    final replacement = ShiftParticipantCreateRequest(
+      participantId: 'host-1',
+      allocationStrategy: 'time_based',
+      allocationValue: 0,
+      reason: 'Correct attendance window',
+      timeWindows: [
+        ShiftParticipantAllocationWindow(
+          participantStartTime: _now,
+          participantEndTime: _now.add(const Duration(hours: 1)),
+        ),
+      ],
+    );
+    final updated = _shift(
+      participants: [
+        participant.copyWith(
+          timeWindows: [
+            ShiftParticipantAllocationOut(
+              id: 'window-1',
+              shiftParticipantId: participant.id,
+              participantStartTime: _now,
+              participantEndTime: _now.add(const Duration(hours: 1)),
+              createdAt: _now,
+            ),
+          ],
+        ),
+      ],
+    );
+    controller.selectedShift.value = original;
+    when(
+      () => shifts.removeParticipant(
+        shiftId: original.id,
+        participantId: participant.participantId,
+        reason: replacement.reason,
+      ),
+    ).thenAnswer((_) async => removed);
+    when(
+      () => shifts.addParticipant(shiftId: original.id, body: replacement),
+    ).thenAnswer((_) async => updated);
+
+    await controller.replaceTimeBasedParticipantOnSelected(
+      participant: participant,
+      replacement: replacement,
+    );
+
+    expect(controller.selectedShift.value, same(updated));
+    verifyInOrder([
+      () => shifts.removeParticipant(
+        shiftId: original.id,
+        participantId: participant.participantId,
+        reason: replacement.reason,
+      ),
+      () => shifts.addParticipant(shiftId: original.id, body: replacement),
+    ]);
+  });
 }

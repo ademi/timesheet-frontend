@@ -603,6 +603,36 @@ class StaffVisitsController extends GetxController {
     }
   }
 
+  /// The backend allocation PATCH updates percentages only. Persist edited
+  /// time windows on a draft by replacing the active participant record.
+  Future<void> replaceTimeBasedParticipantOnSelected({
+    required ShiftParticipantOut participant,
+    required ShiftParticipantCreateRequest replacement,
+  }) async {
+    final shift = selectedShift.value;
+    if (shift == null || isSaving.value || shift.status != 'draft') return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final removed = await _shiftsRepository.removeParticipant(
+        shiftId: shift.id,
+        participantId: participant.participantId,
+        reason: replacement.reason,
+      );
+      selectedShift.value = removed;
+      final updated = await _shiftsRepository.addParticipant(
+        shiftId: shift.id,
+        body: replacement,
+      );
+      selectedShift.value = updated;
+      await load();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
   Future<void> loadAllocationChanges() async {
     final shift = selectedShift.value;
     if (shift == null || isLoadingAllocationChanges.value) return;

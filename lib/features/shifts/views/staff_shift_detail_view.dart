@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
-import '../../../shared/widgets/async_action.dart';
 import '../../shifts/data/models/shift_models.dart';
+import '../../shifts/widgets/allocation_audit_section.dart';
+import '../../shifts/widgets/shift_participants_section.dart';
+import '../../shifts/widgets/shift_publish_strip.dart';
 import '../../shifts/widgets/shift_slot_pips.dart';
 import '../../visits/controllers/staff_visits_controller.dart';
 
@@ -27,7 +31,9 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
     super.initState();
     final c = Get.find<StaffVisitsController>();
     c.hydrateShiftFromArgs();
-    c.refreshSelectedShift();
+    unawaited(c.loadClientsForPicker());
+    unawaited(c.loadAllocationChanges());
+    unawaited(c.refreshSelectedShift());
   }
 
   @override
@@ -35,7 +41,32 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
     final controller = Get.find<StaffVisitsController>();
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Shift')),
+      appBar: AppBar(
+        title: Obx(
+          () => Text(controller.selectedShift.value?.jobTitle ?? 'Shift'),
+        ),
+        actions: [
+          Obx(() {
+            final shift = controller.selectedShift.value;
+            if (!controller.canManage ||
+                shift == null ||
+                shift.status == 'cancelled') {
+              return const SizedBox.shrink();
+            }
+            return PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'cancel') {
+                  unawaited(controller.cancelSelectedShift());
+                }
+              },
+              itemBuilder:
+                  (_) => const [
+                    PopupMenuItem(value: 'cancel', child: Text('Cancel shift')),
+                  ],
+            );
+          }),
+        ],
+      ),
       body: Obx(() {
         final shift = controller.selectedShift.value;
         final err = controller.errorMessage.value;
@@ -45,6 +76,11 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
           }
           return const Center(child: Text('Shift not loaded.'));
         }
+        final clients = [
+          for (final client in controller.clientsForPicker)
+            (id: client.id, name: client.fullName),
+        ];
+        final participantNames = controller.participantNameMap;
         return Column(
           children: [
             if (controller.isRefreshing.value)
@@ -57,90 +93,138 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                  if (err != null) ...[
-                    _ErrorBox(err),
-                    const SizedBox(height: 12),
-                  ],
-                  Text(shift.jobTitle, style: Get.textTheme.titleMedium),
-                  if (shift.clientName?.isNotEmpty == true)
-                    Text('Client: ${shift.clientName}'),
-                  const SizedBox(height: 4),
-                  Text('Status: ${shift.status}'),
-                  Text('Start: ${_fmt(shift.scheduledStart)}'),
-                  Text('End: ${_fmt(shift.scheduledEnd)}'),
-                  if (shift.locationLabel?.isNotEmpty == true)
-                    Text('Location: ${shift.locationLabel}'),
-                  const SizedBox(height: 8),
-                  ShiftSlotPips(
-                    requiredSlots: shift.requiredSlots,
-                    filledSlots: shift.filledSlots,
-                  ),
-                  Text(
-                    '${shift.filledSlots} of ${shift.requiredSlots} filled · '
-                    '${shift.openSlots} open',
-                  ),
-                  const Divider(height: 32),
-                  Text('Assignments', style: Get.textTheme.titleMedium),
-                  if (shift.assignments.isEmpty)
-                    const Text('No workers assigned yet.'),
-                  for (final a in shift.assignments)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(a.contractorName),
-                      subtitle: Text(
-                        '${a.source} · ${a.status}'
-                        '${a.visitStatus != null ? ' · ${a.visitStatus}' : ''}',
-                      ),
-                      trailing:
-                          controller.canManage && a.status == 'active'
-                              ? TextButton(
-                                onPressed:
-                                    controller.isSaving.value
-                                        ? null
-                                        : () => controller.releaseAssignment(
-                                          shiftId: shift.id,
-                                          contractorId: a.contractorId,
-                                          workerName: a.contractorName,
-                                        ),
-                                child: const Text('Release'),
-                              )
-                              : const Icon(Icons.chevron_right),
-                      onTap: () => controller.openAssignmentVisit(a.visitId),
-                    ),
-                  if (controller.canManage &&
-                      shift.status != 'cancelled' &&
-                      shift.openSlots > 0) ...[
-                    const Divider(height: 32),
-                    Text('Assign worker', style: Get.textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed:
-                          controller.isSaving.value
-                              ? null
-                              : () => _showAssignPicker(
-                                context,
-                                controller,
-                                shift,
-                              ),
-                      icon: const Icon(Icons.person_add_outlined),
-                      label: const Text('Choose contractor'),
-                    ),
-                  ],
-                  if (controller.canManage) ...[
-                    const Divider(height: 32),
-                    if (shift.status == 'draft')
-                      AsyncElevatedButton(
-                        onPressed: controller.publishSelectedShift,
-                        isLoading: controller.isSaving.value,
-                        child: const Text('Publish shift'),
-                      ),
-                    if (shift.status == 'published')
-                      AsyncOutlinedButton(
-                        onPressed: controller.cancelSelectedShift,
-                        isLoading: controller.isSaving.value,
-                        child: const Text('Cancel shift'),
-                      ),
-                  ],
+                        if (err != null) ...[
+                          _ErrorBox(err),
+                          const SizedBox(height: 12),
+                        ],
+                        ShiftPublishStrip(
+                          shift: shift,
+                          canManage: controller.canManage,
+                          canPublish: controller.canPublishSelected,
+                          isSaving: controller.isSaving.value,
+                          showDraftCapacityHint:
+                              controller.showDraftCapacityHint.value,
+                          onPublish: controller.publishSelectedShift,
+                          onDismissHint:
+                              () =>
+                                  controller.showDraftCapacityHint.value =
+                                      false,
+                        ),
+                        const Divider(height: 32),
+                        ShiftParticipantsSection(
+                          shift: shift,
+                          clients: clients,
+                          participantNames: participantNames,
+                          canManage: controller.canManage,
+                          isSaving: controller.isSaving.value,
+                          onAdd: (request) async {
+                            await controller.addParticipantToSelected(request);
+                            await controller.loadAllocationChanges();
+                          },
+                          onUpdate: (participant, request) async {
+                            await controller.updateAllocationOnSelected(
+                              participantId: participant.participantId,
+                              body: request,
+                            );
+                            await controller.loadAllocationChanges();
+                          },
+                          onReplaceTimeBased: (participant, request) async {
+                            await controller
+                                .replaceTimeBasedParticipantOnSelected(
+                                  participant: participant,
+                                  replacement: request,
+                                );
+                            await controller.loadAllocationChanges();
+                          },
+                          onRemove: (participant, reason) async {
+                            await controller.removeParticipantFromSelected(
+                              participantId: participant.participantId,
+                              reason: reason,
+                            );
+                            await controller.loadAllocationChanges();
+                          },
+                        ),
+                        const Divider(height: 32),
+                        Text('When & where', style: Get.textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        Text('Start: ${_fmt(shift.scheduledStart)}'),
+                        Text('End: ${_fmt(shift.scheduledEnd)}'),
+                        if (shift.locationLabel?.isNotEmpty == true)
+                          Text('Location: ${shift.locationLabel}')
+                        else
+                          const Text('Location: Not set'),
+                        const Divider(height: 32),
+                        Text('Workers', style: Get.textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        ShiftSlotPips(
+                          requiredSlots: shift.requiredSlots,
+                          filledSlots: shift.filledSlots,
+                        ),
+                        Text(
+                          '${shift.filledSlots} of ${shift.requiredSlots} filled · '
+                          '${shift.openSlots} open',
+                        ),
+                        if (shift.assignments.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 8),
+                            child: Text('No workers assigned yet.'),
+                          ),
+                        for (final assignment in shift.assignments)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(assignment.contractorName),
+                            subtitle: Text(
+                              '${assignment.source} · ${assignment.status}'
+                              '${assignment.visitStatus != null ? ' · ${assignment.visitStatus}' : ''}',
+                            ),
+                            trailing:
+                                controller.canManage &&
+                                        assignment.status == 'active'
+                                    ? TextButton(
+                                      onPressed:
+                                          controller.isSaving.value
+                                              ? null
+                                              : () =>
+                                                  controller.releaseAssignment(
+                                                    shiftId: shift.id,
+                                                    contractorId:
+                                                        assignment.contractorId,
+                                                    workerName:
+                                                        assignment
+                                                            .contractorName,
+                                                  ),
+                                      child: const Text('Release'),
+                                    )
+                                    : const Icon(Icons.chevron_right),
+                            onTap:
+                                () => controller.openAssignmentVisit(
+                                  assignment.visitId,
+                                ),
+                          ),
+                        if (controller.canManage &&
+                            shift.status != 'cancelled' &&
+                            shift.openSlots > 0) ...[
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed:
+                                controller.isSaving.value
+                                    ? null
+                                    : () => _showAssignPicker(
+                                      context,
+                                      controller,
+                                      shift,
+                                    ),
+                            icon: const Icon(Icons.person_add_outlined),
+                            label: const Text('Choose contractor'),
+                          ),
+                        ],
+                        const Divider(height: 32),
+                        AllocationAuditSection(
+                          changes: controller.allocationChanges,
+                          participantNames: participantNames,
+                          isLoading:
+                              controller.isLoadingAllocationChanges.value,
+                        ),
                       ],
                     ),
                   ),
