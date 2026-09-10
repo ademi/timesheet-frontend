@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:rostiq/app/routes/app_routes.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
@@ -137,7 +139,21 @@ void main() {
 
   tearDown(Get.reset);
 
-  test('keeps draft and error when second participant add fails', () async {
+  testWidgets('keeps draft and error when second participant add fails', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      GetMaterialApp(
+        initialRoute: '/',
+        getPages: [
+          GetPage(name: '/', page: () => const SizedBox.shrink()),
+          GetPage(
+            name: AppRoutes.staffShiftDetail,
+            page: () => const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
     final draft = _shift();
     final afterFirst = _shift(participants: [_participant('host-1', 60)]);
     final requests = [
@@ -168,12 +184,17 @@ void main() {
       end: _now.add(const Duration(hours: 2)),
       participants: requests,
     );
+    await tester.pumpAndSettle();
 
     expect(ok, isFalse);
     expect(controller.errorMessage.value, 'Could not add participant.');
     expect(controller.selectedShift.value?.id, draft.id);
     expect(controller.selectedShift.value?.participants, hasLength(1));
     expect(controller.showDraftCapacityHint.value, isTrue);
+    final arguments = Get.arguments as Map;
+    expect(arguments['shift'], same(afterFirst));
+    expect(arguments['errorMessage'], 'Could not add participant.');
+    expect(arguments['showDraftCapacityHint'], isTrue);
     verify(
       () => shifts.addParticipant(shiftId: draft.id, body: any(named: 'body')),
     ).called(2);
@@ -215,7 +236,21 @@ void main() {
     );
   });
 
-  test('creates draft and adds every participant sequentially', () async {
+  testWidgets('creates draft and adds every participant sequentially', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      GetMaterialApp(
+        initialRoute: '/',
+        getPages: [
+          GetPage(name: '/', page: () => const SizedBox.shrink()),
+          GetPage(
+            name: AppRoutes.staffShiftDetail,
+            page: () => const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
     final draft = _shift();
     final first = _shift(participants: [_participant('host-1', 60)]);
     final complete = _shift(
@@ -238,6 +273,7 @@ void main() {
       participants: requests,
       requiredSlots: 2,
     );
+    await tester.pumpAndSettle();
 
     expect(ok, isTrue);
     final createRequest =
@@ -258,6 +294,10 @@ void main() {
     ]);
     expect(controller.selectedShift.value?.participants, hasLength(2));
     expect(controller.showDraftCapacityHint.value, isFalse);
+    final arguments = Get.arguments as Map;
+    expect(arguments['shift'], same(complete));
+    expect(arguments.containsKey('errorMessage'), isFalse);
+    expect(arguments['showDraftCapacityHint'], isFalse);
   });
 
   test('canPublishSelected requires draft with ready allocation', () {
