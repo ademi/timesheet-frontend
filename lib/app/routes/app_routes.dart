@@ -36,6 +36,17 @@ abstract class AppRoutes {
   static const staffVisits = '/staff/visits';
   static const staffVisitDetail = '/staff/visits/detail';
   static const staffShiftDetail = '/staff/visits/shift-detail';
+
+  /// Full-screen Group Shift wizard (People · When · Review).
+  static const staffGroupShiftBook = '/staff/visits/book-group';
+
+  /// Draft-only full-screen Edit group (PUT participants).
+  static const staffGroupShiftEdit = '/staff/visits/shift-detail/edit-group';
+
+  /// Full-screen Remove from group (DELETE + equal rebalance).
+  static const staffGroupShiftRemove =
+      '/staff/visits/shift-detail/remove-participant';
+
   static const staffPayments = '/staff/payments';
   static const staffBillingExports = '/staff/billing/exports';
   static const staffBillingExportDetail = '/staff/billing/exports/detail';

@@ -64,4 +64,18 @@ void main() {
       expect(atHardCap(33), isTrue);
     });
   });
+
+  group('remainingCapacityLabel', () {
+    test('shows remaining when under 100', () {
+      expect(remainingCapacityLabel([40.0, 40.0]), 'Remaining: 20%');
+    });
+
+    test('shows over when above 100', () {
+      expect(remainingCapacityLabel([60.0, 50.0]), 'Over by 10%');
+    });
+
+    test('shows zero remaining at 100', () {
+      expect(remainingCapacityLabel([50.0, 50.0]), 'Remaining: 0%');
+    });
+  });
 }

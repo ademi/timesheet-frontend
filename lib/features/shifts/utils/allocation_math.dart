@@ -37,3 +37,15 @@ bool needsLargeGroupConfirm(int nextN) => nextN >= 9;
 
 /// Hard server-aligned cap.
 bool atHardCap(int n) => n >= 32;
+
+/// Inline Remaining / Over copy for Capacity % (design D6).
+String remainingCapacityLabel(Iterable<double> values) {
+  final rem = remainingTo100(values);
+  if (rem.abs() <= 0.01) return 'Remaining: 0%';
+  final shown = rem.abs();
+  final text = shown == shown.roundToDouble()
+      ? shown.toStringAsFixed(0)
+      : shown.toStringAsFixed(2);
+  if (rem > 0) return 'Remaining: $text%';
+  return 'Over by $text%';
+}

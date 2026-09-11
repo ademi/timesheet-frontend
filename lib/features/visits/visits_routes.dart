@@ -8,6 +8,11 @@ import '../../app/routes/middlewares/permission_guard.dart';
 import '../shell/contractor_shell.dart';
 import '../shell/staff_shell.dart';
 import '../shifts/views/staff_shift_detail_view.dart';
+import '../shifts/group_book/group_shift_book_binding.dart';
+import '../shifts/group_book/group_shift_book_view.dart';
+import '../shifts/group_book/group_shift_edit_binding.dart';
+import '../shifts/group_book/group_shift_edit_view.dart';
+import '../shifts/group_book/group_shift_remove_view.dart';
 import 'bindings/visits_binding.dart';
 import 'views/contractor_visit_detail_view.dart';
 import 'views/contractor_visits_list_view.dart';
@@ -38,6 +43,22 @@ abstract final class VisitsPages {
       transition: Transition.fadeIn,
     ),
     GetPage(
+      name: AppRoutes.staffGroupShiftBook,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [
+            AppPermissions.shiftsManage,
+            AppPermissions.jobsManage,
+          ],
+        ),
+      ],
+      binding: GroupShiftBookBinding(),
+      page: () => const GroupShiftBookView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
       name: AppRoutes.staffShiftDetail,
       middlewares: [
         AuthGuard(),
@@ -54,6 +75,38 @@ abstract final class VisitsPages {
       ],
       binding: StaffVisitsBinding(),
       page: () => const StaffShiftDetailView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.staffGroupShiftEdit,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [
+            AppPermissions.shiftsManage,
+            AppPermissions.jobsManage,
+          ],
+        ),
+      ],
+      binding: GroupShiftEditBinding(),
+      page: () => const GroupShiftEditView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.staffGroupShiftRemove,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [
+            AppPermissions.shiftsManage,
+            AppPermissions.jobsManage,
+          ],
+        ),
+      ],
+      binding: GroupShiftRemoveBinding(),
+      page: () => const GroupShiftRemoveView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

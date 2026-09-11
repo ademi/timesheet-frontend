@@ -1,0 +1,188 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../../core/errors/app_failure.dart';
+import '../../../shared/widgets/app_toast.dart';
+import '../data/models/shift_models.dart';
+import '../data/repositories/shifts_repository.dart';
+import '../utils/allocation_math.dart';
+import '../utils/group_participant_draft.dart';
+import '../utils/participant_display.dart';
+
+/// Args for full-screen Edit group (draft only).
+class GroupShiftEditArgs {
+  const GroupShiftEditArgs({required this.shift});
+
+  final ShiftOut shift;
+}
+
+/// Local draft → one [ShiftsRepository.putParticipants] on Save (E4).
+class GroupShiftEditController extends GetxController {
+  GroupShiftEditController({
+    required ShiftsRepository shiftsRepository,
+    required this.args,
+    void Function(ShiftOut shift)? onSaved,
+    Future<bool> Function(int nextN)? confirmLargeGroup,
+  }) : _shifts = shiftsRepository,
+       _onSaved = onSaved,
+       _confirmLargeGroup = confirmLargeGroup;
+
+  final ShiftsRepository _shifts;
+  final GroupShiftEditArgs args;
+  final void Function(ShiftOut shift)? _onSaved;
+  final Future<bool> Function(int nextN)? _confirmLargeGroup;
+
+  final draft = GroupParticipantDraftSet(equalSplit: true).obs;
+  final isSaving = false.obs;
+  final errorMessage = RxnString();
+
+  String get remainingLabel => remainingCapacityLabel(
+    draft.value.participants.map((p) => p.allocationValue),
+  );
+
+  @override
+  void onInit() {
+    super.onInit();
+    _hydrateFromShift(args.shift);
+  }
+
+  void _hydrateFromShift(ShiftOut shift) {
+    final active = activeParticipants(shift.participants);
+    final values = active.map((p) => p.allocationValue ?? 0.0).toList();
+    final equal = active.isNotEmpty && sumsTo100(values) && _looksEqual(values);
+    var next = GroupParticipantDraftSet(
+      equalSplit: equal,
+      participants: [
+        for (final p in active)
+          GroupParticipantDraft(
+            participantId: p.participantId,
+            displayName: p.participantName ?? p.participantId,
+            allocationValue: p.allocationValue ?? 0,
+            isHostIncluded: p.participantId == shift.clientId,
+          ),
+      ],
+    );
+    if (equal) next = next.recomputeEqualSplit();
+    draft.value = next;
+  }
+
+  bool _looksEqual(List<double> values) {
+    if (values.isEmpty) return true;
+    final expected = equalPercentageValues(values.length);
+    for (var i = 0; i < values.length; i++) {
+      if ((values[i] - expected[i]).abs() > 0.02) return false;
+    }
+    return true;
+  }
+
+  void setEqualSplit(bool enabled) {
+    draft.value = draft.value.withEqualSplit(enabled);
+    errorMessage.value = null;
+  }
+
+  void setAllocation(String participantId, double value) {
+    draft.value = draft.value.setAllocation(participantId, value);
+  }
+
+  void removeParticipant(String participantId) {
+    draft.value = draft.value.remove(participantId);
+  }
+
+  /// Returns false when add was cancelled (hard cap or large-group dialog).
+  Future<bool> addParticipant({
+    required String participantId,
+    required String displayName,
+  }) async {
+    if (draft.value.containsParticipant(participantId)) return false;
+    final nextN = draft.value.length + 1;
+    if (atHardCap(draft.value.length)) {
+      errorMessage.value = 'Groups are limited to 32 participants';
+      return false;
+    }
+    if (needsLargeGroupConfirm(nextN)) {
+      final ok = await _askLargeGroupConfirm(nextN);
+      if (!ok) return false;
+    }
+    draft.value = draft.value.add(
+      GroupParticipantDraft(
+        participantId: participantId,
+        displayName: displayName,
+        allocationValue: 0,
+        isHostIncluded: participantId == args.shift.clientId,
+      ),
+    );
+    return true;
+  }
+
+  Future<bool> _askLargeGroupConfirm(int nextN) async {
+    if (_confirmLargeGroup != null) return _confirmLargeGroup(nextN);
+    if (Get.testMode) return true;
+    final result = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Large group'),
+        content: Text('Large group ($nextN). Continue?'),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    return result == true;
+  }
+
+  Future<void> save() async {
+    if (isSaving.value) return;
+    errorMessage.value = null;
+    final validation = draft.value.validate();
+    if (validation != null) {
+      errorMessage.value = validation;
+      return;
+    }
+    if (!draft.value.equalSplit &&
+        !sumsTo100(draft.value.participants.map((p) => p.allocationValue))) {
+      errorMessage.value = remainingLabel;
+      return;
+    }
+
+    isSaving.value = true;
+    try {
+      final equal = draft.value.equalSplit;
+      final updated = await _shifts.putParticipants(
+        args.shift.id,
+        ShiftParticipantsReplaceRequest(
+          equalSplit: equal,
+          participants: [
+            for (final p in draft.value.participants)
+              ShiftParticipantReplaceItem(
+                participantId: p.participantId,
+                allocationValue: equal ? null : p.allocationValue,
+              ),
+          ],
+        ),
+      );
+      if (_onSaved != null) {
+        _onSaved(updated);
+      } else if (!Get.testMode) {
+        Get.back(result: updated);
+      }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      if (!Get.testMode) {
+        AppToast.error('Could not save group', e.message);
+      }
+    } catch (e) {
+      errorMessage.value = e.toString();
+      if (!Get.testMode) {
+        AppToast.error('Could not save group', e.toString());
+      }
+    } finally {
+      isSaving.value = false;
+    }
+  }
+}

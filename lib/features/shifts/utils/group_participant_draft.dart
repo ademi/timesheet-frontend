@@ -95,6 +95,33 @@ class GroupParticipantDraftSet {
     );
   }
 
+  /// Toggles equal-split mode. Enabling redistributes; disabling keeps values.
+  GroupParticipantDraftSet withEqualSplit(bool enabled) {
+    if (enabled) return recomputeEqualSplit();
+    return copyWith(equalSplit: false);
+  }
+
+  /// Updates one row's Capacity % and forces manual (non-equal) mode.
+  GroupParticipantDraftSet setAllocation(
+    String participantId,
+    double allocationValue,
+  ) {
+    final next = [
+      for (final p in participants)
+        if (p.participantId == participantId)
+          p.copyWith(allocationValue: allocationValue)
+        else
+          p,
+    ];
+    return copyWith(equalSplit: false, participants: List.unmodifiable(next));
+  }
+
+  double get remaining =>
+      remainingTo100(participants.map((p) => p.allocationValue));
+
+  bool containsParticipant(String participantId) =>
+      participants.any((p) => p.participantId == participantId);
+
   static List<GroupParticipantDraft> _withEqualValues(
     List<GroupParticipantDraft> rows,
   ) {

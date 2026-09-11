@@ -577,6 +577,81 @@ class StaffVisitsController extends GetxController {
     }
   }
 
+  final allocationHistory = <AllocationChangeLogOut>[].obs;
+  final isLoadingAllocationHistory = false.obs;
+  final allocationHistoryExpanded = false.obs;
+
+  Future<void> loadAllocationHistory({bool force = false}) async {
+    final shift = selectedShift.value;
+    if (shift == null) return;
+    if (!force && allocationHistory.isNotEmpty) return;
+    isLoadingAllocationHistory.value = true;
+    try {
+      allocationHistory.assignAll(
+        await _shiftsRepository.getAllocationChanges(shift.id),
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isLoadingAllocationHistory.value = false;
+    }
+  }
+
+  Future<void> patchSelectedShiftWorkerCount(int workerCount) async {
+    final shift = selectedShift.value;
+    if (shift == null || !canManage || shift.status != 'draft') return;
+    if (workerCount < 1) {
+      errorMessage.value = 'Workers planned must be at least 1.';
+      return;
+    }
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      selectedShift.value = await _shiftsRepository.patchShift(
+        shift.id,
+        workerCount: workerCount,
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      AppToast.error('Could not update', e.message);
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> openEditGroup() async {
+    final shift = selectedShift.value;
+    if (shift == null || shift.status != 'draft') return;
+    final result = await Get.toNamed(
+      AppRoutes.staffGroupShiftEdit,
+      arguments: shift,
+    );
+    if (result is ShiftOut) {
+      selectedShift.value = result;
+      allocationHistory.clear();
+    } else {
+      await refreshSelectedShift();
+    }
+  }
+
+  Future<void> openRemoveParticipant(ShiftParticipantOut participant) async {
+    final shift = selectedShift.value;
+    if (shift == null) return;
+    final result = await Get.toNamed(
+      AppRoutes.staffGroupShiftRemove,
+      arguments: {
+        'shift': shift,
+        'participant': participant,
+      },
+    );
+    if (result is ShiftOut) {
+      selectedShift.value = result;
+      allocationHistory.clear();
+    } else {
+      await refreshSelectedShift();
+    }
+  }
+
   Future<bool> confirmAssignAnyway() async {
     if (Get.testMode) return true;
     final result = await Get.dialog<bool>(
