@@ -396,11 +396,13 @@ class StaffVisitsController extends GetxController {
       final from = _fromUtc;
       final to = _toUtc;
       // D20: isolate overlay failure from shifts — soft banner only.
+      final clientFilter = clientIdFilter.value.trim();
       final shiftsFuture = _shiftsRepository.listShifts(
         from: from,
         to: to,
         jobId:
             jobIdFilter.value.trim().isEmpty ? null : jobIdFilter.value.trim(),
+        participantId: clientFilter.isEmpty ? null : clientFilter,
       );
       overlayFuture = () async {
         try {

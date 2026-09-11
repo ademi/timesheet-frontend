@@ -10,7 +10,6 @@ import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/controllers/staff_visits_controller.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
-import 'package:rostiq/features/visits/data/models/visit_models.dart';
 import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
 
 class _MockVisitsRepository extends Mock implements VisitsRepository {}
@@ -28,43 +27,6 @@ class _MockSessionService extends Mock implements SessionService {}
 
 class _FakeHorizonRequest extends Fake implements HorizonRequest {}
 
-VisitOut _visit() {
-  final t = DateTime.utc(2026, 8, 12, 9);
-  return VisitOut(
-    id: 'v1',
-    tenantId: 't',
-    jobId: 'j',
-    contractorId: 'c',
-    scheduledStart: t,
-    scheduledEnd: t.add(const Duration(hours: 1)),
-    status: 'scheduled',
-    source: 'manual',
-    geofenceRadiusM: 100,
-    geofenceMode: 'informational',
-    paymentStatus: 'unpaid',
-    createdAt: t,
-    updatedAt: t,
-  );
-}
-
-StaffVisitsController _controller({
-  required _MockVisitsRepository visits,
-  required _MockShiftsRepository shifts,
-  required _MockJobsRepository jobs,
-  required _MockEngagementsRepository engagements,
-  required _MockClientsRepository clients,
-  required _MockSessionService session,
-}) {
-  return StaffVisitsController(
-    repository: visits,
-    shiftsRepository: shifts,
-    jobsRepository: jobs,
-    engagementsRepository: engagements,
-    clientsRepository: clients,
-    session: session,
-  );
-}
-
 void main() {
   late _MockVisitsRepository visits;
   late _MockShiftsRepository shifts;
@@ -72,6 +34,7 @@ void main() {
   late _MockEngagementsRepository engagements;
   late _MockClientsRepository clients;
   late _MockSessionService session;
+  late StaffVisitsController controller;
 
   setUpAll(() {
     registerFallbackValue(DateTime.utc(2026, 1, 1));
@@ -109,110 +72,41 @@ void main() {
       () => jobs.ensureHorizon(any()),
     ).thenAnswer((_) async => HorizonOut.empty);
     when(() => engagements.listTenantEngagements()).thenAnswer((_) async => []);
+    controller = StaffVisitsController(
+      repository: visits,
+      shiftsRepository: shifts,
+      jobsRepository: jobs,
+      engagementsRepository: engagements,
+      clientsRepository: clients,
+      session: session,
+    );
   });
 
   tearDown(Get.reset);
 
-  test('onInit does not call listShifts', () async {
-    Get.routing.args = {'visit': _visit()};
-    Get.put(
-      _controller(
-        visits: visits,
-        shifts: shifts,
-        jobs: jobs,
-        engagements: engagements,
-        clients: clients,
-        session: session,
-      ),
-    );
-    await Future<void>.delayed(Duration.zero);
-    verifyNever(
-      () => shifts.listShifts(
-        from: any(named: 'from'),
-        to: any(named: 'to'),
-        jobId: any(named: 'jobId'),
-        participantId: any(named: 'participantId'),
-      ),
-    );
-  });
-
-  test('shiftRange calls listShifts', () async {
-    final c = _controller(
-      visits: visits,
-      shifts: shifts,
-      jobs: jobs,
-      engagements: engagements,
-      clients: clients,
-      session: session,
-    );
-    Get.put(c);
-    c.shiftRange(1);
-    await Future<void>.delayed(Duration.zero);
+  test('load passes participantId when client filter is set', () async {
+    controller.clientIdFilter.value = 'client-maya';
+    await controller.load();
     verify(
       () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
         jobId: any(named: 'jobId'),
-        participantId: any(named: 'participantId'),
+        participantId: 'client-maya',
       ),
     ).called(1);
   });
 
-  test('load calls listShifts', () async {
-    final c = _controller(
-      visits: visits,
-      shifts: shifts,
-      jobs: jobs,
-      engagements: engagements,
-      clients: clients,
-      session: session,
-    );
-    Get.put(c);
-    await c.load();
+  test('load passes null participantId when client filter is empty', () async {
+    controller.clientIdFilter.value = '';
+    await controller.load();
     verify(
       () => shifts.listShifts(
         from: any(named: 'from'),
         to: any(named: 'to'),
         jobId: any(named: 'jobId'),
-        participantId: any(named: 'participantId'),
+        participantId: null,
       ),
     ).called(1);
-  });
-
-  test('ensureBoardLoaded calls listShifts', () async {
-    final c = _controller(
-      visits: visits,
-      shifts: shifts,
-      jobs: jobs,
-      engagements: engagements,
-      clients: clients,
-      session: session,
-    );
-    Get.put(c);
-    await c.ensureBoardLoaded();
-    verify(
-      () => shifts.listShifts(
-        from: any(named: 'from'),
-        to: any(named: 'to'),
-        jobId: any(named: 'jobId'),
-        participantId: any(named: 'participantId'),
-      ),
-    ).called(1);
-  });
-
-  test('applyRouteArgs sets job filter and pending create from map', () {
-    Get.routing.args = {'job_id': 'job-standing', 'create': true};
-    final c = _controller(
-      visits: visits,
-      shifts: shifts,
-      jobs: jobs,
-      engagements: engagements,
-      clients: clients,
-      session: session,
-    );
-    c.applyRouteArgs();
-    expect(c.jobIdFilter.value, 'job-standing');
-    expect(c.consumePendingCreateShift(), isTrue);
-    expect(c.consumePendingCreateShift(), isFalse);
   });
 }

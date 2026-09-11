@@ -170,6 +170,13 @@ class _ExportLineTile extends StatelessWidget {
               ),
             ],
           ),
+          if (line.shiftParticipantId != null) ...[
+            const SizedBox(height: 2),
+            const Text(
+              'Group share',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          ],
           const SizedBox(height: 6),
           Text(
             [

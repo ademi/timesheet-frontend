@@ -123,6 +123,139 @@ void main() {
       expect(unfilled.cells[0].tiles.single.shiftId, 's-a');
     });
 
+    test('client filter keeps non-host participant shifts', () {
+      final monday = DateTime(2026, 8, 10, 9);
+      final hostOnly = ShiftOut(
+        id: 's-host',
+        tenantId: 't',
+        jobId: 'j',
+        jobTitle: 'Host support',
+        clientId: 'host',
+        clientName: 'Host Client',
+        scheduledStart: monday,
+        scheduledEnd: monday.add(const Duration(hours: 2)),
+        requiredSlots: 1,
+        openSlots: 1,
+        status: 'published',
+        createdAt: monday,
+        updatedAt: monday,
+      );
+      final groupShift = ShiftOut(
+        id: 's-group',
+        tenantId: 't',
+        jobId: 'j',
+        jobTitle: 'Group',
+        clientId: 'host',
+        clientName: 'Host Client',
+        scheduledStart: monday,
+        scheduledEnd: monday.add(const Duration(hours: 2)),
+        requiredSlots: 1,
+        openSlots: 1,
+        status: 'published',
+        participants: const [
+          ShiftParticipantOut(
+            id: 'sp1',
+            participantId: 'maya',
+            participantName: 'Maya Smith',
+            status: 'active',
+          ),
+          ShiftParticipantOut(
+            id: 'sp2',
+            participantId: 'jordan',
+            participantName: 'Jordan Lee',
+            status: 'active',
+          ),
+        ],
+        createdAt: monday,
+        updatedAt: monday,
+      );
+      final grid = buildRosterGrid(
+        rangeStart: DateTime(2026, 8, 10),
+        dayCount: 5,
+        shifts: [hostOnly, groupShift],
+        people: const [],
+        overlay: const RosterOverlayOut(contractors: []),
+        clientIdFilter: 'maya',
+      );
+      final unfilled = grid.rows.first;
+      expect(unfilled.cells[0].tiles, hasLength(1));
+      expect(unfilled.cells[0].tiles.single.shiftId, 's-group');
+      expect(unfilled.cells[0].tiles.single.clientName, 'Maya, Jordan');
+    });
+
+    test('tile label uses active participants then host fallback', () {
+      final monday = DateTime(2026, 8, 10, 9);
+      final withParticipants = ShiftOut(
+        id: 's-p',
+        tenantId: 't',
+        jobId: 'j',
+        jobTitle: 'Group',
+        clientId: 'host',
+        clientName: 'Host Client',
+        scheduledStart: monday,
+        scheduledEnd: monday.add(const Duration(hours: 2)),
+        requiredSlots: 1,
+        openSlots: 1,
+        status: 'published',
+        participants: const [
+          ShiftParticipantOut(
+            id: 'sp1',
+            participantId: 'maya',
+            participantName: 'Maya Smith',
+            status: 'active',
+          ),
+          ShiftParticipantOut(
+            id: 'sp2',
+            participantId: 'jordan',
+            participantName: 'Jordan Lee',
+            status: 'active',
+          ),
+          ShiftParticipantOut(
+            id: 'sp3',
+            participantId: 'alex',
+            participantName: 'Alex Kim',
+            status: 'active',
+          ),
+          ShiftParticipantOut(
+            id: 'sp-rm',
+            participantId: 'gone',
+            participantName: 'Removed Person',
+            status: 'removed',
+          ),
+        ],
+        createdAt: monday,
+        updatedAt: monday,
+      );
+      final hostOnly = ShiftOut(
+        id: 's-host',
+        tenantId: 't',
+        jobId: 'j',
+        jobTitle: 'One',
+        clientId: 'host',
+        clientName: 'Host Client',
+        scheduledStart: monday.add(const Duration(days: 1)),
+        scheduledEnd: monday.add(const Duration(days: 1, hours: 2)),
+        requiredSlots: 1,
+        openSlots: 1,
+        status: 'published',
+        createdAt: monday,
+        updatedAt: monday,
+      );
+      expect(rosterShiftTileLabel(withParticipants), 'Maya, Jordan +1 more');
+      expect(rosterShiftTileLabel(hostOnly), 'Host Client');
+
+      final grid = buildRosterGrid(
+        rangeStart: DateTime(2026, 8, 10),
+        dayCount: 5,
+        shifts: [withParticipants, hostOnly],
+        people: const [],
+        overlay: const RosterOverlayOut(contractors: []),
+      );
+      final unfilled = grid.rows.first;
+      expect(unfilled.cells[0].tiles.single.clientName, 'Maya, Jordan +1 more');
+      expect(unfilled.cells[1].tiles.single.clientName, 'Host Client');
+    });
+
     test(
       'includes draft/cancelled shifts passed in and sorts people by name',
       () {

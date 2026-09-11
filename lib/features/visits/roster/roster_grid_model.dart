@@ -1,5 +1,23 @@
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
+import 'package:rostiq/features/shifts/utils/participant_display.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
+
+/// Roster tile label from active participant names; falls back to host name.
+String rosterShiftTileLabel(ShiftOut shift) {
+  final label = rosterTileLabel(
+    activeParticipants(shift.participants).map((p) => p.participantName ?? ''),
+  );
+  if (label.isNotEmpty) return label;
+  return shift.clientName ?? '';
+}
+
+bool _shiftMatchesClientFilter(ShiftOut shift, String clientIdFilter) {
+  if (shift.clientId == clientIdFilter) return true;
+  for (final participant in activeParticipants(shift.participants)) {
+    if (participant.participantId == clientIdFilter) return true;
+  }
+  return false;
+}
 
 class RosterPerson {
   const RosterPerson({required this.contractorId, required this.displayName});
@@ -136,10 +154,11 @@ RosterGrid buildRosterGrid({
   );
 
   // Controller owns status filtering; include every shift passed in.
+  // Client filter matches host or an active participant (non-host group share).
   final filteredShifts = shifts
       .where((shift) {
         if (clientIdFilter == null || clientIdFilter.isEmpty) return true;
-        return shift.clientId == clientIdFilter;
+        return _shiftMatchesClientFilter(shift, clientIdFilter);
       })
       .toList(growable: false);
 
@@ -153,7 +172,7 @@ RosterGrid buildRosterGrid({
 
     final tile = RosterTile(
       shiftId: shift.id,
-      clientName: shift.clientName ?? '',
+      clientName: rosterShiftTileLabel(shift),
       start: shift.scheduledStart,
       end: shift.scheduledEnd,
       openSlots: shift.openSlots,
@@ -196,7 +215,7 @@ RosterGrid buildRosterGrid({
           tiles.add(
             RosterTile(
               shiftId: shift.id,
-              clientName: shift.clientName ?? '',
+              clientName: rosterShiftTileLabel(shift),
               start: shift.scheduledStart,
               end: shift.scheduledEnd,
               openSlots: shift.openSlots,

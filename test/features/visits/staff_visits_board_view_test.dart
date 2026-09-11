@@ -85,6 +85,7 @@ void main() {
         from: any(named: 'from'),
         to: any(named: 'to'),
         jobId: any(named: 'jobId'),
+        participantId: any(named: 'participantId'),
       ),
     ).thenAnswer((_) async => <ShiftOut>[]);
     when(
@@ -171,6 +172,21 @@ void main() {
       expect(find.text('All supports'), findsOneWidget);
     },
   );
+
+  testWidgets('FAB opens Book one / Group shift sheet', (tester) async {
+    putController();
+    await tester.pumpWidget(
+      const GetMaterialApp(home: StaffVisitsBoardView()),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Book one'), findsOneWidget);
+    expect(find.text('Group shift'), findsOneWidget);
+  });
 
   testWidgets('wide roster content is centered', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1600, 900));

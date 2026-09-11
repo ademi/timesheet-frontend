@@ -10,6 +10,7 @@ import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../jobs/utils/unified_support_args.dart';
 import '../../shifts/data/models/shift_models.dart';
+import '../../shifts/group_book/group_shift_book_args.dart';
 import '../controllers/staff_visits_controller.dart';
 import '../roster/roster_grid_model.dart';
 import '../roster/roster_grid_view.dart';
@@ -107,6 +108,70 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
     );
   }
 
+  String? _clientFilterId(StaffVisitsController controller) {
+    final id = controller.clientIdFilter.value.trim();
+    return id.isEmpty ? null : id;
+  }
+
+  Future<void> _openBookActionsSheet(
+    BuildContext context,
+    StaffVisitsController controller,
+  ) async {
+    final participantId = _clientFilterId(controller);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 44),
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.person_outline,
+                    color: AppColors.textDark,
+                  ),
+                  title: const Text(
+                    'Book one',
+                    style: TextStyle(color: AppColors.textDark),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openUnifiedSupport(clientId: participantId);
+                  },
+                ),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 44),
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.groups_outlined,
+                    color: AppColors.textDark,
+                  ),
+                  title: const Text(
+                    'Group shift',
+                    style: TextStyle(color: AppColors.textDark),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Get.toNamed(
+                      AppRoutes.staffGroupShiftBook,
+                      arguments: GroupShiftBookArgs(
+                        participantId: participantId,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<StaffVisitsController>();
@@ -119,13 +184,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
       floatingActionButton:
           controller.canManage
               ? FloatingActionButton(
-                onPressed:
-                    () => _openUnifiedSupport(
-                      clientId:
-                          controller.clientIdFilter.value.trim().isEmpty
-                              ? null
-                              : controller.clientIdFilter.value.trim(),
-                    ),
+                onPressed: () => _openBookActionsSheet(context, controller),
                 child: const Icon(Icons.add),
               )
               : null,
