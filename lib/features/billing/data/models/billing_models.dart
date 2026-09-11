@@ -182,6 +182,7 @@ class InvoiceExportLineOut {
     this.participantNdisNumber,
     this.priceTier,
     this.visitTaskId,
+    this.shiftParticipantId,
   });
 
   final String id;
@@ -198,6 +199,7 @@ class InvoiceExportLineOut {
   final double lineAmount;
   final String? priceTier;
   final String? visitTaskId;
+  final String? shiftParticipantId;
 
   factory InvoiceExportLineOut.fromJson(Map<String, dynamic> json) {
     return InvoiceExportLineOut(
@@ -215,6 +217,7 @@ class InvoiceExportLineOut {
       lineAmount: (json['line_amount'] as num).toDouble(),
       priceTier: json['price_tier'] as String?,
       visitTaskId: json['visit_task_id']?.toString(),
+      shiftParticipantId: json['shift_participant_id']?.toString(),
     );
   }
 }

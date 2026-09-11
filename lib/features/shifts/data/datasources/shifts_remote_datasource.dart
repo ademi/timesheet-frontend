@@ -15,6 +15,8 @@ class ShiftsRemoteDataSource {
     DateTime? from,
     DateTime? to,
     String? jobId,
+    String? participantId,
+    String? include,
     int limit = 200,
   }) async {
     try {
@@ -24,6 +26,11 @@ class ShiftsRemoteDataSource {
           if (from != null) 'from': from.toUtc().toIso8601String(),
           if (to != null) 'to': to.toUtc().toIso8601String(),
           if (jobId != null && jobId.isNotEmpty) 'job_id': jobId,
+          if (participantId != null && participantId.isNotEmpty)
+            'participant_id': participantId,
+          'include': (include != null && include.isNotEmpty)
+              ? include
+              : 'participants_summary',
           'limit': limit,
         },
       );
@@ -74,12 +81,78 @@ class ShiftsRemoteDataSource {
     }
   }
 
-  Future<ShiftOut> publishShift(String id) async {
+  Future<ShiftOut> publishShift(
+    String id, {
+    ShiftPublishRequest? body,
+  }) async {
     try {
+      final payload = body?.toJson();
       final response = await _dio.post<Map<String, dynamic>>(
         ApiPaths.shiftPublish(id),
+        data: payload != null && payload.isNotEmpty ? payload : null,
       );
       return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ShiftOut> patchShift(String shiftId, ShiftPatchRequest body) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.shift(shiftId),
+        data: body.toJson(),
+      );
+      return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ShiftOut> putParticipants(
+    String shiftId,
+    ShiftParticipantsReplaceRequest body,
+  ) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        ApiPaths.shiftParticipants(shiftId),
+        data: body.toJson(),
+      );
+      return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  /// Soft-remove by client [participantId] (not shift_participant row id).
+  Future<ShiftOut> removeParticipant(
+    String shiftId,
+    String participantId, {
+    required String reason,
+    String rebalance = 'equal',
+  }) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        ApiPaths.shiftParticipant(shiftId, participantId),
+        queryParameters: {
+          'reason': reason,
+          'rebalance': rebalance,
+        },
+      );
+      return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<AllocationChangeLogOut>> getAllocationChanges(
+    String shiftId,
+  ) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.shiftAllocationChanges(shiftId),
+      );
+      return _mapList(response.data, AllocationChangeLogOut.fromJson);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }
