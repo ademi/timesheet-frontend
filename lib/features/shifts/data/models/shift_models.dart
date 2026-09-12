@@ -334,6 +334,23 @@ class OpenShiftOut {
   }
 }
 
+/// Input window for create / PUT replace (ISO datetimes).
+class ShiftParticipantTimeWindowInput {
+  const ShiftParticipantTimeWindowInput({
+    required this.participantStartTime,
+    required this.participantEndTime,
+  });
+
+  final DateTime participantStartTime;
+  final DateTime participantEndTime;
+
+  Map<String, dynamic> toJson() => {
+    'participant_start_time':
+        participantStartTime.toUtc().toIso8601String(),
+    'participant_end_time': participantEndTime.toUtc().toIso8601String(),
+  };
+}
+
 /// One participant in a composite create body (backend requires [reason]).
 class ShiftParticipantCreateItem {
   const ShiftParticipantCreateItem({
@@ -341,50 +358,61 @@ class ShiftParticipantCreateItem {
     required this.allocationStrategy,
     required this.reason,
     this.allocationValue,
+    this.timeWindows,
   });
 
   final String participantId;
   final String allocationStrategy;
   final double? allocationValue;
   final String reason;
+  final List<ShiftParticipantTimeWindowInput>? timeWindows;
 
   Map<String, dynamic> toJson() => {
     'participant_id': participantId,
     'allocation_strategy': allocationStrategy,
     if (allocationValue != null) 'allocation_value': allocationValue,
     'reason': reason,
+    if (timeWindows != null && timeWindows!.isNotEmpty)
+      'time_windows': [for (final w in timeWindows!) w.toJson()],
   };
 }
 
-/// One participant in a PUT replace-active-set body (Phase 1: percentage).
+/// One participant in a PUT replace-active-set body (Phase 1.1).
+///
+/// Strategy is top-level on [ShiftParticipantsReplaceRequest]; rows carry
+/// values and optional [timeWindows] only.
 class ShiftParticipantReplaceItem {
   const ShiftParticipantReplaceItem({
     required this.participantId,
-    this.allocationStrategy = 'percentage',
     this.allocationValue,
+    this.timeWindows,
   });
 
   final String participantId;
-  final String allocationStrategy;
   final double? allocationValue;
+  final List<ShiftParticipantTimeWindowInput>? timeWindows;
 
   Map<String, dynamic> toJson() => {
     'participant_id': participantId,
-    'allocation_strategy': allocationStrategy,
     if (allocationValue != null) 'allocation_value': allocationValue,
+    if (timeWindows != null && timeWindows!.isNotEmpty)
+      'time_windows': [for (final w in timeWindows!) w.toJson()],
   };
 }
 
 class ShiftParticipantsReplaceRequest {
   const ShiftParticipantsReplaceRequest({
     required this.participants,
+    this.allocationStrategy = 'percentage',
     this.equalSplit = false,
   });
 
+  final String allocationStrategy;
   final bool equalSplit;
   final List<ShiftParticipantReplaceItem> participants;
 
   Map<String, dynamic> toJson() => {
+    'allocation_strategy': allocationStrategy,
     'equal_split': equalSplit,
     'participants': [for (final p in participants) p.toJson()],
   };

@@ -18,7 +18,9 @@ import '../data/models/shift_models.dart';
 import '../data/repositories/shifts_repository.dart';
 import '../utils/allocation_math.dart';
 import '../utils/group_participant_draft.dart';
+import '../utils/participant_window_math.dart';
 import 'group_shift_book_args.dart';
+import 'group_shift_windows_view.dart';
 
 /// 3-step Group Shift booking wizard (People · When · Review).
 class GroupShiftBookController extends GetxController {
@@ -31,6 +33,10 @@ class GroupShiftBookController extends GetxController {
     GroupShiftBookArgs? args,
     void Function(String route, dynamic arguments)? onNavigate,
     Future<bool> Function(int nextN)? confirmLargeGroup,
+    Future<List<ParticipantWindowDraft>?> Function(
+      GroupShiftWindowsArgs args,
+    )?
+    openWindowsEditor,
   }) : _clients = clientsRepository,
        _jobs = jobsRepository,
        _shifts = shiftsRepository,
@@ -38,7 +44,8 @@ class GroupShiftBookController extends GetxController {
        _payroll = payroll,
        _args = args,
        _onNavigate = onNavigate,
-       _confirmLargeGroup = confirmLargeGroup;
+       _confirmLargeGroup = confirmLargeGroup,
+       _openWindowsEditor = openWindowsEditor;
 
   final ClientsRepository _clients;
   final JobsRepository _jobs;
@@ -48,6 +55,10 @@ class GroupShiftBookController extends GetxController {
   final GroupShiftBookArgs? _args;
   final void Function(String route, dynamic arguments)? _onNavigate;
   final Future<bool> Function(int nextN)? _confirmLargeGroup;
+  final Future<List<ParticipantWindowDraft>?> Function(
+    GroupShiftWindowsArgs args,
+  )?
+  _openWindowsEditor;
 
   static const int peopleStep = 0;
   static const int whenStep = 1;
@@ -78,6 +89,8 @@ class GroupShiftBookController extends GetxController {
       _session.hasPermission(AppPermissions.jobsManage);
 
   bool get slotsMismatch => workerCount.value != requiredSlots.value;
+
+  bool get isTimeBased => draft.value.isTimeBased;
 
   String get remainingLabel =>
       remainingCapacityLabel(draft.value.participants.map((p) => p.allocationValue));
@@ -192,10 +205,26 @@ class GroupShiftBookController extends GetxController {
           displayName: h.fullName,
           allocationValue: 0,
           isHostIncluded: true,
+          timeWindows:
+              next.isTimeBased
+                  ? defaultFullShiftWindows(
+                    scheduledStart.value,
+                    scheduledEnd.value,
+                  )
+                  : const [],
         ),
       );
     }
     draft.value = next;
+  }
+
+  void setAllocationStrategy(String strategy) {
+    draft.value = draft.value.withAllocationStrategy(
+      strategy,
+      shiftStart: scheduledStart.value,
+      shiftEnd: scheduledEnd.value,
+    );
+    errorMessage.value = null;
   }
 
   void setEqualSplit(bool enabled) {
@@ -217,6 +246,27 @@ class GroupShiftBookController extends GetxController {
     }
   }
 
+  Future<void> editWindows(GroupParticipantDraft row) async {
+    final args = GroupShiftWindowsArgs(
+      displayName: row.displayName,
+      windows: row.timeWindows,
+      shiftStart: scheduledStart.value,
+      shiftEnd: scheduledEnd.value,
+    );
+    List<ParticipantWindowDraft>? result;
+    if (_openWindowsEditor != null) {
+      result = await _openWindowsEditor(args);
+    } else if (!Get.testMode) {
+      result = await Get.to<List<ParticipantWindowDraft>>(
+        () => GroupShiftWindowsView(args: args),
+      );
+    }
+    if (result != null) {
+      draft.value = draft.value.setTimeWindows(row.participantId, result);
+      errorMessage.value = null;
+    }
+  }
+
   /// Returns false when add was cancelled (hard cap or large-group dialog).
   Future<bool> addParticipant(ClientOut client) async {
     if (draft.value.containsParticipant(client.id)) return false;
@@ -230,12 +280,20 @@ class GroupShiftBookController extends GetxController {
       if (!ok) return false;
     }
     final isHostRow = includeHost.value && host.value?.id == client.id;
+    final windows =
+        isTimeBased
+            ? defaultFullShiftWindows(
+              scheduledStart.value,
+              scheduledEnd.value,
+            )
+            : const <ParticipantWindowDraft>[];
     draft.value = draft.value.add(
       GroupParticipantDraft(
         participantId: client.id,
         displayName: client.fullName,
         allocationValue: 0,
         isHostIncluded: isHostRow,
+        timeWindows: windows,
       ),
     );
     if (isHostRow) includeHost.value = true;
@@ -306,12 +364,16 @@ class GroupShiftBookController extends GetxController {
       fail('Groups are limited to 32 participants');
       return false;
     }
-    if (!draft.value.equalSplit &&
+    if (!isTimeBased &&
+        !draft.value.equalSplit &&
         !sumsTo100(draft.value.participants.map((p) => p.allocationValue))) {
       fail(remainingLabel);
       return false;
     }
-    final validation = draft.value.validate();
+    final validation = draft.value.validate(
+      shiftStart: scheduledStart.value,
+      shiftEnd: scheduledEnd.value,
+    );
     if (validation != null) {
       fail(validation);
       return false;
@@ -327,6 +389,16 @@ class GroupShiftBookController extends GetxController {
     if (workerCount.value < 1) {
       if (showError) errorMessage.value = 'Workers planned must be at least 1.';
       return false;
+    }
+    if (isTimeBased) {
+      final validation = draft.value.validate(
+        shiftStart: scheduledStart.value,
+        shiftEnd: scheduledEnd.value,
+      );
+      if (validation != null) {
+        if (showError) errorMessage.value = validation;
+        return false;
+      }
     }
     return true;
   }
@@ -360,7 +432,12 @@ class GroupShiftBookController extends GetxController {
       final tz = await _resolveTenantTimezone();
       final startUtc = tenantCivilInstantUtc(scheduledStart.value, tz);
       final endUtc = tenantCivilInstantUtc(scheduledEnd.value, tz);
-      final equal = draft.value.equalSplit;
+      final timeBased = isTimeBased;
+      final equal = !timeBased && draft.value.equalSplit;
+      final strategy =
+          timeBased
+              ? GroupAllocationStrategy.timeBased
+              : GroupAllocationStrategy.percentage;
       final created = await _shifts.createShift(
         ShiftCreateRequest(
           jobId: support.id,
@@ -374,9 +451,28 @@ class GroupShiftBookController extends GetxController {
             for (final p in draft.value.participants)
               ShiftParticipantCreateItem(
                 participantId: p.participantId,
-                allocationStrategy: 'percentage',
-                allocationValue: equal ? null : p.allocationValue,
+                allocationStrategy: strategy,
+                allocationValue:
+                    timeBased ? 0 : (equal ? null : p.allocationValue),
                 reason: 'group_shift_book',
+                timeWindows:
+                    timeBased
+                        ? [
+                          for (final w in p.timeWindows)
+                            ShiftParticipantTimeWindowInput(
+                              // Windows were edited in local civil time; map
+                              // onto the same UTC instants as the shift.
+                              participantStartTime: tenantCivilInstantUtc(
+                                w.start,
+                                tz,
+                              ),
+                              participantEndTime: tenantCivilInstantUtc(
+                                w.end,
+                                tz,
+                              ),
+                            ),
+                        ]
+                        : null,
               ),
           ],
         ),

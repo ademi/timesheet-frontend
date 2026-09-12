@@ -137,14 +137,13 @@ void main() {
         ).toJson();
 
     expect(json['equal_split'], true);
+    expect(json['allocation_strategy'], 'percentage');
     expect(json['participants'], [
       {
         'participant_id': 'p1',
-        'allocation_strategy': 'percentage',
       },
       {
         'participant_id': 'p2',
-        'allocation_strategy': 'percentage',
       },
     ]);
   });
@@ -168,8 +167,83 @@ void main() {
           ).toJson();
 
       expect(json['equal_split'], false);
+      expect(json['allocation_strategy'], 'percentage');
       expect(json['participants'][0]['allocation_value'], 60);
       expect(json['participants'][1]['allocation_value'], 40);
+    },
+  );
+
+  test(
+    'ShiftParticipantsReplaceRequest time_based includes time_windows',
+    () {
+      final start = DateTime.utc(2026, 9, 12, 10);
+      final mid = DateTime.utc(2026, 9, 12, 12);
+      final end = DateTime.utc(2026, 9, 12, 14);
+      final json =
+          ShiftParticipantsReplaceRequest(
+            allocationStrategy: 'time_based',
+            equalSplit: false,
+            participants: [
+              ShiftParticipantReplaceItem(
+                participantId: 'p1',
+                allocationValue: 0,
+                timeWindows: [
+                  ShiftParticipantTimeWindowInput(
+                    participantStartTime: start,
+                    participantEndTime: mid,
+                  ),
+                  ShiftParticipantTimeWindowInput(
+                    participantStartTime: mid.add(const Duration(minutes: 30)),
+                    participantEndTime: end,
+                  ),
+                ],
+              ),
+            ],
+          ).toJson();
+
+      expect(json['allocation_strategy'], 'time_based');
+      expect(json['equal_split'], false);
+      expect(json['participants'][0]['allocation_value'], 0);
+      expect(json['participants'][0]['time_windows'], [
+        {
+          'participant_start_time': '2026-09-12T10:00:00.000Z',
+          'participant_end_time': '2026-09-12T12:00:00.000Z',
+        },
+        {
+          'participant_start_time': '2026-09-12T12:30:00.000Z',
+          'participant_end_time': '2026-09-12T14:00:00.000Z',
+        },
+      ]);
+    },
+  );
+
+  test(
+    'ShiftParticipantCreateItem includes time_windows when set',
+    () {
+      final start = DateTime.utc(2026, 9, 12, 10);
+      final end = DateTime.utc(2026, 9, 12, 14);
+      final item =
+          ShiftParticipantCreateItem(
+            participantId: 'p1',
+            allocationStrategy: 'time_based',
+            allocationValue: 0,
+            reason: 'group_shift_book',
+            timeWindows: [
+              ShiftParticipantTimeWindowInput(
+                participantStartTime: start,
+                participantEndTime: end,
+              ),
+            ],
+          ).toJson();
+
+      expect(item['allocation_strategy'], 'time_based');
+      expect(item['allocation_value'], 0);
+      expect(item['time_windows'], [
+        {
+          'participant_start_time': '2026-09-12T10:00:00.000Z',
+          'participant_end_time': '2026-09-12T14:00:00.000Z',
+        },
+      ]);
     },
   );
 

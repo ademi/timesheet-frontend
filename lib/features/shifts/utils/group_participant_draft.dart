@@ -1,4 +1,11 @@
 import 'allocation_math.dart';
+import 'participant_window_math.dart';
+
+/// Group-level allocation mode (no mix across participants).
+abstract final class GroupAllocationStrategy {
+  static const percentage = 'percentage';
+  static const timeBased = 'time_based';
+}
 
 /// One row in a group-shift participant draft (wizard / Edit group).
 class GroupParticipantDraft {
@@ -7,6 +14,7 @@ class GroupParticipantDraft {
     required this.displayName,
     required this.allocationValue,
     this.isHostIncluded = false,
+    this.timeWindows = const [],
   });
 
   final String participantId;
@@ -16,17 +24,23 @@ class GroupParticipantDraft {
   /// True when this row is the host client included as a participant.
   final bool isHostIncluded;
 
+  /// Local ISO windows when [GroupParticipantDraftSet.allocationStrategy]
+  /// is [GroupAllocationStrategy.timeBased].
+  final List<ParticipantWindowDraft> timeWindows;
+
   GroupParticipantDraft copyWith({
     String? participantId,
     String? displayName,
     double? allocationValue,
     bool? isHostIncluded,
+    List<ParticipantWindowDraft>? timeWindows,
   }) {
     return GroupParticipantDraft(
       participantId: participantId ?? this.participantId,
       displayName: displayName ?? this.displayName,
       allocationValue: allocationValue ?? this.allocationValue,
       isHostIncluded: isHostIncluded ?? this.isHostIncluded,
+      timeWindows: timeWindows ?? this.timeWindows,
     );
   }
 }
@@ -36,20 +50,43 @@ class GroupParticipantDraftSet {
   const GroupParticipantDraftSet({
     this.participants = const [],
     this.equalSplit = true,
+    this.allocationStrategy = GroupAllocationStrategy.percentage,
   });
 
   final List<GroupParticipantDraft> participants;
   final bool equalSplit;
+  final String allocationStrategy;
+
+  bool get isTimeBased =>
+      allocationStrategy == GroupAllocationStrategy.timeBased;
 
   int get length => participants.length;
 
   /// Returns an error message when invalid, otherwise `null`.
-  String? validate() {
+  ///
+  /// For time-based mode pass [shiftStart]/[shiftEnd] (required for bounds).
+  String? validate({DateTime? shiftStart, DateTime? shiftEnd}) {
     if (participants.isEmpty) {
       return 'Add at least one participant';
     }
     if (participants.length > 32) {
       return 'Groups are limited to 32 participants';
+    }
+    if (isTimeBased) {
+      if (shiftStart == null || shiftEnd == null) {
+        return 'Shift times are required for time windows';
+      }
+      for (final p in participants) {
+        final err = validateParticipantWindows(
+          p.timeWindows,
+          shiftStart: shiftStart,
+          shiftEnd: shiftEnd,
+        );
+        if (err != null) {
+          return '${p.displayName}: $err';
+        }
+      }
+      return null;
     }
     if (!equalSplit) {
       final values = participants.map((p) => p.allocationValue);
@@ -63,16 +100,24 @@ class GroupParticipantDraftSet {
   GroupParticipantDraftSet copyWith({
     List<GroupParticipantDraft>? participants,
     bool? equalSplit,
+    String? allocationStrategy,
   }) {
     return GroupParticipantDraftSet(
       participants: participants ?? this.participants,
       equalSplit: equalSplit ?? this.equalSplit,
+      allocationStrategy: allocationStrategy ?? this.allocationStrategy,
     );
   }
 
   GroupParticipantDraftSet add(GroupParticipantDraft participant) {
-    final next = [...participants, participant];
-    if (equalSplit) {
+    var row = participant;
+    if (isTimeBased && row.timeWindows.isEmpty) {
+      // Caller should seed windows; leave empty so validate surfaces the issue
+      // unless they already provided windows.
+      row = participant;
+    }
+    final next = [...participants, row];
+    if (!isTimeBased && equalSplit) {
       return copyWith(participants: _withEqualValues(next));
     }
     return copyWith(participants: List.unmodifiable(next));
@@ -81,7 +126,7 @@ class GroupParticipantDraftSet {
   GroupParticipantDraftSet remove(String participantId) {
     final next =
         participants.where((p) => p.participantId != participantId).toList();
-    if (equalSplit) {
+    if (!isTimeBased && equalSplit) {
       return copyWith(participants: _withEqualValues(next));
     }
     return copyWith(participants: List.unmodifiable(next));
@@ -91,21 +136,30 @@ class GroupParticipantDraftSet {
   GroupParticipantDraftSet recomputeEqualSplit() {
     return copyWith(
       equalSplit: true,
-      participants: _withEqualValues(participants),
+      allocationStrategy: GroupAllocationStrategy.percentage,
+      participants: _withEqualValues(
+        [
+          for (final p in participants)
+            p.copyWith(timeWindows: const []),
+        ],
+      ),
     );
   }
 
   /// Toggles equal-split mode. Enabling redistributes; disabling keeps values.
+  /// No-op when time-based.
   GroupParticipantDraftSet withEqualSplit(bool enabled) {
+    if (isTimeBased) return this;
     if (enabled) return recomputeEqualSplit();
     return copyWith(equalSplit: false);
   }
 
-  /// Updates one row's Capacity % and forces manual (non-equal) mode.
+  /// Updates one row's Capacity % and forces manual (non-equal) percentage mode.
   GroupParticipantDraftSet setAllocation(
     String participantId,
     double allocationValue,
   ) {
+    if (isTimeBased) return this;
     final next = [
       for (final p in participants)
         if (p.participantId == participantId)
@@ -114,6 +168,60 @@ class GroupParticipantDraftSet {
           p,
     ];
     return copyWith(equalSplit: false, participants: List.unmodifiable(next));
+  }
+
+  /// Replaces local windows for one participant (window editor Done).
+  GroupParticipantDraftSet setTimeWindows(
+    String participantId,
+    List<ParticipantWindowDraft> windows,
+  ) {
+    final next = [
+      for (final p in participants)
+        if (p.participantId == participantId)
+          p.copyWith(
+            timeWindows: List.unmodifiable(windows),
+            allocationValue: 0,
+          )
+        else
+          p,
+    ];
+    return copyWith(
+      allocationStrategy: GroupAllocationStrategy.timeBased,
+      equalSplit: false,
+      participants: List.unmodifiable(next),
+    );
+  }
+
+  /// Switches group strategy. → time seeds empty rows; → % clears windows + equal.
+  GroupParticipantDraftSet withAllocationStrategy(
+    String strategy, {
+    required DateTime shiftStart,
+    required DateTime shiftEnd,
+  }) {
+    if (strategy == GroupAllocationStrategy.timeBased) {
+      final next = [
+        for (final p in participants)
+          p.copyWith(
+            allocationValue: 0,
+            timeWindows:
+                p.timeWindows.isEmpty
+                    ? defaultFullShiftWindows(shiftStart, shiftEnd)
+                    : p.timeWindows,
+          ),
+      ];
+      return copyWith(
+        allocationStrategy: GroupAllocationStrategy.timeBased,
+        equalSplit: false,
+        participants: List.unmodifiable(next),
+      );
+    }
+    return copyWith(
+      allocationStrategy: GroupAllocationStrategy.percentage,
+      equalSplit: true,
+      participants: _withEqualValues([
+        for (final p in participants) p.copyWith(timeWindows: const []),
+      ]),
+    );
   }
 
   double get remaining =>
@@ -131,7 +239,10 @@ class GroupParticipantDraftSet {
     final values = equalPercentageValues(rows.length);
     return List.unmodifiable([
       for (var i = 0; i < rows.length; i++)
-        rows[i].copyWith(allocationValue: values[i]),
+        rows[i].copyWith(
+          allocationValue: values[i],
+          timeWindows: const [],
+        ),
     ]);
   }
 }

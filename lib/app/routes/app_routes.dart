@@ -43,7 +43,11 @@ abstract class AppRoutes {
   /// Draft-only full-screen Edit group (PUT participants).
   static const staffGroupShiftEdit = '/staff/visits/shift-detail/edit-group';
 
-  /// Full-screen Remove from group (DELETE + equal rebalance).
+  /// Full-screen per-participant time-window editor (local Done only).
+  static const staffGroupShiftWindows =
+      '/staff/visits/shift-detail/participant-windows';
+
+  /// Full-screen Remove from group (DELETE + equal|none rebalance).
   static const staffGroupShiftRemove =
       '/staff/visits/shift-detail/remove-participant';
 

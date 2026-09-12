@@ -133,15 +133,14 @@ void main() {
       () => dio.put<Map<String, dynamic>>(
         ApiPaths.shiftParticipants('shift-1'),
         data: {
+          'allocation_strategy': 'percentage',
           'equal_split': true,
           'participants': [
             {
               'participant_id': 'client-1',
-              'allocation_strategy': 'percentage',
             },
             {
               'participant_id': 'client-2',
-              'allocation_strategy': 'percentage',
             },
           ],
         },

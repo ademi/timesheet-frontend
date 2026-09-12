@@ -12,6 +12,8 @@ import '../../../shared/utils/name_sort.dart';
 import '../utils/allocation_math.dart';
 import '../utils/group_participant_draft.dart';
 import '../utils/participant_display.dart';
+import '../utils/participant_window_math.dart';
+import 'group_allocation_strategy_segment.dart';
 import 'group_shift_book_controller.dart';
 
 class GroupShiftBookView extends GetView<GroupShiftBookController> {
@@ -219,28 +221,47 @@ class _PeopleStep extends StatelessWidget {
               ),
             ],
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Equal split'),
-            value: draft.equalSplit,
-            onChanged: (v) => controller.setEqualSplit(v),
+          GroupAllocationStrategySegment(
+            strategy: draft.allocationStrategy,
+            onChanged: controller.setAllocationStrategy,
           ),
-          if (!draft.equalSplit) ...[
-            Semantics(
-              liveRegion: true,
-              child: Text(
-                controller.remainingLabel,
-                style: TextStyle(
-                  color:
-                      sumsTo100(draft.participants.map((p) => p.allocationValue))
-                          ? AppColors.textMuted
-                          : AppColors.error,
-                  fontWeight: FontWeight.w600,
+          const SizedBox(height: 8),
+          if (!draft.isTimeBased) ...[
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Equal split'),
+              value: draft.equalSplit,
+              onChanged: (v) => controller.setEqualSplit(v),
+            ),
+            if (!draft.equalSplit) ...[
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  controller.remainingLabel,
+                  style: TextStyle(
+                    color:
+                        sumsTo100(
+                              draft.participants.map((p) => p.allocationValue),
+                            )
+                            ? AppColors.textMuted
+                            : AppColors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
+              const SizedBox(height: 8),
+            ],
+          ] else
+            Text(
+              formatShiftBoundsHint(
+                controller.scheduledStart.value,
+                controller.scheduledEnd.value,
+              ),
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 12,
+              ),
             ),
-            const SizedBox(height: 8),
-          ],
           if (draft.participants.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
@@ -249,13 +270,18 @@ class _PeopleStep extends StatelessWidget {
           for (final row in draft.participants)
             _ParticipantDraftRow(
               row: row,
+              timeBased: draft.isTimeBased,
               equalSplit: draft.equalSplit,
               onRemove: () => controller.removeParticipant(row.participantId),
               onAllocationChanged:
-                  draft.equalSplit
+                  draft.isTimeBased || draft.equalSplit
                       ? null
                       : (v) =>
                           controller.setAllocation(row.participantId, v),
+              onEditWindows:
+                  draft.isTimeBased
+                      ? () => controller.editWindows(row)
+                      : null,
             ),
         ],
       );
@@ -279,15 +305,19 @@ class _PeopleStep extends StatelessWidget {
 class _ParticipantDraftRow extends StatelessWidget {
   const _ParticipantDraftRow({
     required this.row,
+    required this.timeBased,
     required this.equalSplit,
     required this.onRemove,
     this.onAllocationChanged,
+    this.onEditWindows,
   });
 
   final GroupParticipantDraft row;
+  final bool timeBased;
   final bool equalSplit;
   final VoidCallback onRemove;
   final ValueChanged<double>? onAllocationChanged;
+  final VoidCallback? onEditWindows;
 
   @override
   Widget build(BuildContext context) {
@@ -298,18 +328,32 @@ class _ParticipantDraftRow extends StatelessWidget {
           minVerticalPadding: 12,
           title: Text(row.displayName),
           subtitle: Text(
-            equalSplit
+            timeBased
+                ? formatWindowsSummary(row.timeWindows)
+                : equalSplit
                 ? '${row.allocationValue.toStringAsFixed(2)}% · equal'
                 : 'Capacity %',
             style: const TextStyle(color: AppColors.textMuted),
           ),
-          trailing: IconButton(
-            tooltip: 'Remove',
-            onPressed: onRemove,
-            icon: const Icon(Icons.close),
+          onTap: timeBased ? onEditWindows : null,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (timeBased)
+                IconButton(
+                  tooltip: 'Edit windows',
+                  onPressed: onEditWindows,
+                  icon: const Icon(Icons.schedule_outlined),
+                ),
+              IconButton(
+                tooltip: 'Remove',
+                onPressed: onRemove,
+                icon: const Icon(Icons.close),
+              ),
+            ],
           ),
         ),
-        if (!equalSplit && onAllocationChanged != null)
+        if (!timeBased && !equalSplit && onAllocationChanged != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: TextFormField(
@@ -512,7 +556,11 @@ class _ReviewStep extends StatelessWidget {
           ),
           Text(
             '${staffParticipantLabel(controller.workerCount.value, n)} · '
-            '${draft.equalSplit ? 'equal split' : 'custom %'} · '
+            '${draft.isTimeBased
+                ? 'time windows'
+                : draft.equalSplit
+                ? 'equal split'
+                : 'custom %'} · '
             '$n participant${n == 1 ? '' : 's'}',
             style: const TextStyle(color: AppColors.textMuted),
           ),

@@ -88,14 +88,17 @@ ShiftParticipantOut _participant({
   required String name,
   double? allocationValue = 50,
   String status = 'active',
+  String allocationStrategy = 'percentage',
+  List<ShiftParticipantAllocationOut>? timeWindows,
 }) {
   return ShiftParticipantOut(
     id: id,
     participantId: participantId,
     participantName: name,
     status: status,
-    allocationStrategy: 'percentage',
+    allocationStrategy: allocationStrategy,
     allocationValue: allocationValue,
+    timeWindows: timeWindows,
   );
 }
 
@@ -259,6 +262,32 @@ void main() {
       await Future.wait([first, second]);
       verify(() => shifts.createShift(any())).called(1);
     });
+
+    test('createDraft time_based includes time_windows', () async {
+      when(() => jobs.ensureOngoingSupport('host-1')).thenAnswer((_) async => _job);
+      when(() => shifts.createShift(any())).thenAnswer((_) async => _shift());
+
+      final c = build();
+      await c._waitBootstrap();
+      c.selectHost(_host);
+      await c.addParticipant(_maya);
+      c.setAllocationStrategy(GroupAllocationStrategy.timeBased);
+      expect(c.draft.value.isTimeBased, isTrue);
+      expect(c.draft.value.participants.single.timeWindows, isNotEmpty);
+
+      c.step.value = GroupShiftBookController.reviewStep;
+      await c.createDraft();
+
+      final captured = verify(() => shifts.createShift(captureAny())).captured.single
+          as ShiftCreateRequest;
+      expect(captured.equalSplit, isFalse);
+      expect(captured.participants, hasLength(1));
+      final item = captured.participants.single;
+      expect(item.allocationStrategy, 'time_based');
+      expect(item.allocationValue, 0);
+      expect(item.timeWindows, isNotNull);
+      expect(item.timeWindows, isNotEmpty);
+    });
   });
 
   group('GroupShiftEditController', () {
@@ -324,6 +353,104 @@ void main() {
       expect(c.isSaving.value, isFalse);
       expect(c.errorMessage.value, 'shift_not_draft');
       expect(c.draft.value.length, 1);
+    });
+
+    test('Save builds time_based PUT body', () async {
+      when(() => shifts.putParticipants(any(), any())).thenAnswer(
+        (_) async => _shift(),
+      );
+
+      final c = GroupShiftEditController(
+        shiftsRepository: shifts,
+        args: GroupShiftEditArgs(
+          shift: _shift(
+            participants: [
+              _participant(
+                id: 'sp1',
+                participantId: _maya.id,
+                name: _maya.fullName,
+                allocationValue: 100,
+              ),
+            ],
+          ),
+        ),
+        onSaved: (_) {},
+      );
+      c.onInit();
+      c.setAllocationStrategy(GroupAllocationStrategy.timeBased);
+      await c.save();
+
+      final body =
+          verify(
+                () => shifts.putParticipants('shift-1', captureAny()),
+              ).captured.single
+              as ShiftParticipantsReplaceRequest;
+      expect(body.allocationStrategy, 'time_based');
+      expect(body.equalSplit, isFalse);
+      expect(body.participants, hasLength(1));
+      expect(body.participants.single.allocationValue, 0);
+      expect(body.participants.single.timeWindows, isNotNull);
+      expect(body.participants.single.timeWindows, isNotEmpty);
+    });
+
+    test('strategy switch hydrates default full-shift windows', () {
+      final c = GroupShiftEditController(
+        shiftsRepository: shifts,
+        args: GroupShiftEditArgs(
+          shift: _shift(
+            participants: [
+              _participant(
+                id: 'sp1',
+                participantId: _maya.id,
+                name: _maya.fullName,
+                allocationValue: 100,
+              ),
+            ],
+          ),
+        ),
+        onSaved: (_) {},
+      );
+      c.onInit();
+      expect(c.draft.value.isTimeBased, isFalse);
+      c.setAllocationStrategy(GroupAllocationStrategy.timeBased);
+      expect(c.draft.value.isTimeBased, isTrue);
+      final win = c.draft.value.participants.single.timeWindows.single;
+      expect(win.start, c.shiftStart);
+      expect(win.end, c.shiftEnd);
+    });
+
+    test('hydrates time_based participants from shift detail', () {
+      final start = _now;
+      final end = _now.add(const Duration(hours: 3));
+      final c = GroupShiftEditController(
+        shiftsRepository: shifts,
+        args: GroupShiftEditArgs(
+          shift: _shift(
+            participants: [
+              _participant(
+                id: 'sp1',
+                participantId: _maya.id,
+                name: _maya.fullName,
+                allocationValue: 0,
+                allocationStrategy: 'time_based',
+                timeWindows: [
+                  ShiftParticipantAllocationOut(
+                    id: 'tw1',
+                    shiftParticipantId: 'sp1',
+                    participantStartTime: start,
+                    participantEndTime: end,
+                    createdAt: _now,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        onSaved: (_) {},
+      );
+      c.onInit();
+      expect(c.draft.value.isTimeBased, isTrue);
+      expect(c.draft.value.participants.single.timeWindows, hasLength(1));
     });
   });
 
@@ -406,6 +533,63 @@ void main() {
         ),
       ).called(1);
       expect(c.isSaving.value, isFalse);
+    });
+
+    test('Remove uses rebalance none when time_based', () async {
+      when(
+        () => shifts.removeParticipant(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+          rebalance: any(named: 'rebalance'),
+        ),
+      ).thenAnswer((_) async => _shift(status: 'published'));
+
+      final c = GroupShiftRemoveController(
+        shiftsRepository: shifts,
+        args: GroupShiftRemoveArgs(
+          shift: _shift(
+            status: 'published',
+            participants: [
+              _participant(
+                id: 'sp1',
+                participantId: _maya.id,
+                name: _maya.fullName,
+                allocationValue: 0,
+                allocationStrategy: 'time_based',
+              ),
+              _participant(
+                id: 'sp2',
+                participantId: _jordan.id,
+                name: _jordan.fullName,
+                allocationValue: 0,
+                allocationStrategy: 'time_based',
+              ),
+            ],
+          ),
+          participant: _participant(
+            id: 'sp1',
+            participantId: _maya.id,
+            name: _maya.fullName,
+            allocationValue: 0,
+            allocationStrategy: 'time_based',
+          ),
+        ),
+        onRemoved: (_) {},
+      );
+      expect(c.rebalanceMode, 'none');
+      expect(c.rebalanceHint, contains('time windows'));
+      c.reasonCtrl.text = 'Left early';
+      await c.remove();
+
+      verify(
+        () => shifts.removeParticipant(
+          'shift-1',
+          _maya.id,
+          reason: 'Left early',
+          rebalance: 'none',
+        ),
+      ).called(1);
     });
 
     test('Remove error toast path clears busy', () async {

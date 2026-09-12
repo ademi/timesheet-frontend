@@ -9,6 +9,8 @@ import '../../clients/data/models/client_models.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../utils/allocation_math.dart';
 import '../utils/group_participant_draft.dart';
+import '../utils/participant_window_math.dart';
+import 'group_allocation_strategy_segment.dart';
 import 'group_shift_edit_controller.dart';
 
 class GroupShiftEditView extends GetView<GroupShiftEditController> {
@@ -22,6 +24,7 @@ class GroupShiftEditView extends GetView<GroupShiftEditController> {
       body: Obx(() {
         final draft = controller.draft.value;
         final err = controller.errorMessage.value;
+        final timeBased = draft.isTimeBased;
         return Column(
           children: [
             Expanded(
@@ -37,35 +40,56 @@ class GroupShiftEditView extends GetView<GroupShiftEditController> {
                           _ErrorBox(err),
                           const SizedBox(height: 12),
                         ],
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('Equal split'),
-                          value: draft.equalSplit,
-                          onChanged:
-                              controller.isSaving.value
-                                  ? null
-                                  : (v) => controller.setEqualSplit(v),
+                        GroupAllocationStrategySegment(
+                          strategy: draft.allocationStrategy,
+                          enabled: !controller.isSaving.value,
+                          onChanged: controller.setAllocationStrategy,
                         ),
-                        if (!draft.equalSplit) ...[
-                          Semantics(
-                            liveRegion: true,
-                            child: Text(
-                              controller.remainingLabel,
-                              style: TextStyle(
-                                color:
-                                    sumsTo100(
-                                          draft.participants.map(
-                                            (p) => p.allocationValue,
-                                          ),
-                                        )
-                                        ? AppColors.textMuted
-                                        : AppColors.error,
-                                fontWeight: FontWeight.w600,
+                        const SizedBox(height: 8),
+                        Text(
+                          timeBased
+                              ? formatShiftBoundsHint(
+                                controller.shiftStart,
+                                controller.shiftEnd,
+                              )
+                              : 'Split capacity across participants.',
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (!timeBased) ...[
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('Equal split'),
+                            value: draft.equalSplit,
+                            onChanged:
+                                controller.isSaving.value
+                                    ? null
+                                    : (v) => controller.setEqualSplit(v),
+                          ),
+                          if (!draft.equalSplit) ...[
+                            Semantics(
+                              liveRegion: true,
+                              child: Text(
+                                controller.remainingLabel,
+                                style: TextStyle(
+                                  color:
+                                      sumsTo100(
+                                            draft.participants.map(
+                                              (p) => p.allocationValue,
+                                            ),
+                                          )
+                                          ? AppColors.textMuted
+                                          : AppColors.error,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          ),
+                            const SizedBox(height: 8),
+                          ],
+                        ] else
                           const SizedBox(height: 8),
-                        ],
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton.icon(
@@ -81,6 +105,7 @@ class GroupShiftEditView extends GetView<GroupShiftEditController> {
                         for (final row in draft.participants)
                           _EditRow(
                             row: row,
+                            timeBased: timeBased,
                             equalSplit: draft.equalSplit,
                             enabled: !controller.isSaving.value,
                             onRemove:
@@ -88,12 +113,16 @@ class GroupShiftEditView extends GetView<GroupShiftEditController> {
                                   row.participantId,
                                 ),
                             onAllocationChanged:
-                                draft.equalSplit
+                                timeBased || draft.equalSplit
                                     ? null
                                     : (v) => controller.setAllocation(
                                       row.participantId,
                                       v,
                                     ),
+                            onEditWindows:
+                                timeBased
+                                    ? () => controller.editWindows(row)
+                                    : null,
                           ),
                       ],
                     ),
@@ -150,17 +179,21 @@ class GroupShiftEditView extends GetView<GroupShiftEditController> {
 class _EditRow extends StatelessWidget {
   const _EditRow({
     required this.row,
+    required this.timeBased,
     required this.equalSplit,
     required this.enabled,
     required this.onRemove,
     this.onAllocationChanged,
+    this.onEditWindows,
   });
 
   final GroupParticipantDraft row;
+  final bool timeBased;
   final bool equalSplit;
   final bool enabled;
   final VoidCallback onRemove;
   final ValueChanged<double>? onAllocationChanged;
+  final VoidCallback? onEditWindows;
 
   @override
   Widget build(BuildContext context) {
@@ -171,17 +204,31 @@ class _EditRow extends StatelessWidget {
           minVerticalPadding: 12,
           title: Text(row.displayName),
           subtitle: Text(
-            equalSplit
+            timeBased
+                ? formatWindowsSummary(row.timeWindows)
+                : equalSplit
                 ? '${row.allocationValue.toStringAsFixed(2)}%'
                 : 'Capacity %',
             style: const TextStyle(color: AppColors.textMuted),
           ),
-          trailing: IconButton(
-            onPressed: enabled ? onRemove : null,
-            icon: const Icon(Icons.close),
+          onTap: timeBased && enabled ? onEditWindows : null,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (timeBased)
+                IconButton(
+                  tooltip: 'Edit windows',
+                  onPressed: enabled ? onEditWindows : null,
+                  icon: const Icon(Icons.schedule_outlined),
+                ),
+              IconButton(
+                onPressed: enabled ? onRemove : null,
+                icon: const Icon(Icons.close),
+              ),
+            ],
           ),
         ),
-        if (!equalSplit && onAllocationChanged != null)
+        if (!timeBased && !equalSplit && onAllocationChanged != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: TextFormField(

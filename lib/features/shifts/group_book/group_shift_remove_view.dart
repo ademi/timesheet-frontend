@@ -47,9 +47,9 @@ class GroupShiftRemoveView extends GetView<GroupShiftRemoveController> {
                             color: AppColors.openSlotBackground,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text(
-                            'Remaining participants will be equal-split again.',
-                            style: TextStyle(color: AppColors.openSlot),
+                          child: Text(
+                            controller.rebalanceHint,
+                            style: const TextStyle(color: AppColors.openSlot),
                           ),
                         ),
                         const SizedBox(height: 16),

@@ -18,7 +18,7 @@ class GroupShiftRemoveArgs {
   final ShiftParticipantOut participant;
 }
 
-/// DELETE with `rebalance=equal` (E2); reason required (D5).
+/// DELETE with `rebalance=equal` for % groups; `none` when time_based (D4).
 class GroupShiftRemoveController extends GetxController {
   GroupShiftRemoveController({
     required ShiftsRepository shiftsRepository,
@@ -41,6 +41,19 @@ class GroupShiftRemoveController extends GetxController {
   String get participantName =>
       args.participant.participantName ?? args.participant.participantId;
 
+  /// True when any active participant uses time_based allocation.
+  bool get isTimeBasedGroup {
+    final active = activeParticipants(args.shift.participants);
+    return active.any((p) => p.allocationStrategy == 'time_based');
+  }
+
+  String get rebalanceMode => isTimeBasedGroup ? 'none' : 'equal';
+
+  String get rebalanceHint =>
+      isTimeBasedGroup
+          ? 'Remaining participants keep their time windows unchanged.'
+          : 'Remaining participants will be equal-split again.';
+
   @override
   void onClose() {
     reasonCtrl.dispose();
@@ -62,7 +75,7 @@ class GroupShiftRemoveController extends GetxController {
         args.shift.id,
         args.participant.participantId,
         reason: reason,
-        rebalance: 'equal',
+        rebalance: rebalanceMode,
       );
       if (_onRemoved != null) {
         _onRemoved(updated);
