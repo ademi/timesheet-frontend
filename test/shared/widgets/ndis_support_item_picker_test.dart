@@ -64,6 +64,7 @@ class _Harness extends StatefulWidget {
     this.initialName,
     this.onChanged,
     this.filterPrefs,
+    this.allowedUnits,
   });
 
   final NdisCatalogueRepository repository;
@@ -71,6 +72,7 @@ class _Harness extends StatefulWidget {
   final String? initialName;
   final void Function(String? code, String? name)? onChanged;
   final NdisCatalogueFilterPrefs? filterPrefs;
+  final Set<String>? allowedUnits;
 
   @override
   State<_Harness> createState() => _HarnessState();
@@ -97,6 +99,7 @@ class _HarnessState extends State<_Harness> {
           repository: widget.repository,
           filterPrefs: widget.filterPrefs,
           debounceDuration: Duration.zero,
+          allowedUnits: widget.allowedUnits,
           onChanged: ({
             required String? supportItemCode,
             required String? supportItemName,
@@ -135,6 +138,7 @@ void main() {
     String? initialCode,
     String? initialName,
     void Function(String? code, String? name)? onChanged,
+    Set<String>? allowedUnits,
   }) {
     return _Harness(
       repository: repository,
@@ -142,6 +146,7 @@ void main() {
       initialName: initialName,
       onChanged: onChanged,
       filterPrefs: isolatedFilterPrefs(),
+      allowedUnits: allowedUnits,
     );
   }
 
@@ -155,6 +160,33 @@ void main() {
       expect(isValidNdisSupportItemCode('bad'), isFalse);
       expect(isValidNdisSupportItemCode(''), isFalse);
     });
+  });
+
+  testWidgets('allowedUnits filters catalogue before other filters', (
+    tester,
+  ) async {
+    const kilometreItem = NdisCatalogueItemOut(
+      supportItemNumber: '02_051_0108_1_1',
+      supportItemName: 'Provider travel kilometres',
+      unit: 'E',
+    );
+    const dayItem = NdisCatalogueItemOut(
+      supportItemNumber: '02_051_0108_1_2',
+      supportItemName: 'Provider travel day',
+      unit: 'D',
+    );
+    when(
+      () => repository.fetchAllActiveItems(),
+    ).thenAnswer((_) async => const [_item, kilometreItem, dayItem]);
+
+    await tester.pumpWidget(isolatedHarness(allowedUnits: const {'E', 'H'}));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text(_item.supportItemName), findsOneWidget);
+    expect(find.text(kilometreItem.supportItemName), findsOneWidget);
+    expect(find.text(dayItem.supportItemName), findsNothing);
+    expect(find.text('Filtered locally (2 of 2)'), findsOneWidget);
   });
 
   testWidgets('shows selected item with clear action', (tester) async {

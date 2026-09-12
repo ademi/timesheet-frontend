@@ -53,6 +53,7 @@ class NdisSupportItemPicker extends StatefulWidget {
     this.searchLimit = 20,
     this.labelText = 'NDIS support item',
     this.searchHintText = 'Search catalogue by name or item number',
+    this.allowedUnits,
   });
 
   final String? supportItemCode;
@@ -67,6 +68,7 @@ class NdisSupportItemPicker extends StatefulWidget {
   final int searchLimit;
   final String? labelText;
   final String searchHintText;
+  final Set<String>? allowedUnits;
 
   @override
   State<NdisSupportItemPicker> createState() => _NdisSupportItemPickerState();
@@ -107,6 +109,14 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
     return code != null && code.isNotEmpty && name != null && name.isNotEmpty;
   }
 
+  List<NdisCatalogueItemOut> get _allowedItems {
+    final units = widget.allowedUnits;
+    if (units == null) return _allItems;
+    return _allItems
+        .where((item) => item.unit != null && units.contains(item.unit))
+        .toList(growable: false);
+  }
+
   NdisCatalogueRepository get _repository {
     if (widget.repository != null) return widget.repository!;
     BillingBinding.ensureShared();
@@ -114,12 +124,12 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
   }
 
   List<NdisCatalogueFacet> get _categoryFacets =>
-      NdisCatalogueLocalFilter.facets(_allItems).supportCategories;
+      NdisCatalogueLocalFilter.facets(_allowedItems).supportCategories;
 
   List<NdisCatalogueFacet> get _regGroupFacets =>
       NdisCatalogueLocalFilter.registrationGroupsFor(
         NdisCatalogueLocalFilter.apply(
-          _allItems,
+          _allowedItems,
           categoryNumber: _categoryNumber,
         ),
       );
@@ -141,6 +151,10 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
     if (oldWidget.supportItemCode != widget.supportItemCode ||
         oldWidget.supportItemName != widget.supportItemName) {
       _syncQueryFromSelection();
+    }
+    if (oldWidget.allowedUnits != widget.allowedUnits) {
+      _clearRegIfInvalid();
+      _recomputeOptions();
     }
   }
 
@@ -216,7 +230,7 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
 
   void _recomputeOptions() {
     _options = NdisCatalogueLocalFilter.apply(
-      _allItems,
+      _allowedItems,
       categoryNumber: _categoryNumber,
       registrationGroupNumber: _registrationGroupNumber,
       query: _queryCtrl.text,
@@ -383,7 +397,7 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
         if (_catalogueLoaded) ...[
           const SizedBox(height: 6),
           Text(
-            'Filtered locally (${_options.length} of ${_allItems.length})',
+            'Filtered locally (${_options.length} of ${_allowedItems.length})',
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
         ],
