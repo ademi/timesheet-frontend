@@ -268,6 +268,36 @@ class ShiftOut {
 
   int get filledSlots => requiredSlots - openSlots;
 
+  ShiftOut copyWith({List<ShiftTravelOut>? travelClaims}) {
+    return ShiftOut(
+      id: id,
+      tenantId: tenantId,
+      jobId: jobId,
+      jobTitle: jobTitle,
+      clientId: clientId,
+      clientName: clientName,
+      scheduledStart: scheduledStart,
+      scheduledEnd: scheduledEnd,
+      requiredSlots: requiredSlots,
+      openSlots: openSlots,
+      workerCount: workerCount,
+      status: status,
+      recurrenceRuleId: recurrenceRuleId,
+      locationLabel: locationLabel,
+      suburb: suburb,
+      postalCode: postalCode,
+      assignments: assignments,
+      participants: participants,
+      travelClaims: travelClaims ?? this.travelClaims,
+      warnings: warnings,
+      accommodationSupportItemCode: accommodationSupportItemCode,
+      accommodationQuantity: accommodationQuantity,
+      publishedAt: publishedAt,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+
   factory ShiftOut.fromJson(Map<String, dynamic> json) {
     return ShiftOut(
       id: json['id'].toString(),

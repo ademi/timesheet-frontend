@@ -55,6 +55,9 @@ abstract class AppRoutes {
   static const staffGroupShiftPublish =
       '/staff/visits/shift-detail/publish-group';
 
+  /// Full-screen provider travel wizard (Item · Split · Review).
+  static const staffGroupShiftTravel = '/staff/visits/shift-detail/travel';
+
   static const staffPayments = '/staff/payments';
   static const staffBillingExports = '/staff/billing/exports';
   static const staffBillingExportDetail = '/staff/billing/exports/detail';

@@ -15,6 +15,8 @@ import '../shifts/group_book/group_shift_edit_view.dart';
 import '../shifts/group_book/group_shift_remove_view.dart';
 import '../shifts/group_publish/group_shift_publish_binding.dart';
 import '../shifts/group_publish/group_shift_publish_view.dart';
+import '../shifts/group_travel/group_shift_travel_binding.dart';
+import '../shifts/group_travel/group_shift_travel_view.dart';
 import 'bindings/visits_binding.dart';
 import 'views/contractor_visit_detail_view.dart';
 import 'views/contractor_visits_list_view.dart';
@@ -50,10 +52,7 @@ abstract final class VisitsPages {
         AuthGuard(),
         ActorGuard(),
         PermissionGuard(
-          anyOf: [
-            AppPermissions.shiftsManage,
-            AppPermissions.jobsManage,
-          ],
+          anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
         ),
       ],
       binding: GroupShiftBookBinding(),
@@ -85,10 +84,7 @@ abstract final class VisitsPages {
         AuthGuard(),
         ActorGuard(),
         PermissionGuard(
-          anyOf: [
-            AppPermissions.shiftsManage,
-            AppPermissions.jobsManage,
-          ],
+          anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
         ),
       ],
       binding: GroupShiftEditBinding(),
@@ -101,10 +97,7 @@ abstract final class VisitsPages {
         AuthGuard(),
         ActorGuard(),
         PermissionGuard(
-          anyOf: [
-            AppPermissions.shiftsManage,
-            AppPermissions.jobsManage,
-          ],
+          anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
         ),
       ],
       binding: GroupShiftRemoveBinding(),
@@ -117,14 +110,22 @@ abstract final class VisitsPages {
         AuthGuard(),
         ActorGuard(),
         PermissionGuard(
-          anyOf: [
-            AppPermissions.shiftsManage,
-            AppPermissions.jobsManage,
-          ],
+          anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
         ),
       ],
       binding: GroupShiftPublishBinding(),
       page: () => const GroupShiftPublishView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.staffGroupShiftTravel,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(anyOf: [AppPermissions.shiftsManage]),
+      ],
+      binding: GroupShiftTravelBinding(),
+      page: () => const GroupShiftTravelView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

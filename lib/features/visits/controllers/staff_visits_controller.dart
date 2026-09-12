@@ -20,7 +20,9 @@ import '../../jobs/data/models/job_models.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../billing/data/models/billing_models.dart';
 import '../../shifts/data/models/shift_models.dart';
+import '../../shifts/data/models/shift_travel_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
+import '../../shifts/group_travel/group_shift_travel_args.dart';
 import '../utils/assign_availability.dart';
 import '../utils/visit_billing_utils.dart';
 import '../data/models/roster_overlay_models.dart';
@@ -62,6 +64,7 @@ class StaffVisitsController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final isRefreshing = false.obs;
+  final travelLoading = false.obs;
   final isFillingHorizon = false.obs;
   final errorMessage = RxnString();
   final overlay = Rxn<RosterOverlayOut>();
@@ -519,7 +522,6 @@ class StaffVisitsController extends GetxController {
   Future<void> openShiftDetail(ShiftOut shift) async {
     selectedShift.value = shift;
     Get.toNamed(AppRoutes.staffShiftDetail, arguments: shift);
-    await refreshSelectedShift(includeTravel: true);
   }
 
   Future<void> openShiftFromTile(RosterTile tile) async {
@@ -540,19 +542,110 @@ class StaffVisitsController extends GetxController {
         (Get.arguments is ShiftOut ? (Get.arguments as ShiftOut).id : null);
     if (id == null) return;
     isRefreshing.value = true;
+    if (includeTravel) travelLoading.value = true;
+    errorMessage.value = null;
     try {
       selectedShift.value =
           includeTravel
               ? await _shiftsRepository.getShift(id, includeTravel: true)
               : await _shiftsRepository.getShift(id);
-      final idx = shifts.indexWhere((s) => s.id == id);
-      if (idx >= 0 && selectedShift.value != null) {
-        shifts[idx] = selectedShift.value!;
+      if (!includeTravel) {
+        final idx = shifts.indexWhere((s) => s.id == id);
+        if (idx >= 0 && selectedShift.value != null) {
+          shifts[idx] = selectedShift.value!;
+        }
       }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
       isRefreshing.value = false;
+      if (includeTravel) travelLoading.value = false;
+    }
+  }
+
+  void upsertSelectedShiftTravel(ShiftTravelOut travel) {
+    final shift = selectedShift.value;
+    if (shift == null || travel.shiftId != shift.id) return;
+    final next = List<ShiftTravelOut>.from(shift.travelClaims);
+    final index = next.indexWhere((existing) => existing.id == travel.id);
+    if (index >= 0) {
+      next[index] = travel;
+    } else {
+      next.add(travel);
+    }
+    selectedShift.value = shift.copyWith(travelClaims: next);
+  }
+
+  void removeSelectedShiftTravel(String travelId) {
+    final shift = selectedShift.value;
+    if (shift == null) return;
+    selectedShift.value = shift.copyWith(
+      travelClaims: shift.travelClaims
+          .where((travel) => travel.id != travelId)
+          .toList(growable: false),
+    );
+  }
+
+  Future<void> openTravelWizard({ShiftTravelOut? existing}) async {
+    final shift = selectedShift.value;
+    if (shift == null || !canManage) return;
+    final result = await Get.toNamed(
+      AppRoutes.staffGroupShiftTravel,
+      arguments: GroupShiftTravelArgs(shift: shift, existing: existing),
+    );
+    if (result is ShiftTravelOut) upsertSelectedShiftTravel(result);
+  }
+
+  Future<bool> confirmDeleteTravel(ShiftTravelOut travel) async {
+    if (Get.testMode) return true;
+    return await Get.dialog<bool>(
+          AlertDialog(
+            title: const Text('Delete travel?'),
+            content: Text('Delete ${travel.supportItemCode} from this shift?'),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(result: false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.back(result: true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ==
+        true;
+  }
+
+  Future<void> deleteSelectedShiftTravel(
+    ShiftTravelOut travel, {
+    bool skipConfirm = false,
+  }) async {
+    final shift = selectedShift.value;
+    if (shift == null ||
+        !canManage ||
+        travel.isClaimed ||
+        isSaving.value ||
+        (!skipConfirm && !await confirmDeleteTravel(travel))) {
+      return;
+    }
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      await _shiftsRepository.deleteTravel(shift.id, travel.id);
+      removeSelectedShiftTravel(travel.id);
+      if (!Get.testMode) {
+        AppToast.success('Travel deleted', travel.supportItemCode);
+      }
+    } on AppFailure catch (failure) {
+      final message =
+          failure.code == 'travel_already_claimed'
+              ? 'This travel was already claimed. Void the claiming export first.'
+              : failure.message;
+      errorMessage.value = message;
+      if (!Get.testMode) AppToast.error('Could not delete travel', message);
+    } finally {
+      isSaving.value = false;
     }
   }
 

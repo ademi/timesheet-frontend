@@ -6,6 +6,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../shifts/data/models/shift_models.dart';
+import '../../shifts/data/models/shift_travel_models.dart';
 import '../../shifts/utils/allocation_math.dart';
 import '../../shifts/utils/participant_display.dart';
 import '../../shifts/widgets/shift_slot_pips.dart';
@@ -30,7 +31,7 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
     super.initState();
     final c = Get.find<StaffVisitsController>();
     c.hydrateShiftFromArgs();
-    c.refreshSelectedShift();
+    c.refreshSelectedShift(includeTravel: true);
   }
 
   @override
@@ -50,13 +51,9 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
         }
         final active = activeParticipants(shift.participants);
         final n = active.length;
-        final values = [
-          for (final p in active) p.allocationValue ?? 0.0,
-        ];
+        final values = [for (final p in active) p.allocationValue ?? 0.0];
         final equal =
-            active.isNotEmpty &&
-            sumsTo100(values) &&
-            looksEqualSplit(values);
+            active.isNotEmpty && sumsTo100(values) && looksEqualSplit(values);
         return Column(
           children: [
             if (controller.isRefreshing.value)
@@ -109,7 +106,8 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                           '${shift.filledSlots} of ${shift.requiredSlots} filled · '
                           '${shift.openSlots} open',
                         ),
-                        if (shift.status == 'draft' && controller.canManage) ...[
+                        if (shift.status == 'draft' &&
+                            controller.canManage) ...[
                           const SizedBox(height: 12),
                           _WorkerCountEditor(
                             workerCount: shift.workerCount,
@@ -146,6 +144,12 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                             style: const TextStyle(color: AppColors.textMuted),
                           ),
                         ],
+                        const SizedBox(height: 16),
+                        _TravelSection(
+                          shift: shift,
+                          active: active,
+                          controller: controller,
+                        ),
                         const Divider(height: 32),
                         _ParticipantsSection(
                           shift: shift,
@@ -310,6 +314,196 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
         );
       },
     );
+  }
+}
+
+class _TravelSection extends StatelessWidget {
+  const _TravelSection({
+    required this.shift,
+    required this.active,
+    required this.controller,
+  });
+
+  final ShiftOut shift;
+  final List<ShiftParticipantOut> active;
+  final StaffVisitsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final claims = shift.travelClaims;
+    final canAdd =
+        controller.canManage && active.isNotEmpty && claims.length < 16;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text('Travel', style: Get.textTheme.titleMedium)),
+            if (canAdd)
+              TextButton.icon(
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : () => controller.openTravelWizard(),
+                style: TextButton.styleFrom(minimumSize: const Size(44, 44)),
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+              ),
+          ],
+        ),
+        if (controller.travelLoading.value)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else ...[
+          if (claims.isEmpty)
+            const Text(
+              'No travel claims',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
+          if (active.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 4),
+              child: Text(
+                'Add participants first',
+                style: TextStyle(color: AppColors.textMuted),
+              ),
+            ),
+          for (final travel in claims) ...[
+            _TravelRow(
+              travel: travel,
+              splitLabel: _splitLabel(travel),
+              canManage: controller.canManage,
+              isSaving: controller.isSaving.value,
+              onEdit: () => controller.openTravelWizard(existing: travel),
+              onDelete: () => controller.deleteSelectedShiftTravel(travel),
+            ),
+            const Divider(height: 1),
+          ],
+          if (claims.length >= 16)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                'Maximum 16 travel rows reached.',
+                style: TextStyle(color: AppColors.textMuted),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  String _splitLabel(ShiftTravelOut travel) {
+    if (travel.apportionmentMode == TravelApportionmentMode.equal) {
+      return 'Equal';
+    }
+    for (final participant in active) {
+      if (participant.id == travel.nominatedParticipantId) {
+        return participant.participantName ?? participant.participantId;
+      }
+    }
+    return 'Nominated participant';
+  }
+}
+
+class _TravelRow extends StatelessWidget {
+  const _TravelRow({
+    required this.travel,
+    required this.splitLabel,
+    required this.canManage,
+    required this.isSaving,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final ShiftTravelOut travel;
+  final String splitLabel;
+  final bool canManage;
+  final bool isSaving;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '${travel.supportItemCode} · qty ${_formatQty(travel.quantity)}',
+                      ),
+                    ),
+                    if (travel.isClaimed) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.successBackground,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Claimed',
+                          style: TextStyle(
+                            color: AppColors.success,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                Text(
+                  splitLabel,
+                  style: const TextStyle(color: AppColors.textMuted),
+                ),
+                if (travel.notes?.trim().isNotEmpty == true)
+                  Text(
+                    travel.notes!.trim(),
+                    style: const TextStyle(color: AppColors.textMuted),
+                  ),
+                if (travel.isClaimed)
+                  const Text(
+                    'Void the claiming export first to make changes.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
+              ],
+            ),
+          ),
+          if (canManage && !travel.isClaimed) ...[
+            TextButton(
+              onPressed: isSaving ? null : onEdit,
+              style: TextButton.styleFrom(minimumSize: const Size(44, 44)),
+              child: const Text('Edit'),
+            ),
+            TextButton(
+              onPressed: isSaving ? null : onDelete,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.error,
+                minimumSize: const Size(44, 44),
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatQty(double value) {
+    return value.toStringAsFixed(4).replaceFirst(RegExp(r'\.?0+$'), '');
   }
 }
 
@@ -509,8 +703,7 @@ class _ParticipantsSection extends StatelessWidget {
               ),
           ],
         ),
-        if (active.isEmpty)
-          const Text('No participants yet.'),
+        if (active.isEmpty) const Text('No participants yet.'),
         for (final p in active) ...[
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -563,13 +756,8 @@ class _AllocationHistorySection extends StatelessWidget {
         children: [
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(
-              'Allocation history',
-              style: Get.textTheme.titleMedium,
-            ),
-            trailing: Icon(
-              expanded ? Icons.expand_less : Icons.expand_more,
-            ),
+            title: Text('Allocation history', style: Get.textTheme.titleMedium),
+            trailing: Icon(expanded ? Icons.expand_less : Icons.expand_more),
             onTap: () async {
               final next = !expanded;
               controller.allocationHistoryExpanded.value = next;
