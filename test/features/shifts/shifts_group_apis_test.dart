@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/constants/api_paths.dart';
 import 'package:rostiq/features/shifts/data/datasources/shifts_remote_datasource.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
+import 'package:rostiq/features/shifts/data/models/shift_travel_models.dart';
 
 class MockDio extends Mock implements Dio {}
 
@@ -51,10 +52,7 @@ void main() {
   });
 
   test('ApiPaths group-shift helpers', () {
-    expect(
-      ApiPaths.shiftParticipants('s1'),
-      '/v1/shifts/s1/participants',
-    );
+    expect(ApiPaths.shiftParticipants('s1'), '/v1/shifts/s1/participants');
     expect(
       ApiPaths.shiftParticipantsBatch('s1'),
       '/v1/shifts/s1/participants/batch',
@@ -71,6 +69,131 @@ void main() {
       ApiPaths.shiftAllocationChanges('s1'),
       '/v1/shifts/s1/allocation-changes',
     );
+    expect(ApiPaths.shiftTravel('s1'), '/v1/shifts/s1/travel');
+    expect(ApiPaths.shiftTravelItem('s1', 't1'), '/v1/shifts/s1/travel/t1');
+    expect(ApiPaths.clientBudgetSummary('c1'), '/v1/clients/c1/budget-summary');
+  });
+
+  test('getShift opts into embedded travel with one request', () async {
+    when(
+      () => dio.get<Map<String, dynamic>>(
+        ApiPaths.shift('shift-1'),
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: ApiPaths.shift('shift-1')),
+        data: {
+          ...shiftJson,
+          'travel_claims': [
+            {
+              'id': 'travel-1',
+              'shift_id': 'shift-1',
+              'support_item_code': '02_051_0108_1_1',
+              'quantity': '10',
+              'apportionment_mode': 'equal',
+              'nominated_participant_id': null,
+              'claimed_export_id': null,
+              'notes': null,
+              'created_at': '2026-09-12T00:00:00Z',
+              'updated_at': '2026-09-12T00:00:00Z',
+            },
+          ],
+        },
+      ),
+    );
+
+    final shift = await dataSource.getShift('shift-1', includeTravel: true);
+
+    expect(shift.travelClaims, hasLength(1));
+    verify(
+      () => dio.get<Map<String, dynamic>>(
+        ApiPaths.shift('shift-1'),
+        queryParameters: const {'include': 'travel'},
+      ),
+    ).called(1);
+  });
+
+  test('travel CRUD uses canonical endpoints and bodies', () async {
+    const body = ShiftTravelWrite(
+      supportItemCode: '02_051_0108_1_1',
+      quantity: '10',
+      apportionmentMode: TravelApportionmentMode.equal,
+    );
+    final travelJson = {
+      'id': 'travel-1',
+      'shift_id': 'shift-1',
+      ...body.toJson(),
+      'claimed_export_id': null,
+      'notes': null,
+      'created_at': '2026-09-12T00:00:00Z',
+      'updated_at': '2026-09-12T00:00:00Z',
+    };
+    when(
+      () => dio.get<List<dynamic>>(ApiPaths.shiftTravel('shift-1')),
+    ).thenAnswer(
+      (_) async => Response<List<dynamic>>(
+        requestOptions: RequestOptions(path: ApiPaths.shiftTravel('shift-1')),
+        data: [travelJson],
+      ),
+    );
+    when(
+      () => dio.post<Map<String, dynamic>>(
+        ApiPaths.shiftTravel('shift-1'),
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: ApiPaths.shiftTravel('shift-1')),
+        data: travelJson,
+      ),
+    );
+    when(
+      () => dio.patch<Map<String, dynamic>>(
+        ApiPaths.shiftTravelItem('shift-1', 'travel-1'),
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(
+          path: ApiPaths.shiftTravelItem('shift-1', 'travel-1'),
+        ),
+        data: travelJson,
+      ),
+    );
+    when(
+      () => dio.delete<void>(ApiPaths.shiftTravelItem('shift-1', 'travel-1')),
+    ).thenAnswer(
+      (_) async => Response<void>(
+        requestOptions: RequestOptions(
+          path: ApiPaths.shiftTravelItem('shift-1', 'travel-1'),
+        ),
+      ),
+    );
+
+    expect(await dataSource.listTravel('shift-1'), hasLength(1));
+    expect((await dataSource.createTravel('shift-1', body)).id, 'travel-1');
+    expect(
+      (await dataSource.updateTravel('shift-1', 'travel-1', body)).id,
+      'travel-1',
+    );
+    await dataSource.deleteTravel('shift-1', 'travel-1');
+
+    verify(
+      () => dio.post<Map<String, dynamic>>(
+        ApiPaths.shiftTravel('shift-1'),
+        data: body.toJson(),
+      ),
+    ).called(1);
+    verify(
+      () => dio.patch<Map<String, dynamic>>(
+        ApiPaths.shiftTravelItem('shift-1', 'travel-1'),
+        data: body.toJson(),
+      ),
+    ).called(1);
+    verify(
+      () => dio.delete<void>(ApiPaths.shiftTravelItem('shift-1', 'travel-1')),
+    ).called(1);
   });
 
   test('listShifts sends participant_id and include', () async {
@@ -136,12 +259,8 @@ void main() {
           'allocation_strategy': 'percentage',
           'equal_split': true,
           'participants': [
-            {
-              'participant_id': 'client-1',
-            },
-            {
-              'participant_id': 'client-2',
-            },
+            {'participant_id': 'client-1'},
+            {'participant_id': 'client-2'},
           ],
         },
       ),
@@ -172,10 +291,7 @@ void main() {
     verify(
       () => dio.delete<Map<String, dynamic>>(
         ApiPaths.shiftParticipant('shift-1', 'client-1'),
-        queryParameters: {
-          'reason': 'Left early',
-          'rebalance': 'equal',
-        },
+        queryParameters: {'reason': 'Left early', 'rebalance': 'equal'},
       ),
     ).called(1);
   });

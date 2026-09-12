@@ -1,6 +1,7 @@
 import '../../../jobs/data/models/job_models.dart';
 import '../datasources/shifts_remote_datasource.dart';
 import '../models/shift_models.dart';
+import '../models/shift_travel_models.dart';
 
 class ShiftsRepository {
   ShiftsRepository({required ShiftsRemoteDataSource remote}) : _remote = remote;
@@ -26,15 +27,29 @@ class ShiftsRepository {
   Future<List<OpenShiftOut>> listOpenShifts({DateTime? from, DateTime? to}) =>
       _remote.listOpenShifts(from: from, to: to);
 
-  Future<ShiftOut> getShift(String id) => _remote.getShift(id);
+  Future<ShiftOut> getShift(String id, {bool includeTravel = false}) =>
+      _remote.getShift(id, includeTravel: includeTravel);
+
+  Future<List<ShiftTravelOut>> listTravel(String shiftId) =>
+      _remote.listTravel(shiftId);
+
+  Future<ShiftTravelOut> createTravel(String shiftId, ShiftTravelWrite body) =>
+      _remote.createTravel(shiftId, body);
+
+  Future<ShiftTravelOut> updateTravel(
+    String shiftId,
+    String travelId,
+    ShiftTravelWrite body,
+  ) => _remote.updateTravel(shiftId, travelId, body);
+
+  Future<void> deleteTravel(String shiftId, String travelId) =>
+      _remote.deleteTravel(shiftId, travelId);
 
   Future<ShiftOut> createShift(ShiftCreateRequest body) =>
       _remote.createShift(body);
 
-  Future<ShiftOut> publishShift(
-    String id, {
-    ShiftPublishRequest? body,
-  }) => _remote.publishShift(id, body: body);
+  Future<ShiftOut> publishShift(String id, {ShiftPublishRequest? body}) =>
+      _remote.publishShift(id, body: body);
 
   Future<ShiftOut> patchShift(String shiftId, {required int workerCount}) =>
       _remote.patchShift(shiftId, ShiftPatchRequest(workerCount: workerCount));

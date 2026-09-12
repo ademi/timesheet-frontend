@@ -1,4 +1,5 @@
 import '../../../jobs/data/models/job_models.dart';
+import 'shift_travel_models.dart';
 
 /// Shift roster DTOs.
 
@@ -86,7 +87,9 @@ class ShiftParticipantAllocationOut {
       participantStartTime: DateTime.parse(
         json['participant_start_time'] as String,
       ),
-      participantEndTime: DateTime.parse(json['participant_end_time'] as String),
+      participantEndTime: DateTime.parse(
+        json['participant_end_time'] as String,
+      ),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -134,27 +137,31 @@ class ShiftParticipantOut {
       allocationValue: (json['allocation_value'] as num?)?.toDouble(),
       status: json['status'] as String? ?? 'active',
       participantName: json['participant_name'] as String?,
-      rateSnapshot: rateRaw is Map
-          ? ShiftParticipantRateSnapshotSummary.fromJson(
-              Map<String, dynamic>.from(rateRaw),
-            )
-          : null,
-      timeWindows: windowsRaw is List
-          ? windowsRaw
-                .whereType<Map>()
-                .map(
-                  (e) => ShiftParticipantAllocationOut.fromJson(
-                    Map<String, dynamic>.from(e),
-                  ),
-                )
-                .toList(growable: false)
-          : null,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString())
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'].toString())
-          : null,
+      rateSnapshot:
+          rateRaw is Map
+              ? ShiftParticipantRateSnapshotSummary.fromJson(
+                Map<String, dynamic>.from(rateRaw),
+              )
+              : null,
+      timeWindows:
+          windowsRaw is List
+              ? windowsRaw
+                  .whereType<Map>()
+                  .map(
+                    (e) => ShiftParticipantAllocationOut.fromJson(
+                      Map<String, dynamic>.from(e),
+                    ),
+                  )
+                  .toList(growable: false)
+              : null,
+      createdAt:
+          json['created_at'] != null
+              ? DateTime.tryParse(json['created_at'].toString())
+              : null,
+      updatedAt:
+          json['updated_at'] != null
+              ? DateTime.tryParse(json['updated_at'].toString())
+              : null,
     );
   }
 }
@@ -224,6 +231,7 @@ class ShiftOut {
     this.postalCode,
     this.assignments = const [],
     this.participants = const [],
+    this.travelClaims = const [],
     this.warnings = const [],
     this.accommodationSupportItemCode,
     this.accommodationQuantity,
@@ -250,6 +258,7 @@ class ShiftOut {
   final String? postalCode;
   final List<ShiftAssignmentOut> assignments;
   final List<ShiftParticipantOut> participants;
+  final List<ShiftTravelOut> travelClaims;
   final List<String> warnings;
   final String? accommodationSupportItemCode;
   final String? accommodationQuantity;
@@ -286,6 +295,10 @@ class ShiftOut {
           .map(
             (e) => ShiftParticipantOut.fromJson(Map<String, dynamic>.from(e)),
           )
+          .toList(growable: false),
+      travelClaims: (json['travel_claims'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => ShiftTravelOut.fromJson(Map<String, dynamic>.from(e)))
           .toList(growable: false),
       warnings: (json['warnings'] as List? ?? const [])
           .map((e) => e.toString())
@@ -352,8 +365,7 @@ class ShiftParticipantTimeWindowInput {
   final DateTime participantEndTime;
 
   Map<String, dynamic> toJson() => {
-    'participant_start_time':
-        participantStartTime.toUtc().toIso8601String(),
+    'participant_start_time': participantStartTime.toUtc().toIso8601String(),
     'participant_end_time': participantEndTime.toUtc().toIso8601String(),
   };
 }

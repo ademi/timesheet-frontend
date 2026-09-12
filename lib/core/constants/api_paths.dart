@@ -141,6 +141,8 @@ abstract final class ApiPaths {
       '${client(clientId)}/support-plans';
   static String clientSupportPlan(String clientId, String planId) =>
       '${clientSupportPlans(clientId)}/$planId';
+  static String clientBudgetSummary(String clientId) =>
+      '${client(clientId)}/budget-summary';
   static String publicClientInvite(String token) =>
       '$_v1/public/client-invites/$token';
   static String publicClientInviteAcknowledge(String token) =>
@@ -206,6 +208,9 @@ abstract final class ApiPaths {
   ) => '${shiftParticipant(shiftId, participantId)}/allocation';
   static String shiftAllocationChanges(String id) =>
       '${shift(id)}/allocation-changes';
+  static String shiftTravel(String id) => '${shift(id)}/travel';
+  static String shiftTravelItem(String shiftId, String travelId) =>
+      '${shiftTravel(shiftId)}/$travelId';
 
   // Workforce / roster overlay
   static const workforceRosterOverlay = '$_v1/workforce/roster-overlay';

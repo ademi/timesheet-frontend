@@ -519,7 +519,7 @@ class StaffVisitsController extends GetxController {
   Future<void> openShiftDetail(ShiftOut shift) async {
     selectedShift.value = shift;
     Get.toNamed(AppRoutes.staffShiftDetail, arguments: shift);
-    await refreshSelectedShift();
+    await refreshSelectedShift(includeTravel: true);
   }
 
   Future<void> openShiftFromTile(RosterTile tile) async {
@@ -534,14 +534,17 @@ class StaffVisitsController extends GetxController {
     await openShiftDetail(match);
   }
 
-  Future<void> refreshSelectedShift() async {
+  Future<void> refreshSelectedShift({bool includeTravel = false}) async {
     final id =
         selectedShift.value?.id ??
         (Get.arguments is ShiftOut ? (Get.arguments as ShiftOut).id : null);
     if (id == null) return;
     isRefreshing.value = true;
     try {
-      selectedShift.value = await _shiftsRepository.getShift(id);
+      selectedShift.value =
+          includeTravel
+              ? await _shiftsRepository.getShift(id, includeTravel: true)
+              : await _shiftsRepository.getShift(id);
       final idx = shifts.indexWhere((s) => s.id == id);
       if (idx >= 0 && selectedShift.value != null) {
         shifts[idx] = selectedShift.value!;
@@ -659,10 +662,7 @@ class StaffVisitsController extends GetxController {
     if (shift == null) return;
     final result = await Get.toNamed(
       AppRoutes.staffGroupShiftRemove,
-      arguments: {
-        'shift': shift,
-        'participant': participant,
-      },
+      arguments: {'shift': shift, 'participant': participant},
     );
     if (result is ShiftOut) {
       selectedShift.value = result;

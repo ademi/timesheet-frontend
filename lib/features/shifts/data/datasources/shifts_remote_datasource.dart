@@ -4,6 +4,7 @@ import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
 import '../../../jobs/data/models/job_models.dart';
 import '../models/shift_models.dart';
+import '../models/shift_travel_models.dart';
 
 class ShiftsRemoteDataSource {
   ShiftsRemoteDataSource({required Dio authenticatedDio})
@@ -28,9 +29,10 @@ class ShiftsRemoteDataSource {
           if (jobId != null && jobId.isNotEmpty) 'job_id': jobId,
           if (participantId != null && participantId.isNotEmpty)
             'participant_id': participantId,
-          'include': (include != null && include.isNotEmpty)
-              ? include
-              : 'participants_summary',
+          'include':
+              (include != null && include.isNotEmpty)
+                  ? include
+                  : 'participants_summary',
           'limit': limit,
         },
       );
@@ -60,10 +62,63 @@ class ShiftsRemoteDataSource {
     }
   }
 
-  Future<ShiftOut> getShift(String id) async {
+  Future<ShiftOut> getShift(String id, {bool includeTravel = false}) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>(ApiPaths.shift(id));
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.shift(id),
+        queryParameters: includeTravel ? const {'include': 'travel'} : null,
+      );
       return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<ShiftTravelOut>> listTravel(String shiftId) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.shiftTravel(shiftId),
+      );
+      return _mapList(response.data, ShiftTravelOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ShiftTravelOut> createTravel(
+    String shiftId,
+    ShiftTravelWrite body,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.shiftTravel(shiftId),
+        data: body.toJson(),
+      );
+      return ShiftTravelOut.fromJson(_require(response.data));
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ShiftTravelOut> updateTravel(
+    String shiftId,
+    String travelId,
+    ShiftTravelWrite body,
+  ) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.shiftTravelItem(shiftId, travelId),
+        data: body.toJson(),
+      );
+      return ShiftTravelOut.fromJson(_require(response.data));
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<void> deleteTravel(String shiftId, String travelId) async {
+    try {
+      await _dio.delete<void>(ApiPaths.shiftTravelItem(shiftId, travelId));
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }
@@ -81,10 +136,7 @@ class ShiftsRemoteDataSource {
     }
   }
 
-  Future<ShiftOut> publishShift(
-    String id, {
-    ShiftPublishRequest? body,
-  }) async {
+  Future<ShiftOut> publishShift(String id, {ShiftPublishRequest? body}) async {
     try {
       final payload = body?.toJson();
       final response = await _dio.post<Map<String, dynamic>>(
@@ -134,10 +186,7 @@ class ShiftsRemoteDataSource {
     try {
       final response = await _dio.delete<Map<String, dynamic>>(
         ApiPaths.shiftParticipant(shiftId, participantId),
-        queryParameters: {
-          'reason': reason,
-          'rebalance': rebalance,
-        },
+        queryParameters: {'reason': reason, 'rebalance': rebalance},
       );
       return ShiftOut.fromJson(response.data!);
     } on DioException catch (e) {
