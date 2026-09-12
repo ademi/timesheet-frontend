@@ -25,6 +25,7 @@ InvoiceExportOut _export({
   String id = 'export-1',
   String status = 'finalized',
   List<InvoiceExportLineOut> lines = const [],
+  List<BudgetWarningOut> budgetWarnings = const [],
 }) {
   return InvoiceExportOut(
     id: id,
@@ -37,6 +38,7 @@ InvoiceExportOut _export({
     updatedAt: _now,
     finalizedAt: status == 'finalized' ? _now : null,
     lines: lines,
+    budgetWarnings: budgetWarnings,
   );
 }
 
@@ -120,6 +122,36 @@ void main() {
         '430000000',
       );
       verify(() => repository.getInvoiceExport('export-42')).called(1);
+    });
+
+    test('load retains budget warnings returned by GET', () async {
+      when(() => repository.getInvoiceExport('export-42')).thenAnswer(
+        (_) async => _export(
+          id: 'export-42',
+          budgetWarnings: const [
+            BudgetWarningOut(
+              code: 'budget_exceeded',
+              clientId: 'client-1',
+              envelope: 'core',
+              remainingAfter: -10,
+            ),
+          ],
+        ),
+      );
+
+      Get.parameters = {'id': 'export-42'};
+      final controller = InvoiceExportDetailController(
+        repository: repository,
+        session: session,
+        exportedVisitIds: ExportedVisitIdsStore(),
+      );
+      await controller.load();
+
+      expect(controller.selected.value?.budgetWarnings, hasLength(1));
+      expect(
+        controller.selected.value?.budgetWarnings.single.remainingAfter,
+        -10,
+      );
     });
 
     test('downloadCsv fetches csv from repository', () async {

@@ -222,6 +222,41 @@ class InvoiceExportLineOut {
   }
 }
 
+class BudgetWarningOut {
+  const BudgetWarningOut({
+    required this.code,
+    this.clientId,
+    this.envelope,
+    this.lineAmount,
+    this.remainingBefore,
+    this.remainingAfter,
+    this.supportItemNumber,
+    this.supportCategoryNumber,
+  });
+
+  final String code;
+  final String? clientId;
+  final String? envelope;
+  final double? lineAmount;
+  final double? remainingBefore;
+  final double? remainingAfter;
+  final String? supportItemNumber;
+  final String? supportCategoryNumber;
+
+  factory BudgetWarningOut.fromJson(Map<String, dynamic> json) {
+    return BudgetWarningOut(
+      code: json['code']?.toString() ?? '',
+      clientId: json['client_id']?.toString(),
+      envelope: json['envelope']?.toString(),
+      lineAmount: (json['line_amount'] as num?)?.toDouble(),
+      remainingBefore: (json['remaining_before'] as num?)?.toDouble(),
+      remainingAfter: (json['remaining_after'] as num?)?.toDouble(),
+      supportItemNumber: json['support_item_number']?.toString(),
+      supportCategoryNumber: json['support_category_number']?.toString(),
+    );
+  }
+}
+
 class InvoiceExportOut {
   const InvoiceExportOut({
     required this.id,
@@ -236,6 +271,7 @@ class InvoiceExportOut {
     this.createdByUserId,
     this.finalizedAt,
     this.lines = const [],
+    this.budgetWarnings = const [],
   });
 
   final String id;
@@ -250,6 +286,7 @@ class InvoiceExportOut {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<InvoiceExportLineOut> lines;
+  final List<BudgetWarningOut> budgetWarnings;
 
   bool get isVoid => status == 'void';
   bool get isFinalized => status == 'finalized';
@@ -275,6 +312,10 @@ class InvoiceExportOut {
           .map(
             (e) => InvoiceExportLineOut.fromJson(Map<String, dynamic>.from(e)),
           )
+          .toList(growable: false),
+      budgetWarnings: (json['budget_warnings'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => BudgetWarningOut.fromJson(Map<String, dynamic>.from(e)))
           .toList(growable: false),
     );
   }

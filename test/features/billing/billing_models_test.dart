@@ -60,6 +60,18 @@ void main() {
       'finalized_at': '2026-01-15T10:00:00Z',
       'created_at': '2026-01-15T10:00:00Z',
       'updated_at': '2026-01-15T10:00:00Z',
+      'budget_warnings': [
+        {
+          'code': 'budget_exceeded',
+          'client_id': 'client-1',
+          'envelope': 'core',
+          'line_amount': 130.94,
+          'remaining_before': 50,
+          'remaining_after': -80.94,
+          'support_item_number': '01_011_0107_1_1',
+          'support_category_number': '01',
+        },
+      ],
       'lines': [
         {
           'id': 'line-1',
@@ -83,6 +95,25 @@ void main() {
     expect(export.isFinalized, isTrue);
     expect(export.lines.single.participantNdisNumber, '430000000');
     expect(export.lines.single.priceTier, PriceTier.national);
+    expect(export.budgetWarnings, hasLength(1));
+    expect(export.budgetWarnings.single.code, 'budget_exceeded');
+    expect(export.budgetWarnings.single.remainingAfter, -80.94);
+    expect(export.budgetWarnings.single.supportCategoryNumber, '01');
+  });
+
+  test('invoice export defaults budget warnings to empty', () {
+    final export = InvoiceExportOut.fromJson({
+      'id': 'export-1',
+      'tenant_id': 'tenant-1',
+      'status': 'finalized',
+      'line_count': 0,
+      'total_amount': 0,
+      'currency_code': 'AUD',
+      'created_at': '2026-01-15T10:00:00Z',
+      'updated_at': '2026-01-15T10:00:00Z',
+    });
+
+    expect(export.budgetWarnings, isEmpty);
   });
 
   test('PriceTier.labelForOverride formats tier labels', () {

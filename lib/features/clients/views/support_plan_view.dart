@@ -6,6 +6,7 @@ import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
 import '../controllers/support_plan_controller.dart';
+import '../widgets/client_budget_remaining_section.dart';
 import '../widgets/support_plan_clinical_section.dart';
 import '../widgets/support_plan_consent_section.dart';
 import '../widgets/support_plan_form_body.dart';
@@ -66,6 +67,11 @@ class SupportPlanView extends GetView<SupportPlanController> {
                           store: controller.fundingConsent,
                           clientId: controller.clientId,
                         ),
+                        if (controller.canViewBudget)
+                          ClientBudgetRemainingSection(
+                            summary: controller.budgetSummary.value,
+                            isLoading: controller.isLoadingBudget.value,
+                          ),
                         const SizedBox(height: 24),
                         SupportPlanConsentSection(
                           store: controller.fundingConsent,

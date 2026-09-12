@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
 import '../../../../shared/models/profile_photo_models.dart';
+import '../models/budget_summary_models.dart';
 import '../models/client_models.dart';
 import '../models/client_profile_models.dart';
 import '../models/support_plan_models.dart';
@@ -156,6 +157,21 @@ class ClientsRemoteDataSource {
         ApiPaths.client(id),
       );
       return _require(response.data, ClientOut.fromJson, 'client');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<BudgetSummaryOut> getBudgetSummary(String clientId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.clientBudgetSummary(clientId),
+      );
+      return _require(
+        response.data,
+        BudgetSummaryOut.fromJson,
+        'budget summary',
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

@@ -1,6 +1,7 @@
 import '../../../../shared/models/profile_photo_models.dart';
 import '../../../../shared/utils/name_sort.dart';
 import '../datasources/clients_remote_datasource.dart';
+import '../models/budget_summary_models.dart';
 import '../models/client_models.dart';
 import '../models/client_profile_models.dart';
 import '../models/support_plan_models.dart';
@@ -47,6 +48,8 @@ class ClientsRepository {
   Future<List<ClientOut>> listClients() async =>
       sortedByName(await _remote.listClients(), (c) => c.fullName);
   Future<ClientOut> getClient(String id) => _remote.getClient(id);
+  Future<BudgetSummaryOut> getBudgetSummary(String clientId) =>
+      _remote.getBudgetSummary(clientId);
   Future<ClientOut> createClient(ClientCreateRequest body) =>
       _remote.createClient(body);
   Future<ClientOut> patchClient(String id, ClientUpdateRequest body) =>

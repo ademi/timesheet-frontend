@@ -45,6 +45,13 @@ class InvoiceExportDetailView extends GetView<InvoiceExportDetailController> {
                       const SizedBox(height: 12),
                     ],
                     _SummaryHeader(export: export),
+                    if (export.budgetWarnings.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      _BudgetWarningsStrip(
+                        warnings: export.budgetWarnings,
+                        currency: export.currencyCode,
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Wrap(
                       spacing: 8,
@@ -93,6 +100,95 @@ class InvoiceExportDetailView extends GetView<InvoiceExportDetailController> {
         );
       }),
     );
+  }
+}
+
+class _BudgetWarningsStrip extends StatelessWidget {
+  const _BudgetWarningsStrip({required this.warnings, required this.currency});
+
+  final List<BudgetWarningOut> warnings;
+  final String currency;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.openSlotBackground,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.openSlot),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: AppColors.openSlot,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Budget warning',
+                  style: TextStyle(
+                    color: AppColors.openSlot,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                for (var i = 0; i < warnings.length; i++) ...[
+                  Text(
+                    _warningText(warnings[i]),
+                    style: const TextStyle(
+                      color: AppColors.openSlot,
+                      fontSize: 13,
+                    ),
+                  ),
+                  if (i < warnings.length - 1) const SizedBox(height: 4),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _warningText(BudgetWarningOut warning) {
+    if (warning.code == 'budget_exceeded') {
+      final envelope = _envelopeLabel(warning.envelope);
+      final remaining = warning.remainingAfter;
+      final amount =
+          remaining != null && remaining < 0
+              ? ' by ${billingFmtMoney(-remaining, currency)}'
+              : '';
+      return '$envelope budget exceeded$amount. The export still succeeded.';
+    }
+    if (warning.code == 'envelope_unmapped') {
+      final item = warning.supportItemNumber;
+      return item == null || item.isEmpty
+          ? 'A support item could not be matched to a budget envelope.'
+          : 'Support item $item could not be matched to a budget envelope.';
+    }
+    return 'Review this export against the client budget.';
+  }
+
+  static String _envelopeLabel(String? key) {
+    switch (key) {
+      case 'core':
+        return 'Core';
+      case 'capacity_building':
+        return 'Capacity building';
+      case 'capital':
+        return 'Capital';
+      case 'other':
+        return 'Other';
+      default:
+        return 'Client';
+    }
   }
 }
 
@@ -188,10 +284,7 @@ class _ExportLineTile extends StatelessWidget {
             style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
           const SizedBox(height: 4),
-          Text(
-            line.supportItemName,
-            style: const TextStyle(fontSize: 13),
-          ),
+          Text(line.supportItemName, style: const TextStyle(fontSize: 13)),
           const SizedBox(height: 4),
           Text(
             '${line.quantity.toStringAsFixed(2)} ${line.unit} @ '

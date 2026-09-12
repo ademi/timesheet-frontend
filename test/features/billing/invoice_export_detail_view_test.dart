@@ -33,7 +33,10 @@ InvoiceExportLineOut _line({String? shiftParticipantId}) {
   );
 }
 
-InvoiceExportOut _export({required List<InvoiceExportLineOut> lines}) {
+InvoiceExportOut _export({
+  required List<InvoiceExportLineOut> lines,
+  List<BudgetWarningOut> budgetWarnings = const [],
+}) {
   return InvoiceExportOut(
     id: 'export-1',
     tenantId: 'tenant-1',
@@ -45,6 +48,7 @@ InvoiceExportOut _export({required List<InvoiceExportLineOut> lines}) {
     updatedAt: _now,
     finalizedAt: _now,
     lines: lines,
+    budgetWarnings: budgetWarnings,
   );
 }
 
@@ -101,5 +105,32 @@ void main() {
     await pumpDetail(tester, export: _export(lines: [_line()]));
     expect(find.text('Maya Smith'), findsOneWidget);
     expect(find.text('Group share'), findsNothing);
+  });
+
+  testWidgets('shows amber budget warning returned by export GET', (
+    tester,
+  ) async {
+    await pumpDetail(
+      tester,
+      export: _export(
+        lines: [_line()],
+        budgetWarnings: const [
+          BudgetWarningOut(
+            code: 'budget_exceeded',
+            clientId: 'client-1',
+            envelope: 'core',
+            remainingAfter: -15,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Budget warning'), findsOneWidget);
+    expect(
+      find.text(
+        'Core budget exceeded by AUD 15.00. The export still succeeded.',
+      ),
+      findsOneWidget,
+    );
   });
 }

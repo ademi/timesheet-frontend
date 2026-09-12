@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/constants/app_permissions.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/services/session_service.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../documents/data/document_pipeline.dart';
+import '../data/models/budget_summary_models.dart';
 import '../data/models/support_plan_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../utils/support_plan_keys.dart';
@@ -17,11 +21,13 @@ class SupportPlanController extends GetxController {
     String? planId,
     this.clientName,
     this.ndisNumber,
+    SessionService? session,
     SupportPlanFundingConsentStore? fundingConsent,
     SupportPlanClinicalStore? clinical,
     DocumentPipeline? documentPipeline,
     Future<({String name, List<int> bytes})?> Function()? pickPdfBytes,
   }) : _repository = repository,
+       _session = session,
        clientId = clientId ?? '',
        _initialPlanId = planId,
        fundingConsent =
@@ -44,6 +50,7 @@ class SupportPlanController extends GetxController {
   }
 
   final ClientsRepository _repository;
+  final SessionService? _session;
 
   /// Funding + Consent facts collaborator (D4=B).
   final SupportPlanFundingConsentStore fundingConsent;
@@ -67,6 +74,8 @@ class SupportPlanController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+  final budgetSummary = Rxn<BudgetSummaryOut>();
+  final isLoadingBudget = false.obs;
 
   /// Soft Activate notice when Consent/SA incomplete (Task 7).
   final activateSoftWarning = RxnString();
@@ -182,6 +191,10 @@ class SupportPlanController extends GetxController {
       clinical.isBusy.value ||
       clinical.isLoading.value;
 
+  bool get canViewBudget =>
+      (_session?.hasPermission(AppPermissions.clientsRead) ?? false) ||
+      (_session?.hasPermission(AppPermissions.billingView) ?? false);
+
   String get displayName => clientName ?? '';
   String? get displayNdis => ndisNumber;
 
@@ -191,6 +204,24 @@ class SupportPlanController extends GetxController {
     _readArguments();
     if (clientId.isNotEmpty) {
       load();
+      loadBudgetSummary();
+    }
+  }
+
+  Future<void> loadBudgetSummary() async {
+    if (clientId.isEmpty || !canViewBudget || isLoadingBudget.value) return;
+    isLoadingBudget.value = true;
+    try {
+      budgetSummary.value = await _repository.getBudgetSummary(clientId);
+    } on AppFailure catch (e) {
+      budgetSummary.value = null;
+      if (!Get.testMode) {
+        AppToast.error('Budget unavailable', e.message);
+      }
+    } catch (_) {
+      budgetSummary.value = null;
+    } finally {
+      isLoadingBudget.value = false;
     }
   }
 

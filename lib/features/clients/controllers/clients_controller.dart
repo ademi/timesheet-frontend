@@ -1509,12 +1509,16 @@ class ClientsController extends GetxController
     if (client == null || !canRead) return;
     if (Get.isRegistered<SupportPlanController>()) {
       final existing = Get.find<SupportPlanController>();
-      if (existing.clientId == client.id) return;
+      if (existing.clientId == client.id) {
+        existing.loadBudgetSummary();
+        return;
+      }
       Get.delete<SupportPlanController>(force: true);
     }
     Get.put(
       SupportPlanController(
         repository: _repository,
+        session: _session,
         clientId: client.id,
         planId: supportPlan.value?.id,
         clientName: client.fullName,

@@ -26,6 +26,7 @@ class SupportPlanBinding extends Bindings {
       Get.put(
         SupportPlanController(
           repository: Get.find<ClientsRepository>(),
+          session: Get.find<SessionService>(),
           clientId: clientId,
           planId: planId,
           clientName: clientName,
