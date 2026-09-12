@@ -119,8 +119,30 @@ class GroupShiftBookController extends GetxController {
       if (!scheduledEnd.value.isAfter(start)) {
         scheduledEnd.value = start.add(const Duration(hours: 1));
       }
+      _alignDraftWindowsToSchedule();
     });
+    ever(scheduledEnd, (_) => _alignDraftWindowsToSchedule());
     _bootstrap();
+  }
+
+  /// Keeps time-based windows inside the current When-step bounds.
+  void _alignDraftWindowsToSchedule() {
+    if (!isTimeBased) return;
+    final start = scheduledStart.value;
+    final end = scheduledEnd.value;
+    if (!end.isAfter(start)) return;
+    draft.value = draft.value.copyWith(
+      participants: [
+        for (final p in draft.value.participants)
+          p.copyWith(
+            timeWindows: alignWindowsToShiftBounds(
+              p.timeWindows,
+              shiftStart: start,
+              shiftEnd: end,
+            ),
+          ),
+      ],
+    );
   }
 
   Future<void> _bootstrap() async {

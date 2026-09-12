@@ -288,6 +288,24 @@ void main() {
       expect(item.timeWindows, isNotNull);
       expect(item.timeWindows, isNotEmpty);
     });
+
+    test('time_based windows realign when When schedule changes', () async {
+      final c = build();
+      await c._waitBootstrap();
+      c.selectHost(_host);
+      await c.addParticipant(_maya);
+      c.setAllocationStrategy(GroupAllocationStrategy.timeBased);
+
+      final originalEnd = c.scheduledEnd.value;
+      final earlierEnd = c.scheduledStart.value.add(const Duration(hours: 1));
+      expect(originalEnd.isAfter(earlierEnd), isTrue);
+
+      c.scheduledEnd.value = earlierEnd;
+
+      final win = c.draft.value.participants.single.timeWindows.single;
+      expect(win.start, c.scheduledStart.value);
+      expect(win.end, earlierEnd);
+    });
   });
 
   group('GroupShiftEditController', () {

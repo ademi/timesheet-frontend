@@ -287,6 +287,20 @@ void main() {
     final json = captured!.toJson();
     expect(json, isNot(contains('accommodation_support_item_code')));
   });
+
+  test('disabling Stay clears qty; re-enable defaults to 1', () async {
+    final c = await build();
+    c.setAccommodationEnabled(true);
+    c.setAccommodationQuantity('3');
+    expect(c.draft.value.accommodationQuantity, '3');
+
+    c.setAccommodationEnabled(false);
+    expect(c.draft.value.accommodationEnabled, isFalse);
+    expect(c.draft.value.accommodationQuantity, isNull);
+
+    c.setAccommodationEnabled(true);
+    expect(c.draft.value.accommodationQuantity, '1');
+  });
 }
 
 extension on ShiftOut {

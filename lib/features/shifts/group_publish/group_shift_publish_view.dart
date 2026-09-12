@@ -351,7 +351,14 @@ class _StayStepState extends State<_StayStep> {
           title: const Text('Include accommodation'),
           value: d.accommodationEnabled,
           activeThumbColor: AppColors.primary,
-          onChanged: c.setAccommodationEnabled,
+          onChanged: (enabled) {
+            c.setAccommodationEnabled(enabled);
+            if (enabled) {
+              _qtyCtrl.text = c.draft.value.accommodationQuantity ?? '1';
+            } else {
+              _qtyCtrl.clear();
+            }
+          },
         ),
         if (d.accommodationEnabled) ...[
           const SizedBox(height: 8),

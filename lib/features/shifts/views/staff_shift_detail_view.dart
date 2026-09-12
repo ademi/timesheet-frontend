@@ -50,9 +50,13 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
         }
         final active = activeParticipants(shift.participants);
         final n = active.length;
+        final values = [
+          for (final p in active) p.allocationValue ?? 0.0,
+        ];
         final equal =
             active.isNotEmpty &&
-            sumsTo100(active.map((p) => p.allocationValue ?? 0));
+            sumsTo100(values) &&
+            looksEqualSplit(values);
         return Column(
           children: [
             if (controller.isRefreshing.value)

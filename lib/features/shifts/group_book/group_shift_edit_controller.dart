@@ -92,7 +92,8 @@ class GroupShiftEditController extends GetxController {
     }
 
     final values = active.map((p) => p.allocationValue ?? 0.0).toList();
-    final equal = active.isNotEmpty && sumsTo100(values) && _looksEqual(values);
+    final equal =
+        active.isNotEmpty && sumsTo100(values) && looksEqualSplit(values);
     var next = GroupParticipantDraftSet(
       equalSplit: equal,
       allocationStrategy: GroupAllocationStrategy.percentage,
@@ -108,15 +109,6 @@ class GroupShiftEditController extends GetxController {
     );
     if (equal) next = next.recomputeEqualSplit();
     draft.value = next;
-  }
-
-  bool _looksEqual(List<double> values) {
-    if (values.isEmpty) return true;
-    final expected = equalPercentageValues(values.length);
-    for (var i = 0; i < values.length; i++) {
-      if ((values[i] - expected[i]).abs() > 0.02) return false;
-    }
-    return true;
   }
 
   void setAllocationStrategy(String strategy) {

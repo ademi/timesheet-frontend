@@ -134,11 +134,18 @@ class GroupShiftPublishController extends GetxController {
   }
 
   void setAccommodationEnabled(bool enabled) {
-    draft.value = draft.value.copyWith(accommodationEnabled: enabled);
     if (!enabled) {
       draft.value = draft.value.copyWith(
+        accommodationEnabled: false,
         clearAccommodationItem: true,
         clearAccommodationQuantity: true,
+      );
+    } else {
+      final qty = draft.value.accommodationQuantity;
+      draft.value = draft.value.copyWith(
+        accommodationEnabled: true,
+        accommodationQuantity:
+            (qty == null || qty.trim().isEmpty) ? '1' : qty,
       );
     }
     errorMessage.value = null;

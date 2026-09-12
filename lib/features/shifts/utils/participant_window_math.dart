@@ -32,6 +32,30 @@ List<ParticipantWindowDraft> defaultFullShiftWindows(
 ) =>
     [ParticipantWindowDraft(start: shiftStart, end: shiftEnd)];
 
+/// Clamps each window into [shiftStart, shiftEnd]; reseeds full span if none remain.
+List<ParticipantWindowDraft> alignWindowsToShiftBounds(
+  List<ParticipantWindowDraft> windows, {
+  required DateTime shiftStart,
+  required DateTime shiftEnd,
+}) {
+  if (!shiftEnd.isAfter(shiftStart)) {
+    return defaultFullShiftWindows(shiftStart, shiftEnd);
+  }
+  final aligned = <ParticipantWindowDraft>[];
+  for (final window in windows) {
+    final start =
+        window.start.isBefore(shiftStart) ? shiftStart : window.start;
+    final end = window.end.isAfter(shiftEnd) ? shiftEnd : window.end;
+    if (end.isAfter(start)) {
+      aligned.add(ParticipantWindowDraft(start: start, end: end));
+    }
+  }
+  if (aligned.isEmpty) {
+    return defaultFullShiftWindows(shiftStart, shiftEnd);
+  }
+  return List.unmodifiable(aligned);
+}
+
 /// Per-window or set-level error; `null` when valid.
 String? validateParticipantWindows(
   List<ParticipantWindowDraft> windows, {

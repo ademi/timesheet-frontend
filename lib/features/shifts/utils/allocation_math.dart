@@ -32,6 +32,17 @@ double remainingTo100(Iterable<double> values) => 100.0 - sumValues(values);
 bool sumsTo100(Iterable<double> values, {double epsilon = 0.01}) =>
     remainingTo100(values).abs() <= epsilon;
 
+/// True when values match [equalPercentageValues] (not merely sum to 100).
+bool looksEqualSplit(Iterable<double> values, {double epsilon = 0.02}) {
+  final list = values.toList(growable: false);
+  if (list.isEmpty) return true;
+  final expected = equalPercentageValues(list.length);
+  for (var i = 0; i < list.length; i++) {
+    if ((list[i] - expected[i]).abs() > epsilon) return false;
+  }
+  return true;
+}
+
 /// Soft UX gate: confirm when the next size would be a "large group".
 bool needsLargeGroupConfirm(int nextN) => nextN >= 9;
 

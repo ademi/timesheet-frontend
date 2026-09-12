@@ -51,6 +51,22 @@ void main() {
     });
   });
 
+  group('looksEqualSplit', () {
+    test('true for equalPercentageValues', () {
+      expect(looksEqualSplit(equalPercentageValues(2)), isTrue);
+      expect(looksEqualSplit(equalPercentageValues(3)), isTrue);
+    });
+
+    test('false for custom split that still sums to 100', () {
+      expect(sumsTo100([60.0, 40.0]), isTrue);
+      expect(looksEqualSplit([60.0, 40.0]), isFalse);
+    });
+
+    test('empty is equal', () {
+      expect(looksEqualSplit(const <double>[]), isTrue);
+    });
+  });
+
   group('large group gates', () {
     test('needsLargeGroupConfirm at N >= 9', () {
       expect(needsLargeGroupConfirm(8), isFalse);

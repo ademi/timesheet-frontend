@@ -129,4 +129,37 @@ void main() {
       contains('·'),
     );
   });
+
+  group('alignWindowsToShiftBounds', () {
+    test('clamps overhanging windows into shift', () {
+      final aligned = alignWindowsToShiftBounds(
+        [
+          ParticipantWindowDraft(
+            start: shiftStart.subtract(const Duration(hours: 1)),
+            end: shiftEnd.add(const Duration(hours: 1)),
+          ),
+        ],
+        shiftStart: shiftStart,
+        shiftEnd: shiftEnd,
+      );
+      expect(aligned, hasLength(1));
+      expect(aligned.single.start, shiftStart);
+      expect(aligned.single.end, shiftEnd);
+    });
+
+    test('reseeds full span when all windows fall outside', () {
+      final laterStart = DateTime.utc(2026, 9, 12, 15);
+      final laterEnd = DateTime.utc(2026, 9, 12, 17);
+      final aligned = alignWindowsToShiftBounds(
+        [
+          ParticipantWindowDraft(start: shiftStart, end: shiftEnd),
+        ],
+        shiftStart: laterStart,
+        shiftEnd: laterEnd,
+      );
+      expect(aligned, hasLength(1));
+      expect(aligned.single.start, laterStart);
+      expect(aligned.single.end, laterEnd);
+    });
+  });
 }
