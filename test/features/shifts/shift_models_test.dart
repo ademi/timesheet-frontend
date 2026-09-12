@@ -255,6 +255,61 @@ void main() {
     );
   });
 
+  test('ShiftParticipantPublishOverride.toJson includes rates and reason', () {
+    expect(
+      const ShiftParticipantPublishOverride(
+        participantId: 'p1',
+        supportItemCode: '01_012_0107_1_1',
+        baseRate: 70.5,
+        saturdayRate: 80,
+        reason: 'High intensity',
+      ).toJson(),
+      {
+        'participant_id': 'p1',
+        'support_item_code': '01_012_0107_1_1',
+        'base_rate': 70.5,
+        'saturday_rate': 80,
+        'reason': 'High intensity',
+      },
+    );
+  });
+
+  test('ShiftPublishRequest.toJson includes overrides and accommodation', () {
+    final json = ShiftPublishRequest(
+      supportItemCode: '01_011_0107_1_1',
+      participantOverrides: const [
+        ShiftParticipantPublishOverride(
+          participantId: 'p1',
+          supportItemCode: '01_012_0107_1_1',
+          reason: 'High intensity',
+        ),
+      ],
+      accommodationSupportItemCode: '01_058_0115_1_1',
+      accommodationQuantity: '2',
+    ).toJson();
+
+    expect(json['support_item_code'], '01_011_0107_1_1');
+    expect(json['participant_overrides'], [
+      {
+        'participant_id': 'p1',
+        'support_item_code': '01_012_0107_1_1',
+        'reason': 'High intensity',
+      },
+    ]);
+    expect(json['accommodation_support_item_code'], '01_058_0115_1_1');
+    expect(json['accommodation_quantity'], '2');
+  });
+
+  test('ShiftPublishRequest.toJson omits empty overrides and accommodation', () {
+    expect(
+      const ShiftPublishRequest(
+        supportItemCode: '01_011_0107_1_1',
+        participantOverrides: [],
+      ).toJson(),
+      {'support_item_code': '01_011_0107_1_1'},
+    );
+  });
+
   test('ShiftPatchRequest.toJson sends worker_count', () {
     expect(const ShiftPatchRequest(workerCount: 3).toJson(), {
       'worker_count': 3,
@@ -337,6 +392,30 @@ void main() {
     expect(p.rateSnapshot?.baseRate, 62.17);
     expect(p.timeWindows, hasLength(1));
     expect(p.timeWindows!.single.id, 'tw-1');
+  });
+
+  test('ShiftOut parses accommodation fields', () {
+    final shift = ShiftOut.fromJson({
+      'id': 'shift-1',
+      'tenant_id': 'tenant-1',
+      'job_id': 'job-1',
+      'job_title': 'Group support',
+      'scheduled_start': '2026-08-22T09:00:00Z',
+      'scheduled_end': '2026-08-22T12:00:00Z',
+      'required_slots': 1,
+      'open_slots': 1,
+      'worker_count': 1,
+      'status': 'published',
+      'accommodation_support_item_code': '01_058_0115_1_1',
+      'accommodation_quantity': 2,
+      'participants': [],
+      'assignments': [],
+      'created_at': '2026-08-22T08:00:00Z',
+      'updated_at': '2026-08-22T08:05:00Z',
+    });
+
+    expect(shift.accommodationSupportItemCode, '01_058_0115_1_1');
+    expect(shift.accommodationQuantity, '2');
   });
 
   test('ShiftOut parses list participants_summary shape', () {

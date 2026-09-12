@@ -571,11 +571,29 @@ class StaffVisitsController extends GetxController {
     errorMessage.value = null;
     try {
       selectedShift.value = await _shiftsRepository.publishShift(shift.id);
+      AppToast.success('Published', selectedShift.value!.jobTitle);
       await load();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+      AppToast.error('Could not publish', e.message);
     } finally {
       isSaving.value = false;
+    }
+  }
+
+  Future<void> openPublishWizard() async {
+    final shift = selectedShift.value;
+    if (shift == null || shift.status != 'draft') return;
+    final result = await Get.toNamed(
+      AppRoutes.staffGroupShiftPublish,
+      arguments: shift,
+    );
+    if (result is ShiftOut) {
+      selectedShift.value = result;
+      allocationHistory.clear();
+      await load();
+    } else {
+      await refreshSelectedShift();
     }
   }
 

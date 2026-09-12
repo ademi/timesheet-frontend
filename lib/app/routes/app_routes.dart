@@ -51,6 +51,10 @@ abstract class AppRoutes {
   static const staffGroupShiftRemove =
       '/staff/visits/shift-detail/remove-participant';
 
+  /// Full-screen Publish group shift wizard (Item · People · Stay · Review).
+  static const staffGroupShiftPublish =
+      '/staff/visits/shift-detail/publish-group';
+
   static const staffPayments = '/staff/payments';
   static const staffBillingExports = '/staff/billing/exports';
   static const staffBillingExportDetail = '/staff/billing/exports/detail';

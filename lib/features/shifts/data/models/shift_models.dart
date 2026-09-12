@@ -225,6 +225,8 @@ class ShiftOut {
     this.assignments = const [],
     this.participants = const [],
     this.warnings = const [],
+    this.accommodationSupportItemCode,
+    this.accommodationQuantity,
     this.publishedAt,
     required this.createdAt,
     required this.updatedAt,
@@ -249,6 +251,8 @@ class ShiftOut {
   final List<ShiftAssignmentOut> assignments;
   final List<ShiftParticipantOut> participants;
   final List<String> warnings;
+  final String? accommodationSupportItemCode;
+  final String? accommodationQuantity;
   final DateTime? publishedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -286,6 +290,9 @@ class ShiftOut {
       warnings: (json['warnings'] as List? ?? const [])
           .map((e) => e.toString())
           .toList(growable: false),
+      accommodationSupportItemCode:
+          json['accommodation_support_item_code'] as String?,
+      accommodationQuantity: json['accommodation_quantity']?.toString(),
       publishedAt:
           json['published_at'] != null
               ? DateTime.tryParse(json['published_at'].toString())
@@ -418,14 +425,77 @@ class ShiftParticipantsReplaceRequest {
   };
 }
 
+/// Per-participant support item and/or rate overrides at publish.
+class ShiftParticipantPublishOverride {
+  const ShiftParticipantPublishOverride({
+    required this.participantId,
+    this.supportItemCode,
+    this.baseRate,
+    this.saturdayRate,
+    this.sundayRate,
+    this.eveningRate,
+    this.nightRate,
+    this.publicHolidayRate,
+    this.reason,
+  });
+
+  final String participantId;
+  final String? supportItemCode;
+  final double? baseRate;
+  final double? saturdayRate;
+  final double? sundayRate;
+  final double? eveningRate;
+  final double? nightRate;
+  final double? publicHolidayRate;
+  final String? reason;
+
+  bool get hasAnyRate =>
+      baseRate != null ||
+      saturdayRate != null ||
+      sundayRate != null ||
+      eveningRate != null ||
+      nightRate != null ||
+      publicHolidayRate != null;
+
+  Map<String, dynamic> toJson() => {
+    'participant_id': participantId,
+    if (supportItemCode != null && supportItemCode!.isNotEmpty)
+      'support_item_code': supportItemCode,
+    if (baseRate != null) 'base_rate': baseRate,
+    if (saturdayRate != null) 'saturday_rate': saturdayRate,
+    if (sundayRate != null) 'sunday_rate': sundayRate,
+    if (eveningRate != null) 'evening_rate': eveningRate,
+    if (nightRate != null) 'night_rate': nightRate,
+    if (publicHolidayRate != null) 'public_holiday_rate': publicHolidayRate,
+    if (reason != null && reason!.isNotEmpty) 'reason': reason,
+  };
+}
+
 class ShiftPublishRequest {
-  const ShiftPublishRequest({this.supportItemCode});
+  const ShiftPublishRequest({
+    this.supportItemCode,
+    this.participantOverrides,
+    this.accommodationSupportItemCode,
+    this.accommodationQuantity,
+  });
 
   final String? supportItemCode;
+  final List<ShiftParticipantPublishOverride>? participantOverrides;
+  final String? accommodationSupportItemCode;
+  final String? accommodationQuantity;
 
   Map<String, dynamic> toJson() => {
     if (supportItemCode != null && supportItemCode!.isNotEmpty)
       'support_item_code': supportItemCode,
+    if (participantOverrides != null && participantOverrides!.isNotEmpty)
+      'participant_overrides': [
+        for (final o in participantOverrides!) o.toJson(),
+      ],
+    if (accommodationSupportItemCode != null &&
+        accommodationSupportItemCode!.isNotEmpty)
+      'accommodation_support_item_code': accommodationSupportItemCode,
+    if (accommodationQuantity != null && accommodationQuantity!.isNotEmpty)
+      'accommodation_quantity': accommodationQuantity,
   };
 }
 

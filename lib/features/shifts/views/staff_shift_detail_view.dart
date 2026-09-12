@@ -77,6 +77,7 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                             equalSplit: equal,
                             isSaving: controller.isSaving.value,
                             onPublish: controller.publishSelectedShift,
+                            onSetupPublish: controller.openPublishWizard,
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -127,6 +128,19 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                                 ),
                               ),
                             ),
+                        ],
+                        if (shift.accommodationSupportItemCode != null &&
+                            shift.accommodationSupportItemCode!.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            'Accommodation',
+                            style: Get.textTheme.titleSmall,
+                          ),
+                          Text(
+                            '${shift.accommodationSupportItemCode}'
+                            '${shift.accommodationQuantity != null ? ' · qty ${shift.accommodationQuantity}' : ''}',
+                            style: const TextStyle(color: AppColors.textMuted),
+                          ),
                         ],
                         const Divider(height: 32),
                         _ParticipantsSection(
@@ -302,6 +316,7 @@ class _PublishStrip extends StatelessWidget {
     required this.equalSplit,
     required this.isSaving,
     required this.onPublish,
+    required this.onSetupPublish,
   });
 
   final ShiftOut shift;
@@ -309,9 +324,11 @@ class _PublishStrip extends StatelessWidget {
   final bool equalSplit;
   final bool isSaving;
   final Future<void> Function() onPublish;
+  final Future<void> Function() onSetupPublish;
 
   @override
   Widget build(BuildContext context) {
+    final useWizard = participantCount >= 2;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -332,16 +349,27 @@ class _PublishStrip extends StatelessWidget {
             style: const TextStyle(color: AppColors.textMuted),
           ),
           const SizedBox(height: 12),
-          AsyncElevatedButton(
-            onPressed: onPublish,
-            isLoading: isSaving,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
-              minimumSize: const Size.fromHeight(48),
+          if (useWizard)
+            ElevatedButton(
+              onPressed: isSaving ? null : onSetupPublish,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                minimumSize: const Size.fromHeight(48),
+              ),
+              child: const Text('Set up publish'),
+            )
+          else
+            AsyncElevatedButton(
+              onPressed: onPublish,
+              isLoading: isSaving,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.onPrimary,
+                minimumSize: const Size.fromHeight(48),
+              ),
+              child: const Text('Publish shift'),
             ),
-            child: const Text('Publish shift'),
-          ),
         ],
       ),
     );
