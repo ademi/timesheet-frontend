@@ -155,7 +155,9 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                           shift: shift,
                           active: active,
                           canManage: controller.canManage,
-                          isSaving: controller.isSaving.value,
+                          isSaving:
+                              controller.isSaving.value ||
+                              controller.isRefreshing.value,
                           onEdit: controller.openEditGroup,
                           onRemove: controller.openRemoveParticipant,
                         ),

@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/app/routes/app_routes.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
+import 'package:rostiq/core/time/tenant_civil_time.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
@@ -409,6 +410,49 @@ void main() {
       expect(body.participants.single.allocationValue, 0);
       expect(body.participants.single.timeWindows, isNotNull);
       expect(body.participants.single.timeWindows, isNotEmpty);
+    });
+
+    test('Save time_based windows use tenant civil timezone', () async {
+      when(() => shifts.putParticipants(any(), any())).thenAnswer(
+        (_) async => _shift(),
+      );
+
+      final c = GroupShiftEditController(
+        shiftsRepository: shifts,
+        args: GroupShiftEditArgs(
+          shift: _shift(
+            participants: [
+              _participant(
+                id: 'sp1',
+                participantId: _maya.id,
+                name: _maya.fullName,
+                allocationValue: 100,
+              ),
+            ],
+          ),
+        ),
+        onSaved: (_) {},
+        resolveTenantTimezone: () async => 'Pacific/Honolulu',
+      );
+      c.onInit();
+      c.setAllocationStrategy(GroupAllocationStrategy.timeBased);
+      final draftWin = c.draft.value.participants.single.timeWindows.single;
+      await c.save();
+
+      final body =
+          verify(
+                () => shifts.putParticipants('shift-1', captureAny()),
+              ).captured.single
+              as ShiftParticipantsReplaceRequest;
+      final win = body.participants.single.timeWindows!.single;
+      expect(
+        win.participantStartTime,
+        tenantCivilInstantUtc(draftWin.start, 'Pacific/Honolulu'),
+      );
+      expect(
+        win.participantEndTime,
+        tenantCivilInstantUtc(draftWin.end, 'Pacific/Honolulu'),
+      );
     });
 
     test('strategy switch hydrates default full-shift windows', () {

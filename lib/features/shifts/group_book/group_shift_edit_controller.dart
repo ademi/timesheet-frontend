@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../core/services/session_service.dart';
+import '../../../core/time/tenant_civil_time.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../data/models/shift_models.dart';
 import '../data/repositories/shifts_repository.dart';
 import '../utils/allocation_math.dart';
@@ -29,10 +32,12 @@ class GroupShiftEditController extends GetxController {
       GroupShiftWindowsArgs args,
     )?
     openWindowsEditor,
+    Future<String?> Function()? resolveTenantTimezone,
   }) : _shifts = shiftsRepository,
        _onSaved = onSaved,
        _confirmLargeGroup = confirmLargeGroup,
-       _openWindowsEditor = openWindowsEditor;
+       _openWindowsEditor = openWindowsEditor,
+       _resolveTenantTimezoneOverride = resolveTenantTimezone;
 
   final ShiftsRepository _shifts;
   final GroupShiftEditArgs args;
@@ -42,6 +47,7 @@ class GroupShiftEditController extends GetxController {
     GroupShiftWindowsArgs args,
   )?
   _openWindowsEditor;
+  final Future<String?> Function()? _resolveTenantTimezoneOverride;
 
   final draft = GroupParticipantDraftSet(equalSplit: true).obs;
   final isSaving = false.obs;
@@ -229,6 +235,7 @@ class GroupShiftEditController extends GetxController {
     try {
       final timeBased = isTimeBased;
       final equal = !timeBased && draft.value.equalSplit;
+      final tz = timeBased ? await _resolveTenantTimezone() : null;
       final updated = await _shifts.putParticipants(
         args.shift.id,
         ShiftParticipantsReplaceRequest(
@@ -246,8 +253,11 @@ class GroupShiftEditController extends GetxController {
                   timeWindows: [
                     for (final w in p.timeWindows)
                       ShiftParticipantTimeWindowInput(
-                        participantStartTime: w.start,
-                        participantEndTime: w.end,
+                        participantStartTime: tenantCivilInstantUtc(
+                          w.start,
+                          tz,
+                        ),
+                        participantEndTime: tenantCivilInstantUtc(w.end, tz),
                       ),
                   ],
                 )
@@ -277,5 +287,22 @@ class GroupShiftEditController extends GetxController {
     } finally {
       isSaving.value = false;
     }
+  }
+
+  Future<String?> _resolveTenantTimezone() async {
+    if (_resolveTenantTimezoneOverride != null) {
+      return _resolveTenantTimezoneOverride();
+    }
+    if (Get.isRegistered<SessionService>()) {
+      final sessionTz =
+          Get.find<SessionService>().tenantTimezone.value?.trim();
+      if (sessionTz != null && sessionTz.isNotEmpty) return sessionTz;
+    }
+    if (Get.isRegistered<StaffTenantSettingsController>()) {
+      final tz =
+          Get.find<StaffTenantSettingsController>().tenant.value?.timezone;
+      if (tz != null && tz.trim().isNotEmpty) return tz.trim();
+    }
+    return null;
   }
 }

@@ -738,15 +738,21 @@ class StaffVisitsController extends GetxController {
   Future<void> openEditGroup() async {
     final shift = selectedShift.value;
     if (shift == null || shift.status != 'draft') return;
+    // Board/list ShiftOut may only have participants_summary — refresh full
+    // detail before Edit so time_based windows are not wiped on Save.
+    await refreshSelectedShift(includeTravel: true);
+    final refreshed = selectedShift.value;
+    if (refreshed == null || refreshed.status != 'draft') return;
     final result = await Get.toNamed(
       AppRoutes.staffGroupShiftEdit,
-      arguments: shift,
+      arguments: refreshed,
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
       allocationHistory.clear();
+      await refreshSelectedShift(includeTravel: true);
     } else {
-      await refreshSelectedShift();
+      await refreshSelectedShift(includeTravel: true);
     }
   }
 
