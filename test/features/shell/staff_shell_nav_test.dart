@@ -136,12 +136,18 @@ void main() {
   });
 
   testWidgets(
-    'phone width shows bottom NavigationBar with Workforce when perms present',
+    'phone width shows bottom NavigationBar with Workforce and More',
     (tester) async {
       tokenStorage.claims = const JwtClaims(
         sub: 'u1',
         tenantId: 't1',
-        permissions: ['auth.session', 'contractors.read', 'jobs.read'],
+        permissions: [
+          'auth.session',
+          'contractors.read',
+          'clients.read',
+          'visits.read',
+          'payments.view',
+        ],
         actorType: 'tenant_member',
         iat: 1,
         exp: 2,
@@ -158,6 +164,34 @@ void main() {
       expect(find.byType(NavigationBar), findsOneWidget);
       expect(find.byType(NavigationRail), findsNothing);
       expect(find.text('Workforce'), findsOneWidget);
+      expect(find.text('More'), findsOneWidget);
+      expect(find.text('Payments'), findsNothing);
     },
   );
+
+  test('destination order is Home Roster Clients Workforce then overflow', () {
+    tokenStorage.claims = const JwtClaims(
+      sub: 'u1',
+      tenantId: 't1',
+      permissions: [
+        'auth.session',
+        'contractors.read',
+        'clients.read',
+        'visits.read',
+        'payments.view',
+        'billing.view',
+      ],
+      actorType: 'tenant_member',
+      iat: 1,
+      exp: 2,
+    );
+    final labels = StaffShellNav.destinations().map((d) => d.label).toList();
+    expect(labels.take(4).toList(), [
+      'Home',
+      'Roster',
+      'Clients',
+      'Workforce',
+    ]);
+    expect(labels.skip(4), containsAll(['Payments', 'Billing', 'Settings']));
+  });
 }
