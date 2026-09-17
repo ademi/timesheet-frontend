@@ -86,6 +86,9 @@ class SyncWorker with WidgetsBindingObserver {
       WidgetsBinding.instance.addObserver(this);
     }
     _sub = _connectivityStream.listen(_onConnectivity);
+    // Cold start: flush durable outbox once (online path succeeds; offline
+    // retries stay Pending via markAttempt).
+    unawaited(Future.microtask(flush));
   }
 
   void dispose() {

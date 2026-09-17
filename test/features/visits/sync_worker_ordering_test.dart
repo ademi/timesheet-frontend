@@ -210,6 +210,52 @@ void main() {
         ),
       );
 
+      final worker = SyncWorker(
+        store: store,
+        repository: visits,
+        connectivityStream: connectivity.stream,
+        observeLifecycle: false,
+        backoffForAttempt: (_) => Duration.zero,
+      );
+      worker.start();
+      addTearDown(worker.dispose);
+      // Drain cold-start microtask flush (empty outbox).
+      await Future<void>.delayed(Duration.zero);
+
+      await store.append(
+        _item(
+          id: 'e1',
+          visitId: 'v1',
+          kind: ClockOutboxKind.checkIn,
+          tap: '2026-09-07T08:00:00.000Z',
+        ),
+      );
+      expect(store.pending(), hasLength(1));
+
+      connectivity.add([ConnectivityResult.none]);
+      await Future<void>.delayed(Duration.zero);
+      expect(store.pending(), hasLength(1));
+
+      connectivity.add([ConnectivityResult.wifi]);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(store.pending(), isEmpty);
+    });
+
+    test('start flushes pending outbox via microtask', () async {
+      when(
+        () => visits.checkIn(
+          id: any(named: 'id'),
+          body: any(named: 'body'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer(
+        (_) async => const VisitCheckInOut(
+          visitId: 'v1',
+          status: 'checked_in',
+          timeEntryId: 'te-1',
+        ),
+      );
+
       await store.append(
         _item(
           id: 'e1',
@@ -222,18 +268,12 @@ void main() {
       final worker = SyncWorker(
         store: store,
         repository: visits,
-        connectivityStream: connectivity.stream,
+        connectivityStream: const Stream.empty(),
         observeLifecycle: false,
         backoffForAttempt: (_) => Duration.zero,
       );
       worker.start();
       addTearDown(worker.dispose);
-
-      connectivity.add([ConnectivityResult.none]);
-      await Future<void>.delayed(Duration.zero);
-      expect(store.pending(), hasLength(1));
-
-      connectivity.add([ConnectivityResult.wifi]);
       await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(store.pending(), isEmpty);
     });
