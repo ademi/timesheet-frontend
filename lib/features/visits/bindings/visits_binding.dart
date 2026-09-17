@@ -85,6 +85,11 @@ class VisitsBinding extends Bindings {
             Get.find<ContractorVisitsController>().onOutboxAcked(item);
           }
         },
+        onConflict: (item) {
+          if (Get.isRegistered<ContractorVisitsController>()) {
+            Get.find<ContractorVisitsController>().onOutboxConflict(item);
+          }
+        },
       );
       Get.put<SyncWorker>(worker, permanent: true);
       worker.start();

@@ -45,6 +45,17 @@ class OutboxStore {
     await _box.write(_key, next.map((e) => e.toJson()).toList());
   }
 
+  /// Remove a conflicted item after staff resolve (or contractor dismiss).
+  /// Non-conflict items are left untouched so Retry cannot accidentally ack.
+  Future<void> dismissConflict(String clientEventId) async {
+    final next = pending()
+        .where(
+          (e) => !(e.clientEventId == clientEventId && e.isConflict),
+        )
+        .toList();
+    await _box.write(_key, next.map((e) => e.toJson()).toList());
+  }
+
   void clearDestructive({required bool confirmDiscard}) {
     if (!confirmDiscard && pending().isNotEmpty) {
       throw StateError('outbox_not_empty');

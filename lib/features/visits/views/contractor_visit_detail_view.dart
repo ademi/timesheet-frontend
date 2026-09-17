@@ -130,6 +130,7 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                                 controller.selectedSyncUi ==
                                 VisitClockSyncUi.failed,
                             onRetry: controller.retryPendingSync,
+                            onDismiss: controller.dismissConflictForSelected,
                           ),
                         ],
                         if (briefCtrl != null)
@@ -236,10 +237,15 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
 }
 
 class _SyncChip extends StatelessWidget {
-  const _SyncChip({required this.failed, required this.onRetry});
+  const _SyncChip({
+    required this.failed,
+    required this.onRetry,
+    required this.onDismiss,
+  });
 
   final bool failed;
   final Future<void> Function() onRetry;
+  final Future<void> Function() onDismiss;
 
   @override
   Widget build(BuildContext context) {
@@ -263,16 +269,24 @@ class _SyncChip extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              failed ? 'Sync failed — retry' : 'Pending sync',
+              failed
+                  ? 'Sync conflict — staff must resolve, then dismiss'
+                  : 'Pending sync',
               style: TextStyle(
                 color: failed ? AppColors.error : AppColors.textMuted,
               ),
             ),
           ),
-          TextButton(
-            onPressed: () => onRetry(),
-            child: const Text('Retry'),
-          ),
+          if (failed)
+            TextButton(
+              onPressed: () => onDismiss(),
+              child: const Text('Dismiss'),
+            )
+          else
+            TextButton(
+              onPressed: () => onRetry(),
+              child: const Text('Retry'),
+            ),
         ],
       ),
     );

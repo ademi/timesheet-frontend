@@ -11,14 +11,14 @@ import 'outbox_store.dart';
 import 'sync_error_classifier.dart';
 
 /// D4: sort by tap time; defer complete while a check-in for the same visit
-/// is still pending. Skip items already marked as terminal conflicts.
+/// is still pending (non-conflict). Skip items already marked as terminal
+/// conflicts — conflicted check-ins must not block completes forever.
 List<ClockOutboxItem> orderedForFlush(List<ClockOutboxItem> pending) {
   final sorted = [...pending]
     ..sort((a, b) => a.tapTimeIso.compareTo(b.tapTimeIso));
   final out = <ClockOutboxItem>[];
-  // Conflict check-ins still block complete (same visit) until discarded.
   final checkInStillPending = sorted
-      .where((e) => e.kind == ClockOutboxKind.checkIn)
+      .where((e) => e.kind == ClockOutboxKind.checkIn && !e.isConflict)
       .map((e) => e.visitId)
       .toSet();
   for (final item in sorted) {
@@ -50,6 +50,7 @@ class SyncWorker with WidgetsBindingObserver {
     required this.repository,
     Stream<List<ConnectivityResult>>? connectivityStream,
     this.onAcked,
+    this.onConflict,
     this.onChanged,
     Duration Function(int attempts)? backoffForAttempt,
     bool observeLifecycle = true,
@@ -61,6 +62,7 @@ class SyncWorker with WidgetsBindingObserver {
   final OutboxStore store;
   final VisitsRepository repository;
   final void Function(ClockOutboxItem item)? onAcked;
+  final void Function(ClockOutboxItem item)? onConflict;
   final void Function()? onChanged;
   final Stream<List<ConnectivityResult>> _connectivityStream;
   final Duration Function(int attempts) _backoffForAttempt;
@@ -202,6 +204,7 @@ class SyncWorker with WidgetsBindingObserver {
           payloadJson: item.toConflictPayloadJson(),
         );
         await store.markConflict(item.clientEventId, detail);
+        onConflict?.call(item);
       } on AppFailure catch (reportErr) {
         // Could not report — keep retryable so we try conflict POST again.
         await store.markAttempt(

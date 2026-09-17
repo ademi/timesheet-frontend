@@ -72,6 +72,29 @@ void main() {
       ];
       expect(orderedForFlush(pending).single.clientEventId, 'c1');
     });
+
+    test('conflicted check-in does not block complete for same visit', () {
+      final pending = [
+        ClockOutboxItem(
+          clientEventId: 'i1',
+          visitId: 'v1',
+          kind: ClockOutboxKind.checkIn,
+          tapTimeIso: '2026-09-07T08:00:00.000Z',
+          locationStatus: 'unavailable',
+          locationFailReason: 'x',
+          deviceOffline: true,
+          isConflict: true,
+          lastError: 'invalid_visit_status',
+        ),
+        _item(
+          id: 'c1',
+          visitId: 'v1',
+          kind: ClockOutboxKind.complete,
+          tap: '2026-09-07T09:00:00.000Z',
+        ),
+      ];
+      expect(orderedForFlush(pending).single.clientEventId, 'c1');
+    });
   });
 
   group('SyncWorker flush', () {
@@ -213,6 +236,71 @@ void main() {
       connectivity.add([ConnectivityResult.wifi]);
       await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(store.pending(), isEmpty);
+    });
+
+    test('conflicted check-in does not block complete flush', () async {
+      when(
+        () => visits.complete(
+          id: any(named: 'id'),
+          body: any(named: 'body'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer(
+        (_) async => const VisitCompleteOut(
+          visitId: 'v1',
+          status: 'completed',
+        ),
+      );
+
+      await store.append(
+        ClockOutboxItem(
+          clientEventId: 'i1',
+          visitId: 'v1',
+          kind: ClockOutboxKind.checkIn,
+          tapTimeIso: '2026-09-07T08:00:00.000Z',
+          locationStatus: 'unavailable',
+          locationFailReason: 'x',
+          deviceOffline: true,
+          isConflict: true,
+          lastError: 'invalid_visit_status',
+        ),
+      );
+      await store.append(
+        _item(
+          id: 'c1',
+          visitId: 'v1',
+          kind: ClockOutboxKind.complete,
+          tap: '2026-09-07T09:00:00.000Z',
+        ),
+      );
+
+      final worker = SyncWorker(
+        store: store,
+        repository: visits,
+        connectivityStream: const Stream.empty(),
+        observeLifecycle: false,
+        backoffForAttempt: (_) => Duration.zero,
+      );
+      await worker.flush();
+
+      expect(
+        store.pending().map((e) => e.clientEventId).toList(),
+        ['i1'],
+      );
+      verify(
+        () => visits.complete(
+          id: 'v1',
+          body: any(named: 'body'),
+          idempotencyKey: 'c1',
+        ),
+      ).called(1);
+      verifyNever(
+        () => visits.checkIn(
+          id: any(named: 'id'),
+          body: any(named: 'body'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      );
     });
 
     test('markAttempt on network failure leaves item pending', () async {

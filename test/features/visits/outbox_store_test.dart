@@ -83,4 +83,36 @@ void main() {
     expect(item.lastError, 'invalid_visit_status');
     expect(item.attempts, 1);
   });
+
+  test('dismissConflict removes conflicted item only', () async {
+    await store.append(ClockOutboxItem(
+      clientEventId: 'conflict',
+      visitId: 'v1',
+      kind: ClockOutboxKind.checkIn,
+      tapTimeIso: DateTime.utc(2026, 9, 7, 8).toIso8601String(),
+      locationStatus: 'unavailable',
+      locationFailReason: 'x',
+      deviceOffline: true,
+    ));
+    await store.append(ClockOutboxItem(
+      clientEventId: 'pending',
+      visitId: 'v1',
+      kind: ClockOutboxKind.complete,
+      tapTimeIso: DateTime.utc(2026, 9, 7, 9).toIso8601String(),
+      locationStatus: 'unavailable',
+      locationFailReason: 'x',
+      deviceOffline: true,
+    ));
+    await store.markConflict('conflict', 'invalid_visit_status');
+
+    await store.dismissConflict('conflict');
+    expect(
+      store.pending().map((e) => e.clientEventId).toList(),
+      ['pending'],
+    );
+
+    // Non-conflict id is a no-op (does not ack pending items).
+    await store.dismissConflict('pending');
+    expect(store.pending().single.clientEventId, 'pending');
+  });
 }

@@ -81,6 +81,7 @@ void main() {
       return null;
     });
     registerFallbackValue(const VisitGpsBody(lat: 0, lng: 0));
+    registerFallbackValue(<String, dynamic>{});
   });
 
   tearDownAll(() async {
@@ -217,6 +218,121 @@ void main() {
 
     expect(store.pending(), isEmpty);
     expect(acked, isTrue);
+    expect(controller.selected.value?.status, 'checked_in');
+    expect(controller.selectedSyncUi, VisitClockSyncUi.none);
+  });
+
+  test('retryable markAttempt lastError stays Pending sync UI', () async {
+    await store.append(
+      ClockOutboxItem(
+        clientEventId: eventId,
+        visitId: 'visit-1',
+        kind: ClockOutboxKind.checkIn,
+        tapTimeIso: DateTime.utc(2026, 9, 7, 8).toIso8601String(),
+        locationStatus: 'unavailable',
+        locationFailReason: 'airplane',
+        deviceOffline: true,
+        attempts: 1,
+        lastError: 'offline',
+      ),
+    );
+    controller.outboxRevision.value++;
+    expect(controller.selectedSyncUi, VisitClockSyncUi.pending);
+  });
+
+  test('conflicted outbox maps to SyncFailed UI', () async {
+    await store.append(
+      ClockOutboxItem(
+        clientEventId: eventId,
+        visitId: 'visit-1',
+        kind: ClockOutboxKind.checkIn,
+        tapTimeIso: DateTime.utc(2026, 9, 7, 8).toIso8601String(),
+        locationStatus: 'unavailable',
+        locationFailReason: 'airplane',
+        deviceOffline: true,
+        isConflict: true,
+        lastError: 'invalid_visit_status',
+      ),
+    );
+    controller.outboxRevision.value++;
+    expect(controller.selectedSyncUi, VisitClockSyncUi.failed);
+    expect(controller.selectedHasConflict, isTrue);
+  });
+
+  test('dismissConflictForSelected clears conflicted item', () async {
+    await store.append(
+      ClockOutboxItem(
+        clientEventId: eventId,
+        visitId: 'visit-1',
+        kind: ClockOutboxKind.checkIn,
+        tapTimeIso: DateTime.utc(2026, 9, 7, 8).toIso8601String(),
+        locationStatus: 'unavailable',
+        locationFailReason: 'airplane',
+        deviceOffline: true,
+        isConflict: true,
+        lastError: 'invalid_visit_status',
+      ),
+    );
+    controller.outboxRevision.value++;
+    await controller.dismissConflictForSelected();
+    expect(store.pending(), isEmpty);
+    expect(controller.selectedSyncUi, VisitClockSyncUi.none);
+  });
+
+  test('terminal conflict reverts optimistic checked_in', () async {
+    when(
+      () => visits.checkIn(
+        id: any(named: 'id'),
+        body: any(named: 'body'),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    ).thenThrow(
+      const AppFailure(
+        code: 'invalid_visit_status',
+        message: 'Cannot change this visit in its current status.',
+        presentation: AppFailurePresentation.toast,
+        statusCode: 409,
+      ),
+    );
+    when(
+      () => visits.reportSyncConflict(
+        visitId: any(named: 'visitId'),
+        clientEventId: any(named: 'clientEventId'),
+        kind: any(named: 'kind'),
+        failureDetail: any(named: 'failureDetail'),
+        payloadJson: any(named: 'payloadJson'),
+      ),
+    ).thenAnswer((_) async {});
+
+    await controller.checkIn();
+
+    expect(store.pending().single.isConflict, isTrue);
+    expect(controller.selected.value?.status, 'scheduled');
+    expect(controller.selectedSyncUi, VisitClockSyncUi.failed);
+  });
+
+  test('refresh dismisses conflict when server already advanced', () async {
+    await store.append(
+      ClockOutboxItem(
+        clientEventId: eventId,
+        visitId: 'visit-1',
+        kind: ClockOutboxKind.checkIn,
+        tapTimeIso: DateTime.utc(2026, 9, 7, 8).toIso8601String(),
+        locationStatus: 'unavailable',
+        locationFailReason: 'airplane',
+        deviceOffline: true,
+        isConflict: true,
+        lastError: 'invalid_visit_status',
+      ),
+    );
+    controller.outboxRevision.value++;
+    when(() => visits.getVisit('visit-1')).thenAnswer(
+      (_) async => _visit(status: 'checked_in'),
+    );
+
+    await controller.refreshSelected();
+
+    expect(store.pending(), isEmpty);
     expect(controller.selected.value?.status, 'checked_in');
     expect(controller.selectedSyncUi, VisitClockSyncUi.none);
   });

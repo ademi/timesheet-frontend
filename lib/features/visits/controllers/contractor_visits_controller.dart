@@ -21,6 +21,16 @@ import '../sync/sync_worker.dart';
 
 enum VisitClockSyncUi { none, pending, failed }
 
+/// Maps outbox rows for a visit to chip state.
+/// Retryable [ClockOutboxItem.lastError] stays Pending; only [isConflict]
+/// (terminal) maps to SyncFailed.
+VisitClockSyncUi clockSyncUiFor(Iterable<ClockOutboxItem> items) {
+  final list = items.toList(growable: false);
+  if (list.isEmpty) return VisitClockSyncUi.none;
+  if (list.any((e) => e.isConflict)) return VisitClockSyncUi.failed;
+  return VisitClockSyncUi.pending;
+}
+
 class ContractorVisitsController extends GetxController {
   ContractorVisitsController({
     required VisitsRepository repository,
@@ -93,17 +103,29 @@ class ContractorVisitsController extends GetxController {
 
   VisitClockSyncUi syncUiFor(String visitId) {
     outboxRevision.value;
-    final items =
-        outbox.pending().where((e) => e.visitId == visitId).toList();
-    if (items.isEmpty) return VisitClockSyncUi.none;
-    if (items.any((e) => e.lastError != null)) return VisitClockSyncUi.failed;
-    return VisitClockSyncUi.pending;
+    return clockSyncUiFor(
+      outbox.pending().where((e) => e.visitId == visitId),
+    );
+  }
+
+  /// True when this visit has a terminal conflicted outbox row.
+  bool hasConflictFor(String visitId) {
+    outboxRevision.value;
+    return outbox
+        .pending()
+        .any((e) => e.visitId == visitId && e.isConflict);
   }
 
   VisitClockSyncUi get selectedSyncUi {
     final id = selected.value?.id;
     if (id == null) return VisitClockSyncUi.none;
     return syncUiFor(id);
+  }
+
+  bool get selectedHasConflict {
+    final id = selected.value?.id;
+    if (id == null) return false;
+    return hasConflictFor(id);
   }
 
   void _bumpOutbox() => outboxRevision.value++;
@@ -144,6 +166,65 @@ class ContractorVisitsController extends GetxController {
         AppToast.success('Completed', 'Visit marked completed.');
       }
     });
+  }
+
+  /// SyncWorker / immediate push marked a terminal conflict — drop optimistic
+  /// checked_in/completed so the UI does not claim a status the server denied.
+  void onOutboxConflict(ClockOutboxItem item) {
+    _bumpOutbox();
+    _revertOptimisticStatus(item);
+  }
+
+  Future<void> dismissConflictForSelected() async {
+    final id = selected.value?.id;
+    if (id == null) return;
+    final conflicts = outbox
+        .pending()
+        .where((e) => e.visitId == id && e.isConflict)
+        .toList(growable: false);
+    for (final item in conflicts) {
+      await outbox.dismissConflict(item.clientEventId);
+    }
+    _bumpOutbox();
+  }
+
+  void _revertOptimisticStatus(ClockOutboxItem item) {
+    VisitOut revert(VisitOut v) {
+      if (item.kind == ClockOutboxKind.checkIn) {
+        return v.copyWith(status: 'scheduled', clearCompletedAt: true);
+      }
+      return v.copyWith(status: 'checked_in', clearCompletedAt: true);
+    }
+
+    final sel = selected.value;
+    if (sel != null && sel.id == item.visitId) {
+      selected.value = revert(sel);
+    }
+    final idx = visits.indexWhere((v) => v.id == item.visitId);
+    if (idx >= 0) {
+      visits[idx] = revert(visits[idx]);
+    }
+  }
+
+  /// After staff force-accept/discard, server status may already match the
+  /// punch — clear local conflict rows so completes are not blocked forever.
+  Future<void> _dismissConflictsResolvedByServer(VisitOut visit) async {
+    final conflicts = outbox
+        .pending()
+        .where((e) => e.visitId == visit.id && e.isConflict)
+        .toList(growable: false);
+    if (conflicts.isEmpty) return;
+    var changed = false;
+    for (final item in conflicts) {
+      final resolved = switch (item.kind) {
+        ClockOutboxKind.checkIn => visit.isCheckedIn || visit.isCompleted,
+        ClockOutboxKind.complete => visit.isCompleted,
+      };
+      if (!resolved) continue;
+      await outbox.dismissConflict(item.clientEventId);
+      changed = true;
+    }
+    if (changed) _bumpOutbox();
   }
 
   @override
@@ -264,6 +345,7 @@ class ContractorVisitsController extends GetxController {
       if (idx >= 0) {
         visits[idx] = visit;
       }
+      await _dismissConflictsResolvedByServer(visit);
     } on AppFailure catch (e) {
       if (!_isRetryableFailure(e) || syncUiFor(id) == VisitClockSyncUi.none) {
         errorMessage.value = e.message;
@@ -497,7 +579,7 @@ class ContractorVisitsController extends GetxController {
             payloadJson: item.toConflictPayloadJson(),
           );
           await outbox.markConflict(item.clientEventId, detail);
-          _bumpOutbox();
+          onOutboxConflict(item);
         } on AppFailure {
           await outbox.markAttempt(item.clientEventId, e.message);
           _bumpOutbox();

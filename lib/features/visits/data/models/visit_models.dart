@@ -338,6 +338,7 @@ class VisitOut {
   VisitOut copyWith({
     String? status,
     DateTime? completedAt,
+    bool clearCompletedAt = false,
     DateTime? clockInAt,
     DateTime? clockOutAt,
     List<VisitTaskOut>? tasks,
@@ -363,7 +364,8 @@ class VisitOut {
       geofenceRadiusM: geofenceRadiusM,
       geofenceMode: geofenceMode,
       paymentStatus: paymentStatus,
-      completedAt: completedAt ?? this.completedAt,
+      completedAt:
+          clearCompletedAt ? null : (completedAt ?? this.completedAt),
       clockInAt: clockInAt ?? this.clockInAt,
       clockOutAt: clockOutAt ?? this.clockOutAt,
       jobTitle: jobTitle,
