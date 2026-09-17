@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/attendance_review_controller.dart';
 import '../data/attendance_review_models.dart';
+
+/// Prefer a short visit ref over a full UUID in list subtitles.
+String attendanceVisitSubtitleRef(String visitId) {
+  final trimmed = visitId.trim();
+  if (trimmed.isEmpty) return '';
+  if (trimmed.length <= 8) return trimmed;
+  return trimmed.substring(0, 8);
+}
 
 class AttendanceReviewView extends GetView<AttendanceReviewController> {
   const AttendanceReviewView({super.key});
@@ -83,10 +92,42 @@ class AttendanceReviewView extends GetView<AttendanceReviewController> {
                                 ? ListView(
                                   physics:
                                       const AlwaysScrollableScrollPhysics(),
-                                  children: const [
-                                    SizedBox(height: 80),
-                                    Center(
-                                      child: Text('Nothing to review.'),
+                                  children: [
+                                    const SizedBox(height: 80),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 32,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            'You\'re all caught up',
+                                            textAlign: TextAlign.center,
+                                            style: Get.textTheme.titleMedium,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'No GPS exceptions or sync conflicts '
+                                            'need review right now.',
+                                            textAlign: TextAlign.center,
+                                            style: Get.textTheme.bodyMedium
+                                                ?.copyWith(
+                                              color: AppColors.textMuted,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 20),
+                                          TextButton.icon(
+                                            onPressed:
+                                                () => Get.toNamed(
+                                                  AppRoutes.staffVisits,
+                                                ),
+                                            icon: const Icon(
+                                              Icons.calendar_today_outlined,
+                                            ),
+                                            label: const Text('Go to visits'),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 )
@@ -131,7 +172,14 @@ class AttendanceReviewView extends GetView<AttendanceReviewController> {
                                         onForceAccept:
                                             () => _promptNote(
                                               context,
-                                              title: 'Force accept sync',
+                                              title:
+                                                  'Record attendance despite failed clock?',
+                                              body:
+                                                  'This writes attendance from the '
+                                                  'contractor\'s frozen punch even '
+                                                  'though the clock sync failed. '
+                                                  'Only continue if you have verified '
+                                                  'the visit happened.',
                                               confirmLabel: 'Force accept',
                                               requireMinLength:
                                                   AttendanceReviewController
@@ -171,37 +219,64 @@ class AttendanceReviewView extends GetView<AttendanceReviewController> {
   Future<void> _promptNote(
     BuildContext context, {
     required String title,
+    String? body,
     required String confirmLabel,
     required int requireMinLength,
     required Future<bool> Function(String note) onConfirm,
   }) async {
     final noteCtrl = TextEditingController();
     final result = await Get.dialog<String>(
-      AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: noteCtrl,
-          autofocus: true,
-          maxLines: 3,
-          decoration: InputDecoration(
-            labelText:
-                requireMinLength > 0
-                    ? 'Note (min $requireMinLength characters)'
-                    : 'Note (optional)',
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
-          AsyncElevatedButton(
-            onPressed: () => Get.back(result: noteCtrl.text),
-            isLoading: false,
-            child: Text(confirmLabel),
-          ),
-        ],
+      StatefulBuilder(
+        builder: (context, setState) {
+          final noteLen = noteCtrl.text.trim().length;
+          final canConfirm =
+              requireMinLength <= 0 || noteLen >= requireMinLength;
+          return AlertDialog(
+            title: Text(title),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (body != null) ...[
+                  Text(
+                    body,
+                    style: Get.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                TextField(
+                  controller: noteCtrl,
+                  autofocus: true,
+                  maxLines: 3,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText:
+                        requireMinLength > 0
+                            ? 'Note (min $requireMinLength characters)'
+                            : 'Note (optional)',
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(),
+                child: const Text('Cancel'),
+              ),
+              AsyncElevatedButton(
+                onPressed:
+                    canConfirm
+                        ? () => Get.back(result: noteCtrl.text)
+                        : null,
+                isLoading: false,
+                child: Text(confirmLabel),
+              ),
+            ],
+          );
+        },
       ),
     );
     noteCtrl.dispose();
@@ -230,6 +305,10 @@ class _ReviewTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isGps = item.kind == AttendanceReviewKind.exception;
+    final visitRef = attendanceVisitSubtitleRef(item.visitId);
+    final subtitle = visitRef.isEmpty
+        ? item.detail
+        : '${item.detail} · $visitRef';
     return Material(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(8),
@@ -250,7 +329,7 @@ class _ReviewTile extends StatelessWidget {
                       Text(item.headline, style: Get.textTheme.titleSmall),
                       const SizedBox(height: 2),
                       Text(
-                        '${item.detail} · visit ${item.visitId}',
+                        subtitle,
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textMuted,
