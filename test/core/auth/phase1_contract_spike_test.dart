@@ -122,10 +122,12 @@ void main() {
         'lat': -33.8688,
         'lng': 151.2093,
         'accuracy_m': 12.5,
+        'location_status': 'captured',
       });
 
       const withoutAccuracy = VisitGpsBody(lat: 1, lng: 2);
       expect(withoutAccuracy.toJson().containsKey('accuracy_m'), isFalse);
+      expect(withoutAccuracy.toJson()['location_status'], 'captured');
     });
 
     test('UploadUrlResponse parses finalize bootstrap fields', () {

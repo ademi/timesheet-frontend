@@ -1,5 +1,8 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
@@ -11,6 +14,11 @@ import '../../shifts/data/repositories/shifts_repository.dart';
 import '../data/models/visit_models.dart';
 import '../data/repositories/visits_repository.dart';
 import '../services/visit_location_service.dart';
+import '../sync/outbox_models.dart';
+import '../sync/outbox_store.dart';
+import '../sync/sync_worker.dart';
+
+enum VisitClockSyncUi { none, pending, failed }
 
 class ContractorVisitsController extends GetxController {
   ContractorVisitsController({
@@ -18,15 +26,32 @@ class ContractorVisitsController extends GetxController {
     required ShiftsRepository shiftsRepository,
     required SessionService session,
     VisitLocationService location = const VisitLocationService(),
+    OutboxStore? outbox,
+    SyncWorker? syncWorker,
+    Future<bool> Function()? isDeviceOffline,
+    String Function()? newEventId,
   }) : _repository = repository,
        _shiftsRepository = shiftsRepository,
        _session = session,
-       _location = location;
+       _location = location,
+       _outboxOverride = outbox,
+       _syncWorkerOverride = syncWorker,
+       _isDeviceOffline = isDeviceOffline,
+       _newEventId = newEventId ?? const Uuid().v4;
 
   final VisitsRepository _repository;
   final ShiftsRepository _shiftsRepository;
   final SessionService _session;
   final VisitLocationService _location;
+  final OutboxStore? _outboxOverride;
+  final SyncWorker? _syncWorkerOverride;
+  final Future<bool> Function()? _isDeviceOffline;
+  final String Function() _newEventId;
+
+  late final OutboxStore outbox;
+  SyncWorker? _syncWorker;
+
+  SyncWorker get syncWorker => _syncWorker!;
 
   final visits = <VisitOut>[].obs;
   final openShifts = <OpenShiftOut>[].obs;
@@ -36,6 +61,9 @@ class ContractorVisitsController extends GetxController {
   final isSaving = false.obs;
   final isRefreshing = false.obs;
   final errorMessage = RxnString();
+
+  /// Bumped when outbox changes so Obx rebuilds sync chips.
+  final outboxRevision = 0.obs;
 
   final manualTemplateIdCtrl = TextEditingController();
 
@@ -62,10 +90,59 @@ class ContractorVisitsController extends GetxController {
     return visit.formSubmissions.any((s) => s.formTemplateId == formTemplateId);
   }
 
+  VisitClockSyncUi syncUiFor(String visitId) {
+    outboxRevision.value;
+    final items =
+        outbox.pending().where((e) => e.visitId == visitId).toList();
+    if (items.isEmpty) return VisitClockSyncUi.none;
+    if (items.any((e) => e.lastError != null)) return VisitClockSyncUi.failed;
+    return VisitClockSyncUi.pending;
+  }
+
+  VisitClockSyncUi get selectedSyncUi {
+    final id = selected.value?.id;
+    if (id == null) return VisitClockSyncUi.none;
+    return syncUiFor(id);
+  }
+
+  void _bumpOutbox() => outboxRevision.value++;
+
   @override
   void onInit() {
     super.onInit();
+    outbox =
+        _outboxOverride ??
+        (Get.isRegistered<OutboxStore>()
+            ? Get.find<OutboxStore>()
+            : OutboxStore(GetStorage()));
+    _syncWorker =
+        _syncWorkerOverride ??
+        (Get.isRegistered<SyncWorker>() ? Get.find<SyncWorker>() : null);
+    // Ensure injected / found worker notifies this controller.
     load();
+  }
+
+  /// Bind ACK callbacks when the shared worker was created by [VisitsBinding].
+  void attachSyncWorker(SyncWorker worker) {
+    _syncWorker = worker;
+  }
+
+  void onOutboxAcked(ClockOutboxItem item) {
+    _bumpOutbox();
+    final selectedId = selected.value?.id;
+    if (selectedId != item.visitId) return;
+    refreshSelected().then((_) {
+      // Skip toast when no navigator overlay (unit tests).
+      if (Get.overlayContext == null) return;
+      if (item.kind == ClockOutboxKind.checkIn) {
+        AppToast.success(
+          'Checked in',
+          'Visit is now ${selected.value?.status ?? 'checked_in'}.',
+        );
+      } else {
+        AppToast.success('Completed', 'Visit marked completed.');
+      }
+    });
   }
 
   @override
@@ -98,8 +175,6 @@ class ContractorVisitsController extends GetxController {
       list.sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
       visits.assignAll(list);
     } on AppFailure catch (e) {
-      // A contractor with no tenant engagement gets a "tenant_id claim missing"
-      // error from the API. Treat it as an empty list rather than an error.
       if (_isTenantMissingError(e)) {
         visits.clear();
       } else {
@@ -189,7 +264,9 @@ class ContractorVisitsController extends GetxController {
         visits[idx] = visit;
       }
     } on AppFailure catch (e) {
-      errorMessage.value = e.message;
+      if (!_isRetryableFailure(e) || syncUiFor(id) == VisitClockSyncUi.none) {
+        errorMessage.value = e.message;
+      }
     } finally {
       isRefreshing.value = false;
     }
@@ -247,6 +324,11 @@ class ContractorVisitsController extends GetxController {
     }
   }
 
+  Future<void> retryPendingSync() async {
+    final worker = _syncWorker;
+    if (worker != null) await worker.flush();
+  }
+
   Future<void> checkIn() async {
     final visit = selected.value;
     if (visit == null) return;
@@ -256,19 +338,45 @@ class ContractorVisitsController extends GetxController {
     }
     isSaving.value = true;
     errorMessage.value = null;
+    String? clientEventId;
     try {
-      final gps = await _location.requireGps();
-      final result = await _repository.checkIn(
-        id: visit.id,
-        body: gps,
-        idempotencyKey: 'checkin-${visit.id}',
+      final gps = await _location.tryGps();
+      clientEventId = _newEventId();
+      final tapTime = DateTime.now().toUtc();
+      final offline = await _resolveDeviceOffline();
+      final item = ClockOutboxItem(
+        clientEventId: clientEventId,
+        visitId: visit.id,
+        kind: ClockOutboxKind.checkIn,
+        tapTimeIso: tapTime.toIso8601String(),
+        locationStatus: gps.status,
+        locationFailReason: gps.failReason,
+        lat: gps.body?.lat,
+        lng: gps.body?.lng,
+        accuracyM: gps.body?.accuracyM,
+        deviceOffline: offline,
       );
-      selected.value = visit.copyWith(status: result.status);
-      await refreshSelected();
-      AppToast.success('Checked in', 'Visit is now ${result.status}.');
-    } on VisitLocationException catch (e) {
-      errorMessage.value = e.message;
+      await outbox.append(item);
+      _bumpOutbox();
+      selected.value = visit.copyWith(status: 'checked_in');
+
+      final acked = await _tryPushNow(item);
+      if (acked) {
+        await outbox.ack(clientEventId);
+        _bumpOutbox();
+        await refreshSelected();
+        AppToast.success(
+          'Checked in',
+          'Visit is now ${selected.value?.status ?? 'checked_in'}.',
+        );
+      }
+      // else: leave Pending — no success toast without ACK
     } on AppFailure catch (e) {
+      if (clientEventId != null) {
+        await outbox.ack(clientEventId);
+        _bumpOutbox();
+      }
+      selected.value = visit;
       errorMessage.value = e.message;
     } catch (e) {
       errorMessage.value = e.toString();
@@ -286,22 +394,44 @@ class ContractorVisitsController extends GetxController {
     }
     isSaving.value = true;
     errorMessage.value = null;
+    String? clientEventId;
     try {
-      final gps = await _location.requireGps();
-      final result = await _repository.complete(
-        id: visit.id,
-        body: gps,
-        idempotencyKey: 'complete-${visit.id}',
+      final gps = await _location.tryGps();
+      clientEventId = _newEventId();
+      final tapTime = DateTime.now().toUtc();
+      final offline = await _resolveDeviceOffline();
+      final item = ClockOutboxItem(
+        clientEventId: clientEventId,
+        visitId: visit.id,
+        kind: ClockOutboxKind.complete,
+        tapTimeIso: tapTime.toIso8601String(),
+        locationStatus: gps.status,
+        locationFailReason: gps.failReason,
+        lat: gps.body?.lat,
+        lng: gps.body?.lng,
+        accuracyM: gps.body?.accuracyM,
+        deviceOffline: offline,
       );
+      await outbox.append(item);
+      _bumpOutbox();
       selected.value = visit.copyWith(
-        status: result.status,
-        completedAt: result.completedAt,
+        status: 'completed',
+        completedAt: tapTime,
       );
-      await refreshSelected();
-      AppToast.success('Completed', 'Visit marked completed.');
-    } on VisitLocationException catch (e) {
-      errorMessage.value = e.message;
+
+      final acked = await _tryPushNow(item);
+      if (acked) {
+        await outbox.ack(clientEventId);
+        _bumpOutbox();
+        await refreshSelected();
+        AppToast.success('Completed', 'Visit marked completed.');
+      }
     } on AppFailure catch (e) {
+      if (clientEventId != null) {
+        await outbox.ack(clientEventId);
+        _bumpOutbox();
+      }
+      selected.value = visit;
       if (e.code == 'forms_incomplete' ||
           e.code == 'required_forms_incomplete') {
         errorMessage.value =
@@ -319,6 +449,55 @@ class ContractorVisitsController extends GetxController {
       isSaving.value = false;
     }
   }
+
+  /// Immediate push; returns true on ACK. Network failures return false.
+  /// Non-retryable [AppFailure] is rethrown (caller removes outbox item).
+  Future<bool> _tryPushNow(ClockOutboxItem item) async {
+    try {
+      final body = gpsBodyFromOutbox(item);
+      if (item.kind == ClockOutboxKind.checkIn) {
+        await _repository.checkIn(
+          id: item.visitId,
+          body: body,
+          idempotencyKey: item.clientEventId,
+        );
+      } else {
+        await _repository.complete(
+          id: item.visitId,
+          body: body,
+          idempotencyKey: item.clientEventId,
+        );
+      }
+      return true;
+    } on AppFailure catch (e) {
+      if (_isRetryableFailure(e)) {
+        // Leave Pending without lastError so UI stays "Pending sync".
+        return false;
+      }
+      rethrow;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> _resolveDeviceOffline() async {
+    final check = _isDeviceOffline;
+    if (check != null) return check();
+    try {
+      final results = await Connectivity().checkConnectivity();
+      return results.isEmpty ||
+          results.every((r) => r == ConnectivityResult.none);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static bool _isRetryableFailure(AppFailure e) {
+    if (e.code == 'network_error' || e.code == 'cors_or_network') return true;
+    final code = e.statusCode;
+    if (code == null) return true;
+    return code >= 500;
+  }
 }
 
 String? _visitIdFromArgs(Object? arg) {
@@ -327,8 +506,6 @@ String? _visitIdFromArgs(Object? arg) {
   return null;
 }
 
-/// Returns true when the API error indicates the contractor has no tenant
-/// engagement yet (not a real error for a newly registered contractor).
 bool _isTenantMissingError(AppFailure e) {
   final msg = e.message.toLowerCase();
   final code = e.code.toLowerCase();

@@ -383,16 +383,36 @@ class VisitOut {
 }
 
 class VisitGpsBody {
-  const VisitGpsBody({required this.lat, required this.lng, this.accuracyM});
+  const VisitGpsBody({
+    this.lat,
+    this.lng,
+    this.accuracyM,
+    this.clientEventId,
+    this.tapTime,
+    this.locationStatus = 'captured',
+    this.locationFailReason,
+    this.deviceOffline = false,
+  });
 
-  final double lat;
-  final double lng;
+  final double? lat;
+  final double? lng;
   final double? accuracyM;
+  final String? clientEventId;
+  final DateTime? tapTime;
+  final String locationStatus;
+  final String? locationFailReason;
+  final bool deviceOffline;
 
   Map<String, dynamic> toJson() => {
-    'lat': lat,
-    'lng': lng,
+    if (lat != null) 'lat': lat,
+    if (lng != null) 'lng': lng,
     if (accuracyM != null) 'accuracy_m': accuracyM,
+    if (clientEventId != null) 'client_event_id': clientEventId,
+    if (tapTime != null) 'tap_time': tapTime!.toUtc().toIso8601String(),
+    'location_status': locationStatus,
+    if (locationFailReason != null)
+      'location_fail_reason': locationFailReason,
+    if (deviceOffline) 'device_offline': deviceOffline,
   };
 }
 

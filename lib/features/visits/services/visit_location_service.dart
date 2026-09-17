@@ -1,11 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:geolocator/geolocator.dart';
 
 import '../data/models/visit_models.dart';
 
+/// Result of a best-effort GPS capture for offline-first check-in.
+class GpsAttempt {
+  const GpsAttempt.captured(this.body)
+      : status = 'captured',
+        failReason = null;
+  const GpsAttempt.failed(this.status, this.failReason) : body = null;
+
+  final VisitGpsBody? body;
+  final String status; // captured|unavailable|denied|timeout|skipped
+  final String? failReason;
+}
+
 /// GPS helper for visit check-in / complete.
 ///
 /// Web: always blocked (design §6.8). Mobile: requests permission + position.
+/// Offline path uses [tryGps] which never blocks the punch on GPS failure.
 class VisitLocationService {
   const VisitLocationService();
 
@@ -13,6 +28,28 @@ class VisitLocationService {
 
   static const webBlockedMessage =
       'Check-in requires the mobile app with location enabled';
+
+  /// Best-effort GPS; returns failed status instead of throwing (except web skip).
+  Future<GpsAttempt> tryGps({
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    if (kIsWeb) {
+      return const GpsAttempt.failed('skipped', 'web_unsupported');
+    }
+    try {
+      final body = await requireGps().timeout(timeout);
+      return GpsAttempt.captured(body);
+    } on VisitLocationException catch (e) {
+      final lower = e.message.toLowerCase();
+      final status =
+          lower.contains('denied') || lower.contains('permanently')
+              ? 'denied'
+              : 'unavailable';
+      return GpsAttempt.failed(status, e.message);
+    } on TimeoutException {
+      return const GpsAttempt.failed('timeout', 'gps_timeout');
+    }
+  }
 
   /// Returns GPS body, or throws [VisitLocationException].
   Future<VisitGpsBody> requireGps() async {

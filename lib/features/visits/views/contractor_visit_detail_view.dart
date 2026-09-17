@@ -122,6 +122,16 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                             ),
                           ),
                         ],
+                        if (controller.selectedSyncUi !=
+                            VisitClockSyncUi.none) ...[
+                          const SizedBox(height: 12),
+                          _SyncChip(
+                            failed:
+                                controller.selectedSyncUi ==
+                                VisitClockSyncUi.failed,
+                            onRetry: controller.retryPendingSync,
+                          ),
+                        ],
                         if (briefCtrl != null)
                           ShiftBriefPanel(
                             brief: brief,
@@ -221,6 +231,50 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
           ],
         );
       }),
+    );
+  }
+}
+
+class _SyncChip extends StatelessWidget {
+  const _SyncChip({required this.failed, required this.onRetry});
+
+  final bool failed;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color:
+            failed
+                ? AppColors.errorBackground
+                : AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            failed ? Icons.sync_problem : Icons.cloud_upload_outlined,
+            size: 18,
+            color: failed ? AppColors.error : AppColors.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              failed ? 'Sync failed — retry' : 'Pending sync',
+              style: TextStyle(
+                color: failed ? AppColors.error : AppColors.textMuted,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => onRetry(),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
     );
   }
 }

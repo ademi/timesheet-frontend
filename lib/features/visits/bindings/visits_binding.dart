@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
@@ -20,6 +21,8 @@ import '../controllers/visit_shift_brief_controller.dart';
 import '../data/datasources/visits_remote_datasource.dart';
 import '../data/repositories/visits_repository.dart';
 import '../services/visit_location_service.dart';
+import '../sync/outbox_store.dart';
+import '../sync/sync_worker.dart';
 
 class VisitsBinding extends Bindings {
   @override
@@ -64,6 +67,27 @@ class VisitsBinding extends Bindings {
     if (!Get.isRegistered<VisitLocationService>()) {
       Get.put<VisitLocationService>(const VisitLocationService());
     }
+    if (!Get.isRegistered<OutboxStore>()) {
+      Get.put<OutboxStore>(OutboxStore(GetStorage()), permanent: true);
+    }
+    if (!Get.isRegistered<SyncWorker>()) {
+      final worker = SyncWorker(
+        store: Get.find<OutboxStore>(),
+        repository: Get.find<VisitsRepository>(),
+        onChanged: () {
+          if (Get.isRegistered<ContractorVisitsController>()) {
+            Get.find<ContractorVisitsController>().outboxRevision.value++;
+          }
+        },
+        onAcked: (item) {
+          if (Get.isRegistered<ContractorVisitsController>()) {
+            Get.find<ContractorVisitsController>().onOutboxAcked(item);
+          }
+        },
+      );
+      Get.put<SyncWorker>(worker, permanent: true);
+      worker.start();
+    }
   }
 }
 
@@ -101,14 +125,15 @@ class ContractorVisitsBinding extends Bindings {
     VisitsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<ContractorVisitsController>()) {
-      Get.put(
-        ContractorVisitsController(
-          repository: Get.find<VisitsRepository>(),
-          shiftsRepository: Get.find<ShiftsRepository>(),
-          session: Get.find<SessionService>(),
-          location: Get.find<VisitLocationService>(),
-        ),
+      final controller = ContractorVisitsController(
+        repository: Get.find<VisitsRepository>(),
+        shiftsRepository: Get.find<ShiftsRepository>(),
+        session: Get.find<SessionService>(),
+        location: Get.find<VisitLocationService>(),
+        outbox: Get.find<OutboxStore>(),
+        syncWorker: Get.find<SyncWorker>(),
       );
+      Get.put(controller);
     }
     if (!Get.isRegistered<VisitShiftBriefController>()) {
       Get.put(VisitShiftBriefController(repo: Get.find<VisitsRepository>()));
