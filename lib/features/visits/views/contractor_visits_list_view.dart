@@ -5,6 +5,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
+import '../../shifts/utils/participant_display.dart';
 import '../controllers/contractor_visits_controller.dart';
 
 String _fmt(DateTime dt) {
@@ -148,8 +149,28 @@ class _OpenShiftsList extends StatelessWidget {
                             shift.jobTitle,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          if (shift.clientName?.isNotEmpty == true)
-                            Text(shift.clientName!),
+                          Builder(
+                            builder: (context) {
+                              final active = shift.activeParticipantsSummary;
+                              final groupLabel = rosterTileLabel([
+                                for (final p in active)
+                                  if (p.participantName != null)
+                                    p.participantName!,
+                              ]);
+                              if (groupLabel.isNotEmpty) {
+                                return Text(
+                                  active.length >= 2
+                                      ? '$groupLabel · '
+                                          '${staffParticipantLabel(shift.workerCount, active.length)}'
+                                      : groupLabel,
+                                );
+                              }
+                              if (shift.clientName?.isNotEmpty == true) {
+                                return Text(shift.clientName!);
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
                           Text(
                             '${_fmt(shift.scheduledStart)}'
                             '${shift.suburb != null ? ' · ${shift.suburb}' : ''}',

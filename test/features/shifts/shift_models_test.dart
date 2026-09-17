@@ -524,4 +524,45 @@ void main() {
     expect(entry.changeReason, 'Left early');
     expect(entry.changedByUserId, 'user-1');
   });
+
+  test('OpenShiftOut parses worker_count and participants_summary', () {
+    final shift = OpenShiftOut.fromJson({
+      'id': 'shift-1',
+      'job_title': 'Community access',
+      'client_name': 'Host Client',
+      'scheduled_start': '2026-09-17T09:00:00Z',
+      'scheduled_end': '2026-09-17T12:00:00Z',
+      'required_slots': 1,
+      'open_slots': 1,
+      'worker_count': 2,
+      'participants_summary': [
+        {
+          'id': 'sp-1',
+          'participant_id': 'c-1',
+          'participant_name': 'Maya Smith',
+          'status': 'active',
+        },
+        {
+          'id': 'sp-2',
+          'participant_id': 'c-2',
+          'participant_name': 'Jordan Lee',
+          'status': 'active',
+        },
+        {
+          'id': 'sp-3',
+          'participant_id': 'c-3',
+          'participant_name': 'Removed',
+          'status': 'removed',
+        },
+      ],
+    });
+
+    expect(shift.workerCount, 2);
+    expect(shift.participantsSummary, hasLength(3));
+    expect(shift.activeParticipantsSummary, hasLength(2));
+    expect(
+      shift.activeParticipantsSummary.map((p) => p.participantName),
+      ['Maya Smith', 'Jordan Lee'],
+    );
+  });
 }

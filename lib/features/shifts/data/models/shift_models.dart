@@ -357,6 +357,8 @@ class OpenShiftOut {
     required this.openSlots,
     this.suburb,
     this.postalCode,
+    this.workerCount = 1,
+    this.participantsSummary = const [],
   });
 
   final String id;
@@ -368,8 +370,17 @@ class OpenShiftOut {
   final int openSlots;
   final String? suburb;
   final String? postalCode;
+  final int workerCount;
+  final List<ShiftParticipantOut> participantsSummary;
+
+  /// Active participants on this open shift (billable group set).
+  List<ShiftParticipantOut> get activeParticipantsSummary => [
+    for (final p in participantsSummary)
+      if (p.status == 'active') p,
+  ];
 
   factory OpenShiftOut.fromJson(Map<String, dynamic> json) {
+    final summaryRaw = json['participants_summary'];
     return OpenShiftOut(
       id: json['id'].toString(),
       jobTitle: json['job_title'] as String? ?? 'Shift',
@@ -380,6 +391,15 @@ class OpenShiftOut {
       openSlots: json['open_slots'] as int? ?? 0,
       suburb: json['suburb'] as String?,
       postalCode: json['postal_code'] as String?,
+      workerCount: json['worker_count'] as int? ?? 1,
+      participantsSummary:
+          summaryRaw is List
+              ? [
+                for (final row in summaryRaw)
+                  if (row is Map)
+                    ShiftParticipantOut.fromJson(Map<String, dynamic>.from(row)),
+              ]
+              : const [],
     );
   }
 }
