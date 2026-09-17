@@ -24,10 +24,10 @@ abstract final class StaffShellNav {
       anyOf: [AppPermissions.authSession],
     ),
     _StaffDest(
-      icon: Icons.groups_outlined,
-      label: 'Workforce',
-      route: AppRoutes.staffWorkforce,
-      anyOf: [AppPermissions.contractorsRead],
+      icon: Icons.event_available_outlined,
+      label: 'Roster',
+      route: AppRoutes.staffVisits,
+      anyOf: [AppPermissions.visitsRead, AppPermissions.shiftsRead],
     ),
     _StaffDest(
       icon: Icons.people_outline,
@@ -36,11 +36,12 @@ abstract final class StaffShellNav {
       anyOf: [AppPermissions.clientsRead],
     ),
     _StaffDest(
-      icon: Icons.event_available_outlined,
-      label: 'Roster',
-      route: AppRoutes.staffVisits,
-      anyOf: [AppPermissions.visitsRead, AppPermissions.shiftsRead],
+      icon: Icons.groups_outlined,
+      label: 'Workforce',
+      route: AppRoutes.staffWorkforce,
+      anyOf: [AppPermissions.contractorsRead],
     ),
+    // —— mobile "More" overflow starts here (narrowPrimaryCount: 4) ——
     _StaffDest(
       icon: Icons.payments_outlined,
       label: 'Payments',
@@ -72,6 +73,9 @@ abstract final class StaffShellNav {
       anyOf: [AppPermissions.authSession],
     ),
   ];
+
+  /// Phone bottom bar pins the first four; remainder opens under More.
+  static const narrowPrimaryCount = 4;
 
   static List<_StaffDest> _visible() {
     final filtered =
@@ -170,6 +174,7 @@ class StaffShell extends StatelessWidget {
             destinations: destinations,
             selectedIndex: index,
             onDestinationSelected: StaffShellNav.navigateTo,
+            narrowPrimaryCount: StaffShellNav.narrowPrimaryCount,
             child: body,
           );
         },

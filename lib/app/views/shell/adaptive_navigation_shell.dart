@@ -7,7 +7,9 @@ import 'responsive_scaffold.dart';
 /// Adaptive shell: bottom [NavigationBar] below [Breakpoints.tablet], left
 /// [NavigationRail] at/above tablet width.
 ///
-/// All destinations stay visible — nothing is hidden behind a More menu.
+/// On narrow layouts, when [destinations] exceed [narrowPrimaryCount], the bar
+/// shows the first [narrowPrimaryCount] items plus a **More** tab that opens an
+/// overflow sheet for the rest. Wide layouts still show every destination.
 class AdaptiveNavigationShell extends StatelessWidget {
   const AdaptiveNavigationShell({
     super.key,
@@ -15,12 +17,16 @@ class AdaptiveNavigationShell extends StatelessWidget {
     required this.destinations,
     required this.selectedIndex,
     required this.onDestinationSelected,
+    this.narrowPrimaryCount = 4,
   });
 
   final Widget child;
   final List<ResponsiveDestination> destinations;
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
+
+  /// Max destinations pinned to the phone bottom bar before **More**.
+  final int narrowPrimaryCount;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +48,7 @@ class AdaptiveNavigationShell extends StatelessWidget {
           destinations: destinations,
           selectedIndex: index,
           onDestinationSelected: onDestinationSelected,
+          primaryCount: narrowPrimaryCount,
           child: child,
         );
       },
@@ -55,36 +62,97 @@ class _NarrowNavigationShell extends StatelessWidget {
     required this.destinations,
     required this.selectedIndex,
     required this.onDestinationSelected,
+    required this.primaryCount,
   });
 
   final Widget child;
   final List<ResponsiveDestination> destinations;
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
+  final int primaryCount;
+
+  bool get _usesMore => destinations.length > primaryCount;
+
+  List<ResponsiveDestination> get _primary {
+    if (!_usesMore) return destinations;
+    return destinations.take(primaryCount).toList(growable: false);
+  }
+
+  List<ResponsiveDestination> get _overflow {
+    if (!_usesMore) return const [];
+    return destinations.skip(primaryCount).toList(growable: false);
+  }
+
+  int get _barSelectedIndex {
+    if (!_usesMore) {
+      return selectedIndex.clamp(0, destinations.length - 1);
+    }
+    if (selectedIndex < primaryCount) return selectedIndex;
+    // Overflow route → highlight More (last bar slot).
+    return primaryCount;
+  }
+
+  Future<void> _openMore(BuildContext context) async {
+    final overflow = _overflow;
+    final chosen = await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Text(
+                  'More',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+              ),
+              for (var i = 0; i < overflow.length; i++)
+                ListTile(
+                  leading: Icon(overflow[i].icon),
+                  title: Text(overflow[i].label),
+                  selected: selectedIndex == primaryCount + i,
+                  onTap: () => Navigator.pop(ctx, primaryCount + i),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+    if (chosen != null) onDestinationSelected(chosen);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final barSelectedIndex = selectedIndex.clamp(0, destinations.length - 1);
+    final primary = _primary;
+    final barIndex = _barSelectedIndex;
+    final barDestinations = <NavigationDestination>[
+      for (final destination in primary)
+        NavigationDestination(icon: Icon(destination.icon), label: destination.label),
+      if (_usesMore)
+        const NavigationDestination(
+          icon: Icon(Icons.more_horiz),
+          label: 'More',
+        ),
+    ];
 
     return Scaffold(
       body: child,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: barSelectedIndex,
-        onDestinationSelected: onDestinationSelected,
+        selectedIndex: barIndex.clamp(0, barDestinations.length - 1),
+        onDestinationSelected: (i) {
+          if (_usesMore && i == primaryCount) {
+            _openMore(context);
+            return;
+          }
+          onDestinationSelected(i);
+        },
         backgroundColor: AppColors.cardBackground,
         indicatorColor: AppColors.primary.withValues(alpha: 0.18),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        height: destinations.length > 5 ? 64 : null,
-        destinations: [
-          for (final destination in destinations)
-            NavigationDestination(
-              icon: Icon(
-                destination.icon,
-                size: destinations.length > 5 ? 22 : 24,
-              ),
-              label: destination.label,
-            ),
-        ],
+        destinations: barDestinations,
       ),
     );
   }
