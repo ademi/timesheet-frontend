@@ -206,7 +206,7 @@ class _BranchCard extends StatelessWidget {
                         branch.location,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade700,
+                          color: AppColors.textMuted,
                         ),
                       ),
                     ],

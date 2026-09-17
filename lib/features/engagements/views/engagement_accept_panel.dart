@@ -117,7 +117,7 @@ class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
                           ElevatedButton(
                             onPressed: () => controller.beginAccept(e),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: AppColors.cta,
                               foregroundColor: AppColors.onPrimary,
                               visualDensity: VisualDensity.compact,
                             ),
@@ -278,7 +278,7 @@ class _GrantForm extends GetView<ContractorEngagementsController> {
                         ? null
                         : () => controller.confirmAccept(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.cta,
                   foregroundColor: AppColors.onPrimary,
                 ),
                 child:

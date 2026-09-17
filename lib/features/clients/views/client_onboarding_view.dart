@@ -127,7 +127,7 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                               onPressed: controller.nextStep,
                               isLoading: controller.isSaving.value,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
+                                backgroundColor: AppColors.cta,
                                 foregroundColor: AppColors.onPrimary,
                               ),
                               child: Text(isLast ? 'Finish' : 'Next'),

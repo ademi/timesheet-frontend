@@ -54,7 +54,7 @@ class LoginView extends GetView<AuthController> {
                     const SizedBox(height: 4),
                     const Text(
                       'Staff or contractor account',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
 
                     const SizedBox(height: 34),
@@ -87,7 +87,7 @@ class LoginView extends GetView<AuthController> {
                           const SizedBox(height: 4),
                           const Text(
                             'Sign in to continue',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                           ),
                           const SizedBox(height: 20),
 
@@ -146,8 +146,8 @@ class LoginView extends GetView<AuthController> {
                                         ? null
                                         : () => controller.login(),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: AppColors.onPrimary,
+                                  backgroundColor: AppColors.cta,
+                                  foregroundColor: AppColors.onCta,
                                   disabledBackgroundColor: AppColors.primary
                                       .withValues(alpha: 0.6),
                                   shape: RoundedRectangleBorder(
@@ -251,7 +251,7 @@ class _InputField extends StatelessWidget {
         prefixIcon: Icon(icon, color: AppColors.primary),
         suffixIcon: suffixIcon,
         labelStyle: const TextStyle(color: AppColors.primaryDark, fontSize: 13),
-        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+        hintStyle: TextStyle(color: AppColors.slate400, fontSize: 12),
         filled: true,
         fillColor: AppColors.background,
         border: OutlineInputBorder(

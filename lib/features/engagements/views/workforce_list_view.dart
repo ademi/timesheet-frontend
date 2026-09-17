@@ -28,8 +28,8 @@ class WorkforceListView extends GetView<WorkforceController> {
               ? FloatingActionButton.extended(
                 heroTag: 'workforce-invite',
                 onPressed: () => Get.toNamed(AppRoutes.staffWorkforceInvite),
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
+                backgroundColor: AppColors.cta,
+                foregroundColor: AppColors.onCta,
                 icon: const Icon(Icons.mail_outline),
                 label: const Text('Invite'),
               )

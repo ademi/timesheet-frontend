@@ -93,7 +93,7 @@ class GatewayView extends GetView<GatewayController> {
                         'Billing & company signup live on the landing site.',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade600,
+                          color: AppColors.textMuted,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -102,7 +102,7 @@ class GatewayView extends GetView<GatewayController> {
                         AppEnv.landingUrl,
                         style: TextStyle(
                           fontSize: 10,
-                          color: Colors.grey.shade500,
+                          color: AppColors.slate500,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -202,7 +202,7 @@ class _ActionCard extends StatelessWidget {
                       subtitle,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: AppColors.textMuted,
                       ),
                     ),
                   ],

@@ -56,7 +56,7 @@ class ClientSiteFormView extends GetView<ClientsController> {
                     onPressed: controller.saveSite,
                     isLoading: busy,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.cta,
                       foregroundColor: AppColors.onPrimary,
                       minimumSize: const Size.fromHeight(48),
                     ),

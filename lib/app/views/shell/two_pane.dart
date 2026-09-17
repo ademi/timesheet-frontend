@@ -50,14 +50,14 @@ class PaneDetailPlaceholder extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 48, color: Colors.grey.shade400),
+              Icon(icon, size: 48, color: AppColors.slate400),
               const SizedBox(height: 12),
               Text(
                 message,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade600,
+                  color: AppColors.textMuted,
                   fontWeight: FontWeight.w500,
                 ),
               ),

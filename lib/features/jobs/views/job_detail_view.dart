@@ -145,7 +145,7 @@ class _JobDetailViewState extends State<JobDetailView> {
                           icon: const Icon(Icons.event_outlined),
                           label: const Text('Book one session'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: AppColors.cta,
                             foregroundColor: AppColors.onPrimary,
                           ),
                         ),
@@ -183,7 +183,7 @@ class _JobDetailViewState extends State<JobDetailView> {
                       icon: const Icon(Icons.description_outlined),
                       label: const Text('Manage templates'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.cta,
                         foregroundColor: AppColors.onPrimary,
                       ),
                     ),

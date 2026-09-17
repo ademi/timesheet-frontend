@@ -132,7 +132,7 @@ class _EngagementRateFormViewState extends State<EngagementRateFormView> {
                     },
                     isLoading: _controller.isSaving.value,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.cta,
                       foregroundColor: AppColors.onPrimary,
                       minimumSize: const Size.fromHeight(48),
                     ),

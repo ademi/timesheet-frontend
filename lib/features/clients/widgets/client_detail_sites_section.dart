@@ -43,7 +43,7 @@ class ClientDetailSitesSection extends StatelessWidget {
               icon: const Icon(Icons.add_location_alt_outlined),
               label: const Text('Add location'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.cta,
                 foregroundColor: AppColors.onPrimary,
               ),
             ),

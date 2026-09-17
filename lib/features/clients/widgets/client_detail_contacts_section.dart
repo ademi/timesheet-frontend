@@ -44,7 +44,7 @@ class ClientDetailContactsSection extends StatelessWidget {
               icon: const Icon(Icons.person_add_alt_1),
               label: const Text('Add contact'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.cta,
                 foregroundColor: AppColors.onPrimary,
               ),
             ),

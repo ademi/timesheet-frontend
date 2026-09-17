@@ -63,7 +63,7 @@ class FormTemplatesView extends GetView<JobsController> {
                         icon: const Icon(Icons.add),
                         label: const Text('Create template'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: AppColors.cta,
                           foregroundColor: AppColors.onPrimary,
                         ),
                       ),

@@ -176,7 +176,7 @@ class _SiteFormFieldsState extends State<SiteFormFields> {
                           child: ElevatedButton(
                             onPressed: controller.confirmSiteAddress,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: AppColors.cta,
                               foregroundColor: AppColors.onPrimary,
                             ),
                             child: const Text('Confirm'),

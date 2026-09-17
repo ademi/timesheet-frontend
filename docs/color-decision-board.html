@@ -1,0 +1,2410 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Rostiq — Color decision board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --ink:#1a1612; --muted:#6b6560; --page:#f0ebe4; --line:#ddd5cb;
+  --font: "DM Sans", system-ui, sans-serif;
+  --display: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+* { box-sizing:border-box }
+html { scroll-behavior:smooth }
+body { margin:0; font-family:var(--font); color:var(--ink); background:var(--page); line-height:1.45 }
+a { color:inherit }
+.top {
+  position:sticky; top:0; z-index:40; background:rgba(240,235,228,.92); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line); padding:12px 20px 10px;
+}
+.top h1 { font-family:var(--display); font-size:1.35rem; margin:0 0 4px; letter-spacing:-.02em }
+.top p { margin:0 0 10px; color:var(--muted); font-size:.92rem; max-width:72ch }
+.controls { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:8px }
+.controls label, .chip-btn {
+  font-size:.8rem; background:#fff; border:1px solid var(--line); border-radius:999px;
+  padding:5px 11px; cursor:pointer; user-select:none;
+}
+.controls label:has(input:checked), .chip-btn.on { background:#1a1612; color:#fff; border-color:#1a1612 }
+.controls input { display:none }
+.jump { display:flex; flex-wrap:wrap; gap:4px }
+.jump a {
+  display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:28px;
+  padding:0 7px; border-radius:8px; background:#fff; border:1px solid var(--line);
+  font-size:.75rem; font-weight:600; text-decoration:none;
+}
+.jump a:hover { background:#ebe4da }
+.jump a.rec { border-color:#7A1F1F; color:#7A1F1F }
+.jump a.hybrid { border-color:#0F766E; color:#0F766E }
+.compare-bar {
+  display:none; position:sticky; top:118px; z-index:35; margin:0 16px; padding:10px 14px;
+  background:#1a1612; color:#fff; border-radius:12px; align-items:center; justify-content:space-between; gap:12px;
+}
+.compare-bar.show { display:flex }
+.compare-bar button {
+  background:#fff; color:#1a1612; border:0; border-radius:8px; padding:7px 12px; font-weight:600; cursor:pointer;
+}
+main { padding:18px 16px 80px; max-width:1400px; margin:0 auto }
+.group {
+  font-size:.75rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted); margin:28px 0 10px;
+}
+.panel {
+  background:#fff; border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:18px;
+}
+.panel.rec { border-color:#7A1F1F; box-shadow:0 0 0 2px rgba(122,31,31,.1) }
+.panel.hybrid { border-color:#0F766E; box-shadow:0 0 0 2px rgba(15,118,110,.12) }
+.panel-head { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:14px }
+.panel-head h2 { font-family:var(--display); font-size:1.2rem; margin:0 0 4px; letter-spacing:-.02em }
+.panel-head p { margin:0 0 8px; color:var(--muted); font-size:.92rem; max-width:60ch }
+.head-right { display:flex; flex-direction:column; align-items:flex-end; gap:8px }
+.pills {
+  font-size:.75rem; background:#f5f0ea; padding:4px 9px; border-radius:999px; white-space:nowrap; color:var(--muted);
+}
+.cmp { font-size:.8rem; display:flex; align-items:center; gap:6px; cursor:pointer }
+.swatches { display:flex; gap:5px; margin:6px 0 }
+.swatches span { width:18px; height:18px; border-radius:5px }
+.hexes { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px }
+.hexes code { font-size:.72rem; background:#ebe4da; padding:2px 6px; border-radius:4px }
+.devices { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; align-items:start }
+.col.wide { grid-column:1 / -1 }
+@media(min-width:1100px) {
+  .devices { grid-template-columns:repeat(4,170px) 1fr; }
+  .col.wide { grid-column:auto }
+}
+.dl { font-size:.7rem; font-weight:600; color:var(--muted); margin-bottom:6px; letter-spacing:.04em; text-transform:uppercase }
+.phone {
+  width:170px; background:var(--bg); color:var(--text);
+  border:1.5px solid #2a2420; border-radius:16px; overflow:hidden; font-size:11px;
+}
+.phone .bar {
+  display:flex; justify-content:space-between; align-items:center; padding:8px 10px;
+  background:var(--rail); color:var(--railText); font-weight:700; font-size:12px;
+}
+.phone .bar .plus { opacity:.9 }
+.phone .body { padding:8px; min-height:250px; position:relative; padding-bottom:42px }
+.phone .body.login { text-align:center; padding-top:20px }
+.logo {
+  width:36px; height:36px; margin:0 auto 8px; border-radius:10px; background:var(--pri); color:var(--onp);
+  display:grid; place-items:center; font-weight:800; font-size:16px;
+}
+.login .h { font-weight:800; font-size:15px }
+.login .sub { color:var(--mute); margin-bottom:12px }
+.field {
+  text-align:left; background:var(--surf); border:1px solid var(--bd); border-radius:8px;
+  padding:8px; margin-bottom:6px; color:var(--mute);
+}
+.search {
+  background:var(--surf); border:1px solid var(--bd); border-radius:8px; padding:7px 8px; color:var(--mute); margin-bottom:8px;
+}
+.chips { display:flex; gap:4px; margin-bottom:8px }
+.chip { padding:3px 8px; border-radius:999px; background:var(--surf); border:1px solid var(--bd); font-size:10px }
+.chip.hot { background:var(--pri); color:var(--onp); border-color:transparent }
+.chip.soft { background:var(--acc10); color:var(--text); border-color:transparent }
+.card {
+  background:var(--surf); border:1px solid var(--bd); border-radius:10px; padding:8px; margin-bottom:6px;
+}
+.card.open { background:var(--warnbg); border-color:color-mix(in srgb, var(--warn) 35%, var(--bd)) }
+.rt { display:flex; justify-content:space-between; gap:6px; align-items:center }
+.rt b { font-size:11px }
+.meta { color:var(--mute); font-size:10px; margin-top:2px }
+.pill {
+  font-size:9px; font-weight:700; padding:2px 6px; border-radius:999px; white-space:nowrap;
+}
+.pill.ok { background:var(--pri10); color:var(--text) }
+.pill.soft { background:var(--acc10); color:var(--text) }
+.pill.warn { background:var(--warnbg); color:var(--warn) }
+.btn {
+  border:0; border-radius:8px; padding:8px 10px; font-weight:700; font-size:11px; cursor:default;
+  font-family:inherit;
+}
+.btn.pri { background:var(--pri); color:var(--onp); width:100% }
+.btn.acc { background:var(--acc); color:#fff }
+.btn.ghost { background:transparent; border:1px solid var(--bd); color:var(--text) }
+.btn.sm { width:auto; padding:5px 8px; margin-top:6px; font-size:10px }
+.login .link { margin-top:8px; color:var(--pri); font-size:10px; font-weight:600 }
+.fab {
+  position:absolute; right:8px; bottom:46px; background:var(--pri); color:var(--onp);
+  border-radius:999px; padding:6px 10px; font-size:10px; font-weight:700;
+}
+.tabbar {
+  position:absolute; left:0; right:0; bottom:0; display:grid; grid-template-columns:repeat(4,1fr);
+  background:var(--surf); border-top:1px solid var(--bd); padding:6px 0; text-align:center;
+  font-size:9px; color:var(--mute);
+}
+.tabbar .on { color:var(--pri); font-weight:700 }
+.stats { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px }
+.stat { background:var(--surf); border:1px solid var(--bd); border-radius:10px; padding:8px }
+.stat b { display:block; font-size:16px }
+.stat span { color:var(--mute); font-size:10px }
+.stat.warn { background:var(--warnbg); border-color:color-mix(in srgb, var(--warn) 30%, var(--bd)) }
+.stat.warn b { color:var(--warn) }
+.week { display:flex; gap:4px; margin-bottom:8px }
+.week span {
+  flex:1; text-align:center; padding:5px 0; border-radius:8px; background:var(--surf); border:1px solid var(--bd); font-size:10px;
+}
+.week .on { background:var(--pri); color:var(--onp); border-color:transparent; font-weight:700 }
+.laptop {
+  background:var(--bg); color:var(--text); border:1.5px solid #2a2420; border-radius:10px; overflow:hidden; min-height:280px; font-size:11px;
+}
+.lbar {
+  display:flex; justify-content:space-between; align-items:center; padding:7px 10px;
+  background:#2a2420; color:#d4ccc2; font-size:10px;
+}
+.brand { display:flex; align-items:center; gap:6px; color:#fff; font-weight:700 }
+.brand i {
+  font-style:normal; width:16px; height:16px; border-radius:4px; background:var(--pri); color:var(--onp);
+  display:inline-grid; place-items:center; font-size:10px;
+}
+.lshell { display:grid; grid-template-columns:110px 1fr; min-height:240px }
+aside { background:var(--rail); color:var(--railText); padding:10px 0 }
+aside .nav { padding:7px 12px; font-size:11px; opacity:.75 }
+aside .nav.on { opacity:1; background:color-mix(in srgb, #fff 14%, transparent); font-weight:700 }
+.lshell main { padding:12px; background:var(--bg) }
+.ltop { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px }
+.ltop h3 { margin:0; font-size:14px }
+.actions { display:flex; gap:6px }
+.kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:10px }
+.kpi { background:var(--surf); border:1px solid var(--bd); border-radius:8px; padding:8px }
+.kpi b { display:block; font-size:14px }
+.kpi span { color:var(--mute); font-size:9px }
+.kpi.warn { background:var(--warnbg) }
+.kpi.warn b { color:var(--warn) }
+.kpi.soft { background:var(--acc10) }
+table { width:100%; border-collapse:collapse; background:var(--surf); border:1px solid var(--bd); border-radius:8px; overflow:hidden }
+th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--bd); font-size:10px }
+th { color:var(--mute); font-weight:600 }
+tr.open { background:var(--warnbg) }
+#compare-stage {
+  display:none; position:fixed; inset:0; z-index:100; background:rgba(26,22,18,.72); padding:24px;
+  overflow:auto;
+}
+#compare-stage.show { display:block }
+#compare-stage .inner { max-width:1400px; margin:0 auto; background:var(--page); border-radius:16px; padding:16px }
+#compare-stage .inner h2 { font-family:var(--display); margin:0 0 12px }
+#compare-grid { display:grid; gap:12px }
+@media(min-width:900px) { #compare-grid { grid-template-columns:repeat(auto-fit,minmax(320px,1fr)) } }
+.note { font-size:.85rem; color:var(--muted); margin:8px 0 0 }
+.t-current {--bg:#EFECE7; --surf:#fff; --pri:#1E1A14; --onp:#fff; --acc:#1E1A14; --text:#1E1A14; --mute:#6B6560; --bd:#DDD8D0; --warn:#B45309; --warnbg:#FFF7ED; --pri10:#DDD8D0; --acc10:#EFECE7; --rail:#1E1A14; --railText:#fff; --railText:#fff}
+.t-brand {--bg:#FFFDFB; --surf:#F9F2EF; --pri:#7A1F1F; --onp:#fff; --acc:#D4A017; --text:#1E1717; --mute:#7A6A6A; --bd:#E8DDD8; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(122,31,31,.1); --acc10:rgba(212,160,23,.16); --rail:#7A1F1F; --railText:#fff; --railText:#fff}
+.t-care {--bg:#F4F8F7; --surf:#fff; --pri:#0F766E; --onp:#fff; --acc:#E76F51; --text:#14201E; --mute:#5B6B68; --bd:#D5E2DF; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(15,118,110,.12); --acc10:rgba(231,111,81,.14); --rail:#0F766E; --railText:#fff; --railText:#fff}
+.t-care-plus {--bg:#F4F8F7; --surf:#fff; --pri:#E76F51; --onp:#fff; --acc:#0F766E; --text:#14201E; --mute:#5B6B68; --bd:#D5E2DF; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(231,111,81,.14); --acc10:rgba(15,118,110,.12); --rail:#0F766E; --railText:#fff; --railText:#fff}
+.t-lime {--bg:#EFECE7; --surf:#fff; --pri:#F4F57D; --onp:#1E1A14; --acc:#1E1A14; --text:#1E1A14; --mute:#6B6560; --bd:#DDD8D0; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(244,245,125,.5); --acc10:rgba(30,26,20,.08); --rail:#1E1A14; --railText:#fff; --railText:#fff}
+.t-navy {--bg:#F5F7FB; --surf:#fff; --pri:#1B3A5F; --onp:#fff; --acc:#E8A317; --text:#152033; --mute:#5C6B7A; --bd:#D8DEE8; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(27,58,95,.1); --acc10:rgba(232,163,23,.16); --rail:#12283F; --railText:#fff; --railText:#fff}
+.t-euc {--bg:#F6F5F0; --surf:#FFFEFA; --pri:#2F5D50; --onp:#fff; --acc:#C47A2C; --text:#1C2421; --mute:#5E6B66; --bd:#D9DFD8; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(47,93,80,.12); --acc10:rgba(196,122,44,.15); --rail:#244A40; --railText:#fff; --railText:#fff}
+.t-cobalt {--bg:#F7F8FC; --surf:#fff; --pri:#1D4ED8; --onp:#fff; --acc:#F0A07A; --text:#15203A; --mute:#5B657A; --bd:#D8DCE8; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(29,78,216,.1); --acc10:rgba(240,160,122,.18); --rail:#1639A3; --railText:#fff; --railText:#fff}
+.t-coral {--bg:#FFF8F5; --surf:#fff; --pri:#E4572E; --onp:#fff; --acc:#1E1A14; --text:#1E1714; --mute:#6B5E58; --bd:#ECDFD8; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(228,87,46,.12); --acc10:rgba(30,26,20,.08); --rail:#1E1A14; --railText:#fff; --railText:#fff}
+.t-shift {--bg:#F6F3F6; --surf:#fff; --pri:#FA7E82; --onp:#fff; --acc:#5175D1; --text:#261127; --mute:#7F6B80; --bd:#EBE5EB; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(250,126,130,.14); --acc10:rgba(81,117,209,.12); --rail:#604B63; --railText:#fff; --railText:#fff}
+.t-deputy {--bg:#F7F5FC; --surf:#fff; --pri:#FD6C63; --onp:#fff; --acc:#4429BA; --text:#1A1530; --mute:#6B6580; --bd:#E4DFF0; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(253,108,99,.14); --acc10:rgba(68,41,186,.12); --rail:#332A5D; --railText:#fff; --railText:#fff}
+.t-tanda {--bg:#F3F8FA; --surf:#fff; --pri:#169CC5; --onp:#fff; --acc:#FBBF24; --text:#0E3E53; --mute:#5A7380; --bd:#D5E4EA; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(22,156,197,.12); --acc10:rgba(251,191,36,.18); --rail:#0E3E53; --railText:#fff; --railText:#fff}
+.t-caremaster {--bg:#F4FAFD; --surf:#fff; --pri:#00ADEF; --onp:#fff; --acc:#6B4EFF; --text:#1C3659; --mute:#5A6E86; --bd:#D4E6F0; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(0,173,239,.12); --acc10:rgba(107,78,255,.12); --rail:#1C3659; --railText:#fff; --railText:#fff}
+.t-humanforce {--bg:#F7F8FB; --surf:#fff; --pri:#F15A29; --onp:#fff; --acc:#50B848; --text:#1E2440; --mute:#5C6478; --bd:#D8DCE8; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(241,90,41,.12); --acc10:rgba(80,184,72,.14); --rail:#3C479D; --railText:#fff; --railText:#fff}
+.t-rotawiz {--bg:#F7F4F8; --surf:#fff; --pri:#E31E68; --onp:#fff; --acc:#4F7CFF; --text:#001033; --mute:#5A6178; --bd:#E0D6E2; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(227,30,104,.12); --acc10:rgba(79,124,255,.14); --rail:#001033; --railText:#fff; --railText:#fff}
+.t-brevity {--bg:#FFF9F5; --surf:#fff; --pri:#FE4C1C; --onp:#fff; --acc:#1E73BE; --text:#1A1F2C; --mute:#6B6570; --bd:#ECDFD6; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(254,76,28,.12); --acc10:rgba(30,115,190,.12); --rail:#1A2B45; --railText:#fff; --railText:#fff}
+.t-ramp {--bg:#F7F7F5; --surf:#FFFFFF; --pri:#E4F222; --onp:#1C1B17; --acc:#5683D2; --text:#1C1B17; --mute:#6D6C6B; --bd:#E5E7EB; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(228,242,34,.35); --acc10:rgba(86,131,210,.12); --rail:#1C1B17; --railText:#F7F7F5; --railText:#F7F7F5}
+.t-linear {--bg:#F9F9FB; --surf:#FFFFFF; --pri:#5E6AD2; --onp:#fff; --acc:#8B5CF6; --text:#08090A; --mute:#6B6B6B; --bd:#E4E5E9; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(94,106,210,.12); --acc10:rgba(139,92,246,.12); --rail:#08090A; --railText:#fff; --railText:#fff}
+.t-stripe {--bg:#FAFBFD; --surf:#FFFFFF; --pri:#635BFF; --onp:#fff; --acc:#0A2540; --text:#0A2540; --mute:#425466; --bd:#E3E8EE; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(99,91,255,.12); --acc10:rgba(10,37,64,.08); --rail:#0A2540; --railText:#fff; --railText:#fff}
+.t-hubspot {--bg:#F8F5EE; --surf:#FFFFFF; --pri:#FF7A59; --onp:#fff; --acc:#2E475D; --text:#1F1F1F; --mute:#7B98B6; --bd:#E8E2D8; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(255,122,89,.14); --acc10:rgba(46,71,93,.1); --rail:#2E475D; --railText:#fff; --railText:#fff}
+.t-rippling {--bg:#F8F9FB; --surf:#FFFFFF; --pri:#FC6723; --onp:#fff; --acc:#192F5D; --text:#2E2C29; --mute:#6B7280; --bd:#E2E6ED; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(252,103,35,.12); --acc10:rgba(25,47,93,.1); --rail:#192F5D; --railText:#fff; --railText:#fff}
+.t-asana {--bg:#F5F4F3; --surf:#FFFFFF; --pri:#F06A6A; --onp:#fff; --acc:#2E3C54; --text:#151B26; --mute:#6D6E6F; --bd:#DBDBDB; --warn:#B45309; --warnbg:#FFF7ED; --pri10:rgba(240,106,106,.12); --acc10:rgba(46,60,84,.1); --rail:#151B26; --railText:#fff; --railText:#fff}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Rostiq — Color decision board</h1>
+  <p>All palette directions on the same key screens (Login, Clients, Today, Roster, Dashboard). Source tokens match <a href="https://colors.rostiq.co/" target="_blank" rel="noopener">colors.rostiq.co</a>. <strong>B+</strong> is a decision helper: teal rail + coral primary CTA.</p>
+  <div class="controls">
+    <label><input type="radio" name="grp" value="all" checked/> All</label>
+    <label><input type="radio" name="grp" value="own"/> Own A–G</label>
+    <label><input type="radio" name="grp" value="peer"/> Peers H–N</label>
+    <label><input type="radio" name="grp" value="b2b"/> B2B O–T</label>
+    <label><input type="checkbox" id="hi-energy"/> Energy ≥ 8</label>
+    <button type="button" class="chip-btn" id="focus-hot">Focus B / B+ / C / G</button>
+  </div>
+  <nav class="jump"><a href="#0" class="" data-jump="0" data-group="current">0</a><a href="#a" class="rec" data-jump="a" data-group="own">A</a><a href="#b" class="" data-jump="b" data-group="own">B</a><a href="#bplus" class="hybrid" data-jump="bplus" data-group="own">B+</a><a href="#c" class="" data-jump="c" data-group="own">C</a><a href="#d" class="" data-jump="d" data-group="own">D</a><a href="#e" class="" data-jump="e" data-group="own">E</a><a href="#f" class="" data-jump="f" data-group="own">F</a><a href="#g" class="" data-jump="g" data-group="own">G</a><a href="#h" class="" data-jump="h" data-group="peer">H</a><a href="#i" class="" data-jump="i" data-group="peer">I</a><a href="#j" class="" data-jump="j" data-group="peer">J</a><a href="#k" class="" data-jump="k" data-group="peer">K</a><a href="#l" class="" data-jump="l" data-group="peer">L</a><a href="#m" class="" data-jump="m" data-group="peer">M</a><a href="#n" class="" data-jump="n" data-group="peer">N</a><a href="#o" class="" data-jump="o" data-group="b2b">O</a><a href="#p" class="" data-jump="p" data-group="b2b">P</a><a href="#q" class="" data-jump="q" data-group="b2b">Q</a><a href="#r" class="" data-jump="r" data-group="b2b">R</a><a href="#s" class="" data-jump="s" data-group="b2b">S</a><a href="#t" class="" data-jump="t" data-group="b2b">T</a></nav>
+  <p class="note">Tip: tick Compare on 2–3 directions, then open the compare stage.</p>
+</header>
+<div class="compare-bar" id="compare-bar">
+  <span id="compare-label">0 selected</span>
+  <div>
+    <button type="button" id="compare-open">Open compare</button>
+    <button type="button" id="compare-clear" style="margin-left:6px;background:transparent;color:#fff;border:1px solid #fff">Clear</button>
+  </div>
+</div>
+<main>
+<div class="group" data-group="current">Current</div>
+<section class="panel t-current" id="0" data-id="0" data-group="current" data-energy="1" data-title="0 · Current (ships today)">
+  <header class="panel-head">
+    <div>
+      <h2>0 · Current (ships today)</h2>
+      <p>Warm monochrome. Buttons read as black — users correctly call this “not colorful.”</p>
+      <div class="swatches">
+    <span title="primary" style="background:#1E1A14"></span>
+    <span title="accent" style="background:#1E1A14"></span>
+    <span title="rail" style="background:#1E1A14"></span>
+    <span title="bg" style="background:#EFECE7; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #1E1A14</code> <code>acc #1E1A14</code> <code>rail #1E1A14</code> <code>bg #EFECE7</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 1/10 · Landing? No</div>
+      <label class="cmp"><input type="checkbox" data-compare="0"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section><div class="group" data-group="own">Own directions · A–G (+ B+ hybrid)</div>
+<section class="panel t-brand rec" id="a" data-id="a" data-group="own" data-energy="7" data-title="A · Brand Burgundy + Gold">
+  <header class="panel-head">
+    <div>
+      <h2>A · Brand Burgundy + Gold</h2>
+      <p>Apply documented landing tokens. Closes marketing↔app gap.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#7A1F1F"></span>
+    <span title="accent" style="background:#D4A017"></span>
+    <span title="rail" style="background:#7A1F1F"></span>
+    <span title="bg" style="background:#FFFDFB; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #7A1F1F</code> <code>acc #D4A017</code> <code>rail #7A1F1F</code> <code>bg #FFFDFB</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 7/10 · Landing? Yes · Rec</div>
+      <label class="cmp"><input type="checkbox" data-compare="a"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-care" id="b" data-id="b" data-group="own" data-energy="7" data-title="B · Care Teal + Coral">
+  <header class="panel-head">
+    <div>
+      <h2>B · Care Teal + Coral</h2>
+      <p>Calmer disability-support workplace. Colorful, but abandons burgundy landing.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#0F766E"></span>
+    <span title="accent" style="background:#E76F51"></span>
+    <span title="rail" style="background:#0F766E"></span>
+    <span title="bg" style="background:#F4F8F7; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #0F766E</code> <code>acc #E76F51</code> <code>rail #0F766E</code> <code>bg #F4F8F7</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 7/10 · Landing? No</div>
+      <label class="cmp"><input type="checkbox" data-compare="b"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-care-plus hybrid" id="bplus" data-id="bplus" data-group="own" data-energy="8" data-title="B+ · Care Teal + Coral CTA">
+  <header class="panel-head">
+    <div>
+      <h2>B+ · Care Teal + Coral CTA</h2>
+      <p>Same teal chrome as B, but coral is the primary button/FAB — higher energy without leaving care.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#E76F51"></span>
+    <span title="accent" style="background:#0F766E"></span>
+    <span title="rail" style="background:#0F766E"></span>
+    <span title="bg" style="background:#F4F8F7; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #E76F51</code> <code>acc #0F766E</code> <code>rail #0F766E</code> <code>bg #F4F8F7</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 8/10 hybrid · Decision helper · not on showcase</div>
+      <label class="cmp"><input type="checkbox" data-compare="bplus"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-lime" id="c" data-id="c" data-group="own" data-energy="8" data-title="C · Charcoal + Lime">
+  <header class="panel-head">
+    <div>
+      <h2>C · Charcoal + Lime</h2>
+      <p>From branch color-app-identity. Loud CTA; chrome stays charcoal.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#F4F57D"></span>
+    <span title="accent" style="background:#1E1A14"></span>
+    <span title="rail" style="background:#1E1A14"></span>
+    <span title="bg" style="background:#EFECE7; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #F4F57D</code> <code>acc #1E1A14</code> <code>rail #1E1A14</code> <code>bg #EFECE7</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 8/10 CTA · Landing? Partial</div>
+      <label class="cmp"><input type="checkbox" data-compare="c"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-navy" id="d" data-id="d" data-group="own" data-energy="6" data-title="D · Navy + Amber">
+  <header class="panel-head">
+    <div>
+      <h2>D · Navy + Amber</h2>
+      <p>Payroll / compliance seriousness. Amber open-slots against cool navy.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#1B3A5F"></span>
+    <span title="accent" style="background:#E8A317"></span>
+    <span title="rail" style="background:#12283F"></span>
+    <span title="bg" style="background:#F5F7FB; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #1B3A5F</code> <code>acc #E8A317</code> <code>rail #12283F</code> <code>bg #F5F7FB</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 6/10 · Ops managers</div>
+      <label class="cmp"><input type="checkbox" data-compare="d"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-euc" id="e" data-id="e" data-group="own" data-energy="7" data-title="E · Eucalyptus + Ochre">
+  <header class="panel-head">
+    <div>
+      <h2>E · Eucalyptus + Ochre</h2>
+      <p>Australian landscape without terracotta cliché. Forest chrome, ochre accents.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#2F5D50"></span>
+    <span title="accent" style="background:#C47A2C"></span>
+    <span title="rail" style="background:#244A40"></span>
+    <span title="bg" style="background:#F6F5F0; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #2F5D50</code> <code>acc #C47A2C</code> <code>rail #244A40</code> <code>bg #F6F5F0</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 7/10 · Memorable: place</div>
+      <label class="cmp"><input type="checkbox" data-compare="e"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-cobalt" id="f" data-id="f" data-group="own" data-energy="7" data-title="F · Cobalt + Soft Apricot">
+  <header class="panel-head">
+    <div>
+      <h2>F · Cobalt + Soft Apricot</h2>
+      <p>Modern SaaS clarity without purple gradients. Cobalt structure, apricot human moments.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#1D4ED8"></span>
+    <span title="accent" style="background:#F0A07A"></span>
+    <span title="rail" style="background:#1639A3"></span>
+    <span title="bg" style="background:#F7F8FC; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #1D4ED8</code> <code>acc #F0A07A</code> <code>rail #1639A3</code> <code>bg #F7F8FC</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 7/10 · Risk: US SaaS look</div>
+      <label class="cmp"><input type="checkbox" data-compare="f"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-coral" id="g" data-id="g" data-group="own" data-energy="9" data-title="G · Coral Ink">
+  <header class="panel-head">
+    <div>
+      <h2>G · Coral Ink</h2>
+      <p>Maximum warmth: coral primary on blush surfaces, charcoal secondary.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#E4572E"></span>
+    <span title="accent" style="background:#1E1A14"></span>
+    <span title="rail" style="background:#1E1A14"></span>
+    <span title="bg" style="background:#FFF8F5; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #E4572E</code> <code>acc #1E1A14</code> <code>rail #1E1A14</code> <code>bg #FFF8F5</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 9/10 · Landing? Partial</div>
+      <label class="cmp"><input type="checkbox" data-compare="g"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section><div class="group" data-group="peer">AU NDIS / WFM peers · H–N</div>
+<section class="panel t-shift" id="h" data-id="h" data-group="peer" data-energy="8" data-title="H · ShiftCare-inspired">
+  <header class="panel-head">
+    <div>
+      <h2>H · ShiftCare-inspired</h2>
+      <p>Mauve rail, coral CTAs, lilac wash — closest NDIS peer vibe.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#FA7E82"></span>
+    <span title="accent" style="background:#5175D1"></span>
+    <span title="rail" style="background:#604B63"></span>
+    <span title="bg" style="background:#F6F3F6; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #FA7E82</code> <code>acc #5175D1</code> <code>rail #604B63</code> <code>bg #F6F3F6</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 8/10 · Peer · NDIS</div>
+      <label class="cmp"><input type="checkbox" data-compare="h"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-deputy" id="i" data-id="i" data-group="peer" data-energy="8" data-title="I · Deputy-inspired">
+  <header class="panel-head">
+    <div>
+      <h2>I · Deputy-inspired</h2>
+      <p>Indigo chrome + coral actions. Classic shift-work SaaS.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#FD6C63"></span>
+    <span title="accent" style="background:#4429BA"></span>
+    <span title="rail" style="background:#332A5D"></span>
+    <span title="bg" style="background:#F7F5FC; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #FD6C63</code> <code>acc #4429BA</code> <code>rail #332A5D</code> <code>bg #F7F5FC</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 8/10 · Peer · WFM</div>
+      <label class="cmp"><input type="checkbox" data-compare="i"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-tanda" id="j" data-id="j" data-group="peer" data-energy="8" data-title="J · Tanda-inspired">
+  <header class="panel-head">
+    <div>
+      <h2>J · Tanda-inspired</h2>
+      <p>Deep teal chrome, cyan primary, amber secondary. Payroll confidence.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#169CC5"></span>
+    <span title="accent" style="background:#FBBF24"></span>
+    <span title="rail" style="background:#0E3E53"></span>
+    <span title="bg" style="background:#F3F8FA; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #169CC5</code> <code>acc #FBBF24</code> <code>rail #0E3E53</code> <code>bg #F3F8FA</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 8/10 · Peer · Payroll</div>
+      <label class="cmp"><input type="checkbox" data-compare="j"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-caremaster" id="k" data-id="k" data-group="peer" data-energy="8" data-title="K · CareMaster-inspired">
+  <header class="panel-head">
+    <div>
+      <h2>K · CareMaster-inspired</h2>
+      <p>Sky cyan CTAs on deep navy rail — NDIS demo energy.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#00ADEF"></span>
+    <span title="accent" style="background:#6B4EFF"></span>
+    <span title="rail" style="background:#1C3659"></span>
+    <span title="bg" style="background:#F4FAFD; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #00ADEF</code> <code>acc #6B4EFF</code> <code>rail #1C3659</code> <code>bg #F4FAFD</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 8/10 · Peer · NDIS</div>
+      <label class="cmp"><input type="checkbox" data-compare="k"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-humanforce" id="l" data-id="l" data-group="peer" data-energy="9" data-title="L · Humanforce-inspired">
+  <header class="panel-head">
+    <div>
+      <h2>L · Humanforce-inspired</h2>
+      <p>Indigo chrome, orange primary, green secondary. Most multicolor of peer set.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#F15A29"></span>
+    <span title="accent" style="background:#50B848"></span>
+    <span title="rail" style="background:#3C479D"></span>
+    <span title="bg" style="background:#F7F8FB; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #F15A29</code> <code>acc #50B848</code> <code>rail #3C479D</code> <code>bg #F7F8FB</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 9/10 · Peer · HCM</div>
+      <label class="cmp"><input type="checkbox" data-compare="l"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-rotawiz" id="m" data-id="m" data-group="peer" data-energy="9" data-title="M · RotaWiz-inspired">
+  <header class="panel-head">
+    <div>
+      <h2>M · RotaWiz-inspired</h2>
+      <p>Midnight navy + hot pink CTAs. High contrast roster energy.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#E31E68"></span>
+    <span title="accent" style="background:#4F7CFF"></span>
+    <span title="rail" style="background:#001033"></span>
+    <span title="bg" style="background:#F7F4F8; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #E31E68</code> <code>acc #4F7CFF</code> <code>rail #001033</code> <code>bg #F7F4F8</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 9/10 · Peer · Rostering</div>
+      <label class="cmp"><input type="checkbox" data-compare="m"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-brevity" id="n" data-id="n" data-group="peer" data-energy="8" data-title="N · Brevity-inspired">
+  <header class="panel-head">
+    <div>
+      <h2>N · Brevity-inspired</h2>
+      <p>Flame orange primary with steel-blue secondary. Warm + serious rail.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#FE4C1C"></span>
+    <span title="accent" style="background:#1E73BE"></span>
+    <span title="rail" style="background:#1A2B45"></span>
+    <span title="bg" style="background:#FFF9F5; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #FE4C1C</code> <code>acc #1E73BE</code> <code>rail #1A2B45</code> <code>bg #FFF9F5</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 8/10 · Peer · NDIS</div>
+      <label class="cmp"><input type="checkbox" data-compare="n"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section><div class="group" data-group="b2b">B2B references · O–T</div>
+<section class="panel t-ramp" id="o" data-id="o" data-group="b2b" data-energy="7" data-title="O · Ramp-style">
+  <header class="panel-head">
+    <div>
+      <h2>O · Ramp-style</h2>
+      <p>Ink rail, lime CTA only, steel blue data accent. Fintech restraint.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#E4F222"></span>
+    <span title="accent" style="background:#5683D2"></span>
+    <span title="rail" style="background:#1C1B17"></span>
+    <span title="bg" style="background:#F7F7F5; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #E4F222</code> <code>acc #5683D2</code> <code>rail #1C1B17</code> <code>bg #F7F7F5</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 7/10 · B2B · Ramp</div>
+      <label class="cmp"><input type="checkbox" data-compare="o"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-linear" id="p" data-id="p" data-group="b2b" data-energy="6" data-title="P · Linear-style">
+  <header class="panel-head">
+    <div>
+      <h2>P · Linear-style</h2>
+      <p>Magic indigo on clean light UI. Modern ops-admin polish.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#5E6AD2"></span>
+    <span title="accent" style="background:#8B5CF6"></span>
+    <span title="rail" style="background:#08090A"></span>
+    <span title="bg" style="background:#F9F9FB; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #5E6AD2</code> <code>acc #8B5CF6</code> <code>rail #08090A</code> <code>bg #F9F9FB</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 6/10 · B2B · Linear</div>
+      <label class="cmp"><input type="checkbox" data-compare="p"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-stripe" id="q" data-id="q" data-group="b2b" data-energy="6" data-title="Q · Stripe-style">
+  <header class="panel-head">
+    <div>
+      <h2>Q · Stripe-style</h2>
+      <p>Blurple buttons, navy sidebar. Instantly reads as money-safe.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#635BFF"></span>
+    <span title="accent" style="background:#0A2540"></span>
+    <span title="rail" style="background:#0A2540"></span>
+    <span title="bg" style="background:#FAFBFD; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #635BFF</code> <code>acc #0A2540</code> <code>rail #0A2540</code> <code>bg #FAFBFD</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 6/10 · B2B · Stripe</div>
+      <label class="cmp"><input type="checkbox" data-compare="q"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-hubspot" id="r" data-id="r" data-group="b2b" data-energy="7" data-title="R · HubSpot-style">
+  <header class="panel-head">
+    <div>
+      <h2>R · HubSpot-style</h2>
+      <p>Warm cream, coral primary, slate navy rail. Friendly enterprise SaaS.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#FF7A59"></span>
+    <span title="accent" style="background:#2E475D"></span>
+    <span title="rail" style="background:#2E475D"></span>
+    <span title="bg" style="background:#F8F5EE; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #FF7A59</code> <code>acc #2E475D</code> <code>rail #2E475D</code> <code>bg #F8F5EE</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 7/10 · B2B · HubSpot</div>
+      <label class="cmp"><input type="checkbox" data-compare="r"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-rippling" id="s" data-id="s" data-group="b2b" data-energy="7" data-title="S · Rippling-style">
+  <header class="panel-head">
+    <div>
+      <h2>S · Rippling-style</h2>
+      <p>Deep navy rail, orange primary CTAs. HCM enterprise.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#FC6723"></span>
+    <span title="accent" style="background:#192F5D"></span>
+    <span title="rail" style="background:#192F5D"></span>
+    <span title="bg" style="background:#F8F9FB; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #FC6723</code> <code>acc #192F5D</code> <code>rail #192F5D</code> <code>bg #F8F9FB</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 7/10 · B2B · Rippling</div>
+      <label class="cmp"><input type="checkbox" data-compare="s"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+<section class="panel t-asana" id="t" data-id="t" data-group="b2b" data-energy="7" data-title="T · Asana-style">
+  <header class="panel-head">
+    <div>
+      <h2>T · Asana-style</h2>
+      <p>Soft gray canvas, coral CTAs, charcoal rail. Warm coordinator UI.</p>
+      <div class="swatches">
+    <span title="primary" style="background:#F06A6A"></span>
+    <span title="accent" style="background:#2E3C54"></span>
+    <span title="rail" style="background:#151B26"></span>
+    <span title="bg" style="background:#F5F4F3; outline:1px solid #ccc"></span>
+    <span title="warn" style="background:#B45309"></span>
+  </div>
+      <div class="hexes"><code>pri #F06A6A</code> <code>acc #2E3C54</code> <code>rail #151B26</code> <code>bg #F5F4F3</code></div>
+    </div>
+    <div class="head-right">
+      <div class="pills">Energy 7/10 · B2B · Asana</div>
+      <label class="cmp"><input type="checkbox" data-compare="t"/> Compare</label>
+    </div>
+  </header>
+  <div class="devices">
+    <div class="col"><div class="dl">Phone · Login</div><div class="phone">
+    <div class="bar"><span>Rostiq</span><span></span></div>
+    <div class="body login">
+      <div class="logo">R</div>
+      <div class="h">Rostiq</div>
+      <div class="sub">Sign in</div>
+      <div class="field">Email or phone</div>
+      <div class="field">Password</div>
+      <button class="btn pri">Sign in</button>
+      <div class="link">Forgot password?</div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Clients</div><div class="phone">
+    <div class="bar"><span>Clients</span><span class="plus">＋</span></div>
+    <div class="body">
+      <div class="search">Search…</div>
+      <div class="chips"><span class="chip hot">All</span><span class="chip soft">Incomplete</span></div>
+      <div class="card"><div class="rt"><b>Amira Hassan</b><span class="pill ok">Active</span></div><div class="meta">NDIS · Parramatta</div></div>
+      <div class="card"><div class="rt"><b>Jordan Lee</b><span class="pill soft">Incomplete</span></div><div class="meta">Onboarding 2/5</div></div>
+      <div class="fab">Add client</div>
+      <div class="tabbar"><span>Home</span><span>Visits</span><span class="on">Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Today</div><div class="phone">
+    <div class="bar"><span>Today</span><span>⚙</span></div>
+    <div class="body">
+      <div class="stats"><div class="stat"><b>12</b><span>Visits</span></div><div class="stat warn"><b>3</b><span>Open</span></div></div>
+      <div class="card"><div class="rt"><b>Morning run — West</b></div><div class="meta">4 visits · 08:00</div></div>
+      <div class="card open"><div class="rt"><b>Open slot</b><span class="pill warn">Needs worker</span></div><div class="meta">14:00–16:00</div>
+        <button class="btn acc sm">Assign</button></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col"><div class="dl">Phone · Roster</div><div class="phone">
+    <div class="bar"><span>Roster</span><span>Week</span></div>
+    <div class="body">
+      <div class="week"><span>M</span><span class="on">T</span><span>W</span><span>T</span><span>F</span></div>
+      <div class="card"><div class="rt"><b>08:00 Priya</b><span class="pill ok">Assigned</span></div><div class="meta">Amira · Personal care</div></div>
+      <div class="card open"><div class="rt"><b>14:00 —</b><span class="pill warn">Open</span></div><div class="meta">Jordan · Community</div>
+        <button class="btn pri sm">Fill</button></div>
+      <div class="card"><div class="rt"><b>16:30 Alex</b><span class="pill ok">Assigned</span></div><div class="meta">Sam · SIL</div></div>
+      <div class="tabbar"><span>Home</span><span class="on">Visits</span><span>Clients</span><span>More</span></div>
+    </div>
+  </div></div>
+    <div class="col wide"><div class="dl">Laptop · Dashboard</div><div class="laptop">
+    <div class="lbar"><span class="brand"><i>R</i> Rostiq</span><span class="url">app.rostiq.com.au / dashboard</span></div>
+    <div class="lshell">
+      <aside>
+        <div class="nav on">Dashboard</div>
+        <div class="nav">Visits</div>
+        <div class="nav">Clients</div>
+        <div class="nav">Jobs</div>
+        <div class="nav">Payroll</div>
+      </aside>
+      <main>
+        <div class="ltop"><h3>Today</h3><div class="actions"><button class="btn ghost sm">Export</button><button class="btn pri sm">Assign workers</button></div></div>
+        <div class="kpis">
+          <div class="kpi"><b>12</b><span>Visits today</span></div>
+          <div class="kpi warn"><b>3</b><span>Open slots</span></div>
+          <div class="kpi soft"><b>2</b><span>Incomplete</span></div>
+          <div class="kpi"><b>$4.2k</b><span>Payroll</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Client</th><th>Worker</th><th>Window</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><b>Amira Hassan</b></td><td>Priya S.</td><td>08:00–10:00</td><td><span class="pill ok">Assigned</span></td></tr>
+            <tr class="open"><td><b>Jordan Lee</b></td><td>—</td><td>14:00–16:00</td><td><span class="pill warn">Open</span></td></tr>
+            <tr><td><b>Sam Nguyen</b></td><td>Alex M.</td><td>16:30–18:00</td><td><span class="pill ok">Assigned</span></td></tr>
+          </tbody>
+        </table>
+      </main>
+    </div>
+  </div></div>
+  </div>
+</section>
+</main>
+<div id="compare-stage">
+  <div class="inner">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <h2>Side-by-side</h2>
+      <button type="button" id="compare-close" class="chip-btn">Close</button>
+    </div>
+    <div id="compare-grid"></div>
+  </div>
+</div>
+<script>
+const panels = [...document.querySelectorAll('.panel')];
+const jumps = [...document.querySelectorAll('.jump a')];
+const groups = [...document.querySelectorAll('.group')];
+function applyFilter() {
+  const grp = document.querySelector('input[name=grp]:checked').value;
+  const hi = document.getElementById('hi-energy').checked;
+  const focus = document.getElementById('focus-hot').classList.contains('on');
+  const hot = new Set(['b','bplus','c','g']);
+  panels.forEach(p => {
+    let show = true;
+    if (grp === 'own') show = p.dataset.group === 'own' || p.dataset.group === 'current';
+    if (grp === 'peer') show = p.dataset.group === 'peer';
+    if (grp === 'b2b') show = p.dataset.group === 'b2b';
+    if (hi && Number(p.dataset.energy) < 8) show = false;
+    if (focus && !hot.has(p.dataset.id)) show = false;
+    p.style.display = show ? '' : 'none';
+  });
+  jumps.forEach(a => {
+    const p = document.getElementById(a.dataset.jump);
+    a.style.display = p && p.style.display !== 'none' ? '' : 'none';
+  });
+  groups.forEach(g => {
+    const next = panels.filter(p => p.dataset.group === g.dataset.group && p.style.display !== 'none');
+    g.style.display = next.length ? '' : 'none';
+  });
+}
+document.querySelectorAll('input[name=grp]').forEach(i => i.addEventListener('change', applyFilter));
+document.getElementById('hi-energy').addEventListener('change', applyFilter);
+document.getElementById('focus-hot').addEventListener('click', (e) => {
+  e.currentTarget.classList.toggle('on');
+  applyFilter();
+});
+const bar = document.getElementById('compare-bar');
+const label = document.getElementById('compare-label');
+function selected() {
+  return [...document.querySelectorAll('input[data-compare]:checked')].map(i => i.dataset.compare);
+}
+function syncCompare() {
+  const ids = selected();
+  bar.classList.toggle('show', ids.length > 0);
+  label.textContent = ids.length + ' selected for compare';
+  if (ids.length > 3) {
+    // keep last 3
+    const keep = new Set(ids.slice(-3));
+    document.querySelectorAll('input[data-compare]').forEach(i => { if (!keep.has(i.dataset.compare)) i.checked = false; });
+    return syncCompare();
+  }
+}
+document.querySelectorAll('input[data-compare]').forEach(i => i.addEventListener('change', syncCompare));
+document.getElementById('compare-clear').onclick = () => {
+  document.querySelectorAll('input[data-compare]').forEach(i => i.checked = false);
+  syncCompare();
+};
+document.getElementById('compare-open').onclick = () => {
+  const ids = selected();
+  const grid = document.getElementById('compare-grid');
+  grid.innerHTML = '';
+  ids.forEach(id => {
+    const src = document.getElementById(id);
+    const clone = src.cloneNode(true);
+    clone.querySelectorAll('input[data-compare]').forEach(n => n.remove());
+    grid.appendChild(clone);
+  });
+  document.getElementById('compare-stage').classList.add('show');
+};
+document.getElementById('compare-close').onclick = () => document.getElementById('compare-stage').classList.remove('show');
+document.getElementById('compare-stage').addEventListener('click', (e) => {
+  if (e.target.id === 'compare-stage') e.currentTarget.classList.remove('show');
+});
+</script>
+</body>
+</html>

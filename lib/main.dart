@@ -121,11 +121,11 @@ ThemeData _appTheme() {
   return ThemeData(
     fontFamily: 'Roboto',
     colorScheme: const ColorScheme.light(
-      primary: AppColors.primary,
+      primary: AppColors.brand,
       onPrimary: AppColors.onPrimary,
-      primaryContainer: AppColors.hover,
-      secondary: AppColors.accent,
-      onSecondary: AppColors.onPrimary,
+      primaryContainer: AppColors.brandSoft,
+      secondary: AppColors.cta,
+      onSecondary: AppColors.onCta,
       surface: AppColors.surface,
       onSurface: AppColors.textDark,
       error: AppColors.error,
@@ -133,12 +133,15 @@ ThemeData _appTheme() {
     scaffoldBackgroundColor: AppColors.background,
     cardTheme: CardThemeData(
       color: AppColors.cardBackground,
-      elevation: 1.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r),
+        side: const BorderSide(color: AppColors.divider, width: 1),
+      ),
     ),
     appBarTheme: AppBarTheme(
       centerTitle: false,
-      backgroundColor: AppColors.darkBrown,
+      backgroundColor: AppColors.brand,
       foregroundColor: AppColors.textLight,
       iconTheme: const IconThemeData(color: AppColors.textLight),
       actionsIconTheme: const IconThemeData(color: AppColors.textLight),
@@ -150,10 +153,11 @@ ThemeData _appTheme() {
         color: AppColors.textLight,
       ),
     ),
+    // B+: coral CTAs; teal stays on ColorScheme.primary for focus/selection.
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
+        backgroundColor: AppColors.cta,
+        foregroundColor: AppColors.onCta,
         textStyle: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12.r),
@@ -161,8 +165,8 @@ ThemeData _appTheme() {
       ),
     ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: AppColors.primary,
-      foregroundColor: AppColors.onPrimary,
+      backgroundColor: AppColors.cta,
+      foregroundColor: AppColors.onCta,
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(

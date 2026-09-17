@@ -183,7 +183,7 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                             onPressed: gpsBlocked ? null : controller.checkIn,
                             isLoading: controller.isSaving.value,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: AppColors.cta,
                               foregroundColor: AppColors.onPrimary,
                               minimumSize: const Size.fromHeight(48),
                             ),
@@ -195,7 +195,7 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                             onPressed: gpsBlocked ? null : controller.complete,
                             isLoading: controller.isSaving.value,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: AppColors.cta,
                               foregroundColor: AppColors.onPrimary,
                               minimumSize: const Size.fromHeight(48),
                             ),

@@ -395,7 +395,7 @@ class _AvailabilityTab extends StatelessWidget {
                     onPressed: controller.saveAvailability,
                     isLoading: controller.isSaving.value,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.cta,
                       foregroundColor: AppColors.onPrimary,
                       minimumSize: const Size.fromHeight(48),
                     ),
@@ -490,7 +490,7 @@ class _LeaveTab extends StatelessWidget {
                     onPressed: controller.createLeave,
                     isLoading: controller.isSaving.value,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.cta,
                       foregroundColor: AppColors.onPrimary,
                       minimumSize: const Size.fromHeight(44),
                     ),
