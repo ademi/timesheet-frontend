@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../core/auth/clear_session.dart';
 import '../../core/network/must_change_password.dart';
 import '../../core/services/session_service.dart';
 import '../../features/billing/data/exported_visit_ids_store.dart';
@@ -87,7 +88,18 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> logout() async {
+  Future<void> logout({bool confirmDiscardOutbox = false}) async {
+    if (hasPendingClockOutbox()) {
+      if (!confirmDiscardOutbox) {
+        if (Get.testMode) {
+          throw StateError('outbox_not_empty');
+        }
+        final confirmed = await _confirmDiscardOutboxLogout();
+        if (!confirmed) return;
+        confirmDiscardOutbox = true;
+      }
+      discardClockOutboxIfConfirmed(confirmDiscardOutbox: confirmDiscardOutbox);
+    }
     if (Get.isRegistered<PushNotificationService>()) {
       await Get.find<PushNotificationService>().unregisterCurrentDeviceToken();
     }
@@ -103,6 +115,29 @@ class AuthController extends GetxController {
     // After leaving any funnel route so dispose cannot re-ensure().
     OnboardingBinding.reset();
     HomeAlertsBinding.reset();
+  }
+
+  Future<bool> _confirmDiscardOutboxLogout() async {
+    return await Get.dialog<bool>(
+          AlertDialog(
+            title: const Text('Unsent check-ins'),
+            content: const Text(
+              'You have clock events waiting to sync. '
+              'Logging out will discard them unless you wait for sync to finish.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(result: false),
+                child: const Text('Stay signed in'),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.back(result: true),
+                child: const Text('Log out anyway'),
+              ),
+            ],
+          ),
+        ) ==
+        true;
   }
 
   @override
