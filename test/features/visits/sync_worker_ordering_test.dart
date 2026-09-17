@@ -93,6 +93,7 @@ void main() {
         return null;
       });
       registerFallbackValue(const VisitGpsBody(lat: 0, lng: 0));
+      registerFallbackValue(<String, dynamic>{});
     });
 
     tearDownAll(() async {
@@ -250,6 +251,161 @@ void main() {
       expect(store.pending(), hasLength(1));
       expect(store.pending().single.attempts, 1);
       expect(store.pending().single.lastError, 'offline');
+      expect(store.pending().single.isConflict, isFalse);
+      verifyNever(
+        () => visits.reportSyncConflict(
+          visitId: any(named: 'visitId'),
+          clientEventId: any(named: 'clientEventId'),
+          kind: any(named: 'kind'),
+          failureDetail: any(named: 'failureDetail'),
+          payloadJson: any(named: 'payloadJson'),
+        ),
+      );
+    });
+
+    test('terminal failure reports sync conflict and marks outbox', () async {
+      when(
+        () => visits.checkIn(
+          id: any(named: 'id'),
+          body: any(named: 'body'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenThrow(
+        const AppFailure(
+          code: 'invalid_visit_status',
+          message: 'Cannot change this visit in its current status.',
+          presentation: AppFailurePresentation.toast,
+          statusCode: 409,
+        ),
+      );
+      when(
+        () => visits.reportSyncConflict(
+          visitId: any(named: 'visitId'),
+          clientEventId: any(named: 'clientEventId'),
+          kind: any(named: 'kind'),
+          failureDetail: any(named: 'failureDetail'),
+          payloadJson: any(named: 'payloadJson'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await store.append(
+        _item(
+          id: 'e1',
+          visitId: 'v1',
+          kind: ClockOutboxKind.checkIn,
+          tap: '2026-09-07T08:00:00.000Z',
+        ),
+      );
+
+      final worker = SyncWorker(
+        store: store,
+        repository: visits,
+        connectivityStream: const Stream.empty(),
+        observeLifecycle: false,
+        backoffForAttempt: (_) => Duration.zero,
+      );
+      await worker.flush();
+
+      expect(store.pending(), hasLength(1));
+      expect(store.pending().single.isConflict, isTrue);
+      expect(store.pending().single.lastError, 'invalid_visit_status');
+      verify(
+        () => visits.reportSyncConflict(
+          visitId: 'v1',
+          clientEventId: 'e1',
+          kind: 'check_in',
+          failureDetail: 'invalid_visit_status',
+          payloadJson: any(named: 'payloadJson'),
+        ),
+      ).called(1);
+      verify(
+        () => visits.checkIn(
+          id: any(named: 'id'),
+          body: any(named: 'body'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).called(1);
+
+      // Second flush must not re-POST check-in or conflict.
+      clearInteractions(visits);
+      await worker.flush();
+      verifyNever(
+        () => visits.checkIn(
+          id: any(named: 'id'),
+          body: any(named: 'body'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      );
+      verifyNever(
+        () => visits.reportSyncConflict(
+          visitId: any(named: 'visitId'),
+          clientEventId: any(named: 'clientEventId'),
+          kind: any(named: 'kind'),
+          failureDetail: any(named: 'failureDetail'),
+          payloadJson: any(named: 'payloadJson'),
+        ),
+      );
+    });
+
+    test('flush calls checkIn before complete for same visit', () async {
+      final order = <String>[];
+      when(
+        () => visits.checkIn(
+          id: any(named: 'id'),
+          body: any(named: 'body'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer((invocation) async {
+        order.add('checkIn:${invocation.namedArguments[#idempotencyKey]}');
+        return const VisitCheckInOut(
+          visitId: 'v1',
+          status: 'checked_in',
+          timeEntryId: 'te-1',
+        );
+      });
+      when(
+        () => visits.complete(
+          id: any(named: 'id'),
+          body: any(named: 'body'),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer((invocation) async {
+        order.add('complete:${invocation.namedArguments[#idempotencyKey]}');
+        return const VisitCompleteOut(
+          visitId: 'v1',
+          status: 'completed',
+        );
+      });
+
+      // Enqueue complete first (earlier tap would be wrong); check-in earlier tap.
+      await store.append(
+        _item(
+          id: 'c1',
+          visitId: 'v1',
+          kind: ClockOutboxKind.complete,
+          tap: '2026-09-07T09:00:00.000Z',
+        ),
+      );
+      await store.append(
+        _item(
+          id: 'i1',
+          visitId: 'v1',
+          kind: ClockOutboxKind.checkIn,
+          tap: '2026-09-07T08:00:00.000Z',
+        ),
+      );
+
+      final worker = SyncWorker(
+        store: store,
+        repository: visits,
+        connectivityStream: const Stream.empty(),
+        observeLifecycle: false,
+        backoffForAttempt: (_) => Duration.zero,
+      );
+      await worker.flush();
+
+      expect(order, ['checkIn:i1', 'complete:c1']);
+      expect(store.pending(), isEmpty);
     });
   });
 }

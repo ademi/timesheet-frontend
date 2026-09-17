@@ -27,19 +27,19 @@ class OutboxStore {
   Future<void> markAttempt(String clientEventId, String error) async {
     final next = pending().map((e) {
       if (e.clientEventId != clientEventId) return e;
-      return ClockOutboxItem(
-        clientEventId: e.clientEventId,
-        visitId: e.visitId,
-        kind: e.kind,
-        tapTimeIso: e.tapTimeIso,
-        locationStatus: e.locationStatus,
-        locationFailReason: e.locationFailReason,
-        lat: e.lat,
-        lng: e.lng,
-        accuracyM: e.accuracyM,
-        deviceOffline: e.deviceOffline,
+      return e.copyWith(attempts: e.attempts + 1, lastError: error);
+    }).toList();
+    await _box.write(_key, next.map((e) => e.toJson()).toList());
+  }
+
+  /// Terminal sync failure: keep item for SyncFailed UI; skip further push.
+  Future<void> markConflict(String clientEventId, String detail) async {
+    final next = pending().map((e) {
+      if (e.clientEventId != clientEventId) return e;
+      return e.copyWith(
         attempts: e.attempts + 1,
-        lastError: error,
+        lastError: detail,
+        isConflict: true,
       );
     }).toList();
     await _box.write(_key, next.map((e) => e.toJson()).toList());

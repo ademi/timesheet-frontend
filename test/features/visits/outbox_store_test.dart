@@ -66,4 +66,21 @@ void main() {
       throwsA(isA<StateError>()),
     );
   });
+
+  test('markConflict sets lastError and isConflict', () async {
+    await store.append(ClockOutboxItem(
+      clientEventId: 'e3',
+      visitId: 'v1',
+      kind: ClockOutboxKind.checkIn,
+      tapTimeIso: DateTime.utc(2026, 9, 7, 8).toIso8601String(),
+      locationStatus: 'unavailable',
+      locationFailReason: 'x',
+      deviceOffline: true,
+    ));
+    await store.markConflict('e3', 'invalid_visit_status');
+    final item = store.pending().single;
+    expect(item.isConflict, isTrue);
+    expect(item.lastError, 'invalid_visit_status');
+    expect(item.attempts, 1);
+  });
 }

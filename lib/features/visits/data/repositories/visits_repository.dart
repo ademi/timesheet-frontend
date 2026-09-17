@@ -57,6 +57,20 @@ class VisitsRepository {
     required String idempotencyKey,
   }) => _remote.complete(id: id, body: body, idempotencyKey: idempotencyKey);
 
+  Future<void> reportSyncConflict({
+    required String visitId,
+    required String clientEventId,
+    required String kind,
+    required String failureDetail,
+    required Map<String, dynamic> payloadJson,
+  }) => _remote.reportSyncConflict(
+    visitId: visitId,
+    clientEventId: clientEventId,
+    kind: kind,
+    failureDetail: failureDetail,
+    payloadJson: payloadJson,
+  );
+
   Future<VisitTaskOut> patchTask({
     required String visitId,
     required String taskId,

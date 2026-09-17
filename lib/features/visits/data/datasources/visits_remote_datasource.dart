@@ -117,6 +117,30 @@ class VisitsRemoteDataSource {
     }
   }
 
+  /// Report a terminal offline clock failure for staff conflict review.
+  Future<void> reportSyncConflict({
+    required String visitId,
+    required String clientEventId,
+    required String kind,
+    required String failureDetail,
+    required Map<String, dynamic> payloadJson,
+  }) async {
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        ApiPaths.attendanceSyncConflicts,
+        data: {
+          'visit_id': visitId,
+          'client_event_id': clientEventId,
+          'kind': kind,
+          'failure_detail': failureDetail,
+          'payload_json': payloadJson,
+        },
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<VisitTaskOut> patchTask({
     required String visitId,
     required String taskId,

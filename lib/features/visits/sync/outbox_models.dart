@@ -14,6 +14,7 @@ class ClockOutboxItem {
     this.deviceOffline = false,
     this.attempts = 0,
     this.lastError,
+    this.isConflict = false,
   });
 
   final String clientEventId;
@@ -28,6 +29,11 @@ class ClockOutboxItem {
   final bool deviceOffline;
   final int attempts;
   final String? lastError;
+  final bool isConflict;
+
+  /// API kind for sync-conflict create (`check_in` | `complete`).
+  String get apiKind =>
+      kind == ClockOutboxKind.checkIn ? 'check_in' : 'complete';
 
   Map<String, dynamic> toJson() => {
         'client_event_id': clientEventId,
@@ -42,6 +48,21 @@ class ClockOutboxItem {
         'device_offline': deviceOffline,
         'attempts': attempts,
         'last_error': lastError,
+        'is_conflict': isConflict,
+      };
+
+  /// Frozen payload posted to sync-conflicts (API kind naming).
+  Map<String, dynamic> toConflictPayloadJson() => {
+        'client_event_id': clientEventId,
+        'visit_id': visitId,
+        'kind': apiKind,
+        'tap_time': tapTimeIso,
+        'location_status': locationStatus,
+        'location_fail_reason': locationFailReason,
+        'lat': lat,
+        'lng': lng,
+        'accuracy_m': accuracyM,
+        'device_offline': deviceOffline,
       };
 
   factory ClockOutboxItem.fromJson(Map<String, dynamic> j) => ClockOutboxItem(
@@ -57,5 +78,28 @@ class ClockOutboxItem {
         deviceOffline: j['device_offline'] as bool? ?? false,
         attempts: j['attempts'] as int? ?? 0,
         lastError: j['last_error'] as String?,
+        isConflict: j['is_conflict'] as bool? ?? false,
+      );
+
+  ClockOutboxItem copyWith({
+    int? attempts,
+    String? lastError,
+    bool clearLastError = false,
+    bool? isConflict,
+  }) =>
+      ClockOutboxItem(
+        clientEventId: clientEventId,
+        visitId: visitId,
+        kind: kind,
+        tapTimeIso: tapTimeIso,
+        locationStatus: locationStatus,
+        locationFailReason: locationFailReason,
+        lat: lat,
+        lng: lng,
+        accuracyM: accuracyM,
+        deviceOffline: deviceOffline,
+        attempts: attempts ?? this.attempts,
+        lastError: clearLastError ? null : (lastError ?? this.lastError),
+        isConflict: isConflict ?? this.isConflict,
       );
 }

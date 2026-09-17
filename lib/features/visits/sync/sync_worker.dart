@@ -8,18 +8,21 @@ import '../data/models/visit_models.dart';
 import '../data/repositories/visits_repository.dart';
 import 'outbox_models.dart';
 import 'outbox_store.dart';
+import 'sync_error_classifier.dart';
 
 /// D4: sort by tap time; defer complete while a check-in for the same visit
-/// is still pending.
+/// is still pending. Skip items already marked as terminal conflicts.
 List<ClockOutboxItem> orderedForFlush(List<ClockOutboxItem> pending) {
   final sorted = [...pending]
     ..sort((a, b) => a.tapTimeIso.compareTo(b.tapTimeIso));
   final out = <ClockOutboxItem>[];
+  // Conflict check-ins still block complete (same visit) until discarded.
   final checkInStillPending = sorted
       .where((e) => e.kind == ClockOutboxKind.checkIn)
       .map((e) => e.visitId)
       .toSet();
   for (final item in sorted) {
+    if (item.isConflict) continue;
     if (item.kind == ClockOutboxKind.complete &&
         checkInStillPending.contains(item.visitId)) {
       continue;
@@ -123,22 +126,27 @@ class SyncWorker with WidgetsBindingObserver {
     try {
       do {
         _flushAgain = false;
-        final items = orderedForFlush(store.pending());
-        for (var i = 0; i < items.length; i++) {
-          if (i > 0) {
-            await Future<void>.delayed(
-              _backoffForAttempt(items[i].attempts),
-            );
+        final attempted = <String>{};
+        var pushedInPass = false;
+        while (true) {
+          final items = orderedForFlush(store.pending())
+              .where((e) => !attempted.contains(e.clientEventId))
+              .toList();
+          if (items.isEmpty) break;
+          final next = items.first;
+          attempted.add(next.clientEventId);
+          if (pushedInPass) {
+            await Future<void>.delayed(_backoffForAttempt(next.attempts));
           }
-          // Re-read pending — prior ack may have changed ordering eligibility.
-          final stillThere = store
-              .pending()
-              .any((e) => e.clientEventId == items[i].clientEventId);
+          final currentList = store.pending();
+          final stillThere = currentList
+              .any((e) => e.clientEventId == next.clientEventId);
           if (!stillThere) continue;
-          final current = store
-              .pending()
-              .firstWhere((e) => e.clientEventId == items[i].clientEventId);
+          final current = currentList
+              .firstWhere((e) => e.clientEventId == next.clientEventId);
+          if (current.isConflict) continue;
           await _pushOne(current);
+          pushedInPass = true;
         }
       } while (_flushAgain);
     } finally {
@@ -168,13 +176,44 @@ class SyncWorker with WidgetsBindingObserver {
       onChanged?.call();
       return true;
     } on AppFailure catch (e) {
-      await store.markAttempt(item.clientEventId, e.message);
-      onChanged?.call();
+      await _handlePushFailure(item, e);
       return false;
     } catch (e) {
       await store.markAttempt(item.clientEventId, e.toString());
       onChanged?.call();
       return false;
     }
+  }
+
+  Future<void> _handlePushFailure(ClockOutboxItem item, AppFailure e) async {
+    final failureClass = classifySyncFailure(
+      statusCode: e.statusCode,
+      detail: e.code,
+    );
+    if (failureClass == SyncFailureClass.terminal) {
+      final detail =
+          (e.code.isNotEmpty && e.code != 'unknown') ? e.code : e.message;
+      try {
+        await repository.reportSyncConflict(
+          visitId: item.visitId,
+          clientEventId: item.clientEventId,
+          kind: item.apiKind,
+          failureDetail: detail,
+          payloadJson: item.toConflictPayloadJson(),
+        );
+        await store.markConflict(item.clientEventId, detail);
+      } on AppFailure catch (reportErr) {
+        // Could not report — keep retryable so we try conflict POST again.
+        await store.markAttempt(
+          item.clientEventId,
+          reportErr.message,
+        );
+      } catch (reportErr) {
+        await store.markAttempt(item.clientEventId, reportErr.toString());
+      }
+    } else {
+      await store.markAttempt(item.clientEventId, e.message);
+    }
+    onChanged?.call();
   }
 }
