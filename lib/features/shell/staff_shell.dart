@@ -42,6 +42,12 @@ abstract final class StaffShellNav {
       anyOf: [AppPermissions.visitsRead, AppPermissions.shiftsRead],
     ),
     _StaffDest(
+      icon: Icons.fact_check_outlined,
+      label: 'Attendance review',
+      route: AppRoutes.staffAttendanceReview,
+      anyOf: [AppPermissions.attendanceAdjust, AppPermissions.visitsManage],
+    ),
+    _StaffDest(
       icon: Icons.payments_outlined,
       label: 'Payments',
       route: AppRoutes.staffPayments,

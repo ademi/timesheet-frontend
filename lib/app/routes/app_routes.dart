@@ -36,6 +36,7 @@ abstract class AppRoutes {
   static const staffVisits = '/staff/visits';
   static const staffVisitDetail = '/staff/visits/detail';
   static const staffShiftDetail = '/staff/visits/shift-detail';
+  static const staffAttendanceReview = '/staff/attendance-review';
 
   /// Full-screen Group Shift wizard (People · When · Review).
   static const staffGroupShiftBook = '/staff/visits/book-group';

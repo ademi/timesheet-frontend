@@ -6,6 +6,7 @@ import '../../app/routes/middlewares/auth_guard.dart';
 import '../../app/routes/middlewares/permission_guard.dart';
 import '../../app/constants/app_permissions.dart';
 import '../../app/views/v2/wrong_actor_view.dart';
+import '../attendance/attendance_routes.dart';
 import '../billing/billing_routes.dart';
 import '../clients/clients_routes.dart';
 import '../compliance_ops/bindings/compliance_ops_binding.dart';
@@ -55,6 +56,7 @@ abstract final class ShellPages {
     ...ClientsPages.routes,
     ...JobsPages.routes,
     ...VisitsPages.routes,
+    ...AttendancePages.routes,
     ...ContractorSchedulePages.routes,
     ...PayrollPages.routes,
     ...BillingPages.routes,

@@ -8,6 +8,7 @@ import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/staff_visits_controller.dart';
 import '../data/models/visit_models.dart';
+import '../../attendance/widgets/visit_attendance_review_banner.dart';
 import 'staff_record_visit_dialog.dart';
 
 String _fmt(DateTime dt) {
@@ -72,6 +73,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                           _ErrorBox(err),
                           const SizedBox(height: 12),
                         ],
+                        VisitAttendanceReviewBanner(visitId: v.id),
                         Text(
                           v.jobTitle ?? 'Visit',
                           style: Get.textTheme.titleMedium,

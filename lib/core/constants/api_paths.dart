@@ -170,6 +170,14 @@ abstract final class ApiPaths {
   static String jobSupportItem(String id) => '${job(id)}/support-item';
   static const visits = '$_v1/visits';
   static const attendanceAdjustments = '$_v1/attendance/adjustments';
+  static const attendanceExceptions = '$_v1/attendance/exceptions';
+  static String attendanceExceptionAck(String id) =>
+      '$attendanceExceptions/$id/ack';
+  static const attendanceSyncConflicts = '$_v1/attendance/sync-conflicts';
+  static String attendanceSyncConflictForceAccept(String id) =>
+      '$attendanceSyncConflicts/$id/force-accept';
+  static String attendanceSyncConflictDiscard(String id) =>
+      '$attendanceSyncConflicts/$id/discard';
   static String visit(String id) => '$visits/$id';
   static String visitCancel(String id) => '${visit(id)}/cancel';
   static String visitCheckIn(String id) => '${visit(id)}/check-in';

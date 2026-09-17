@@ -4,6 +4,7 @@ import 'package:get_storage/get_storage.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
+import '../../attendance/bindings/attendance_binding.dart';
 import '../../billing/bindings/billing_binding.dart';
 import '../../clients/bindings/clients_binding.dart';
 import '../../clients/data/repositories/clients_repository.dart';
@@ -99,6 +100,7 @@ class StaffVisitsBinding extends Bindings {
     EngagementsBinding.ensureShared();
     PayrollBinding.ensureShared();
     ClientsBinding.ensureShared();
+    AttendanceBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<StaffVisitsController>()) {
       Get.put(
