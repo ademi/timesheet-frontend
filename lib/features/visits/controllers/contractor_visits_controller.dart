@@ -16,6 +16,7 @@ import '../data/repositories/visits_repository.dart';
 import '../services/visit_location_service.dart';
 import '../sync/outbox_models.dart';
 import '../sync/outbox_store.dart';
+import '../sync/sync_error_classifier.dart';
 import '../sync/sync_worker.dart';
 
 enum VisitClockSyncUi { none, pending, failed }
@@ -451,7 +452,9 @@ class ContractorVisitsController extends GetxController {
   }
 
   /// Immediate push; returns true on ACK. Network failures return false.
-  /// Non-retryable [AppFailure] is rethrown (caller removes outbox item).
+  /// Terminal clock failures report a sync conflict (same as [SyncWorker]).
+  /// Form-requirement failures are rethrown so the caller can clear optimistic
+  /// state and show the forms UI.
   Future<bool> _tryPushNow(ClockOutboxItem item) async {
     try {
       final body = gpsBodyFromOutbox(item);
@@ -472,6 +475,36 @@ class ContractorVisitsController extends GetxController {
     } on AppFailure catch (e) {
       if (_isRetryableFailure(e)) {
         // Leave Pending without lastError so UI stays "Pending sync".
+        return false;
+      }
+      if (e.code == 'forms_incomplete' ||
+          e.code == 'required_forms_incomplete') {
+        rethrow;
+      }
+      final failureClass = classifySyncFailure(
+        statusCode: e.statusCode,
+        detail: e.code,
+      );
+      if (failureClass == SyncFailureClass.terminal) {
+        final detail =
+            (e.code.isNotEmpty && e.code != 'unknown') ? e.code : e.message;
+        try {
+          await _repository.reportSyncConflict(
+            visitId: item.visitId,
+            clientEventId: item.clientEventId,
+            kind: item.apiKind,
+            failureDetail: detail,
+            payloadJson: item.toConflictPayloadJson(),
+          );
+          await outbox.markConflict(item.clientEventId, detail);
+          _bumpOutbox();
+        } on AppFailure {
+          await outbox.markAttempt(item.clientEventId, e.message);
+          _bumpOutbox();
+        } catch (_) {
+          await outbox.markAttempt(item.clientEventId, e.message);
+          _bumpOutbox();
+        }
         return false;
       }
       rethrow;
