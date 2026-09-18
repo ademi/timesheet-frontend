@@ -94,7 +94,7 @@ Matches VS Code **“Chrome: frontend (local APIs)”**:
 ```bash
 flutter run -d chrome \
   --web-port=3000 \
-  --dart-define=API_BASE_URL=http://localhost:8000
+  --dart-define=API_BASE_URL=http://localhost:8000 --dart-define=DOMAIN_V2=true
 ```
 
 ### Chrome — default / remote API
