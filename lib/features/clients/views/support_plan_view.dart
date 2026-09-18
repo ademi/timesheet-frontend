@@ -6,11 +6,7 @@ import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
 import '../controllers/support_plan_controller.dart';
-import '../widgets/client_budget_remaining_section.dart';
-import '../widgets/support_plan_clinical_section.dart';
-import '../widgets/support_plan_consent_section.dart';
-import '../widgets/support_plan_form_body.dart';
-import '../widgets/support_plan_funding_section.dart';
+import '../widgets/support_plan_wizard_shell.dart';
 
 class SupportPlanView extends GetView<SupportPlanController> {
   const SupportPlanView({super.key});
@@ -30,6 +26,8 @@ class SupportPlanView extends GetView<SupportPlanController> {
             controller.clinical.errorMessage.value;
         final soft = controller.activateSoftWarning.value;
         final busy = controller.isBusy;
+        final step = controller.wizardStep.value;
+        final onReview = step >= SupportPlanController.wizardStepCount - 1;
         return Column(
           children: [
             Expanded(
@@ -63,27 +61,7 @@ class SupportPlanView extends GetView<SupportPlanController> {
                           ),
                           const SizedBox(height: 12),
                         ],
-                        SupportPlanFundingSection(
-                          store: controller.fundingConsent,
-                          clientId: controller.clientId,
-                        ),
-                        if (controller.canViewBudget)
-                          ClientBudgetRemainingSection(
-                            summary: controller.budgetSummary.value,
-                            isLoading: controller.isLoadingBudget.value,
-                          ),
-                        const SizedBox(height: 24),
-                        SupportPlanConsentSection(
-                          store: controller.fundingConsent,
-                          clientId: controller.clientId,
-                        ),
-                        const SizedBox(height: 24),
-                        SupportPlanClinicalSection(
-                          store: controller.clinical,
-                          clientId: controller.clientId,
-                        ),
-                        const SizedBox(height: 24),
-                        SupportPlanFormBody(controller: controller),
+                        SupportPlanWizardShell(controller: controller),
                       ],
                     ),
                   ),
@@ -111,14 +89,24 @@ class SupportPlanView extends GetView<SupportPlanController> {
                 ),
               ),
             FormStickyActions(
-              onCancel: busy ? null : () => Get.back(),
+              cancelLabel: step > 0 ? 'Back' : 'Cancel',
+              onCancel: busy
+                  ? null
+                  : () {
+                      if (step > 0) {
+                        controller.prevStep();
+                      } else {
+                        Get.back();
+                      }
+                    },
               secondaryLabel: 'Save draft',
               onSecondary: busy ? null : () => controller.saveDraft(),
-              primaryLabel: 'Activate',
-              onPrimary:
-                  !controller.canActivate || busy
+              primaryLabel: onReview ? 'Activate' : 'Next',
+              onPrimary: onReview
+                  ? (!controller.canActivate || busy
                       ? null
-                      : () => controller.activate(),
+                      : () => controller.activate())
+                  : (busy ? null : () => controller.nextStep()),
               isLoading: busy,
             ),
           ],

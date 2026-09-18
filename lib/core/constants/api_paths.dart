@@ -143,6 +143,25 @@ abstract final class ApiPaths {
       '${clientSupportPlans(clientId)}/$planId';
   static String clientBudgetSummary(String clientId) =>
       '${client(clientId)}/budget-summary';
+  static String clientStrengthsNeeds(String clientId) =>
+      '${client(clientId)}/strengths-needs';
+  static String clientStrengthsNeedsCurrent(String clientId) =>
+      '${clientStrengthsNeeds(clientId)}/current';
+  static String clientStrengthsNeedsAssessment(
+    String clientId,
+    String assessmentId,
+  ) =>
+      '${clientStrengthsNeeds(clientId)}/$assessmentId';
+  static String clientStrengthsNeedsSubmit(
+    String clientId,
+    String assessmentId,
+  ) =>
+      '${clientStrengthsNeedsAssessment(clientId, assessmentId)}/submit';
+  static String clientStrengthsNeedsImport(
+    String clientId,
+    String assessmentId,
+  ) =>
+      '${clientStrengthsNeedsAssessment(clientId, assessmentId)}/import-to-plan';
   static String publicClientInvite(String token) =>
       '$_v1/public/client-invites/$token';
   static String publicClientInviteAcknowledge(String token) =>

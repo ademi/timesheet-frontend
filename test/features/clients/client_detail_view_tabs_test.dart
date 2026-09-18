@@ -65,6 +65,7 @@ void main() {
     ).thenAnswer((_) async => const ClientProfileBundle(facts: []));
     when(() => clients.listSites(any())).thenAnswer((_) async => []);
     when(() => clients.listContacts(any())).thenAnswer((_) async => []);
+    when(() => clients.listStrengthsNeeds(any())).thenAnswer((_) async => []);
     controller = ClientsController(
       repository: clients,
       session: session,
@@ -152,7 +153,7 @@ void main() {
     expect(find.text('Upcoming'), findsNothing);
 
     await _openTab(tester, ClientsController.tabCarePlan);
-    expect(find.text('Primary disability'), findsOneWidget);
+    expect(find.text('Funding'), findsWidgets);
     expect(find.text('Start ongoing support'), findsNothing);
     expect(find.text('Upcoming'), findsNothing);
     expect(find.text('Past'), findsNothing);

@@ -18,6 +18,7 @@ abstract class AppRoutes {
   static const staffClientOnboarding = '/staff/clients/onboarding';
   static const staffClientDetail = '/staff/clients/detail';
   static const staffClientSupportPlan = '/staff/clients/support-plan';
+  static const staffClientStrengthsNeeds = '/staff/clients/strengths-needs';
   static const staffClientSiteForm = '/staff/clients/site-form';
   static const staffClientContactForm = '/staff/clients/contact-form';
 

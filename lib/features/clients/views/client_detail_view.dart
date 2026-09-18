@@ -300,15 +300,29 @@ class _CarePlanSticky extends StatelessWidget {
               ),
             ),
           if (canEdit)
-            FormStickyActions(
-              onCancel: busy ? null : () => plan.discardDrafts(),
-              secondaryLabel: 'Save draft',
-              onSecondary: busy ? null : () => plan.saveDraft(),
-              primaryLabel: 'Activate',
-              onPrimary:
-                  !plan.canActivate || busy ? null : () => plan.activate(),
-              isLoading: busy,
-            ),
+            Obx(() {
+              final step = plan.wizardStep.value;
+              final onReview = step >= SupportPlanController.wizardStepCount - 1;
+              return FormStickyActions(
+                cancelLabel: step > 0 ? 'Back' : 'Discard',
+                onCancel: busy
+                    ? null
+                    : () {
+                        if (step > 0) {
+                          plan.prevStep();
+                        } else {
+                          plan.discardDrafts();
+                        }
+                      },
+                secondaryLabel: 'Save draft',
+                onSecondary: busy ? null : () => plan.saveDraft(),
+                primaryLabel: onReview ? 'Activate' : 'Next',
+                onPrimary: onReview
+                    ? (!plan.canActivate || busy ? null : () => plan.activate())
+                    : (busy ? null : () => plan.nextStep()),
+                isLoading: busy,
+              );
+            }),
         ],
       );
     });
