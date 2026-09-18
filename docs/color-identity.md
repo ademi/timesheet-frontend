@@ -71,7 +71,10 @@ Teal structures the workplace chrome. Coral is scarce and reserved for primary a
 2. **Coral** = action (primary buttons, FABs, Assign / Add client).
 3. **Amber** = open / needs worker (not coral).
 4. **Red / green** = error / success only.
-5. **Logo** = existing R + clock mark; do not replace with a generic Material icon when the asset loads.
+5. **Logo** = SVG wordmark (`assets/images/logo.svg`) via `RostiqLogo`. Source is
+   monochrome black; tint at runtime with `ColorFilter` + `BlendMode.srcIn`
+   (default `AppColors.brand` teal, or `AppColors.cta` coral). Do not bake brand
+   color into the SVG file.
 
 ---
 
