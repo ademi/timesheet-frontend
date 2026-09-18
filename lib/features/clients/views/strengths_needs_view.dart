@@ -136,9 +136,18 @@ class StrengthsNeedsView extends GetView<StrengthsNeedsController> {
                 isLoading: busy,
               )
             else
-              FormStickyActions(
-                onCancel: busy ? null : () => Get.back(result: true),
-                isLoading: busy,
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: busy ? null : () => Get.back(result: true),
+                      child: const Text('Close'),
+                    ),
+                  ),
+                ),
               ),
           ],
         );
