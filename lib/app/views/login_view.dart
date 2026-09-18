@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../core/constants/feature_flags.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../core/responsive/max_width_box.dart';
-import '../../shared/utils/external_url.dart';
 import '../controllers/auth_controller.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
