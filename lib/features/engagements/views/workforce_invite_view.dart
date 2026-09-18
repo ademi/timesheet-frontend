@@ -118,7 +118,7 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
                             ? null
                             : controller.submitInvite,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.cta,
                       foregroundColor: AppColors.onPrimary,
                       minimumSize: const Size.fromHeight(48),
                     ),

@@ -133,7 +133,7 @@ class _FormTemplateEditorViewState extends State<FormTemplateEditorView> {
                               if (ok && mounted) Get.back(result: true);
                             },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.cta,
                       foregroundColor: AppColors.onPrimary,
                       minimumSize: const Size.fromHeight(48),
                     ),

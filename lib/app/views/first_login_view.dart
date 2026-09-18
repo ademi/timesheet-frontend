@@ -97,7 +97,7 @@ class FirstLoginView extends StatelessWidget {
                                 ? null
                                 : controller.submit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: AppColors.cta,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child:

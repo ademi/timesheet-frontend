@@ -112,7 +112,7 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                       onPressed: controller.save,
                       isLoading: controller.isSaving.value,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.cta,
                         foregroundColor: AppColors.onPrimary,
                         minimumSize: const Size.fromHeight(48),
                       ),

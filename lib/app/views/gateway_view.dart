@@ -6,6 +6,7 @@ import '../../core/responsive/breakpoints.dart';
 import '../../core/responsive/max_width_box.dart';
 import '../controllers/gateway_controller.dart';
 import '../themes/app_colors.dart';
+import '../../shared/widgets/rostiq_logo.dart';
 
 class GatewayView extends GetView<GatewayController> {
   const GatewayView({super.key});
@@ -25,17 +26,7 @@ class GatewayView extends GetView<GatewayController> {
                   child: Column(
                     children: [
                       const SizedBox(height: 24),
-                      Image.asset(
-                        'assets/images/logo.png',
-                        height: 56,
-                        fit: BoxFit.contain,
-                        errorBuilder:
-                            (_, __, ___) => const Icon(
-                              Icons.schedule_rounded,
-                              size: 56,
-                              color: AppColors.primary,
-                            ),
-                      ),
+                      const RostiqLogo(height: 56),
                       const SizedBox(height: 28),
                       const Text(
                         'Rostiq',
@@ -93,7 +84,7 @@ class GatewayView extends GetView<GatewayController> {
                         'Billing & company signup live on the landing site.',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade600,
+                          color: AppColors.textMuted,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -102,7 +93,7 @@ class GatewayView extends GetView<GatewayController> {
                         AppEnv.landingUrl,
                         style: TextStyle(
                           fontSize: 10,
-                          color: Colors.grey.shade500,
+                          color: AppColors.slate500,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -202,7 +193,7 @@ class _ActionCard extends StatelessWidget {
                       subtitle,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: AppColors.textMuted,
                       ),
                     ),
                   ],

@@ -71,7 +71,7 @@ class ClientFormView extends GetView<ClientsController> {
                       onPressed: controller.saveClient,
                       isLoading: controller.isSaving.value,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.cta,
                         foregroundColor: AppColors.onPrimary,
                         minimumSize: const Size.fromHeight(48),
                       ),

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../core/constants/feature_flags.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../core/responsive/max_width_box.dart';
-import '../../shared/utils/external_url.dart';
 import '../controllers/auth_controller.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
+import '../../shared/widgets/rostiq_logo.dart';
 
 class LoginView extends GetView<AuthController> {
   const LoginView({super.key});
@@ -28,8 +27,8 @@ class LoginView extends GetView<AuthController> {
                   children: [
                     const SizedBox(height: 16),
 
-                    // ── Logo ──────────────────────────────────
-                    _LogoWidget(),
+                    // ── Logo (SVG, tinted teal brand) ─────────
+                    const RostiqLogo(height: 56),
 
                     const SizedBox(height: 28),
 
@@ -54,7 +53,7 @@ class LoginView extends GetView<AuthController> {
                     const SizedBox(height: 4),
                     const Text(
                       'Staff or contractor account',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
 
                     const SizedBox(height: 34),
@@ -87,7 +86,7 @@ class LoginView extends GetView<AuthController> {
                           const SizedBox(height: 4),
                           const Text(
                             'Sign in to continue',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                           ),
                           const SizedBox(height: 20),
 
@@ -146,8 +145,8 @@ class LoginView extends GetView<AuthController> {
                                         ? null
                                         : () => controller.login(),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: AppColors.onPrimary,
+                                  backgroundColor: AppColors.cta,
+                                  foregroundColor: AppColors.onCta,
                                   disabledBackgroundColor: AppColors.primary
                                       .withValues(alpha: 0.6),
                                   shape: RoundedRectangleBorder(
@@ -197,24 +196,6 @@ class LoginView extends GetView<AuthController> {
   }
 }
 
-// ── Logo Widget ────────────────────────────────────────────────
-class _LogoWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      'assets/images/logo.png',
-      height: 56,
-      fit: BoxFit.contain,
-      errorBuilder:
-          (_, __, ___) => const Icon(
-            Icons.schedule_rounded,
-            size: 56,
-            color: AppColors.primary,
-          ),
-    );
-  }
-}
-
 // ── Reusable Input Field ───────────────────────────────────────
 class _InputField extends StatelessWidget {
   final TextEditingController controller;
@@ -251,7 +232,7 @@ class _InputField extends StatelessWidget {
         prefixIcon: Icon(icon, color: AppColors.primary),
         suffixIcon: suffixIcon,
         labelStyle: const TextStyle(color: AppColors.primaryDark, fontSize: 13),
-        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+        hintStyle: TextStyle(color: AppColors.slate400, fontSize: 12),
         filled: true,
         fillColor: AppColors.background,
         border: OutlineInputBorder(

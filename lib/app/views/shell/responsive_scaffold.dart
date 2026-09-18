@@ -58,9 +58,11 @@ class ResponsiveScaffold extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
               ),
-              unselectedIconTheme: IconThemeData(color: Colors.grey.shade600),
-              unselectedLabelTextStyle: TextStyle(
-                color: Colors.grey.shade700,
+              unselectedIconTheme: const IconThemeData(
+                color: AppColors.textMuted,
+              ),
+              unselectedLabelTextStyle: const TextStyle(
+                color: AppColors.textMuted,
                 fontSize: 11,
               ),
               destinations: [

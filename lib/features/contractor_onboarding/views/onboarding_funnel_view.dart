@@ -103,7 +103,7 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
                           controller.isLoading.value ||
                           controller.hasPendingAction,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.cta,
                         foregroundColor: AppColors.onPrimary,
                       ),
                       child: Text(

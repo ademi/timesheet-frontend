@@ -109,7 +109,7 @@ class UnifiedSupportView extends GetView<UnifiedSupportController> {
                                         ? null
                                         : controller.nextStep,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
+                                  backgroundColor: AppColors.cta,
                                   foregroundColor: AppColors.onPrimary,
                                 ),
                                 child: const Text('Next'),
@@ -206,7 +206,7 @@ class _AssignStepActions extends StatelessWidget {
             onPressed: () => _submit(context),
             isLoading: controller.isSaving.value,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: AppColors.cta,
               foregroundColor: AppColors.onPrimary,
               minimumSize: const Size.fromHeight(48),
             ),

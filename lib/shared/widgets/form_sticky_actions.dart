@@ -59,8 +59,8 @@ class FormStickyActions extends StatelessWidget {
                 onPressed: onPrimary,
                 isLoading: isLoading,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
+                  backgroundColor: AppColors.cta,
+                  foregroundColor: AppColors.onCta,
                   minimumSize: _minSize,
                 ),
                 child: Text(primaryLabel),

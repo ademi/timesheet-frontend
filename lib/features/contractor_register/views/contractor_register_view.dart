@@ -59,7 +59,7 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                             'any remaining onboarding steps.',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey.shade700,
+                              color: AppColors.textMuted,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -117,7 +117,7 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                                 controller.isLoading.value ||
                                 controller.isInviteLoading.value,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: AppColors.cta,
                               foregroundColor: AppColors.onPrimary,
                             ),
                             child: Text(

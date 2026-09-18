@@ -33,8 +33,8 @@ class JobsListView extends GetView<JobsController> {
               ? null
               : FloatingActionButton.extended(
                 onPressed: controller.openCreate,
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
+                backgroundColor: AppColors.cta,
+                foregroundColor: AppColors.onCta,
                 icon: const Icon(Icons.add),
                 label: const Text('Add job'),
               ),

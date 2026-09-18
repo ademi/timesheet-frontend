@@ -5,7 +5,7 @@ import 'package:rostiq/shared/widgets/form_sticky_actions.dart';
 
 void main() {
   testWidgets(
-    'Cancel outlined + primary elevated, each Expanded, min height 48, AppColors.primary',
+    'Cancel outlined + primary elevated, each Expanded, min height 48, AppColors.cta',
     (tester) async {
       var cancelled = false;
       var saved = false;
@@ -48,8 +48,8 @@ void main() {
       );
       expect(cancel.style?.minimumSize?.resolve({})?.height, 48);
       expect(primary.style?.minimumSize?.resolve({})?.height, 48);
-      expect(primary.style?.backgroundColor?.resolve({}), AppColors.primary);
-      expect(primary.style?.foregroundColor?.resolve({}), AppColors.onPrimary);
+      expect(primary.style?.backgroundColor?.resolve({}), AppColors.cta);
+      expect(primary.style?.foregroundColor?.resolve({}), AppColors.onCta);
 
       await tester.tap(find.text('Cancel'));
       await tester.tap(find.text('Save'));

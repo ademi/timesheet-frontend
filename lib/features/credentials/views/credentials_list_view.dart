@@ -120,7 +120,7 @@ class CredentialsListView extends GetView<CredentialsController> {
                         icon: const Icon(Icons.add),
                         label: const Text('Add credential'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: AppColors.cta,
                           foregroundColor: AppColors.onPrimary,
                         ),
                       ),
