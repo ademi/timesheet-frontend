@@ -26,7 +26,7 @@ void main() {
     await tester.pumpWidget(const GetMaterialApp(home: LoginView()));
 
     expect(find.text('Register as contractor'), findsOneWidget);
-    expect(find.text('Provider signup'), findsOneWidget);
     expect(find.text('Login'), findsOneWidget);
+    expect(find.text('Sign in'), findsOneWidget);
   });
 }
