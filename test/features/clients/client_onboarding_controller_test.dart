@@ -7,6 +7,7 @@ import 'package:rostiq/app/routes/app_routes.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/controllers/client_onboarding_controller.dart';
+import 'package:rostiq/features/clients/controllers/clients_controller.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
@@ -16,6 +17,7 @@ import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
 import 'package:rostiq/features/clients/widgets/contact_form_host.dart';
 import 'package:rostiq/features/clients/widgets/onboarding/onboarding_identity_step.dart';
 import 'package:rostiq/features/documents/data/document_pipeline.dart';
+import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/shared/models/profile_photo_models.dart';
 
 class _MockClientsRepository extends Mock implements ClientsRepository {}
@@ -23,6 +25,8 @@ class _MockClientsRepository extends Mock implements ClientsRepository {}
 class _MockSessionService extends Mock implements SessionService {}
 
 class _MockDocumentPipeline extends Mock implements DocumentPipeline {}
+
+class _MockJobsRepository extends Mock implements JobsRepository {}
 
 class _FakeClientCreateRequest extends Fake implements ClientCreateRequest {}
 
@@ -532,8 +536,74 @@ void main() {
 
     expect(await c.finishOnboarding(), isTrue);
     await tester.pumpAndSettle();
-    expect(Get.currentRoute, AppRoutes.staffClientDetail);
+    expect(Get.currentRoute, startsWith(AppRoutes.staffClientDetail));
+    expect(Get.parameters['id'], 'client-1');
   });
+
+  testWidgets(
+    'finishOnboarding hydrates ClientsController.selected before detail route',
+    (tester) async {
+      Get.testMode = true;
+      Get.reset();
+
+      when(() => mock.listClients()).thenAnswer((_) async => [_fakeClient]);
+      when(() => mock.getClient('client-1')).thenAnswer((_) async => _fakeClient);
+      when(() => mock.patchClient(any(), any())).thenAnswer((_) async => _fakeClient);
+      when(
+        () => mock.getClientProfilePhoto(any()),
+      ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
+      when(() => mock.listClientTypes()).thenAnswer((_) async => []);
+      when(
+        () => mock.getClientProfile(any()),
+      ).thenAnswer((_) async => const ClientProfileBundle(facts: []));
+      when(() => mock.listSites(any())).thenAnswer((_) async => []);
+      when(() => mock.listContacts(any())).thenAnswer((_) async => []);
+      when(() => mock.listSupportPlans(any())).thenAnswer((_) async => []);
+      when(
+        () => mock.listTypeRequirements(any()),
+      ).thenAnswer((_) async => []);
+
+      final clientsCtrl = ClientsController(
+        repository: mock,
+        session: session,
+        jobsRepository: _MockJobsRepository(),
+      );
+      Get.put(clientsCtrl);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          initialRoute: AppRoutes.staffClientOnboarding,
+          getPages: [
+            GetPage(
+              name: AppRoutes.staffClientOnboarding,
+              page: () => const SizedBox.shrink(),
+            ),
+            GetPage(
+              name: AppRoutes.staffClientDetail,
+              page: () => const SizedBox.shrink(),
+              binding: BindingsBuilder(() {
+                if (!Get.isRegistered<ClientsController>()) {
+                  Get.put(clientsCtrl);
+                }
+              }),
+            ),
+          ],
+        ),
+      );
+
+      c.dispose();
+      c = _buildController(softGateConfirm: (_) async => true);
+      c.client.value = _fakeClient;
+      c.step.value = 6;
+
+      expect(await c.finishOnboarding(), isTrue);
+      await tester.pumpAndSettle();
+
+      expect(Get.currentRoute, startsWith(AppRoutes.staffClientDetail));
+      expect(Get.parameters['id'], 'client-1');
+      expect(clientsCtrl.selected.value?.id, 'client-1');
+    },
+  );
 
   test(
     'lookupSiteAddress rejects low confidence like ClientsController',

@@ -1578,11 +1578,18 @@ class ClientOnboardingController extends GetxController
 
       if (onFinished != null) {
         onFinished!(id);
+      } else if (Get.isRegistered<ClientsController>()) {
+        final clients = Get.find<ClientsController>();
+        await clients.load();
+        await clients.openDetailReplacing(updated);
       } else {
-        if (Get.isRegistered<ClientsController>()) {
-          await Get.find<ClientsController>().load();
-        }
-        Get.offAllNamed(AppRoutes.staffClientDetail, arguments: updated);
+        // Let ClientsBinding construct ClientsController; Task 3 hydrate
+        // (ensureDetailHydratedFromRoute) loads by id/args on detail entry.
+        Get.offNamed(
+          AppRoutes.staffClientDetail,
+          arguments: updated,
+          parameters: {'id': id},
+        );
       }
       return true;
     } on AppFailure catch (e) {

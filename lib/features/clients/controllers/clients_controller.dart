@@ -249,7 +249,12 @@ class ClientsController extends GetxController
     ever<int>(tabIndex, (i) {
       if (i == tabCarePlan) ensureCarePlanController();
     });
-    load();
+    // Hydrate detail from route id/args before list load so a fresh
+    // ClientsBinding after onboarding never lands on "Client not found."
+    Future.microtask(() async {
+      await ensureDetailHydratedFromRoute();
+      await load();
+    });
   }
 
   @override
@@ -1401,10 +1406,7 @@ class ClientsController extends GetxController
   static const tabLocations = tabPlaces;
   static const tabSites = tabPlaces;
 
-  Future<void> openDetail(
-    ClientOut client, {
-    int initialTab = tabOverview,
-  }) async {
+  void _prepareDetailState(ClientOut client, {int initialTab = tabOverview}) {
     selected.value = client;
     overviewEditing.value = false;
     lastInvite.value = null;
@@ -1421,8 +1423,48 @@ class ClientsController extends GetxController
     supportPlan.value = null;
     _disposeRequirementDrafts();
     requirementDrafts.clear();
-    Get.toNamed(AppRoutes.staffClientDetail, arguments: client);
+  }
+
+  Future<void> openDetail(
+    ClientOut client, {
+    int initialTab = tabOverview,
+  }) async {
+    _prepareDetailState(client, initialTab: initialTab);
+    Get.toNamed(
+      AppRoutes.staffClientDetail,
+      arguments: client,
+      parameters: {'id': client.id},
+    );
     await openDetailById(client.id);
+  }
+
+  /// Opens client detail after onboarding (replaces current route).
+  Future<void> openDetailReplacing(ClientOut client) async {
+    _prepareDetailState(client);
+    Get.offNamed(
+      AppRoutes.staffClientDetail,
+      arguments: client,
+      parameters: {'id': client.id},
+    );
+    await openDetailById(client.id);
+  }
+
+  /// Call from [onInit] (or detail view) so a fresh controller still loads the
+  /// client when navigation only passed route id / arguments.
+  Future<void> ensureDetailHydratedFromRoute() async {
+    if (selected.value != null) return;
+
+    final fromArgs = Get.arguments;
+    if (fromArgs is ClientOut) {
+      selected.value = fromArgs;
+      await openDetailById(fromArgs.id);
+      return;
+    }
+
+    final id = Get.parameters['id'];
+    if (id != null && id.isNotEmpty) {
+      await openDetailById(id);
+    }
   }
 
   Future<void> openDetailById(String id) async {
