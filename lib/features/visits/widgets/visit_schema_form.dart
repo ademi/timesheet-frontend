@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/app_date_field.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../data/models/visit_models.dart';
 
@@ -297,35 +298,20 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
     }
 
     if (field.type == 'date') {
-      return TextFormField(
-        controller: _controllers[field.id],
-        readOnly: true,
+      final raw = _controllers[field.id]!.text.trim();
+      final parsed = DateTime.tryParse(raw);
+      final now = DateTime.now();
+      return AppDateField(
+        label: label,
+        value: parsed,
+        isDense: true,
         enabled: !widget.isSubmitted,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-          isDense: true,
-          suffixIcon: const Icon(Icons.calendar_today, size: 18),
-        ),
-        onTap:
-            widget.isSubmitted
-                ? null
-                : () async {
-                  final now = DateTime.now();
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: now,
-                    firstDate: DateTime(1900),
-                    lastDate: DateTime(now.year + 5),
-                  );
-                  if (picked != null) {
-                    final y = picked.year.toString().padLeft(4, '0');
-                    final m = picked.month.toString().padLeft(2, '0');
-                    final d = picked.day.toString().padLeft(2, '0');
-                    _controllers[field.id]!.text = '$y-$m-$d';
-                    setState(() {});
-                  }
-                },
+        firstDate: DateTime(1900),
+        lastDate: DateTime(now.year + 5),
+        onChanged: (picked) {
+          _controllers[field.id]!.text = formatAppDate(picked);
+          setState(() {});
+        },
       );
     }
 

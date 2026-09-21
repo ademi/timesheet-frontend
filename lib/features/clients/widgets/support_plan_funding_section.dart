@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/app_date_field.dart';
 import '../controllers/support_plan_funding_consent_store.dart';
 import 'onboarding/support_plan_specialists_panel.dart';
 
@@ -185,54 +186,24 @@ class SupportPlanFundingSection extends StatelessWidget {
             'Plan dates (optional)',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              store.planStartDate.value == null
-                  ? 'Plan start date'
-                  : 'Start: ${_fmt(store.planStartDate.value!)}',
-            ),
-            trailing: const Icon(Icons.calendar_today),
-            onTap:
-                enabled
-                    ? () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate:
-                            store.planStartDate.value ?? DateTime.now(),
-                        firstDate: DateTime(2013),
-                        lastDate: DateTime.now().add(
-                          const Duration(days: 365 * 5),
-                        ),
-                      );
-                      if (picked != null) store.onPlanStartPicked(picked);
-                    }
-                    : null,
+          const SizedBox(height: 12),
+          AppDateField(
+            label: 'Plan start date',
+            value: store.planStartDate.value,
+            enabled: enabled,
+            firstDate: DateTime(2013),
+            lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+            onChanged: store.onPlanStartPicked,
           ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              store.planEndDate.value == null
-                  ? 'Plan end date'
-                  : 'End: ${_fmt(store.planEndDate.value!)}',
-            ),
-            trailing: const Icon(Icons.calendar_today),
-            onTap:
-                enabled
-                    ? () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate:
-                            store.planEndDate.value ??
-                            DateTime.now().add(const Duration(days: 365)),
-                        firstDate: DateTime(2013),
-                        lastDate: DateTime.now().add(
-                          const Duration(days: 365 * 5),
-                        ),
-                      );
-                      if (picked != null) store.planEndDate.value = picked;
-                    }
-                    : null,
+          const SizedBox(height: 12),
+          AppDateField(
+            label: 'Plan end date',
+            value: store.planEndDate.value,
+            enabled: enabled,
+            firstDate: DateTime(2013),
+            lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+            initialDate: DateTime.now().add(const Duration(days: 365)),
+            onChanged: (picked) => store.planEndDate.value = picked,
           ),
           const SizedBox(height: 8),
           const Text(
@@ -388,9 +359,4 @@ class SupportPlanFundingSection extends StatelessWidget {
       );
     });
   }
-
-  static String _fmt(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/'
-      '${d.month.toString().padLeft(2, '0')}/'
-      '${d.year}';
 }

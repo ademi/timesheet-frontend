@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../shared/widgets/app_date_field.dart';
 import '../../../../shared/widgets/other_text_field.dart';
 import '../../../../shared/widgets/profile_photo_editor.dart';
 import '../../controllers/client_onboarding_controller.dart';
@@ -20,9 +21,7 @@ class OnboardingIdentityStep extends StatelessWidget {
     'Prefer not to say',
   ];
   static const atsiOptions = [
-    'Aboriginal',
-    'Torres Strait Islander',
-    'Aboriginal & Torres Strait Islander',
+    'Aboriginal and/or Torres Strait Islander',
     'No',
   ];
   static const referralOptions = [
@@ -129,28 +128,14 @@ class OnboardingIdentityStep extends StatelessWidget {
             label: 'Participant gender (other)',
           ),
           const SizedBox(height: 12),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              controller.dob.value == null
-                  ? 'Participant date of birth *'
-                  : 'DOB: ${_fmt(controller.dob.value!)}',
-            ),
-            trailing: const Icon(Icons.calendar_today),
-            onTap:
-                enabled
-                    ? () async {
-                      final now = DateTime.now();
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate:
-                            controller.dob.value ?? DateTime(now.year - 30),
-                        firstDate: DateTime(1900),
-                        lastDate: now,
-                      );
-                      if (picked != null) controller.dob.value = picked;
-                    }
-                    : null,
+          AppDateField(
+            label: 'Participant date of birth *',
+            value: controller.dob.value,
+            enabled: enabled,
+            firstDate: DateTime(1900),
+            lastDate: DateTime.now(),
+            initialDate: DateTime(DateTime.now().year - 30),
+            onChanged: (picked) => controller.dob.value = picked,
           ),
           const SizedBox(height: 12),
           TextField(
@@ -304,9 +289,4 @@ class OnboardingIdentityStep extends StatelessWidget {
       );
     });
   }
-
-  static String _fmt(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/'
-      '${d.month.toString().padLeft(2, '0')}/'
-      '${d.year}';
 }

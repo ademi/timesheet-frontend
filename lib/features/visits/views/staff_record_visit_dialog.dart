@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/widgets/app_date_field.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/keyboard_time_field.dart';
@@ -95,24 +96,6 @@ class _StaffRecordVisitPageState extends State<_StaffRecordVisitPage> {
   DateTime _combine(DateTime date, TimeOfDay time) =>
       DateTime(date.year, date.month, date.day, time.hour, time.minute);
 
-  Future<void> _pickDate({required bool arrival}) async {
-    final initial = arrival ? _arrivalDate : _departureDate;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-    );
-    if (picked == null) return;
-    setState(() {
-      if (arrival) {
-        _arrivalDate = DateTime(picked.year, picked.month, picked.day);
-      } else {
-        _departureDate = DateTime(picked.year, picked.month, picked.day);
-      }
-    });
-  }
-
   Future<void> _submit() async {
     final reason = _reasonController.text.trim();
     if (reason.isEmpty) {
@@ -151,11 +134,6 @@ class _StaffRecordVisitPageState extends State<_StaffRecordVisitPage> {
       _saving = false;
       _error = 'Could not record visit. Check the reason and try again.';
     });
-  }
-
-  String _dateLabel(DateTime d) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${d.year}-${two(d.month)}-${two(d.day)}';
   }
 
   @override
@@ -199,14 +177,21 @@ class _StaffRecordVisitPageState extends State<_StaffRecordVisitPage> {
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
-                    OutlinedButton(
-                      onPressed:
-                          _saving ? null : () => _pickDate(arrival: true),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(44),
-                        alignment: Alignment.centerLeft,
-                      ),
-                      child: Text(_dateLabel(_arrivalDate)),
+                    AppDateField(
+                      label: 'Arrival date',
+                      value: _arrivalDate,
+                      enabled: !_saving,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                      onChanged: (picked) {
+                        setState(() {
+                          _arrivalDate = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                          );
+                        });
+                      },
                     ),
                     const SizedBox(height: 8),
                     KeyboardTimeField(
@@ -221,14 +206,21 @@ class _StaffRecordVisitPageState extends State<_StaffRecordVisitPage> {
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
-                    OutlinedButton(
-                      onPressed:
-                          _saving ? null : () => _pickDate(arrival: false),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(44),
-                        alignment: Alignment.centerLeft,
-                      ),
-                      child: Text(_dateLabel(_departureDate)),
+                    AppDateField(
+                      label: 'Departure date',
+                      value: _departureDate,
+                      enabled: !_saving,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                      onChanged: (picked) {
+                        setState(() {
+                          _departureDate = DateTime(
+                            picked.year,
+                            picked.month,
+                            picked.day,
+                          );
+                        });
+                      },
                     ),
                     const SizedBox(height: 8),
                     KeyboardTimeField(

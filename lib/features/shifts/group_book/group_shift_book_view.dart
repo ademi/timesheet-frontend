@@ -6,6 +6,8 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
 import '../../../shared/widgets/keyboard_time_field.dart';
+import '../../../shared/widgets/app_date_field.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 import '../../clients/data/models/client_models.dart';
 import '../../jobs/utils/required_slots_input.dart';
 import '../../../shared/utils/name_sort.dart';
@@ -195,10 +197,9 @@ class _PeopleStep extends StatelessWidget {
               border: OutlineInputBorder(),
             ),
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Include host in group'),
-            subtitle: const Text('Adds the host as a billed participant'),
+          AppSwitchField(
+            label: 'Include host in group',
+            subtitle: 'Adds the host as a billed participant',
             value: controller.includeHost.value,
             onChanged:
                 host == null
@@ -227,9 +228,8 @@ class _PeopleStep extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           if (!draft.isTimeBased) ...[
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Equal split'),
+            AppSwitchField(
+              label: 'Equal split',
               value: draft.equalSplit,
               onChanged: (v) => controller.setEqualSplit(v),
             ),
@@ -442,10 +442,12 @@ class _WhenStep extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _DateTile(
+          AppDateField(
             label: 'Start date',
             value: start,
-            onSelected: (d) {
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            onChanged: (d) {
               controller.scheduledStart.value = DateTime(
                 d.year,
                 d.month,
@@ -455,6 +457,7 @@ class _WhenStep extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 8),
           KeyboardTimeField(
             label: 'Start time',
             value: TimeOfDay(hour: start.hour, minute: start.minute),
@@ -469,10 +472,12 @@ class _WhenStep extends StatelessWidget {
             },
           ),
           const SizedBox(height: 8),
-          _DateTile(
+          AppDateField(
             label: 'End date',
             value: end,
-            onSelected: (d) {
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            onChanged: (d) {
               controller.scheduledEnd.value = DateTime(
                 d.year,
                 d.month,
@@ -482,6 +487,7 @@ class _WhenStep extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 8),
           KeyboardTimeField(
             label: 'End time',
             value: TimeOfDay(hour: end.hour, minute: end.minute),
@@ -617,38 +623,6 @@ class _NumberStepper extends StatelessWidget {
   }
 }
 
-class _DateTile extends StatelessWidget {
-  const _DateTile({
-    required this.label,
-    required this.value,
-    required this.onSelected,
-  });
-
-  final String label;
-  final DateTime value;
-  final ValueChanged<DateTime> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(label),
-      subtitle: Text(
-        '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}',
-      ),
-      trailing: const Icon(Icons.calendar_today_outlined),
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: value,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-        );
-        if (picked != null) onSelected(picked);
-      },
-    );
-  }
-}
 
 class _ErrorBox extends StatelessWidget {
   const _ErrorBox(this.message);

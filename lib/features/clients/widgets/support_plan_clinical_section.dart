@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../controllers/support_plan_clinical_store.dart';
@@ -100,13 +101,9 @@ class _ClinicalDocRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (onToggle != null)
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(label),
-            subtitle:
-                helper != null
-                    ? Text(helper!, style: const TextStyle(fontSize: 12))
-                    : null,
+          AppSwitchField(
+            label: label,
+            subtitle: helper,
             value: onFile,
             onChanged: onToggle,
           )

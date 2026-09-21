@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../shared/widgets/app_switch_field.dart';
 import '../../controllers/client_onboarding_controller.dart';
 
 class OnboardingPreferencesStep extends StatelessWidget {
@@ -36,24 +37,49 @@ class OnboardingPreferencesStep extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: controller.culturalPreferencesCtrl,
-            minLines: 3,
-            maxLines: 5,
-            decoration: const InputDecoration(
-              labelText: 'Cultural preferences',
-              hintText: culturalPreferencesHint,
-              hintMaxLines: 4,
-              border: OutlineInputBorder(),
-              alignLabelWithHint: true,
-            ),
+          AppSwitchField(
+            label: 'Interpreter required',
+            value: controller.interpreterRequired.value,
+            onChanged: (v) {
+              controller.interpreterRequired.value = v;
+              if (!v) controller.interpreterLanguageCtrl.clear();
+            },
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
+          if (controller.interpreterRequired.value) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller.interpreterLanguageCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Interpreter language',
+                hintText: 'e.g. Mandarin, Arabic, Auslan',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          AppSwitchField(
+            label: 'Consent to home visit',
             value: controller.homeVisitConsent.value,
             onChanged: (v) => controller.homeVisitConsent.value = v,
-            title: const Text('Consent to home visit'),
           ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            value: controller.preferredContactMethod.value,
+            decoration: const InputDecoration(
+              labelText: 'Preferred contact method',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('Select'),
+              ),
+              for (final o in contactMethodOptions)
+                DropdownMenuItem(value: o, child: Text(o)),
+            ],
+            onChanged: (v) => controller.preferredContactMethod.value = v,
+          ),
+          const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
             value: controller.swGenderPreference.value,
             decoration: const InputDecoration(
@@ -70,41 +96,18 @@ class OnboardingPreferencesStep extends StatelessWidget {
             ],
             onChanged: (v) => controller.swGenderPreference.value = v,
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: controller.interpreterRequired.value,
-            onChanged: (v) {
-              controller.interpreterRequired.value = v;
-              if (!v) controller.interpreterLanguageCtrl.clear();
-            },
-            title: const Text('Interpreter required'),
-          ),
-          if (controller.interpreterRequired.value) ...[
-            TextField(
-              controller: controller.interpreterLanguageCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Interpreter language',
-                hintText: 'e.g. Mandarin, Arabic, Auslan',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          DropdownButtonFormField<String?>(
-            value: controller.preferredContactMethod.value,
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller.culturalPreferencesCtrl,
+            minLines: 3,
+            maxLines: 5,
             decoration: const InputDecoration(
-              labelText: 'Preferred contact method',
+              labelText: 'Cultural preferences',
+              hintText: culturalPreferencesHint,
+              hintMaxLines: 4,
               border: OutlineInputBorder(),
+              alignLabelWithHint: true,
             ),
-            items: [
-              const DropdownMenuItem<String?>(
-                value: null,
-                child: Text('Select'),
-              ),
-              for (final o in contactMethodOptions)
-                DropdownMenuItem(value: o, child: Text(o)),
-            ],
-            onChanged: (v) => controller.preferredContactMethod.value = v,
           ),
         ],
       );

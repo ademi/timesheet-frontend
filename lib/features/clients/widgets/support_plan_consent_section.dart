@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../controllers/support_plan_funding_consent_store.dart';
@@ -90,19 +91,17 @@ class SupportPlanConsentSection extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Information share'),
-            subtitle: const Text(
-              'Information may be shared with relevant providers',
-            ),
+          AppSwitchField(
+            label: 'Information share',
+            subtitle:
+                'Information may be shared with relevant providers',
             value: store.infoShareConsent.value,
             onChanged: (v) => store.infoShareConsent.value = v,
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Specific supports'),
-            subtitle: const Text('Consented to specific supports in this plan'),
+          const SizedBox(height: 12),
+          AppSwitchField(
+            label: 'Specific supports',
+            subtitle: 'Consented to specific supports in this plan',
             value: store.specificSupportsConsent.value,
             onChanged: (v) => store.specificSupportsConsent.value = v,
           ),

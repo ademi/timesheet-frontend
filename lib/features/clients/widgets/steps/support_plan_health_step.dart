@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../app/themes/app_colors.dart';
 import '../../../../shared/widgets/other_text_field.dart';
+import '../../../../shared/widgets/app_switch_field.dart';
 import '../../controllers/support_plan_controller.dart';
 import '../../utils/support_plan_keys.dart';
 import '../support_plan_form_widgets.dart';
@@ -113,9 +114,8 @@ class SupportPlanHealthStep extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Obx(
-          () => SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Behaviour support plan'),
+          () => AppSwitchField(
+            label: 'Behaviour support plan',
             value: controller.behaviourSupportPlan.value,
             onChanged: (v) => controller.behaviourSupportPlan.value = v,
           ),

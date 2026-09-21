@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../../shared/widgets/app_date_field.dart';
 import '../../controllers/client_onboarding_controller.dart';
 import 'support_plan_specialists_panel.dart';
 
@@ -180,54 +181,24 @@ class OnboardingSupportPlanStep extends StatelessWidget {
             'Plan dates (optional)',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              controller.planStartDate.value == null
-                  ? 'Plan start date'
-                  : 'Start: ${_fmt(controller.planStartDate.value!)}',
-            ),
-            trailing: const Icon(Icons.calendar_today),
-            onTap:
-                enabled
-                    ? () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate:
-                            controller.planStartDate.value ?? DateTime.now(),
-                        firstDate: DateTime(2013),
-                        lastDate: DateTime.now().add(
-                          const Duration(days: 365 * 5),
-                        ),
-                      );
-                      if (picked != null) controller.onPlanStartPicked(picked);
-                    }
-                    : null,
+          const SizedBox(height: 12),
+          AppDateField(
+            label: 'Plan start date',
+            value: controller.planStartDate.value,
+            enabled: enabled,
+            firstDate: DateTime(2013),
+            lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+            onChanged: controller.onPlanStartPicked,
           ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              controller.planEndDate.value == null
-                  ? 'Plan end date'
-                  : 'End: ${_fmt(controller.planEndDate.value!)}',
-            ),
-            trailing: const Icon(Icons.calendar_today),
-            onTap:
-                enabled
-                    ? () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate:
-                            controller.planEndDate.value ??
-                            DateTime.now().add(const Duration(days: 365)),
-                        firstDate: DateTime(2013),
-                        lastDate: DateTime.now().add(
-                          const Duration(days: 365 * 5),
-                        ),
-                      );
-                      if (picked != null) controller.planEndDate.value = picked;
-                    }
-                    : null,
+          const SizedBox(height: 12),
+          AppDateField(
+            label: 'Plan end date',
+            value: controller.planEndDate.value,
+            enabled: enabled,
+            firstDate: DateTime(2013),
+            lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+            initialDate: DateTime.now().add(const Duration(days: 365)),
+            onChanged: (picked) => controller.planEndDate.value = picked,
           ),
           const SizedBox(height: 8),
           const Text(
@@ -319,8 +290,4 @@ class OnboardingSupportPlanStep extends StatelessWidget {
     });
   }
 
-  static String _fmt(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/'
-      '${d.month.toString().padLeft(2, '0')}/'
-      '${d.year}';
 }

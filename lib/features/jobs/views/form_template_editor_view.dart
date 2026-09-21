@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
@@ -76,12 +77,10 @@ class _FormTemplateEditorViewState extends State<FormTemplateEditorView> {
                   ),
                   const SizedBox(height: 8),
                   Obx(
-                    () => SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Active'),
-                      subtitle: const Text(
-                        'Inactive templates stay in the catalog but should not be used for new visits.',
-                      ),
+                    () => AppSwitchField(
+                      label: 'Active',
+                      subtitle:
+                          'Inactive templates stay in the catalog but should not be used for new visits.',
                       value: c.isActive.value,
                       onChanged: (v) => c.isActive.value = v,
                     ),
@@ -269,9 +268,8 @@ class _FieldCard extends StatelessWidget {
               );
             }),
             Obx(
-              () => SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Required'),
+              () => AppSwitchField(
+                label: 'Required',
                 value: field.required.value,
                 onChanged:
                     controller.isSaving.value

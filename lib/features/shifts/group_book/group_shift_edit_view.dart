@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 import '../../clients/data/models/client_models.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../utils/allocation_math.dart';
@@ -59,9 +60,8 @@ class GroupShiftEditView extends GetView<GroupShiftEditController> {
                           ),
                         ),
                         if (!timeBased) ...[
-                          SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('Equal split'),
+                          AppSwitchField(
+                            label: 'Equal split',
                             value: draft.equalSplit,
                             onChanged:
                                 controller.isSaving.value

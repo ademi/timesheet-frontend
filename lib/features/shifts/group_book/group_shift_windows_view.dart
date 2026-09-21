@@ -5,6 +5,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
 import '../../../shared/widgets/keyboard_time_field.dart';
+import '../../../shared/widgets/app_date_field.dart';
 import '../utils/participant_window_math.dart';
 
 /// Args for full-screen per-participant window editor (local Done only).
@@ -208,10 +209,13 @@ class _WindowRow extends StatelessWidget {
             Expanded(
               child: Column(
                 children: [
-                  _MiniDateTile(
+                  AppDateField(
                     label: 'Start date',
                     value: startLocal,
-                    onSelected: (d) {
+                    isDense: true,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                    onChanged: (d) {
                       onChanged(
                         window.copyWith(
                           start: DateTime(
@@ -225,6 +229,7 @@ class _WindowRow extends StatelessWidget {
                       );
                     },
                   ),
+                  const SizedBox(height: 8),
                   KeyboardTimeField(
                     label: 'Start time',
                     value: TimeOfDay(
@@ -252,10 +257,13 @@ class _WindowRow extends StatelessWidget {
             Expanded(
               child: Column(
                 children: [
-                  _MiniDateTile(
+                  AppDateField(
                     label: 'End date',
                     value: endLocal,
-                    onSelected: (d) {
+                    isDense: true,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                    onChanged: (d) {
                       onChanged(
                         window.copyWith(
                           end: DateTime(
@@ -269,6 +277,7 @@ class _WindowRow extends StatelessWidget {
                       );
                     },
                   ),
+                  const SizedBox(height: 8),
                   KeyboardTimeField(
                     label: 'End time',
                     value: TimeOfDay(
@@ -304,39 +313,6 @@ class _WindowRow extends StatelessWidget {
   }
 }
 
-class _MiniDateTile extends StatelessWidget {
-  const _MiniDateTile({
-    required this.label,
-    required this.value,
-    required this.onSelected,
-  });
-
-  final String label;
-  final DateTime value;
-  final ValueChanged<DateTime> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      dense: true,
-      title: Text(label, style: const TextStyle(fontSize: 12)),
-      subtitle: Text(
-        '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}',
-      ),
-      trailing: const Icon(Icons.calendar_today_outlined, size: 18),
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: value,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-        );
-        if (picked != null) onSelected(picked);
-      },
-    );
-  }
-}
 
 class _InlineError extends StatelessWidget {
   const _InlineError(this.message);

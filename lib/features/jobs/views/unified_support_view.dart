@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/app_date_field.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 import '../../../shared/widgets/keyboard_time_field.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../../clients/widgets/ndis_capture_prompt.dart';
@@ -549,10 +551,12 @@ class _OneSessionSchedule extends StatelessWidget {
             const _AmberNotice(message: kAtypicalScheduleHoursMessage),
             const SizedBox(height: 12),
           ],
-          _DateTile(
+          AppDateField(
             label: 'Start date',
             value: start,
-            onSelected: (d) {
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            onChanged: (d) {
               controller.oneSessionStart.value = DateTime(
                 d.year,
                 d.month,
@@ -562,6 +566,7 @@ class _OneSessionSchedule extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 8),
           KeyboardTimeField(
             label: 'Start time',
             value: TimeOfDay(hour: start.hour, minute: start.minute),
@@ -576,10 +581,12 @@ class _OneSessionSchedule extends StatelessWidget {
             },
           ),
           const SizedBox(height: 8),
-          _DateTile(
+          AppDateField(
             label: 'End date',
             value: end,
-            onSelected: (d) {
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            onChanged: (d) {
               controller.oneSessionEnd.value = DateTime(
                 d.year,
                 d.month,
@@ -589,6 +596,7 @@ class _OneSessionSchedule extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 8),
           KeyboardTimeField(
             label: 'End time',
             value: TimeOfDay(hour: end.hour, minute: end.minute),
@@ -604,9 +612,8 @@ class _OneSessionSchedule extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           _SlotsStepper(controller: controller),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Publish immediately'),
+          AppSwitchField(
+            label: 'Publish immediately',
             value: controller.publishImmediately.value,
             onChanged: (v) => controller.publishImmediately.value = v,
           ),
@@ -663,16 +670,22 @@ class _OngoingSchedule extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 8),
-          _DateTile(
+          AppDateField(
             label: 'Start date',
             value: controller.startDate.value,
-            onSelected: (d) => controller.startDate.value = d,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            onChanged: (d) => controller.startDate.value = d,
           ),
-          _DateTile(
+          const SizedBox(height: 8),
+          AppDateField(
             label: 'Ends on',
             value: controller.endDate.value,
-            onSelected: (d) => controller.endDate.value = d,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+            onChanged: (d) => controller.endDate.value = d,
           ),
+          const SizedBox(height: 8),
           KeyboardTimeField(
             label: 'Start time',
             value: controller.startTime.value,
@@ -1083,33 +1096,4 @@ class _AmberNotice extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DateTile extends StatelessWidget {
-  const _DateTile({
-    required this.label,
-    required this.value,
-    required this.onSelected,
-  });
-
-  final String label;
-  final DateTime value;
-  final ValueChanged<DateTime> onSelected;
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    title: Text(label),
-    subtitle: Text(MaterialLocalizations.of(context).formatMediumDate(value)),
-    trailing: const Icon(Icons.calendar_today),
-    onTap: () async {
-      final picked = await showDatePicker(
-        context: context,
-        initialDate: value,
-        firstDate: DateTime(2020),
-        lastDate: DateTime(2100),
-      );
-      if (picked != null) onSelected(picked);
-    },
-  );
 }

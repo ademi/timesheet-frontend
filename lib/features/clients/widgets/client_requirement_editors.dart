@@ -3,6 +3,8 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/app_date_field.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 import '../../../shared/widgets/other_text_field.dart';
 import '../controllers/clients_controller.dart';
 import '../controllers/requirement_draft.dart';
@@ -45,7 +47,7 @@ class ClientRequirementEditor extends StatelessWidget {
     final title = req.isRequired ? '${req.label} *' : req.label;
     final help = _helpTextFor(req);
 
-    // Use Material (not a colored Container) so SwitchListTile / ListTile ink
+    // Use Material (not a colored Container) so AppSwitchField / ListTile ink
     // and tile colors paint on the nearest Material instead of being obscured.
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -139,9 +141,8 @@ class _FieldInput extends StatelessWidget {
     switch (type) {
       case 'boolean':
         return Obx(
-          () => SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(draft.requirement.label),
+          () => AppSwitchField(
+            label: draft.requirement.label,
             value: draft.boolValue.value,
             onChanged: draft.setBool,
           ),
@@ -149,12 +150,13 @@ class _FieldInput extends StatelessWidget {
       case 'date':
         return Obx(() {
           final d = draft.dateValue.value;
-          final label =
-              d == null ? 'Select date' : RequirementDraft.formatDate(d);
-          return OutlinedButton.icon(
-            onPressed: () => controller.pickDateForRequirement(draft),
-            icon: const Icon(Icons.calendar_today_outlined, size: 18),
-            label: Text(label),
+          return AppDateField(
+            label: draft.requirement.label,
+            value: d,
+            firstDate: DateTime(1900),
+            lastDate: DateTime.now(),
+            initialDate: DateTime(DateTime.now().year - 30),
+            onChanged: (picked) => draft.dateValue.value = picked,
           );
         });
       case 'multiselect':
@@ -348,12 +350,10 @@ class _SharingSwitch extends StatelessWidget {
       () => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Allow sharing'),
-            subtitle: const Text(
-              'Grant specific contractors later from Edit client.',
-            ),
+          AppSwitchField(
+            label: 'Allow sharing',
+            subtitle:
+                'Grant specific contractors later from Edit client.',
             value: draft.boolValue.value,
             onChanged: draft.setBool,
           ),

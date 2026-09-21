@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/app_date_field.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/recurrence_rule_form_controller.dart';
 import '../utils/recurrence_rrule_builder.dart';
@@ -119,15 +120,20 @@ class RecurrenceRuleFormView extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  _DateTile(
+                  AppDateField(
                     label: 'Start date',
                     value: c.startDate.value,
-                    onSelected: (date) => c.startDate.value = date,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                    onChanged: (date) => c.startDate.value = date,
                   ),
-                  _DateTile(
+                  const SizedBox(height: 12),
+                  AppDateField(
                     label: 'Ends on',
                     value: c.endDate.value,
-                    onSelected: (date) => c.endDate.value = date,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                    onChanged: (date) => c.endDate.value = date,
                   ),
                   const Divider(height: 32),
                   Text('Visit windows', style: Get.textTheme.titleMedium),
@@ -249,33 +255,6 @@ class RecurrenceRuleFormView extends StatelessWidget {
   }
 }
 
-class _DateTile extends StatelessWidget {
-  const _DateTile({
-    required this.label,
-    required this.value,
-    required this.onSelected,
-  });
-  final String label;
-  final DateTime value;
-  final ValueChanged<DateTime> onSelected;
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    title: Text(label),
-    subtitle: Text(MaterialLocalizations.of(context).formatMediumDate(value)),
-    trailing: const Icon(Icons.calendar_today),
-    onTap: () async {
-      final picked = await showDatePicker(
-        context: context,
-        initialDate: value,
-        firstDate: DateTime(2020),
-        lastDate: DateTime(2100),
-      );
-      if (picked != null) onSelected(picked);
-    },
-  );
-}
 
 class _WindowRow extends StatelessWidget {
   const _WindowRow({required this.controller, required this.index});

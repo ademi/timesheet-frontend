@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../shared/widgets/app_date_field.dart';
 import '../controllers/clients_controller.dart';
 
 /// Editable identity fields for the Overview tab (CR1).
@@ -73,7 +74,7 @@ class ClientDetailOverviewSection extends StatelessWidget {
               value:
                   controller.overviewDob.value == null
                       ? ''
-                      : _fmt(controller.overviewDob.value!),
+                      : formatAppDate(controller.overviewDob.value!),
             ),
             _ReadOnlyField(
               label: 'NDIS number',
@@ -146,20 +147,17 @@ class ClientDetailOverviewSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ListTile(
+            AppDateField(
               key: dobKey,
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                controller.overviewDob.value == null
-                    ? 'Date of birth'
-                    : 'Date of birth: ${_fmt(controller.overviewDob.value!)}',
-              ),
-              subtitle: const Text(
-                'Tap to change. Clearing date of birth is not supported.',
-                style: TextStyle(fontSize: 12),
-              ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: saving ? null : () => controller.pickOverviewDob(context),
+              label: 'Date of birth',
+              value: controller.overviewDob.value,
+              enabled: !saving,
+              firstDate: DateTime(1900),
+              lastDate: DateTime.now(),
+              initialDate: DateTime(DateTime.now().year - 30),
+              helperText:
+                  'Tap to change. Clearing date of birth is not supported.',
+              onChanged: (picked) => controller.overviewDob.value = picked,
             ),
             const SizedBox(height: 12),
             TextField(
@@ -203,11 +201,6 @@ class ClientDetailOverviewSection extends StatelessWidget {
       );
     });
   }
-
-  static String _fmt(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
 }
 
 class _ReadOnlyField extends StatelessWidget {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../shared/widgets/other_text_field.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 import 'contact_form_host.dart';
 
 /// Shared contact fields: name, email, phone, relationship, primary, emergency.
@@ -115,11 +116,10 @@ class ContactFormFields extends StatelessWidget {
               ),
             ],
           ],
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
+          AppSwitchField(
+            label: 'Primary contact',
             value: controller.contactIsPrimary.value,
             onChanged: (v) => controller.contactIsPrimary.value = v,
-            title: const Text('Primary contact'),
           ),
           if (showEmergencyCheckbox)
             CheckboxListTile(

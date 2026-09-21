@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../data/models/shift_models.dart';
 import '../utils/publish_estimate_math.dart';
@@ -346,9 +347,8 @@ class _StayStepState extends State<_StayStep> {
           style: TextStyle(color: AppColors.textMuted),
         ),
         const SizedBox(height: 12),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Include accommodation'),
+        AppSwitchField(
+          label: 'Include accommodation',
           value: d.accommodationEnabled,
           activeThumbColor: AppColors.primary,
           onChanged: (enabled) {

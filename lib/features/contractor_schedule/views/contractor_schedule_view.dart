@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/contractor_schedule_controller.dart';
 import '../data/models/schedule_models.dart';
@@ -312,9 +313,8 @@ class _AvailabilityTab extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(dayOfWeekLabels[i]),
+                          AppSwitchField(
+                            label: dayOfWeekLabels[i],
                             value: controller.draftWindows[i].isNotEmpty,
                             onChanged:
                                 controller.canManage

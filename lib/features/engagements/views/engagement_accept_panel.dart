@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../bindings/engagements_binding.dart';
@@ -241,16 +242,14 @@ class _GrantForm extends GetView<ContractorEngagementsController> {
             ),
           ],
           const SizedBox(height: 12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
+          AppSwitchField(
+            label: 'Allow source evidence access',
+            subtitle:
+                'When on, this provider may view underlying document files '
+                '(not only metadata), subject to grants and permissions. '
+                'Leave off unless the provider needs to sight originals.',
             value: controller.allowSourceEvidence.value,
             onChanged: (v) => controller.allowSourceEvidence.value = v,
-            title: const Text('Allow source evidence access'),
-            subtitle: const Text(
-              'When on, this provider may view underlying document files '
-              '(not only metadata), subject to grants and permissions. '
-              'Leave off unless the provider needs to sight originals.',
-            ),
           ),
           CheckboxListTile(
             contentPadding: EdgeInsets.zero,

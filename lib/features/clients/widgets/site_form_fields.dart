@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 import '../../../shared/widgets/au_state_dropdown.dart';
 import 'site_form_host.dart';
 
@@ -60,7 +61,7 @@ class _SiteFormFieldsState extends State<SiteFormFields> {
               ? TextField(
                 controller: controller.siteNameCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'Address Reference Name ( Home / Work) *',
+                  labelText: 'Address Reference Name *',
                   hintText: 'Home / Work',
                   border: OutlineInputBorder(),
                 ),
@@ -105,14 +106,13 @@ class _SiteFormFieldsState extends State<SiteFormFields> {
               border: const OutlineInputBorder(),
             ),
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
+          AppSwitchField(
+            label: 'Primary site',
             value: isPrimary,
             onChanged:
                 widget.primaryMode
                     ? null
                     : (v) => controller.siteIsPrimary.value = v,
-            title: const Text('Primary site'),
           ),
           const SizedBox(height: 12),
           TextField(
