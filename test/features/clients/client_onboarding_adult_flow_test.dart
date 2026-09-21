@@ -181,8 +181,18 @@ void main() {
     c.dispose();
   });
 
-  test('adult happy path: Identity→Address→Preferences→Contacts→skip nominee→'
-      'Funding→Legal→Finish', () async {
+  test('adult happy path: Identity→Address→Preferences→Contacts→'
+      'Support Plan→Legal→Finish', () async {
+    expect(ClientOnboardingController.stepLabels, [
+      'Identity',
+      'Address',
+      'Preferences',
+      'Contacts',
+      'Support Plan',
+      'Legal',
+    ]);
+    expect(ClientOnboardingController.maxStep, 5);
+
     // ── Identity (adult DOB) ──────────────────────────────────────────
     c.fullName.text = 'Alex Adult';
     c.email.text = 'alex@example.com';
@@ -223,16 +233,20 @@ void main() {
     expect(await c.submitPreferences(), isTrue);
     expect(c.step.value, 3);
 
-    // ── Emergency contact (kinship + flag) ────────────────────────────
+    // ── Contacts: emergency + soft-skip nominee ───────────────────────
+    c.beginEmergencyDraft();
     c.contactNameCtrl.text = 'Sam Emergency';
     c.contactPhoneCtrl.text = '+61433333333';
     c.contactRelationshipPreset.value = 'mother';
     c.contactIsEmergency.value = true;
     c.contactIsPrimary.value = true;
 
-    expect(await c.submitContacts(), isTrue);
+    expect(c.requiresChildRepresentative, isFalse);
+    expect(c.nomineeOptional, isTrue);
+    expect(await c.submitContactsStep(), isTrue);
     expect(c.step.value, 4);
     expect(c.emergencySaved.value, isTrue);
+    expect(c.nomineeSkipped.value, isTrue);
     expect(
       contactCreates.any(
         (r) => r.relationship == 'mother' && r.isEmergency == true,
@@ -244,13 +258,6 @@ void main() {
     );
     expect(emergency.name, 'Sam Emergency');
     expect(emergency.phone, '+61433333333');
-
-    // ── Skip nominee (adult) ──────────────────────────────────────────
-    expect(c.requiresChildRepresentative, isFalse);
-    expect(c.nomineeOptional, isTrue);
-    expect(await c.submitRepresentative(), isTrue);
-    expect(c.nomineeSkipped.value, isTrue);
-    expect(c.step.value, 5);
     expect(
       contactCreates.any((r) => r.relationship == OnboardingKeys.relNominee),
       isFalse,
@@ -260,7 +267,7 @@ void main() {
     c.ndisCtrl.text = '431234567';
     c.planManagementType.value = 'self_managed';
     expect(await c.submitSupportPlan(), isTrue);
-    expect(c.step.value, 6);
+    expect(c.step.value, 5);
     expect(
       factUpserts.any(
         (e) =>
@@ -287,5 +294,25 @@ void main() {
     verify(() => mock.createSite('client-adult-1', any())).called(1);
     verify(() => mock.createContact('client-adult-1', any())).called(1);
     verify(() => mock.patchClient('client-adult-1', any())).called(1);
+  });
+
+  test('adult soft-skips empty Contacts step', () async {
+    c.client.value = ClientOut(
+      id: 'client-adult-1',
+      tenantId: 'tenant-1',
+      fullName: 'Alex Adult',
+      status: 'active',
+      metadata: const {'onboarding_incomplete': true},
+      createdAt: DateTime.utc(2026, 3, 1),
+      updatedAt: DateTime.utc(2026, 3, 1),
+    );
+    c.dob.value = DateTime(1990, 5, 15);
+    c.step.value = 3;
+    c.contactDraftMode.value = 'nominee';
+
+    expect(await c.submitContactsStep(), isTrue);
+    expect(c.step.value, 4);
+    expect(c.nomineeSkipped.value, isTrue);
+    expect(c.errorMessage.value, isNull);
   });
 }

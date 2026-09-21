@@ -162,7 +162,7 @@ void main() {
     c.dispose();
   });
 
-  Future<void> walkToRepresentativeStep() async {
+  Future<void> walkToContactsStep() async {
     c.fullName.text = 'Casey Child';
     c.email.text = 'casey@example.com';
     c.phone.text = '+61444444444';
@@ -179,28 +179,21 @@ void main() {
     expect(await c.submitAddress(), isTrue);
 
     expect(await c.submitPreferences(), isTrue);
-
-    c.contactNameCtrl.text = 'Parent Emergency';
-    c.contactPhoneCtrl.text = '+61455555555';
-    c.contactRelationshipPreset.value = 'mother';
-    c.contactIsEmergency.value = true;
-    expect(await c.submitContacts(), isTrue);
-    expect(c.step.value, 4);
-    expect(c.contactRelationshipPreset.value, isNull);
+    expect(c.step.value, 3);
     expect(c.contactDraftMode.value, 'representative');
   }
 
   test(
-    'child path: cannot advance Representative without child_representative; '
+    'child path: cannot advance Contacts without child_representative; '
     'adding rep unlocks finish and creates contact',
     () async {
-      await walkToRepresentativeStep();
+      await walkToContactsStep();
 
       // Blocked without child representative.
       expect(c.representativeSaved.value, isFalse);
-      expect(await c.submitRepresentative(), isFalse);
+      expect(await c.submitContactsStep(), isFalse);
       expect(c.errorMessage.value, contains('representative'));
-      expect(c.step.value, 4);
+      expect(c.step.value, 3);
       expect(
         contactCreates.any(
           (r) => r.legalRole == OnboardingKeys.relChildRepresentative,
@@ -214,9 +207,9 @@ void main() {
       c.contactEmailCtrl.text = 'jamie@example.com';
       c.contactRelationshipPreset.value = 'mother';
 
-      expect(await c.submitRepresentative(), isTrue);
+      expect(await c.submitContactsStep(), isTrue);
       expect(c.representativeSaved.value, isTrue);
-      expect(c.step.value, 5);
+      expect(c.step.value, 4);
       expect(
         contactCreates.any(
           (r) =>
@@ -236,7 +229,7 @@ void main() {
       c.ndisCtrl.text = '431234567';
       c.planManagementType.value = 'self_managed';
       expect(await c.submitSupportPlan(), isTrue);
-      expect(c.step.value, 6);
+      expect(c.step.value, 5);
 
       c.consentComplete.value = true;
       c.serviceAgreementComplete.value = true;
@@ -244,10 +237,10 @@ void main() {
       expect(await c.finishOnboarding(), isTrue);
       expect(finishedId, 'client-child-1');
 
-      verify(() => mock.createContact('client-child-1', any())).called(2);
+      verify(() => mock.createContact('client-child-1', any())).called(1);
       expect(
         contactCreates.map((r) => r.relationship).toList(),
-        containsAll(['mother', 'mother']),
+        contains('mother'),
       );
       expect(
         contactCreates.map((r) => r.legalRole).whereType<String>().toList(),

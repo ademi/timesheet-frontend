@@ -64,13 +64,12 @@ class ClientOnboardingController extends GetxController
   /// Called after finish instead of navigation when set (tests).
   void Function(String clientId)? onFinished;
 
-  static const maxStep = 6;
+  static const maxStep = 5;
   static const stepLabels = [
     'Identity',
     'Address',
     'Preferences',
-    'Contacts (Optional)',
-    'Representative',
+    'Contacts',
     'Support Plan',
     'Legal',
   ];
@@ -268,11 +267,7 @@ class ClientOnboardingController extends GetxController
       !carerSaved.value &&
       contactDraftMode.value == 'carer';
 
-  bool get showSkipNominee =>
-      step.value == 4 &&
-      nomineeOptional &&
-      !representativeSaved.value &&
-      !nomineeSkipped.value;
+  bool get showSkipNominee => false;
 
   ClientContactOut? get selectedExistingEmergencyContact {
     final id = reuseEmergencyContactId.value;
@@ -622,17 +617,8 @@ class ClientOnboardingController extends GetxController
   void previousStep() {
     if (step.value > 0) {
       errorMessage.value = null;
-      if (step.value == 4) {
-        _prepContactsStep();
-      }
       step.value--;
     }
-  }
-
-  void _prepContactsStep() {
-    _resetContactDraft();
-    contactDraftMode.value = 'emergency';
-    contactRelationshipPreset.value = null;
   }
 
   Future<void> nextStep() async {
@@ -640,9 +626,8 @@ class ClientOnboardingController extends GetxController
       0 => await submitIdentity(),
       1 => await submitAddress(),
       2 => await submitPreferences(),
-      3 => await submitContacts(),
-      4 => await submitRepresentative(),
-      5 => await submitSupportPlan(),
+      3 => await submitContactsStep(),
+      4 => await submitSupportPlan(),
       _ => await finishOnboarding(),
     };
     if (!ok) return;
@@ -964,7 +949,10 @@ class ClientOnboardingController extends GetxController
         OnboardingKeys.preferredContactMethod,
         preferredContactMethod.value,
       );
-      if (step.value == 2) step.value = 3;
+      if (step.value == 2) {
+        step.value = 3;
+        _prepRepresentativeStep();
+      }
       return true;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -997,6 +985,11 @@ class ClientOnboardingController extends GetxController
     _resetContactDraft();
     contactDraftMode.value = 'more';
     contactRelationshipPreset.value = null;
+  }
+
+  /// Cancel emergency/more draft and return to representative/nominee mode.
+  void cancelContactDraftToRepresentative() {
+    _prepRepresentativeStep();
   }
 
   void _resetContactDraft() {
@@ -1091,15 +1084,44 @@ class ClientOnboardingController extends GetxController
       contactPhoneCtrl.text.trim().isNotEmpty ||
       contactEmailCtrl.text.trim().isNotEmpty;
 
-  Future<bool> submitContacts() async {
+  Future<bool> submitContacts({bool allowEmpty = true}) async {
     errorMessage.value = null;
-    if (!hasEmergencyContact &&
+    final mode = contactDraftMode.value;
+    final editingRep = mode == 'representative' || mode == 'nominee';
+    if (!editingRep && _contactDraftHasChannel) {
+      final ok = await saveContactDraft();
+      if (!ok) return false;
+    } else if (!hasEmergencyContact &&
         contactIsEmergency.value &&
         _contactDraftHasChannel) {
       final ok = await saveContactDraft();
       if (!ok) return false;
     }
-    _prepRepresentativeStep();
+    if (!allowEmpty && contactsCreated.isEmpty && !hasEmergencyContact) {
+      errorMessage.value = 'Add at least one contact to continue.';
+      return false;
+    }
+    return true;
+  }
+
+  /// Combined Contacts step: representative/nominee gate + optional contacts.
+  Future<bool> submitContactsStep() async {
+    errorMessage.value = null;
+    final mode = contactDraftMode.value;
+    final editingRep = mode == 'representative' || mode == 'nominee';
+
+    if (!editingRep) {
+      final ok = await submitContacts(allowEmpty: true);
+      if (!ok) return false;
+    }
+
+    if (editingRep || requiresChildRepresentative) {
+      final ok = await submitRepresentative();
+      if (!ok) return false;
+    } else if (!representativeSaved.value) {
+      nomineeSkipped.value = true;
+    }
+
     if (step.value == 3) step.value = 4;
     return true;
   }
@@ -1115,7 +1137,7 @@ class ClientOnboardingController extends GetxController
   }
 
   String? get _representativeLegalRole {
-    if (step.value != 4 &&
+    if (step.value != 3 &&
         contactDraftMode.value != 'representative' &&
         contactDraftMode.value != 'nominee') {
       return null;
@@ -1222,6 +1244,10 @@ class ClientOnboardingController extends GetxController
             contactPhoneCtrl.text.trim().isNotEmpty ||
             contactEmailCtrl.text.trim().isNotEmpty;
         if (hasDraft) {
+          // Ensure legal role applies when saving from Contacts step.
+          if (contactDraftMode.value != 'representative') {
+            contactDraftMode.value = 'representative';
+          }
           final ok = await saveContactDraft();
           if (!ok) return false;
         }
@@ -1237,6 +1263,9 @@ class ClientOnboardingController extends GetxController
           contactPhoneCtrl.text.trim().isNotEmpty ||
           contactEmailCtrl.text.trim().isNotEmpty;
       if (hasDraft) {
+        if (contactDraftMode.value != 'nominee') {
+          contactDraftMode.value = 'nominee';
+        }
         final ok = await saveContactDraft();
         if (!ok) return false;
       } else {
@@ -1244,7 +1273,6 @@ class ClientOnboardingController extends GetxController
       }
     }
 
-    if (step.value == 4) step.value = 5;
     return true;
   }
 
@@ -1445,7 +1473,7 @@ class ClientOnboardingController extends GetxController
         await _clearLegacySpecialistFacts(id);
       }
 
-      if (step.value == 5) step.value = 6;
+      if (step.value == 4) step.value = 5;
       return true;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;

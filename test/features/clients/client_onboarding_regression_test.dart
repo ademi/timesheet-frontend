@@ -100,18 +100,15 @@ void main() {
     expect(await c.submitPreferences(), isTrue);
 
     c.step.value = 3;
-    expect(await c.submitContacts(), isTrue);
+    expect(await c.submitContactsStep(), isTrue);
     expect(c.contactsCreated, isEmpty);
-
-    c.dob.value = DateTime(1990, 1, 1);
-    c.step.value = 4;
-    expect(await c.submitRepresentative(), isTrue);
+    expect(c.step.value, 4);
+    expect(c.nomineeSkipped.value, isTrue);
 
     c.ndisCtrl.text = '431234567';
     c.planManagementType.value = 'self_managed';
-    c.step.value = 5;
     expect(await c.submitSupportPlan(), isTrue);
-    expect(c.step.value, 6);
+    expect(c.step.value, 5);
 
     c.consentComplete.value = true;
     c.serviceAgreementComplete.value = true;
@@ -153,12 +150,12 @@ void main() {
       return Future.value();
     });
     c.client.value = _fakeClient;
-    c.step.value = 5;
+    c.step.value = 4;
     c.ndisCtrl.text = '431234567';
     c.planManagementType.value = 'self_managed';
 
     expect(await c.submitSupportPlan(), isFalse);
     expect(c.ndisFieldError.value, isNotNull);
-    expect(c.step.value, 5);
+    expect(c.step.value, 4);
   });
 }

@@ -232,7 +232,9 @@ void main() {
       tester,
     ) async {
       final c = Get.find<ClientOnboardingController>();
+      c.dob.value = DateTime(1990, 1, 1);
       c.step.value = 3;
+      c.beginEmergencyDraft();
 
       await tester.pumpWidget(
         const GetMaterialApp(home: ClientOnboardingView()),
@@ -251,7 +253,8 @@ void main() {
     ) async {
       final c = Get.find<ClientOnboardingController>();
       c.dob.value = DateTime(1990, 1, 1);
-      c.step.value = 4;
+      c.step.value = 3;
+      c.contactDraftMode.value = 'nominee';
       c.contactsCreated.add(
         const ClientContactOut(
           id: 'c-existing',
@@ -270,7 +273,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Also emergency contact'), findsOneWidget);
-      expect(find.text('Use existing contact as emergency'), findsOneWidget);
+      expect(find.text('Use existing contact'), findsOneWidget);
       expect(find.text('Name'), findsOneWidget);
 
       c.reuseEmergencyContactId.value = 'c-existing';

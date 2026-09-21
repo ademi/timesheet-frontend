@@ -7,7 +7,6 @@ import 'package:rostiq/features/clients/controllers/client_onboarding_controller
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
-import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
 import 'package:rostiq/features/clients/views/client_onboarding_view.dart';
 import 'package:rostiq/shared/widgets/floating_error_notice.dart';
 
@@ -50,6 +49,9 @@ void main() {
     for (final label in ClientOnboardingController.stepLabels) {
       expect(find.text(label), findsWidgets);
     }
+    expect(find.text('Representative'), findsNothing);
+    expect(ClientOnboardingController.stepLabels, hasLength(6));
+    expect(ClientOnboardingController.maxStep, 5);
   });
 
   testWidgets('error notice sits above footer, not inside ListView', (
@@ -98,33 +100,24 @@ void main() {
     );
   });
 
-  testWidgets('Skip nominee sits in footer above Next, not in ListView', (
+  testWidgets('Contacts step shows soft Add emergency contact CTA', (
     tester,
   ) async {
     final c = Get.find<ClientOnboardingController>();
     c.dob.value = DateTime(1990, 1, 1);
-    c.step.value = 4;
+    c.step.value = 3;
+    c.contactDraftMode.value = 'nominee';
 
     await tester.pumpWidget(const GetMaterialApp(home: ClientOnboardingView()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Skip nominee'), findsOneWidget);
-    expect(find.text('Next'), findsOneWidget);
-    expect(
-      find.descendant(
-        of: find.byType(ListView),
-        matching: find.text('Skip nominee'),
-      ),
-      findsNothing,
-    );
-    expect(
-      tester.getTopLeft(find.text('Skip nominee')).dy,
-      lessThan(tester.getTopLeft(find.text('Next')).dy),
-    );
+    expect(find.text('Add emergency contact'), findsOneWidget);
+    expect(find.text('You can add contacts later.'), findsOneWidget);
+    expect(find.text('Skip nominee'), findsNothing);
   });
 
   testWidgets(
-    'back from representative returns to contacts without exception',
+    'back from Support Plan returns to Contacts without exception',
     (tester) async {
       final c = Get.find<ClientOnboardingController>();
       c.client.value = ClientOut(
@@ -150,8 +143,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(c.step.value, 3);
-      expect(c.contactRelationshipPreset.value, isNull);
-      expect(find.text('Emergency contact'), findsOneWidget);
+      expect(find.text('Contacts'), findsWidgets);
     },
   );
 }

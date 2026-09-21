@@ -12,7 +12,6 @@ import '../widgets/onboarding/onboarding_support_plan_step.dart';
 import '../widgets/onboarding/onboarding_identity_step.dart';
 import '../widgets/onboarding/onboarding_legal_pack_step.dart';
 import '../widgets/onboarding/onboarding_preferences_step.dart';
-import '../widgets/onboarding/onboarding_representative_step.dart';
 
 class ClientOnboardingView extends GetView<ClientOnboardingController> {
   const ClientOnboardingView({super.key});
@@ -60,10 +59,7 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                             controller: controller,
                           ),
                           3 => OnboardingContactsStep(controller: controller),
-                          4 => OnboardingRepresentativeStep(
-                            controller: controller,
-                          ),
-                          5 => OnboardingSupportPlanStep(
+                          4 => OnboardingSupportPlanStep(
                             controller: controller,
                           ),
                           _ => OnboardingLegalPackStep(controller: controller),
@@ -92,7 +88,6 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                         controller.step.value ==
                         ClientOnboardingController.maxStep;
                     final skipCarer = controller.showSkipCarer;
-                    final skipNominee = controller.showSkipNominee;
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -103,14 +98,6 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                                     ? null
                                     : controller.skipCarer,
                             child: const Text('Skip carer'),
-                          ),
-                        if (skipNominee)
-                          TextButton(
-                            onPressed:
-                                controller.isSaving.value
-                                    ? null
-                                    : controller.skipNominee,
-                            child: const Text('Skip nominee'),
                           ),
                         Row(
                           children: [

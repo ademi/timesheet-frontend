@@ -191,7 +191,7 @@ void main() {
 
   test('submitSupportPlan blocks without NDIS number', () async {
     c.client.value = _fakeClient;
-    c.step.value = 5;
+    c.step.value = 4;
     c.planManagementType.value = 'self_managed';
     expect(await c.submitSupportPlan(), isFalse);
     expect(c.ndisFieldError.value, contains('NDIS'));
@@ -201,7 +201,7 @@ void main() {
     'submitSupportPlan blocks plan_managed without manager fields',
     () async {
       c.client.value = _fakeClient;
-      c.step.value = 5;
+      c.step.value = 4;
       c.ndisCtrl.text = '431234567';
       c.planManagementType.value = 'plan_managed';
       expect(await c.submitSupportPlan(), isFalse);
@@ -214,11 +214,11 @@ void main() {
       () => mock.upsertProfileFact(any(), any(), any()),
     ).thenAnswer((_) async {});
     c.client.value = _fakeClient;
-    c.step.value = 5;
+    c.step.value = 4;
     c.ndisCtrl.text = '431234567';
     c.planManagementType.value = 'self_managed';
     expect(await c.submitSupportPlan(), isTrue);
-    expect(c.step.value, 6);
+    expect(c.step.value, 5);
     verify(
       () => mock.upsertProfileFact(
         'client-1',
@@ -264,7 +264,7 @@ void main() {
         ),
       ]);
       c.client.value = _fakeClient;
-      c.step.value = 5;
+      c.step.value = 4;
       c.ndisCtrl.text = '431234567';
       c.planManagementType.value = 'self_managed';
       c.budgetCoreCtrl.text = '1000';
@@ -287,7 +287,7 @@ void main() {
 
   test('submitSupportPlan rejects negative budget values', () async {
     c.client.value = _fakeClient;
-    c.step.value = 5;
+    c.step.value = 4;
     c.ndisCtrl.text = '431234567';
     c.planManagementType.value = 'self_managed';
     c.budgetCoreCtrl.text = '-50';
@@ -310,12 +310,12 @@ void main() {
         }
       });
       c.client.value = _fakeClient;
-      c.step.value = 5;
+      c.step.value = 4;
       c.ndisCtrl.text = '431234567';
       c.planManagementType.value = 'self_managed';
       expect(await c.submitSupportPlan(), isFalse);
       expect(c.ndisFieldError.value, contains('already used'));
-      expect(c.step.value, 5);
+      expect(c.step.value, 4);
     },
   );
 
@@ -326,7 +326,7 @@ void main() {
         () => mock.upsertProfileFact(any(), any(), any()),
       ).thenAnswer((_) async {});
       c.client.value = _fakeClient;
-      c.step.value = 5;
+      c.step.value = 4;
       c.ndisCtrl.text = '431234567';
       c.planManagementType.value = 'plan_managed';
       c.planManagerNameCtrl.text = 'Acme PM';
@@ -377,7 +377,7 @@ void main() {
         onFinished: (id) => finishedId = id,
       );
       c.client.value = _fakeClient;
-      c.step.value = 6;
+      c.step.value = 5;
 
       expect(await c.finishOnboarding(), isTrue);
       expect(softGateCalled, isTrue);
@@ -390,7 +390,7 @@ void main() {
     c.dispose();
     c = _buildController(softGateConfirm: (_) async => false);
     c.client.value = _fakeClient;
-    c.step.value = 6;
+    c.step.value = 5;
     expect(await c.finishOnboarding(), isFalse);
     verifyNever(() => mock.patchClient(any(), any()));
   });
@@ -435,7 +435,7 @@ void main() {
         onFinished: (_) {},
       );
       c.client.value = _fakeClient;
-      c.step.value = 6;
+      c.step.value = 5;
 
       expect(await c.finishOnboarding(), isTrue);
       verify(() => mock.getClient('client-1')).called(1);
@@ -451,7 +451,7 @@ void main() {
       onFinished: (_) {},
     );
     c.client.value = _fakeClient;
-    c.step.value = 6;
+    c.step.value = 5;
 
     when(() => mock.getClient('client-1')).thenThrow(
       const AppFailure(
@@ -475,7 +475,7 @@ void main() {
         onFinished: (_) {},
       );
       c.client.value = _fakeClient;
-      c.step.value = 6;
+      c.step.value = 5;
 
       when(
         () => mock.getClient('client-1'),
@@ -532,7 +532,7 @@ void main() {
     c.dispose();
     c = _buildController(softGateConfirm: (_) async => true);
     c.client.value = _fakeClient;
-    c.step.value = 6;
+    c.step.value = 5;
 
     expect(await c.finishOnboarding(), isTrue);
     await tester.pumpAndSettle();
@@ -591,7 +591,7 @@ void main() {
       c.dispose();
       c = _buildController(softGateConfirm: (_) async => true);
       c.client.value = _fakeClient;
-      c.step.value = 6;
+      c.step.value = 5;
 
       expect(await c.finishOnboarding(), isTrue);
       await tester.pumpAndSettle();
@@ -661,7 +661,7 @@ void main() {
       c.dispose();
       c = _buildController(softGateConfirm: (_) async => true);
       c.client.value = _fakeClient;
-      c.step.value = 6;
+      c.step.value = 5;
 
       expect(await c.finishOnboarding(), isTrue);
       await tester.pumpAndSettle();
@@ -700,10 +700,11 @@ void main() {
     c.client.value = _fakeClient;
     c.step.value = 3;
     c.dob.value = DateTime(1990, 1, 1);
-    expect(await c.submitContacts(), isTrue);
+    c.contactDraftMode.value = 'nominee';
+    expect(await c.submitContactsStep(), isTrue);
     expect(c.errorMessage.value, isNull);
     expect(c.step.value, 4);
-    expect(c.contactDraftMode.value, 'nominee');
+    expect(c.nomineeSkipped.value, isTrue);
   });
 
   test(
@@ -782,6 +783,7 @@ void main() {
     c.client.value = _fakeClient;
     c.step.value = 3;
     c.dob.value = DateTime(1990, 1, 1);
+    c.contactDraftMode.value = 'nominee';
     c.contactsCreated.add(
       const ClientContactOut(
         id: 'c-friend',
@@ -793,7 +795,7 @@ void main() {
         notifyVisitComplete: false,
       ),
     );
-    expect(await c.submitContacts(), isTrue);
+    expect(await c.submitContactsStep(), isTrue);
     expect(c.step.value, 4);
   });
 
@@ -819,7 +821,7 @@ void main() {
 
       c.client.value = _fakeClient;
       c.dob.value = DateTime(2000, 1, 1);
-      c.step.value = 4;
+      c.step.value = 3;
       c.contactDraftMode.value = 'nominee';
       c.contactNameCtrl.text = 'Pat Nominee';
       c.contactPhoneCtrl.text = '+61400000033';
@@ -905,7 +907,8 @@ void main() {
   test('submitRepresentative blocks under-18 without child rep', () async {
     c.client.value = _fakeClient;
     c.dob.value = DateTime(2015, 1, 1);
-    c.step.value = 4;
+    c.step.value = 3;
+    c.contactDraftMode.value = 'representative';
     expect(await c.submitRepresentative(), isFalse);
     expect(c.errorMessage.value, contains('representative'));
   });
@@ -913,10 +916,31 @@ void main() {
   test('submitRepresentative allows adult to skip nominee', () async {
     c.client.value = _fakeClient;
     c.dob.value = DateTime(2000, 1, 1);
-    c.step.value = 4;
+    c.step.value = 3;
+    c.contactDraftMode.value = 'nominee';
     expect(await c.submitRepresentative(), isTrue);
     expect(c.nomineeSkipped.value, isTrue);
-    expect(c.step.value, 5);
+    expect(c.step.value, 3);
+  });
+
+  test('submitContactsStep advances adult past empty Contacts', () async {
+    c.client.value = _fakeClient;
+    c.dob.value = DateTime(2000, 1, 1);
+    c.step.value = 3;
+    c.contactDraftMode.value = 'nominee';
+    expect(await c.submitContactsStep(), isTrue);
+    expect(c.nomineeSkipped.value, isTrue);
+    expect(c.step.value, 4);
+  });
+
+  test('submitContactsStep blocks child without representative', () async {
+    c.client.value = _fakeClient;
+    c.dob.value = DateTime(2015, 1, 1);
+    c.step.value = 3;
+    c.contactDraftMode.value = 'representative';
+    expect(await c.submitContactsStep(), isFalse);
+    expect(c.errorMessage.value, contains('representative'));
+    expect(c.step.value, 3);
   });
 
   test(
@@ -1090,7 +1114,7 @@ void main() {
     c.primarySiteSaved.value = true;
     c.representativeSaved.value = true;
     c.consentComplete.value = true;
-    c.step.value = 5;
+    c.step.value = 4;
 
     c.hydrateFromClient(_fakeClient);
 
@@ -1395,7 +1419,7 @@ void main() {
       () => mock.upsertProfileFact(any(), any(), any()),
     ).thenAnswer((_) async {});
     c.client.value = _fakeClient;
-    c.step.value = 5;
+    c.step.value = 4;
     c.ndisCtrl.text = '431234567';
     c.planManagementType.value = 'self_managed';
     c.addSupportSpecialist(SupportPlanSpecialistTypes.supportCoordinator);
@@ -1421,7 +1445,7 @@ void main() {
 
   test('submitSupportPlan rejects invalid budget values', () async {
     c.client.value = _fakeClient;
-    c.step.value = 5;
+    c.step.value = 4;
     c.ndisCtrl.text = '431234567';
     c.planManagementType.value = 'self_managed';
     c.budgetCoreCtrl.text = 'abc';
@@ -1430,15 +1454,15 @@ void main() {
   });
 
   test(
-    'previousStep from representative resets kinship preset for contacts',
+    'previousStep from Support Plan returns to Contacts',
     () {
       c.step.value = 4;
-      c.contactDraftMode.value = 'representative';
+      c.contactDraftMode.value = 'nominee';
       c.contactRelationshipPreset.value = 'mother';
       c.previousStep();
       expect(c.step.value, 3);
-      expect(c.contactRelationshipPreset.value, isNull);
-      expect(c.contactDraftMode.value, 'emergency');
+      expect(c.contactDraftMode.value, 'nominee');
+      expect(c.contactRelationshipPreset.value, 'mother');
     },
   );
 
@@ -1548,7 +1572,7 @@ void main() {
 
     c.client.value = _fakeClient;
     c.dob.value = DateTime(2015, 1, 1);
-    c.step.value = 4;
+    c.step.value = 3;
     c.contactDraftMode.value = 'representative';
     c.reuseEmergencyContactId.value = 'c-mother';
     c.contactsCreated.add(
