@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../shared/widgets/app_date_field.dart';
 import '../../../shared/widgets/app_file_field.dart';
 import '../controllers/support_plan_funding_consent_store.dart';
+import 'onboarding/support_plan_specialist_section.dart';
 import 'onboarding/support_plan_specialists_panel.dart';
 
 /// Care-plan Support Plan section (profile facts + NDIA PDF).
@@ -284,6 +285,16 @@ class SupportPlanFundingSection extends StatelessWidget {
                 borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
             ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Support Coordinator',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          SupportPlanSpecialistSection(
+            entry: store.supportCoordinatorEntry,
+            enabled: enabled,
           ),
           const SizedBox(height: 8),
           SupportPlanSpecialistsPanel(

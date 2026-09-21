@@ -617,6 +617,31 @@ void main() {
     expect(find.textContaining('Plan management'), findsOneWidget);
     expect(find.textContaining('NDIA plan PDF'), findsWidgets);
     expect(find.textContaining('Preferred claiming'), findsOneWidget);
+    expect(find.text('Support Coordinator'), findsOneWidget);
+    expect(find.text('SC name'), findsOneWidget);
+    expect(find.text('Add support specialist'), findsOneWidget);
+    store.dispose();
+  });
+
+  testWidgets('funding add specialist sheet excludes support coordinator', (
+    tester,
+  ) async {
+    final store = SupportPlanFundingConsentStore(repository: mock);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SupportPlanFundingSection(store: store, clientId: 'c1'),
+          ),
+        ),
+      ),
+    );
+    await tester.ensureVisible(find.text('Add support specialist'));
+    await tester.tap(find.text('Add support specialist'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(ListTile, 'Support coordinator'), findsNothing);
+    expect(find.widgetWithText(ListTile, 'Speech therapist'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Other specialist'), findsOneWidget);
     store.dispose();
   });
 
@@ -634,8 +659,8 @@ void main() {
       ),
     );
     expect(find.text('Consent & agreements'), findsOneWidget);
-    expect(find.textContaining('Consent agreement'), findsOneWidget);
-    expect(find.textContaining('Service agreement'), findsOneWidget);
+    expect(find.textContaining('Consent agreement'), findsWidgets);
+    expect(find.textContaining('Service agreement'), findsWidgets);
     expect(find.textContaining('Information share'), findsOneWidget);
     expect(find.textContaining('Specific supports'), findsOneWidget);
     store.dispose();

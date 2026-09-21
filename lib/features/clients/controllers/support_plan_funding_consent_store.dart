@@ -9,6 +9,7 @@ import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../services/client_legal_upload_helper.dart';
 import '../models/support_plan_specialist_entry.dart';
+import '../models/support_plan_specialist_types.dart';
 import '../utils/support_plan_specialists_codec.dart';
 import '../utils/ndis_plan_budgets_codec.dart';
 import '../utils/onboarding_keys.dart';
@@ -69,6 +70,9 @@ class SupportPlanFundingConsentStore {
   final budgetOtherCtrl = TextEditingController();
   final supportPlanOtherCtrl = TextEditingController();
   final supportSpecialists = <SupportPlanSpecialistEntry>[].obs;
+  final supportCoordinatorEntry = SupportPlanSpecialistEntry.create(
+    SupportPlanSpecialistTypes.supportCoordinator,
+  );
   final preferredClaimingMethod = RxnString();
   final preferredClaimingOtherCtrl = TextEditingController();
   final ndisPdfOnFile = false.obs;
@@ -146,7 +150,7 @@ class SupportPlanFundingConsentStore {
       otherAmount: budgetOtherCtrl,
     );
     supportPlanOtherCtrl.text = _resolveSupportPlanOther(bundle);
-    replaceSupportSpecialists(
+    _hydrateSpecialistsPartition(
       SupportPlanSpecialistsCodec.resolveFromFacts(bundle.facts),
     );
     preferredClaimingMethod.value = _stringFact(
@@ -361,7 +365,7 @@ class SupportPlanFundingConsentStore {
       );
     }
     final specialistJson = SupportPlanSpecialistsCodec.toFactValue(
-      supportSpecialists,
+      _mergedSpecialistsForPersist(),
     );
     if (specialistJson.isEmpty) {
       if (_presentKeys.contains(OnboardingKeys.supportPlanSpecialists)) {
@@ -601,6 +605,7 @@ class SupportPlanFundingConsentStore {
     budgetOtherLabelCtrl.dispose();
     budgetOtherCtrl.dispose();
     supportPlanOtherCtrl.dispose();
+    supportCoordinatorEntry.dispose();
     clearSupportSpecialists();
     preferredClaimingOtherCtrl.dispose();
     consentSignerNameCtrl.dispose();
@@ -614,6 +619,7 @@ class SupportPlanFundingConsentStore {
   }
 
   void addSupportSpecialist(String type) {
+    if (type == SupportPlanSpecialistTypes.supportCoordinator) return;
     supportSpecialists.add(
       SupportPlanSpecialistEntry.create(type, expanded: true),
     );
@@ -629,6 +635,56 @@ class SupportPlanFundingConsentStore {
   void replaceSupportSpecialists(Iterable<SupportPlanSpecialistEntry> entries) {
     clearSupportSpecialists();
     supportSpecialists.assignAll(entries);
+  }
+
+  void _hydrateSpecialistsPartition(List<SupportPlanSpecialistEntry> entries) {
+    SupportPlanSpecialistEntry? firstSc;
+    final nonSc = <SupportPlanSpecialistEntry>[];
+    for (final entry in entries) {
+      if (entry.type == SupportPlanSpecialistTypes.supportCoordinator) {
+        if (firstSc == null) {
+          firstSc = entry;
+        } else {
+          entry.dispose();
+        }
+      } else {
+        nonSc.add(entry);
+      }
+    }
+    if (firstSc != null) {
+      _copySpecialistFields(from: firstSc, to: supportCoordinatorEntry);
+      firstSc.dispose();
+    } else {
+      supportCoordinatorEntry.fields.clear();
+      supportCoordinatorEntry.customLabelCtrl.clear();
+    }
+    replaceSupportSpecialists(nonSc);
+  }
+
+  void _copySpecialistFields({
+    required SupportPlanSpecialistEntry from,
+    required SupportPlanSpecialistEntry to,
+  }) {
+    to.customLabelCtrl.text = from.customLabelCtrl.text;
+    to.fields.nameCtrl.text = from.fields.nameCtrl.text;
+    to.fields.companyCtrl.text = from.fields.companyCtrl.text;
+    to.fields.abnAcnCtrl.text = from.fields.abnAcnCtrl.text;
+    to.fields.orgIdCtrl.text = from.fields.orgIdCtrl.text;
+    to.fields.phoneCtrl.text = from.fields.phoneCtrl.text;
+    to.fields.emailCtrl.text = from.fields.emailCtrl.text;
+    to.fields.addressCtrl.text = from.fields.addressCtrl.text;
+    to.revision.value++;
+  }
+
+  List<SupportPlanSpecialistEntry> _mergedSpecialistsForPersist() {
+    final nonSc =
+        supportSpecialists
+            .where((e) => e.type != SupportPlanSpecialistTypes.supportCoordinator)
+            .toList();
+    if (!supportCoordinatorEntry.hasAnyFieldFilled) {
+      return nonSc;
+    }
+    return [supportCoordinatorEntry, ...nonSc];
   }
 
   static String _resolveSupportPlanOther(ClientProfileBundle bundle) {
