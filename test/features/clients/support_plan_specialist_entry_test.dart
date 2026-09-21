@@ -6,6 +6,28 @@ import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
 import 'package:rostiq/features/clients/utils/support_plan_specialists_codec.dart';
 
 void main() {
+  group('SupportPlanSpecialistTypes', () {
+    test('pickerTypes does not include support_coordinator', () {
+      expect(
+        SupportPlanSpecialistTypes.pickerTypes,
+        isNot(contains(SupportPlanSpecialistTypes.supportCoordinator)),
+      );
+      expect(
+        SupportPlanSpecialistTypes.pickerTypes,
+        contains(SupportPlanSpecialistTypes.other),
+      );
+    });
+
+    test('legacy support_coordinator remains valid for hydrate', () {
+      expect(
+        SupportPlanSpecialistTypes.isValid(
+          SupportPlanSpecialistTypes.supportCoordinator,
+        ),
+        isTrue,
+      );
+    });
+  });
+
   group('SupportPlanSpecialistEntry', () {
     test('create assigns unique ids', () {
       final a = SupportPlanSpecialistEntry.create(

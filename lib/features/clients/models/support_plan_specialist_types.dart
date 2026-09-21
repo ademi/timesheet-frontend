@@ -17,7 +17,6 @@ abstract final class SupportPlanSpecialistTypes {
   };
 
   static const pickerTypes = <String>[
-    supportCoordinator,
     behaviouralTherapist,
     speechTherapist,
     occupationalTherapist,
