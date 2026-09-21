@@ -2176,6 +2176,7 @@ class ClientOnboardingController extends GetxController
     }
 
     legalOtherUploading.add(rowId);
+    legalOtherUploading.refresh();
     try {
       final docId = await _legalUploadHelper.uploadLegalOtherPdf(
         clientId: id,
@@ -2196,13 +2197,18 @@ class ClientOnboardingController extends GetxController
       return false;
     } finally {
       legalOtherUploading.remove(rowId);
+      legalOtherUploading.refresh();
+      legalOtherDocs.refresh();
     }
   }
 
   Future<void> _persistLegalOtherDocuments(String clientId) async {
+    // Persist every completed upload with a document id. Do not require
+    // canUpload — clearing/editing an Other name after upload must not wipe
+    // the already-persisted fact on finish.
     final payload =
         legalOtherDocs
-            .where((e) => e.complete && e.documentId != null && e.canUpload)
+            .where((e) => e.complete && e.documentId != null)
             .map((e) => e.toFactEntry())
             .toList();
     if (payload.isEmpty) {

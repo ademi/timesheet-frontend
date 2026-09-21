@@ -2228,6 +2228,67 @@ void main() {
     },
   );
 
+  test(
+    'finishOnboarding keeps complete other docs when Other name cleared',
+    () async {
+      when(
+        () => mock.getClient('client-1'),
+      ).thenAnswer((_) async => _fakeClient);
+      when(() => mock.patchClient(any(), any())).thenAnswer((_) async {
+        return ClientOut(
+          id: _fakeClient.id,
+          tenantId: _fakeClient.tenantId,
+          fullName: _fakeClient.fullName,
+          status: _fakeClient.status,
+          metadata: const {'onboarding_incomplete': false},
+          createdAt: _now,
+          updatedAt: _now,
+        );
+      });
+      when(
+        () => mock.upsertProfileFact(any(), any(), any()),
+      ).thenAnswer((_) async {});
+
+      c.dispose();
+      c = _buildController(
+        softGateConfirm: (_) async => true,
+        onFinished: (_) {},
+      );
+      c.client.value = _fakeClient;
+      c.consentComplete.value = true;
+      c.serviceAgreementComplete.value = true;
+      c.legalOtherDocs.add(
+        LegalOtherDocumentDraft(
+          id: 'lo-other',
+          typeKey: 'other',
+          customLabel: '',
+          fileName: 'order.pdf',
+          documentId: 'doc-other',
+          complete: true,
+        ),
+      );
+
+      expect(await c.finishOnboarding(), isTrue);
+      final upsert =
+          verify(
+                () => mock.upsertProfileFact(
+                  'client-1',
+                  OnboardingKeys.legalOtherDocuments,
+                  captureAny(),
+                ),
+              ).captured.single
+              as ProfileFactUpsert;
+      expect(upsert.clearValue, isNot(true));
+      expect(upsert.valueJson, [
+        {
+          'type': 'other',
+          'label': 'order.pdf',
+          'document_id': 'doc-other',
+        },
+      ]);
+    },
+  );
+
   test('hydrateLegalOtherFromFacts restores complete rows', () {
     c.hydrateLegalOtherFromFacts([
       const ClientProfileFactOut(

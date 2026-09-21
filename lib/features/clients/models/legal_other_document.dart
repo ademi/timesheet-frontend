@@ -54,7 +54,7 @@ class LegalOtherDocumentDraft {
 
   Map<String, dynamic> toFactEntry() => {
     'type': typeKey,
-    'label': displayLabel,
+    'label': displayLabel ?? fileName ?? typeKey,
     'document_id': documentId,
   };
 }

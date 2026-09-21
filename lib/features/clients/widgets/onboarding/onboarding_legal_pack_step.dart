@@ -146,81 +146,85 @@ class _LegalOtherItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title =
-        row.displayLabel ?? legalOtherTypePresets[row.typeKey] ?? 'Document';
-    final uploading = controller.legalOtherUploading.contains(row.id);
-    return _LegalItem(
-      title: title,
-      complete: row.complete,
-      // Legal-other rows stay editable so users can remove / re-upload.
-      lockWhenComplete: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          DropdownButtonFormField<String>(
-            value: legalOtherTypePresets.containsKey(row.typeKey)
-                ? row.typeKey
-                : 'other',
-            decoration: const InputDecoration(
-              labelText: 'Document type',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              for (final e in legalOtherTypePresets.entries)
-                DropdownMenuItem(value: e.key, child: Text(e.value)),
-            ],
-            onChanged: uploading
-                ? null
-                : (v) {
-                    if (v == null) return;
-                    row.typeKey = v;
-                    if (v != 'other') {
-                      row.customLabel = null;
-                    }
-                    controller.legalOtherDocs.refresh();
-                  },
-          ),
-          if (row.typeKey == 'other') ...[
-            const SizedBox(height: 8),
-            TextFormField(
-              key: ValueKey('legal-other-name-${row.id}'),
-              initialValue: row.customLabel ?? '',
-              enabled: !uploading,
+    return Obx(() {
+      final title =
+          row.displayLabel ?? legalOtherTypePresets[row.typeKey] ?? 'Document';
+      // Subscribe so Choose/Re-upload disable while upload is in flight.
+      final uploading = controller.legalOtherUploading.contains(row.id);
+      controller.legalOtherDocs.length;
+      return _LegalItem(
+        title: title,
+        complete: row.complete,
+        // Legal-other rows stay editable so users can remove / re-upload.
+        lockWhenComplete: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            DropdownButtonFormField<String>(
+              value: legalOtherTypePresets.containsKey(row.typeKey)
+                  ? row.typeKey
+                  : 'other',
               decoration: const InputDecoration(
-                labelText: 'Name',
+                labelText: 'Document type',
                 border: OutlineInputBorder(),
               ),
-              onChanged: (v) {
-                row.customLabel = v;
-                controller.legalOtherDocs.refresh();
+              items: [
+                for (final e in legalOtherTypePresets.entries)
+                  DropdownMenuItem(value: e.key, child: Text(e.value)),
+              ],
+              onChanged: uploading
+                  ? null
+                  : (v) {
+                      if (v == null) return;
+                      row.typeKey = v;
+                      if (v != 'other') {
+                        row.customLabel = null;
+                      }
+                      controller.legalOtherDocs.refresh();
+                    },
+            ),
+            if (row.typeKey == 'other') ...[
+              const SizedBox(height: 8),
+              TextFormField(
+                key: ValueKey('legal-other-name-${row.id}'),
+                initialValue: row.customLabel ?? '',
+                enabled: !uploading,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (v) {
+                  row.customLabel = v;
+                  controller.legalOtherDocs.refresh();
+                },
+              ),
+            ],
+            const SizedBox(height: 8),
+            AppFileField(
+              label: 'Document PDF',
+              fileName: row.fileName ?? (row.complete ? 'On file' : null),
+              enabled: !uploading,
+              onPick: () {
+                controller.markLegalOtherComplete(row.id);
               },
+              pickLabel: row.complete ? 'Re-upload' : 'Choose file',
+              helperText:
+                  uploading ? 'Uploading…' : 'Upload PDF & mark complete',
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: uploading
+                    ? null
+                    : () => controller.removeLegalOtherDoc(row.id),
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('Remove'),
+              ),
             ),
           ],
-          const SizedBox(height: 8),
-          AppFileField(
-            label: 'Document PDF',
-            fileName: row.fileName ?? (row.complete ? 'On file' : null),
-            enabled: !uploading,
-            onPick: () {
-              controller.markLegalOtherComplete(row.id);
-            },
-            pickLabel: row.complete ? 'Re-upload' : 'Choose file',
-            helperText:
-                uploading ? 'Uploading…' : 'Upload PDF & mark complete',
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: uploading
-                  ? null
-                  : () => controller.removeLegalOtherDoc(row.id),
-              icon: const Icon(Icons.delete_outline, size: 18),
-              label: const Text('Remove'),
-            ),
-          ),
-        ],
-      ),
-    );
+        ),
+      );
+    });
   }
 }
 
