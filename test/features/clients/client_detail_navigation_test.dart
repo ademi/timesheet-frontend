@@ -136,6 +136,51 @@ void main() {
     verify(() => clients.getClient(_client.id)).called(1);
   });
 
+  testWidgets(
+    'onInit sets isLoading when route has id before hydrate completes',
+    (tester) async {
+      Get.reset();
+      Get.testMode = true;
+      stubDetailExtras();
+      // Delay getClient so the first frame can observe isLoading.
+      when(() => clients.getClient(_client.id)).thenAnswer((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return _client;
+      });
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          initialRoute: '${AppRoutes.staffClientDetail}?id=${_client.id}',
+          getPages: [
+            GetPage(
+              name: AppRoutes.staffClientDetail,
+              page: () {
+                final ctrl = ClientsController(
+                  repository: clients,
+                  session: session,
+                  jobsRepository: _MockJobsRepository(),
+                );
+                Get.put(ctrl);
+                return const ClientDetailView();
+              },
+            ),
+          ],
+        ),
+      );
+      await tester.pump(); // first frame after onInit schedules microtask
+
+      final ctrl = Get.find<ClientsController>();
+      expect(ctrl.selected.value, isNull);
+      expect(ctrl.isLoading.value, isTrue);
+      expect(find.text('Client not found.'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(ctrl.selected.value?.id, _client.id);
+      expect(find.text(_client.fullName), findsWidgets);
+    },
+  );
+
   testWidgets('openDetail passes client id in route parameters', (tester) async {
     Get.reset();
     Get.testMode = true;

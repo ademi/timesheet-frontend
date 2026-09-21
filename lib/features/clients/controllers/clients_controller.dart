@@ -251,10 +251,22 @@ class ClientsController extends GetxController
     });
     // Hydrate detail from route id/args before list load so a fresh
     // ClientsBinding after onboarding never lands on "Client not found."
+    // Set isLoading immediately when route implies a client so the first
+    // frame shows a spinner, not the empty "Client not found." state.
+    if (_routeImpliesClientDetail()) {
+      isLoading.value = true;
+    }
     Future.microtask(() async {
       await ensureDetailHydratedFromRoute();
       await load();
     });
+  }
+
+  bool _routeImpliesClientDetail() {
+    if (selected.value != null) return false;
+    if (Get.arguments is ClientOut) return true;
+    final id = Get.parameters['id'];
+    return id != null && id.isNotEmpty;
   }
 
   @override

@@ -541,6 +541,73 @@ void main() {
   });
 
   testWidgets(
+    'finishOnboarding without registered ClientsController hydrates via binding',
+    (tester) async {
+      Get.testMode = true;
+      Get.reset();
+
+      when(() => mock.listClients()).thenAnswer((_) async => [_fakeClient]);
+      when(() => mock.getClient('client-1')).thenAnswer((_) async => _fakeClient);
+      when(() => mock.patchClient(any(), any())).thenAnswer((_) async => _fakeClient);
+      when(
+        () => mock.getClientProfilePhoto(any()),
+      ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
+      when(() => mock.listClientTypes()).thenAnswer((_) async => []);
+      when(
+        () => mock.getClientProfile(any()),
+      ).thenAnswer((_) async => const ClientProfileBundle(facts: []));
+      when(() => mock.listSites(any())).thenAnswer((_) async => []);
+      when(() => mock.listContacts(any())).thenAnswer((_) async => []);
+      when(() => mock.listSupportPlans(any())).thenAnswer((_) async => []);
+      when(() => mock.listTypeRequirements(any())).thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          initialRoute: AppRoutes.staffClientOnboarding,
+          getPages: [
+            GetPage(
+              name: AppRoutes.staffClientOnboarding,
+              page: () => const SizedBox.shrink(),
+            ),
+            GetPage(
+              name: AppRoutes.staffClientDetail,
+              page: () => const SizedBox.shrink(),
+              binding: BindingsBuilder(() {
+                Get.put(
+                  ClientsController(
+                    repository: mock,
+                    session: session,
+                    jobsRepository: _MockJobsRepository(),
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+      );
+
+      expect(Get.isRegistered<ClientsController>(), isFalse);
+
+      c.dispose();
+      c = _buildController(softGateConfirm: (_) async => true);
+      c.client.value = _fakeClient;
+      c.step.value = 6;
+
+      expect(await c.finishOnboarding(), isTrue);
+      await tester.pumpAndSettle();
+
+      expect(Get.currentRoute, startsWith(AppRoutes.staffClientDetail));
+      expect(Get.parameters['id'], 'client-1');
+      expect(Get.isRegistered<ClientsController>(), isTrue);
+      final clientsCtrl = Get.find<ClientsController>();
+      // onInit microtask hydrate + openDetailById
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+      expect(clientsCtrl.selected.value?.id, 'client-1');
+    },
+  );
+
+  testWidgets(
     'finishOnboarding hydrates ClientsController.selected before detail route',
     (tester) async {
       Get.testMode = true;
