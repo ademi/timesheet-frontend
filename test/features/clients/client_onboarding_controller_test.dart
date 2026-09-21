@@ -1559,6 +1559,87 @@ void main() {
     c.clearSupportSpecialists();
   });
 
+  test(
+    'soft-skip coordinator clears previously saved specialists fact',
+    () async {
+      when(
+        () => mock.upsertProfileFact(any(), any(), any()),
+      ).thenAnswer((_) async {});
+      c.client.value = _fakeClient;
+      c.hydrateSupportPlanFromFacts([
+        ClientProfileFactOut(
+          requirementKey: OnboardingKeys.supportPlanSpecialists,
+          valueJson: [
+            {
+              'type': SupportPlanSpecialistTypes.supportCoordinator,
+              'name': 'Jane SC',
+            },
+          ],
+          updatedAt: DateTime.utc(2026, 1, 1),
+        ),
+      ]);
+      c.supportCoordinatorEntry.fields.nameCtrl.clear();
+      c.step.value = 6;
+
+      expect(await c.submitSupportCoordinatorStep(soft: true), isTrue);
+      expect(c.step.value, 7);
+
+      final captured =
+          verify(
+                () => mock.upsertProfileFact(
+                  'client-1',
+                  OnboardingKeys.supportPlanSpecialists,
+                  captureAny(),
+                ),
+              ).captured.single
+              as ProfileFactUpsert;
+      expect(captured.clearValue, isTrue);
+    },
+  );
+
+  test(
+    'soft-skip specialists clears previously saved specialists fact',
+    () async {
+      when(
+        () => mock.upsertProfileFact(any(), any(), any()),
+      ).thenAnswer((_) async {});
+      c.client.value = _fakeClient;
+      c.hydrateSupportPlanFromFacts([
+        ClientProfileFactOut(
+          requirementKey: OnboardingKeys.supportPlanSpecialists,
+          valueJson: [
+            {
+              'type': SupportPlanSpecialistTypes.supportCoordinator,
+              'name': 'Jane SC',
+            },
+            {
+              'type': SupportPlanSpecialistTypes.physiotherapist,
+              'name': 'Bob PT',
+            },
+          ],
+          updatedAt: DateTime.utc(2026, 1, 1),
+        ),
+      ]);
+      c.supportCoordinatorEntry.fields.nameCtrl.clear();
+      c.clearSupportSpecialists();
+      c.step.value = 7;
+
+      expect(await c.submitSupportSpecialistsStep(soft: true), isTrue);
+      expect(c.step.value, 8);
+
+      final captured =
+          verify(
+                () => mock.upsertProfileFact(
+                  'client-1',
+                  OnboardingKeys.supportPlanSpecialists,
+                  captureAny(),
+                ),
+              ).captured.single
+              as ProfileFactUpsert;
+      expect(captured.clearValue, isTrue);
+    },
+  );
+
   test('hydrate partitions SC into coordinator form', () {
     c.hydrateSupportPlanFromFacts([
       ClientProfileFactOut(

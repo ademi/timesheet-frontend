@@ -1706,11 +1706,8 @@ class ClientOnboardingController extends GetxController
       return false;
     }
 
-    if (soft && !supportCoordinatorEntry.hasAnyFieldFilled) {
-      if (step.value == 6) step.value = 7;
-      return true;
-    }
-
+    // Always rewrite merged specialists JSON so clearing the coordinator form
+    // (soft skip with empty fields) removes a previously saved SC row.
     isSaving.value = true;
     try {
       await _persistMergedSpecialists(id);
@@ -1735,19 +1732,8 @@ class ClientOnboardingController extends GetxController
       return false;
     }
 
-    final hasSpecialistContent = supportSpecialists.any(
-      (e) =>
-          e.type != SupportPlanSpecialistTypes.supportCoordinator &&
-          e.hasAnyFieldFilled,
-    );
-
-    if (soft &&
-        !hasSpecialistContent &&
-        !supportCoordinatorEntry.hasAnyFieldFilled) {
-      if (step.value == 7) step.value = 8;
-      return true;
-    }
-
+    // Always rewrite merged specialists so cleared specialist rows do not
+    // leave stale support_plan_specialists JSON behind.
     isSaving.value = true;
     try {
       await _persistMergedSpecialists(id);
