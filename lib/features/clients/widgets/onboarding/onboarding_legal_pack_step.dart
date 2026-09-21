@@ -146,10 +146,14 @@ class _LegalOtherItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = row.displayLabel ?? legalOtherTypePresets[row.typeKey] ?? 'Document';
+    final title =
+        row.displayLabel ?? legalOtherTypePresets[row.typeKey] ?? 'Document';
+    final uploading = controller.legalOtherUploading.contains(row.id);
     return _LegalItem(
       title: title,
       complete: row.complete,
+      // Legal-other rows stay editable so users can remove / re-upload.
+      lockWhenComplete: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -165,41 +169,51 @@ class _LegalOtherItem extends StatelessWidget {
               for (final e in legalOtherTypePresets.entries)
                 DropdownMenuItem(value: e.key, child: Text(e.value)),
             ],
-            onChanged: (v) {
-              if (v == null) return;
-              row.typeKey = v;
-              if (v != 'other') {
-                row.customLabel = null;
-              }
-              controller.legalOtherDocs.refresh();
-            },
+            onChanged: uploading
+                ? null
+                : (v) {
+                    if (v == null) return;
+                    row.typeKey = v;
+                    if (v != 'other') {
+                      row.customLabel = null;
+                    }
+                    controller.legalOtherDocs.refresh();
+                  },
           ),
           if (row.typeKey == 'other') ...[
             const SizedBox(height: 8),
             TextFormField(
               key: ValueKey('legal-other-name-${row.id}'),
               initialValue: row.customLabel ?? '',
+              enabled: !uploading,
               decoration: const InputDecoration(
                 labelText: 'Name',
                 border: OutlineInputBorder(),
               ),
-              onChanged: (v) => row.customLabel = v,
+              onChanged: (v) {
+                row.customLabel = v;
+                controller.legalOtherDocs.refresh();
+              },
             ),
           ],
           const SizedBox(height: 8),
           AppFileField(
             label: 'Document PDF',
             fileName: row.fileName ?? (row.complete ? 'On file' : null),
+            enabled: !uploading,
             onPick: () {
               controller.markLegalOtherComplete(row.id);
             },
             pickLabel: row.complete ? 'Re-upload' : 'Choose file',
-            helperText: 'Upload PDF & mark complete',
+            helperText:
+                uploading ? 'Uploading…' : 'Upload PDF & mark complete',
           ),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
-              onPressed: () => controller.removeLegalOtherDoc(row.id),
+              onPressed: uploading
+                  ? null
+                  : () => controller.removeLegalOtherDoc(row.id),
               icon: const Icon(Icons.delete_outline, size: 18),
               label: const Text('Remove'),
             ),
@@ -215,14 +229,20 @@ class _LegalItem extends StatelessWidget {
     required this.title,
     required this.complete,
     required this.child,
+    this.lockWhenComplete = true,
   });
 
   final String title;
   final bool complete;
   final Widget child;
 
+  /// When true (Consent / SA / Ack), hide controls after complete.
+  /// Legal-other rows pass false so Remove / Re-upload stay available.
+  final bool lockWhenComplete;
+
   @override
   Widget build(BuildContext context) {
+    final showChild = !complete || !lockWhenComplete;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -258,7 +278,7 @@ class _LegalItem extends StatelessWidget {
               ),
             ],
           ),
-          if (!complete) ...[const SizedBox(height: 12), child],
+          if (showChild) ...[const SizedBox(height: 12), child],
         ],
       ),
     );

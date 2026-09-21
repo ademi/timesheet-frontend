@@ -82,7 +82,7 @@ void main() {
     expect(find.text('Add a document'), findsOneWidget);
   });
 
-  testWidgets('complete other row has no Remove', (tester) async {
+  testWidgets('complete other row keeps Remove and Re-upload', (tester) async {
     c.legalOtherDocs.add(
       LegalOtherDocumentDraft(
         id: 'legal-other-complete',
@@ -95,7 +95,21 @@ void main() {
     await pumpStep(tester);
 
     expect(find.text('Court order'), findsWidgets);
-    expect(find.text('Remove'), findsNothing);
-    expect(find.text('Document type'), findsNothing);
+    expect(find.text('Remove'), findsOneWidget);
+    expect(find.text('Document type'), findsOneWidget);
+    expect(find.text('Re-upload'), findsOneWidget);
+  });
+
+  testWidgets('Other name onChanged refreshes title via displayLabel', (
+    tester,
+  ) async {
+    c.addLegalOtherDoc();
+    await pumpStep(tester);
+
+    await tester.enterText(find.byType(TextFormField), 'Guardianship note');
+    await tester.pumpAndSettle();
+
+    expect(c.legalOtherDocs.single.customLabel, 'Guardianship note');
+    expect(find.text('Guardianship note'), findsWidgets);
   });
 }

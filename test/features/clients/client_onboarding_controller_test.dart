@@ -2024,6 +2024,9 @@ void main() {
           scanStatus: 'clean',
         ),
       );
+      when(
+        () => mock.upsertProfileFact(any(), any(), any()),
+      ).thenAnswer((_) async {});
 
       c.dispose();
       c = _buildController(documentPipeline: pipeline);
@@ -2041,6 +2044,7 @@ void main() {
       );
       expect(c.legalOtherDocs.first.complete, isTrue);
       expect(c.legalOtherDocs.first.documentId, 'doc-1');
+      expect(c.legalOtherUploading, isEmpty);
       final request =
           verify(
                 () => pipeline.uploadEvidence(
@@ -2050,6 +2054,22 @@ void main() {
               ).captured.single
               as UploadUrlRequest;
       expect(request.category, OnboardingKeys.legalOtherCategory);
+      final upsert =
+          verify(
+                () => mock.upsertProfileFact(
+                  'client-1',
+                  OnboardingKeys.legalOtherDocuments,
+                  captureAny(),
+                ),
+              ).captured.single
+              as ProfileFactUpsert;
+      expect(upsert.valueJson, [
+        {
+          'type': 'court_order',
+          'label': 'Court order',
+          'document_id': 'doc-1',
+        },
+      ]);
     },
   );
 
@@ -2259,4 +2279,111 @@ void main() {
       expect(c.legalOtherDocs.first.complete, isTrue);
     },
   );
+
+  test(
+    'upload then hydrateFromClient restores legal other row from fact',
+    () async {
+      final pipeline = _MockDocumentPipeline();
+      when(
+        () => pipeline.uploadEvidence(
+          request: any(named: 'request'),
+          bytes: any(named: 'bytes'),
+        ),
+      ).thenAnswer(
+        (_) async => const DocumentOut(
+          id: 'doc-resume-1',
+          ownerType: 'client',
+          ownerId: 'client-1',
+          filename: 'order.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 3,
+          scanStatus: 'clean',
+        ),
+      );
+
+      Object? persistedJson;
+      when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((
+        inv,
+      ) async {
+        final key = inv.positionalArguments[1] as String;
+        if (key == OnboardingKeys.legalOtherDocuments) {
+          final body = inv.positionalArguments[2] as ProfileFactUpsert;
+          persistedJson = body.valueJson;
+        }
+      });
+      when(() => mock.getClientProfile('client-1')).thenAnswer((_) async {
+        return ClientProfileBundle(
+          facts: [
+            if (persistedJson != null)
+              ClientProfileFactOut(
+                requirementKey: OnboardingKeys.legalOtherDocuments,
+                valueJson: persistedJson,
+              ),
+          ],
+        );
+      });
+
+      c.dispose();
+      c = _buildController(documentPipeline: pipeline);
+      c.client.value = _fakeClient;
+      c.addLegalOtherDoc();
+      c.legalOtherDocs.first.typeKey = 'court_order';
+
+      expect(
+        await c.uploadLegalOther(
+          c.legalOtherDocs.first.id,
+          [1, 2, 3],
+          'order.pdf',
+        ),
+        isTrue,
+      );
+      expect(persistedJson, isNotNull);
+
+      // Simulate leave + resume: clear local state then hydrate from fact.
+      c.resetForResume();
+      expect(c.legalOtherDocs, isEmpty);
+
+      await c.hydrateFromClient(_fakeClient);
+
+      expect(c.legalOtherDocs, hasLength(1));
+      expect(c.legalOtherDocs.first.typeKey, 'court_order');
+      expect(c.legalOtherDocs.first.documentId, 'doc-resume-1');
+      expect(c.legalOtherDocs.first.complete, isTrue);
+    },
+  );
+
+  test('removeLegalOtherDoc persists cleared fact when client exists', () async {
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((
+      _,
+    ) async {});
+    // Pretend fact was already present so clear path runs.
+    c.hydrateLegalOtherFromFacts([
+      const ClientProfileFactOut(
+        requirementKey: OnboardingKeys.legalOtherDocuments,
+        valueJson: [
+          {
+            'type': 'court_order',
+            'label': 'Court order',
+            'document_id': 'doc-1',
+          },
+        ],
+      ),
+    ]);
+    c.client.value = _fakeClient;
+    final id = c.legalOtherDocs.single.id;
+
+    await c.removeLegalOtherDoc(id);
+
+    expect(c.legalOtherDocs, isEmpty);
+    final upsert =
+        verify(
+              () => mock.upsertProfileFact(
+                'client-1',
+                OnboardingKeys.legalOtherDocuments,
+                captureAny(),
+              ),
+            ).captured.single
+            as ProfileFactUpsert;
+    expect(upsert.clearValue, isTrue);
+  });
 }

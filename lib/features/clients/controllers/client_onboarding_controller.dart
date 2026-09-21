@@ -89,6 +89,8 @@ class ClientOnboardingController extends GetxController
   final consentUploading = false.obs;
   final serviceAgreementUploading = false.obs;
   final acknowledgementUploading = false.obs;
+  /// Row ids currently uploading a legal-other PDF.
+  final legalOtherUploading = <String>{}.obs;
 
   // ── Identity ──────────────────────────────────────────────────────────
   final fullName = TextEditingController();
@@ -308,9 +310,9 @@ class ClientOnboardingController extends GetxController
     contactDraftMode.value = 'emergency';
     loadFormTemplates();
     final args = Get.arguments;
-    if (args is ClientOut) {
-      hydrateFromClient(args);
-    } else {
+    // Resume hydrate is owned by [ClientOnboardingBinding] so put + binding
+    // do not both fire unawaited [hydrateFromClient].
+    if (args is! ClientOut) {
       // TEMP: delete import + this call (and onboarding_test_defaults.dart) when done.
       applyOnboardingTestDefaults(this);
     }
@@ -409,6 +411,7 @@ class ClientOnboardingController extends GetxController
     includeAcknowledgement.value = false;
     consentSignerNameCtrl.clear();
     legalOtherDocs.clear();
+    legalOtherUploading.clear();
     _presentKeys.clear();
     _factUpdatedAt.clear();
   }
@@ -2100,8 +2103,18 @@ class ClientOnboardingController extends GetxController
     );
   }
 
-  void removeLegalOtherDoc(String id) {
+  Future<void> removeLegalOtherDoc(String id) async {
     legalOtherDocs.removeWhere((e) => e.id == id);
+    legalOtherUploading.remove(id);
+    final clientId = this.clientId;
+    if (clientId == null) return;
+    try {
+      await _persistLegalOtherDocuments(clientId);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      _setUnexpectedError(e);
+    }
   }
 
   /// Pick a PDF then [uploadLegalOther] — same chrome pattern as Consent / SA.
@@ -2122,6 +2135,9 @@ class ClientOnboardingController extends GetxController
   }
 
   /// Upload a PDF for [rowId], mark complete, store document id.
+  ///
+  /// Persists [OnboardingKeys.legalOtherDocuments] immediately so resume
+  /// hydrate does not drop uploads made before [finishOnboarding].
   ///
   /// Rejects null [LegalOtherDocumentDraft.displayLabel] and Other labels over
   /// [legalOtherMaxCustomLabelLength] (after trim). PDF-only via helper.
@@ -2159,6 +2175,7 @@ class ClientOnboardingController extends GetxController
       return false;
     }
 
+    legalOtherUploading.add(rowId);
     try {
       final docId = await _legalUploadHelper.uploadLegalOtherPdf(
         clientId: id,
@@ -2169,6 +2186,7 @@ class ClientOnboardingController extends GetxController
       row.fileName = fileName;
       row.complete = true;
       legalOtherDocs.refresh();
+      await _persistLegalOtherDocuments(id);
       return true;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -2176,6 +2194,8 @@ class ClientOnboardingController extends GetxController
     } catch (e) {
       _setUnexpectedError(e);
       return false;
+    } finally {
+      legalOtherUploading.remove(rowId);
     }
   }
 
