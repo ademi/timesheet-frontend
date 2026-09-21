@@ -256,98 +256,103 @@ class _ProfilePhotoEditorState extends State<ProfilePhotoEditor> {
       provider = NetworkImage(widget.networkUrl!.trim());
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    final avatar = Stack(
+      alignment: Alignment.center,
       children: [
-        if (widget.showLabel && !widget.readOnly) ...[
-          Text(
-            widget.label,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-        ],
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap:
-                    !widget.readOnly && widget.enabled && !showLoading
-                        ? () => _pick(context)
-                        : null,
-                customBorder: const CircleBorder(),
-                child: CircleAvatar(
-                  radius: radius,
-                  backgroundColor: AppColors.primaryLight,
-                  backgroundImage: provider,
-                  child:
-                      provider == null
-                          ? Icon(
-                            Icons.person,
-                            size: widget.size * 0.45,
-                            color: AppColors.textMuted,
-                          )
-                          : null,
-                ),
-              ),
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap:
+                !widget.readOnly && widget.enabled && !showLoading
+                    ? () => _pick(context)
+                    : null,
+            customBorder: const CircleBorder(),
+            child: CircleAvatar(
+              radius: radius,
+              backgroundColor: AppColors.primaryLight,
+              backgroundImage: provider,
+              child:
+                  provider == null
+                      ? Icon(
+                        Icons.person,
+                        size: widget.size * 0.45,
+                        color: AppColors.textMuted,
+                      )
+                      : null,
             ),
-            if (showLoading)
-              SizedBox(
-                width: widget.size,
-                height: widget.size,
-                child: const CircularProgressIndicator(strokeWidth: 3),
-              ),
-            if (!widget.readOnly && widget.enabled && !showLoading)
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Material(
-                  color: AppColors.primary,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: () => _pick(context),
-                    child: const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.camera_alt,
-                        size: 18,
-                        color: AppColors.onPrimary,
-                      ),
-                    ),
+          ),
+        ),
+        if (showLoading)
+          SizedBox(
+            width: widget.size,
+            height: widget.size,
+            child: const CircularProgressIndicator(strokeWidth: 3),
+          ),
+        if (!widget.readOnly && widget.enabled && !showLoading)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Material(
+              color: AppColors.primary,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => _pick(context),
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.camera_alt,
+                    size: 18,
+                    color: AppColors.onPrimary,
                   ),
                 ),
               ),
-          ],
-        ),
-        if (!widget.readOnly) ...[
-          const SizedBox(height: 8),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            children: [
-              TextButton.icon(
-                onPressed:
-                    widget.enabled && !showLoading
-                        ? () => _pick(context)
-                        : null,
-                icon: const Icon(Icons.photo_library_outlined, size: 18),
-                label: Text(_hasImage ? 'Change photo' : 'Add photo'),
-              ),
-              if (_hasImage && widget.onRemove != null)
+            ),
+          ),
+      ],
+    );
+
+    // List/detail read-only avatars stay chrome-free; form editors use field shell.
+    if (widget.readOnly) {
+      return avatar;
+    }
+
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: widget.showLabel ? widget.label : null,
+        enabled: widget.enabled,
+      ),
+      child: Row(
+        children: [
+          avatar,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
                 TextButton.icon(
                   onPressed:
-                      widget.enabled && !showLoading ? widget.onRemove : null,
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Remove'),
+                      widget.enabled && !showLoading
+                          ? () => _pick(context)
+                          : null,
+                  icon: const Icon(Icons.photo_library_outlined, size: 18),
+                  label: Text(_hasImage ? 'Change photo' : 'Add photo'),
                 ),
-            ],
+                if (_hasImage && widget.onRemove != null)
+                  TextButton.icon(
+                    onPressed:
+                        widget.enabled && !showLoading
+                            ? widget.onRemove
+                            : null,
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: const Text('Remove'),
+                  ),
+              ],
+            ),
           ),
         ],
-      ],
+      ),
     );
   }
 }
