@@ -68,26 +68,28 @@ class SupportPlanSpecialistsPanel extends StatelessWidget {
       showDragHandle: true,
       builder: (ctx) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Text(
-                  'Add support specialist',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Text(
+                    'Add support specialist',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
                 ),
-              ),
-              for (final type in SupportPlanSpecialistTypes.pickerTypes)
-                ListTile(
-                  title: Text(SupportPlanSpecialistTypes.labels[type]!),
-                  onTap: () {
-                    Navigator.of(ctx).pop();
-                    onSelected(type);
-                  },
-                ),
-            ],
+                for (final type in SupportPlanSpecialistTypes.pickerTypes)
+                  ListTile(
+                    title: Text(SupportPlanSpecialistTypes.labels[type]!),
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      onSelected(type);
+                    },
+                  ),
+              ],
+            ),
           ),
         );
       },

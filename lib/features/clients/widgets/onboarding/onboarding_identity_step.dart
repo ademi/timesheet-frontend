@@ -276,17 +276,6 @@ class OnboardingIdentityStep extends StatelessWidget {
             ],
             onChanged: enabled ? (v) => controller.atsiStatus.value = v : null,
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: controller.allergiesCtrl,
-            minLines: 2,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Allergies (optional)',
-              border: OutlineInputBorder(),
-              alignLabelWithHint: true,
-            ),
-          ),
         ],
       );
     });

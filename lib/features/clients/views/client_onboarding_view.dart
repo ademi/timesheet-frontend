@@ -7,11 +7,14 @@ import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
 import '../controllers/client_onboarding_controller.dart';
 import '../widgets/onboarding/onboarding_address_step.dart';
+import '../widgets/onboarding/onboarding_care_plan_step.dart';
 import '../widgets/onboarding/onboarding_contacts_step.dart';
-import '../widgets/onboarding/onboarding_support_plan_step.dart';
 import '../widgets/onboarding/onboarding_identity_step.dart';
 import '../widgets/onboarding/onboarding_legal_pack_step.dart';
+import '../widgets/onboarding/onboarding_ndis_step.dart';
 import '../widgets/onboarding/onboarding_preferences_step.dart';
+import '../widgets/onboarding/onboarding_support_coordinator_step.dart';
+import '../widgets/onboarding/onboarding_support_specialists_step.dart';
 
 class ClientOnboardingView extends GetView<ClientOnboardingController> {
   const ClientOnboardingView({super.key});
@@ -59,7 +62,12 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                             controller: controller,
                           ),
                           3 => OnboardingContactsStep(controller: controller),
-                          4 => OnboardingSupportPlanStep(
+                          4 => OnboardingNdisStep(controller: controller),
+                          5 => OnboardingCarePlanStep(controller: controller),
+                          6 => OnboardingSupportCoordinatorStep(
+                            controller: controller,
+                          ),
+                          7 => OnboardingSupportSpecialistsStep(
                             controller: controller,
                           ),
                           _ => OnboardingLegalPackStep(controller: controller),

@@ -5,10 +5,9 @@ import 'package:get/get.dart';
 import '../../../../shared/widgets/app_date_field.dart';
 import '../../../../shared/widgets/app_file_field.dart';
 import '../../controllers/client_onboarding_controller.dart';
-import 'support_plan_specialists_panel.dart';
 
-class OnboardingSupportPlanStep extends StatelessWidget {
-  const OnboardingSupportPlanStep({super.key, required this.controller});
+class OnboardingNdisStep extends StatelessWidget {
+  const OnboardingNdisStep({super.key, required this.controller});
 
   final ClientOnboardingController controller;
 
@@ -31,15 +30,20 @@ class OnboardingSupportPlanStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Support Plan',
+            'NDIS',
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Optional for day-one — you can add plan details later.',
+            style: TextStyle(fontSize: 13, color: Colors.black54),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: controller.ndisCtrl,
             enabled: enabled,
             decoration: InputDecoration(
-              labelText: 'NDIS number *',
+              labelText: 'NDIS number',
               border: const OutlineInputBorder(),
               errorText: controller.ndisFieldError.value,
             ),
@@ -66,7 +70,7 @@ class OnboardingSupportPlanStep extends StatelessWidget {
           DropdownButtonFormField<String?>(
             value: planType,
             decoration: const InputDecoration(
-              labelText: 'Plan management type *',
+              labelText: 'Plan management type',
               border: OutlineInputBorder(),
             ),
             items: [
@@ -253,20 +257,8 @@ class OnboardingSupportPlanStep extends StatelessWidget {
               errorText: controller.budgetFieldError.value,
             ),
           ),
-          const SizedBox(height: 8),
-          SupportPlanSpecialistsPanel(
-            specialists: controller.supportSpecialists,
-            enabled: enabled,
-            onAdd:
-                (context) => SupportPlanSpecialistsPanel.showTypePicker(
-                  context,
-                  onSelected: controller.addSupportSpecialist,
-                ),
-            onRemove: controller.removeSupportSpecialist,
-          ),
         ],
       );
     });
   }
-
 }

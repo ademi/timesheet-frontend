@@ -17,6 +17,7 @@ import '../data/models/client_models.dart';
 import '../data/models/client_profile_models.dart';
 import '../models/identity_card_attachment.dart';
 import '../models/support_plan_specialist_entry.dart';
+import '../models/support_plan_specialist_types.dart';
 import '../data/repositories/clients_repository.dart';
 import '../services/client_legal_upload_helper.dart';
 import '../utils/onboarding_age.dart';
@@ -29,6 +30,7 @@ import '../widgets/contact_form_host.dart';
 import '../widgets/onboarding/onboarding_identity_step.dart';
 import '../widgets/site_form_host.dart';
 import 'clients_controller.dart';
+import 'support_plan_clinical_store.dart';
 
 /// Modular client onboarding wizard (Identity → … → Legal).
 class ClientOnboardingController extends GetxController
@@ -64,13 +66,16 @@ class ClientOnboardingController extends GetxController
   /// Called after finish instead of navigation when set (tests).
   void Function(String clientId)? onFinished;
 
-  static const maxStep = 5;
+  static const maxStep = 8;
   static const stepLabels = [
     'Identity',
     'Address',
     'Preferences',
     'Contacts',
-    'Support Plan',
+    'NDIS',
+    'Care plan',
+    'Support Coordinator',
+    'Support Specialists',
     'Legal',
   ];
 
@@ -226,6 +231,18 @@ class ClientOnboardingController extends GetxController
   final budgetOtherCtrl = TextEditingController();
   final supportPlanOtherCtrl = TextEditingController();
   final supportSpecialists = <SupportPlanSpecialistEntry>[].obs;
+  final supportCoordinatorEntry = SupportPlanSpecialistEntry.create(
+    SupportPlanSpecialistTypes.supportCoordinator,
+  );
+  final primaryDisabilityCtrl = TextEditingController();
+  final infoShareConsent = false.obs;
+  final specificSupportsConsent = false.obs;
+  late final SupportPlanClinicalStore clinical = SupportPlanClinicalStore(
+    repository: _repository,
+    documentPipeline: _pipeline,
+    pickPdfBytes: _pickPdfBytesOverride,
+    canUploadDocs: () => canUploadDocs,
+  );
 
   // ── Legal pack ────────────────────────────────────────────────────────
   final consentComplete = false.obs;
@@ -377,6 +394,11 @@ class ClientOnboardingController extends GetxController
     budgetOtherLabelCtrl.clear();
     budgetOtherCtrl.clear();
     supportPlanOtherCtrl.clear();
+    primaryDisabilityCtrl.clear();
+    infoShareConsent.value = false;
+    specificSupportsConsent.value = false;
+    supportCoordinatorEntry.fields.clear();
+    supportCoordinatorEntry.customLabelCtrl.clear();
     clearSupportSpecialists();
 
     consentComplete.value = false;
@@ -509,6 +531,10 @@ class ClientOnboardingController extends GetxController
           planStartDate.value = _parseHydratedDate(stored);
         case OnboardingKeys.planEndDate:
           planEndDate.value = _parseHydratedDate(stored);
+        case OnboardingKeys.infoShareConsent:
+          infoShareConsent.value = _parseHydratedBool(fact.valueJson);
+        case OnboardingKeys.specificSupportsConsent:
+          specificSupportsConsent.value = _parseHydratedBool(fact.valueJson);
       }
     }
     NdisPlanBudgetsCodec.applyToControllers(
@@ -519,9 +545,7 @@ class ClientOnboardingController extends GetxController
       otherLabel: budgetOtherLabelCtrl,
       otherAmount: budgetOtherCtrl,
     );
-    replaceSupportSpecialists(
-      SupportPlanSpecialistsCodec.resolveFromFacts(factsList),
-    );
+    replaceSupportSpecialists(_partitionSpecialistsFromFacts(factsList));
     final resolvedOther =
         (otherText != null && otherText.isNotEmpty) ? otherText : legacyOther;
     if (resolvedOther != null && resolvedOther.isNotEmpty) {
@@ -529,9 +553,71 @@ class ClientOnboardingController extends GetxController
     }
   }
 
+  /// Partitions specialists JSON: first SC → coordinator form; rest → list.
+  List<SupportPlanSpecialistEntry> _partitionSpecialistsFromFacts(
+    List<ClientProfileFactOut> factsList,
+  ) {
+    final entries = SupportPlanSpecialistsCodec.resolveFromFacts(factsList);
+    SupportPlanSpecialistEntry? firstSc;
+    final nonSc = <SupportPlanSpecialistEntry>[];
+    for (final entry in entries) {
+      if (entry.type == SupportPlanSpecialistTypes.supportCoordinator) {
+        if (firstSc == null) {
+          firstSc = entry;
+        } else {
+          // Legacy multi-SC: keep first only (YAGNI no merge UI).
+          entry.dispose();
+        }
+      } else {
+        nonSc.add(entry);
+      }
+    }
+    if (firstSc != null) {
+      _copySpecialistFields(from: firstSc, to: supportCoordinatorEntry);
+      firstSc.dispose();
+    } else {
+      supportCoordinatorEntry.fields.clear();
+      supportCoordinatorEntry.customLabelCtrl.clear();
+    }
+    return nonSc;
+  }
+
+  void _copySpecialistFields({
+    required SupportPlanSpecialistEntry from,
+    required SupportPlanSpecialistEntry to,
+  }) {
+    to.customLabelCtrl.text = from.customLabelCtrl.text;
+    to.fields.nameCtrl.text = from.fields.nameCtrl.text;
+    to.fields.companyCtrl.text = from.fields.companyCtrl.text;
+    to.fields.abnAcnCtrl.text = from.fields.abnAcnCtrl.text;
+    to.fields.orgIdCtrl.text = from.fields.orgIdCtrl.text;
+    to.fields.phoneCtrl.text = from.fields.phoneCtrl.text;
+    to.fields.emailCtrl.text = from.fields.emailCtrl.text;
+    to.fields.addressCtrl.text = from.fields.addressCtrl.text;
+    to.revision.value++;
+  }
+
+  /// Persist merge: `[scEntry?] + nonScEntries` (at most one SC).
+  List<SupportPlanSpecialistEntry> _mergedSpecialistsForPersist() {
+    final nonSc =
+        supportSpecialists
+            .where((e) => e.type != SupportPlanSpecialistTypes.supportCoordinator)
+            .toList();
+    if (!supportCoordinatorEntry.hasAnyFieldFilled) {
+      return nonSc;
+    }
+    return [supportCoordinatorEntry, ...nonSc];
+  }
+
   static DateTime? _parseHydratedDate(String? raw) {
     if (raw == null || raw.isEmpty) return null;
     return DateTime.tryParse(raw);
+  }
+
+  static bool _parseHydratedBool(Object? raw) {
+    if (raw is bool) return raw;
+    final s = raw?.toString().trim().toLowerCase();
+    return s == 'true' || s == '1';
   }
 
   Future<void> pickIdentityCard(IdentityCardAttachment attachment) async {
@@ -609,6 +695,8 @@ class ClientOnboardingController extends GetxController
     budgetOtherLabelCtrl.dispose();
     budgetOtherCtrl.dispose();
     supportPlanOtherCtrl.dispose();
+    primaryDisabilityCtrl.dispose();
+    supportCoordinatorEntry.dispose();
     clearSupportSpecialists();
     consentSignerNameCtrl.dispose();
     super.onClose();
@@ -627,7 +715,10 @@ class ClientOnboardingController extends GetxController
       1 => await submitAddress(),
       2 => await submitPreferences(),
       3 => await submitContactsStep(),
-      4 => await submitSupportPlan(),
+      4 => await submitNdisStep(soft: true),
+      5 => await submitCarePlanStep(soft: true),
+      6 => await submitSupportCoordinatorStep(soft: true),
+      7 => await submitSupportSpecialistsStep(soft: true),
       _ => await finishOnboarding(),
     };
     if (!ok) return;
@@ -724,14 +815,6 @@ class ClientOnboardingController extends GetxController
         OnboardingKeys.referralSource,
         resolvedReferralSource,
       );
-      final allergies = allergiesCtrl.text.trim();
-      if (allergies.isNotEmpty) {
-        await _repository.upsertProfileFact(
-          id,
-          OnboardingKeys.allergies,
-          ProfileFactUpsert(valueJson: allergies),
-        );
-      }
 
       if (step.value == 0) step.value = 1;
       return true;
@@ -1336,9 +1419,10 @@ class ClientOnboardingController extends GetxController
     _resetContactDraft();
   }
 
-  // ── Support Plan ──────────────────────────────────────────────────────
+  // ── NDIS / Care plan / Coordinator / Specialists ──────────────────────
 
-  Future<bool> submitSupportPlan() async {
+  /// Soft-skip when empty; if NDIS or plan type is present, hard-validate.
+  Future<bool> submitNdisStep({bool soft = true}) async {
     errorMessage.value = null;
     ndisFieldError.value = null;
     final id = clientId;
@@ -1348,29 +1432,33 @@ class ClientOnboardingController extends GetxController
     }
 
     final ndis = ndisCtrl.text.trim();
-    if (ndis.isEmpty) {
-      ndisFieldError.value = 'NDIS number is required.';
-      return false;
-    }
-
     final planType = planManagementType.value;
-    if (planType == null || planType.isEmpty) {
-      errorMessage.value = 'Plan management type is required.';
-      return false;
-    }
+    final hasHardContent =
+        ndis.isNotEmpty || (planType != null && planType.isNotEmpty);
 
-    if (planType == 'plan_managed') {
-      final pmName = planManagerNameCtrl.text.trim();
-      final pmPhone = planManagerPhoneCtrl.text.trim();
-      final pmEmail = planManagerEmailCtrl.text.trim();
-      if (pmName.isEmpty) {
-        errorMessage.value = 'Plan manager name is required for plan-managed.';
+    if (!soft || hasHardContent) {
+      if (ndis.isEmpty) {
+        ndisFieldError.value = 'NDIS number is required.';
         return false;
       }
-      if (pmPhone.isEmpty && pmEmail.isEmpty) {
-        errorMessage.value =
-            'Plan manager phone or email is required for plan-managed.';
+      if (planType == null || planType.isEmpty) {
+        errorMessage.value = 'Plan management type is required.';
         return false;
+      }
+      if (planType == 'plan_managed') {
+        final pmName = planManagerNameCtrl.text.trim();
+        final pmPhone = planManagerPhoneCtrl.text.trim();
+        final pmEmail = planManagerEmailCtrl.text.trim();
+        if (pmName.isEmpty) {
+          errorMessage.value =
+              'Plan manager name is required for plan-managed.';
+          return false;
+        }
+        if (pmPhone.isEmpty && pmEmail.isEmpty) {
+          errorMessage.value =
+              'Plan manager phone or email is required for plan-managed.';
+          return false;
+        }
       }
     }
 
@@ -1382,6 +1470,22 @@ class ClientOnboardingController extends GetxController
     );
     if (budgetFieldError.value != null) {
       return false;
+    }
+
+    final hasOptionalPersist =
+        ndisPdfAttachment.pending.value != null ||
+        ndisPdfAttachment.hasAttachment ||
+        planStartDate.value != null ||
+        planEndDate.value != null ||
+        budgetCoreCtrl.text.trim().isNotEmpty ||
+        budgetCbCtrl.text.trim().isNotEmpty ||
+        budgetCapitalCtrl.text.trim().isNotEmpty ||
+        budgetOtherCtrl.text.trim().isNotEmpty ||
+        budgetOtherLabelCtrl.text.trim().isNotEmpty;
+
+    if (soft && !hasHardContent && !hasOptionalPersist) {
+      if (step.value == 4) step.value = 5;
+      return true;
     }
 
     isSaving.value = true;
@@ -1401,25 +1505,35 @@ class ClientOnboardingController extends GetxController
         ndisPdfAttachment.pending.value = null;
       }
 
-      try {
+      if (ndis.isNotEmpty) {
+        try {
+          await _repository.upsertProfileFact(
+            id,
+            OnboardingKeys.ndis,
+            ProfileFactUpsert(valueJson: ndis, documentId: ndisDocId),
+          );
+        } on AppFailure catch (e) {
+          if (e.code == 'ndis_number_in_use') {
+            ndisFieldError.value = e.message;
+            return false;
+          }
+          rethrow;
+        }
+      } else if (ndisDocId != null && ndisDocId.isNotEmpty) {
         await _repository.upsertProfileFact(
           id,
           OnboardingKeys.ndis,
-          ProfileFactUpsert(valueJson: ndis, documentId: ndisDocId),
+          ProfileFactUpsert(documentId: ndisDocId),
         );
-      } on AppFailure catch (e) {
-        if (e.code == 'ndis_number_in_use') {
-          ndisFieldError.value = e.message;
-          return false;
-        }
-        rethrow;
       }
 
-      await _repository.upsertProfileFact(
-        id,
-        OnboardingKeys.planManagementType,
-        ProfileFactUpsert(valueJson: planType),
-      );
+      if (planType != null && planType.isNotEmpty) {
+        await _repository.upsertProfileFact(
+          id,
+          OnboardingKeys.planManagementType,
+          ProfileFactUpsert(valueJson: planType),
+        );
+      }
       if (planType == 'plan_managed') {
         await _putOptionalFact(
           id,
@@ -1490,20 +1604,6 @@ class ClientOnboardingController extends GetxController
         _presentKeys.add(OnboardingKeys.ndisPlanBudgets);
         await _clearLegacyBudgetFacts(id);
       }
-      final specialistJson = SupportPlanSpecialistsCodec.toFactValue(
-        supportSpecialists,
-      );
-      if (specialistJson.isEmpty) {
-        await _clearFactIfPresent(id, OnboardingKeys.supportPlanSpecialists);
-      } else {
-        await _repository.upsertProfileFact(
-          id,
-          OnboardingKeys.supportPlanSpecialists,
-          ProfileFactUpsert(valueJson: specialistJson),
-        );
-        _presentKeys.add(OnboardingKeys.supportPlanSpecialists);
-        await _clearLegacySpecialistFacts(id);
-      }
 
       if (step.value == 4) step.value = 5;
       return true;
@@ -1517,6 +1617,172 @@ class ClientOnboardingController extends GetxController
       isSaving.value = false;
     }
   }
+
+  /// Soft-skip when empty; persists allergies, clinical flags, consent, notes.
+  Future<bool> submitCarePlanStep({bool soft = true}) async {
+    errorMessage.value = null;
+    final id = clientId;
+    if (id == null) {
+      errorMessage.value = 'Create the client on the Identity step first.';
+      return false;
+    }
+
+    final allergies = allergiesCtrl.text.trim();
+    final notes = supportPlanOtherCtrl.text.trim();
+    final disability = primaryDisabilityCtrl.text.trim();
+    final hasContent =
+        allergies.isNotEmpty ||
+        notes.isNotEmpty ||
+        disability.isNotEmpty ||
+        infoShareConsent.value ||
+        specificSupportsConsent.value ||
+        clinical.bspOnFile.value ||
+        clinical.nutritionChecklistOnFile.value ||
+        clinical.hazardChecklistOnFile.value;
+
+    if (soft && !hasContent) {
+      if (step.value == 5) step.value = 6;
+      return true;
+    }
+
+    isSaving.value = true;
+    try {
+      if (allergies.isNotEmpty) {
+        await _repository.upsertProfileFact(
+          id,
+          OnboardingKeys.allergies,
+          ProfileFactUpsert(valueJson: allergies),
+        );
+      }
+      // Primary disability is day-one capture only; full goals/living/risk
+      // body_json stays on the Care plan tab / support-plan wizard.
+      final careNotes = [
+        if (disability.isNotEmpty) 'Primary disability: $disability',
+        if (notes.isNotEmpty) notes,
+      ].join('\n');
+      await _putOptionalFact(
+        id,
+        OnboardingKeys.supportPlanOther,
+        careNotes.isEmpty ? null : careNotes,
+      );
+
+      await _repository.upsertProfileFact(
+        id,
+        OnboardingKeys.infoShareConsent,
+        ProfileFactUpsert(valueJson: infoShareConsent.value),
+      );
+      await _repository.upsertProfileFact(
+        id,
+        OnboardingKeys.specificSupportsConsent,
+        ProfileFactUpsert(valueJson: specificSupportsConsent.value),
+      );
+
+      clinical.hasHydrated = true;
+      final clinicalFailed = await clinical.persistFacts(clientId: id);
+      if (clinicalFailed.isNotEmpty) {
+        errorMessage.value =
+            'Could not save clinical documents: ${clinicalFailed.join(', ')}';
+        return false;
+      }
+
+      if (step.value == 5) step.value = 6;
+      return true;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      return false;
+    } catch (e) {
+      _setUnexpectedError(e);
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<bool> submitSupportCoordinatorStep({bool soft = true}) async {
+    errorMessage.value = null;
+    final id = clientId;
+    if (id == null) {
+      errorMessage.value = 'Create the client on the Identity step first.';
+      return false;
+    }
+
+    if (soft && !supportCoordinatorEntry.hasAnyFieldFilled) {
+      if (step.value == 6) step.value = 7;
+      return true;
+    }
+
+    isSaving.value = true;
+    try {
+      await _persistMergedSpecialists(id);
+      if (step.value == 6) step.value = 7;
+      return true;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      return false;
+    } catch (e) {
+      _setUnexpectedError(e);
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<bool> submitSupportSpecialistsStep({bool soft = true}) async {
+    errorMessage.value = null;
+    final id = clientId;
+    if (id == null) {
+      errorMessage.value = 'Create the client on the Identity step first.';
+      return false;
+    }
+
+    final hasSpecialistContent = supportSpecialists.any(
+      (e) =>
+          e.type != SupportPlanSpecialistTypes.supportCoordinator &&
+          e.hasAnyFieldFilled,
+    );
+
+    if (soft &&
+        !hasSpecialistContent &&
+        !supportCoordinatorEntry.hasAnyFieldFilled) {
+      if (step.value == 7) step.value = 8;
+      return true;
+    }
+
+    isSaving.value = true;
+    try {
+      await _persistMergedSpecialists(id);
+      if (step.value == 7) step.value = 8;
+      return true;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      return false;
+    } catch (e) {
+      _setUnexpectedError(e);
+      return false;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> _persistMergedSpecialists(String id) async {
+    final specialistJson = SupportPlanSpecialistsCodec.toFactValue(
+      _mergedSpecialistsForPersist(),
+    );
+    if (specialistJson.isEmpty) {
+      await _clearFactIfPresent(id, OnboardingKeys.supportPlanSpecialists);
+    } else {
+      await _repository.upsertProfileFact(
+        id,
+        OnboardingKeys.supportPlanSpecialists,
+        ProfileFactUpsert(valueJson: specialistJson),
+      );
+      _presentKeys.add(OnboardingKeys.supportPlanSpecialists);
+      await _clearLegacySpecialistFacts(id);
+    }
+  }
+
+  /// Backward-compatible alias used by older tests — NDIS hard path.
+  Future<bool> submitSupportPlan() => submitNdisStep(soft: false);
 
   // ── Legal pack ────────────────────────────────────────────────────────
 
@@ -1794,6 +2060,7 @@ class ClientOnboardingController extends GetxController
   }
 
   void addSupportSpecialist(String type) {
+    if (type == SupportPlanSpecialistTypes.supportCoordinator) return;
     supportSpecialists.add(
       SupportPlanSpecialistEntry.create(type, expanded: true),
     );
