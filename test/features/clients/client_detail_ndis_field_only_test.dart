@@ -75,7 +75,8 @@ void main() {
 
   tearDown(Get.reset);
 
-  Finder documentPicker() => find.byIcon(Icons.upload_file_outlined);
+  Finder documentPicker() =>
+      find.byKey(ClientRequirementEditor.documentPickerKey);
 
   testWidgets('non-ndis document requirement still shows document picker', (
     tester,
@@ -92,11 +93,8 @@ void main() {
     );
 
     expect(documentPicker(), findsOneWidget);
-    expect(
-      find.byKey(ClientRequirementEditor.documentPickerKey),
-      findsOneWidget,
-    );
-    expect(find.text('Upload file'), findsOneWidget);
+    expect(find.text('Choose file'), findsOneWidget);
+    expect(find.text('Document'), findsOneWidget);
   });
 
   test(

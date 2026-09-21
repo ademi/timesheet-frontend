@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
-import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/app_date_field.dart';
+import '../../../shared/widgets/app_file_field.dart';
 import '../controllers/support_plan_funding_consent_store.dart';
 import 'onboarding/support_plan_specialists_panel.dart';
 
@@ -330,30 +330,13 @@ class SupportPlanFundingSection extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          const Text(
-            'NDIA plan PDF',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          if (store.ndisPdfOnFile.value)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
-              child: Text(
-                'PDF on file',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-              ),
-            ),
-          OutlinedButton.icon(
-            onPressed:
-                enabled
-                    ? () => store.uploadNdisPlanPdf(clientId: clientId)
-                    : null,
-            icon: const Icon(Icons.upload_file_outlined),
-            label: Text(
-              store.ndisPdfOnFile.value
-                  ? 'Replace NDIA plan PDF'
-                  : 'Upload NDIA plan PDF',
-            ),
+          AppFileField(
+            label: 'NDIA plan PDF',
+            fileName: store.ndisPdfOnFile.value ? 'On file' : null,
+            enabled: enabled,
+            onPick: () => store.uploadNdisPlanPdf(clientId: clientId),
+            pickLabel:
+                store.ndisPdfOnFile.value ? 'Replace file' : 'Choose file',
           ),
         ],
       );

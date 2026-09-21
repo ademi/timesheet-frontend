@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../shared/widgets/app_switch_field.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/app_file_field.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 import '../controllers/support_plan_funding_consent_store.dart';
 
 /// Care-plan Consent & agreements section (legal status + share flags).
@@ -49,12 +50,12 @@ class SupportPlanConsentSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed:
-                  busy
-                      ? null
-                      : () => store.markConsentComplete(clientId: clientId),
-              child: const Text('Upload Consent PDF'),
+            AppFileField(
+              label: 'Consent PDF',
+              fileName: null,
+              enabled: !busy,
+              onPick: () => store.markConsentComplete(clientId: clientId),
+              helperText: 'Upload PDF & mark complete',
             ),
           ],
           const SizedBox(height: 12),
@@ -64,14 +65,13 @@ class SupportPlanConsentSection extends StatelessWidget {
           ),
           if (!store.serviceAgreementComplete.value) ...[
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed:
-                  busy
-                      ? null
-                      : () => store.markServiceAgreementComplete(
-                        clientId: clientId,
-                      ),
-              child: const Text('Upload Service Agreement PDF'),
+            AppFileField(
+              label: 'Service agreement PDF',
+              fileName: null,
+              enabled: !busy,
+              onPick:
+                  () => store.markServiceAgreementComplete(clientId: clientId),
+              helperText: 'Upload PDF & mark complete',
             ),
           ],
           const SizedBox(height: 12),
@@ -81,13 +81,14 @@ class SupportPlanConsentSection extends StatelessWidget {
           ),
           if (!store.acknowledgementComplete.value) ...[
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed:
-                  busy
-                      ? null
-                      : () =>
-                          store.markAcknowledgementComplete(clientId: clientId),
-              child: const Text('Upload Acknowledgement PDF'),
+            AppFileField(
+              label: 'Acknowledgement PDF',
+              fileName: null,
+              enabled: !busy,
+              onPick:
+                  () =>
+                      store.markAcknowledgementComplete(clientId: clientId),
+              helperText: 'Upload PDF & mark complete',
             ),
           ],
           const SizedBox(height: 16),
@@ -123,22 +124,18 @@ class _LegalRow extends StatelessWidget {
       children: [
         Icon(
           complete ? Icons.check_circle : Icons.radio_button_unchecked,
-          color: complete ? AppColors.success : AppColors.textMuted,
+          color: complete ? AppColors.primary : AppColors.textMuted,
           size: 20,
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
+          child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
         ),
         Text(
           complete ? 'Complete' : 'Missing',
           style: TextStyle(
             fontSize: 12,
-            color: complete ? AppColors.success : AppColors.openSlot,
-            fontWeight: FontWeight.w600,
+            color: complete ? AppColors.primary : AppColors.textMuted,
           ),
         ),
       ],

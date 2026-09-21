@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../shared/widgets/app_switch_field.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/widgets/app_file_field.dart';
+import '../../../shared/widgets/app_switch_field.dart';
 import '../controllers/support_plan_clinical_store.dart';
 
 /// Care-plan clinical on-file flags + document uploads (V040).
@@ -106,41 +107,15 @@ class _ClinicalDocRow extends StatelessWidget {
             subtitle: helper,
             value: onFile,
             onChanged: onToggle,
-          )
-        else
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(label),
-            trailing: Text(
-              pdfOnFile ? 'PDF on file' : 'No PDF',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: pdfOnFile ? AppColors.success : AppColors.textMuted,
-              ),
-            ),
           ),
-        if (onToggle == null && helper != null) ...[
-          Text(
-            helper!,
-            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 4),
-        ],
-        if (onToggle != null && helper == null)
-          Padding(
-            padding: const EdgeInsets.only(left: 0, bottom: 4),
-            child: Text(
-              pdfOnFile ? 'PDF on file' : 'No PDF uploaded',
-              style: TextStyle(
-                fontSize: 12,
-                color: pdfOnFile ? AppColors.success : AppColors.textMuted,
-              ),
-            ),
-          ),
-        OutlinedButton(
-          onPressed: onUpload,
-          child: Text(pdfOnFile ? 'Replace PDF' : 'Upload PDF'),
+        if (onToggle != null) const SizedBox(height: 8),
+        AppFileField(
+          label: onToggle != null ? '$label PDF' : label,
+          fileName: pdfOnFile ? 'On file' : null,
+          enabled: onUpload != null,
+          onPick: onUpload ?? () {},
+          pickLabel: pdfOnFile ? 'Replace file' : 'Choose file',
+          helperText: onToggle == null ? helper : null,
         ),
       ],
     );

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/app_date_field.dart';
+import '../../../shared/widgets/app_file_field.dart';
 import '../../../shared/widgets/app_switch_field.dart';
 import '../../../shared/widgets/other_text_field.dart';
 import '../controllers/clients_controller.dart';
@@ -231,38 +232,41 @@ class _DocumentPicker extends StatelessWidget {
     return Obx(() {
       final files = draft.localFiles;
       final existing = draft.existingDocumentId.value;
+      final existingName =
+          draft.existingDocumentFilename.value ??
+          (existing != null ? 'Current document on file' : null);
+      final displayName =
+          files.isNotEmpty ? files.last.name : existingName;
+      final defaultPickLabel =
+          uploadLabel ??
+          (draft.requirement.maxFiles > 1
+              ? 'Add file(s)'
+              : (draft.requirement.acceptMimeTypes.any(
+                    (m) => m.toLowerCase().startsWith('image'),
+                  ) ||
+                  draft.requirement.acceptMimeTypes.any(
+                    (m) => m.toLowerCase().contains('image/*'),
+                  ))
+              ? 'Choose from photos'
+              : 'Choose file');
+
       return Column(
         key: ClientRequirementEditor.documentPickerKey,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          OutlinedButton.icon(
+          AppFileField(
             key: buttonKey,
-            onPressed:
-                controller.isSaving.value
-                    ? null
-                    : () => controller.pickFilesForRequirement(draft),
-            icon: const Icon(Icons.upload_file_outlined),
-            label: Text(
-              uploadLabel ??
-                  (draft.requirement.maxFiles > 1
-                      ? 'Add file(s)'
-                      : (draft.requirement.acceptMimeTypes.any(
-                            (m) => m.toLowerCase().startsWith('image'),
-                          ) ||
-                          draft.requirement.acceptMimeTypes.any(
-                            (m) => m.toLowerCase().contains('image/*'),
-                          ))
-                      ? 'Choose from photos'
-                      : 'Upload file'),
-            ),
+            label: 'Document',
+            fileName: displayName,
+            enabled: !controller.isSaving.value,
+            onPick: () => controller.pickFilesForRequirement(draft),
+            onClear:
+                files.isNotEmpty
+                    ? () => controller.removePickedFile(draft, files.length - 1)
+                    : null,
+            pickLabel: defaultPickLabel,
           ),
-          if (existing != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              draft.existingDocumentFilename.value ??
-                  'Current document on file',
-              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
+          if (existing != null)
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
@@ -275,18 +279,18 @@ class _DocumentPicker extends StatelessWidget {
                 label: const Text('Download'),
               ),
             ),
-          ],
-          for (var i = 0; i < files.length; i++)
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.insert_drive_file_outlined, size: 20),
-              title: Text(files[i].name, overflow: TextOverflow.ellipsis),
-              trailing: IconButton(
-                icon: const Icon(Icons.close, size: 18),
-                onPressed: () => controller.removePickedFile(draft, i),
+          if (files.length > 1)
+            for (var i = 0; i < files.length; i++)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.insert_drive_file_outlined, size: 20),
+                title: Text(files[i].name, overflow: TextOverflow.ellipsis),
+                trailing: IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () => controller.removePickedFile(draft, i),
+                ),
               ),
-            ),
         ],
       );
     });
