@@ -249,11 +249,11 @@ git commit -am "feat: Legal step Add a document for other PDFs"
 
 **Files:** profile section / requirement list widgets.
 
-- [ ] **Step 1: Test** — profile bundle with `legal_other_documents` fact renders labels + open/download affordance (match existing doc row pattern).
+- [x] **Step 1: Test** — profile bundle with `legal_other_documents` fact renders labels + open/download affordance (match existing doc row pattern).
 
-- [ ] **Step 2: Implement read-only or edit-upload parity with other profile docs — **Profile & docs only** (not Care plan consent section).
+- [x] **Step 2: Implement read-only or edit-upload parity with other profile docs — **Profile & docs only** (not Care plan consent section).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git commit -am "feat: show legal other documents on Profile and docs"
@@ -301,7 +301,7 @@ cd backend/timesheet-backend && .venv/bin/pytest tests/ -k legal_other -q
 **Acceptance criteria:**
 - [ ] Optional other docs with type dropdown + Other free text → Tasks 1–3
 - [ ] Same card/PDF complete pattern; no signer → Task 3
-- [ ] Profile & docs only after onboarding → Task 4
+- [x] Profile & docs only after onboarding → Task 4
 - [ ] Zero others allowed → Task 2
 
 

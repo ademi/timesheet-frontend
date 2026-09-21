@@ -426,7 +426,14 @@ class ClientsController extends GetxController
 
   Future<void> openExistingRequirementDocument(RequirementDraft draft) async {
     final id = draft.existingDocumentId.value;
-    if (id == null || _pipeline == null) return;
+    if (id == null) return;
+    await openClientDocument(id);
+  }
+
+  /// Opens / downloads a client document by id (Profile & docs rows).
+  Future<void> openClientDocument(String documentId) async {
+    final id = documentId.trim();
+    if (id.isEmpty || _pipeline == null) return;
     try {
       await _pipeline!.openDocument(id);
     } on AppFailure catch (e) {

@@ -10,6 +10,7 @@ import '../../../shared/widgets/other_text_field.dart';
 import '../controllers/clients_controller.dart';
 import '../controllers/requirement_draft.dart';
 import '../data/models/client_profile_models.dart';
+import '../utils/onboarding_keys.dart';
 
 /// Renders one schema-driven client type requirement.
 class ClientRequirementEditor extends StatelessWidget {
@@ -112,6 +113,11 @@ class ClientRequirementEditor extends StatelessWidget {
                 _LegalBlock(controller: controller, draft: draft)
               else if (req.isSharingFlag)
                 _SharingSwitch(draft: draft)
+              else if (req.requirementKey == OnboardingKeys.legalOtherDocuments)
+                _LegalOtherDocumentsBlock(
+                  controller: controller,
+                  draft: draft,
+                )
               else ...[
                 if (draft.capturesField)
                   _FieldInput(controller: controller, draft: draft),
@@ -211,6 +217,53 @@ class _FieldInput extends StatelessWidget {
           ),
         );
     }
+  }
+}
+
+/// Read-only list of optional legal other PDFs from the profile fact JSON.
+class _LegalOtherDocumentsBlock extends StatelessWidget {
+  const _LegalOtherDocumentsBlock({
+    required this.controller,
+    required this.draft,
+  });
+
+  final ClientsController controller;
+  final RequirementDraft draft;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final rows = draft.legalOtherDocs;
+      if (rows.isEmpty) {
+        return const Text(
+          'No other legal documents on file.',
+          style: TextStyle(color: AppColors.textMuted),
+        );
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final row in rows)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.insert_drive_file_outlined, size: 20),
+              title: Text(
+                row.displayLabel ?? row.typeKey,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: TextButton.icon(
+                onPressed:
+                    controller.isSaving.value || row.documentId == null
+                        ? null
+                        : () => controller.openClientDocument(row.documentId!),
+                icon: const Icon(Icons.download_outlined, size: 18),
+                label: const Text('Download'),
+              ),
+            ),
+        ],
+      );
+    });
   }
 }
 

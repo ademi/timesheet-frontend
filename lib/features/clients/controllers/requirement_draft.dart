@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../data/models/client_profile_models.dart';
+import '../models/legal_other_document.dart';
+import '../utils/onboarding_keys.dart';
 
 /// In-memory editor state for one type requirement on Add/Edit Client.
 class RequirementDraft {
@@ -27,6 +29,9 @@ class RequirementDraft {
   final existingDocumentId = RxnString();
   final existingDocumentFilename = RxnString();
 
+  /// Parsed [OnboardingKeys.legalOtherDocuments] JSON fact rows (Profile & docs).
+  final legalOtherDocs = <LegalOtherDocumentDraft>[].obs;
+
   final formFieldCtrls = <String, TextEditingController>{};
 
   final legalDoc = Rxn<ClientLegalDocumentCurrent>();
@@ -46,7 +51,14 @@ class RequirementDraft {
   bool get capturesDocument =>
       requirement.requirementKey != 'ndis' && requirement.capturesDocument;
 
+  bool get isLegalOtherDocuments =>
+      requirement.requirementKey == OnboardingKeys.legalOtherDocuments;
+
   Object? get fieldValueJson {
+    if (isLegalOtherDocuments) {
+      if (legalOtherDocs.isEmpty) return null;
+      return legalOtherDocs.map((e) => e.toFactEntry()).toList();
+    }
     final type = requirement.valueType ?? 'text';
     switch (type) {
       case 'boolean':
@@ -87,6 +99,7 @@ class RequirementDraft {
 
   bool get hasFieldContent {
     if (!capturesField) return false;
+    if (isLegalOtherDocuments) return legalOtherDocs.isNotEmpty;
     final type = requirement.valueType ?? 'text';
     if (type == 'boolean' || requirement.isSharingFlag) {
       return _booleanTouched;
@@ -125,6 +138,10 @@ class RequirementDraft {
     }
     final value = fact.valueJson;
     if (value == null) return;
+    if (isLegalOtherDocuments) {
+      legalOtherDocs.assignAll(legalOtherDocsFromFactValue(value));
+      return;
+    }
     final type = requirement.valueType ?? 'text';
     switch (type) {
       case 'boolean':
