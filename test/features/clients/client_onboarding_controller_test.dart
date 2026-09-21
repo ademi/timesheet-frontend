@@ -1469,6 +1469,34 @@ void main() {
     expect(captured[OnboardingKeys.pensionCard]?.valueJson, 'PC-456');
   });
 
+  test('persist identity cards writes disability_card value_json', () async {
+    final captured = <String, ProfileFactUpsert>{};
+    when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
+    when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((
+      inv,
+    ) async {
+      captured[inv.positionalArguments[1] as String] =
+          inv.positionalArguments[2] as ProfileFactUpsert;
+    });
+
+    _fillValidIdentity(c);
+    c.disabilityCardNumberCtrl.text = 'DC-99';
+
+    expect(await c.submitIdentity(), isTrue);
+    expect(captured[OnboardingKeys.disabilityCard]?.valueJson, 'DC-99');
+  });
+
+  test('hydrate restores disability card number from fact', () {
+    c.hydrateIdentityFromFacts([
+      const ClientProfileFactOut(
+        requirementKey: OnboardingKeys.disabilityCard,
+        valueJson: 'DC-1',
+      ),
+    ]);
+
+    expect(c.disabilityCardNumberCtrl.text, 'DC-1');
+  });
+
   test('submitIdentity persists photo_id number as plain text', () async {
     ProfileFactUpsert? photoFact;
     when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);

@@ -35,6 +35,7 @@ void applyOnboardingTestDefaults(ClientOnboardingController c) {
   c.allergiesCtrl.text = 'Peanuts';
   c.medicareCtrl.text = '1234567890';
   c.companionCardNumberCtrl.text = 'CC-1001';
+  c.disabilityCardNumberCtrl.text = 'DC-3003';
   c.pensionCardNumberCtrl.text = 'PC-2002';
   c.photoIdNumberCtrl.text = 'P1234567';
 

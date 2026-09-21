@@ -23,6 +23,7 @@ import '../utils/onboarding_age.dart';
 import '../utils/ndis_plan_budgets_codec.dart';
 import '../utils/support_plan_specialists_codec.dart';
 import '../utils/onboarding_keys.dart';
+import '../utils/onboarding_test_defaults.dart';
 import '../utils/site_geocode_apply.dart';
 import '../widgets/contact_form_host.dart';
 import '../widgets/onboarding/onboarding_identity_step.dart';
@@ -95,6 +96,7 @@ class ClientOnboardingController extends GetxController
   final disabilityCardAttachment = IdentityCardAttachment();
   final pensionCardAttachment = IdentityCardAttachment();
   final companionCardNumberCtrl = TextEditingController();
+  final disabilityCardNumberCtrl = TextEditingController();
   final pensionCardNumberCtrl = TextEditingController();
   final photoIdAttachment = IdentityCardAttachment();
   final photoIdNumberCtrl = TextEditingController();
@@ -294,6 +296,9 @@ class ClientOnboardingController extends GetxController
     final args = Get.arguments;
     if (args is ClientOut) {
       hydrateFromClient(args);
+    } else {
+      // TEMP: delete import + this call (and onboarding_test_defaults.dart) when done.
+      applyOnboardingTestDefaults(this);
     }
   }
 
@@ -309,6 +314,7 @@ class ClientOnboardingController extends GetxController
     companionCardAttachment.reset();
     companionCardNumberCtrl.clear();
     disabilityCardAttachment.reset();
+    disabilityCardNumberCtrl.clear();
     pensionCardAttachment.reset();
     pensionCardNumberCtrl.clear();
     photoIdAttachment.reset();
@@ -418,6 +424,7 @@ class ClientOnboardingController extends GetxController
           companionCardNumberCtrl.text = stored?.trim() ?? '';
           _hydrateCardAttachment(companionCardAttachment, fact);
         case OnboardingKeys.disabilityCard:
+          disabilityCardNumberCtrl.text = stored?.trim() ?? '';
           _hydrateCardAttachment(disabilityCardAttachment, fact);
         case OnboardingKeys.pensionCard:
           pensionCardNumberCtrl.text = stored?.trim() ?? '';
@@ -573,6 +580,7 @@ class ClientOnboardingController extends GetxController
     ndisCtrl.dispose();
     medicareCtrl.dispose();
     companionCardNumberCtrl.dispose();
+    disabilityCardNumberCtrl.dispose();
     pensionCardNumberCtrl.dispose();
     photoIdNumberCtrl.dispose();
     allergiesCtrl.dispose();
@@ -1764,6 +1772,7 @@ class ClientOnboardingController extends GetxController
       requirementKey: OnboardingKeys.disabilityCard,
       category: OnboardingKeys.disabilityCard,
       attachment: disabilityCardAttachment,
+      valueJson: _nullIfEmpty(disabilityCardNumberCtrl.text.trim()),
     );
     await _persistIdentityCard(
       clientId: clientId,

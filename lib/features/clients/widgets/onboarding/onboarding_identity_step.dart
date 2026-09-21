@@ -188,6 +188,8 @@ class OnboardingIdentityStep extends StatelessWidget {
           ),
           OnboardingIdentityCardField(
             label: 'Participant Disability card (optional)',
+            numberController: controller.disabilityCardNumberCtrl,
+            numberLabel: 'Disability card number (optional)',
             attachment: controller.disabilityCardAttachment,
             enabled: enabled,
             onPick:
