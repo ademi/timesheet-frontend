@@ -2104,6 +2104,14 @@ class ClientOnboardingController extends GetxController
     legalOtherDocs.removeWhere((e) => e.id == id);
   }
 
+  /// Pick a PDF then [uploadLegalOther] — same chrome pattern as Consent / SA.
+  Future<bool> markLegalOtherComplete(String rowId) async {
+    errorMessage.value = null;
+    final picked = await _pickPdfBytes();
+    if (picked == null) return false;
+    return uploadLegalOther(rowId, picked.bytes, picked.name);
+  }
+
   /// Resume hydrate for optional legal other docs from profile facts.
   void hydrateLegalOtherFromFacts(Iterable<ClientProfileFactOut> facts) {
     _recordPresentFacts(facts);

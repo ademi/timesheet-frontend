@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../app/themes/app_colors.dart';
 import '../../../../shared/widgets/app_file_field.dart';
 import '../../controllers/client_onboarding_controller.dart';
+import '../../models/legal_other_document.dart';
 
 class OnboardingLegalPackStep extends StatelessWidget {
   const OnboardingLegalPackStep({super.key, required this.controller});
@@ -121,9 +122,91 @@ class OnboardingLegalPackStep extends StatelessWidget {
               ),
             ),
           ],
+          for (final row in controller.legalOtherDocs) ...[
+            const SizedBox(height: 12),
+            _LegalOtherItem(controller: controller, row: row),
+          ],
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: controller.addLegalOtherDoc,
+            icon: const Icon(Icons.add),
+            label: const Text('Add a document'),
+          ),
         ],
       );
     });
+  }
+}
+
+class _LegalOtherItem extends StatelessWidget {
+  const _LegalOtherItem({required this.controller, required this.row});
+
+  final ClientOnboardingController controller;
+  final LegalOtherDocumentDraft row;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = row.displayLabel ?? legalOtherTypePresets[row.typeKey] ?? 'Document';
+    return _LegalItem(
+      title: title,
+      complete: row.complete,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DropdownButtonFormField<String>(
+            value: legalOtherTypePresets.containsKey(row.typeKey)
+                ? row.typeKey
+                : 'other',
+            decoration: const InputDecoration(
+              labelText: 'Document type',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              for (final e in legalOtherTypePresets.entries)
+                DropdownMenuItem(value: e.key, child: Text(e.value)),
+            ],
+            onChanged: (v) {
+              if (v == null) return;
+              row.typeKey = v;
+              if (v != 'other') {
+                row.customLabel = null;
+              }
+              controller.legalOtherDocs.refresh();
+            },
+          ),
+          if (row.typeKey == 'other') ...[
+            const SizedBox(height: 8),
+            TextFormField(
+              key: ValueKey('legal-other-name-${row.id}'),
+              initialValue: row.customLabel ?? '',
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (v) => row.customLabel = v,
+            ),
+          ],
+          const SizedBox(height: 8),
+          AppFileField(
+            label: 'Document PDF',
+            fileName: row.fileName ?? (row.complete ? 'On file' : null),
+            onPick: () {
+              controller.markLegalOtherComplete(row.id);
+            },
+            pickLabel: row.complete ? 'Re-upload' : 'Choose file',
+            helperText: 'Upload PDF & mark complete',
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => controller.removeLegalOtherDoc(row.id),
+              icon: const Icon(Icons.delete_outline, size: 18),
+              label: const Text('Remove'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
