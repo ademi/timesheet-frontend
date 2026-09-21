@@ -413,9 +413,9 @@ class ClientOnboardingController extends GetxController
     _factUpdatedAt.clear();
   }
 
-  /// CR3 minimum resume: set client/id, prefill Identity from [ClientOut],
-  /// step 0. Full funding/contacts hydrate is a follow-up.
-  void hydrateFromClient(ClientOut existing) {
+  /// CR3 resume: set client/id, prefill Identity from [ClientOut], step 0,
+  /// then load profile facts (identity cards, support plan, legal other docs).
+  Future<void> hydrateFromClient(ClientOut existing) async {
     resetForResume();
     client.value = existing;
     fullName.text = existing.fullName;
@@ -425,6 +425,25 @@ class ClientOnboardingController extends GetxController
     dob.value =
         (rawDob == null || rawDob.isEmpty) ? null : DateTime.tryParse(rawDob);
     step.value = 0;
+    await _loadAndHydrateProfileFacts(existing.id);
+  }
+
+  /// Fetches the profile bundle and applies resume hydrates (soft on failure).
+  Future<void> _loadAndHydrateProfileFacts(String clientId) async {
+    if (clientId.isEmpty) return;
+    try {
+      final bundle = await _repository.getClientProfile(clientId);
+      applyProfileFacts(bundle.facts);
+    } on AppFailure catch (e) {
+      errorMessage.value ??= e.message;
+    } catch (_) {}
+  }
+
+  /// Applies stored profile facts to wizard fields (identity, support, legal).
+  void applyProfileFacts(Iterable<ClientProfileFactOut> facts) {
+    hydrateIdentityFromFacts(facts);
+    hydrateSupportPlanFromFacts(facts);
+    hydrateLegalOtherFromFacts(facts);
   }
 
   /// Applies stored profile facts to Identity fields (CR5 Other hydration).

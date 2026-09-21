@@ -123,6 +123,9 @@ void main() {
       () => mock.listFormTemplates(tenantLevel: any(named: 'tenantLevel')),
     ).thenAnswer((_) async => <FormTemplateSummary>[]);
     when(() => mock.listClientTypes()).thenAnswer((_) async => [_patientType]);
+    when(
+      () => mock.getClientProfile(any()),
+    ).thenAnswer((_) async => const ClientProfileBundle(facts: []));
     c = _buildController();
   });
 
@@ -1175,9 +1178,9 @@ void main() {
     },
   );
 
-  test('hydrateFromClient prefills Identity, sets client, step 0', () {
+  test('hydrateFromClient prefills Identity, sets client, step 0', () async {
     c.step.value = 4;
-    c.hydrateFromClient(_fakeClient);
+    await c.hydrateFromClient(_fakeClient);
 
     expect(c.client.value?.id, 'client-1');
     expect(c.fullName.text, 'Sam Parent');
@@ -1187,7 +1190,8 @@ void main() {
     expect(c.step.value, 0);
   });
 
-  test('hydrateFromClient clears prior step state from previous session', () {
+  test('hydrateFromClient clears prior step state from previous session',
+      () async {
     c.emergencySaved.value = true;
     c.carerSaved.value = true;
     c.contactsCreated.add(
@@ -1208,7 +1212,7 @@ void main() {
     c.consentComplete.value = true;
     c.step.value = 4;
 
-    c.hydrateFromClient(_fakeClient);
+    await c.hydrateFromClient(_fakeClient);
 
     expect(c.emergencySaved.value, isFalse);
     expect(c.carerSaved.value, isFalse);
@@ -1230,7 +1234,7 @@ void main() {
       () => mock.upsertProfileFact(any(), any(), any()),
     ).thenAnswer((_) async {});
 
-    c.hydrateFromClient(_fakeClient);
+    await c.hydrateFromClient(_fakeClient);
     c.dob.value = DateTime(1990, 5, 1);
 
     expect(await c.submitIdentity(), isTrue);
@@ -2222,4 +2226,37 @@ void main() {
     expect(c.legalOtherDocs.first.documentId, 'doc-poa');
     expect(c.legalOtherDocs.first.complete, isTrue);
   });
+
+  test(
+    'hydrateFromClient loads legal_other_documents from profile facts',
+    () async {
+      when(() => mock.getClientProfile('client-1')).thenAnswer(
+        (_) async => const ClientProfileBundle(
+          facts: [
+            ClientProfileFactOut(
+              requirementKey: OnboardingKeys.legalOtherDocuments,
+              valueJson: [
+                {
+                  'type': 'power_of_attorney',
+                  'label': 'Power of attorney',
+                  'document_id': 'doc-poa',
+                },
+              ],
+            ),
+          ],
+        ),
+      );
+
+      c.addLegalOtherDoc();
+      expect(c.legalOtherDocs, isNotEmpty);
+
+      await c.hydrateFromClient(_fakeClient);
+
+      verify(() => mock.getClientProfile('client-1')).called(1);
+      expect(c.legalOtherDocs, hasLength(1));
+      expect(c.legalOtherDocs.first.typeKey, 'power_of_attorney');
+      expect(c.legalOtherDocs.first.documentId, 'doc-poa');
+      expect(c.legalOtherDocs.first.complete, isTrue);
+    },
+  );
 }
