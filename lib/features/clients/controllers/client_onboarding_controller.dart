@@ -1036,31 +1036,47 @@ class ClientOnboardingController extends GetxController
 
     isSaving.value = true;
     try {
-      final created = await _repository.createContact(
-        id,
-        ClientContactWriteRequest(
-          name: _nullIfEmpty(name),
-          email: _nullIfEmpty(em),
-          phone: _nullIfEmpty(ph),
-          relationship: relationship,
-          legalRole: _representativeLegalRole,
-          isPrimary: contactIsPrimary.value,
-          notifyVisitComplete: false,
-          isEmergency: contactIsEmergency.value,
-        ),
+      final body = ClientContactWriteRequest(
+        name: _nullIfEmpty(name),
+        email: _nullIfEmpty(em),
+        phone: _nullIfEmpty(ph),
+        relationship: relationship,
+        legalRole: _representativeLegalRole,
+        isPrimary: contactIsPrimary.value,
+        notifyVisitComplete: false,
+        isEmergency: contactIsEmergency.value,
       );
-      contactsCreated.add(created);
-      if (created.isEmergency || contactIsEmergency.value) {
+
+      final ClientContactOut saved;
+      final editingId =
+          representativeEditing.value
+              ? savedRepresentativeContact.value?.id
+              : null;
+      if (editingId != null && editingId.isNotEmpty) {
+        saved = await _repository.patchContact(id, editingId, body);
+        final idx = contactsCreated.indexWhere((c) => c.id == editingId);
+        if (idx >= 0) {
+          contactsCreated[idx] = saved;
+        } else {
+          contactsCreated.add(saved);
+        }
+        contactsCreated.refresh();
+      } else {
+        saved = await _repository.createContact(id, body);
+        contactsCreated.add(saved);
+      }
+
+      if (saved.isEmergency || contactIsEmergency.value) {
         emergencySaved.value = true;
       }
       if (relationship == OnboardingKeys.relCarer) {
         carerSaved.value = true;
       }
       final legalRole = _representativeLegalRole;
-      if (legalRole != null && created.legalRole == legalRole) {
+      if (legalRole != null && saved.legalRole == legalRole) {
         representativeSaved.value = true;
         representativeEditing.value = false;
-        savedRepresentativeContact.value = created;
+        savedRepresentativeContact.value = saved;
         nomineeSkipped.value = false;
       }
       _resetContactDraft();
@@ -1137,9 +1153,10 @@ class ClientOnboardingController extends GetxController
   }
 
   String? get _representativeLegalRole {
-    if (step.value != 3 &&
-        contactDraftMode.value != 'representative' &&
-        contactDraftMode.value != 'nominee') {
+    // Only tag contacts created/edited as rep/nominee — never emergency/carer/more
+    // drafts on the combined Contacts step (step index 3).
+    final mode = contactDraftMode.value;
+    if (mode != 'representative' && mode != 'nominee') {
       return null;
     }
     if (requiresChildRepresentative) {
@@ -1237,6 +1254,19 @@ class ClientOnboardingController extends GetxController
   Future<bool> submitRepresentative() async {
     errorMessage.value = null;
 
+    // Persist in-progress edit of a saved representative before Next.
+    if (representativeEditing.value && _contactDraftHasChannel) {
+      if (requiresChildRepresentative &&
+          contactDraftMode.value != 'representative') {
+        contactDraftMode.value = 'representative';
+      } else if (!requiresChildRepresentative &&
+          contactDraftMode.value != 'nominee') {
+        contactDraftMode.value = 'nominee';
+      }
+      final ok = await saveContactDraft();
+      if (!ok) return false;
+    }
+
     if (requiresChildRepresentative) {
       if (!representativeSaved.value) {
         final hasDraft =
@@ -1287,6 +1317,8 @@ class ClientOnboardingController extends GetxController
 
   void beginEditRepresentative() {
     representativeEditing.value = true;
+    contactDraftMode.value =
+        requiresChildRepresentative ? 'representative' : 'nominee';
     final saved = savedRepresentativeContact.value;
     if (saved == null) return;
     contactNameCtrl.text = saved.name ?? '';

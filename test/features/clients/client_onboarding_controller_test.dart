@@ -708,6 +708,87 @@ void main() {
   });
 
   test(
+    'emergency draft on Contacts step does not get representative legal_role',
+    () async {
+      ClientContactWriteRequest? captured;
+      when(() => mock.createContact(any(), any())).thenAnswer((inv) async {
+        captured = inv.positionalArguments[1] as ClientContactWriteRequest;
+        return ClientContactOut(
+          id: 'c-em',
+          tenantId: 'tenant-1',
+          clientId: 'client-1',
+          name: captured!.name,
+          phone: captured!.phone,
+          relationship: captured!.relationship,
+          legalRole: captured!.legalRole,
+          isPrimary: captured!.isPrimary ?? false,
+          notifyVisitComplete: captured!.notifyVisitComplete ?? false,
+          isEmergency: captured!.isEmergency ?? true,
+        );
+      });
+
+      c.client.value = _fakeClient;
+      c.step.value = 3;
+      c.dob.value = DateTime(2015, 1, 1); // under 18
+      c.beginEmergencyDraft();
+      c.contactNameCtrl.text = 'Emergency Parent';
+      c.contactPhoneCtrl.text = '+61400000111';
+      c.contactRelationshipPreset.value = 'mother';
+
+      expect(await c.saveContactDraft(), isTrue);
+      expect(captured!.legalRole, isNull);
+      expect(c.representativeSaved.value, isFalse);
+    },
+  );
+
+  test('edit representative patches existing contact on save', () async {
+    when(() => mock.patchContact(any(), any(), any())).thenAnswer((inv) async {
+      final body = inv.positionalArguments[2] as ClientContactWriteRequest;
+      return ClientContactOut(
+        id: 'rep-1',
+        tenantId: 'tenant-1',
+        clientId: 'client-1',
+        name: body.name,
+        phone: body.phone,
+        relationship: body.relationship,
+        legalRole: body.legalRole,
+        isPrimary: body.isPrimary ?? false,
+        notifyVisitComplete: body.notifyVisitComplete ?? false,
+        isEmergency: body.isEmergency ?? false,
+      );
+    });
+
+    c.client.value = _fakeClient;
+    c.step.value = 3;
+    c.dob.value = DateTime(2015, 1, 1);
+    c.representativeSaved.value = true;
+    c.savedRepresentativeContact.value = ClientContactOut(
+      id: 'rep-1',
+      tenantId: 'tenant-1',
+      clientId: 'client-1',
+      name: 'Old Name',
+      phone: '+61400000001',
+      relationship: 'mother',
+      legalRole: OnboardingKeys.relChildRepresentative,
+      isPrimary: false,
+      notifyVisitComplete: false,
+      isEmergency: false,
+    );
+    c.contactsCreated.add(c.savedRepresentativeContact.value!);
+
+    c.beginEditRepresentative();
+    c.contactNameCtrl.text = 'Updated Rep';
+    c.contactPhoneCtrl.text = '+61400000999';
+    c.contactRelationshipPreset.value = 'mother';
+
+    expect(await c.saveContactDraft(), isTrue);
+    verify(() => mock.patchContact('client-1', 'rep-1', any())).called(1);
+    verifyNever(() => mock.createContact(any(), any()));
+    expect(c.savedRepresentativeContact.value?.name, 'Updated Rep');
+    expect(c.representativeEditing.value, isFalse);
+  });
+
+  test(
     'saveContactDraft sends custom relationship for Other free-text',
     () async {
       ClientContactWriteRequest? captured;
