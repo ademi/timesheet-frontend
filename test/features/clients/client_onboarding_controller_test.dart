@@ -189,6 +189,15 @@ void main() {
     expect(c.nomineeOptional, isTrue);
   });
 
+
+  test('submitNdisStep soft-skips when empty', () async {
+    c.client.value = _fakeClient;
+    c.step.value = 4;
+    expect(await c.submitNdisStep(soft: true), isTrue);
+    expect(c.step.value, 5);
+    expect(c.errorMessage.value, isNull);
+  });
+
   test('submitSupportPlan blocks without NDIS number', () async {
     c.client.value = _fakeClient;
     c.step.value = 4;
@@ -377,7 +386,7 @@ void main() {
         onFinished: (id) => finishedId = id,
       );
       c.client.value = _fakeClient;
-      c.step.value = 5;
+      c.step.value = 8;
 
       expect(await c.finishOnboarding(), isTrue);
       expect(softGateCalled, isTrue);
@@ -390,7 +399,7 @@ void main() {
     c.dispose();
     c = _buildController(softGateConfirm: (_) async => false);
     c.client.value = _fakeClient;
-    c.step.value = 5;
+    c.step.value = 8;
     expect(await c.finishOnboarding(), isFalse);
     verifyNever(() => mock.patchClient(any(), any()));
   });
@@ -435,7 +444,7 @@ void main() {
         onFinished: (_) {},
       );
       c.client.value = _fakeClient;
-      c.step.value = 5;
+      c.step.value = 8;
 
       expect(await c.finishOnboarding(), isTrue);
       verify(() => mock.getClient('client-1')).called(1);
@@ -451,7 +460,7 @@ void main() {
       onFinished: (_) {},
     );
     c.client.value = _fakeClient;
-    c.step.value = 5;
+    c.step.value = 8;
 
     when(() => mock.getClient('client-1')).thenThrow(
       const AppFailure(
@@ -475,7 +484,7 @@ void main() {
         onFinished: (_) {},
       );
       c.client.value = _fakeClient;
-      c.step.value = 5;
+      c.step.value = 8;
 
       when(
         () => mock.getClient('client-1'),
@@ -532,7 +541,7 @@ void main() {
     c.dispose();
     c = _buildController(softGateConfirm: (_) async => true);
     c.client.value = _fakeClient;
-    c.step.value = 5;
+    c.step.value = 8;
 
     expect(await c.finishOnboarding(), isTrue);
     await tester.pumpAndSettle();
@@ -591,7 +600,7 @@ void main() {
       c.dispose();
       c = _buildController(softGateConfirm: (_) async => true);
       c.client.value = _fakeClient;
-      c.step.value = 5;
+      c.step.value = 8;
 
       expect(await c.finishOnboarding(), isTrue);
       await tester.pumpAndSettle();
@@ -661,7 +670,7 @@ void main() {
       c.dispose();
       c = _buildController(softGateConfirm: (_) async => true);
       c.client.value = _fakeClient;
-      c.step.value = 5;
+      c.step.value = 8;
 
       expect(await c.finishOnboarding(), isTrue);
       await tester.pumpAndSettle();
@@ -1495,18 +1504,16 @@ void main() {
     c.clearSupportSpecialists();
   });
 
-  test('submitSupportPlan upserts support_plan_specialists JSON', () async {
+  test('coordinator step persists single SC specialist entry', () async {
     when(
       () => mock.upsertProfileFact(any(), any(), any()),
     ).thenAnswer((_) async {});
     c.client.value = _fakeClient;
-    c.step.value = 4;
-    c.ndisCtrl.text = '431234567';
-    c.planManagementType.value = 'self_managed';
-    c.addSupportSpecialist(SupportPlanSpecialistTypes.supportCoordinator);
-    c.supportSpecialists.first.fields.nameCtrl.text = 'Jane SC';
+    c.step.value = 6;
+    c.supportCoordinatorEntry.fields.nameCtrl.text = 'Jane SC';
 
-    expect(await c.submitSupportPlan(), isTrue);
+    expect(await c.submitSupportCoordinatorStep(soft: false), isTrue);
+    expect(c.step.value, 7);
 
     final captured =
         verify(
@@ -1521,7 +1528,97 @@ void main() {
     expect(value, hasLength(1));
     expect(value.first['type'], SupportPlanSpecialistTypes.supportCoordinator);
     expect(value.first['name'], 'Jane SC');
+  });
+
+  test('specialists step persists non-coordinator entries with SC merge', () async {
+    when(
+      () => mock.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async {});
+    c.client.value = _fakeClient;
+    c.step.value = 7;
+    c.supportCoordinatorEntry.fields.nameCtrl.text = 'Jane SC';
+    c.addSupportSpecialist(SupportPlanSpecialistTypes.speechTherapist);
+    c.supportSpecialists.first.fields.nameCtrl.text = 'Alex OT';
+
+    expect(await c.submitSupportSpecialistsStep(soft: false), isTrue);
+    expect(c.step.value, 8);
+
+    final captured =
+        verify(
+              () => mock.upsertProfileFact(
+                'client-1',
+                OnboardingKeys.supportPlanSpecialists,
+                captureAny(),
+              ),
+            ).captured.single
+            as ProfileFactUpsert;
+    final value = captured.valueJson as List;
+    expect(value, hasLength(2));
+    expect(value.first['type'], SupportPlanSpecialistTypes.supportCoordinator);
+    expect(value.last['type'], SupportPlanSpecialistTypes.speechTherapist);
     c.clearSupportSpecialists();
+  });
+
+  test('hydrate partitions SC into coordinator form', () {
+    c.hydrateSupportPlanFromFacts([
+      ClientProfileFactOut(
+        requirementKey: OnboardingKeys.supportPlanSpecialists,
+        valueJson: [
+          {
+            'type': SupportPlanSpecialistTypes.supportCoordinator,
+            'name': 'Legacy SC',
+          },
+          {
+            'type': SupportPlanSpecialistTypes.physiotherapist,
+            'name': 'Bob PT',
+          },
+        ],
+      ),
+    ]);
+    expect(c.supportCoordinatorEntry.fields.nameCtrl.text, 'Legacy SC');
+    expect(c.supportSpecialists, hasLength(1));
+    expect(
+      c.supportSpecialists.first.type,
+      SupportPlanSpecialistTypes.physiotherapist,
+    );
+    c.clearSupportSpecialists();
+  });
+
+  test('submitIdentity does not upsert allergies', () async {
+    when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
+    when(
+      () => mock.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async {});
+    _fillValidIdentity(c);
+    c.allergiesCtrl.text = 'Peanuts';
+    expect(await c.submitIdentity(), isTrue);
+    verifyNever(
+      () => mock.upsertProfileFact(
+        any(),
+        OnboardingKeys.allergies,
+        any(),
+      ),
+    );
+  });
+
+  test('submitCarePlanStep upserts allergies fact', () async {
+    when(
+      () => mock.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async {});
+    c.client.value = _fakeClient;
+    c.step.value = 5;
+    c.allergiesCtrl.text = 'Peanuts';
+    expect(await c.submitCarePlanStep(soft: false), isTrue);
+    expect(c.step.value, 6);
+    verify(
+      () => mock.upsertProfileFact(
+        'client-1',
+        OnboardingKeys.allergies,
+        any(
+          that: predicate<ProfileFactUpsert>((u) => u.valueJson == 'Peanuts'),
+        ),
+      ),
+    ).called(1);
   });
 
   test('submitSupportPlan rejects invalid budget values', () async {
@@ -1535,7 +1632,7 @@ void main() {
   });
 
   test(
-    'previousStep from Support Plan returns to Contacts',
+    'previousStep from NDIS returns to Contacts',
     () {
       c.step.value = 4;
       c.contactDraftMode.value = 'nominee';

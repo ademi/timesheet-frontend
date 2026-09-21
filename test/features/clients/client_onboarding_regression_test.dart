@@ -50,7 +50,7 @@ final _patientType = ClientTypeOut(
   sortOrder: 1,
 );
 
-/// Phase G regression: empty contacts → Support Plan → finish path.
+/// Phase G regression: empty contacts → NDIS → soft-skip → finish path.
 void main() {
   late _MockClientsRepository mock;
   late _MockSessionService session;
@@ -88,7 +88,7 @@ void main() {
 
   tearDown(() => c.dispose());
 
-  test('empty contacts path reaches Support Plan and finishes', () async {
+  test('empty contacts path reaches NDIS and finishes', () async {
     c.fullName.text = 'Reg Client';
     c.email.text = 'reg@example.com';
     c.phone.text = '+61411111111';
@@ -107,8 +107,12 @@ void main() {
 
     c.ndisCtrl.text = '431234567';
     c.planManagementType.value = 'self_managed';
-    expect(await c.submitSupportPlan(), isTrue);
+    expect(await c.submitNdisStep(), isTrue);
     expect(c.step.value, 5);
+    expect(await c.submitCarePlanStep(), isTrue);
+    expect(await c.submitSupportCoordinatorStep(), isTrue);
+    expect(await c.submitSupportSpecialistsStep(), isTrue);
+    expect(c.step.value, 8);
 
     c.consentComplete.value = true;
     c.serviceAgreementComplete.value = true;
@@ -118,7 +122,7 @@ void main() {
     ).called(1);
   });
 
-  test('resume hydrates Support Plan from profile facts', () {
+  test('resume hydrates NDIS from profile facts', () {
     c.hydrateSupportPlanFromFacts([
       const ClientProfileFactOut(
         requirementKey: OnboardingKeys.ndis,
@@ -138,7 +142,7 @@ void main() {
     expect(c.supportPlanOtherCtrl.text, '999');
   });
 
-  test('NDIS collision stays on Support Plan step', () async {
+  test('NDIS collision stays on NDIS step', () async {
     when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((inv) {
       if (inv.positionalArguments[1] == OnboardingKeys.ndis) {
         throw const AppFailure(
@@ -154,7 +158,7 @@ void main() {
     c.ndisCtrl.text = '431234567';
     c.planManagementType.value = 'self_managed';
 
-    expect(await c.submitSupportPlan(), isFalse);
+    expect(await c.submitNdisStep(), isFalse);
     expect(c.ndisFieldError.value, isNotNull);
     expect(c.step.value, 4);
   });

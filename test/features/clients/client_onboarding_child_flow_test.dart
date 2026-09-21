@@ -225,11 +225,15 @@ void main() {
       expect(childRep.phone, '+61466666666');
       expect(childRep.relationship, 'mother');
 
-      // Funding → Legal (mock) → Finish.
+      // NDIS → soft-skip Care/SC/Specialists → Legal → Finish.
       c.ndisCtrl.text = '431234567';
       c.planManagementType.value = 'self_managed';
-      expect(await c.submitSupportPlan(), isTrue);
+      expect(await c.submitNdisStep(), isTrue);
       expect(c.step.value, 5);
+      expect(await c.submitCarePlanStep(), isTrue);
+      expect(await c.submitSupportCoordinatorStep(), isTrue);
+      expect(await c.submitSupportSpecialistsStep(), isTrue);
+      expect(c.step.value, 8);
 
       c.consentComplete.value = true;
       c.serviceAgreementComplete.value = true;

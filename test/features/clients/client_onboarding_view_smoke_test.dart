@@ -50,8 +50,8 @@ void main() {
       expect(find.text(label), findsWidgets);
     }
     expect(find.text('Representative'), findsNothing);
-    expect(ClientOnboardingController.stepLabels, hasLength(6));
-    expect(ClientOnboardingController.maxStep, 5);
+    expect(ClientOnboardingController.stepLabels, hasLength(9));
+    expect(ClientOnboardingController.maxStep, 8);
   });
 
   testWidgets('error notice sits above footer, not inside ListView', (
@@ -117,7 +117,7 @@ void main() {
   });
 
   testWidgets(
-    'back from Support Plan returns to Contacts without exception',
+    'back from NDIS returns to Contacts without exception',
     (tester) async {
       final c = Get.find<ClientOnboardingController>();
       c.client.value = ClientOut(

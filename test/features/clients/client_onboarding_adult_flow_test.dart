@@ -182,16 +182,19 @@ void main() {
   });
 
   test('adult happy path: Identity→Address→Preferences→Contacts→'
-      'Support Plan→Legal→Finish', () async {
+      'NDIS→Care→SC→Specialists→Legal→Finish', () async {
     expect(ClientOnboardingController.stepLabels, [
       'Identity',
       'Address',
       'Preferences',
       'Contacts',
-      'Support Plan',
+      'NDIS',
+      'Care plan',
+      'Support Coordinator',
+      'Support Specialists',
       'Legal',
     ]);
-    expect(ClientOnboardingController.maxStep, 5);
+    expect(ClientOnboardingController.maxStep, 8);
 
     // ── Identity (adult DOB) ──────────────────────────────────────────
     c.fullName.text = 'Alex Adult';
@@ -263,11 +266,19 @@ void main() {
       isFalse,
     );
 
-    // ── Support Plan self_managed ─────────────────────────────────────
+    // ── NDIS self_managed ─────────────────────────────────────────────
     c.ndisCtrl.text = '431234567';
     c.planManagementType.value = 'self_managed';
-    expect(await c.submitSupportPlan(), isTrue);
+    expect(await c.submitNdisStep(), isTrue);
     expect(c.step.value, 5);
+
+    // ── Soft-skip Care / Coordinator / Specialists ────────────────────
+    expect(await c.submitCarePlanStep(), isTrue);
+    expect(c.step.value, 6);
+    expect(await c.submitSupportCoordinatorStep(), isTrue);
+    expect(c.step.value, 7);
+    expect(await c.submitSupportSpecialistsStep(), isTrue);
+    expect(c.step.value, 8);
     expect(
       factUpserts.any(
         (e) =>
