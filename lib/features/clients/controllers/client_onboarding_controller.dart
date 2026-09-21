@@ -2120,9 +2120,24 @@ class ClientOnboardingController extends GetxController
   /// Pick a PDF then [uploadLegalOther] — same chrome pattern as Consent / SA.
   Future<bool> markLegalOtherComplete(String rowId) async {
     errorMessage.value = null;
-    final picked = await _pickPdfBytes();
-    if (picked == null) return false;
-    return uploadLegalOther(rowId, picked.bytes, picked.name);
+    if (legalOtherUploading.contains(rowId)) return false;
+    legalOtherUploading.add(rowId);
+    legalOtherUploading.refresh();
+    try {
+      final picked = await _pickPdfBytes();
+      if (picked == null) return false;
+      // uploadLegalOther re-enters the uploading set; clear so it can own the
+      // finally lifecycle without leaving a stale id if upload is skipped.
+      legalOtherUploading.remove(rowId);
+      legalOtherUploading.refresh();
+      return uploadLegalOther(rowId, picked.bytes, picked.name);
+    } finally {
+      if (legalOtherUploading.contains(rowId)) {
+        legalOtherUploading.remove(rowId);
+        legalOtherUploading.refresh();
+        legalOtherDocs.refresh();
+      }
+    }
   }
 
   /// Resume hydrate for optional legal other docs from profile facts.
