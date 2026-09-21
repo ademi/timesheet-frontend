@@ -16,6 +16,7 @@ import '../../documents/data/document_pipeline.dart';
 import '../data/models/client_models.dart';
 import '../data/models/client_profile_models.dart';
 import '../models/identity_card_attachment.dart';
+import '../models/legal_other_document.dart';
 import '../models/support_plan_specialist_entry.dart';
 import '../models/support_plan_specialist_types.dart';
 import '../data/repositories/clients_repository.dart';
@@ -250,6 +251,7 @@ class ClientOnboardingController extends GetxController
   final acknowledgementComplete = false.obs;
   final includeAcknowledgement = false.obs;
   final consentSignerNameCtrl = TextEditingController();
+  final legalOtherDocs = <LegalOtherDocumentDraft>[].obs;
   final formTemplates = <FormTemplateSummary>[].obs;
   final isLoadingTemplates = false.obs;
   FormTemplateSummary? get acknowledgementTemplate {
@@ -406,6 +408,7 @@ class ClientOnboardingController extends GetxController
     acknowledgementComplete.value = false;
     includeAcknowledgement.value = false;
     consentSignerNameCtrl.clear();
+    legalOtherDocs.clear();
     _presentKeys.clear();
     _factUpdatedAt.clear();
   }
@@ -2065,6 +2068,19 @@ class ClientOnboardingController extends GetxController
     if (index < 0) return;
     supportSpecialists[index].dispose();
     supportSpecialists.removeAt(index);
+  }
+
+  void addLegalOtherDoc() {
+    legalOtherDocs.add(
+      LegalOtherDocumentDraft(
+        id: LegalOtherDocumentDraft.nextId(),
+        typeKey: 'other',
+      ),
+    );
+  }
+
+  void removeLegalOtherDoc(String id) {
+    legalOtherDocs.removeWhere((e) => e.id == id);
   }
 
   void replaceSupportSpecialists(Iterable<SupportPlanSpecialistEntry> entries) {

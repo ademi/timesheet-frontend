@@ -1976,4 +1976,26 @@ void main() {
     c.resetForResume();
     expect(c.siteNameCtrl.text, isEmpty);
   });
+
+  test('addLegalOtherDoc appends other-type row with unique id', () {
+    c.addLegalOtherDoc();
+    c.addLegalOtherDoc();
+    expect(c.legalOtherDocs, hasLength(2));
+    expect(c.legalOtherDocs.every((e) => e.typeKey == 'other'), isTrue);
+    expect(c.legalOtherDocs[0].id, isNot(equals(c.legalOtherDocs[1].id)));
+    expect(c.legalOtherDocs[0].id, startsWith('legal-other-'));
+  });
+
+  test('removeLegalOtherDoc removes matching row', () {
+    c.addLegalOtherDoc();
+    final id = c.legalOtherDocs.single.id;
+    c.removeLegalOtherDoc(id);
+    expect(c.legalOtherDocs, isEmpty);
+  });
+
+  test('resetForResume clears legalOtherDocs', () {
+    c.addLegalOtherDoc();
+    c.resetForResume();
+    expect(c.legalOtherDocs, isEmpty);
+  });
 }
