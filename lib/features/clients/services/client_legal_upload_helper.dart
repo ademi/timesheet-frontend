@@ -121,6 +121,38 @@ class ClientLegalUploadHelper {
     );
   }
 
+  /// Upload an optional Legal "other" PDF (category [OnboardingKeys.legalOtherCategory]).
+  ///
+  /// Returns the new document id. Does not upsert the JSON fact — caller persists
+  /// the list after mark-complete.
+  Future<String> uploadLegalOtherPdf({
+    required String clientId,
+    required String filename,
+    required List<int> fileBytes,
+  }) async {
+    if (!filename.toLowerCase().endsWith('.pdf')) {
+      throw const AppFailure(
+        code: 'validation',
+        message: 'Only PDF files are accepted for other legal documents.',
+        presentation: AppFailurePresentation.inline,
+      );
+    }
+    if (fileBytes.isEmpty) {
+      throw const AppFailure(
+        code: 'validation',
+        message: 'Select a PDF to upload.',
+        presentation: AppFailurePresentation.inline,
+      );
+    }
+    return _uploadClientFile(
+      clientId: clientId,
+      category: OnboardingKeys.legalOtherCategory,
+      name: filename,
+      contentType: 'application/pdf',
+      fileBytes: fileBytes,
+    );
+  }
+
   Future<String> _uploadClientFile({
     required String clientId,
     required String category,

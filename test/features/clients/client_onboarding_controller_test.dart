@@ -14,6 +14,7 @@ import 'package:rostiq/features/clients/data/repositories/clients_repository.dar
 import 'package:rostiq/features/clients/models/identity_card_attachment.dart';
 import 'package:rostiq/features/clients/models/support_plan_specialist_types.dart';
 import 'package:rostiq/features/clients/utils/clinical_keys.dart';
+import 'package:rostiq/features/clients/models/legal_other_document.dart';
 import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
 import 'package:rostiq/features/clients/widgets/contact_form_host.dart';
 import 'package:rostiq/features/clients/widgets/onboarding/onboarding_identity_step.dart';
@@ -1997,5 +1998,228 @@ void main() {
     c.addLegalOtherDoc();
     c.resetForResume();
     expect(c.legalOtherDocs, isEmpty);
+  });
+
+  test(
+    'uploadLegalOther marks row complete and stores document id',
+    () async {
+      final pipeline = _MockDocumentPipeline();
+      when(
+        () => pipeline.uploadEvidence(
+          request: any(named: 'request'),
+          bytes: any(named: 'bytes'),
+        ),
+      ).thenAnswer(
+        (_) async => const DocumentOut(
+          id: 'doc-1',
+          ownerType: 'client',
+          ownerId: 'client-1',
+          filename: 'order.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 3,
+          scanStatus: 'clean',
+        ),
+      );
+
+      c.dispose();
+      c = _buildController(documentPipeline: pipeline);
+      c.client.value = _fakeClient;
+      c.addLegalOtherDoc();
+      c.legalOtherDocs.first.typeKey = 'court_order';
+
+      expect(
+        await c.uploadLegalOther(
+          c.legalOtherDocs.first.id,
+          [1, 2, 3],
+          'order.pdf',
+        ),
+        isTrue,
+      );
+      expect(c.legalOtherDocs.first.complete, isTrue);
+      expect(c.legalOtherDocs.first.documentId, 'doc-1');
+      final request =
+          verify(
+                () => pipeline.uploadEvidence(
+                  request: captureAny(named: 'request'),
+                  bytes: any(named: 'bytes'),
+                ),
+              ).captured.single
+              as UploadUrlRequest;
+      expect(request.category, OnboardingKeys.legalOtherCategory);
+    },
+  );
+
+  test('finishOnboarding succeeds with zero other legal docs', () async {
+    when(() => mock.getClient('client-1')).thenAnswer((_) async => _fakeClient);
+    when(() => mock.patchClient(any(), any())).thenAnswer((_) async {
+      return ClientOut(
+        id: _fakeClient.id,
+        tenantId: _fakeClient.tenantId,
+        fullName: _fakeClient.fullName,
+        status: _fakeClient.status,
+        metadata: const {'onboarding_incomplete': false},
+        createdAt: _now,
+        updatedAt: _now,
+      );
+    });
+
+    c.dispose();
+    c = _buildController(
+      softGateConfirm: (_) async => true,
+      onFinished: (_) {},
+    );
+    c.client.value = _fakeClient;
+    c.consentComplete.value = true;
+    c.serviceAgreementComplete.value = true;
+    expect(c.legalOtherDocs, isEmpty);
+
+    expect(await c.finishOnboarding(), isTrue);
+    verifyNever(
+      () => mock.upsertProfileFact(
+        any(),
+        OnboardingKeys.legalOtherDocuments,
+        any(),
+      ),
+    );
+  });
+
+  test('Other label longer than 120 chars is rejected', () async {
+    final pipeline = _MockDocumentPipeline();
+    c.dispose();
+    c = _buildController(documentPipeline: pipeline);
+    c.client.value = _fakeClient;
+    c.addLegalOtherDoc();
+    c.legalOtherDocs.first.typeKey = 'other';
+    c.legalOtherDocs.first.customLabel =
+        'x' * (legalOtherMaxCustomLabelLength + 1);
+
+    expect(
+      await c.uploadLegalOther(
+        c.legalOtherDocs.first.id,
+        [1],
+        'order.pdf',
+      ),
+      isFalse,
+    );
+    expect(c.legalOtherDocs.first.complete, isFalse);
+    expect(c.errorMessage.value, contains('120'));
+    verifyNever(
+      () => pipeline.uploadEvidence(
+        request: any(named: 'request'),
+        bytes: any(named: 'bytes'),
+      ),
+    );
+  });
+
+  test('upload rejected when displayLabel null', () async {
+    final pipeline = _MockDocumentPipeline();
+    c.dispose();
+    c = _buildController(documentPipeline: pipeline);
+    c.client.value = _fakeClient;
+    c.addLegalOtherDoc();
+    // typeKey defaults to 'other' with empty customLabel → null displayLabel
+    expect(c.legalOtherDocs.first.displayLabel, isNull);
+
+    expect(
+      await c.uploadLegalOther(
+        c.legalOtherDocs.first.id,
+        [1],
+        'order.pdf',
+      ),
+      isFalse,
+    );
+    expect(c.legalOtherDocs.first.complete, isFalse);
+    expect(c.errorMessage.value, contains('name'));
+    verifyNever(
+      () => pipeline.uploadEvidence(
+        request: any(named: 'request'),
+        bytes: any(named: 'bytes'),
+      ),
+    );
+  });
+
+  test(
+    'finishOnboarding upserts legal_other_documents from complete rows',
+    () async {
+      when(
+        () => mock.getClient('client-1'),
+      ).thenAnswer((_) async => _fakeClient);
+      when(() => mock.patchClient(any(), any())).thenAnswer((_) async {
+        return ClientOut(
+          id: _fakeClient.id,
+          tenantId: _fakeClient.tenantId,
+          fullName: _fakeClient.fullName,
+          status: _fakeClient.status,
+          metadata: const {'onboarding_incomplete': false},
+          createdAt: _now,
+          updatedAt: _now,
+        );
+      });
+      when(
+        () => mock.upsertProfileFact(any(), any(), any()),
+      ).thenAnswer((_) async {});
+
+      c.dispose();
+      c = _buildController(
+        softGateConfirm: (_) async => true,
+        onFinished: (_) {},
+      );
+      c.client.value = _fakeClient;
+      c.consentComplete.value = true;
+      c.serviceAgreementComplete.value = true;
+      c.legalOtherDocs.add(
+        LegalOtherDocumentDraft(
+          id: 'lo-1',
+          typeKey: 'court_order',
+          documentId: 'doc-court',
+          complete: true,
+        ),
+      );
+      c.legalOtherDocs.add(
+        LegalOtherDocumentDraft(
+          id: 'lo-2',
+          typeKey: 'other',
+          customLabel: 'Custom',
+          // incomplete — excluded from fact
+        ),
+      );
+
+      expect(await c.finishOnboarding(), isTrue);
+      final upsert =
+          verify(
+                () => mock.upsertProfileFact(
+                  'client-1',
+                  OnboardingKeys.legalOtherDocuments,
+                  captureAny(),
+                ),
+              ).captured.single
+              as ProfileFactUpsert;
+      expect(upsert.valueJson, [
+        {
+          'type': 'court_order',
+          'label': 'Court order',
+          'document_id': 'doc-court',
+        },
+      ]);
+    },
+  );
+
+  test('hydrateLegalOtherFromFacts restores complete rows', () {
+    c.hydrateLegalOtherFromFacts([
+      const ClientProfileFactOut(
+        requirementKey: OnboardingKeys.legalOtherDocuments,
+        valueJson: [
+          {
+            'type': 'power_of_attorney',
+            'label': 'Power of attorney',
+            'document_id': 'doc-poa',
+          },
+        ],
+      ),
+    ]);
+    expect(c.legalOtherDocs, hasLength(1));
+    expect(c.legalOtherDocs.first.typeKey, 'power_of_attorney');
+    expect(c.legalOtherDocs.first.documentId, 'doc-poa');
+    expect(c.legalOtherDocs.first.complete, isTrue);
   });
 }

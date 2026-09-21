@@ -79,6 +79,8 @@ class OnboardingKeys {
   static const consentAgreementDocKey = 'patient.consent_agreement';
   static const serviceAgreement = 'service_agreement';
   static const acknowledgement = 'acknowledgement';
+  static const legalOtherDocuments = 'legal_other_documents';
+  static const legalOtherCategory = 'legal_other';
 
   /// Profile field keys owned by Care plan Funding/Consent (hide from Profile drafts).
   static const carePlanOwnedFundingKeys = <String>{

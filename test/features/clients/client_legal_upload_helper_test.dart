@@ -164,4 +164,75 @@ void main() {
             as ProfileFactUpsert;
     expect(upsert.documentId, 'doc-sa');
   });
+
+  test('uploadLegalOtherPdf uses legal_other category', () async {
+    when(
+      () => pipeline.uploadEvidence(
+        request: any(named: 'request'),
+        bytes: any(named: 'bytes'),
+      ),
+    ).thenAnswer(
+      (_) async => const DocumentOut(
+        id: 'doc-other',
+        ownerType: 'client',
+        ownerId: 'c1',
+        filename: 'order.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 2,
+        scanStatus: 'clean',
+      ),
+    );
+
+    final helper = ClientLegalUploadHelper(
+      repository: repo,
+      pipeline: pipeline,
+      pickPdfBytes: () async => null,
+    );
+
+    final docId = await helper.uploadLegalOtherPdf(
+      clientId: 'c1',
+      filename: 'order.pdf',
+      fileBytes: [1, 2],
+    );
+    expect(docId, 'doc-other');
+    final request =
+        verify(
+              () => pipeline.uploadEvidence(
+                request: captureAny(named: 'request'),
+                bytes: any(named: 'bytes'),
+              ),
+            ).captured.single
+            as UploadUrlRequest;
+    expect(request.category, OnboardingKeys.legalOtherCategory);
+    expect(request.contentType, 'application/pdf');
+  });
+
+  test('uploadLegalOtherPdf rejects non-PDF filename', () async {
+    final helper = ClientLegalUploadHelper(
+      repository: repo,
+      pipeline: pipeline,
+      pickPdfBytes: () async => null,
+    );
+
+    expect(
+      () => helper.uploadLegalOtherPdf(
+        clientId: 'c1',
+        filename: 'order.png',
+        fileBytes: [1],
+      ),
+      throwsA(
+        isA<AppFailure>().having(
+          (e) => e.message,
+          'message',
+          contains('PDF'),
+        ),
+      ),
+    );
+    verifyNever(
+      () => pipeline.uploadEvidence(
+        request: any(named: 'request'),
+        bytes: any(named: 'bytes'),
+      ),
+    );
+  });
 }

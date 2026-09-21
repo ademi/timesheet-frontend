@@ -1897,6 +1897,8 @@ class ClientOnboardingController extends GetxController
 
     isSaving.value = true;
     try {
+      await _persistLegalOtherDocuments(id);
+
       final fresh = await _repository.getClient(id);
       client.value = fresh;
       final existing = Map<String, dynamic>.from(fresh.metadata);
@@ -2081,6 +2083,91 @@ class ClientOnboardingController extends GetxController
 
   void removeLegalOtherDoc(String id) {
     legalOtherDocs.removeWhere((e) => e.id == id);
+  }
+
+  /// Resume hydrate for optional legal other docs from profile facts.
+  void hydrateLegalOtherFromFacts(Iterable<ClientProfileFactOut> facts) {
+    _recordPresentFacts(facts);
+    for (final fact in facts) {
+      if (fact.requirementKey != OnboardingKeys.legalOtherDocuments) continue;
+      legalOtherDocs.assignAll(legalOtherDocsFromFactValue(fact.valueJson));
+    }
+  }
+
+  /// Upload a PDF for [rowId], mark complete, store document id.
+  ///
+  /// Rejects null [LegalOtherDocumentDraft.displayLabel] and Other labels over
+  /// [legalOtherMaxCustomLabelLength] (after trim). PDF-only via helper.
+  Future<bool> uploadLegalOther(
+    String rowId,
+    List<int> fileBytes,
+    String fileName,
+  ) async {
+    errorMessage.value = null;
+    final id = clientId;
+    if (id == null) {
+      errorMessage.value = 'No client created yet.';
+      return false;
+    }
+
+    final index = legalOtherDocs.indexWhere((e) => e.id == rowId);
+    if (index < 0) {
+      errorMessage.value = 'Document row not found.';
+      return false;
+    }
+    final row = legalOtherDocs[index];
+    final label = row.displayLabel;
+    if (label == null) {
+      errorMessage.value =
+          row.typeKey == 'other'
+              ? 'Enter a name for this Other document before uploading.'
+              : 'Select a document type before uploading.';
+      return false;
+    }
+    if (row.typeKey == 'other' &&
+        label.length > legalOtherMaxCustomLabelLength) {
+      errorMessage.value =
+          'Other document name must be $legalOtherMaxCustomLabelLength '
+          'characters or fewer.';
+      return false;
+    }
+
+    try {
+      final docId = await _legalUploadHelper.uploadLegalOtherPdf(
+        clientId: id,
+        filename: fileName,
+        fileBytes: fileBytes,
+      );
+      row.documentId = docId;
+      row.fileName = fileName;
+      row.complete = true;
+      legalOtherDocs.refresh();
+      return true;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      return false;
+    } catch (e) {
+      _setUnexpectedError(e);
+      return false;
+    }
+  }
+
+  Future<void> _persistLegalOtherDocuments(String clientId) async {
+    final payload =
+        legalOtherDocs
+            .where((e) => e.complete && e.documentId != null && e.canUpload)
+            .map((e) => e.toFactEntry())
+            .toList();
+    if (payload.isEmpty) {
+      await _clearFactIfPresent(clientId, OnboardingKeys.legalOtherDocuments);
+      return;
+    }
+    await _repository.upsertProfileFact(
+      clientId,
+      OnboardingKeys.legalOtherDocuments,
+      ProfileFactUpsert(valueJson: payload),
+    );
+    _presentKeys.add(OnboardingKeys.legalOtherDocuments);
   }
 
   void replaceSupportSpecialists(Iterable<SupportPlanSpecialistEntry> entries) {
