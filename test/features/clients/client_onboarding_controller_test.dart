@@ -1702,6 +1702,82 @@ void main() {
     ).called(1);
   });
 
+  test(
+    'soft-skip care plan clears previously saved consent and allergies',
+    () async {
+      when(
+        () => mock.upsertProfileFact(any(), any(), any()),
+      ).thenAnswer((_) async {});
+      c.client.value = _fakeClient;
+      c.hydrateIdentityFromFacts([
+        ClientProfileFactOut(
+          requirementKey: OnboardingKeys.allergies,
+          valueJson: 'Peanuts',
+          updatedAt: DateTime.utc(2026, 1, 1),
+        ),
+      ]);
+      c.hydrateSupportPlanFromFacts([
+        ClientProfileFactOut(
+          requirementKey: OnboardingKeys.infoShareConsent,
+          valueJson: true,
+          updatedAt: DateTime.utc(2026, 1, 1),
+        ),
+        ClientProfileFactOut(
+          requirementKey: OnboardingKeys.specificSupportsConsent,
+          valueJson: true,
+          updatedAt: DateTime.utc(2026, 1, 1),
+        ),
+        ClientProfileFactOut(
+          requirementKey: OnboardingKeys.supportPlanOther,
+          valueJson: 'Primary disability: ASD',
+          updatedAt: DateTime.utc(2026, 1, 1),
+        ),
+      ]);
+      c.allergiesCtrl.clear();
+      c.supportPlanOtherCtrl.clear();
+      c.primaryDisabilityCtrl.clear();
+      c.infoShareConsent.value = false;
+      c.specificSupportsConsent.value = false;
+      c.step.value = 5;
+
+      expect(await c.submitCarePlanStep(soft: true), isTrue);
+      expect(c.step.value, 6);
+
+      verify(
+        () => mock.upsertProfileFact(
+          'client-1',
+          OnboardingKeys.allergies,
+          any(that: predicate<ProfileFactUpsert>((u) => u.clearValue == true)),
+        ),
+      ).called(1);
+      verify(
+        () => mock.upsertProfileFact(
+          'client-1',
+          OnboardingKeys.supportPlanOther,
+          any(that: predicate<ProfileFactUpsert>((u) => u.clearValue == true)),
+        ),
+      ).called(1);
+      verify(
+        () => mock.upsertProfileFact(
+          'client-1',
+          OnboardingKeys.infoShareConsent,
+          any(
+            that: predicate<ProfileFactUpsert>((u) => u.valueJson == false),
+          ),
+        ),
+      ).called(1);
+      verify(
+        () => mock.upsertProfileFact(
+          'client-1',
+          OnboardingKeys.specificSupportsConsent,
+          any(
+            that: predicate<ProfileFactUpsert>((u) => u.valueJson == false),
+          ),
+        ),
+      ).called(1);
+    },
+  );
+
   test('submitSupportPlan rejects invalid budget values', () async {
     c.client.value = _fakeClient;
     c.step.value = 4;

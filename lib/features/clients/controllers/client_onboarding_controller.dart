@@ -1619,6 +1619,7 @@ class ClientOnboardingController extends GetxController
   }
 
   /// Soft-skip when empty; persists allergies, clinical flags, consent, notes.
+  /// Always rewrites so clearing fields/flags removes previously saved facts.
   Future<bool> submitCarePlanStep({bool soft = true}) async {
     errorMessage.value = null;
     final id = clientId;
@@ -1627,23 +1628,12 @@ class ClientOnboardingController extends GetxController
       return false;
     }
 
+    // soft retained for API parity; empty form still clears prior facts.
+    final _ = soft;
+
     final allergies = allergiesCtrl.text.trim();
     final notes = supportPlanOtherCtrl.text.trim();
     final disability = primaryDisabilityCtrl.text.trim();
-    final hasContent =
-        allergies.isNotEmpty ||
-        notes.isNotEmpty ||
-        disability.isNotEmpty ||
-        infoShareConsent.value ||
-        specificSupportsConsent.value ||
-        clinical.bspOnFile.value ||
-        clinical.nutritionChecklistOnFile.value ||
-        clinical.hazardChecklistOnFile.value;
-
-    if (soft && !hasContent) {
-      if (step.value == 5) step.value = 6;
-      return true;
-    }
 
     isSaving.value = true;
     try {
@@ -1653,6 +1643,9 @@ class ClientOnboardingController extends GetxController
           OnboardingKeys.allergies,
           ProfileFactUpsert(valueJson: allergies),
         );
+        _presentKeys.add(OnboardingKeys.allergies);
+      } else {
+        await _clearFactIfPresent(id, OnboardingKeys.allergies);
       }
       // Primary disability is day-one capture only; full goals/living/risk
       // body_json stays on the Care plan tab / support-plan wizard.
@@ -1660,11 +1653,16 @@ class ClientOnboardingController extends GetxController
         if (disability.isNotEmpty) 'Primary disability: $disability',
         if (notes.isNotEmpty) notes,
       ].join('\n');
-      await _putOptionalFact(
-        id,
-        OnboardingKeys.supportPlanOther,
-        careNotes.isEmpty ? null : careNotes,
-      );
+      if (careNotes.isEmpty) {
+        await _clearFactIfPresent(id, OnboardingKeys.supportPlanOther);
+      } else {
+        await _repository.upsertProfileFact(
+          id,
+          OnboardingKeys.supportPlanOther,
+          ProfileFactUpsert(valueJson: careNotes),
+        );
+        _presentKeys.add(OnboardingKeys.supportPlanOther);
+      }
 
       await _repository.upsertProfileFact(
         id,
