@@ -13,6 +13,7 @@ import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/clients/models/identity_card_attachment.dart';
 import 'package:rostiq/features/clients/models/support_plan_specialist_types.dart';
+import 'package:rostiq/features/clients/utils/clinical_keys.dart';
 import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
 import 'package:rostiq/features/clients/widgets/contact_form_host.dart';
 import 'package:rostiq/features/clients/widgets/onboarding/onboarding_identity_step.dart';
@@ -1770,6 +1771,39 @@ void main() {
         () => mock.upsertProfileFact(
           'client-1',
           OnboardingKeys.specificSupportsConsent,
+          any(
+            that: predicate<ProfileFactUpsert>((u) => u.valueJson == false),
+          ),
+        ),
+      ).called(1);
+      // Never-hydrated clinical store must not clobber Care-tab flags.
+      verifyNever(
+        () => mock.upsertProfileFact(
+          'client-1',
+          ClinicalKeys.bspOnFile,
+          any(),
+        ),
+      );
+    },
+  );
+
+  test(
+    'care plan soft-skip persists clinical flags only after hydrate',
+    () async {
+      when(
+        () => mock.upsertProfileFact(any(), any(), any()),
+      ).thenAnswer((_) async {});
+      c.client.value = _fakeClient;
+      c.clinical.hasHydrated = true;
+      c.clinical.bspOnFile.value = false;
+      c.step.value = 5;
+
+      expect(await c.submitCarePlanStep(soft: true), isTrue);
+
+      verify(
+        () => mock.upsertProfileFact(
+          'client-1',
+          ClinicalKeys.bspOnFile,
           any(
             that: predicate<ProfileFactUpsert>((u) => u.valueJson == false),
           ),

@@ -1675,12 +1675,22 @@ class ClientOnboardingController extends GetxController
         ProfileFactUpsert(valueJson: specificSupportsConsent.value),
       );
 
-      clinical.hasHydrated = true;
-      final clinicalFailed = await clinical.persistFacts(clientId: id);
-      if (clinicalFailed.isNotEmpty) {
-        errorMessage.value =
-            'Could not save clinical documents: ${clinicalFailed.join(', ')}';
-        return false;
+      // Only rewrite clinical on-file flags when the store was loaded from the
+      // profile or the user explicitly toggled a flag on. Forcing hasHydrated
+      // and persisting defaults would clobber Care-tab / prior-pass trues.
+      final shouldPersistClinical =
+          clinical.hasHydrated ||
+          clinical.bspOnFile.value ||
+          clinical.nutritionChecklistOnFile.value ||
+          clinical.hazardChecklistOnFile.value;
+      if (shouldPersistClinical) {
+        clinical.hasHydrated = true;
+        final clinicalFailed = await clinical.persistFacts(clientId: id);
+        if (clinicalFailed.isNotEmpty) {
+          errorMessage.value =
+              'Could not save clinical documents: ${clinicalFailed.join(', ')}';
+          return false;
+        }
       }
 
       if (step.value == 5) step.value = 6;
