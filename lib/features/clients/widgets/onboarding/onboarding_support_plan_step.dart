@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../shared/widgets/app_date_field.dart';
+import '../../../../shared/widgets/app_file_field.dart';
 import '../../controllers/client_onboarding_controller.dart';
 import 'support_plan_specialists_panel.dart';
 
@@ -44,45 +45,23 @@ class OnboardingSupportPlanStep extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'NDIS PDF plan',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          AppFileField(
+            label: 'NDIS plan PDF',
+            fileName:
+                ndisPending?.name ??
+                controller.ndisPdfAttachment.existingDocumentLabel.value ??
+                (ndisOnFile ? 'Document on file' : null),
+            enabled: enabled,
+            onPick: controller.pickNdisPlanPdf,
+            onClear:
+                ndisPending != null && enabled
+                    ? controller.clearNdisPlanPdfPending
+                    : null,
+            pickLabel:
+                ndisPending != null || ndisOnFile
+                    ? 'Replace file'
+                    : 'Choose file',
           ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: enabled ? controller.pickNdisPlanPdf : null,
-            icon: const Icon(Icons.upload_file_outlined),
-            label: Text(
-              ndisPending != null || ndisOnFile
-                  ? 'Replace NDIS plan PDF'
-                  : 'Attach NDIS plan PDF',
-            ),
-          ),
-          if (controller.ndisPdfAttachment.existingDocumentLabel.value !=
-                  null &&
-              ndisPending == null) ...[
-            const SizedBox(height: 6),
-            Text(
-              controller.ndisPdfAttachment.existingDocumentLabel.value!,
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          if (ndisPending != null) ...[
-            const SizedBox(height: 6),
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.insert_drive_file_outlined, size: 20),
-              title: Text(ndisPending.name, overflow: TextOverflow.ellipsis),
-              trailing: IconButton(
-                icon: const Icon(Icons.close, size: 18),
-                onPressed: enabled ? controller.clearNdisPlanPdfPending : null,
-              ),
-            ),
-          ],
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
             value: planType,

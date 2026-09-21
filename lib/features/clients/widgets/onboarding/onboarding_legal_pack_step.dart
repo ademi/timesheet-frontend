@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../app/themes/app_colors.dart';
-import '../../../../shared/widgets/async_action.dart';
+import '../../../../shared/widgets/app_file_field.dart';
 import '../../controllers/client_onboarding_controller.dart';
 
 class OnboardingLegalPackStep extends StatelessWidget {
@@ -42,14 +42,22 @@ class OnboardingLegalPackStep extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                AsyncOutlinedButton(
-                  onPressed: controller.markConsentComplete,
-                  isLoading: controller.consentUploading.value,
-                  child: Text(
-                    controller.consentComplete.value
-                        ? 'Re-upload consent'
-                        : 'Upload PDF & mark complete',
-                  ),
+                AppFileField(
+                  label: 'Consent PDF',
+                  fileName:
+                      controller.consentComplete.value ? 'On file' : null,
+                  enabled: !controller.consentUploading.value,
+                  onPick: () {
+                    controller.markConsentComplete();
+                  },
+                  pickLabel:
+                      controller.consentComplete.value
+                          ? 'Re-upload'
+                          : 'Choose file',
+                  helperText:
+                      controller.consentUploading.value
+                          ? 'Uploading…'
+                          : 'Upload PDF & mark complete',
                 ),
               ],
             ),
@@ -58,14 +66,22 @@ class OnboardingLegalPackStep extends StatelessWidget {
           _LegalItem(
             title: 'Service agreement',
             complete: controller.serviceAgreementComplete.value,
-            child: AsyncOutlinedButton(
-              onPressed: controller.markServiceAgreementComplete,
-              isLoading: controller.serviceAgreementUploading.value,
-              child: Text(
-                controller.serviceAgreementComplete.value
-                    ? 'Re-upload service agreement'
-                    : 'Upload PDF & mark complete',
-              ),
+            child: AppFileField(
+              label: 'Service agreement PDF',
+              fileName:
+                  controller.serviceAgreementComplete.value ? 'On file' : null,
+              enabled: !controller.serviceAgreementUploading.value,
+              onPick: () {
+                controller.markServiceAgreementComplete();
+              },
+              pickLabel:
+                  controller.serviceAgreementComplete.value
+                      ? 'Re-upload'
+                      : 'Choose file',
+              helperText:
+                  controller.serviceAgreementUploading.value
+                      ? 'Uploading…'
+                      : 'Upload PDF & mark complete',
             ),
           ),
           const SizedBox(height: 12),
@@ -74,14 +90,24 @@ class OnboardingLegalPackStep extends StatelessWidget {
             _LegalItem(
               title: ackTemplate?.name ?? 'Participant acknowledgement',
               complete: controller.acknowledgementComplete.value,
-              child: AsyncOutlinedButton(
-                onPressed: controller.markAcknowledgementComplete,
-                isLoading: controller.acknowledgementUploading.value,
-                child: Text(
-                  controller.acknowledgementComplete.value
-                      ? 'Re-upload acknowledgement'
-                      : 'Upload PDF & mark complete',
-                ),
+              child: AppFileField(
+                label: 'Acknowledgement PDF',
+                fileName:
+                    controller.acknowledgementComplete.value
+                        ? 'On file'
+                        : null,
+                enabled: !controller.acknowledgementUploading.value,
+                onPick: () {
+                  controller.markAcknowledgementComplete();
+                },
+                pickLabel:
+                    controller.acknowledgementComplete.value
+                        ? 'Re-upload'
+                        : 'Choose file',
+                helperText:
+                    controller.acknowledgementUploading.value
+                        ? 'Uploading…'
+                        : 'Upload PDF & mark complete',
               ),
             ),
           ] else ...[
