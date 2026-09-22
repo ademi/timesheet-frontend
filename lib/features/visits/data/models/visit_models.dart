@@ -216,6 +216,7 @@ class VisitOut {
     required this.paymentStatus,
     required this.createdAt,
     required this.updatedAt,
+    this.invoiceStatus = 'pending',
     this.recurrenceRuleId,
     this.latitude,
     this.longitude,
@@ -252,6 +253,7 @@ class VisitOut {
   final int geofenceRadiusM;
   final String geofenceMode;
   final String paymentStatus;
+  final String invoiceStatus;
   final DateTime? completedAt;
   final DateTime? clockInAt;
   final DateTime? clockOutAt;
@@ -272,6 +274,7 @@ class VisitOut {
   bool get isCheckedIn => status == 'checked_in';
   bool get isCompleted => status == 'completed';
   bool get isCancelled => status == 'cancelled';
+  bool get isInvoiceExported => invoiceStatus == 'exported';
 
   bool get geofenceEnforced =>
       geofenceMode == 'enforced' || geofenceMode == 'enforce';
@@ -302,6 +305,7 @@ class VisitOut {
       geofenceRadiusM: json['geofence_radius_m'] as int? ?? 100,
       geofenceMode: json['geofence_mode'] as String? ?? 'informational',
       paymentStatus: json['payment_status'] as String? ?? 'unpaid',
+      invoiceStatus: json['invoice_status'] as String? ?? 'pending',
       completedAt:
           json['completed_at'] != null
               ? DateTime.tryParse(json['completed_at'].toString())
@@ -364,6 +368,7 @@ class VisitOut {
       geofenceRadiusM: geofenceRadiusM,
       geofenceMode: geofenceMode,
       paymentStatus: paymentStatus,
+      invoiceStatus: invoiceStatus,
       completedAt:
           clearCompletedAt ? null : (completedAt ?? this.completedAt),
       clockInAt: clockInAt ?? this.clockInAt,

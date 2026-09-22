@@ -109,8 +109,9 @@ class StaffVisitsController extends GetxController {
     final visit = selected.value;
     return visit != null &&
         canManage &&
-        (visit.isScheduled || visit.isCheckedIn) &&
-        visit.paymentStatus == 'unpaid';
+        (visit.isScheduled || visit.isCheckedIn || visit.isCompleted) &&
+        visit.paymentStatus == 'unpaid' &&
+        !visit.isInvoiceExported;
   }
 
   bool get canRecordVisit {
