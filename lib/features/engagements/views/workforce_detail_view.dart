@@ -27,26 +27,23 @@ class WorkforceDetailView extends GetView<WorkforceController> {
 
   @override
   Widget build(BuildContext context) {
-    final arg = Get.arguments;
-    final EngagementOut? initial =
-        arg is EngagementOut ? arg : controller.selected;
-    if (initial == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Engagement')),
-        body: const Center(child: Text('Engagement not found.')),
-      );
-    }
-
     return Obx(() {
-      EngagementOut current = initial;
+      final selected = controller.selectedRx.value;
+      if (selected == null) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Engagement')),
+          body:
+              controller.isLoading.value
+                  ? const Center(child: CircularProgressIndicator())
+                  : const Center(child: Text('Engagement not found.')),
+        );
+      }
+      EngagementOut current = selected;
       for (final e in controller.items) {
-        if (e.id == initial.id) {
+        if (e.id == selected.id) {
           current = e;
           break;
         }
-      }
-      if (controller.selected?.id == initial.id) {
-        current = controller.selected!;
       }
       final err = controller.errorMessage.value;
       final tab = controller.tabIndex.value;

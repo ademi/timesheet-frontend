@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/utils/name_sort.dart';
@@ -59,7 +60,9 @@ class CredentialsController extends GetxController {
   /// credential_type → presented legal-event id
   final presentedEventIds = <String, String>{}.obs;
 
-  CredentialOut? selected;
+  CredentialOut? get selected => selectedRx.value;
+  set selected(CredentialOut? value) => selectedRx.value = value;
+  final selectedRx = Rxn<CredentialOut>();
 
   /// Bumped after credential catalog fetch so create UI can show help links.
   final catalogRevision = 0.obs;
@@ -84,8 +87,54 @@ class CredentialsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    load();
+    if (_routeImpliesDetail()) {
+      isLoading.value = true;
+    }
+    Future.microtask(() async {
+      await load();
+      await ensureDetailHydratedFromRoute();
+    });
     _loadCredentialCategories();
+  }
+
+  bool _routeImpliesDetail() {
+    if (selected != null) return false;
+    if (Get.arguments is CredentialOut) return true;
+    final id = Get.parameters['id'];
+    return id != null && id.isNotEmpty;
+  }
+
+  /// Hydrate credential detail after browser refresh / deep link.
+  Future<void> ensureDetailHydratedFromRoute() async {
+    if (selected != null) return;
+
+    CredentialOut? found;
+    final fromArgs = Get.arguments;
+    if (fromArgs is CredentialOut) {
+      found = fromArgs;
+    } else {
+      final id = Get.parameters['id'];
+      if (id != null && id.isNotEmpty) {
+        if (items.isEmpty) await load();
+        for (final c in items) {
+          if (c.id == id) {
+            found = c;
+            break;
+          }
+        }
+      }
+    }
+    if (found == null) return;
+    selected = found;
+  }
+
+  void openDetail(CredentialOut credential) {
+    selected = credential;
+    Get.toNamed(
+      AppRoutes.contractorCredentialDetail,
+      arguments: credential,
+      parameters: {'id': credential.id},
+    );
   }
 
   Future<void> _loadCredentialCategories() async {

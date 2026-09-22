@@ -13,24 +13,25 @@ class CredentialDetailView extends GetView<CredentialsController> {
 
   @override
   Widget build(BuildContext context) {
-    final arg = Get.arguments;
-    final CredentialOut? credential =
-        arg is CredentialOut ? arg : controller.selected;
-    if (credential == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Credential')),
-        body: const Center(child: Text('Credential not found.')),
-      );
-    }
+    return Obx(() {
+      final credential = controller.selectedRx.value;
+      if (credential == null) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Credential')),
+          body:
+              controller.isLoading.value
+                  ? const Center(child: CircularProgressIndicator())
+                  : const Center(child: Text('Credential not found.')),
+        );
+      }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(credentialTypeLabel(credential.credentialType)),
-      ),
-      body: Obx(() {
-        final err = controller.errorMessage.value;
-        return ListView(
+      final err = controller.errorMessage.value;
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: Text(credentialTypeLabel(credential.credentialType)),
+        ),
+        body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             PageContent(
@@ -156,9 +157,9 @@ class CredentialDetailView extends GetView<CredentialsController> {
               ),
             ),
           ],
-        );
-      }),
-    );
+        ),
+      );
+    });
   }
 
   Widget _statusRow(String status) {

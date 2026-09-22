@@ -72,9 +72,6 @@ class ClientsController extends GetxController
   final notesCtrl = TextEditingController();
   final status = 'active'.obs;
   ClientOut? editing;
-  final isCreateFlow = false.obs;
-  final createStepIndex = 0.obs;
-  final createdClient = Rxn<ClientOut>();
 
   // Profile photo (create / edit form)
   final formPhoto = Rxn<ProfilePhotoOut>();
@@ -318,9 +315,6 @@ class ClientsController extends GetxController
   }
 
   Future<void> openCreate() async {
-    isCreateFlow.value = false;
-    createStepIndex.value = 0;
-    createdClient.value = null;
     selected.value = null;
     editing = null;
     nameCtrl.clear();
@@ -339,9 +333,6 @@ class ClientsController extends GetxController
   }
 
   Future<void> openEdit(ClientOut client) async {
-    isCreateFlow.value = false;
-    createStepIndex.value = 0;
-    createdClient.value = null;
     editing = client;
     // I5: prefer dirty Overview drafts when editing the selected client
     if (selected.value?.id == client.id && isOverviewDirty) {
@@ -829,13 +820,6 @@ class ClientsController extends GetxController
             return;
           }
         }
-        if (isCreateFlow.value) {
-          createdClient.value = created;
-          editing = created;
-          selected.value = created;
-          await openDetailById(created.id);
-          return;
-        }
         Get.back();
         await load();
         openDetail(created, initialTab: ClientsController.tabDetails);
@@ -855,10 +839,6 @@ class ClientsController extends GetxController
         }
         // I5: keep Overview drafts aligned with AppBar Edit after save
         syncOverviewDraftsFromForm();
-        if (isCreateFlow.value) {
-          await openDetailById(editing!.id);
-          return;
-        }
         Get.back();
         await load();
         if (selected.value?.id == editing!.id) {
@@ -889,74 +869,6 @@ class ClientsController extends GetxController
       }
     }
     return null;
-  }
-
-  Future<void> continueCreateFlow() async {
-    errorMessage.value = null;
-    if (createStepIndex.value == 0) {
-      final hadClient = createdClient.value != null;
-      await saveClient();
-      if (createdClient.value != null || hadClient) {
-        createStepIndex.value = 1;
-      }
-      return;
-    }
-    if (createStepIndex.value < 3) {
-      createStepIndex.value++;
-    }
-  }
-
-  void backCreateFlow() {
-    if (createStepIndex.value > 0) {
-      createStepIndex.value--;
-    }
-  }
-
-  Future<void> finishCreateFlow() async {
-    final client = createdClient.value ?? selected.value;
-    if (client == null) {
-      await continueCreateFlow();
-      return;
-    }
-    isSaving.value = true;
-    errorMessage.value = null;
-    profileSaveProgress.value = null;
-    try {
-      final typeId =
-          selectedClientTypeId.value ?? await _resolveDefaultPatientTypeId();
-      final dob = _resolveDobForCore();
-      await _repository.patchClient(
-        client.id,
-        ClientUpdateRequest(clientTypeId: typeId, dob: dob),
-      );
-      if (typeId != null && typeId.isNotEmpty && requirementDrafts.isNotEmpty) {
-        for (final draft in requirementDrafts) {
-          if (!draft.requirement.isRequired) continue;
-          if (draft.hasAnyContent) continue;
-          errorMessage.value = '${draft.requirement.label} is required.';
-          return;
-        }
-        final profileErrors = await _saveDynamicAnswers(client.id);
-        if (profileErrors.isNotEmpty) {
-          AppToast.info(
-            'Saved with warnings',
-            profileErrors.take(3).join('\n'),
-            duration: const Duration(seconds: 6),
-          );
-        }
-      }
-      isCreateFlow.value = false;
-      Get.back();
-      await load();
-      await openDetail(client, initialTab: ClientsController.tabDetails);
-    } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-    } catch (e) {
-      errorMessage.value = e.toString();
-    } finally {
-      isSaving.value = false;
-      profileSaveProgress.value = null;
-    }
   }
 
   /// Reloads type + profile drafts from the server, dropping unsaved edits.
@@ -1177,16 +1089,6 @@ class ClientsController extends GetxController
       isSaving.value = false;
       profileSaveProgress.value = null;
     }
-  }
-
-  String? _resolveDobForCore() {
-    for (final draft in requirementDrafts) {
-      if (draft.requirement.requirementKey != 'dob') continue;
-      final d = draft.dateValue.value;
-      if (d == null) return selected.value?.dob ?? editing?.dob;
-      return RequirementDraft.formatDate(d);
-    }
-    return selected.value?.dob ?? editing?.dob;
   }
 
   Future<List<String>> _saveDynamicAnswers(String clientId) async {

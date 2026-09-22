@@ -277,10 +277,7 @@ class _CredentialTile extends StatelessWidget {
               onSelected: (value) async {
                 switch (value) {
                   case 'detail':
-                    Get.toNamed(
-                      AppRoutes.contractorCredentialDetail,
-                      arguments: credential,
-                    );
+                    c.openDetail(credential);
                   case 'upload':
                     await c.attachEvidence(credential);
                   case 'supersede':
@@ -305,11 +302,7 @@ class _CredentialTile extends StatelessWidget {
                       ),
                   ],
             ),
-            onTap:
-                () => Get.toNamed(
-                  AppRoutes.contractorCredentialDetail,
-                  arguments: credential,
-                ),
+            onTap: () => c.openDetail(credential),
           ),
           if (c.evidenceFor(credential).isNotEmpty)
             Padding(

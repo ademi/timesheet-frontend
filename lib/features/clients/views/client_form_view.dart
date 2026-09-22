@@ -18,7 +18,7 @@ class ClientFormView extends GetView<ClientsController> {
   @override
   Widget build(BuildContext context) {
     // Legacy create path → redirect to onboarding wizard.
-    if (controller.isCreateFlow.value || controller.editing == null) {
+    if (controller.editing == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (Get.currentRoute == AppRoutes.staffClientForm) {
           Get.offNamed(AppRoutes.staffClientOnboarding);

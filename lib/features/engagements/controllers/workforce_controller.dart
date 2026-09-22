@@ -77,7 +77,9 @@ class WorkforceController extends GetxController {
   final isLoadingAvailability = false.obs;
   final scheduleError = RxnString();
 
-  EngagementOut? selected;
+  EngagementOut? get selected => selectedRx.value;
+  set selected(EngagementOut? value) => selectedRx.value = value;
+  final selectedRx = Rxn<EngagementOut>();
 
   bool _detailExtrasLoaded = false;
 
@@ -159,8 +161,45 @@ class WorkforceController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    load();
     ever(tabIndex, _onTabChanged);
+    if (_routeImpliesDetail()) {
+      isLoading.value = true;
+    }
+    Future.microtask(() async {
+      await load();
+      await ensureDetailHydratedFromRoute();
+    });
+  }
+
+  bool _routeImpliesDetail() {
+    if (selected != null) return false;
+    if (Get.arguments is EngagementOut) return true;
+    final id = Get.parameters['id'];
+    return id != null && id.isNotEmpty;
+  }
+
+  /// Call from detail so a fresh controller still loads after web refresh.
+  Future<void> ensureDetailHydratedFromRoute() async {
+    if (selected != null) return;
+
+    EngagementOut? found;
+    final fromArgs = Get.arguments;
+    if (fromArgs is EngagementOut) {
+      found = fromArgs;
+    } else {
+      final id = Get.parameters['id'];
+      if (id != null && id.isNotEmpty) {
+        if (items.isEmpty) await load();
+        for (final e in items) {
+          if (e.id == id) {
+            found = e;
+            break;
+          }
+        }
+      }
+    }
+    if (found == null) return;
+    await _bindDetail(found);
   }
 
   void _onTabChanged(int tab) {
@@ -238,6 +277,15 @@ class WorkforceController extends GetxController {
       photosByContractor[contractorId]?.documentId;
 
   void openDetail(EngagementOut e) {
+    Get.toNamed(
+      AppRoutes.staffWorkforceDetail,
+      arguments: e,
+      parameters: {'id': e.id},
+    );
+    unawaited(_bindDetail(e));
+  }
+
+  Future<void> _bindDetail(EngagementOut e) async {
     selected = e;
     tabIndex.value = tabOverview;
     _detailExtrasLoaded = false;
@@ -254,11 +302,12 @@ class WorkforceController extends GetxController {
       ..clear()
       ..addAll(e.requiredDocCategories.map((c) => c.category));
     if (canManage && !e.isEnded) {
-      loadCredentialCategories();
+      await loadCredentialCategories();
     }
-    Get.toNamed(AppRoutes.staffWorkforceDetail, arguments: e);
-    loadDetailProfilePhoto(e.contractorId);
-    loadStaffProfile(e.contractorId);
+    await Future.wait([
+      loadDetailProfilePhoto(e.contractorId),
+      loadStaffProfile(e.contractorId),
+    ]);
   }
 
   Future<void> loadStaffProfile(String contractorId) async {
