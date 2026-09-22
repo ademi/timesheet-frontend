@@ -464,7 +464,8 @@ class _LeaveTab extends StatelessWidget {
                     ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: controller.leaveType.value,
+                    key: ValueKey(controller.leaveType.value),
+                    initialValue: controller.leaveType.value,
                     items: [
                       for (final t in leaveTypeOptions)
                         DropdownMenuItem(value: t, child: Text(t)),
@@ -505,19 +506,21 @@ class _LeaveTab extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       title: Text(
-                        '${leave.leaveType}: ${leave.startDate} → ${leave.endDate}',
+                        '${leave.leaveType}: ${leave.startDate} - ${leave.endDate}',
                       ),
-                      subtitle: leave.notes != null ? Text(leave.notes!) : null,
+                      subtitle:
+                          leave.notes != null ? Text(leave.notes!) : null,
                       trailing:
                           controller.canManage
                               ? AsyncIconButton(
                                 tooltip: 'Delete',
-                                onPressed:
-                                    () => controller.deleteLeave(leave.id),
+                                onPressed: () {
+                                  controller.deleteLeave(leave.id);
+                                },
                                 isLoading: controller.isSaving.value,
                                 icon: const Icon(Icons.delete_outline),
                               )
-                              : null,
+                              : const SizedBox.shrink(),
                     ),
                   ),
               ],
