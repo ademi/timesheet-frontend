@@ -27,6 +27,24 @@ void main() {
     expect(find.text('—'), findsNWidgets(6));
 
     final negative = tester.widget<Text>(find.text('-\$25.00'));
-    expect(negative.style?.color, const Color(0xFFB45309));
+    expect(negative.style?.color, const Color(0xFFDC2626));
+  });
+
+  testWidgets('soft warn colours remaining at or under 20%', (tester) async {
+    final summary = BudgetSummaryOut.fromJson({
+      'client_id': 'client-1',
+      'envelopes': [
+        {'key': 'core', 'declared': 100, 'spent': 85, 'remaining': 15},
+      ],
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: ClientBudgetRemainingSection(summary: summary)),
+      ),
+    );
+
+    final soft = tester.widget<Text>(find.text('\$15.00'));
+    expect(soft.style?.color, const Color(0xFFB45309));
   });
 }

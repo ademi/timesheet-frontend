@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
+import '../../billing/bindings/billing_binding.dart';
+import '../../billing/data/repositories/billing_repository.dart';
 import '../../clients/bindings/clients_binding.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../../contractor_me/data/datasources/contractor_me_remote_datasource.dart';
@@ -121,6 +123,7 @@ class HomeAlertsBinding extends Bindings {
     JobsBinding.ensureShared();
     VisitsBinding.ensureShared();
     CredentialsBinding.ensureDependencies();
+    BillingBinding.ensureShared();
     NotificationsFeedController.ensureRegistered();
     if (!Get.isRegistered<SessionService>()) return;
     // Keep across shell Get.offNamed tab switches to avoid refetch storms.
@@ -134,6 +137,10 @@ class HomeAlertsBinding extends Bindings {
           jobsRepository: Get.find<JobsRepository>(),
           visitsRepository: Get.find<VisitsRepository>(),
           credentialsRepository: Get.find<CredentialsRepository>(),
+          billingRepository:
+              Get.isRegistered<BillingRepository>()
+                  ? Get.find<BillingRepository>()
+                  : null,
           notificationsFeed: Get.find<NotificationsFeedController>(),
         ),
         permanent: true,

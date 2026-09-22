@@ -1,8 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/errors/app_failure.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../billing/data/models/billing_models.dart';
+import '../../billing/data/repositories/billing_repository.dart';
 import '../../billing/data/repositories/ndis_catalogue_repository.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
 import '../data/models/shift_models.dart';
@@ -20,26 +22,34 @@ class GroupShiftPublishController extends GetxController {
     required JobsRepository jobsRepository,
     required NdisCatalogueRepository catalogueRepository,
     required this.args,
+    BillingRepository? billingRepository,
     void Function(dynamic result)? onPop,
     Future<PublishParticipantOverrideDraft?> Function(
       GroupShiftPublishOverrideArgs args,
     )?
     openOverrideEditor,
+    Future<String?> Function({required List<String> reasons})?
+    promptBurnOverride,
   }) : _shifts = shiftsRepository,
        _jobs = jobsRepository,
        _catalogue = catalogueRepository,
+       _billing = billingRepository,
        _onPop = onPop,
-       _openOverrideEditor = openOverrideEditor;
+       _openOverrideEditor = openOverrideEditor,
+       _promptBurnOverride = promptBurnOverride;
 
   final ShiftsRepository _shifts;
   final JobsRepository _jobs;
   final NdisCatalogueRepository _catalogue;
+  final BillingRepository? _billing;
   final GroupShiftPublishArgs args;
   final void Function(dynamic result)? _onPop;
   final Future<PublishParticipantOverrideDraft?> Function(
     GroupShiftPublishOverrideArgs args,
   )?
   _openOverrideEditor;
+  final Future<String?> Function({required List<String> reasons})?
+  _promptBurnOverride;
 
   static const int itemStep = 0;
   static const int peopleStep = 1;
@@ -53,6 +63,8 @@ class GroupShiftPublishController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+  final burnReport = Rxn<PublishBurnReportOut>();
+  final isLoadingBurn = false.obs;
 
   /// support_item_number → national price limit (parsed).
   final catalogueNationalByCode = <String, double>{}.obs;
@@ -237,9 +249,26 @@ class GroupShiftPublishController extends GetxController {
     if (step.value >= maxStep) return;
     step.value += 1;
     errorMessage.value = null;
+    if (step.value == reviewStep) {
+      loadBurnPreview();
+    }
   }
 
-  Future<void> publish() async {
+  Future<void> loadBurnPreview() async {
+    final billing = _billing;
+    if (billing == null) return;
+    isLoadingBurn.value = true;
+    try {
+      burnReport.value = await billing.previewPublishBurn(shift.id);
+    } on AppFailure {
+      // Preview is advisory; publish still enforces hard block server-side.
+      burnReport.value = null;
+    } finally {
+      isLoadingBurn.value = false;
+    }
+  }
+
+  Future<void> publish({String? overrideReason}) async {
     if (isSaving.value) return;
     final err = draft.value.validateAll();
     if (err != null) {
@@ -251,7 +280,7 @@ class GroupShiftPublishController extends GetxController {
     try {
       final published = await _shifts.publishShift(
         shift.id,
-        body: draft.value.toRequest(),
+        body: draft.value.toRequest(overrideReason: overrideReason),
       );
       if (!Get.testMode) {
         AppToast.success('Published', published.jobTitle);
@@ -264,13 +293,89 @@ class GroupShiftPublishController extends GetxController {
       }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
-      if (!Get.testMode) {
+      if (e.isBudgetBurnBlocked &&
+          (overrideReason == null || overrideReason.trim().isEmpty)) {
+        final reason = await promptBudgetBurnOverride(
+          reasons: e.eligibilityReasons,
+        );
+        if (reason != null && reason.trim().isNotEmpty) {
+          isSaving.value = false;
+          await publish(overrideReason: reason.trim());
+          return;
+        }
+      } else if (!Get.testMode) {
         AppToast.error('Could not publish', e.message);
       }
       // Stay on Review (D6).
     } finally {
       isSaving.value = false;
     }
+  }
+
+  @visibleForTesting
+  Future<String?> promptBudgetBurnOverride({
+    required List<String> reasons,
+  }) async {
+    final custom = _promptBurnOverride;
+    if (custom != null) return custom(reasons: reasons);
+    if (Get.testMode) return null;
+    final controller = TextEditingController();
+    final result = await Get.dialog<String>(
+      AlertDialog(
+        title: const Text('Plan budget hard block'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Publishing would exceed declared plan envelopes '
+                '(ledger vs declared — not a live NDIA balance).',
+              ),
+              if (reasons.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                for (final r in reasons)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('• $r', style: const TextStyle(fontSize: 13)),
+                  ),
+              ],
+              const SizedBox(height: 12),
+              const Text(
+                'To continue, enter an audited override reason '
+                '(no silent bypass).',
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Override reason',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                autofocus: true,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              Get.back(result: text);
+            },
+            child: const Text('Override & publish'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    return result;
   }
 
   void cancel() {

@@ -689,6 +689,17 @@ class StaffVisitsController extends GetxController {
             await publishSelectedShift(overrideReason: reason.trim());
           }
         }
+      } else if (e.isBudgetBurnBlocked) {
+        if (overrideReason == null || overrideReason.trim().isEmpty) {
+          final reason = await promptCredentialGateOverride(
+            reasons: e.eligibilityReasons.isEmpty
+                ? const ['Plan budget hard block']
+                : e.eligibilityReasons,
+          );
+          if (reason != null && reason.trim().isNotEmpty) {
+            await publishSelectedShift(overrideReason: reason.trim());
+          }
+        }
       } else {
         AppToast.error('Could not publish', e.message);
       }

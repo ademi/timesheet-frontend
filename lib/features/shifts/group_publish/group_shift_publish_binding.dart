@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../billing/bindings/billing_binding.dart';
+import '../../billing/data/repositories/billing_repository.dart';
 import '../../billing/data/repositories/ndis_catalogue_repository.dart';
 import '../../jobs/bindings/jobs_binding.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
@@ -27,6 +28,10 @@ class GroupShiftPublishBinding extends Bindings {
         shiftsRepository: Get.find<ShiftsRepository>(),
         jobsRepository: Get.find<JobsRepository>(),
         catalogueRepository: Get.find<NdisCatalogueRepository>(),
+        billingRepository:
+            Get.isRegistered<BillingRepository>()
+                ? Get.find<BillingRepository>()
+                : null,
         args: args,
       ),
     );

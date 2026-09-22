@@ -252,6 +252,15 @@ abstract final class ApiPaths {
   static String invoiceExport(String id) => '$invoiceExports/$id';
   static String invoiceExportCsv(String id) => '${invoiceExport(id)}/csv';
   static String invoiceExportVoid(String id) => '${invoiceExport(id)}/void';
+  static const unclaimedAgeing = '$_v1/billing/unclaimed-ageing';
+  static const budgetAlerts = '$_v1/billing/budget-alerts';
+  static const budgetAlertSettings = '$_v1/billing/budget-alert-settings';
+  static String publishBurnPreview(String shiftId) =>
+      '$_v1/billing/shifts/$shiftId/publish-burn-preview';
+  static const paymentEnquiries = '$_v1/billing/payment-enquiries';
+  static String paymentEnquiry(String id) => '$paymentEnquiries/$id';
+  static const fundsRiskChecks = '$_v1/billing/funds-risk-checks';
+  static String fundsRiskCheck(String id) => '$fundsRiskChecks/$id';
 
   // Payroll / payments
   static String engagementRates(String engagementId) =>

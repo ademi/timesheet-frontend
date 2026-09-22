@@ -262,6 +262,43 @@ void main() {
       expect(failure.message, contains('override'));
     });
 
+    test('parses budget_burn_blocked burn hard_blocks', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(path: '/shifts/1/publish'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/shifts/1/publish'),
+            statusCode: 409,
+            data: {
+              'detail': {
+                'code': 'budget_burn_blocked',
+                'message': 'Publishing would exceed plan budget thresholds.',
+                'burn': {
+                  'hard_blocks': [
+                    {
+                      'participant_id': 'p1',
+                      'client_id': 'c1',
+                      'client_name': 'Maya',
+                      'envelope': 'core',
+                      'estimated_amount': 120,
+                      'severity': 'hard_block',
+                    },
+                  ],
+                  'soft_warns': [],
+                  'by_participant': [],
+                  'pace_outside_release': false,
+                },
+              },
+            },
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+      expect(failure.isBudgetBurnBlocked, isTrue);
+      expect(failure.eligibilityReasons, contains('hard_block: Maya / core'));
+      expect(failure.message, contains('budget'));
+    });
+
     test('standing_job_exists is coordinator copy', () {
       expect(
         AppFailure.fromDio(

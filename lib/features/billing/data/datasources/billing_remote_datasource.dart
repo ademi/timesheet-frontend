@@ -82,6 +82,79 @@ class BillingRemoteDataSource {
     }
   }
 
+  Future<List<UnclaimedAgeingVisitOut>> listUnclaimedAgeing({
+    String? clientId,
+    String? branchId,
+    int? minDays,
+    bool approaching90 = false,
+    int limit = 200,
+  }) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.unclaimedAgeing,
+        queryParameters: {
+          if (clientId != null && clientId.isNotEmpty) 'client_id': clientId,
+          if (branchId != null && branchId.isNotEmpty) 'branch_id': branchId,
+          if (minDays != null) 'min_days': minDays,
+          if (approaching90) 'approaching_90': true,
+          'limit': limit,
+        },
+      );
+      return _mapList(response.data, UnclaimedAgeingVisitOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<BurnEnvelopeAlertOut>> listBudgetAlerts({
+    String? severity,
+    int limit = 200,
+  }) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.budgetAlerts,
+        queryParameters: {
+          if (severity != null) 'severity': severity,
+          'limit': limit,
+        },
+      );
+      return _mapList(response.data, BurnEnvelopeAlertOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<PublishBurnReportOut> previewPublishBurn(String shiftId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.publishBurnPreview(shiftId),
+      );
+      return PublishBurnReportOut.fromJson(response.data ?? const {});
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<PaymentEnquiryOut>> listPaymentEnquiries({
+    String? clientId,
+    String? status,
+    int limit = 200,
+  }) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.paymentEnquiries,
+        queryParameters: {
+          if (clientId != null && clientId.isNotEmpty) 'client_id': clientId,
+          if (status != null) 'status': status,
+          'limit': limit,
+        },
+      );
+      return _mapList(response.data, PaymentEnquiryOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   List<T> _mapList<T>(
     List<dynamic>? raw,
     T Function(Map<String, dynamic>) fromJson,

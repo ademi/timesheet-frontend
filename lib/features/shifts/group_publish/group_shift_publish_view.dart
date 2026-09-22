@@ -452,8 +452,101 @@ class _ReviewStep extends StatelessWidget {
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
         ],
+        const SizedBox(height: 16),
+        _BurnStrip(controller: controller),
       ],
     );
+  }
+}
+
+class _BurnStrip extends StatelessWidget {
+  const _BurnStrip({required this.controller});
+  final GroupShiftPublishController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (controller.isLoadingBurn.value) {
+        return const Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: LinearProgressIndicator(minHeight: 2),
+        );
+      }
+      final report = controller.burnReport.value;
+      if (report == null || !report.hasAnyWarn) {
+        return const SizedBox.shrink();
+      }
+      final isHard = report.hardBlocks.isNotEmpty;
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color:
+              isHard
+                  ? AppColors.errorBackground
+                  : AppColors.openSlotBackground,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isHard ? AppColors.error : AppColors.openSlot,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              isHard
+                  ? 'Plan burn hard block — publish needs override'
+                  : 'Plan burn soft warning',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isHard ? AppColors.error : AppColors.openSlot,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Ledger vs declared envelopes (not a live NDIA balance). '
+              'Shared-shift cost by participant:',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+            if (report.paceOutsideRelease) ...[
+              const SizedBox(height: 6),
+              Text(
+                report.paceMessage ??
+                    'Scheduled outside PACE release period for a participant.',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+            for (final line in [
+              ...report.hardBlocks,
+              ...report.softWarns,
+              ...report.byParticipant.where(
+                (l) =>
+                    !report.hardBlocks.any(
+                      (h) =>
+                          h.participantId == l.participantId &&
+                          h.envelope == l.envelope,
+                    ) &&
+                    !report.softWarns.any(
+                      (s) =>
+                          s.participantId == l.participantId &&
+                          s.envelope == l.envelope,
+                    ),
+              ),
+            ]) ...[
+              const SizedBox(height: 6),
+              Text(
+                '${line.clientName ?? line.clientId ?? line.participantId}'
+                ' · ${line.envelope}'
+                ' · est. \$${line.estimatedAmount.toStringAsFixed(2)}'
+                '${line.remainingAfter != null ? ' · after \$${line.remainingAfter!.toStringAsFixed(2)}' : ''}'
+                ' · ${line.severity}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ],
+        ),
+      );
+    });
   }
 }
 

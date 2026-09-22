@@ -97,6 +97,28 @@ void main() {
     session = _MockSessionService();
     when(() => session.canViewBilling).thenReturn(true);
     when(() => session.canManageBilling).thenReturn(false);
+    when(
+      () => repository.listUnclaimedAgeing(
+        clientId: any(named: 'clientId'),
+        branchId: any(named: 'branchId'),
+        minDays: any(named: 'minDays'),
+        approaching90: any(named: 'approaching90'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => <UnclaimedAgeingVisitOut>[]);
+    when(
+      () => repository.listBudgetAlerts(
+        severity: any(named: 'severity'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => <BurnEnvelopeAlertOut>[]);
+    when(
+      () => repository.listPaymentEnquiries(
+        clientId: any(named: 'clientId'),
+        status: any(named: 'status'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => <PaymentEnquiryOut>[]);
   });
 
   tearDown(Get.reset);
@@ -376,6 +398,125 @@ void main() {
         ),
       ).captured;
       expect(captured.last, 'client-1');
+    });
+
+    test('loadUnclaimedAgeing sorts oldest first and sets risk badge', () async {
+      when(
+        () => repository.listUnclaimedAgeing(
+          clientId: any(named: 'clientId'),
+          branchId: any(named: 'branchId'),
+          minDays: any(named: 'minDays'),
+          approaching90: any(named: 'approaching90'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          UnclaimedAgeingVisitOut(
+            visitId: 'v-old',
+            jobId: 'job-1',
+            contractorId: 'c-1',
+            completedAt: DateTime.utc(2026, 6, 1),
+            daysSinceCompleted: 80,
+            riskBand: 'high',
+            paymentStatus: 'unpaid',
+            invoiceStatus: 'pending',
+            jobTitle: 'Old visit',
+          ),
+          UnclaimedAgeingVisitOut(
+            visitId: 'v-new',
+            jobId: 'job-2',
+            contractorId: 'c-1',
+            completedAt: DateTime.utc(2026, 9, 1),
+            daysSinceCompleted: 10,
+            riskBand: 'ok',
+            paymentStatus: 'unpaid',
+            invoiceStatus: 'pending',
+            jobTitle: 'New visit',
+          ),
+        ],
+      );
+
+      final controller = _controller(
+        repository: repository,
+        visitsRepository: visitsRepository,
+        session: session,
+      );
+      await controller.loadUnclaimedAgeing();
+
+      expect(controller.unclaimedAgeing, hasLength(2));
+      expect(controller.unclaimedAgeing.first.visitId, 'v-old');
+      expect(controller.hasAgeingRiskBadge, isTrue);
+      expect(controller.ageingRiskCount, 1);
+    });
+
+    test('loadUnclaimedAgeing empty clears badge', () async {
+      final controller = _controller(
+        repository: repository,
+        visitsRepository: visitsRepository,
+        session: session,
+      );
+      await controller.loadUnclaimedAgeing();
+      expect(controller.unclaimedAgeing, isEmpty);
+      expect(controller.hasAgeingRiskBadge, isFalse);
+    });
+
+    test('loadBurnAlerts sets badge count', () async {
+      when(
+        () => repository.listBudgetAlerts(
+          severity: any(named: 'severity'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          const BurnEnvelopeAlertOut(
+            clientId: 'c1',
+            envelope: 'core',
+            severity: 'soft_warn',
+            spent: 800,
+            remaining: 100,
+            remainingPct: 11,
+            clientName: 'Maya',
+          ),
+        ],
+      );
+
+      final controller = _controller(
+        repository: repository,
+        visitsRepository: visitsRepository,
+        session: session,
+      );
+      await controller.loadBurnAlerts();
+
+      expect(controller.burnAlerts, hasLength(1));
+      expect(controller.hasBurnAlertBadge, isTrue);
+      expect(controller.burnAlertCount, 1);
+    });
+
+    test('openUnclaimedVisitForFix loads visit then opens detail path', () async {
+      when(
+        () => visitsRepository.getVisit('v-old'),
+      ).thenAnswer((_) async => _exportableVisit(id: 'v-old'));
+
+      final controller = _controller(
+        repository: repository,
+        visitsRepository: visitsRepository,
+        session: session,
+      );
+      await controller.openUnclaimedVisitForFix(
+        UnclaimedAgeingVisitOut(
+          visitId: 'v-old',
+          jobId: 'job-1',
+          contractorId: 'c-1',
+          completedAt: DateTime.utc(2026, 6, 1),
+          daysSinceCompleted: 80,
+          riskBand: 'high',
+          paymentStatus: 'unpaid',
+          invoiceStatus: 'pending',
+        ),
+      );
+
+      verify(() => visitsRepository.getVisit('v-old')).called(1);
+      expect(controller.errorMessage.value, isNull);
     });
   });
 

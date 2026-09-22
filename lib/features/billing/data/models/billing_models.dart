@@ -320,3 +320,222 @@ class InvoiceExportOut {
     );
   }
 }
+
+/// Completed unpaid visit not yet exported — 90-day claim window risk (A2).
+class UnclaimedAgeingVisitOut {
+  const UnclaimedAgeingVisitOut({
+    required this.visitId,
+    required this.jobId,
+    required this.contractorId,
+    required this.completedAt,
+    required this.daysSinceCompleted,
+    required this.riskBand,
+    required this.paymentStatus,
+    required this.invoiceStatus,
+    this.jobTitle,
+    this.clientId,
+    this.clientName,
+    this.branchId,
+    this.branchName,
+    this.contractorName,
+    this.supportItemCode,
+  });
+
+  final String visitId;
+  final String jobId;
+  final String? jobTitle;
+  final String? clientId;
+  final String? clientName;
+  final String? branchId;
+  final String? branchName;
+  final String contractorId;
+  final String? contractorName;
+  final DateTime completedAt;
+  final int daysSinceCompleted;
+  final String riskBand;
+  final String paymentStatus;
+  final String invoiceStatus;
+  final String? supportItemCode;
+
+  bool get isWatchOrWorse =>
+      riskBand == 'watch' || riskBand == 'high' || riskBand == 'critical';
+
+  factory UnclaimedAgeingVisitOut.fromJson(Map<String, dynamic> json) {
+    return UnclaimedAgeingVisitOut(
+      visitId: json['visit_id'].toString(),
+      jobId: json['job_id'].toString(),
+      jobTitle: json['job_title'] as String?,
+      clientId: json['client_id']?.toString(),
+      clientName: json['client_name'] as String?,
+      branchId: json['branch_id']?.toString(),
+      branchName: json['branch_name'] as String?,
+      contractorId: json['contractor_id'].toString(),
+      contractorName: json['contractor_name'] as String?,
+      completedAt: DateTime.parse(json['completed_at'] as String),
+      daysSinceCompleted: json['days_since_completed'] as int? ?? 0,
+      riskBand: json['risk_band'] as String? ?? 'ok',
+      paymentStatus: json['payment_status'] as String? ?? 'unpaid',
+      invoiceStatus: json['invoice_status'] as String? ?? 'pending',
+      supportItemCode: json['support_item_code'] as String?,
+    );
+  }
+}
+
+class BurnEnvelopeAlertOut {
+  const BurnEnvelopeAlertOut({
+    required this.clientId,
+    required this.envelope,
+    required this.severity,
+    this.clientName,
+    this.declared,
+    this.spent = 0,
+    this.remaining,
+    this.remainingPct,
+  });
+
+  final String clientId;
+  final String? clientName;
+  final String envelope;
+  final String severity;
+  final double? declared;
+  final double spent;
+  final double? remaining;
+  final double? remainingPct;
+
+  bool get isHard => severity == 'hard_block';
+  bool get isSoft => severity == 'soft_warn';
+
+  factory BurnEnvelopeAlertOut.fromJson(Map<String, dynamic> json) {
+    return BurnEnvelopeAlertOut(
+      clientId: json['client_id'].toString(),
+      clientName: json['client_name'] as String?,
+      envelope: json['envelope'] as String? ?? '',
+      severity: json['severity'] as String? ?? 'ok',
+      declared: (json['declared'] as num?)?.toDouble(),
+      spent: (json['spent'] as num?)?.toDouble() ?? 0,
+      remaining: (json['remaining'] as num?)?.toDouble(),
+      remainingPct: (json['remaining_pct'] as num?)?.toDouble(),
+    );
+  }
+}
+
+class PublishBurnLineOut {
+  const PublishBurnLineOut({
+    required this.participantId,
+    required this.envelope,
+    required this.estimatedAmount,
+    required this.severity,
+    this.clientId,
+    this.clientName,
+    this.remainingBefore,
+    this.remainingAfter,
+    this.supportItemNumber,
+  });
+
+  final String participantId;
+  final String? clientId;
+  final String? clientName;
+  final String envelope;
+  final double estimatedAmount;
+  final double? remainingBefore;
+  final double? remainingAfter;
+  final String severity;
+  final String? supportItemNumber;
+
+  factory PublishBurnLineOut.fromJson(Map<String, dynamic> json) {
+    return PublishBurnLineOut(
+      participantId: json['participant_id'].toString(),
+      clientId: json['client_id']?.toString(),
+      clientName: json['client_name'] as String?,
+      envelope: json['envelope'] as String? ?? '',
+      estimatedAmount: (json['estimated_amount'] as num?)?.toDouble() ?? 0,
+      remainingBefore: (json['remaining_before'] as num?)?.toDouble(),
+      remainingAfter: (json['remaining_after'] as num?)?.toDouble(),
+      severity: json['severity'] as String? ?? 'ok',
+      supportItemNumber: json['support_item_number'] as String?,
+    );
+  }
+}
+
+class PublishBurnReportOut {
+  const PublishBurnReportOut({
+    this.softWarns = const [],
+    this.hardBlocks = const [],
+    this.byParticipant = const [],
+    this.paceOutsideRelease = false,
+    this.paceMessage,
+  });
+
+  final List<PublishBurnLineOut> softWarns;
+  final List<PublishBurnLineOut> hardBlocks;
+  final List<PublishBurnLineOut> byParticipant;
+  final bool paceOutsideRelease;
+  final String? paceMessage;
+
+  bool get hasAnyWarn =>
+      softWarns.isNotEmpty || hardBlocks.isNotEmpty || paceOutsideRelease;
+
+  factory PublishBurnReportOut.fromJson(Map<String, dynamic> json) {
+    List<PublishBurnLineOut> parseList(Object? raw) {
+      if (raw is! List) return const [];
+      return raw
+          .whereType<Map>()
+          .map(
+            (e) => PublishBurnLineOut.fromJson(Map<String, dynamic>.from(e)),
+          )
+          .toList(growable: false);
+    }
+
+    return PublishBurnReportOut(
+      softWarns: parseList(json['soft_warns']),
+      hardBlocks: parseList(json['hard_blocks']),
+      byParticipant: parseList(json['by_participant']),
+      paceOutsideRelease: json['pace_outside_release'] as bool? ?? false,
+      paceMessage: json['pace_message'] as String?,
+    );
+  }
+}
+
+class PaymentEnquiryOut {
+  const PaymentEnquiryOut({
+    required this.id,
+    required this.clientId,
+    required this.status,
+    required this.lodgedAt,
+    required this.daysOpen,
+    required this.riskBand,
+    this.clientName,
+    this.exportId,
+    this.reference,
+    this.amount,
+    this.notes,
+  });
+
+  final String id;
+  final String clientId;
+  final String? clientName;
+  final String? exportId;
+  final String? reference;
+  final String status;
+  final DateTime lodgedAt;
+  final double? amount;
+  final String? notes;
+  final int daysOpen;
+  final String riskBand;
+
+  factory PaymentEnquiryOut.fromJson(Map<String, dynamic> json) {
+    return PaymentEnquiryOut(
+      id: json['id'].toString(),
+      clientId: json['client_id'].toString(),
+      clientName: json['client_name'] as String?,
+      exportId: json['export_id']?.toString(),
+      reference: json['reference'] as String?,
+      status: json['status'] as String? ?? 'open',
+      lodgedAt: DateTime.parse(json['lodged_at'] as String),
+      amount: (json['amount'] as num?)?.toDouble(),
+      notes: json['notes'] as String?,
+      daysOpen: json['days_open'] as int? ?? 0,
+      riskBand: json['risk_band'] as String? ?? 'ok',
+    );
+  }
+}

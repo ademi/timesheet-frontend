@@ -48,6 +48,10 @@ class InvoiceExportsController extends GetxController {
   final tabIndex = 0.obs;
   final exports = <InvoiceExportOut>[].obs;
   final exportableVisits = <VisitOut>[].obs;
+  final unclaimedAgeing = <UnclaimedAgeingVisitOut>[].obs;
+  final ageingApproaching90Only = false.obs;
+  final burnAlerts = <BurnEnvelopeAlertOut>[].obs;
+  final paymentEnquiries = <PaymentEnquiryOut>[].obs;
   final selectedVisitIds = <String>{}.obs;
   final lastVisitErrors = <InvoiceExportVisitError>[].obs;
   final isLoading = false.obs;
@@ -60,6 +64,17 @@ class InvoiceExportsController extends GetxController {
 
   bool get canView => _session.canViewBilling;
   bool get canManage => _session.canManageBilling;
+
+  /// True when any unclaimed visit is ≥60 days (watch / high / critical).
+  bool get hasAgeingRiskBadge =>
+      unclaimedAgeing.any((v) => v.isWatchOrWorse);
+
+  int get ageingRiskCount =>
+      unclaimedAgeing.where((v) => v.isWatchOrWorse).length;
+
+  bool get hasBurnAlertBadge => burnAlerts.isNotEmpty;
+
+  int get burnAlertCount => burnAlerts.length;
 
   /// Test/read access to the shared export exclusion set.
   ExportedVisitIdsStore get exportedVisitIds => _exportedVisitIds;
@@ -89,9 +104,123 @@ class InvoiceExportsController extends GetxController {
           end: today,
         ).obs;
     loadExports();
+    loadUnclaimedAgeing();
+    loadBurnAlerts();
+    loadPaymentEnquiries();
     if (canManage) {
       loadClients();
     }
+    _applyInitialTabFromArgs();
+  }
+
+  void _applyInitialTabFromArgs() {
+    final raw = Get.arguments;
+    String? tab;
+    if (raw is Map) {
+      tab = raw['tab']?.toString();
+    } else if (raw is String) {
+      tab = raw;
+    }
+    switch (tab) {
+      case 'create':
+        if (canManage) switchToCreateTab();
+      case 'ageing' || '90d':
+        switchToAgeingTab();
+      case 'burn':
+        switchToBurnTab();
+      case 'pe':
+        switchToPeTab();
+      default:
+        break;
+    }
+  }
+
+  Future<void> loadBurnAlerts() async {
+    if (!canView) return;
+    try {
+      burnAlerts.assignAll(await _repository.listBudgetAlerts());
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (_) {
+      // Non-blocking for other tabs.
+    }
+  }
+
+  Future<void> loadPaymentEnquiries() async {
+    if (!canView) return;
+    try {
+      paymentEnquiries.assignAll(await _repository.listPaymentEnquiries());
+    } on AppFailure catch (_) {
+      // Optional tower tab.
+    }
+  }
+
+  Future<void> loadUnclaimedAgeing() async {
+    if (!canView) return;
+    isLoading.value = true;
+    errorMessage.value = null;
+    try {
+      final clientId = clientIdFilter.value.trim();
+      final list = await _repository.listUnclaimedAgeing(
+        clientId: clientId.isEmpty ? null : clientId,
+        approaching90: ageingApproaching90Only.value,
+      );
+      // Oldest first from API; keep that order for claim urgency.
+      unclaimedAgeing.assignAll(list);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> setAgeingApproaching90Only(bool value) async {
+    if (ageingApproaching90Only.value == value) return;
+    ageingApproaching90Only.value = value;
+    await loadUnclaimedAgeing();
+  }
+
+  Future<void> openUnclaimedVisitForFix(UnclaimedAgeingVisitOut row) async {
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final visit = await _visitsRepository.getVisit(row.visitId);
+      openVisitForFix(visit);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      if (!Get.testMode) {
+        AppToast.error('Could not open visit', e.message);
+      }
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  /// Jump to Create tab and select this visit for export when present.
+  Future<void> openUnclaimedForExport(UnclaimedAgeingVisitOut row) async {
+    switchToCreateTab();
+    selectedVisitIds.add(row.visitId);
+    if (!exportableVisits.any((v) => v.id == row.visitId)) {
+      // Outside current period — still open Fix so staff can correct codes.
+      await openUnclaimedVisitForFix(row);
+    }
+  }
+
+  void switchToAgeingTab() {
+    tabIndex.value = 2;
+    loadUnclaimedAgeing();
+  }
+
+  void switchToBurnTab() {
+    tabIndex.value = 3;
+    loadBurnAlerts();
+  }
+
+  void switchToPeTab() {
+    tabIndex.value = 4;
+    loadPaymentEnquiries();
   }
 
   Future<void> loadClients() async {
@@ -167,6 +296,9 @@ class InvoiceExportsController extends GetxController {
 
   Future<void> loadAll() async {
     await loadExports();
+    await loadUnclaimedAgeing();
+    await loadBurnAlerts();
+    await loadPaymentEnquiries();
     if (canManage) {
       await loadExportableVisits();
     }
@@ -192,6 +324,7 @@ class InvoiceExportsController extends GetxController {
     clientIdFilter.value = next;
     selectedVisitIds.clear();
     lastVisitErrors.clear();
+    await loadUnclaimedAgeing();
     if (tabIndex.value == 1 && canManage) {
       await loadExportableVisits();
     }

@@ -39,6 +39,8 @@ class AppFailure implements Exception {
 
   bool get isCredentialGateBlocked => code == 'credential_gate_blocked';
 
+  bool get isBudgetBurnBlocked => code == 'budget_burn_blocked';
+
   bool get isSharingGrantRequired => code == 'sharing_grant_required';
 
   @override
@@ -173,6 +175,36 @@ class AppFailure implements Exception {
             })
             .toList(growable: false);
       }
+      final burn = detailMap['burn'];
+      if (burn is Map) {
+        final burnMap = Map<String, dynamic>.from(burn);
+        final lines = <String>[];
+        void addLines(Object? raw, String label) {
+          if (raw is! List) return;
+          for (final item in raw) {
+            if (item is! Map) continue;
+            final row = Map<String, dynamic>.from(item);
+            final name =
+                row['client_name']?.toString() ??
+                row['client_id']?.toString() ??
+                'participant';
+            final envelope = row['envelope']?.toString() ?? 'envelope';
+            lines.add('$label: $name / $envelope');
+          }
+        }
+
+        addLines(burnMap['hard_blocks'], 'hard_block');
+        addLines(burnMap['soft_warns'], 'soft_warn');
+        if (burnMap['pace_outside_release'] == true) {
+          final msg = burnMap['pace_message']?.toString();
+          lines.add(
+            msg != null && msg.isNotEmpty
+                ? 'pace_outside_release: $msg'
+                : 'pace_outside_release',
+          );
+        }
+        if (lines.isNotEmpty) return lines;
+      }
     }
     return const [];
   }
@@ -195,6 +227,7 @@ class AppFailure implements Exception {
       'proxy_required',
       'eligibility_incomplete',
       'credential_gate_blocked',
+      'budget_burn_blocked',
       'counsel_pending',
       'counsel_pending_policy',
       'legal_document_unavailable',
@@ -285,6 +318,7 @@ class AppFailure implements Exception {
         return AppFailurePresentation.billingGate;
       case 'eligibility_incomplete':
       case 'credential_gate_blocked':
+      case 'budget_burn_blocked':
       case 'geofence_rejected':
       case 'forms_incomplete':
       case 'required_forms_incomplete':
@@ -369,6 +403,8 @@ class AppFailure implements Exception {
         return 'Requirements incomplete — review the listed items.';
       case 'credential_gate_blocked':
         return 'Screening or credentials block this roster action — review the listed items or provide an audited override reason.';
+      case 'budget_burn_blocked':
+        return 'Publishing would exceed plan budget thresholds — review burn warnings or provide an audited override reason.';
       case 'mfa_required':
         return 'Multi-factor authentication required. Complete MFA, then retry.';
       case 'notice_not_presented':

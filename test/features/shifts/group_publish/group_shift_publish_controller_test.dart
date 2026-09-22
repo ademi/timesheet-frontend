@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/features/billing/data/models/billing_models.dart';
+import 'package:rostiq/features/billing/data/repositories/billing_repository.dart';
 import 'package:rostiq/features/billing/data/repositories/ndis_catalogue_repository.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
@@ -19,6 +20,8 @@ class _MockJobsRepository extends Mock implements JobsRepository {}
 
 class _MockCatalogueRepository extends Mock
     implements NdisCatalogueRepository {}
+
+class _MockBillingRepository extends Mock implements BillingRepository {}
 
 class _FakeShiftPublishRequest extends Fake implements ShiftPublishRequest {}
 
@@ -96,6 +99,7 @@ void main() {
   late _MockShiftsRepository shifts;
   late _MockJobsRepository jobs;
   late _MockCatalogueRepository catalogue;
+  late _MockBillingRepository billing;
 
   setUpAll(() {
     registerFallbackValue(_FakeShiftPublishRequest());
@@ -106,6 +110,10 @@ void main() {
     shifts = _MockShiftsRepository();
     jobs = _MockJobsRepository();
     catalogue = _MockCatalogueRepository();
+    billing = _MockBillingRepository();
+    when(() => billing.previewPublishBurn(any())).thenAnswer(
+      (_) async => const PublishBurnReportOut(),
+    );
   });
 
   tearDown(Get.reset);
@@ -117,6 +125,8 @@ void main() {
       GroupShiftPublishOverrideArgs args,
     )?
     openOverrideEditor,
+    Future<String?> Function({required List<String> reasons})?
+    promptBurnOverride,
   }) async {
     when(() => jobs.getJob('job-1')).thenAnswer(
       (_) async => _job(supportItemCode: '01_011_0107_1_1'),
@@ -133,9 +143,11 @@ void main() {
       shiftsRepository: shifts,
       jobsRepository: jobs,
       catalogueRepository: catalogue,
+      billingRepository: billing,
       args: GroupShiftPublishArgs(shift: shift ?? _shift()),
       onPop: onPop,
       openOverrideEditor: openOverrideEditor,
+      promptBurnOverride: promptBurnOverride,
     );
     c.onInit();
     await Future<void>.delayed(Duration.zero);
@@ -158,6 +170,7 @@ void main() {
       shiftsRepository: shifts,
       jobsRepository: jobs,
       catalogueRepository: catalogue,
+      billingRepository: billing,
       args: GroupShiftPublishArgs(shift: _shift()),
     );
     c.onInit();
@@ -170,7 +183,20 @@ void main() {
     expect(c.errorMessage.value, contains('default'));
   });
 
-  test('steps Item → People → Stay → Review', () async {
+  test('steps Item → People → Stay → Review and loads burn preview', () async {
+    when(() => billing.previewPublishBurn('shift-1')).thenAnswer(
+      (_) async => PublishBurnReportOut(
+        softWarns: [
+          const PublishBurnLineOut(
+            participantId: 'p1',
+            envelope: 'core',
+            estimatedAmount: 40,
+            severity: 'soft_warn',
+            clientName: 'Maya',
+          ),
+        ],
+      ),
+    );
     final c = await build();
     expect(c.step.value, GroupShiftPublishController.itemStep);
     c.nextStep();
@@ -179,6 +205,40 @@ void main() {
     expect(c.step.value, GroupShiftPublishController.stayStep);
     c.nextStep();
     expect(c.step.value, GroupShiftPublishController.reviewStep);
+    await Future<void>.delayed(Duration.zero);
+    expect(c.burnReport.value?.softWarns, hasLength(1));
+    verify(() => billing.previewPublishBurn('shift-1')).called(1);
+  });
+
+  test('budget_burn_blocked prompts override then republishes', () async {
+    var calls = 0;
+    when(
+      () => shifts.publishShift('shift-1', body: any(named: 'body')),
+    ).thenAnswer((invocation) async {
+      calls += 1;
+      final body = invocation.namedArguments[#body] as ShiftPublishRequest?;
+      if (body?.overrideReason == null || body!.overrideReason!.isEmpty) {
+        throw const AppFailure(
+          code: 'budget_burn_blocked',
+          message: 'Publishing would exceed plan budget thresholds.',
+          presentation: AppFailurePresentation.inline,
+          eligibilityReasons: ['hard_block: Maya / core'],
+        );
+      }
+      return _shift().copyWithStatus('published');
+    });
+
+    dynamic popped;
+    final c = await build(
+      onPop: (r) => popped = r,
+      promptBurnOverride: ({required List<String> reasons}) async =>
+          'SC confirmed statement',
+    );
+    c.step.value = GroupShiftPublishController.reviewStep;
+    await c.publish();
+
+    expect(calls, 2);
+    expect(popped, isA<ShiftOut>());
   });
 
   test('override merges into publish body; busy guards double publish', () async {
