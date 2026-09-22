@@ -14,6 +14,7 @@ import '../widgets/visit_instructions_field.dart';
 import '../widgets/worker_slot_picker.dart';
 import '../controllers/unified_support_controller.dart';
 import '../utils/partial_assign_preview.dart';
+import '../utils/prior_client_workers.dart';
 import '../utils/recurrence_rrule_builder.dart';
 import '../utils/required_slots_input.dart';
 import '../utils/schedule_hours_warn.dart';
@@ -623,12 +624,24 @@ class _OneSessionSchedule extends StatelessWidget {
   }
 }
 
-class _OngoingSchedule extends StatelessWidget {
+class _OngoingSchedule extends StatefulWidget {
   const _OngoingSchedule({required this.controller});
   final UnifiedSupportController controller;
 
   @override
+  State<_OngoingSchedule> createState() => _OngoingScheduleState();
+}
+
+class _OngoingScheduleState extends State<_OngoingSchedule> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.ensureLastPatternLoaded();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     return Obx(() {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -638,6 +651,15 @@ class _OngoingSchedule extends StatelessWidget {
             const _AmberNotice(message: kAtypicalScheduleHoursMessage),
             const SizedBox(height: 12),
           ],
+          if (controller.lastPatternAvailable.value)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: controller.copyLastPattern,
+                icon: const Icon(Icons.content_copy_outlined, size: 18),
+                label: const Text('Copy last pattern'),
+              ),
+            ),
           DropdownButtonFormField<RecurrenceFrequency>(
             value: controller.frequency.value,
             items: [
@@ -905,6 +927,7 @@ class _WorkersStepState extends State<_WorkersStep> {
     widget.controller.ensureEngagementsLoaded();
     widget.controller.ensureAssignAvailabilityLoaded();
     widget.controller.ensureClientConflictsLoaded();
+    widget.controller.ensurePriorWorkersLoaded();
   }
 
   Color _availabilityColor(String label) {
@@ -929,6 +952,7 @@ class _WorkersStepState extends State<_WorkersStep> {
       controller.assignVisits.length;
       controller.conflictVisits.length;
       controller.conflictShifts.length;
+      controller.priorClientVisitCounts.length;
       controller.errorMessage.value;
       final seen = <String>{};
       final workers = [
@@ -990,12 +1014,26 @@ class _WorkersStepState extends State<_WorkersStep> {
                       final status = controller.availabilityStatusForContractor(
                         contractorId,
                       );
-                      return Text(
-                        ' · $label',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _availabilityColor(status),
-                        ),
+                      final worked = controller.workedWithClient(contractorId);
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            ' · $label',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _availabilityColor(status),
+                            ),
+                          ),
+                          if (worked)
+                            Text(
+                              ' · $workedWithClientLabel',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                        ],
                       );
                     },
                   ),

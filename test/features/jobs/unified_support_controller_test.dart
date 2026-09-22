@@ -943,8 +943,9 @@ void main() {
       () => engagements.listTenantEngagements(),
     ).thenAnswer((_) async => [_eng]);
 
-    final monStart = DateTime.utc(2026, 8, 31, 9);
-    final monEnd = DateTime.utc(2026, 8, 31, 12);
+    // Monday inside a typical ~14d horizon from "today" (2026-09-22).
+    final monStart = DateTime.utc(2026, 9, 28, 9);
+    final monEnd = DateTime.utc(2026, 9, 28, 12);
     when(
       () => visits.listVisits(
         from: any(named: 'from'),
@@ -974,7 +975,7 @@ void main() {
     final controller = build();
     await controller.load();
     controller.setMode(UnifiedSupportMode.ongoing);
-    controller.startDate.value = DateTime(2026, 8, 31);
+    controller.startDate.value = DateTime(2026, 9, 28);
     controller.endDate.value = DateTime(2026, 12, 31);
     controller.frequency.value = RecurrenceFrequency.weekly;
     controller.weekdays
@@ -990,7 +991,133 @@ void main() {
     final preview = await controller.buildPartialAssignPreview();
     expect(preview, hasLength(1));
     expect(preview.single.displayName, 'Alex Worker');
-    expect(preview.single.skipDates, [DateTime(2026, 8, 31)]);
+    expect(preview.single.skipDates, [DateTime(2026, 9, 28)]);
+  });
+
+  test('ensurePriorWorkersLoaded ranks assignable engagements', () async {
+    final zoe = EngagementOut(
+      id: 'eng-z',
+      tenantId: 'tenant-1',
+      contractorId: 'zoe',
+      contractorName: 'Zoe Zed',
+      status: 'active',
+      createdAt: _now,
+      updatedAt: _now,
+    );
+    final amy = EngagementOut(
+      id: 'eng-a',
+      tenantId: 'tenant-1',
+      contractorId: 'amy',
+      contractorName: 'Amy Able',
+      status: 'active',
+      createdAt: _now,
+      updatedAt: _now,
+    );
+    when(
+      () => engagements.listTenantEngagements(),
+    ).thenAnswer((_) async => [zoe, amy]);
+    when(
+      () => visits.listVisits(
+        clientId: any(named: 'clientId'),
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        limit: any(named: 'limit'),
+        includeNested: any(named: 'includeNested'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        VisitOut(
+          id: 'v1',
+          tenantId: 'tenant-1',
+          jobId: 'job-1',
+          contractorId: 'amy',
+          scheduledStart: _now.subtract(const Duration(days: 10)),
+          scheduledEnd: _now.subtract(const Duration(days: 10, hours: -2)),
+          status: 'completed',
+          source: 'manual',
+          geofenceRadiusM: 100,
+          geofenceMode: 'informational',
+          paymentStatus: 'unpaid',
+          createdAt: _now,
+          updatedAt: _now,
+        ),
+        VisitOut(
+          id: 'v2',
+          tenantId: 'tenant-1',
+          jobId: 'job-1',
+          contractorId: 'amy',
+          scheduledStart: _now.subtract(const Duration(days: 5)),
+          scheduledEnd: _now.subtract(const Duration(days: 5, hours: -2)),
+          status: 'completed',
+          source: 'manual',
+          geofenceRadiusM: 100,
+          geofenceMode: 'informational',
+          paymentStatus: 'unpaid',
+          createdAt: _now,
+          updatedAt: _now,
+        ),
+      ],
+    );
+
+    final controller = build();
+    await controller.load();
+    await controller.ensureEngagementsLoaded();
+    controller.step.value = UnifiedSupportController.assignStep;
+    await controller.ensurePriorWorkersLoaded();
+
+    expect(controller.workedWithClient('amy'), isTrue);
+    expect(controller.workedWithClient('zoe'), isFalse);
+    expect(
+      controller.assignableEngagements.map((e) => e.contractorId).toList(),
+      ['amy', 'zoe'],
+    );
+  });
+
+  test('copyLastPattern prefills schedule from latest rule', () async {
+    when(() => jobs.getOngoingSupport('client-1')).thenAnswer((_) async => _job);
+    when(() => jobs.listRecurrenceRules('job-1')).thenAnswer(
+      (_) async => [
+        RecurrenceRuleOut(
+          id: 'rule-1',
+          tenantId: 'tenant-1',
+          jobId: 'job-1',
+          requiredSlots: 2,
+          rrule: 'FREQ=WEEKLY;BYDAY=TU,TH',
+          dtstart: DateTime(2026, 4, 7, 9),
+          until: DateTime(2027, 4, 7),
+          timeWindows: const [
+            TimeWindow(startTime: '11:00', endTime: '15:00'),
+          ],
+          isActive: true,
+          createdAt: _now,
+          updatedAt: _now,
+        ),
+      ],
+    );
+
+    final controller = build();
+    await controller.load();
+    await controller.ensureLastPatternLoaded();
+    expect(controller.lastPatternAvailable.value, isTrue);
+
+    await controller.copyLastPattern();
+
+    expect(controller.frequency.value, RecurrenceFrequency.weekly);
+    expect(controller.weekdays, {DateTime.tuesday, DateTime.thursday});
+    expect(controller.startTime.value, const TimeOfDay(hour: 11, minute: 0));
+    expect(controller.endTime.value, const TimeOfDay(hour: 15, minute: 0));
+    expect(controller.requiredSlots.value, 2);
+    expect(controller.endDate.value, DateTime(2027, 4, 7));
+  });
+
+  test('ensureLastPatternLoaded empty when no rules', () async {
+    when(() => jobs.getOngoingSupport('client-1')).thenAnswer((_) async => _job);
+    when(() => jobs.listRecurrenceRules('job-1')).thenAnswer((_) async => []);
+
+    final controller = build();
+    await controller.load();
+    await controller.ensureLastPatternLoaded();
+    expect(controller.lastPatternAvailable.value, isFalse);
   });
 }
 

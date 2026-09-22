@@ -181,14 +181,7 @@ void main() {
     controller.endDate.value = DateTime(2027, 3, 15);
     await tester.pump();
 
-    expect(
-      find.text(
-        MaterialLocalizations.of(
-          tester.element(find.byType(UnifiedSupportView)),
-        ).formatMediumDate(DateTime(2027, 3, 15)),
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('2027-03-15'), findsOneWidget);
 
     expect(find.widgetWithText(FilterChip, 'MO'), findsOneWidget);
     final mondayChip = tester.widget<FilterChip>(

@@ -8,6 +8,7 @@ import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/time/tenant_civil_time.dart';
 import '../../../shared/utils/name_sort.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../billing/data/models/billing_models.dart';
 import '../../clients/bindings/clients_binding.dart';
 import '../../clients/controllers/clients_controller.dart';
@@ -30,7 +31,9 @@ import '../data/models/job_models.dart';
 import '../data/repositories/jobs_repository.dart';
 import '../utils/job_copy.dart';
 import '../utils/partial_assign_preview.dart' as partial_preview;
+import '../utils/prior_client_workers.dart';
 import '../utils/recurrence_rrule_builder.dart';
+import '../utils/recurrence_rule_composer_prefill.dart';
 import '../utils/required_slots_input.dart';
 import '../utils/schedule_conflict.dart';
 import '../utils/schedule_hours_warn.dart';
@@ -131,18 +134,28 @@ class UnifiedSupportController extends GetxController
   final conflictShifts = <ShiftOut>[].obs;
   final isConflictsLoading = false.obs;
 
+  /// Contractor id → prior non-cancelled visit count with selected client.
+  final priorClientVisitCounts = <String, int>{}.obs;
+  final lastPatternAvailable = false.obs;
+
   bool engagementsLoaded = false;
   bool assignAvailabilityLoaded = false;
   bool clientConflictsLoaded = false;
+  bool priorWorkersLoaded = false;
   String? _assignAvailabilityKey;
   String? _clientConflictsKey;
+  String? _priorWorkersKey;
   String? _standingJobId;
   String? _standingJobClientId;
   bool _supportItemUserChanged = false;
   bool _supportItemPrefilledFromStanding = false;
+  RecurrenceRuleOut? _lastPatternRule;
+  String? _lastPatternClientId;
   Future<void>? _engagementsLoadFuture;
   Future<void>? _assignAvailabilityLoadFuture;
   Future<void>? _clientConflictsLoadFuture;
+  Future<void>? _priorWorkersLoadFuture;
+  Future<void>? _lastPatternLoadFuture;
 
   bool get canManage => _session.hasPermission(AppPermissions.jobsManage);
 
@@ -175,13 +188,33 @@ class UnifiedSupportController extends GetxController
   bool get supportItemPrefilledFromStanding =>
       _supportItemPrefilledFromStanding;
 
-  List<EngagementOut> get assignableEngagements => sortedByName(
-    engagements.where(
-      (e) =>
-          e.isActive || e.isApproved || e.isPendingDocs || e.isAwaitingApproval,
-    ),
-    (e) => e.displayName,
-  );
+  List<EngagementOut> get assignableEngagements {
+    final list =
+        engagements
+            .where(
+              (e) =>
+                  e.isActive ||
+                  e.isApproved ||
+                  e.isPendingDocs ||
+                  e.isAwaitingApproval,
+            )
+            .toList();
+    final counts = Map<String, int>.from(priorClientVisitCounts);
+    list.sort(
+      (a, b) => comparePriorThenName(
+        aId: a.contractorId,
+        bId: b.contractorId,
+        aName: a.displayName,
+        bName: b.displayName,
+        counts: counts,
+        nameCompare: compareNames,
+      ),
+    );
+    return list;
+  }
+
+  bool workedWithClient(String contractorId) =>
+      hasPriorClientVisits(contractorId, counts: priorClientVisitCounts);
 
   @override
   void onInit() {
@@ -561,6 +594,139 @@ class UnifiedSupportController extends GetxController
     }
   }
 
+  /// Loads prior client visits for Assign ranking / “Worked with client”.
+  Future<void> ensurePriorWorkersLoaded() async {
+    if (step.value != assignStep) return;
+    final c = client.value;
+    if (c == null) {
+      priorClientVisitCounts.clear();
+      priorWorkersLoaded = false;
+      _priorWorkersKey = null;
+      return;
+    }
+    final now = DateTime.now().toUtc();
+    final from = now.subtract(priorClientWorkerLookback);
+    final key =
+        '${c.id}|${from.toIso8601String().substring(0, 10)}|${now.toIso8601String().substring(0, 10)}';
+    if (priorWorkersLoaded && _priorWorkersKey == key) return;
+    if (_priorWorkersLoadFuture != null) {
+      await _priorWorkersLoadFuture;
+      if (priorWorkersLoaded && _priorWorkersKey == key) return;
+    }
+    _priorWorkersLoadFuture = _loadPriorWorkers(c.id, from, now, key);
+    try {
+      await _priorWorkersLoadFuture;
+    } finally {
+      _priorWorkersLoadFuture = null;
+    }
+  }
+
+  Future<void> _loadPriorWorkers(
+    String clientId,
+    DateTime from,
+    DateTime to,
+    String key,
+  ) async {
+    try {
+      final visits = await _visits.listVisits(
+        clientId: clientId,
+        from: from,
+        to: to,
+        limit: priorClientWorkerFetchLimit,
+        includeNested: false,
+      );
+      priorClientVisitCounts
+        ..clear()
+        ..addAll(countPriorClientVisits(visits));
+      _priorWorkersKey = key;
+      priorWorkersLoaded = true;
+    } catch (_) {
+      priorClientVisitCounts.clear();
+      _priorWorkersKey = key;
+      priorWorkersLoaded = true;
+    }
+  }
+
+  /// Resolves whether the client's standing job has a copyable latest rule.
+  Future<void> ensureLastPatternLoaded() async {
+    if (!isOngoing) {
+      lastPatternAvailable.value = false;
+      return;
+    }
+    final c = client.value;
+    if (c == null) {
+      lastPatternAvailable.value = false;
+      return;
+    }
+    if (_lastPatternClientId == c.id) {
+      lastPatternAvailable.value =
+          _lastPatternRule != null &&
+          mapRecurrenceRuleToComposerPrefill(_lastPatternRule!) != null;
+      return;
+    }
+    if (_lastPatternLoadFuture != null) {
+      await _lastPatternLoadFuture;
+      return;
+    }
+    _lastPatternLoadFuture = _loadLastPattern(c.id);
+    try {
+      await _lastPatternLoadFuture;
+    } finally {
+      _lastPatternLoadFuture = null;
+    }
+  }
+
+  Future<void> _loadLastPattern(String clientId) async {
+    try {
+      final jobId = await _resolveStandingJobId(clientId);
+      if (jobId == null) {
+        _lastPatternRule = null;
+        _lastPatternClientId = clientId;
+        lastPatternAvailable.value = false;
+        return;
+      }
+      final rules = await _jobs.listRecurrenceRules(jobId);
+      final rule = rules.isEmpty ? null : rules.first;
+      _lastPatternRule = rule;
+      _lastPatternClientId = clientId;
+      lastPatternAvailable.value =
+          rule != null && mapRecurrenceRuleToComposerPrefill(rule) != null;
+    } catch (_) {
+      _lastPatternRule = null;
+      _lastPatternClientId = clientId;
+      lastPatternAvailable.value = false;
+    }
+  }
+
+  /// One-tap copy of the client's latest recurrence into Schedule fields.
+  Future<void> copyLastPattern() async {
+    await ensureLastPatternLoaded();
+    final rule = _lastPatternRule;
+    if (rule == null) return;
+    final prefill = mapRecurrenceRuleToComposerPrefill(rule);
+    if (prefill == null) return;
+    frequency.value = prefill.frequency;
+    weekdays
+      ..clear()
+      ..addAll(prefill.weekdays);
+    weekdays.refresh();
+    startDate.value = prefill.startDate;
+    if (prefill.endDate != null) {
+      endDate.value = prefill.endDate!;
+    } else {
+      endDate.value = defaultRecurrenceEndDate(prefill.startDate);
+    }
+    startTime.value = prefill.startTime;
+    endTime.value = prefill.endTime;
+    requiredSlots.value = prefill.requiredSlots;
+    if (!Get.testMode) {
+      AppToast.info(
+        'Pattern copied',
+        'Schedule updated from the last recurrence rule.',
+      );
+    }
+  }
+
   ({
     DateTime from,
     DateTime to,
@@ -762,6 +928,12 @@ class UnifiedSupportController extends GetxController
       supportItemName.value = null;
     }
     client.value = value;
+    priorClientVisitCounts.clear();
+    priorWorkersLoaded = false;
+    _priorWorkersKey = null;
+    _lastPatternRule = null;
+    _lastPatternClientId = null;
+    lastPatternAvailable.value = false;
     if (titleCtrl.text.trim().isEmpty) {
       titleCtrl.text = defaultOngoingTitle(value.fullName);
     }
@@ -935,12 +1107,14 @@ class UnifiedSupportController extends GetxController
       step.value++;
       if (step.value == scheduleStep) {
         ensureClientConflictsLoaded();
+        ensureLastPatternLoaded();
       }
       if (step.value == assignStep) {
         syncAssignSlots(requiredSlots.value);
         ensureEngagementsLoaded();
         ensureAssignAvailabilityLoaded();
         ensureClientConflictsLoaded();
+        ensurePriorWorkersLoaded();
       }
     }
   }
