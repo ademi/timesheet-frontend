@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/models/shift_travel_models.dart';
 import '../../shifts/utils/allocation_math.dart';
@@ -68,6 +69,14 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                       children: [
                         if (err != null) ...[
                           _ErrorBox(err),
+                          const SizedBox(height: 12),
+                        ],
+                        if (controller.credentialGateReasons.isNotEmpty) ...[
+                          EligibilityIncompletePanel(
+                            title: 'Screening / credentials incomplete',
+                            reasons:
+                                controller.credentialGateReasons.toList(),
+                          ),
                           const SizedBox(height: 12),
                         ],
                         if (controller.canManage &&

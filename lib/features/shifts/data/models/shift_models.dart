@@ -539,12 +539,14 @@ class ShiftPublishRequest {
     this.participantOverrides,
     this.accommodationSupportItemCode,
     this.accommodationQuantity,
+    this.overrideReason,
   });
 
   final String? supportItemCode;
   final List<ShiftParticipantPublishOverride>? participantOverrides;
   final String? accommodationSupportItemCode;
   final String? accommodationQuantity;
+  final String? overrideReason;
 
   Map<String, dynamic> toJson() => {
     if (supportItemCode != null && supportItemCode!.isNotEmpty)
@@ -558,6 +560,8 @@ class ShiftPublishRequest {
       'accommodation_support_item_code': accommodationSupportItemCode,
     if (accommodationQuantity != null && accommodationQuantity!.isNotEmpty)
       'accommodation_quantity': accommodationQuantity,
+    if (overrideReason != null && overrideReason!.trim().isNotEmpty)
+      'override_reason': overrideReason!.trim(),
   };
 }
 
@@ -581,6 +585,7 @@ class ShiftCreateRequest {
     this.taskTemplate = const [],
     this.equalSplit = false,
     this.participants = const [],
+    this.overrideReason,
   });
 
   final String jobId;
@@ -593,6 +598,7 @@ class ShiftCreateRequest {
   final List<TaskTemplateItem> taskTemplate;
   final bool equalSplit;
   final List<ShiftParticipantCreateItem> participants;
+  final String? overrideReason;
 
   Map<String, dynamic> toJson() => {
     'job_id': jobId,
@@ -607,5 +613,7 @@ class ShiftCreateRequest {
     if (equalSplit) 'equal_split': equalSplit,
     if (participants.isNotEmpty)
       'participants': [for (final p in participants) p.toJson()],
+    if (overrideReason != null && overrideReason!.trim().isNotEmpty)
+      'override_reason': overrideReason!.trim(),
   };
 }

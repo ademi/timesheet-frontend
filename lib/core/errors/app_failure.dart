@@ -21,7 +21,7 @@ class AppFailure implements Exception {
   final AppFailurePresentation presentation;
   final int? statusCode;
 
-  /// Parsed from `eligibility_incomplete` payloads when present.
+  /// Parsed from `eligibility_incomplete` / `credential_gate_blocked` payloads.
   final List<String> eligibilityReasons;
 
   /// Per-visit issues from batch billing/export responses (`visit_errors`).
@@ -36,6 +36,8 @@ class AppFailure implements Exception {
   bool get isProxyRequired => code == 'proxy_required';
 
   bool get isEligibilityIncomplete => code == 'eligibility_incomplete';
+
+  bool get isCredentialGateBlocked => code == 'credential_gate_blocked';
 
   bool get isSharingGrantRequired => code == 'sharing_grant_required';
 
@@ -153,7 +155,12 @@ class AppFailure implements Exception {
     final map = Map<String, dynamic>.from(data);
     final detail = map['detail'];
     if (detail is Map) {
-      final reasons = detail['reasons'] ?? detail['requirements'];
+      final detailMap = Map<String, dynamic>.from(detail);
+      final gate = detailMap['gate'];
+      final reasons =
+          detailMap['reasons'] ??
+          detailMap['requirements'] ??
+          (gate is Map ? gate['reasons'] : null);
       if (reasons is List) {
         return reasons
             .map((e) {
@@ -187,6 +194,7 @@ class AppFailure implements Exception {
       'scan_blocked',
       'proxy_required',
       'eligibility_incomplete',
+      'credential_gate_blocked',
       'counsel_pending',
       'counsel_pending_policy',
       'legal_document_unavailable',
@@ -276,6 +284,7 @@ class AppFailure implements Exception {
       case 'billing_gate':
         return AppFailurePresentation.billingGate;
       case 'eligibility_incomplete':
+      case 'credential_gate_blocked':
       case 'geofence_rejected':
       case 'forms_incomplete':
       case 'required_forms_incomplete':
@@ -358,6 +367,8 @@ class AppFailure implements Exception {
         return 'This file must be opened through a secure download.';
       case 'eligibility_incomplete':
         return 'Requirements incomplete — review the listed items.';
+      case 'credential_gate_blocked':
+        return 'Screening or credentials block this roster action — review the listed items or provide an audited override reason.';
       case 'mfa_required':
         return 'Multi-factor authentication required. Complete MFA, then retry.';
       case 'notice_not_presented':

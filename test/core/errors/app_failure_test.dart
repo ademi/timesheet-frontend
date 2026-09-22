@@ -234,6 +234,34 @@ void main() {
       expect(failure.eligibilityReasons, isNotEmpty);
     });
 
+    test('parses credential_gate_blocked gate.reasons', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(path: '/shifts/1/assign'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/shifts/1/assign'),
+            statusCode: 409,
+            data: {
+              'detail': {
+                'code': 'credential_gate_blocked',
+                'message': 'Worker credentials do not meet roster requirements.',
+                'gate': {
+                  'decision': 'block',
+                  'reasons': [
+                    {'category': 'wwcc', 'reason': 'expired'},
+                  ],
+                },
+              },
+            },
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+      expect(failure.isCredentialGateBlocked, isTrue);
+      expect(failure.eligibilityReasons, ['wwcc: expired']);
+      expect(failure.message, contains('override'));
+    });
+
     test('standing_job_exists is coordinator copy', () {
       expect(
         AppFailure.fromDio(

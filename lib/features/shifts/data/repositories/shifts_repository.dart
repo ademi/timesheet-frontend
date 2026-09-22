@@ -79,20 +79,24 @@ class ShiftsRepository {
     required String shiftId,
     required String contractorId,
     List<TaskTemplateItem>? taskTemplate,
+    String? overrideReason,
   }) => _remote.assignShift(
     shiftId: shiftId,
     contractorId: contractorId,
     taskTemplate: taskTemplate,
+    overrideReason: overrideReason,
   );
 
   Future<ShiftOut> assignShiftBatch({
     required String shiftId,
     required List<String> contractorIds,
     List<TaskTemplateItem>? taskTemplate,
+    String? overrideReason,
   }) => _remote.assignShiftBatch(
     shiftId: shiftId,
     contractorIds: contractorIds,
     taskTemplate: taskTemplate,
+    overrideReason: overrideReason,
   );
 
   Future<ShiftOut> unassignShift(String shiftId, String contractorId) =>

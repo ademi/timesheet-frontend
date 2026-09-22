@@ -10,6 +10,7 @@ import '../../../core/services/session_service.dart';
 import '../../../core/time/tenant_civil_time.dart';
 import '../../../shared/utils/name_sort.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../clients/data/repositories/clients_repository.dart';
@@ -67,6 +68,9 @@ class StaffVisitsController extends GetxController {
   final travelLoading = false.obs;
   final isFillingHorizon = false.obs;
   final errorMessage = RxnString();
+
+  /// Structured reasons from ``credential_gate_blocked`` on assign/publish.
+  final credentialGateReasons = <String>[].obs;
   final overlay = Rxn<RosterOverlayOut>();
   final overlayWarning = RxnString();
   final boardVisits = <VisitOut>[].obs;
@@ -660,18 +664,34 @@ class StaffVisitsController extends GetxController {
     }
   }
 
-  Future<void> publishSelectedShift() async {
+  Future<void> publishSelectedShift({String? overrideReason}) async {
     final shift = selectedShift.value;
     if (shift == null) return;
     isSaving.value = true;
     errorMessage.value = null;
+    credentialGateReasons.clear();
     try {
-      selectedShift.value = await _shiftsRepository.publishShift(shift.id);
+      selectedShift.value = await _shiftsRepository.publishShift(
+        shift.id,
+        body: ShiftPublishRequest(overrideReason: overrideReason),
+      );
       AppToast.success('Published', selectedShift.value!.jobTitle);
       await load();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
-      AppToast.error('Could not publish', e.message);
+      if (e.isCredentialGateBlocked || e.isEligibilityIncomplete) {
+        credentialGateReasons.assignAll(e.eligibilityReasons);
+        if (overrideReason == null || overrideReason.trim().isEmpty) {
+          final reason = await promptCredentialGateOverride(
+            reasons: e.eligibilityReasons,
+          );
+          if (reason != null && reason.trim().isNotEmpty) {
+            await publishSelectedShift(overrideReason: reason.trim());
+          }
+        }
+      } else {
+        AppToast.error('Could not publish', e.message);
+      }
     } finally {
       isSaving.value = false;
     }
@@ -818,6 +838,7 @@ class StaffVisitsController extends GetxController {
   Future<void> assignSelectedShift(
     String contractorId, {
     bool skipConfirm = false,
+    String? overrideReason,
   }) async {
     final shift = selectedShift.value;
     if (shift == null) return;
@@ -830,17 +851,89 @@ class StaffVisitsController extends GetxController {
     }
     isSaving.value = true;
     errorMessage.value = null;
+    credentialGateReasons.clear();
     try {
       selectedShift.value = await _shiftsRepository.assignShift(
         shiftId: shift.id,
         contractorId: contractorId,
+        overrideReason: overrideReason,
       );
       await load();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+      if (e.isCredentialGateBlocked || e.isEligibilityIncomplete) {
+        credentialGateReasons.assignAll(e.eligibilityReasons);
+        if (overrideReason == null || overrideReason.trim().isEmpty) {
+          final reason = await promptCredentialGateOverride(
+            reasons: e.eligibilityReasons,
+          );
+          if (reason != null && reason.trim().isNotEmpty) {
+            await assignSelectedShift(
+              contractorId,
+              skipConfirm: true,
+              overrideReason: reason.trim(),
+            );
+          }
+        }
+      }
     } finally {
       isSaving.value = false;
     }
+  }
+
+  @visibleForTesting
+  Future<String?> promptCredentialGateOverride({
+    required List<String> reasons,
+  }) async {
+    if (Get.testMode) return null;
+    final controller = TextEditingController();
+    final result = await Get.dialog<String>(
+      AlertDialog(
+        title: const Text('Credentials block assign'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              EligibilityIncompletePanel(
+                title: 'Screening / credentials incomplete',
+                reasons: reasons,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'To continue, enter an audited override reason '
+                '(no silent bypass).',
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Override reason',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                autofocus: true,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              Get.back(result: text);
+            },
+            child: const Text('Assign with override'),
+          ),
+        ],
+      ),
+    );
+    return result;
   }
 
   Future<void> cancelSelectedShift() async {
