@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/mixins/pending_action_mixin.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/utils/name_sort.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -15,7 +16,7 @@ import '../../billing/data/models/billing_models.dart';
 import '../data/models/job_models.dart';
 import '../data/repositories/jobs_repository.dart';
 
-class JobsController extends GetxController {
+class JobsController extends GetxController with PendingActionMixin {
   JobsController({
     required JobsRepository repository,
     required ClientsRepository clientsRepository,
@@ -41,6 +42,11 @@ class JobsController extends GetxController {
 
   /// Attached templates from `GET /v1/jobs/{id}/form-catalog`.
   final formCatalog = <JobFormCatalogOut>[].obs;
+
+  /// Multi-select ids pending attach on Manage templates (not yet in catalog).
+  final pendingAttachIds = <String>[].obs;
+
+  static const attachCatalogPendingKey = 'attach-catalog';
 
   final isLoading = false.obs;
   final isSaving = false.obs;
@@ -461,21 +467,50 @@ class JobsController extends GetxController {
     }
   }
 
-  Future<void> attachFormTemplate(String templateId) async {
+  Future<void> attachFormTemplates(List<String> templateIds) async {
     final job = selected.value;
     if (job == null) return;
-    isSaving.value = true;
-    errorMessage.value = null;
-    try {
-      await _repository.addFormCatalog(job.id, templateId);
-      await refreshFormCatalog();
-      AppToast.info('Attached', 'Form template added to job catalog.');
-    } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-    } finally {
-      isSaving.value = false;
+    final ids =
+        templateIds
+            .map((id) => id.trim())
+            .where((id) => id.isNotEmpty && !isTemplateAttached(id))
+            .toSet()
+            .toList();
+    if (ids.isEmpty) return;
+    await runPendingAction(attachCatalogPendingKey, () async {
+      errorMessage.value = null;
+      try {
+        await _repository.addFormCatalog(job.id, ids);
+        pendingAttachIds.removeWhere(ids.contains);
+        await refreshFormCatalog();
+        if (!Get.testMode) {
+          AppToast.info(
+            'Attached',
+            ids.length == 1
+                ? 'Form template added to job catalog.'
+                : '${ids.length} form templates added to job catalog.',
+          );
+        }
+      } on AppFailure catch (e) {
+        errorMessage.value = e.message;
+      }
+    });
+  }
+
+  Future<void> attachSelectedFormTemplates() async {
+    await attachFormTemplates(List<String>.from(pendingAttachIds));
+  }
+
+  void togglePendingAttach(String templateId) {
+    if (isTemplateAttached(templateId)) return;
+    if (pendingAttachIds.contains(templateId)) {
+      pendingAttachIds.remove(templateId);
+    } else {
+      pendingAttachIds.add(templateId);
     }
   }
+
+  void clearPendingAttach() => pendingAttachIds.clear();
 
   /// Create or update a tenant-wide form template with a full field schema.
   Future<bool> saveFormTemplate({

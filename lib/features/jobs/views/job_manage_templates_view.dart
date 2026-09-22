@@ -21,6 +21,7 @@ class _JobManageTemplatesViewState extends State<JobManageTemplatesView> {
     super.initState();
     final c = Get.find<JobsController>();
     c.hydrateSelectedFromArgs();
+    c.clearPendingAttach();
     if (c.formCatalog.isEmpty && c.selected.value != null) {
       c.refreshFormCatalog();
     }
@@ -49,6 +50,10 @@ class _JobManageTemplatesViewState extends State<JobManageTemplatesView> {
       body: Obx(() {
         final job = controller.selected.value;
         final err = controller.errorMessage.value;
+        final attaching = controller.isPending(
+          JobsController.attachCatalogPendingKey,
+        );
+        final pendingCount = controller.pendingAttachIds.length;
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -146,7 +151,41 @@ class _JobManageTemplatesViewState extends State<JobManageTemplatesView> {
                     ),
                     const Divider(height: 32),
                   ],
-                  Text('All templates', style: Get.textTheme.titleSmall),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'All templates',
+                          style: Get.textTheme.titleSmall,
+                        ),
+                      ),
+                      if (controller.canManage && pendingCount > 0)
+                        TextButton(
+                          onPressed:
+                              attaching
+                                  ? null
+                                  : controller.attachSelectedFormTemplates,
+                          child: AsyncButtonChild(
+                            isLoading: attaching,
+                            child: Text('Attach selected ($pendingCount)'),
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (controller.canManage &&
+                      controller.formTemplates.any(
+                        (t) => !controller.isTemplateAttached(t.id),
+                      ))
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Select one or more templates, then Attach selected.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   if (controller.formTemplates.isEmpty)
                     const Text('No form templates yet.'),
@@ -154,6 +193,30 @@ class _JobManageTemplatesViewState extends State<JobManageTemplatesView> {
                     Card(
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
+                        leading:
+                            controller.canManage &&
+                                    !controller.isTemplateAttached(t.id)
+                                ? Checkbox(
+                                  value: controller.pendingAttachIds.contains(
+                                    t.id,
+                                  ),
+                                  onChanged:
+                                      attaching
+                                          ? null
+                                          : (_) => controller.togglePendingAttach(
+                                            t.id,
+                                          ),
+                                )
+                                : Icon(
+                                  controller.isTemplateAttached(t.id)
+                                      ? Icons.check_circle
+                                      : Icons.description_outlined,
+                                  color:
+                                      controller.isTemplateAttached(t.id)
+                                          ? AppColors.primary
+                                          : AppColors.textMuted,
+                                  size: 22,
+                                ),
                         title: Text(t.name),
                         subtitle: Text(
                           '${t.isActive ? 'active' : 'inactive'} · '
@@ -168,28 +231,15 @@ class _JobManageTemplatesViewState extends State<JobManageTemplatesView> {
                           ),
                         ),
                         isThreeLine: true,
+                        onTap:
+                            controller.canManage &&
+                                    !controller.isTemplateAttached(t.id) &&
+                                    !attaching
+                                ? () => controller.togglePendingAttach(t.id)
+                                : null,
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            if (controller.canManage)
-                              TextButton(
-                                onPressed:
-                                    controller.isSaving.value ||
-                                            controller.isTemplateAttached(t.id)
-                                        ? null
-                                        : () =>
-                                            controller.attachFormTemplate(t.id),
-                                child: AsyncButtonChild(
-                                  isLoading:
-                                      controller.isSaving.value &&
-                                      !controller.isTemplateAttached(t.id),
-                                  child: Text(
-                                    controller.isTemplateAttached(t.id)
-                                        ? 'Attached'
-                                        : 'Attach',
-                                  ),
-                                ),
-                              ),
                             if (controller.canManageForms) ...[
                               IconButton(
                                 tooltip: 'Edit fields',

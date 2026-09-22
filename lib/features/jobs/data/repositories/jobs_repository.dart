@@ -29,8 +29,8 @@ class JobsRepository {
       _remote.patchJobSupportItem(jobId, body);
   Future<List<JobFormCatalogOut>> listFormCatalog(String jobId) async =>
       sortedByName(await _remote.listFormCatalog(jobId), (c) => c.name);
-  Future<void> addFormCatalog(String jobId, String formTemplateId) =>
-      _remote.addFormCatalog(jobId, formTemplateId);
+  Future<void> addFormCatalog(String jobId, List<String> formTemplateIds) =>
+      _remote.addFormCatalog(jobId, formTemplateIds);
 
   Future<List<RecurrenceRuleOut>> listRecurrenceRules(String jobId) =>
       _remote.listRecurrenceRules(jobId);

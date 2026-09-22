@@ -847,7 +847,7 @@ class _DetailsStep extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           VisitInstructionsField(
             controller: controller.instructionsCtrl,
             helperText:
@@ -855,7 +855,7 @@ class _DetailsStep extends StatelessWidget {
                     ? 'One task per line. Copied onto generated visits.'
                     : 'One task per line. Copied onto the booked visit.',
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           const Text(
             'Form templates',
             style: TextStyle(fontWeight: FontWeight.w600),

@@ -518,6 +518,57 @@ void main() {
       verify(() => visitsRepository.getVisit('v-old')).called(1);
       expect(controller.errorMessage.value, isNull);
     });
+
+    test(
+      'openVisitForFix clears visit errors and reloads exportable visits',
+      () async {
+        when(() => session.canManageBilling).thenReturn(true);
+        when(
+          () => visitsRepository.listVisits(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            clientId: any(named: 'clientId'),
+            status: 'completed',
+            limit: 200,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _exportableVisit(id: 'visit-1', jobTitle: 'Fixed support item'),
+          ],
+        );
+
+        final controller = _controller(
+          repository: repository,
+          visitsRepository: visitsRepository,
+          session: session,
+          init: true,
+        );
+        await controller.loadExportableVisits();
+        clearInteractions(visitsRepository);
+        controller.lastVisitErrors.add(
+          const InvoiceExportVisitError(
+            visitId: 'visit-1',
+            code: 'support_item_required',
+            message: 'Missing item',
+          ),
+        );
+
+        await controller.openVisitForFix(_exportableVisit(id: 'visit-1'));
+
+        expect(controller.lastVisitErrors, isEmpty);
+        expect(controller.exportableVisits, hasLength(1));
+        expect(controller.exportableVisits.single.id, 'visit-1');
+        verify(
+          () => visitsRepository.listVisits(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            clientId: any(named: 'clientId'),
+            status: 'completed',
+            limit: 200,
+          ),
+        ).called(1);
+      },
+    );
   });
 
   test('invoiceExportStatusLabel formats known statuses', () {

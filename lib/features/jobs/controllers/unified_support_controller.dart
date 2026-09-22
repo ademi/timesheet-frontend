@@ -1165,12 +1165,12 @@ class UnifiedSupportController extends GetxController
   }
 
   Future<void> _attachSelectedTemplates(String jobId) async {
-    for (final id in selectedFormTemplateIds) {
-      try {
-        await _jobs.addFormCatalog(jobId, id);
-      } catch (_) {
-        // Best-effort; support create already succeeded.
-      }
+    final ids = selectedFormTemplateIds.toList();
+    if (ids.isEmpty) return;
+    try {
+      await _jobs.addFormCatalog(jobId, ids);
+    } catch (_) {
+      // Best-effort; support create already succeeded.
     }
   }
 

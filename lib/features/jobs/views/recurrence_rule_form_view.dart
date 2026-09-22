@@ -5,6 +5,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/app_date_field.dart';
+import '../../../shared/widgets/keyboard_time_field.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/recurrence_rule_form_controller.dart';
 import '../utils/recurrence_rrule_builder.dart';
@@ -136,13 +137,13 @@ class RecurrenceRuleFormView extends StatelessWidget {
                     onChanged: (date) => c.endDate.value = date,
                   ),
                   const Divider(height: 32),
-                  Text('Visit windows', style: Get.textTheme.titleMedium),
+                  Text('Participant shifts', style: Get.textTheme.titleMedium),
                   for (var index = 0; index < c.windows.length; index++)
                     _WindowRow(controller: c, index: index),
                   TextButton.icon(
                     onPressed: c.windows.length == 4 ? null : c.addWindow,
                     icon: const Icon(Icons.add),
-                    label: const Text('Add window'),
+                    label: const Text('Add participant shift'),
                   ),
                   const SizedBox(height: 12),
                   Text('Task titles', style: Get.textTheme.titleMedium),
@@ -261,49 +262,44 @@ class _WindowRow extends StatelessWidget {
   final RecurrenceRuleFormController controller;
   final int index;
 
+  TimeOfDay _parse(String value) {
+    return parseHhMm(value) ?? const TimeOfDay(hour: 9, minute: 0);
+  }
+
   @override
   Widget build(BuildContext context) {
     final window = controller.windows[index];
-    Future<void> pick(bool start) async {
-      final value = start ? window.startTime : window.endTime;
-      final parts = value.split(':');
-      final selected = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay(
-          hour: int.parse(parts[0]),
-          minute: int.parse(parts[1]),
-        ),
-      );
-      if (selected == null) return;
-      final replacement =
-          '${selected.hour.toString().padLeft(2, '0')}:${selected.minute.toString().padLeft(2, '0')}';
-      if (start) {
-        controller.setWindowStartTime(index, replacement);
-      } else {
-        controller.setWindowEndTime(index, replacement);
-      }
-    }
-
-    return Row(
-      children: [
-        Expanded(
-          child: TextButton(
-            onPressed: () => pick(true),
-            child: Text('Start ${window.startTime}'),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: KeyboardTimeField(
+              label: 'Start time',
+              value: _parse(window.startTime),
+              onChanged: (time) {
+                controller.setWindowStartTime(index, formatHhMm(time));
+              },
+            ),
           ),
-        ),
-        Expanded(
-          child: TextButton(
-            onPressed: () => pick(false),
-            child: Text('End ${window.endTime}'),
+          const SizedBox(width: 8),
+          Expanded(
+            child: KeyboardTimeField(
+              label: 'End time',
+              value: _parse(window.endTime),
+              onChanged: (time) {
+                controller.setWindowEndTime(index, formatHhMm(time));
+              },
+            ),
           ),
-        ),
-        if (controller.windows.length > 1)
-          IconButton(
-            onPressed: () => controller.removeWindow(index),
-            icon: const Icon(Icons.remove_circle_outline),
-          ),
-      ],
+          if (controller.windows.length > 1)
+            IconButton(
+              onPressed: () => controller.removeWindow(index),
+              icon: const Icon(Icons.remove_circle_outline),
+            ),
+        ],
+      ),
     );
   }
 }

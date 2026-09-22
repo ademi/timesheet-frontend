@@ -187,7 +187,7 @@ class InvoiceExportsController extends GetxController {
     errorMessage.value = null;
     try {
       final visit = await _visitsRepository.getVisit(row.visitId);
-      openVisitForFix(visit);
+      await openVisitForFix(visit);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
       if (!Get.testMode) {
@@ -474,9 +474,13 @@ class InvoiceExportsController extends GetxController {
     ]);
   }
 
-  void openVisitForFix(VisitOut visit) {
-    if (Get.testMode) return;
-    Get.toNamed(AppRoutes.staffVisitDetail, arguments: visit);
+  /// Opens visit detail for Fix-on-visit; reloads Create list when staff returns.
+  Future<void> openVisitForFix(VisitOut visit) async {
+    if (!Get.testMode) {
+      await Get.toNamed(AppRoutes.staffVisitDetail, arguments: visit);
+    }
+    lastVisitErrors.clear();
+    await loadExportableVisits();
   }
 
   void openDetail(InvoiceExportOut export) {
