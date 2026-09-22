@@ -71,7 +71,7 @@
 - Modify: controller
 - Create: `frontend/test/features/clients/legal_other_document_test.dart`
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 ```dart
 test('Other type requires non-empty custom label to be complete-ready', () {
@@ -107,7 +107,7 @@ const legalOtherTypePresets = <String, String>{
 
 (Adjust labels to product language if a prior list exists in codebase — grep first.)
 
-- [ ] **Step 2: Implement model**
+- [x] **Step 2: Implement model**
 
 ```dart
 class LegalOtherDocumentDraft {
@@ -157,7 +157,7 @@ void removeLegalOtherDoc(String id) {
 }
 ```
 
-- [ ] **Step 3: PASS + commit**
+- [x] **Step 3: PASS + commit**
 
 ```bash
 cd frontend && flutter test test/features/clients/legal_other_document_test.dart
@@ -170,78 +170,15 @@ git commit -am "feat: legal other document draft model"
 
 **Files:** controller, helper, backend if needed.
 
-- [ ] **Step 1: Failing controller test**
+- [x] **Step 1: Failing controller test**
+- [x] **Step 2: Implement upload** via helper with category from Task 0; PDF-only FilePicker.
+- [x] **Step 3: Persist fact** on legal submit / finish
+- [x] **Step 4: Security tests**
+- [x] **Step 5: Commit**
 
-```dart
-test('uploadLegalOther marks row complete and stores document id', () async {
-  when(() => mock.uploadClientDocument(/*...*/))
-      .thenAnswer((_) async => 'doc-1');
-  c.addLegalOtherDoc();
-  c.legalOtherDocs.first.typeKey = 'court_order';
-  await c.uploadLegalOther(c.legalOtherDocs.first.id, fakeBytes, 'order.pdf');
-  expect(c.legalOtherDocs.first.complete, isTrue);
-  expect(c.legalOtherDocs.first.documentId, 'doc-1');
-});
-
-test('finishOnboarding succeeds with zero other legal docs', () async {
-  // existing finish stubs...
-  expect(await c.finishOnboarding(), isTrue);
-});
-```
-
-- [ ] **Step 2: Implement upload** via helper with category from Task 0; PDF-only FilePicker.
-
-- [ ] **Step 3: Persist fact** on legal submit / finish:
-
-```dart
-await _upsertFact(
-  clientId,
-  'legal_other_documents',
-  legalOtherDocs
-      .where((e) => e.complete && e.documentId != null)
-      .map((e) => {
-            'type': e.typeKey,
-            'label': e.displayLabel,
-            'document_id': e.documentId,
-          })
-      .toList(),
-);
-```
-
-Hydrate on resume into `legalOtherDocs`.
-
-- [ ] **Step 4: Security tests**
-
-```dart
-test('Other label longer than 120 chars is rejected', () async { ... });
-test('upload rejected when displayLabel null', () async { ... });
-```
-
-- [ ] **Step 5: Commit**
-
-```bash
-git commit -am "feat: persist optional legal other documents"
-```
-
----
-
-### Task 3: Legal step UI
-
-**Files:** `onboarding_legal_pack_step.dart`
-
-- [ ] **Step 1: Widget test** — finds “Add a document”; Other shows text field; incomplete row removable.
-
-- [ ] **Step 2: UI structure**
-
-1. Existing Consent / SA / Acknowledgement cards unchanged (including Consent signer).
-2. For each `legalOtherDocs` row: type dropdown, conditional Other text field, `AppFileField` (or existing upload chrome), complete state, remove if incomplete.
-3. Button: “Add a document”.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git commit -am "feat: Legal step Add a document for other PDFs"
-```
+- [x] **Step 1: Widget test** — finds “Add a document”; Other shows text field; incomplete row removable.
+- [x] **Step 2: UI structure**
+- [x] **Step 3: Commit**
 
 ---
 
@@ -299,10 +236,14 @@ cd backend/timesheet-backend && .venv/bin/pytest tests/ -k legal_other -q
 ```
 
 **Acceptance criteria:**
-- [ ] Optional other docs with type dropdown + Other free text → Tasks 1–3
-- [ ] Same card/PDF complete pattern; no signer → Task 3
+- [x] Optional other docs with type dropdown + Other free text → Tasks 1–3
+- [x] Same card/PDF complete pattern; no signer → Task 3
 - [x] Profile & docs only after onboarding → Task 4
-- [ ] Zero others allowed → Task 2
+- [x] Zero others allowed → Task 2
+
+**Shipped (2026-09-22):** Frontend commits through legal-other persist/hydrate/UI + audit fixes; backend V070 + nested `document_id` ownership validation (`85972aa`).
+
+**Deferred from this plan:** Profile & docs remains read-only for other docs (no post-finish add/replace); contractor share mapping for `legal_other_documents` if product needs share-by-key later.
 
 
 ## GSTACK REVIEW REPORT

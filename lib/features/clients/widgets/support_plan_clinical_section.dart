@@ -35,6 +35,15 @@ class SupportPlanClinicalSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _ClinicalDocRow(
+            label: 'Medical report',
+            onFile: store.medicalPdfOnFile.value,
+            pdfOnFile: store.medicalPdfOnFile.value,
+            onToggle: null,
+            onUpload:
+                busy ? null : () => store.uploadMedicalPdf(clientId: clientId),
+          ),
+          const SizedBox(height: 12),
+          _ClinicalDocRow(
             label: 'Behaviour support plan',
             helper:
                 'Document on file is separate from the Care plan BSP flag below — set both when a BSP applies.',
@@ -43,15 +52,6 @@ class SupportPlanClinicalSection extends StatelessWidget {
             onToggle: (v) => store.bspOnFile.value = v,
             onUpload:
                 busy ? null : () => store.uploadBspPdf(clientId: clientId),
-          ),
-          const SizedBox(height: 12),
-          _ClinicalDocRow(
-            label: 'Medical report',
-            onFile: store.medicalPdfOnFile.value,
-            pdfOnFile: store.medicalPdfOnFile.value,
-            onToggle: null,
-            onUpload:
-                busy ? null : () => store.uploadMedicalPdf(clientId: clientId),
           ),
           const SizedBox(height: 12),
           _ClinicalDocRow(

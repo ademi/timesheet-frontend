@@ -25,7 +25,6 @@ import '../utils/onboarding_age.dart';
 import '../utils/ndis_plan_budgets_codec.dart';
 import '../utils/support_plan_specialists_codec.dart';
 import '../utils/onboarding_keys.dart';
-import '../utils/onboarding_test_defaults.dart';
 import '../utils/site_geocode_apply.dart';
 import '../widgets/contact_form_host.dart';
 import '../widgets/onboarding/onboarding_identity_step.dart';
@@ -309,13 +308,8 @@ class ClientOnboardingController extends GetxController
     contactIsEmergency.value = true;
     contactDraftMode.value = 'emergency';
     loadFormTemplates();
-    final args = Get.arguments;
     // Resume hydrate is owned by [ClientOnboardingBinding] so put + binding
     // do not both fire unawaited [hydrateFromClient].
-    if (args is! ClientOut) {
-      // TEMP: delete import + this call (and onboarding_test_defaults.dart) when done.
-      applyOnboardingTestDefaults(this);
-    }
   }
 
   /// Clears non-Identity step state from a prior wizard session so resume

@@ -17,5 +17,15 @@ void main() {
     final theme = appTheme();
     expect(theme.inputDecorationTheme.filled, isTrue);
     expect(theme.inputDecorationTheme.fillColor, AppColors.cardBackground);
+
+    final checkboxFill = theme.checkboxTheme.fillColor?.resolve({
+      WidgetState.selected,
+    });
+    expect(checkboxFill, AppColors.cta);
+
+    final switchTrack = theme.switchTheme.trackColor?.resolve({
+      WidgetState.selected,
+    });
+    expect(switchTrack, AppColors.cta);
   });
 }

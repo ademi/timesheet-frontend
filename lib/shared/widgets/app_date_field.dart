@@ -70,7 +70,7 @@ class AppDateField extends StatelessWidget {
     final empty = value == null;
     final display =
         empty
-            ? (hintText ?? 'Select date')
+            ? (hintText ?? '')
             : formatAppDate(value!);
     final hintStyle = theme.inputDecorationTheme.hintStyle ??
         theme.textTheme.bodyLarge?.copyWith(

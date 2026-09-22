@@ -15,7 +15,7 @@ class AppFileField extends StatelessWidget {
     this.errorText,
     this.enabled = true,
     this.pickLabel = 'Choose file',
-    this.emptyHint = 'No file',
+    this.emptyHint = '',
   });
 
   final String label;

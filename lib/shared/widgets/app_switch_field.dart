@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/themes/app_colors.dart';
+
 /// Boolean switch styled like a filled outlined [TextField].
 ///
 /// Uses the app [InputDecorationTheme] (fill + border) so toggles match other
@@ -56,7 +58,8 @@ class AppSwitchField extends StatelessWidget {
             Switch(
               value: value,
               onChanged: onChanged,
-              activeThumbColor: activeThumbColor,
+              activeThumbColor: activeThumbColor ?? AppColors.onCta,
+              activeTrackColor: AppColors.cta,
             ),
           ],
         ),
