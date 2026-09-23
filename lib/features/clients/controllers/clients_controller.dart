@@ -59,6 +59,9 @@ class ClientsController extends GetxController
 
   /// When false (default), hide clients still mid-wizard (D19).
   final showIncompleteOnboarding = false.obs;
+
+  /// Manage-only: include archived clients in the list fetch.
+  final showArchived = false.obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
@@ -305,7 +308,13 @@ class ClientsController extends GetxController
     isLoading.value = true;
     errorMessage.value = null;
     try {
-      items.assignAll(await _repository.listClients());
+      // Only pass include_archived from the clients list (never job/shift pickers).
+      final includeArchived = showArchived.value && canManage;
+      items.assignAll(
+        includeArchived
+            ? await _repository.listClients(includeArchived: true)
+            : await _repository.listClients(),
+      );
       photosByClient.clear();
       _ensureListPhotosLoaded();
     } on AppFailure catch (e) {
@@ -315,6 +324,12 @@ class ClientsController extends GetxController
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> setShowArchived(bool value) async {
+    if (!canManage) return;
+    showArchived.value = value;
+    await load();
   }
 
   Future<void> openCreate() async {
@@ -1416,6 +1431,53 @@ class ClientsController extends GetxController
     }
   }
 
+  /// Default restore target: prior inactive if known from metadata, else active.
+  static String defaultRestoreTargetStatus(ClientOut client) {
+    final prior = client.metadata['status_before_archive'] ??
+        client.metadata['previous_status'];
+    if (prior == 'inactive') return 'inactive';
+    return 'active';
+  }
+
+  Future<void> restoreClient(ClientOut client) async {
+    if (client.status != 'archived') return;
+    final target = await Get.dialog<String>(
+      _RestoreClientDialog(
+        clientName: client.fullName,
+        initialTarget: defaultRestoreTargetStatus(client),
+      ),
+    );
+    if (target == null) return;
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final restored = await _repository.restoreClient(
+        client.id,
+        targetStatus: target,
+      );
+      await openDetailById(restored.id);
+      await load();
+      if (!Get.testMode) {
+        AppToast.success(
+          'Client restored',
+          '${restored.fullName} is ${restored.status} again.',
+        );
+      }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      if (!Get.testMode) {
+        AppToast.error('Could not restore', e.message);
+      }
+    } catch (e) {
+      errorMessage.value = e.toString();
+      if (!Get.testMode) {
+        AppToast.error('Could not restore', e.toString());
+      }
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
   /// Tab indices on client detail (Option B).
   static const tabOverview = 0;
   static const tabCarePlan = 1;
@@ -2139,6 +2201,77 @@ class ClientsController extends GetxController
       // Never send octet-stream — backend rejects it with 400.
       _ => 'image/jpeg',
     };
+  }
+}
+
+/// Confirm restore: target status + disclosure that jobs/visits stay closed.
+class _RestoreClientDialog extends StatefulWidget {
+  const _RestoreClientDialog({
+    required this.clientName,
+    required this.initialTarget,
+  });
+
+  final String clientName;
+  final String initialTarget;
+
+  @override
+  State<_RestoreClientDialog> createState() => _RestoreClientDialogState();
+}
+
+class _RestoreClientDialogState extends State<_RestoreClientDialog> {
+  late String _target;
+
+  @override
+  void initState() {
+    super.initState();
+    _target = widget.initialTarget == 'inactive' ? 'inactive' : 'active';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Restore client?'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '${widget.clientName} will return to roster lists. Standing '
+              'jobs and visits are not automatically reopened. Client invites '
+              'and document shares stay revoked.',
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Restore as',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'active', label: Text('Active')),
+                ButtonSegment(value: 'inactive', label: Text('Inactive')),
+              ],
+              selected: {_target},
+              onSelectionChanged: (next) {
+                if (next.isEmpty) return;
+                setState(() => _target = next.first);
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Get.back(result: _target),
+          child: const Text('Restore'),
+        ),
+      ],
+    );
   }
 }
 

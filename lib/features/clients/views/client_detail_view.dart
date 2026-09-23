@@ -89,6 +89,15 @@ class ClientDetailView extends GetView<ClientsController> {
                         : () => controller.deleteClient(client),
                 icon: const Icon(Icons.archive_outlined),
               ),
+            if (controller.canManage && archived)
+              IconButton(
+                tooltip: 'Restore',
+                onPressed:
+                    controller.isSaving.value
+                        ? null
+                        : () => controller.restoreClient(client),
+                icon: const Icon(Icons.unarchive_outlined),
+              ),
           ],
         ),
         body: Column(
@@ -134,7 +143,13 @@ class ClientDetailView extends GetView<ClientsController> {
                   ],
                   if (archived) ...[
                     const SizedBox(height: 12),
-                    const _ArchivedClientBanner(),
+                    _ArchivedClientBanner(
+                      onRestore:
+                          controller.canManage
+                              ? () => controller.restoreClient(client)
+                              : null,
+                      isBusy: controller.isSaving.value,
+                    ),
                   ],
                   if (ClientsController.isOnboardingIncomplete(client)) ...[
                     const SizedBox(height: 12),
@@ -343,7 +358,10 @@ class _CarePlanSticky extends StatelessWidget {
 }
 
 class _ArchivedClientBanner extends StatelessWidget {
-  const _ArchivedClientBanner();
+  const _ArchivedClientBanner({this.onRestore, this.isBusy = false});
+
+  final VoidCallback? onRestore;
+  final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
@@ -355,9 +373,25 @@ class _ArchivedClientBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.slate300),
       ),
-      child: const Text(
-        'Archived — records retained for legal and audit requirements.',
-        style: TextStyle(fontSize: 13),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Archived — records retained for legal and audit requirements.',
+            style: TextStyle(fontSize: 13),
+          ),
+          if (onRestore != null) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: isBusy ? null : onRestore,
+                icon: const Icon(Icons.unarchive_outlined, size: 18),
+                label: const Text('Restore'),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

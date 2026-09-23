@@ -46,8 +46,11 @@ class ClientsRepository {
     bool tenantLevel = true,
   }) => _remote.listFormTemplates(tenantLevel: tenantLevel);
 
-  Future<List<ClientOut>> listClients() async =>
-      sortedByName(await _remote.listClients(), (c) => c.fullName);
+  Future<List<ClientOut>> listClients({bool includeArchived = false}) async =>
+      sortedByName(
+        await _remote.listClients(includeArchived: includeArchived),
+        (c) => c.fullName,
+      );
   Future<ClientOut> getClient(String id) => _remote.getClient(id);
   Future<BudgetSummaryOut> getBudgetSummary(String clientId) =>
       _remote.getBudgetSummary(clientId);
@@ -56,6 +59,11 @@ class ClientsRepository {
   Future<ClientOut> patchClient(String id, ClientUpdateRequest body) =>
       _remote.patchClient(id, body);
   Future<void> deleteClient(String id) => _remote.deleteClient(id);
+  Future<ClientOut> restoreClient(
+    String id, {
+    String targetStatus = 'active',
+  }) =>
+      _remote.restoreClient(id, targetStatus: targetStatus);
 
   Future<ProfilePhotoOut> getClientProfilePhoto(String clientId) =>
       _remote.getClientProfilePhoto(clientId);

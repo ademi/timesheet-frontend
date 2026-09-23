@@ -66,8 +66,8 @@ void main() {
   }
 
   setUp(() {
-    Get.testMode = true;
     Get.reset();
+    Get.testMode = true;
     clients = _MockClientsRepository();
     jobs = _MockJobsRepository();
     session = _MockSessionService();
@@ -114,6 +114,24 @@ void main() {
     expect(find.byTooltip('Edit'), findsNothing);
     expect(find.byTooltip('Delete'), findsNothing);
     expect(find.byTooltip('Archive'), findsNothing);
-    expect(find.textContaining('Archived'), findsOneWidget);
+    expect(find.byTooltip('Restore'), findsOneWidget);
+    expect(find.textContaining('Archived'), findsWidgets);
+  });
+
+  testWidgets('restore dialog discloses jobs stay closed and invites revoked', (
+    tester,
+  ) async {
+    controller.selected.value = _archivedClient;
+    await tester.pumpWidget(const GetMaterialApp(home: ClientDetailView()));
+    await tester.pump();
+
+    await tester.tap(find.widgetWithText(TextButton, 'Restore'));
+    await tester.pump();
+
+    expect(find.text('Restore client?'), findsOneWidget);
+    expect(find.textContaining('not automatically reopened'), findsOneWidget);
+    expect(find.textContaining('stay revoked'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
+    expect(find.text('Inactive'), findsOneWidget);
   });
 }

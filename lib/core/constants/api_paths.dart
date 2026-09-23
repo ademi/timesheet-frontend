@@ -107,6 +107,7 @@ abstract final class ApiPaths {
   // Clients
   static const clients = '$_v1/clients';
   static String client(String id) => '$clients/$id';
+  static String clientRestore(String id) => '${client(id)}/restore';
   static const clientTypes = '$clients/types';
   static String clientType(String id) => '$clientTypes/$id';
   static String clientTypeRequirements(String clientTypeId) =>

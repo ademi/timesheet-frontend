@@ -54,12 +54,27 @@ class ClientsListView extends GetView<ClientsController> {
                     ],
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: FilterChip(
-                        label: const Text('Show incomplete'),
-                        selected: controller.showIncompleteOnboarding.value,
-                        onSelected:
-                            (v) =>
-                                controller.showIncompleteOnboarding.value = v,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilterChip(
+                            label: const Text('Show incomplete'),
+                            selected:
+                                controller.showIncompleteOnboarding.value,
+                            onSelected:
+                                (v) =>
+                                    controller
+                                        .showIncompleteOnboarding
+                                        .value = v,
+                          ),
+                          if (controller.canManage)
+                            FilterChip(
+                              label: const Text('Show archived'),
+                              selected: controller.showArchived.value,
+                              onSelected: controller.setShowArchived,
+                            ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -75,7 +90,10 @@ class ClientsListView extends GetView<ClientsController> {
                         onOpen: () => controller.openDetail(c),
                         onContinueOnboarding:
                             controller.canManage &&
-                                    ClientsController.isOnboardingIncomplete(c)
+                                    ClientsController.isOnboardingIncomplete(
+                                      c,
+                                    ) &&
+                                    c.status != 'archived'
                                 ? () => controller.openResumeOnboarding(c)
                                 : null,
                       ),
@@ -112,9 +130,11 @@ class _ClientCard extends StatelessWidget {
       if (client.phone != null) client.phone!,
     ].join(' · ');
     final incomplete = ClientsController.isOnboardingIncomplete(client);
+    final archived = client.status == 'archived';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      color: archived ? AppColors.brandSoft : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -129,7 +149,27 @@ class _ClientCard extends StatelessWidget {
             title: Row(
               children: [
                 Expanded(child: Text(client.fullName)),
-                if (incomplete)
+                if (archived)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.slate300),
+                    ),
+                    child: const Text(
+                      'Archived',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  )
+                else if (incomplete)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -154,7 +194,12 @@ class _ClientCard extends StatelessWidget {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(client.status + (contact.isEmpty ? '' : ' · $contact')),
+                Text(
+                  archived
+                      ? 'Archived${contact.isEmpty ? '' : ' · $contact'}'
+                      : client.status +
+                          (contact.isEmpty ? '' : ' · $contact'),
+                ),
                 if (address.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   InkWell(

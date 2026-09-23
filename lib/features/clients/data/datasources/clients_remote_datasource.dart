@@ -143,9 +143,13 @@ class ClientsRemoteDataSource {
     }
   }
 
-  Future<List<ClientOut>> listClients() async {
+  Future<List<ClientOut>> listClients({bool includeArchived = false}) async {
     try {
-      final response = await _dio.get<List<dynamic>>(ApiPaths.clients);
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.clients,
+        queryParameters:
+            includeArchived ? const {'include_archived': true} : null,
+      );
       return _mapList(response.data, ClientOut.fromJson);
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
@@ -254,6 +258,21 @@ class ClientsRemoteDataSource {
   Future<void> deleteClient(String id) async {
     try {
       await _dio.delete<void>(ApiPaths.client(id));
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ClientOut> restoreClient(
+    String id, {
+    String targetStatus = 'active',
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.clientRestore(id),
+        data: {'target_status': targetStatus},
+      );
+      return _require(response.data, ClientOut.fromJson, 'restore client');
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

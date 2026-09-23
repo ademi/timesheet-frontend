@@ -60,10 +60,13 @@ void declareClientArchiveStaffE2e() {
   late MockSessionServiceForArchiveE2e session;
   late ClientsController controller;
   var deleteClientCalls = 0;
+  var restoreClientCalls = 0;
+  String? lastRestoreTarget;
 
   void stubReadPaths(ClientOut client) {
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => clients.listClients()).thenAnswer((_) async => [client]);
+    when(() => clients.getClient(any())).thenAnswer((_) async => client);
     when(
       () => clients.getClientProfilePhoto(any()),
     ).thenAnswer((_) async => const ProfilePhotoOut(hasPhoto: false));
@@ -78,15 +81,25 @@ void declareClientArchiveStaffE2e() {
   }
 
   setUp(() {
-    Get.testMode = true;
     Get.reset();
+    Get.testMode = true;
     clients = MockClientsRepositoryForArchiveE2e();
     jobs = MockJobsRepositoryForArchiveE2e();
     session = MockSessionServiceForArchiveE2e();
     deleteClientCalls = 0;
+    restoreClientCalls = 0;
+    lastRestoreTarget = null;
     stubReadPaths(activeClientForArchiveE2e);
     when(() => clients.deleteClient(any())).thenAnswer((_) async {
       deleteClientCalls++;
+    });
+    when(
+      () => clients.restoreClient(any(), targetStatus: any(named: 'targetStatus')),
+    ).thenAnswer((invocation) async {
+      restoreClientCalls++;
+      lastRestoreTarget =
+          invocation.namedArguments[#targetStatus] as String? ?? 'active';
+      return activeClientForArchiveE2e;
     });
     controller = ClientsController(
       repository: clients,
@@ -134,6 +147,51 @@ void declareClientArchiveStaffE2e() {
 
     expect(find.byTooltip('Edit'), findsNothing);
     expect(find.byTooltip('Archive'), findsNothing);
-    expect(find.textContaining('Archived'), findsOneWidget);
+    expect(find.byTooltip('Restore'), findsOneWidget);
+    expect(find.textContaining('Archived'), findsWidgets);
+  });
+
+  testWidgets('staff restores archived client to active', (tester) async {
+    stubReadPaths(archivedClientForArchiveE2e);
+    when(() => clients.getClient(any())).thenAnswer((_) async {
+      return activeClientForArchiveE2e;
+    });
+    when(() => clients.listClients()).thenAnswer(
+      (_) async => [activeClientForArchiveE2e],
+    );
+    controller.selected.value = archivedClientForArchiveE2e;
+    controller.hydrateOverviewDrafts();
+
+    await tester.pumpWidget(const GetMaterialApp(home: ClientDetailView()));
+    await tester.pump();
+
+    expect(find.byTooltip('Restore'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Restore'));
+    await tester.pump(); // open dialog
+
+    expect(find.text('Restore client?'), findsOneWidget);
+    expect(
+      find.textContaining('not automatically reopened'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('stay revoked'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
+    expect(find.text('Inactive'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Restore').last);
+    await tester.pump(); // start restore
+    await tester.pump(); // finish async restore + refresh
+
+    expect(restoreClientCalls, 1);
+    expect(lastRestoreTarget, 'active');
+    verify(
+      () => clients.restoreClient(
+        archivedClientForArchiveE2e.id,
+        targetStatus: 'active',
+      ),
+    ).called(1);
+    expect(controller.selected.value?.status, 'active');
+    expect(find.byTooltip('Archive'), findsOneWidget);
+    expect(find.byTooltip('Restore'), findsNothing);
   });
 }
