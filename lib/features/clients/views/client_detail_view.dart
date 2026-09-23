@@ -169,7 +169,7 @@ class ClientDetailView extends GetView<ClientsController> {
                 controller.tabIndex.value = i;
               },
             ),
-            Expanded(child: _tabContent(tab)),
+            Expanded(child: _tabContent(tab, canEdit: !archived)),
             if (errorNotice != null && overviewSelected) errorNotice,
             if (overviewSelected &&
                 canEditOverview &&
@@ -203,13 +203,15 @@ class ClientDetailView extends GetView<ClientsController> {
     );
   }
 
-  Widget _tabContent(int tab) {
+  Widget _tabContent(int tab, {required bool canEdit}) {
+    final manage = canEdit && controller.canManage;
+    final manageSupport = canEdit && controller.canManageSupport;
     switch (tab) {
       case ClientsController.tabPlaces:
         return _scrollTab(
           ClientDetailSitesSection(
             sites: controller.sites.toList(),
-            canManage: controller.canManage,
+            canManage: manage,
             onAdd: () => controller.beginSiteForm(),
             onEdit: (s) => controller.beginSiteForm(site: s),
             onDelete: controller.deleteSite,
@@ -219,7 +221,7 @@ class ClientDetailView extends GetView<ClientsController> {
         return _scrollTab(
           ClientDetailContactsSection(
             contacts: controller.contacts.toList(),
-            canManage: controller.canManage,
+            canManage: manage,
             onAdd: () => controller.beginContactForm(),
             onEdit: (c) => controller.beginContactForm(contact: c),
             onDelete: controller.deleteContact,
@@ -250,7 +252,7 @@ class ClientDetailView extends GetView<ClientsController> {
             hasVisitsAccess: controller.canViewVisits,
             onOpen: controller.openVisitDetail,
             hasOngoing: controller.hasOngoing,
-            canManage: controller.canManageSupport,
+            canManage: manageSupport,
             supportItemCode: controller.standingJob.value?.supportItemCode,
             supportItemName: controller.standingJob.value?.supportItemName,
             onStartOngoing: controller.startOngoingSupport,
@@ -262,7 +264,12 @@ class ClientDetailView extends GetView<ClientsController> {
         return _scrollTab(ClientDetailProfileSection(controller: controller));
       case ClientsController.tabOverview:
       default:
-        return _scrollTab(ClientDetailOverviewSection(controller: controller));
+        return _scrollTab(
+          ClientDetailOverviewSection(
+            controller: controller,
+            canEditOverride: canEdit,
+          ),
+        );
     }
   }
 }

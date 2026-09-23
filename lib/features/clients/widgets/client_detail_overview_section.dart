@@ -6,9 +6,16 @@ import '../controllers/clients_controller.dart';
 
 /// Editable identity fields for the Overview tab (CR1).
 class ClientDetailOverviewSection extends StatelessWidget {
-  const ClientDetailOverviewSection({super.key, required this.controller});
+  const ClientDetailOverviewSection({
+    super.key,
+    required this.controller,
+    this.canEditOverride,
+  });
 
   final ClientsController controller;
+
+  /// When false, forces read-only (e.g. archived clients). Null = derive from perms.
+  final bool? canEditOverride;
 
   static const fullNameKey = ValueKey<String>('overview-full-name');
   static const emailKey = ValueKey<String>('overview-email');
@@ -22,7 +29,9 @@ class ClientDetailOverviewSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final canEdit = controller.canManage || controller.canManageProfile;
+      final canEdit =
+          canEditOverride ??
+          (controller.canManage || controller.canManageProfile);
       final editing = controller.overviewEditing.value;
       final types = controller.clientTypes;
       final selectedTypeId = controller.overviewClientTypeId.value;
