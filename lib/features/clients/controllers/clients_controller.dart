@@ -1378,11 +1378,16 @@ class ClientsController extends GetxController
   }
 
   Future<void> deleteClient(ClientOut client) async {
+    if (client.status == 'archived') return;
     final ok =
         await Get.dialog<bool>(
           AlertDialog(
-            title: const Text('Delete client?'),
-            content: Text('Delete ${client.fullName}? This cannot be undone.'),
+            title: const Text('Archive client?'),
+            content: Text(
+              'Archive ${client.fullName}? They will be hidden from normal '
+              'workflows. Records and documents are kept for legal and audit '
+              'requirements.',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Get.back(result: false),
@@ -1390,7 +1395,7 @@ class ClientsController extends GetxController
               ),
               TextButton(
                 onPressed: () => Get.back(result: true),
-                child: const Text('Delete'),
+                child: const Text('Archive'),
               ),
             ],
           ),

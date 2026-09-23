@@ -49,10 +49,12 @@ class ClientDetailView extends GetView<ClientsController> {
       final profileSelected = tab == ClientsController.tabProfile;
       final overviewSelected = tab == ClientsController.tabOverview;
       final carePlanSelected = tab == ClientsController.tabCarePlan;
+      final archived = client.status == 'archived';
       final canEditProfile =
-          controller.canManage || controller.canManageProfile;
+          !archived &&
+          (controller.canManage || controller.canManageProfile);
       final canEditOverview = canEditProfile;
-      final canEditCarePlan = controller.canManage;
+      final canEditCarePlan = !archived && controller.canManage;
       final errorNotice =
           err == null
               ? null
@@ -69,7 +71,7 @@ class ClientDetailView extends GetView<ClientsController> {
           leading: const AppBackButton(fallbackRoute: AppRoutes.staffClients),
           title: Text(client.fullName),
           actions: [
-            if (controller.canManage)
+            if (controller.canManage && !archived)
               IconButton(
                 tooltip: 'Edit',
                 onPressed:
@@ -78,14 +80,14 @@ class ClientDetailView extends GetView<ClientsController> {
                         : () => controller.openEdit(client),
                 icon: const Icon(Icons.edit_outlined),
               ),
-            if (controller.canManage)
+            if (controller.canManage && !archived)
               IconButton(
-                tooltip: 'Delete',
+                tooltip: 'Archive',
                 onPressed:
                     controller.isSaving.value
                         ? null
                         : () => controller.deleteClient(client),
-                icon: const Icon(Icons.delete_outline),
+                icon: const Icon(Icons.archive_outlined),
               ),
           ],
         ),
@@ -130,11 +132,15 @@ class ClientDetailView extends GetView<ClientsController> {
                       ),
                     ),
                   ],
+                  if (archived) ...[
+                    const SizedBox(height: 12),
+                    const _ArchivedClientBanner(),
+                  ],
                   if (ClientsController.isOnboardingIncomplete(client)) ...[
                     const SizedBox(height: 12),
                     _IncompleteOnboardingBanner(
                       onContinue:
-                          controller.canManage
+                          controller.canManage && !archived
                               ? () => controller.openResumeOnboarding(client)
                               : null,
                     ),
@@ -326,6 +332,27 @@ class _CarePlanSticky extends StatelessWidget {
         ],
       );
     });
+  }
+}
+
+class _ArchivedClientBanner extends StatelessWidget {
+  const _ArchivedClientBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.brandSoft,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.slate300),
+      ),
+      child: const Text(
+        'Archived — records retained for legal and audit requirements.',
+        style: TextStyle(fontSize: 13),
+      ),
+    );
   }
 }
 

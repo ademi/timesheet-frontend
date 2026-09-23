@@ -19,7 +19,7 @@ class ClientOut {
   final String id;
   final String tenantId;
   final String fullName;
-  final String status; // active | inactive
+  final String status; // active | inactive | archived
   final String? email;
   final String? phone;
   final String? serviceAgreementNotes;

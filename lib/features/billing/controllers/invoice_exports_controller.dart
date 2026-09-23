@@ -68,7 +68,7 @@ class InvoiceExportsController extends GetxController {
   List<({String id, String name})> get clientFilterOptions {
     final list =
         clients
-            .where((c) => c.status != 'inactive')
+            .where((c) => c.status == 'active')
             .map((c) => (id: c.id, name: c.fullName.trim()))
             .where((c) => c.name.isNotEmpty)
             .toList(growable: false)
