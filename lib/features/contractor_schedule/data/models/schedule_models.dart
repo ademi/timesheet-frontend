@@ -1,4 +1,6 @@
 /// Contractor schedule DTOs (design §6.9 / wiring guide §10).
+import '../../../visits/data/models/visit_models.dart';
+
 class TimetableVisitOut {
   const TimetableVisitOut({
     required this.id,
@@ -19,6 +21,28 @@ class TimetableVisitOut {
   final DateTime scheduledStart;
   final DateTime scheduledEnd;
   final String status;
+
+  /// Lightweight stub so schedule → detail can hydrate immediately (A17).
+  /// [ContractorVisitsController.refreshSelected] replaces with the full visit.
+  VisitOut toVisitOutStub({required String contractorId}) {
+    return VisitOut(
+      id: id,
+      tenantId: tenantId,
+      jobId: jobId,
+      contractorId: contractorId,
+      scheduledStart: scheduledStart,
+      scheduledEnd: scheduledEnd,
+      status: status,
+      source: 'timetable',
+      geofenceRadiusM: 100,
+      geofenceMode: 'informational',
+      paymentStatus: 'unpaid',
+      createdAt: scheduledStart,
+      updatedAt: scheduledStart,
+      jobTitle: jobTitle,
+      tenantName: tenantName,
+    );
+  }
 
   factory TimetableVisitOut.fromJson(Map<String, dynamic> json) {
     return TimetableVisitOut(

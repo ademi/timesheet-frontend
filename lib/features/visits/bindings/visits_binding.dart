@@ -8,6 +8,11 @@ import '../../attendance/bindings/attendance_binding.dart';
 import '../../billing/bindings/billing_binding.dart';
 import '../../clients/bindings/clients_binding.dart';
 import '../../clients/data/repositories/clients_repository.dart';
+import '../../documents/data/datasources/documents_remote_datasource.dart';
+import '../../documents/data/document_pipeline.dart';
+import '../../documents/sync/media_blob_store.dart';
+import '../../documents/sync/media_outbox_store.dart';
+import '../../documents/sync/media_sync_worker.dart';
 import '../../payroll/bindings/payroll_binding.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../engagements/bindings/engagements_binding.dart';
@@ -93,6 +98,45 @@ class VisitsBinding extends Bindings {
       );
       Get.put<SyncWorker>(worker, permanent: true);
       worker.start();
+    }
+    if (!Get.isRegistered<DocumentsRemoteDataSource>()) {
+      Get.lazyPut<DocumentsRemoteDataSource>(
+        () => DocumentsRemoteDataSource(
+          authenticatedDio: Get.find<ApiClient>().dio,
+        ),
+        fenix: true,
+      );
+    }
+    if (!Get.isRegistered<DocumentPipeline>()) {
+      Get.lazyPut<DocumentPipeline>(
+        () => DocumentPipeline(remote: Get.find<DocumentsRemoteDataSource>()),
+        fenix: true,
+      );
+    }
+    if (!Get.isRegistered<MediaBlobStore>()) {
+      Get.put<MediaBlobStore>(PathMediaBlobStore(), permanent: true);
+    }
+    if (!Get.isRegistered<MediaOutboxStore>()) {
+      Get.put<MediaOutboxStore>(MediaOutboxStore(GetStorage()), permanent: true);
+    }
+    if (!Get.isRegistered<MediaSyncWorker>()) {
+      final mediaWorker = MediaSyncWorker(
+        store: Get.find<MediaOutboxStore>(),
+        blobs: Get.find<MediaBlobStore>(),
+        pipeline: Get.find<DocumentPipeline>(),
+        onChanged: () {
+          if (Get.isRegistered<ContractorVisitsController>()) {
+            Get.find<ContractorVisitsController>().mediaOutboxRevision.value++;
+          }
+        },
+        onAcked: (item) {
+          if (Get.isRegistered<ContractorVisitsController>()) {
+            Get.find<ContractorVisitsController>().onMediaOutboxAcked(item);
+          }
+        },
+      );
+      Get.put<MediaSyncWorker>(mediaWorker, permanent: true);
+      mediaWorker.start();
     }
   }
 }

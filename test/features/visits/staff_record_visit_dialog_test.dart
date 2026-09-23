@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:rostiq/features/visits/data/models/visit_models.dart';
@@ -196,4 +197,76 @@ void main() {
     expect(find.textContaining('Progress report'), findsOneWidget);
     expect(find.textContaining('NDIS support item'), findsOneWidget);
   });
+
+  testWidgets(
+    'Before you record liveRegion + Record visit CTA expose Semantics labels',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: ElevatedButton(
+                  onPressed: () {
+                    showStaffRecordVisitDialog(
+                      context: context,
+                      visit: _visit(
+                        formRequirements: const [
+                          VisitFormRequirement(
+                            formTemplateId: 'f1',
+                            name: 'Progress report',
+                            isRequired: true,
+                          ),
+                        ],
+                        supportItemCode: null,
+                      ),
+                      onSubmit: ({
+                        required clockInAt,
+                        required clockOutAt,
+                        required reason,
+                      }) async => true,
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      final warnFinder = find.bySemanticsLabel(RegExp(r'Before you record'));
+      expect(warnFinder, findsOneWidget);
+      expect(
+        tester.getSemantics(warnFinder).hasFlag(SemanticsFlag.isLiveRegion),
+        isTrue,
+      );
+
+      // App bar title also reads "Record visit"; CTA is the Semantics(button).
+      final ctaFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.button == true &&
+            widget.properties.label == 'Record visit',
+      );
+      expect(ctaFinder, findsOneWidget);
+      expect(
+        tester.getSemantics(ctaFinder).hasFlag(SemanticsFlag.isButton),
+        isTrue,
+      );
+      expect(find.bySemanticsLabel(RegExp(r'Record visit')), findsWidgets);
+
+      // Documented focus order: warning liveRegion above CTA.
+      expect(
+        tester.getTopLeft(warnFinder).dy,
+        lessThan(tester.getTopLeft(ctaFinder).dy),
+      );
+
+      handle.dispose();
+    },
+  );
 }

@@ -34,6 +34,12 @@ List<String> incompleteRequiredFormNames(VisitOut visit) {
 bool visitMissingSupportItem(VisitOut visit) =>
     visit.supportItemCode == null || visit.supportItemCode!.trim().isEmpty;
 
+/// Staff "Record visit" dialog.
+///
+/// Focus / a11y order (top → bottom): app bar title → arrival date/time →
+/// departure date/time → optional "Before you record" liveRegion warning →
+/// "Record visit" CTA button → Cancel. Semantics labels match visible copy so
+/// tests can use [find.bySemanticsLabel].
 Future<void> showStaffRecordVisitDialog({
   required BuildContext context,
   required VisitOut visit,

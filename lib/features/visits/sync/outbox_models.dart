@@ -12,6 +12,7 @@ class ClockOutboxItem {
     this.lng,
     this.accuracyM,
     this.deviceOffline = false,
+    this.lateReasonCode,
     this.attempts = 0,
     this.lastError,
     this.isConflict = false,
@@ -27,6 +28,7 @@ class ClockOutboxItem {
   final double? lng;
   final double? accuracyM;
   final bool deviceOffline;
+  final String? lateReasonCode;
   final int attempts;
   final String? lastError;
   final bool isConflict;
@@ -46,6 +48,7 @@ class ClockOutboxItem {
         'lng': lng,
         'accuracy_m': accuracyM,
         'device_offline': deviceOffline,
+        'late_reason_code': lateReasonCode,
         'attempts': attempts,
         'last_error': lastError,
         'is_conflict': isConflict,
@@ -63,6 +66,7 @@ class ClockOutboxItem {
         'lng': lng,
         'accuracy_m': accuracyM,
         'device_offline': deviceOffline,
+        if (lateReasonCode != null) 'late_reason_code': lateReasonCode,
       };
 
   factory ClockOutboxItem.fromJson(Map<String, dynamic> j) => ClockOutboxItem(
@@ -76,6 +80,7 @@ class ClockOutboxItem {
         lng: (j['lng'] as num?)?.toDouble(),
         accuracyM: (j['accuracy_m'] as num?)?.toDouble(),
         deviceOffline: j['device_offline'] as bool? ?? false,
+        lateReasonCode: j['late_reason_code'] as String?,
         attempts: j['attempts'] as int? ?? 0,
         lastError: j['last_error'] as String?,
         isConflict: j['is_conflict'] as bool? ?? false,
@@ -86,6 +91,7 @@ class ClockOutboxItem {
     String? lastError,
     bool clearLastError = false,
     bool? isConflict,
+    String? lateReasonCode,
   }) =>
       ClockOutboxItem(
         clientEventId: clientEventId,
@@ -98,6 +104,7 @@ class ClockOutboxItem {
         lng: lng,
         accuracyM: accuracyM,
         deviceOffline: deviceOffline,
+        lateReasonCode: lateReasonCode ?? this.lateReasonCode,
         attempts: attempts ?? this.attempts,
         lastError: clearLastError ? null : (lastError ?? this.lastError),
         isConflict: isConflict ?? this.isConflict,

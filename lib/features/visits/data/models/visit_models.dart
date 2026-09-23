@@ -399,6 +399,7 @@ class VisitGpsBody {
     this.locationStatus = 'captured',
     this.locationFailReason,
     this.deviceOffline = false,
+    this.lateReasonCode,
   });
 
   final double? lat;
@@ -409,6 +410,7 @@ class VisitGpsBody {
   final String locationStatus;
   final String? locationFailReason;
   final bool deviceOffline;
+  final String? lateReasonCode;
 
   Map<String, dynamic> toJson() => {
     if (lat != null) 'lat': lat,
@@ -420,8 +422,37 @@ class VisitGpsBody {
     if (locationFailReason != null)
       'location_fail_reason': locationFailReason,
     if (deviceOffline) 'device_offline': deviceOffline,
+    if (lateReasonCode != null && lateReasonCode!.isNotEmpty)
+      'late_reason_code': lateReasonCode,
   };
 }
+
+/// A19 late check-in reason codes (must match BE allowlist).
+const lateCheckInReasonCodes = <String>[
+  'traffic',
+  'client_delay',
+  'prior_visit_overrun',
+  'equipment_issue',
+  'other',
+];
+
+const lateCheckInReasonLabels = <String, String>{
+  'traffic': 'Traffic / travel delay',
+  'client_delay': 'Client was not ready',
+  'prior_visit_overrun': 'Previous visit ran over',
+  'equipment_issue': 'Equipment / admin issue',
+  'other': 'Other',
+};
+
+/// Grace after scheduled start before punch is considered late (matches BE).
+const lateCheckInGrace = Duration(minutes: 5);
+
+bool isLateCheckIn({
+  required DateTime scheduledStart,
+  required DateTime tapTime,
+  Duration grace = lateCheckInGrace,
+}) =>
+    tapTime.toUtc().isAfter(scheduledStart.toUtc().add(grace));
 
 class VisitCheckInOut {
   const VisitCheckInOut({

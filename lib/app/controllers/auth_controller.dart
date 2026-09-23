@@ -89,16 +89,24 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout({bool confirmDiscardOutbox = false}) async {
-    if (hasPendingClockOutbox()) {
+    final clockPending = hasPendingClockOutbox();
+    final mediaPending = hasPendingMediaOutbox();
+    if (clockPending || mediaPending) {
       if (!confirmDiscardOutbox) {
         if (Get.testMode) {
-          throw StateError('outbox_not_empty');
+          throw StateError(
+            clockPending ? 'outbox_not_empty' : 'media_outbox_not_empty',
+          );
         }
-        final confirmed = await _confirmDiscardOutboxLogout();
+        final confirmed = await _confirmDiscardOutboxLogout(
+          clockPending: clockPending,
+          mediaPending: mediaPending,
+        );
         if (!confirmed) return;
         confirmDiscardOutbox = true;
       }
       discardClockOutboxIfConfirmed(confirmDiscardOutbox: confirmDiscardOutbox);
+      discardMediaOutboxIfConfirmed(confirmDiscardOutbox: confirmDiscardOutbox);
     }
     if (Get.isRegistered<PushNotificationService>()) {
       await Get.find<PushNotificationService>().unregisterCurrentDeviceToken();
@@ -117,12 +125,27 @@ class AuthController extends GetxController {
     HomeAlertsBinding.reset();
   }
 
-  Future<bool> _confirmDiscardOutboxLogout() async {
+  Future<bool> _confirmDiscardOutboxLogout({
+    required bool clockPending,
+    required bool mediaPending,
+  }) async {
+    final parts = <String>[];
+    if (clockPending) {
+      parts.add('clock events waiting to sync');
+    }
+    if (mediaPending) {
+      parts.add('photo/video evidence waiting to upload');
+    }
+    final title = mediaPending && !clockPending
+        ? 'Unsent evidence'
+        : clockPending && !mediaPending
+            ? 'Unsent check-ins'
+            : 'Unsent data';
     return await Get.dialog<bool>(
           AlertDialog(
-            title: const Text('Unsent check-ins'),
-            content: const Text(
-              'You have clock events waiting to sync. '
+            title: Text(title),
+            content: Text(
+              'You have ${parts.join(' and ')}. '
               'Logging out will discard them unless you wait for sync to finish.',
             ),
             actions: [

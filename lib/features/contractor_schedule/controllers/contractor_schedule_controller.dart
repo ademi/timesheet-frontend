@@ -110,7 +110,10 @@ class ContractorScheduleController extends GetxController {
   }
 
   void openVisit(TimetableVisitOut visit) {
-    Get.toNamed(AppRoutes.contractorVisitDetail, arguments: visit.id);
+    final stub = visit.toVisitOutStub(
+      contractorId: _session.contractorId.value ?? '',
+    );
+    Get.toNamed(AppRoutes.contractorVisitDetail, arguments: stub);
   }
 
   /// Seven calendar days for the current timetable range, each with its visits.

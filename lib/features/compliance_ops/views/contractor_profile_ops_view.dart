@@ -5,6 +5,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
+import '../../visits/widgets/worker_sync_diagnostics_panel.dart';
 import '../controllers/contractor_profile_controller.dart';
 import '../widgets/contractor_profile_sections.dart';
 import '../widgets/notification_bell_button.dart';
@@ -116,6 +117,8 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
                     ),
                   ],
                   const Divider(height: 32),
+                  const WorkerSyncDiagnosticsPanel(),
+                  const SizedBox(height: 8),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.payments_outlined),

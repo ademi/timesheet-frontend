@@ -52,10 +52,12 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Visit detail')),
       body: Obx(() {
+        controller.mediaOutboxRevision.value;
         final v = controller.selected.value;
         final err = controller.errorMessage.value;
         if (v == null) {
-          if (controller.isRefreshing.value) {
+          if (controller.isRefreshing.value ||
+              controller.resolvedVisitId != null) {
             return const Center(child: CircularProgressIndicator());
           }
           return const Center(child: Text('Visit not loaded.'));
@@ -174,6 +176,26 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                                 isSubmitted: controller.isFormSubmitted(
                                   req.formTemplateId,
                                 ),
+                                visitId: v.id,
+                                onEnqueueFile: ({
+                                  required fieldId,
+                                  required filename,
+                                  required contentType,
+                                  required bytes,
+                                }) =>
+                                    controller.enqueueVisitFormFile(
+                                      visitId: v.id,
+                                      formTemplateId: req.formTemplateId,
+                                      fieldId: fieldId,
+                                      filename: filename,
+                                      contentType: contentType,
+                                      bytes: bytes,
+                                    ),
+                                pendingFileForField:
+                                    controller.mediaPendingForField,
+                                ackedDocumentIdForField: (fieldId) =>
+                                    controller.ackedMediaDocumentIds[fieldId],
+                                onRetryMedia: controller.retryMediaUploads,
                                 onSubmit:
                                     (payload) => controller.submitForm(
                                       req,

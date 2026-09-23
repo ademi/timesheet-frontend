@@ -18,6 +18,10 @@ import '../sync/outbox_models.dart';
 import '../sync/outbox_store.dart';
 import '../sync/sync_error_classifier.dart';
 import '../sync/sync_worker.dart';
+import '../../documents/sync/media_blob_store.dart';
+import '../../documents/sync/media_outbox_models.dart';
+import '../../documents/sync/media_outbox_store.dart';
+import '../../documents/sync/media_sync_worker.dart';
 
 enum VisitClockSyncUi { none, pending, failed }
 
@@ -39,16 +43,24 @@ class ContractorVisitsController extends GetxController {
     VisitLocationService location = const VisitLocationService(),
     OutboxStore? outbox,
     SyncWorker? syncWorker,
+    MediaOutboxStore? mediaOutbox,
+    MediaSyncWorker? mediaSyncWorker,
+    MediaBlobStore? mediaBlobs,
     Future<bool> Function()? isDeviceOffline,
     String Function()? newEventId,
+    Future<String?> Function()? promptLateReason,
   }) : _repository = repository,
        _shiftsRepository = shiftsRepository,
        _session = session,
        _location = location,
        _outboxOverride = outbox,
        _syncWorkerOverride = syncWorker,
+       _mediaOutboxOverride = mediaOutbox,
+       _mediaSyncWorkerOverride = mediaSyncWorker,
+       _mediaBlobsOverride = mediaBlobs,
        _isDeviceOffline = isDeviceOffline,
-       _newEventId = newEventId ?? const Uuid().v4;
+       _newEventId = newEventId ?? const Uuid().v4,
+       _promptLateReason = promptLateReason;
 
   final VisitsRepository _repository;
   final ShiftsRepository _shiftsRepository;
@@ -56,11 +68,18 @@ class ContractorVisitsController extends GetxController {
   final VisitLocationService _location;
   final OutboxStore? _outboxOverride;
   final SyncWorker? _syncWorkerOverride;
+  final MediaOutboxStore? _mediaOutboxOverride;
+  final MediaSyncWorker? _mediaSyncWorkerOverride;
+  final MediaBlobStore? _mediaBlobsOverride;
   final Future<bool> Function()? _isDeviceOffline;
   final String Function() _newEventId;
+  final Future<String?> Function()? _promptLateReason;
 
   late final OutboxStore outbox;
   SyncWorker? _syncWorker;
+  late final MediaOutboxStore mediaOutbox;
+  MediaSyncWorker? _mediaSyncWorker;
+  late final MediaBlobStore mediaBlobs;
 
   SyncWorker get syncWorker => _syncWorker!;
 
@@ -75,6 +94,12 @@ class ContractorVisitsController extends GetxController {
 
   /// Bumped when outbox changes so Obx rebuilds sync chips.
   final outboxRevision = 0.obs;
+
+  /// Bumped when media outbox changes (form file field progress).
+  final mediaOutboxRevision = 0.obs;
+
+  /// fieldId → document_id once media ACK completes (survives until form submit).
+  final ackedMediaDocumentIds = <String, String>{}.obs;
 
   final manualTemplateIdCtrl = TextEditingController();
 
@@ -141,7 +166,21 @@ class ContractorVisitsController extends GetxController {
     _syncWorker =
         _syncWorkerOverride ??
         (Get.isRegistered<SyncWorker>() ? Get.find<SyncWorker>() : null);
-    // Ensure injected / found worker notifies this controller.
+    mediaOutbox =
+        _mediaOutboxOverride ??
+        (Get.isRegistered<MediaOutboxStore>()
+            ? Get.find<MediaOutboxStore>()
+            : MediaOutboxStore(GetStorage()));
+    mediaBlobs =
+        _mediaBlobsOverride ??
+        (Get.isRegistered<MediaBlobStore>()
+            ? Get.find<MediaBlobStore>()
+            : MemoryMediaBlobStore());
+    _mediaSyncWorker =
+        _mediaSyncWorkerOverride ??
+        (Get.isRegistered<MediaSyncWorker>()
+            ? Get.find<MediaSyncWorker>()
+            : null);
     load();
   }
 
@@ -166,6 +205,77 @@ class ContractorVisitsController extends GetxController {
         AppToast.success('Completed', 'Visit marked completed.');
       }
     });
+  }
+
+  void onMediaOutboxAcked(MediaOutboxItem item) {
+    mediaOutboxRevision.value++;
+    final fieldId = item.fieldId;
+    final docId = item.documentId;
+    if (fieldId != null && docId != null && docId.isNotEmpty) {
+      ackedMediaDocumentIds[fieldId] = docId;
+    }
+  }
+
+  List<MediaOutboxItem> mediaPendingForVisit(String visitId) {
+    mediaOutboxRevision.value;
+    return mediaOutbox.pending().where((e) => e.visitId == visitId).toList();
+  }
+
+  MediaOutboxItem? mediaPendingForField(String fieldId) {
+    mediaOutboxRevision.value;
+    final matches =
+        mediaOutbox.pending().where((e) => e.fieldId == fieldId).toList();
+    if (matches.isEmpty) return null;
+    return matches.last;
+  }
+
+  /// Enqueue visit evidence for a form file field; never silent-succeeds.
+  Future<void> enqueueVisitFormFile({
+    required String visitId,
+    required String formTemplateId,
+    required String fieldId,
+    required String filename,
+    required String contentType,
+    required List<int> bytes,
+  }) async {
+    if (bytes.isEmpty) {
+      errorMessage.value = 'Could not read file bytes.';
+      return;
+    }
+    final clientUploadId = _newEventId();
+    final localPath = await mediaBlobs.write(
+      clientUploadId: clientUploadId,
+      bytes: bytes,
+      filename: filename,
+    );
+    final item = MediaOutboxItem(
+      clientUploadId: clientUploadId,
+      ownerType: 'visit',
+      ownerId: visitId,
+      filename: filename,
+      contentType: contentType,
+      sizeBytes: bytes.length,
+      localPath: localPath,
+      createdAtIso: DateTime.now().toUtc().toIso8601String(),
+      category: 'other',
+      visitId: visitId,
+      formTemplateId: formTemplateId,
+      fieldId: fieldId,
+    );
+    await mediaOutbox.append(item);
+    mediaOutboxRevision.value++;
+    ackedMediaDocumentIds.remove(fieldId);
+    final worker = _mediaSyncWorker;
+    if (worker != null) {
+      await worker.flush();
+    }
+  }
+
+  Future<void> retryMediaUploads() async {
+    final worker = _mediaSyncWorker;
+    if (worker != null) {
+      await worker.flush();
+    }
   }
 
   /// SyncWorker / immediate push marked a terminal conflict — drop optimistic
@@ -423,9 +533,19 @@ class ContractorVisitsController extends GetxController {
     errorMessage.value = null;
     String? clientEventId;
     try {
+      final tapTime = DateTime.now().toUtc();
+      String? lateReason;
+      if (isLateCheckIn(
+        scheduledStart: visit.scheduledStart,
+        tapTime: tapTime,
+      )) {
+        lateReason = await (_promptLateReason?.call() ?? _showLateReasonDialog());
+        if (lateReason == null || lateReason.isEmpty) {
+          return;
+        }
+      }
       final gps = await _location.tryGps();
       clientEventId = _newEventId();
-      final tapTime = DateTime.now().toUtc();
       final offline = await _resolveDeviceOffline();
       final item = ClockOutboxItem(
         clientEventId: clientEventId,
@@ -438,6 +558,7 @@ class ContractorVisitsController extends GetxController {
         lng: gps.body?.lng,
         accuracyM: gps.body?.accuracyM,
         deviceOffline: offline,
+        lateReasonCode: lateReason,
       );
       await outbox.append(item);
       _bumpOutbox();
@@ -466,6 +587,28 @@ class ContractorVisitsController extends GetxController {
     } finally {
       isSaving.value = false;
     }
+  }
+
+  Future<String?> _showLateReasonDialog() async {
+    if (Get.testMode || Get.overlayContext == null) {
+      return null;
+    }
+    return Get.dialog<String>(
+      SimpleDialog(
+        title: const Text('Why are you checking in late?'),
+        children: [
+          for (final code in lateCheckInReasonCodes)
+            SimpleDialogOption(
+              onPressed: () => Get.back(result: code),
+              child: Text(lateCheckInReasonLabels[code] ?? code),
+            ),
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> complete() async {
