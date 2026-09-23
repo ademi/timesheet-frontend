@@ -247,6 +247,7 @@ class AppFailure implements Exception {
       'hard_split_violation',
       'email_required_for_registration_invite',
       'email_already_registered',
+      'primary_site_already_exists',
       'invite_token_invalid',
       'invite_email_mismatch',
       'engagement_already_exists',
@@ -473,7 +474,9 @@ class AppFailure implements Exception {
       case 'email_required_for_registration_invite':
         return 'An email address is required to send a registration invite.';
       case 'email_already_registered':
-        return 'This email is already registered. Ask the contractor to log in.';
+        return 'This email is already registered on another invite path.';
+      case 'primary_site_already_exists':
+        return 'This client already has a primary site. Refresh and try again.';
       case 'invite_token_invalid':
         return 'This registration invite is invalid or has expired.';
       case 'invite_email_mismatch':

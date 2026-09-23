@@ -15,6 +15,7 @@ class OnboardingLegalPackStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final ackTemplate = controller.acknowledgementTemplate;
+      final canUpload = controller.canUploadDocs;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -28,6 +29,14 @@ class OnboardingLegalPackStep extends StatelessWidget {
             'Consent and Service Agreement are selected by default.',
             style: TextStyle(fontSize: 13),
           ),
+          if (!canUpload) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Document upload is unavailable without documents.upload '
+              'permission — PDF pickers are disabled.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          ],
           const SizedBox(height: 16),
           _LegalItem(
             title: 'Consent agreement',
@@ -47,7 +56,8 @@ class OnboardingLegalPackStep extends StatelessWidget {
                   label: 'Consent PDF',
                   fileName:
                       controller.consentComplete.value ? 'On file' : null,
-                  enabled: !controller.consentUploading.value,
+                  enabled:
+                      canUpload && !controller.consentUploading.value,
                   onPick: () {
                     controller.markConsentComplete();
                   },
@@ -71,7 +81,8 @@ class OnboardingLegalPackStep extends StatelessWidget {
               label: 'Service agreement PDF',
               fileName:
                   controller.serviceAgreementComplete.value ? 'On file' : null,
-              enabled: !controller.serviceAgreementUploading.value,
+              enabled:
+                  canUpload && !controller.serviceAgreementUploading.value,
               onPick: () {
                 controller.markServiceAgreementComplete();
               },
@@ -97,7 +108,8 @@ class OnboardingLegalPackStep extends StatelessWidget {
                     controller.acknowledgementComplete.value
                         ? 'On file'
                         : null,
-                enabled: !controller.acknowledgementUploading.value,
+                enabled:
+                    canUpload && !controller.acknowledgementUploading.value,
                 onPick: () {
                   controller.markAcknowledgementComplete();
                 },
@@ -113,7 +125,10 @@ class OnboardingLegalPackStep extends StatelessWidget {
             ),
           ] else ...[
             OutlinedButton.icon(
-              onPressed: () => controller.includeAcknowledgement.value = true,
+              onPressed:
+                  canUpload
+                      ? () => controller.includeAcknowledgement.value = true
+                      : null,
               icon: const Icon(Icons.add),
               label: Text(
                 ackTemplate != null
@@ -128,7 +143,7 @@ class OnboardingLegalPackStep extends StatelessWidget {
           ],
           const SizedBox(height: 12),
           OutlinedButton.icon(
-            onPressed: controller.addLegalOtherDoc,
+            onPressed: canUpload ? controller.addLegalOtherDoc : null,
             icon: const Icon(Icons.add),
             label: const Text('Add a document'),
           ),
@@ -203,7 +218,7 @@ class _LegalOtherItem extends StatelessWidget {
             AppFileField(
               label: 'Document PDF',
               fileName: row.fileName ?? (row.complete ? 'On file' : null),
-              enabled: !uploading,
+              enabled: controller.canUploadDocs && !uploading,
               onPick: () {
                 controller.markLegalOtherComplete(row.id);
               },
