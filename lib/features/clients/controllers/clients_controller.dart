@@ -1440,6 +1440,7 @@ class ClientsController extends GetxController
   }
 
   Future<void> restoreClient(ClientOut client) async {
+    if (!canManage) return;
     if (client.status != 'archived') return;
     final target = await Get.dialog<String>(
       _RestoreClientDialog(
