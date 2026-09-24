@@ -143,7 +143,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                           style: Get.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
-                        if (controller.canEditVisitSupportItem)
+                        if (controller.canEditVisitSupportItem) ...[
                           NdisSupportItemPicker(
                             supportItemCode:
                                 controller.editingVisitSupportItemCode.value,
@@ -155,13 +155,29 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                               required String? supportItemCode,
                               required String? supportItemName,
                             }) {
-                              controller.updateVisitSupportItem(
+                              controller.setVisitSupportItemDraft(
                                 supportItemCode: supportItemCode,
                                 supportItemName: supportItemName,
                               );
                             },
-                          )
-                        else if (v.supportItemCode != null &&
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: AsyncElevatedButton(
+                              onPressed:
+                                  controller.hasUnsavedVisitSupportItem
+                                      ? controller.saveVisitSupportItem
+                                      : null,
+                              isLoading: controller.isSaving.value,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.cta,
+                                foregroundColor: AppColors.onPrimary,
+                              ),
+                              child: const Text('Save'),
+                            ),
+                          ),
+                        ] else if (v.supportItemCode != null &&
                             v.supportItemName != null)
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,8 +205,9 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                         const SizedBox(height: 4),
                         Text(
                           controller.canEditVisitSupportItem
-                              ? 'Editable while scheduled or checked in and unpaid.'
-                              : 'Locked after completed or when paid.',
+                              ? 'Editable while scheduled, checked in, or completed '
+                                  '(unpaid, not exported). Pick an item, then Save.'
+                              : 'Locked when paid or already exported.',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textMuted,

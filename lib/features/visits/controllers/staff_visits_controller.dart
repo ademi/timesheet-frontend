@@ -114,6 +114,14 @@ class StaffVisitsController extends GetxController {
         !visit.isInvoiceExported;
   }
 
+  /// True when the support-item picker differs from the last saved visit.
+  bool get hasUnsavedVisitSupportItem {
+    final visit = selected.value;
+    if (visit == null || !canEditVisitSupportItem) return false;
+    return editingVisitSupportItemCode.value != visit.supportItemCode ||
+        editingVisitSupportItemName.value != visit.supportItemName;
+  }
+
   bool get canRecordVisit {
     final visit = selected.value;
     if (visit == null) return false;
@@ -1262,6 +1270,22 @@ class StaffVisitsController extends GetxController {
     }
   }
 
+  void setVisitSupportItemDraft({
+    required String? supportItemCode,
+    required String? supportItemName,
+  }) {
+    if (!canEditVisitSupportItem) return;
+    editingVisitSupportItemCode.value = supportItemCode;
+    editingVisitSupportItemName.value = supportItemName;
+  }
+
+  Future<void> saveVisitSupportItem() async {
+    await updateVisitSupportItem(
+      supportItemCode: editingVisitSupportItemCode.value,
+      supportItemName: editingVisitSupportItemName.value,
+    );
+  }
+
   Future<void> updateVisitSupportItem({
     required String? supportItemCode,
     required String? supportItemName,
@@ -1272,8 +1296,8 @@ class StaffVisitsController extends GetxController {
         supportItemName == visit.supportItemName) {
       return;
     }
-    final previousCode = editingVisitSupportItemCode.value;
-    final previousName = editingVisitSupportItemName.value;
+    final previousCode = visit.supportItemCode;
+    final previousName = visit.supportItemName;
     editingVisitSupportItemCode.value = supportItemCode;
     editingVisitSupportItemName.value = supportItemName;
     isSaving.value = true;

@@ -166,6 +166,41 @@ void main() {
     expect(controller.canEditVisitSupportItem, isFalse);
   });
 
+  test('setVisitSupportItemDraft does not patch until save', () async {
+    controller.selected.value = _visit();
+    controller.setVisitSupportItemDraft(
+      supportItemCode: '01_011_0107_1_1',
+      supportItemName: 'Self care',
+    );
+
+    expect(controller.hasUnsavedVisitSupportItem, isTrue);
+    expect(controller.editingVisitSupportItemCode.value, '01_011_0107_1_1');
+    verifyNever(() => visits.patchVisitSupportItem(any(), any()));
+  });
+
+  test('saveVisitSupportItem patches visit and clears dirty state', () async {
+    final initial = _visit();
+    final updated = _visit(
+      supportItemCode: '01_011_0107_1_1',
+      supportItemName: 'Self care',
+    );
+    controller.selected.value = initial;
+    controller.setVisitSupportItemDraft(
+      supportItemCode: '01_011_0107_1_1',
+      supportItemName: 'Self care',
+    );
+
+    when(
+      () => visits.patchVisitSupportItem('visit-1', any()),
+    ).thenAnswer((_) async => updated);
+
+    await controller.saveVisitSupportItem();
+
+    expect(controller.selected.value?.supportItemCode, '01_011_0107_1_1');
+    expect(controller.editingVisitSupportItemCode.value, '01_011_0107_1_1');
+    expect(controller.hasUnsavedVisitSupportItem, isFalse);
+  });
+
   test('updateVisitSupportItem patches visit and syncs editor', () async {
     final initial = _visit();
     final updated = _visit(

@@ -53,7 +53,6 @@ class _JobManageTemplatesViewState extends State<JobManageTemplatesView> {
         final attaching = controller.isPending(
           JobsController.attachCatalogPendingKey,
         );
-        final pendingCount = controller.pendingAttachIds.length;
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -151,35 +150,16 @@ class _JobManageTemplatesViewState extends State<JobManageTemplatesView> {
                     ),
                     const Divider(height: 32),
                   ],
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'All templates',
-                          style: Get.textTheme.titleSmall,
-                        ),
-                      ),
-                      if (controller.canManage && pendingCount > 0)
-                        TextButton(
-                          onPressed:
-                              attaching
-                                  ? null
-                                  : controller.attachSelectedFormTemplates,
-                          child: AsyncButtonChild(
-                            isLoading: attaching,
-                            child: Text('Attach selected ($pendingCount)'),
-                          ),
-                        ),
-                    ],
-                  ),
+                  Text('All templates', style: Get.textTheme.titleSmall),
                   if (controller.canManage &&
                       controller.formTemplates.any(
                         (t) => !controller.isTemplateAttached(t.id),
                       ))
                     const Padding(
-                      padding: EdgeInsets.only(bottom: 8),
+                      padding: EdgeInsets.only(top: 4, bottom: 8),
                       child: Text(
-                        'Select one or more templates, then Attach selected.',
+                        'Select one or more templates, then use Attach selected '
+                        'at the bottom of the screen.',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textMuted,
@@ -268,6 +248,40 @@ class _JobManageTemplatesViewState extends State<JobManageTemplatesView> {
               ),
             ),
           ],
+        );
+      }),
+      bottomNavigationBar: Obx(() {
+        final pendingCount = controller.pendingAttachIds.length;
+        if (!controller.canManage || pendingCount == 0) {
+          return const SizedBox.shrink();
+        }
+        final attaching = controller.isPending(
+          JobsController.attachCatalogPendingKey,
+        );
+        return Material(
+          elevation: 8,
+          color: AppColors.surface,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: AsyncElevatedButton(
+                  onPressed:
+                      attaching
+                          ? null
+                          : controller.attachSelectedFormTemplates,
+                  isLoading: attaching,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.cta,
+                    foregroundColor: AppColors.onPrimary,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  child: Text('Attach selected ($pendingCount)'),
+                ),
+              ),
+            ),
+          ),
         );
       }),
     );
