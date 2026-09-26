@@ -41,13 +41,16 @@ class StaffVisitsController extends GetxController {
     required ClientsRepository clientsRepository,
     required SessionService session,
     PayrollRepository? payroll,
+    Future<String?> Function({required List<String> reasons})?
+    promptBurnOverride,
   }) : _repository = repository,
        _shiftsRepository = shiftsRepository,
        _jobsRepository = jobsRepository,
        _engagementsRepository = engagementsRepository,
        _clientsRepository = clientsRepository,
        _session = session,
-       _payroll = payroll;
+       _payroll = payroll,
+       _promptBurnOverride = promptBurnOverride;
 
   final VisitsRepository _repository;
   final ShiftsRepository _shiftsRepository;
@@ -56,6 +59,8 @@ class StaffVisitsController extends GetxController {
   final ClientsRepository _clientsRepository;
   final SessionService _session;
   final PayrollRepository? _payroll;
+  final Future<String?> Function({required List<String> reasons})?
+  _promptBurnOverride;
 
   final shifts = <ShiftOut>[].obs;
   final jobs = <JobOut>[].obs;
@@ -684,7 +689,9 @@ class StaffVisitsController extends GetxController {
         shift.id,
         body: ShiftPublishRequest(overrideReason: overrideReason),
       );
-      AppToast.success('Published', selectedShift.value!.jobTitle);
+      if (!Get.testMode) {
+        AppToast.success('Published', selectedShift.value!.jobTitle);
+      }
       await load();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -700,17 +707,21 @@ class StaffVisitsController extends GetxController {
         }
       } else if (e.isBudgetBurnBlocked) {
         if (overrideReason == null || overrideReason.trim().isEmpty) {
-          final reason = await promptCredentialGateOverride(
+          final reason = await promptBudgetBurnOverride(
             reasons: e.eligibilityReasons.isEmpty
                 ? const ['Plan budget hard block']
                 : e.eligibilityReasons,
           );
           if (reason != null && reason.trim().isNotEmpty) {
+            isSaving.value = false;
             await publishSelectedShift(overrideReason: reason.trim());
+            return;
           }
         }
       } else {
-        AppToast.error('Could not publish', e.message);
+        if (!Get.testMode) {
+          AppToast.error('Could not publish', e.message);
+        }
       }
     } finally {
       isSaving.value = false;
@@ -953,6 +964,73 @@ class StaffVisitsController extends GetxController {
         ],
       ),
     );
+    return result;
+  }
+
+  /// Budget hard-block override (C6) — distinct copy from credential gate.
+  @visibleForTesting
+  Future<String?> promptBudgetBurnOverride({
+    required List<String> reasons,
+  }) async {
+    final custom = _promptBurnOverride;
+    if (custom != null) return custom(reasons: reasons);
+    if (Get.testMode) return null;
+    final controller = TextEditingController();
+    final result = await Get.dialog<String>(
+      AlertDialog(
+        title: const Text('Plan budget hard block'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Publishing would exceed declared plan envelopes '
+                '(ledger vs declared — not a live NDIA balance).',
+              ),
+              if (reasons.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                for (final r in reasons)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('• $r', style: const TextStyle(fontSize: 13)),
+                  ),
+              ],
+              const SizedBox(height: 12),
+              const Text(
+                'To continue, enter an audited override reason '
+                '(no silent bypass).',
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Override reason',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                autofocus: true,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              Get.back(result: text);
+            },
+            child: const Text('Override & publish'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
     return result;
   }
 
