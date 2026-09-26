@@ -135,8 +135,33 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Present occupancy: ${b.presentOccupancy} / ${b.members.length}',
+                    'Present occupancy: ${b.presentOccupancy} / ${b.members.length}'
+                    '${b.house.bedCapacity != null ? ' (beds ${b.house.bedCapacity})' : ''}',
                     style: Get.textTheme.titleMedium,
+                  ),
+                  if (controller.overlay.value != null) ...[
+                    const SizedBox(height: 8),
+                    _VacancyStrip(overlay: controller.overlay.value!),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed:
+                          controller.isSaving.value
+                              ? null
+                              : () => controller.draftFillShift(),
+                      icon: const Icon(Icons.add_circle_outline),
+                      label: const Text('Draft fill shift'),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  _CapacityCostEditor(
+                    bedCapacity: b.house.bedCapacity,
+                    fixedWeeklyCost: b.house.fixedWeeklyCost,
+                    enabled: !controller.isSaving.value,
+                    onSave: ({bedCapacity, fixedWeeklyCost}) =>
+                        controller.saveCapacityCost(
+                          bedCapacity: bedCapacity,
+                          fixedWeeklyCost: fixedWeeklyCost,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   const Text(
@@ -311,6 +336,132 @@ class _RocBandEditorState extends State<_RocBandEditor> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _VacancyStrip extends StatelessWidget {
+  const _VacancyStrip({required this.overlay});
+  final SilVacancyOverlayOut overlay;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Vacancy overlay · ${overlay.presentOccupancy}'
+            '${overlay.bedCapacity != null ? '/${overlay.bedCapacity}' : ''} present'
+            '${overlay.fixedWeeklyCost != null ? ' · \$${overlay.fixedWeeklyCost!.toStringAsFixed(0)}/wk' : ''}'
+            '${overlay.costPerPresentBed != null ? ' · \$${overlay.costPerPresentBed!.toStringAsFixed(0)}/present bed' : ''}',
+            style: const TextStyle(fontSize: 13),
+          ),
+          if (overlay.warningCodes.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            for (final code in overlay.warningCodes)
+              Text(
+                '• ${silWarningLabel(code)}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CapacityCostEditor extends StatefulWidget {
+  const _CapacityCostEditor({
+    required this.bedCapacity,
+    required this.fixedWeeklyCost,
+    required this.enabled,
+    required this.onSave,
+  });
+
+  final int? bedCapacity;
+  final double? fixedWeeklyCost;
+  final bool enabled;
+  final Future<void> Function({int? bedCapacity, double? fixedWeeklyCost})
+  onSave;
+
+  @override
+  State<_CapacityCostEditor> createState() => _CapacityCostEditorState();
+}
+
+class _CapacityCostEditorState extends State<_CapacityCostEditor> {
+  late final TextEditingController _beds;
+  late final TextEditingController _cost;
+
+  @override
+  void initState() {
+    super.initState();
+    _beds = TextEditingController(
+      text: widget.bedCapacity?.toString() ?? '',
+    );
+    _cost = TextEditingController(
+      text: widget.fixedWeeklyCost?.toStringAsFixed(0) ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _beds.dispose();
+    _cost.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _beds,
+            enabled: widget.enabled,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: const InputDecoration(
+              labelText: 'Bed capacity',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: TextField(
+            controller: _cost,
+            enabled: widget.enabled,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Fixed \$/week',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        TextButton(
+          onPressed:
+              widget.enabled
+                  ? () => widget.onSave(
+                    bedCapacity: int.tryParse(_beds.text.trim()),
+                    fixedWeeklyCost: double.tryParse(_cost.text.trim()),
+                  )
+                  : null,
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }

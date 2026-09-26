@@ -78,9 +78,12 @@ class VisitsRemoteDataSource {
     }
   }
 
-  Future<void> cancel(String id) async {
+  Future<void> cancel(String id, {Map<String, dynamic>? body}) async {
     try {
-      await _dio.post<void>(ApiPaths.visitCancel(id));
+      await _dio.post<void>(
+        ApiPaths.visitCancel(id),
+        data: body,
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

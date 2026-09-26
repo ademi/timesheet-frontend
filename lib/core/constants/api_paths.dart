@@ -203,6 +203,8 @@ abstract final class ApiPaths {
       '$attendanceSyncConflicts/$id/discard';
   static String visit(String id) => '$visits/$id';
   static String visitCancel(String id) => '${visit(id)}/cancel';
+  static const cancellations = '$_v1/cancellations';
+  static String cancellation(String id) => '$cancellations/$id';
   static String visitCheckIn(String id) => '${visit(id)}/check-in';
   static String visitComplete(String id) => '${visit(id)}/complete';
   static String visitSupportItem(String id) => '${visit(id)}/support-item';
@@ -302,9 +304,11 @@ abstract final class ApiPaths {
   static const tenantMembers = '$_v1/tenant-members';
   static String tenantMember(String id) => '$tenantMembers/$id';
 
-  // SIL / roster of care (B3)
+  // SIL / roster of care (B3) + vacancy (B19)
   static const silHouses = '$_v1/sil/houses';
   static String silHouse(String id) => '$silHouses/$id';
+  static String silHouseOverlay(String id) => '${silHouse(id)}/overlay';
+  static String silHouseFillVacancy(String id) => '${silHouse(id)}/fill-vacancy';
   static String silHouseMembers(String id) => '${silHouse(id)}/members';
   static String silHouseRocBlocks(String id) => '${silHouse(id)}/roc-blocks';
   static String jobSilHouse(String jobId) => '$_v1/sil/jobs/$jobId/house';

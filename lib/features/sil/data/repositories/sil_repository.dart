@@ -26,4 +26,15 @@ class SilRepository {
 
   Future<void> linkJobHouse(String jobId, String? silHouseId) =>
       _remote.linkJobHouse(jobId, silHouseId);
+
+  Future<SilHouseOut> patchHouse(String houseId, SilHousePatchRequest body) =>
+      _remote.patchHouse(houseId, body);
+
+  Future<SilVacancyOverlayOut> getOverlay(String houseId) =>
+      _remote.getOverlay(houseId);
+
+  Future<SilFillVacancyOut> fillVacancy(
+    String houseId,
+    SilFillVacancyRequest body,
+  ) => _remote.fillVacancy(houseId, body);
 }

@@ -45,7 +45,8 @@ class VisitsRepository {
     scheduledEnd: scheduledEnd,
   );
 
-  Future<void> cancel(String id) => _remote.cancel(id);
+  Future<void> cancel(String id, {Map<String, dynamic>? body}) =>
+      _remote.cancel(id, body: body);
 
   Future<VisitCheckInOut> checkIn({
     required String id,

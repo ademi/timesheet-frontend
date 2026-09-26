@@ -9,6 +9,8 @@ class SilHouseOut {
     this.city,
     this.postalCode,
     this.isActive = true,
+    this.bedCapacity,
+    this.fixedWeeklyCost,
   });
 
   final String id;
@@ -18,6 +20,8 @@ class SilHouseOut {
   final String? city;
   final String? postalCode;
   final bool isActive;
+  final int? bedCapacity;
+  final double? fixedWeeklyCost;
 
   factory SilHouseOut.fromJson(Map<String, dynamic> json) => SilHouseOut(
     id: json['id'].toString(),
@@ -27,6 +31,8 @@ class SilHouseOut {
     city: json['city'] as String?,
     postalCode: json['postal_code'] as String?,
     isActive: json['is_active'] as bool? ?? true,
+    bedCapacity: json['bed_capacity'] as int?,
+    fixedWeeklyCost: (json['fixed_weekly_cost'] as num?)?.toDouble(),
   );
 }
 
@@ -125,19 +131,116 @@ class SilHouseCreateRequest {
     this.addressLine1,
     this.city,
     this.postalCode,
+    this.bedCapacity,
+    this.fixedWeeklyCost,
   });
 
   final String name;
   final String? addressLine1;
   final String? city;
   final String? postalCode;
+  final int? bedCapacity;
+  final double? fixedWeeklyCost;
 
   Map<String, dynamic> toJson() => {
     'name': name,
     if (addressLine1 != null) 'address_line1': addressLine1,
     if (city != null) 'city': city,
     if (postalCode != null) 'postal_code': postalCode,
+    if (bedCapacity != null) 'bed_capacity': bedCapacity,
+    if (fixedWeeklyCost != null) 'fixed_weekly_cost': fixedWeeklyCost,
   };
+}
+
+class SilHousePatchRequest {
+  const SilHousePatchRequest({
+    this.bedCapacity,
+    this.fixedWeeklyCost,
+    this.clearFixedWeeklyCost = false,
+  });
+
+  final int? bedCapacity;
+  final double? fixedWeeklyCost;
+  final bool clearFixedWeeklyCost;
+
+  Map<String, dynamic> toJson() => {
+    if (bedCapacity != null) 'bed_capacity': bedCapacity,
+    if (fixedWeeklyCost != null) 'fixed_weekly_cost': fixedWeeklyCost,
+    if (clearFixedWeeklyCost) 'clear_fixed_weekly_cost': true,
+  };
+}
+
+class SilVacancyOverlayOut {
+  const SilVacancyOverlayOut({
+    required this.houseId,
+    required this.presentOccupancy,
+    required this.vacantCount,
+    required this.warningCodes,
+    required this.publishedShiftCount,
+    this.bedCapacity,
+    this.fixedWeeklyCost,
+    this.costPerPresentBed,
+  });
+
+  final String houseId;
+  final int? bedCapacity;
+  final int presentOccupancy;
+  final int vacantCount;
+  final double? fixedWeeklyCost;
+  final double? costPerPresentBed;
+  final List<String> warningCodes;
+  final int publishedShiftCount;
+
+  factory SilVacancyOverlayOut.fromJson(Map<String, dynamic> json) =>
+      SilVacancyOverlayOut(
+        houseId: json['house_id'].toString(),
+        bedCapacity: json['bed_capacity'] as int?,
+        presentOccupancy: json['present_occupancy'] as int? ?? 0,
+        vacantCount: json['vacant_count'] as int? ?? 0,
+        fixedWeeklyCost: (json['fixed_weekly_cost'] as num?)?.toDouble(),
+        costPerPresentBed: (json['cost_per_present_bed'] as num?)?.toDouble(),
+        warningCodes: (json['warning_codes'] as List? ?? const [])
+            .map((e) => e.toString())
+            .toList(growable: false),
+        publishedShiftCount: json['published_shift_count'] as int? ?? 0,
+      );
+}
+
+class SilFillVacancyRequest {
+  const SilFillVacancyRequest({
+    required this.scheduledStart,
+    required this.scheduledEnd,
+    this.jobId,
+  });
+
+  final DateTime scheduledStart;
+  final DateTime scheduledEnd;
+  final String? jobId;
+
+  Map<String, dynamic> toJson() => {
+    'scheduled_start': scheduledStart.toUtc().toIso8601String(),
+    'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
+    if (jobId != null) 'job_id': jobId,
+  };
+}
+
+class SilFillVacancyOut {
+  const SilFillVacancyOut({
+    required this.shiftId,
+    required this.jobId,
+    required this.status,
+  });
+
+  final String shiftId;
+  final String jobId;
+  final String status;
+
+  factory SilFillVacancyOut.fromJson(Map<String, dynamic> json) =>
+      SilFillVacancyOut(
+        shiftId: json['shift_id'].toString(),
+        jobId: json['job_id'].toString(),
+        status: json['status'] as String? ?? 'draft',
+      );
 }
 
 class SilHouseMemberUpsertRequest {
@@ -191,6 +294,16 @@ String silWarningLabel(String code) {
       return 'No funded ROC block for this time of day';
     case 'worker_count_slots_mismatch':
       return 'Workers planned ≠ open slots';
+    case 'vacancy_bed_underfilled':
+      return 'Beds underfilled vs capacity';
+    case 'vacancy_member_absent':
+      return 'Member vacant / hospital / absent';
+    case 'creep_staffing_above_roc':
+      return 'Staffed above funded ROC';
+    case 'creep_unfunded_shift':
+      return 'Published shift without ROC stamp';
+    case 'cost_occupancy_gap':
+      return 'Fixed cost spread over underfilled beds';
     default:
       return code;
   }

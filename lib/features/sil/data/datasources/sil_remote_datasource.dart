@@ -118,4 +118,69 @@ class SilRemoteDataSource {
       throw AppFailure.fromDio(e);
     }
   }
+
+  Future<SilHouseOut> patchHouse(
+    String houseId,
+    SilHousePatchRequest body,
+  ) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.silHouse(houseId),
+        data: body.toJson(),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'empty_response',
+          message: 'patch sil house: empty',
+          presentation: AppFailurePresentation.toast,
+        );
+      }
+      return SilHouseOut.fromJson(data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<SilVacancyOverlayOut> getOverlay(String houseId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.silHouseOverlay(houseId),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'empty_response',
+          message: 'sil overlay: empty',
+          presentation: AppFailurePresentation.toast,
+        );
+      }
+      return SilVacancyOverlayOut.fromJson(data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<SilFillVacancyOut> fillVacancy(
+    String houseId,
+    SilFillVacancyRequest body,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.silHouseFillVacancy(houseId),
+        data: body.toJson(),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'empty_response',
+          message: 'fill vacancy: empty',
+          presentation: AppFailurePresentation.toast,
+        );
+      }
+      return SilFillVacancyOut.fromJson(data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
 }

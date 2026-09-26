@@ -1655,11 +1655,115 @@ class StaffVisitsController extends GetxController {
   Future<void> cancelSelected() async {
     final visit = selected.value;
     if (visit == null) return;
+
+    final claimEligible = false.obs;
+    final payEligible = false.obs;
+    final redeploy = 'skip'.obs;
+    final reason = 'other'.obs;
+
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Cancel visit'),
+        content: Obx(
+          () => SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: reason.value,
+                  decoration: const InputDecoration(labelText: 'Reason'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'participant',
+                      child: Text('Participant'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'provider',
+                      child: Text('Provider'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'worker_no_show',
+                      child: Text('Worker no-show'),
+                    ),
+                    DropdownMenuItem(value: 'other', child: Text('Other')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) reason.value = v;
+                  },
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: redeploy.value,
+                  decoration: const InputDecoration(labelText: 'Redeploy'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'keep_open',
+                      child: Text('Keep slot open'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'cancel_shift',
+                      child: Text('Cancel whole shift'),
+                    ),
+                    DropdownMenuItem(value: 'skip', child: Text('Skip')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) redeploy.value = v;
+                  },
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Claim eligible (NDIS)'),
+                  value: claimEligible.value,
+                  onChanged: (v) => claimEligible.value = v ?? false,
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Pay eligible (SCHADS / make-up)'),
+                  subtitle: const Text(
+                    'Tracks pay reminder until award engine (C2)',
+                    style: TextStyle(fontSize: 11),
+                  ),
+                  value: payEligible.value,
+                  onChanged: (v) => payEligible.value = v ?? false,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Back'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Cancel visit'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      await _repository.cancel(visit.id);
+      await _repository.cancel(
+        visit.id,
+        body: {
+          'reason': reason.value,
+          'redeploy': redeploy.value,
+          'claim_eligible': claimEligible.value,
+          'pay_eligible': payEligible.value,
+        },
+      );
       await refreshSelected();
+      if (!Get.testMode) {
+        AppToast.success(
+          'Visit cancelled',
+          'Tracked on cancellations queue for redeploy / pay / claim.',
+        );
+      }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {

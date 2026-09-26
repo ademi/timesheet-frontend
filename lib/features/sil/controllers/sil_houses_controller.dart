@@ -61,6 +61,7 @@ class SilHouseDetailController extends GetxController {
   final String houseId;
 
   final bundle = Rxn<SilHouseBundleOut>();
+  final overlay = Rxn<SilVacancyOverlayOut>();
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
@@ -76,12 +77,67 @@ class SilHouseDetailController extends GetxController {
     errorMessage.value = null;
     try {
       bundle.value = await _repo.getHouse(houseId);
+      try {
+        overlay.value = await _repo.getOverlay(houseId);
+      } catch (_) {
+        overlay.value = null;
+      }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> saveCapacityCost({
+    int? bedCapacity,
+    double? fixedWeeklyCost,
+  }) async {
+    isSaving.value = true;
+    try {
+      await _repo.patchHouse(
+        houseId,
+        SilHousePatchRequest(
+          bedCapacity: bedCapacity,
+          fixedWeeklyCost: fixedWeeklyCost,
+        ),
+      );
+      await refresh();
+      if (!Get.testMode) {
+        AppToast.success('House updated', 'Capacity / cost saved');
+      }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      if (!Get.testMode) AppToast.error('House update failed', e.message);
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<String?> draftFillShift() async {
+    isSaving.value = true;
+    try {
+      final start = DateTime.now().toUtc().add(const Duration(days: 1));
+      final out = await _repo.fillVacancy(
+        houseId,
+        SilFillVacancyRequest(
+          scheduledStart: start,
+          scheduledEnd: start.add(const Duration(hours: 2)),
+        ),
+      );
+      await refresh();
+      if (!Get.testMode) {
+        AppToast.success('Draft shift created', out.shiftId);
+      }
+      return out.shiftId;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      if (!Get.testMode) AppToast.error('Fill vacancy failed', e.message);
+      return null;
+    } finally {
+      isSaving.value = false;
     }
   }
 
