@@ -157,4 +157,81 @@ void main() {
     expect(acked?.documentId, 'doc-9');
     worker.dispose();
   });
+
+  test('upload once → poll fail → retry poll only (no second upload)', () async {
+    await enqueue();
+    var uploadCalls = 0;
+    var pollCalls = 0;
+    when(
+      () => pipeline.uploadEvidence(
+        request: any(named: 'request'),
+        bytes: any(named: 'bytes'),
+        onSendProgress: any(named: 'onSendProgress'),
+      ),
+    ).thenAnswer((_) async {
+      uploadCalls++;
+      return const DocumentOut(
+        id: 'doc-resume-1',
+        ownerType: 'visit',
+        ownerId: 'v1',
+        filename: 'shot.jpg',
+        contentType: 'image/jpeg',
+        sizeBytes: 3,
+        scanStatus: 'pending',
+      );
+    });
+    when(
+      () => pipeline.pollScanStatus(
+        documentId: any(named: 'documentId'),
+        ownerType: any(named: 'ownerType'),
+        ownerId: any(named: 'ownerId'),
+      ),
+    ).thenAnswer((invocation) async {
+      pollCalls++;
+      final id = invocation.namedArguments[#documentId] as String;
+      expect(id, 'doc-resume-1');
+      if (pollCalls == 1) {
+        throw const AppFailure(
+          code: 'network',
+          message: 'poll timeout',
+          statusCode: 503,
+          presentation: AppFailurePresentation.toast,
+        );
+      }
+      return const DocumentOut(
+        id: 'doc-resume-1',
+        ownerType: 'visit',
+        ownerId: 'v1',
+        filename: 'shot.jpg',
+        contentType: 'image/jpeg',
+        sizeBytes: 3,
+        scanStatus: 'clean',
+      );
+    });
+
+    MediaOutboxItem? acked;
+    final worker = MediaSyncWorker(
+      store: store,
+      blobs: blobs,
+      pipeline: pipeline,
+      connectivityStream: connectivity.stream,
+      observeLifecycle: false,
+      backoffForAttempt: (_) => Duration.zero,
+      onAcked: (item) => acked = item,
+    );
+
+    await worker.flush();
+    expect(uploadCalls, 1);
+    expect(pollCalls, 1);
+    expect(store.pending(), hasLength(1));
+    expect(store.pending().single.documentId, 'doc-resume-1');
+    expect(store.pending().single.stage, MediaOutboxStage.failed);
+
+    await worker.flush();
+    expect(uploadCalls, 1, reason: 'must not re-upload after documentId is set');
+    expect(pollCalls, 2);
+    expect(store.pending(), isEmpty);
+    expect(acked?.documentId, 'doc-resume-1');
+    worker.dispose();
+  });
 }

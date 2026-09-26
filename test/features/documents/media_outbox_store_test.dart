@@ -85,4 +85,11 @@ void main() {
     await store.markTerminalFailure('u3', 'scan_blocked');
     expect(store.pending().single.isTerminalFailure, isTrue);
   });
+
+  test('markAttempt preserves documentId for poll resume (C3)', () async {
+    await store.append(_item('u4').copyWith(documentId: 'doc-keep'));
+    await store.markAttempt('u4', 'poll timeout');
+    expect(store.pending().single.documentId, 'doc-keep');
+    expect(store.pending().single.stage, MediaOutboxStage.failed);
+  });
 }

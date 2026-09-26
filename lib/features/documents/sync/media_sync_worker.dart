@@ -128,47 +128,66 @@ class MediaSyncWorker with WidgetsBindingObserver {
 
   Future<bool> _pushOne(MediaOutboxItem item) async {
     try {
-      await store.update(
-        item.copyWith(stage: MediaOutboxStage.uploading, uploadProgress: 0),
-      );
-      onChanged?.call();
+      final existingDocId = item.documentId;
+      late final String documentId;
 
-      final bytes = await blobs.read(item.localPath);
-      final doc = await pipeline.uploadEvidence(
-        request: UploadUrlRequest(
-          ownerType: item.ownerType,
-          ownerId: item.ownerId,
-          filename: item.filename,
-          contentType: item.contentType,
-          sizeBytes: bytes.length,
-          category: item.category,
-        ),
-        bytes: bytes,
-        onSendProgress: (sent, total) {
-          if (total <= 0) return;
-          unawaited(
-            store.update(
-              item.copyWith(
-                stage: MediaOutboxStage.uploading,
-                uploadProgress: sent / total,
-                documentId: item.documentId,
-              ),
-            ).then((_) => onChanged?.call()),
-          );
-        },
-      );
+      if (existingDocId != null && existingDocId.isNotEmpty) {
+        // Upload already succeeded; resume scan poll only (C3 — no duplicate docs).
+        await store.update(
+          item.copyWith(
+            documentId: existingDocId,
+            stage: MediaOutboxStage.finalizing,
+            uploadProgress: 1,
+          ),
+        );
+        onChanged?.call();
+        documentId = existingDocId;
+      } else {
+        await store.update(
+          item.copyWith(stage: MediaOutboxStage.uploading, uploadProgress: 0),
+        );
+        onChanged?.call();
 
-      await store.update(
-        item.copyWith(
-          documentId: doc.id,
-          stage: MediaOutboxStage.finalizing,
-          uploadProgress: 1,
-        ),
-      );
-      onChanged?.call();
+        final bytes = await blobs.read(item.localPath);
+        final doc = await pipeline.uploadEvidence(
+          request: UploadUrlRequest(
+            ownerType: item.ownerType,
+            ownerId: item.ownerId,
+            filename: item.filename,
+            contentType: item.contentType,
+            sizeBytes: bytes.length,
+            category: item.category,
+          ),
+          bytes: bytes,
+          onSendProgress: (sent, total) {
+            if (total <= 0) return;
+            unawaited(
+              store
+                  .update(
+                    item.copyWith(
+                      stage: MediaOutboxStage.uploading,
+                      uploadProgress: sent / total,
+                      documentId: item.documentId,
+                    ),
+                  )
+                  .then((_) => onChanged?.call()),
+            );
+          },
+        );
+        documentId = doc.id;
+
+        await store.update(
+          item.copyWith(
+            documentId: documentId,
+            stage: MediaOutboxStage.finalizing,
+            uploadProgress: 1,
+          ),
+        );
+        onChanged?.call();
+      }
 
       final polled = await pipeline.pollScanStatus(
-        documentId: doc.id,
+        documentId: documentId,
         ownerType: item.ownerType,
         ownerId: item.ownerId,
       );
@@ -183,18 +202,20 @@ class MediaSyncWorker with WidgetsBindingObserver {
 
       await blobs.delete(item.localPath);
       await store.ack(item.clientUploadId);
-      onAcked?.call(item.copyWith(documentId: doc.id));
+      onAcked?.call(item.copyWith(documentId: documentId));
       onChanged?.call();
       return true;
     } on AppFailure catch (e) {
       final code = e.statusCode;
-      final terminal = code != null && code >= 400 && code < 500 && code != 408 && code != 429;
+      final terminal =
+          code != null && code >= 400 && code < 500 && code != 408 && code != 429;
       if (terminal || e.code == 'scan_blocked') {
         await store.markTerminalFailure(
           item.clientUploadId,
           e.code.isNotEmpty ? e.code : e.message,
         );
       } else {
+        // Preserves documentId via copyWith so the next flush can resume poll.
         await store.markAttempt(item.clientUploadId, e.message);
       }
       onChanged?.call();
