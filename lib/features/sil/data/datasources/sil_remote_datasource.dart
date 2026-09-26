@@ -183,4 +183,51 @@ class SilRemoteDataSource {
       throw AppFailure.fromDio(e);
     }
   }
+
+  Future<List<SilCompatRuleOut>> listCompatRules(String houseId) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.silHouseCompatRules(houseId),
+      );
+      final data = response.data ?? const [];
+      return [
+        for (final item in data)
+          if (item is Map)
+            SilCompatRuleOut.fromJson(Map<String, dynamic>.from(item)),
+      ];
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<SilCompatRuleOut> createCompatRule(
+    String houseId,
+    SilCompatRuleCreateRequest body,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.silHouseCompatRules(houseId),
+        data: body.toJson(),
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'empty_response',
+          message: 'create compat rule: empty',
+          presentation: AppFailurePresentation.toast,
+        );
+      }
+      return SilCompatRuleOut.fromJson(data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<void> deleteCompatRule(String houseId, String ruleId) async {
+    try {
+      await _dio.delete(ApiPaths.silHouseCompatRule(houseId, ruleId));
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
 }

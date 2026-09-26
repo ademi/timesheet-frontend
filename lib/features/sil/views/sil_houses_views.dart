@@ -228,12 +228,150 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                                 },
                       ),
                     ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Compatibility rules',
+                          style: Get.textTheme.titleMedium,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed:
+                            controller.isSaving.value
+                                ? null
+                                : () => _promptCompatRule(context, b.members),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Soft warn or hard-block assign when a housemate is present.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
+                  if (controller.compatRules.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Text(
+                        'No compatibility rules yet.',
+                        style: TextStyle(color: AppColors.textMuted),
+                      ),
+                    ),
+                  for (final rule in controller.compatRules)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(rule.reason),
+                      subtitle: Text(
+                        '${rule.isHard ? 'Hard block' : 'Soft warn'}'
+                        '${rule.againstClientId != null ? ' · client ${rule.againstClientId!.substring(0, 8)}…' : ''}',
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed:
+                            controller.isSaving.value
+                                ? null
+                                : () => controller.removeCompatRule(rule.id),
+                      ),
+                    ),
                 ],
               ),
             ),
           ],
         );
       }),
+    );
+  }
+
+  Future<void> _promptCompatRule(
+    BuildContext context,
+    List<SilHouseMemberOut> members,
+  ) async {
+    final reasonCtrl = TextEditingController();
+    var severity = 'soft_warn';
+    String? againstClientId = members.isNotEmpty ? members.first.clientId : null;
+    final ok = await Get.dialog<bool>(
+      StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Add compatibility rule'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: reasonCtrl,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Reason',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: severity,
+                    decoration: const InputDecoration(
+                      labelText: 'Severity',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'soft_warn',
+                        child: Text('Soft warn'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'hard_block',
+                        child: Text('Hard block'),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setState(() => severity = v);
+                    },
+                  ),
+                  if (members.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: againstClientId,
+                      decoration: const InputDecoration(
+                        labelText: 'Against housemate',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        for (final m in members)
+                          DropdownMenuItem(
+                            value: m.clientId,
+                            child: Text(m.clientName ?? m.clientId),
+                          ),
+                      ],
+                      onChanged: (v) => setState(() => againstClientId = v),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(result: false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.back(result: true),
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (ok != true) return;
+    await controller.addCompatRule(
+      reason: reasonCtrl.text,
+      severity: severity,
+      againstClientId: againstClientId,
     );
   }
 }

@@ -39,6 +39,8 @@ class AppFailure implements Exception {
 
   bool get isCredentialGateBlocked => code == 'credential_gate_blocked';
 
+  bool get isAssignGateBlocked => code == 'assign_gate_blocked';
+
   bool get isBudgetBurnBlocked => code == 'budget_burn_blocked';
 
   bool get isBudgetOverrideForbidden => code == 'budget_override_forbidden';
@@ -229,6 +231,7 @@ class AppFailure implements Exception {
       'proxy_required',
       'eligibility_incomplete',
       'credential_gate_blocked',
+      'assign_gate_blocked',
       'budget_burn_blocked',
       'budget_override_forbidden',
       'counsel_pending',
@@ -331,6 +334,7 @@ class AppFailure implements Exception {
         return AppFailurePresentation.billingGate;
       case 'eligibility_incomplete':
       case 'credential_gate_blocked':
+      case 'assign_gate_blocked':
       case 'budget_burn_blocked':
       case 'budget_override_forbidden':
       case 'geofence_rejected':
@@ -421,6 +425,8 @@ class AppFailure implements Exception {
         return 'Requirements incomplete — review the listed items.';
       case 'credential_gate_blocked':
         return 'Screening or credentials block this roster action — review the listed items or provide an audited override reason.';
+      case 'assign_gate_blocked':
+        return 'Care competency or housemate compatibility blocks this assign — review the listed items or provide an audited override reason.';
       case 'budget_burn_blocked':
         return 'Publishing would exceed plan budget thresholds — review burn warnings or provide an audited override reason.';
       case 'budget_override_forbidden':

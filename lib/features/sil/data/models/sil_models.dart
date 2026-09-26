@@ -125,6 +125,60 @@ class SilHouseBundleOut {
       );
 }
 
+class SilCompatRuleOut {
+  const SilCompatRuleOut({
+    required this.id,
+    required this.houseId,
+    this.contractorId,
+    this.againstClientId,
+    required this.severity,
+    required this.reason,
+    this.isActive = true,
+  });
+
+  final String id;
+  final String houseId;
+  final String? contractorId;
+  final String? againstClientId;
+  final String severity;
+  final String reason;
+  final bool isActive;
+
+  factory SilCompatRuleOut.fromJson(Map<String, dynamic> json) =>
+      SilCompatRuleOut(
+        id: json['id'].toString(),
+        houseId: json['house_id'].toString(),
+        contractorId: json['contractor_id']?.toString(),
+        againstClientId: json['against_client_id']?.toString(),
+        severity: json['severity'] as String? ?? 'soft_warn',
+        reason: json['reason'] as String? ?? '',
+        isActive: json['is_active'] as bool? ?? true,
+      );
+
+  bool get isHard => severity == 'hard_block';
+}
+
+class SilCompatRuleCreateRequest {
+  const SilCompatRuleCreateRequest({
+    this.contractorId,
+    this.againstClientId,
+    this.severity = 'soft_warn',
+    required this.reason,
+  });
+
+  final String? contractorId;
+  final String? againstClientId;
+  final String severity;
+  final String reason;
+
+  Map<String, dynamic> toJson() => {
+    if (contractorId != null) 'contractor_id': contractorId,
+    if (againstClientId != null) 'against_client_id': againstClientId,
+    'severity': severity,
+    'reason': reason,
+  };
+}
+
 class SilHouseCreateRequest {
   const SilHouseCreateRequest({
     required this.name,
@@ -304,7 +358,16 @@ String silWarningLabel(String code) {
       return 'Published shift without ROC stamp';
     case 'cost_occupancy_gap':
       return 'Fixed cost spread over underfilled beds';
+    case 'assign_soft:mealtime_assist':
+      return 'Worker lacks mealtime assistance competency';
+    case 'assign_soft:bsp_support':
+      return 'Worker lacks BSP support competency';
+    case 'assign_soft:housemate_compat':
+      return 'Housemate compatibility preference warning';
     default:
+      if (code.startsWith('assign_soft:')) {
+        return 'Assign soft warning: ${code.substring('assign_soft:'.length)}';
+      }
       return code;
   }
 }

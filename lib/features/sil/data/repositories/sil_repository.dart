@@ -37,4 +37,15 @@ class SilRepository {
     String houseId,
     SilFillVacancyRequest body,
   ) => _remote.fillVacancy(houseId, body);
+
+  Future<List<SilCompatRuleOut>> listCompatRules(String houseId) =>
+      _remote.listCompatRules(houseId);
+
+  Future<SilCompatRuleOut> createCompatRule(
+    String houseId,
+    SilCompatRuleCreateRequest body,
+  ) => _remote.createCompatRule(houseId, body);
+
+  Future<void> deleteCompatRule(String houseId, String ruleId) =>
+      _remote.deleteCompatRule(houseId, ruleId);
 }

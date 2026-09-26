@@ -701,11 +701,16 @@ class StaffVisitsController extends GetxController {
       await load();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
-      if (e.isCredentialGateBlocked || e.isEligibilityIncomplete) {
+      if (e.isCredentialGateBlocked ||
+          e.isAssignGateBlocked ||
+          e.isEligibilityIncomplete) {
         credentialGateReasons.assignAll(e.eligibilityReasons);
         if (overrideReason == null || overrideReason.trim().isEmpty) {
           final reason = await promptCredentialGateOverride(
             reasons: e.eligibilityReasons,
+            title: e.isAssignGateBlocked
+                ? 'Care / compatibility block'
+                : 'Credentials block assign',
           );
           if (reason != null && reason.trim().isNotEmpty) {
             await publishSelectedShift(
@@ -933,11 +938,16 @@ class StaffVisitsController extends GetxController {
       await load();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
-      if (e.isCredentialGateBlocked || e.isEligibilityIncomplete) {
+      if (e.isCredentialGateBlocked ||
+          e.isAssignGateBlocked ||
+          e.isEligibilityIncomplete) {
         credentialGateReasons.assignAll(e.eligibilityReasons);
         if (overrideReason == null || overrideReason.trim().isEmpty) {
           final reason = await promptCredentialGateOverride(
             reasons: e.eligibilityReasons,
+            title: e.isAssignGateBlocked
+                ? 'Care / compatibility block'
+                : 'Credentials block assign',
           );
           if (reason != null && reason.trim().isNotEmpty) {
             await assignSelectedShift(
@@ -956,19 +966,20 @@ class StaffVisitsController extends GetxController {
   @visibleForTesting
   Future<String?> promptCredentialGateOverride({
     required List<String> reasons,
+    String title = 'Credentials block assign',
   }) async {
     if (Get.testMode) return null;
     final controller = TextEditingController();
     final result = await Get.dialog<String>(
       AlertDialog(
-        title: const Text('Credentials block assign'),
+        title: Text(title),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               EligibilityIncompletePanel(
-                title: 'Screening / credentials incomplete',
+                title: title,
                 reasons: reasons,
               ),
               const SizedBox(height: 12),

@@ -311,5 +311,14 @@ abstract final class ApiPaths {
   static String silHouseFillVacancy(String id) => '${silHouse(id)}/fill-vacancy';
   static String silHouseMembers(String id) => '${silHouse(id)}/members';
   static String silHouseRocBlocks(String id) => '${silHouse(id)}/roc-blocks';
+  static String silHouseCompatRules(String id) => '${silHouse(id)}/compat-rules';
+  static String silHouseCompatRule(String houseId, String ruleId) =>
+      '${silHouseCompatRules(houseId)}/$ruleId';
   static String jobSilHouse(String jobId) => '$_v1/sil/jobs/$jobId/house';
+  static String tenantContractorCompetencies(String contractorId) =>
+      '$_v1/tenants/current/contractors/$contractorId/competencies';
+  static String tenantContractorCompetency(
+    String contractorId,
+    String skillCode,
+  ) => '${tenantContractorCompetencies(contractorId)}/$skillCode';
 }

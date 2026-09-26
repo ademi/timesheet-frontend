@@ -62,6 +62,7 @@ class SilHouseDetailController extends GetxController {
 
   final bundle = Rxn<SilHouseBundleOut>();
   final overlay = Rxn<SilVacancyOverlayOut>();
+  final compatRules = <SilCompatRuleOut>[].obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
@@ -81,6 +82,11 @@ class SilHouseDetailController extends GetxController {
         overlay.value = await _repo.getOverlay(houseId);
       } catch (_) {
         overlay.value = null;
+      }
+      try {
+        compatRules.assignAll(await _repo.listCompatRules(houseId));
+      } catch (_) {
+        compatRules.clear();
       }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -185,6 +191,48 @@ class SilHouseDetailController extends GetxController {
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
       if (!Get.testMode) AppToast.error('Occupancy update failed', e.message);
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> addCompatRule({
+    required String reason,
+    String severity = 'soft_warn',
+    String? againstClientId,
+  }) async {
+    final trimmed = reason.trim();
+    if (trimmed.isEmpty) return;
+    isSaving.value = true;
+    try {
+      await _repo.createCompatRule(
+        houseId,
+        SilCompatRuleCreateRequest(
+          againstClientId: againstClientId,
+          severity: severity,
+          reason: trimmed,
+        ),
+      );
+      await refresh();
+      if (!Get.testMode) {
+        AppToast.success('Compat rule added', severity);
+      }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      if (!Get.testMode) AppToast.error('Compat rule failed', e.message);
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> removeCompatRule(String ruleId) async {
+    isSaving.value = true;
+    try {
+      await _repo.deleteCompatRule(houseId, ruleId);
+      await refresh();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      if (!Get.testMode) AppToast.error('Delete failed', e.message);
     } finally {
       isSaving.value = false;
     }
