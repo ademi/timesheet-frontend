@@ -129,6 +129,10 @@ abstract final class ApiPaths {
   static String clientSites(String id) => '${client(id)}/sites';
   static String clientSite(String id, String siteId) =>
       '${clientSites(id)}/$siteId';
+  static String clientSiteStops(String id, String siteId) =>
+      '${clientSite(id, siteId)}/stops';
+  static String clientSiteStop(String id, String siteId, String stopId) =>
+      '${clientSiteStops(id, siteId)}/$stopId';
   static String clientContacts(String id) => '${client(id)}/contacts';
   static String clientContact(String id, String contactId) =>
       '${clientContacts(id)}/$contactId';

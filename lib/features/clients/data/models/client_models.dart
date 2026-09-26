@@ -259,6 +259,63 @@ class ClientSiteOut {
   }
 }
 
+/// Extra geofence point on a client site (community / transport multi-stop).
+class ClientSiteStopOut {
+  const ClientSiteStopOut({
+    required this.id,
+    required this.siteId,
+    required this.label,
+    required this.latitude,
+    required this.longitude,
+    required this.geofenceRadiusM,
+    required this.sortOrder,
+  });
+
+  final String id;
+  final String siteId;
+  final String label;
+  final double latitude;
+  final double longitude;
+  final int geofenceRadiusM;
+  final int sortOrder;
+
+  factory ClientSiteStopOut.fromJson(Map<String, dynamic> json) {
+    return ClientSiteStopOut(
+      id: json['id'].toString(),
+      siteId: json['site_id'].toString(),
+      label: json['label'] as String,
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+      geofenceRadiusM: json['geofence_radius_m'] as int? ?? 100,
+      sortOrder: json['sort_order'] as int? ?? 0,
+    );
+  }
+}
+
+class ClientSiteStopWriteRequest {
+  const ClientSiteStopWriteRequest({
+    required this.label,
+    required this.latitude,
+    required this.longitude,
+    this.geofenceRadiusM = 100,
+    this.sortOrder = 0,
+  });
+
+  final String label;
+  final double latitude;
+  final double longitude;
+  final int geofenceRadiusM;
+  final int sortOrder;
+
+  Map<String, dynamic> toJson() => {
+    'label': label,
+    'latitude': latitude,
+    'longitude': longitude,
+    'geofence_radius_m': geofenceRadiusM,
+    'sort_order': sortOrder,
+  };
+}
+
 /// `POST /v1/public/geocode` — address_line1 + city + ISO country required.
 class GeocodeRequest {
   const GeocodeRequest({

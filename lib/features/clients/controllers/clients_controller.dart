@@ -95,6 +95,8 @@ class ClientsController extends GetxController
   // Detail
   final selected = Rxn<ClientOut>();
   final sites = <ClientSiteOut>[].obs;
+  /// Extra geofence stops keyed by site id (B5 multi-stop).
+  final siteStopsBySiteId = <String, List<ClientSiteStopOut>>{}.obs;
   final contacts = <ClientContactOut>[].obs;
   final lastInvite = Rxn<ClientInviteCreateResponse>();
   final invites = <ClientInviteOut>[].obs;
@@ -1458,12 +1460,87 @@ class ClientsController extends GetxController
       ]);
       sites.assignAll(results[0] as List<ClientSiteOut>);
       contacts.assignAll(results[1] as List<ClientContactOut>);
+      await _reloadAllSiteStops(id);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     }
     await loadClientVisits();
     await loadStandingJob();
     await loadSupportPlanSummary();
+  }
+
+  Future<void> _reloadAllSiteStops(String clientId) async {
+    final next = <String, List<ClientSiteStopOut>>{};
+    for (final site in sites) {
+      try {
+        next[site.id] = await _repository.listSiteStops(clientId, site.id);
+      } on AppFailure {
+        next[site.id] = siteStopsBySiteId[site.id] ?? const [];
+      }
+    }
+    siteStopsBySiteId
+      ..clear()
+      ..addAll(next);
+  }
+
+  List<ClientSiteStopOut> stopsForSite(String siteId) =>
+      List<ClientSiteStopOut>.from(siteStopsBySiteId[siteId] ?? const []);
+
+  Future<void> addSiteStop(
+    ClientSiteOut site, {
+    required String label,
+    required double latitude,
+    required double longitude,
+    int geofenceRadiusM = 100,
+  }) async {
+    final clientId = selected.value?.id;
+    if (clientId == null) return;
+    final cleaned = label.trim();
+    if (cleaned.isEmpty) {
+      errorMessage.value = 'Stop label is required.';
+      return;
+    }
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final created = await _repository.createSiteStop(
+        clientId,
+        site.id,
+        ClientSiteStopWriteRequest(
+          label: cleaned,
+          latitude: latitude,
+          longitude: longitude,
+          geofenceRadiusM: geofenceRadiusM.clamp(10, 5000),
+        ),
+      );
+      final existing = List<ClientSiteStopOut>.from(
+        siteStopsBySiteId[site.id] ?? const [],
+      )..add(created);
+      siteStopsBySiteId[site.id] = existing;
+      siteStopsBySiteId.refresh();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> deleteSiteStop(ClientSiteOut site, ClientSiteStopOut stop) async {
+    final clientId = selected.value?.id;
+    if (clientId == null) return;
+    isSaving.value = true;
+    try {
+      await _repository.deleteSiteStop(clientId, site.id, stop.id);
+      final existing = List<ClientSiteStopOut>.from(
+        siteStopsBySiteId[site.id] ?? const [],
+      )..removeWhere((s) => s.id == stop.id);
+      siteStopsBySiteId[site.id] = existing;
+      siteStopsBySiteId.refresh();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
   }
 
   /// Puts or replaces [SupportPlanController] for the selected client (CR2).
@@ -1876,6 +1953,8 @@ class ClientsController extends GetxController
     isSaving.value = true;
     try {
       await _repository.deleteSite(clientId, site.id);
+      siteStopsBySiteId.remove(site.id);
+      siteStopsBySiteId.refresh();
       await refreshDetailExtras();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;

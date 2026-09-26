@@ -252,12 +252,15 @@ class TenantSettingsOut {
     this.name,
     this.timezone,
     this.publicHolidayJurisdiction,
+    this.geofenceOutsidePolicy = 'soft',
   });
 
   final String id;
   final String? name;
   final String? timezone;
   final String? publicHolidayJurisdiction;
+  /// soft = allow outside punch + exception; hard = 400 geofence_rejected.
+  final String geofenceOutsidePolicy;
 
   factory TenantSettingsOut.fromJson(Map<String, dynamic> json) {
     return TenantSettingsOut(
@@ -265,6 +268,11 @@ class TenantSettingsOut {
       name: json['name'] as String? ?? json['display_name'] as String?,
       timezone: json['timezone'] as String?,
       publicHolidayJurisdiction: json['public_holiday_jurisdiction'] as String?,
+      geofenceOutsidePolicy:
+          (json['geofence_outside_policy'] as String?)?.trim().toLowerCase() ==
+                  'hard'
+              ? 'hard'
+              : 'soft',
     );
   }
 }

@@ -80,6 +80,23 @@ class ClientsRepository {
   Future<void> deleteSite(String clientId, String siteId) =>
       _remote.deleteSite(clientId, siteId);
 
+  Future<List<ClientSiteStopOut>> listSiteStops(
+    String clientId,
+    String siteId,
+  ) => _remote.listSiteStops(clientId, siteId);
+
+  Future<ClientSiteStopOut> createSiteStop(
+    String clientId,
+    String siteId,
+    ClientSiteStopWriteRequest body,
+  ) => _remote.createSiteStop(clientId, siteId, body);
+
+  Future<void> deleteSiteStop(
+    String clientId,
+    String siteId,
+    String stopId,
+  ) => _remote.deleteSiteStop(clientId, siteId, stopId);
+
   Future<List<ClientContactOut>> listContacts(String clientId) async =>
       sortedByName(
         await _remote.listContacts(clientId),

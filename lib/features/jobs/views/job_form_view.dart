@@ -201,8 +201,8 @@ class JobFormView extends GetView<JobsController> {
                         child: Text('informational'),
                       ),
                       DropdownMenuItem(
-                        value: 'enforced',
-                        child: Text('enforced'),
+                        value: 'enforce',
+                        child: Text('enforce'),
                       ),
                     ],
                     onChanged: (v) {

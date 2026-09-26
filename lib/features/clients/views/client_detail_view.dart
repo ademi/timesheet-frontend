@@ -11,6 +11,7 @@ import '../../../shared/widgets/profile_photo_editor.dart';
 import '../../../shared/widgets/subject_tab_bar.dart';
 import '../controllers/clients_controller.dart';
 import '../controllers/support_plan_controller.dart';
+import '../data/models/client_models.dart';
 import '../widgets/client_detail_care_plan_section.dart';
 import '../widgets/client_detail_contacts_section.dart';
 import '../widgets/client_detail_overview_section.dart';
@@ -203,10 +204,15 @@ class ClientDetailView extends GetView<ClientsController> {
         return _scrollTab(
           ClientDetailSitesSection(
             sites: controller.sites.toList(),
+            stopsBySiteId: Map<String, List<ClientSiteStopOut>>.from(
+              controller.siteStopsBySiteId,
+            ),
             canManage: controller.canManage,
             onAdd: () => controller.beginSiteForm(),
             onEdit: (s) => controller.beginSiteForm(site: s),
             onDelete: controller.deleteSite,
+            onAddStop: (site) => _promptAddStop(site),
+            onDeleteStop: controller.deleteSiteStop,
           ),
         );
       case ClientsController.tabPeople:
@@ -258,6 +264,101 @@ class ClientDetailView extends GetView<ClientsController> {
       default:
         return _scrollTab(ClientDetailOverviewSection(controller: controller));
     }
+  }
+
+  Future<void> _promptAddStop(ClientSiteOut site) async {
+    final labelCtrl = TextEditingController();
+    final latCtrl = TextEditingController(
+      text: site.latitude?.toString() ?? '',
+    );
+    final lngCtrl = TextEditingController(
+      text: site.longitude?.toString() ?? '',
+    );
+    final radiusCtrl = TextEditingController(
+      text: '${site.geofenceRadiusM}',
+    );
+    final result = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('Add stop · ${site.name}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: labelCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Label (e.g. Day program)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: latCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Latitude',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: lngCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Longitude',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: radiusCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Geofence radius (m)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(result: false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+    final label = labelCtrl.text;
+    final latText = latCtrl.text;
+    final lngText = lngCtrl.text;
+    final radiusText = radiusCtrl.text;
+    labelCtrl.dispose();
+    latCtrl.dispose();
+    lngCtrl.dispose();
+    radiusCtrl.dispose();
+    if (result != true) return;
+    final lat = double.tryParse(latText.trim());
+    final lng = double.tryParse(lngText.trim());
+    final radius = int.tryParse(radiusText.trim()) ?? site.geofenceRadiusM;
+    if (lat == null || lng == null) {
+      controller.errorMessage.value = 'Valid latitude and longitude required.';
+      return;
+    }
+    await controller.addSiteStop(
+      site,
+      label: label,
+      latitude: lat,
+      longitude: lng,
+      geofenceRadiusM: radius,
+    );
   }
 }
 

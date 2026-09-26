@@ -33,6 +33,7 @@ class StaffTenantSettingsController extends GetxController {
 
   final timezoneCtrl = TextEditingController();
   final jurisdictionCtrl = TextEditingController();
+  final geofenceOutsidePolicy = 'soft'.obs;
 
   bool get canManage => _session.hasPermission(AppPermissions.tenantsManage);
   bool get canViewMembers =>
@@ -69,6 +70,7 @@ class StaffTenantSettingsController extends GetxController {
       tenant.value = t;
       timezoneCtrl.text = t.timezone ?? '';
       jurisdictionCtrl.text = t.publicHolidayJurisdiction ?? '';
+      geofenceOutsidePolicy.value = t.geofenceOutsidePolicy;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     }
@@ -103,11 +105,13 @@ class StaffTenantSettingsController extends GetxController {
             jurisdictionCtrl.text.trim().isEmpty
                 ? null
                 : jurisdictionCtrl.text.trim(),
+        geofenceOutsidePolicy: geofenceOutsidePolicy.value,
       );
       tenant.value = updated;
+      geofenceOutsidePolicy.value = updated.geofenceOutsidePolicy;
       AppToast.success(
         'Saved',
-        'Tenant timezone / holiday jurisdiction updated.',
+        'Tenant settings updated.',
       );
     } on AppFailure catch (e) {
       await BillingGate.showIfNeeded(e);

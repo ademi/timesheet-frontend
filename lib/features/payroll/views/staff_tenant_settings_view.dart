@@ -107,6 +107,39 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  const Text(
+                    'When a visit uses enforce geofence: soft allows the punch '
+                    'and opens a variance for review; hard blocks with '
+                    'geofence_rejected.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: controller.geofenceOutsidePolicy.value,
+                    decoration: const InputDecoration(
+                      labelText: 'Outside geofence policy',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'soft',
+                        child: Text('Soft (allow + variance)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'hard',
+                        child: Text('Hard (reject punch)'),
+                      ),
+                    ],
+                    onChanged:
+                        controller.canManage
+                            ? (v) {
+                              if (v != null) {
+                                controller.geofenceOutsidePolicy.value = v;
+                              }
+                            }
+                            : null,
+                  ),
+                  const SizedBox(height: 16),
                   if (controller.canManage)
                     AsyncElevatedButton(
                       onPressed: controller.save,

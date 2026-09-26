@@ -309,6 +309,52 @@ class ClientsRemoteDataSource {
     }
   }
 
+  Future<List<ClientSiteStopOut>> listSiteStops(
+    String clientId,
+    String siteId,
+  ) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.clientSiteStops(clientId, siteId),
+      );
+      return _mapList(response.data, ClientSiteStopOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ClientSiteStopOut> createSiteStop(
+    String clientId,
+    String siteId,
+    ClientSiteStopWriteRequest body,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.clientSiteStops(clientId, siteId),
+        data: body.toJson(),
+      );
+      return _require(
+        response.data,
+        ClientSiteStopOut.fromJson,
+        'create site stop',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<void> deleteSiteStop(
+    String clientId,
+    String siteId,
+    String stopId,
+  ) async {
+    try {
+      await _dio.delete<void>(ApiPaths.clientSiteStop(clientId, siteId, stopId));
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<List<ClientContactOut>> listContacts(String clientId) async {
     try {
       final response = await _dio.get<List<dynamic>>(

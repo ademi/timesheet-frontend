@@ -40,6 +40,15 @@ class AttendanceReviewController extends GetxController {
         return list
             .where((i) => i.kind == AttendanceReviewKind.exception)
             .toList(growable: false);
+      case AttendanceReviewFilter.variance:
+        return list
+            .where(
+              (i) =>
+                  i.kind == AttendanceReviewKind.exception &&
+                  i.exception != null &&
+                  attendanceExceptionIsVariance(i.exception!.kind),
+            )
+            .toList(growable: false);
       case AttendanceReviewFilter.sync:
         return list
             .where((i) => i.kind == AttendanceReviewKind.syncConflict)
