@@ -221,7 +221,10 @@ class PublishDraft {
         validateAccommodation();
   }
 
-  ShiftPublishRequest toRequest({String? overrideReason}) {
+  ShiftPublishRequest toRequest({
+    String? overrideReason,
+    String? budgetOverrideReason,
+  }) {
     final overrideList = <ShiftParticipantPublishOverride>[
       for (final o in overrides.values)
         if (!o.isEmpty) o.toApi(),
@@ -234,6 +237,7 @@ class PublishDraft {
           stayOn ? accommodationSupportItemCode?.trim() : null,
       accommodationQuantity: stayOn ? accommodationQuantity?.trim() : null,
       overrideReason: overrideReason,
+      budgetOverrideReason: budgetOverrideReason,
     );
   }
 }

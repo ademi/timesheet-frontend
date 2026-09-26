@@ -678,7 +678,10 @@ class StaffVisitsController extends GetxController {
     }
   }
 
-  Future<void> publishSelectedShift({String? overrideReason}) async {
+  Future<void> publishSelectedShift({
+    String? overrideReason,
+    String? budgetOverrideReason,
+  }) async {
     final shift = selectedShift.value;
     if (shift == null) return;
     isSaving.value = true;
@@ -687,7 +690,10 @@ class StaffVisitsController extends GetxController {
     try {
       selectedShift.value = await _shiftsRepository.publishShift(
         shift.id,
-        body: ShiftPublishRequest(overrideReason: overrideReason),
+        body: ShiftPublishRequest(
+          overrideReason: overrideReason,
+          budgetOverrideReason: budgetOverrideReason,
+        ),
       );
       if (!Get.testMode) {
         AppToast.success('Published', selectedShift.value!.jobTitle);
@@ -702,21 +708,41 @@ class StaffVisitsController extends GetxController {
             reasons: e.eligibilityReasons,
           );
           if (reason != null && reason.trim().isNotEmpty) {
-            await publishSelectedShift(overrideReason: reason.trim());
+            await publishSelectedShift(
+              overrideReason: reason.trim(),
+              budgetOverrideReason: budgetOverrideReason,
+            );
           }
         }
       } else if (e.isBudgetBurnBlocked) {
-        if (overrideReason == null || overrideReason.trim().isEmpty) {
-          final reason = await promptBudgetBurnOverride(
-            reasons: e.eligibilityReasons.isEmpty
-                ? const ['Plan budget hard block']
-                : e.eligibilityReasons,
-          );
-          if (reason != null && reason.trim().isNotEmpty) {
-            isSaving.value = false;
-            await publishSelectedShift(overrideReason: reason.trim());
-            return;
+        if (budgetOverrideReason == null ||
+            budgetOverrideReason.trim().isEmpty) {
+          if (!_session.hasPermission(AppPermissions.billingManage)) {
+            if (!Get.testMode) {
+              AppToast.error(
+                'Could not publish',
+                'Plan budget override requires billing.manage.',
+              );
+            }
+          } else {
+            final reason = await promptBudgetBurnOverride(
+              reasons: e.eligibilityReasons.isEmpty
+                  ? const ['Plan budget hard block']
+                  : e.eligibilityReasons,
+            );
+            if (reason != null && reason.trim().isNotEmpty) {
+              isSaving.value = false;
+              await publishSelectedShift(
+                overrideReason: overrideReason,
+                budgetOverrideReason: reason.trim(),
+              );
+              return;
+            }
           }
+        }
+      } else if (e.isBudgetOverrideForbidden) {
+        if (!Get.testMode) {
+          AppToast.error('Could not publish', e.message);
         }
       } else {
         if (!Get.testMode) {

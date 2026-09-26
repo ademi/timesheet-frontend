@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/constants/app_permissions.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/services/session_service.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../billing/data/models/billing_models.dart';
 import '../../billing/data/repositories/billing_repository.dart';
@@ -268,7 +270,10 @@ class GroupShiftPublishController extends GetxController {
     }
   }
 
-  Future<void> publish({String? overrideReason}) async {
+  Future<void> publish({
+    String? overrideReason,
+    String? budgetOverrideReason,
+  }) async {
     if (isSaving.value) return;
     final err = draft.value.validateAll();
     if (err != null) {
@@ -280,7 +285,10 @@ class GroupShiftPublishController extends GetxController {
     try {
       final published = await _shifts.publishShift(
         shift.id,
-        body: draft.value.toRequest(overrideReason: overrideReason),
+        body: draft.value.toRequest(
+          overrideReason: overrideReason,
+          budgetOverrideReason: budgetOverrideReason,
+        ),
       );
       if (!Get.testMode) {
         AppToast.success('Published', published.jobTitle);
@@ -294,14 +302,31 @@ class GroupShiftPublishController extends GetxController {
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
       if (e.isBudgetBurnBlocked &&
-          (overrideReason == null || overrideReason.trim().isEmpty)) {
-        final reason = await promptBudgetBurnOverride(
-          reasons: e.eligibilityReasons,
-        );
-        if (reason != null && reason.trim().isNotEmpty) {
-          isSaving.value = false;
-          await publish(overrideReason: reason.trim());
-          return;
+          (budgetOverrideReason == null ||
+              budgetOverrideReason.trim().isEmpty)) {
+        if (!_canPromptBudgetOverride) {
+          if (!Get.testMode) {
+            AppToast.error(
+              'Could not publish',
+              'Plan budget override requires billing.manage.',
+            );
+          }
+        } else {
+          final reason = await promptBudgetBurnOverride(
+            reasons: e.eligibilityReasons,
+          );
+          if (reason != null && reason.trim().isNotEmpty) {
+            isSaving.value = false;
+            await publish(
+              overrideReason: overrideReason,
+              budgetOverrideReason: reason.trim(),
+            );
+            return;
+          }
+        }
+      } else if (e.isBudgetOverrideForbidden) {
+        if (!Get.testMode) {
+          AppToast.error('Could not publish', e.message);
         }
       } else if (!Get.testMode) {
         AppToast.error('Could not publish', e.message);
@@ -310,6 +335,15 @@ class GroupShiftPublishController extends GetxController {
     } finally {
       isSaving.value = false;
     }
+  }
+
+  /// Test inject or live session with [AppPermissions.billingManage].
+  bool get _canPromptBudgetOverride {
+    if (_promptBurnOverride != null) return true;
+    if (!Get.isRegistered<SessionService>()) return false;
+    return Get.find<SessionService>().hasPermission(
+      AppPermissions.billingManage,
+    );
   }
 
   @visibleForTesting

@@ -41,6 +41,8 @@ class AppFailure implements Exception {
 
   bool get isBudgetBurnBlocked => code == 'budget_burn_blocked';
 
+  bool get isBudgetOverrideForbidden => code == 'budget_override_forbidden';
+
   bool get isSharingGrantRequired => code == 'sharing_grant_required';
 
   @override
@@ -228,6 +230,7 @@ class AppFailure implements Exception {
       'eligibility_incomplete',
       'credential_gate_blocked',
       'budget_burn_blocked',
+      'budget_override_forbidden',
       'counsel_pending',
       'counsel_pending_policy',
       'legal_document_unavailable',
@@ -320,6 +323,7 @@ class AppFailure implements Exception {
       case 'eligibility_incomplete':
       case 'credential_gate_blocked':
       case 'budget_burn_blocked':
+      case 'budget_override_forbidden':
       case 'geofence_rejected':
       case 'forms_incomplete':
       case 'required_forms_incomplete':
@@ -406,6 +410,8 @@ class AppFailure implements Exception {
         return 'Screening or credentials block this roster action — review the listed items or provide an audited override reason.';
       case 'budget_burn_blocked':
         return 'Publishing would exceed plan budget thresholds — review burn warnings or provide an audited override reason.';
+      case 'budget_override_forbidden':
+        return 'Plan budget override requires billing.manage. Ask a finance admin to publish with an audited reason.';
       case 'mfa_required':
         return 'Multi-factor authentication required. Complete MFA, then retry.';
       case 'notice_not_presented':

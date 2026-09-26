@@ -217,7 +217,8 @@ void main() {
     ).thenAnswer((invocation) async {
       calls += 1;
       final body = invocation.namedArguments[#body] as ShiftPublishRequest?;
-      if (body?.overrideReason == null || body!.overrideReason!.isEmpty) {
+      if (body?.budgetOverrideReason == null ||
+          body!.budgetOverrideReason!.isEmpty) {
         throw const AppFailure(
           code: 'budget_burn_blocked',
           message: 'Publishing would exceed plan budget thresholds.',

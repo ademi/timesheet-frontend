@@ -143,7 +143,8 @@ void main() {
     ).thenAnswer((invocation) async {
       publishCalls++;
       final body = invocation.namedArguments[#body] as ShiftPublishRequest?;
-      if (body?.overrideReason == null || body!.overrideReason!.isEmpty) {
+      if (body?.budgetOverrideReason == null ||
+          body!.budgetOverrideReason!.isEmpty) {
         throw const AppFailure(
           code: 'budget_burn_blocked',
           message: 'Publishing would exceed plan budget thresholds.',
@@ -174,8 +175,8 @@ void main() {
         body: any(
           named: 'body',
           that: isA<ShiftPublishRequest>().having(
-            (b) => b.overrideReason,
-            'overrideReason',
+            (b) => b.budgetOverrideReason,
+            'budgetOverrideReason',
             'SC confirmed statement remaining',
           ),
         ),
