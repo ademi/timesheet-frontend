@@ -120,6 +120,16 @@ class VisitsRepository {
   Future<ShiftBriefDto> getVisitShiftBrief(String visitId) =>
       _remote.getVisitShiftBrief(visitId);
 
+  Future<VisitOut> putVisitTripKms({
+    required String visitId,
+    required double tripKms,
+    String? supportItemCode,
+  }) => _remote.putVisitTripKms(
+    visitId: visitId,
+    tripKms: tripKms,
+    supportItemCode: supportItemCode,
+  );
+
   Future<RosterOverlayOut> fetchRosterOverlay({
     required DateTime from,
     required DateTime to,

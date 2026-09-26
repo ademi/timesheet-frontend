@@ -216,6 +216,7 @@ abstract final class ApiPaths {
   static String visitFormSubmissions(String id) =>
       '${visit(id)}/form-submissions';
   static String visitShiftBrief(String id) => '${visit(id)}/shift-brief';
+  static String visitTripKms(String id) => '${visit(id)}/trip-kms';
 
   // Shifts / roster
   static const shifts = '$_v1/shifts';
@@ -261,6 +262,8 @@ abstract final class ApiPaths {
   static String invoiceExportCsv(String id) => '${invoiceExport(id)}/csv';
   static String invoiceExportVoid(String id) => '${invoiceExport(id)}/void';
   static const unclaimedAgeing = '$_v1/billing/unclaimed-ageing';
+  static const arAgeing = '$_v1/billing/ar-ageing';
+  static String invoiceExportAr(String id) => '${invoiceExport(id)}/ar';
   static const budgetAlerts = '$_v1/billing/budget-alerts';
   static const budgetAlertSettings = '$_v1/billing/budget-alert-settings';
   static String publishBurnPreview(String shiftId) =>

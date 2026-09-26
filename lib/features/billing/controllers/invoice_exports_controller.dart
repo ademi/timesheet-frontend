@@ -57,6 +57,8 @@ class InvoiceExportsController extends GetxController {
   final ageingApproaching90Only = false.obs;
   final burnAlerts = <BurnEnvelopeAlertOut>[].obs;
   final paymentEnquiries = <PaymentEnquiryOut>[].obs;
+  final arAgeing = <ArAgeingExportOut>[].obs;
+  final arManagementTypeFilter = ''.obs;
   final selectedVisitIds = <String>{}.obs;
   final lastVisitErrors = <InvoiceExportVisitError>[].obs;
   final isLoading = false.obs;
@@ -88,6 +90,10 @@ class InvoiceExportsController extends GetxController {
   bool get hasBurnAlertBadge => burnAlerts.isNotEmpty;
 
   int get burnAlertCount => burnAlerts.length;
+
+  bool get hasArRiskBadge => arAgeing.any((e) => e.isWatchOrWorse);
+
+  int get arRiskCount => arAgeing.where((e) => e.isWatchOrWorse).length;
 
   /// Test/read access to the shared export exclusion set.
   ExportedVisitIdsStore get exportedVisitIds => _exportedVisitIds;
@@ -141,6 +147,7 @@ class InvoiceExportsController extends GetxController {
     loadUnclaimedAgeing();
     loadBurnAlerts();
     loadPaymentEnquiries();
+    loadArAgeing();
     if (canManage) {
       loadClients();
       loadJobs();
@@ -165,6 +172,8 @@ class InvoiceExportsController extends GetxController {
         switchToBurnTab();
       case 'pe':
         switchToPeTab();
+      case 'ar':
+        switchToArTab();
       default:
         break;
     }
@@ -201,6 +210,57 @@ class InvoiceExportsController extends GetxController {
       paymentEnquiries.assignAll(await _repository.listPaymentEnquiries());
     } on AppFailure catch (_) {
       // Optional tower tab.
+    }
+  }
+
+  Future<void> loadArAgeing() async {
+    if (!canView) return;
+    try {
+      final mt = arManagementTypeFilter.value.trim();
+      arAgeing.assignAll(
+        await _repository.listArAgeing(
+          managementType: mt.isEmpty ? null : mt,
+        ),
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (_) {
+      // Optional tower tab.
+    }
+  }
+
+  Future<void> setArManagementTypeFilter(String? value) async {
+    arManagementTypeFilter.value = value?.trim() ?? '';
+    await loadArAgeing();
+  }
+
+  Future<void> setArDelayReason(ArAgeingExportOut row, String reason) async {
+    if (!canManage) return;
+    try {
+      final updated = await _repository.patchArExport(
+        row.exportId,
+        delayReason: reason,
+      );
+      final idx = arAgeing.indexWhere((e) => e.exportId == row.exportId);
+      if (idx >= 0) arAgeing[idx] = updated;
+      AppToast.success('Saved', 'Delay reason saved');
+    } on AppFailure catch (e) {
+      AppToast.error('AR update failed', e.message);
+    }
+  }
+
+  Future<void> markArPaid(ArAgeingExportOut row) async {
+    if (!canManage) return;
+    try {
+      await _repository.patchArExport(
+        row.exportId,
+        arPaymentStatus: 'paid',
+        clearDelayReason: true,
+      );
+      arAgeing.removeWhere((e) => e.exportId == row.exportId);
+      AppToast.success('Paid', 'Marked paid');
+    } on AppFailure catch (e) {
+      AppToast.error('AR update failed', e.message);
     }
   }
 
@@ -270,6 +330,11 @@ class InvoiceExportsController extends GetxController {
   void switchToPeTab() {
     tabIndex.value = 4;
     loadPaymentEnquiries();
+  }
+
+  void switchToArTab() {
+    tabIndex.value = 5;
+    loadArAgeing();
   }
 
   Future<void> loadClients() async {

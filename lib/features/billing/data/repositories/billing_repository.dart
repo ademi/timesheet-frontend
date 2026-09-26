@@ -54,4 +54,28 @@ class BillingRepository {
     status: status,
     limit: limit,
   );
+
+  Future<List<ArAgeingExportOut>> listArAgeing({
+    String? managementType,
+    int? minDays,
+    bool includePaid = false,
+    int limit = 200,
+  }) => _remote.listArAgeing(
+    managementType: managementType,
+    minDays: minDays,
+    includePaid: includePaid,
+    limit: limit,
+  );
+
+  Future<ArAgeingExportOut> patchArExport(
+    String exportId, {
+    String? arPaymentStatus,
+    String? delayReason,
+    bool clearDelayReason = false,
+  }) => _remote.patchArExport(
+    exportId,
+    arPaymentStatus: arPaymentStatus,
+    delayReason: delayReason,
+    clearDelayReason: clearDelayReason,
+  );
 }

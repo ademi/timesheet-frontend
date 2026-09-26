@@ -676,6 +676,38 @@ class ContractorVisitsController extends GetxController {
     if (worker != null) await worker.flush();
   }
 
+  Future<void> saveTripKms(double tripKms) async {
+    final visit = selected.value;
+    if (visit == null) return;
+    if (visit.shiftId == null || visit.shiftId!.isEmpty) {
+      errorMessage.value = 'Trip kms requires a group shift visit.';
+      return;
+    }
+    if (tripKms <= 0) {
+      errorMessage.value = 'Enter trip kilometres greater than zero.';
+      return;
+    }
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final updated = await _repository.putVisitTripKms(
+        visitId: visit.id,
+        tripKms: tripKms,
+      );
+      selected.value = updated;
+      final idx = visits.indexWhere((v) => v.id == updated.id);
+      if (idx >= 0) visits[idx] = updated;
+      AppToast.success('Trip kms saved', 'Claim ready for invoice export.');
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      AppToast.error('Trip kms failed', e.message);
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
   Future<void> toggleTask(VisitTaskOut task) async {
     final visit = selected.value;
     if (visit == null) return;

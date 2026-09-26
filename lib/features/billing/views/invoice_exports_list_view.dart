@@ -56,6 +56,7 @@ class InvoiceExportsListView extends GetView<InvoiceExportsController> {
         final showAgeing = tab == 2;
         final showBurn = tab == 3;
         final showPe = tab == 4;
+        final showAr = tab == 5;
 
         return Column(
           children: [
@@ -124,6 +125,18 @@ class InvoiceExportsListView extends GetView<InvoiceExportsController> {
                                 label: Text('PE'),
                                 icon: Icon(Icons.outgoing_mail, size: 18),
                               ),
+                              ButtonSegment(
+                                value: 5,
+                                label: Text(
+                                  controller.hasArRiskBadge
+                                      ? 'AR (${controller.arRiskCount})'
+                                      : 'AR',
+                                ),
+                                icon: const Icon(
+                                  Icons.account_balance_outlined,
+                                  size: 18,
+                                ),
+                              ),
                             ],
                             selected: {tab},
                             onSelectionChanged: (next) {
@@ -136,6 +149,8 @@ class InvoiceExportsListView extends GetView<InvoiceExportsController> {
                                 controller.switchToBurnTab();
                               } else if (v == 4) {
                                 controller.switchToPeTab();
+                              } else if (v == 5) {
+                                controller.switchToArTab();
                               } else {
                                 controller.tabIndex.value = 0;
                               }
@@ -173,7 +188,9 @@ class InvoiceExportsListView extends GetView<InvoiceExportsController> {
                 child: KeyedSubtree(
                   key: ValueKey('billing-tab-$tab'),
                   child:
-                      showBurn
+                      showAr
+                          ? _ArTab(controller: controller)
+                          : showBurn
                           ? _BurnTab(controller: controller)
                           : showPe
                           ? _PeTab(controller: controller)
@@ -728,6 +745,142 @@ class _PeTab extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 row.notes!,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+class _ArTab extends StatelessWidget {
+  const _ArTab({required this.controller});
+  final InvoiceExportsController controller;
+
+  static const _delayReasons = <String>[
+    'pm_queue',
+    'participant_hold',
+    'ndia_review',
+    'pe',
+    'rejected',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final rows = controller.arAgeing.toList(growable: false);
+      final filter = controller.arManagementTypeFilter.value;
+      return RefreshIndicator(
+        onRefresh: controller.loadArAgeing,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          children: [
+            PageContent(
+              width: PageContentWidth.workflow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Accounts receivable — finalized unpaid invoices. '
+                    'SLA bands: watch ≥5d, high ≥7d, critical ≥14d. '
+                    'Not the same as PE or 90-day unclaimed visits.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: filter.isEmpty ? '' : filter,
+                    decoration: const InputDecoration(
+                      labelText: 'Management type',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: '', child: Text('All')),
+                      DropdownMenuItem(
+                        value: 'plan_managed',
+                        child: Text('Plan managed'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'self_managed',
+                        child: Text('Self managed'),
+                      ),
+                      DropdownMenuItem(value: 'ndia', child: Text('NDIA')),
+                    ],
+                    onChanged: (v) => controller.setArManagementTypeFilter(v),
+                  ),
+                  const SizedBox(height: 12),
+                  if (rows.isEmpty && !controller.isLoading.value)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 48),
+                      child: Text(
+                        'No unpaid finalized invoices in AR.',
+                        style: TextStyle(color: AppColors.textMuted),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  else
+                    for (final row in rows) ...[
+                      Container(
+                        decoration: billingPanelDecoration(),
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              row.destinationProfileName?.trim().isNotEmpty ==
+                                      true
+                                  ? row.destinationProfileName!
+                                  : 'Export ${row.exportId.substring(0, 8)}…',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${row.arPaymentStatus} · ${row.daysOpen}d · ${row.riskBand}'
+                              ' · \$${row.totalAmount.toStringAsFixed(2)}'
+                              '${row.managementType != null ? ' · ${row.managementType}' : ''}',
+                              style: const TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 13,
+                              ),
+                            ),
+                            if (controller.canManage) ...[
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  for (final reason in _delayReasons)
+                                    ChoiceChip(
+                                      label: Text(reason),
+                                      selected: row.delayReason == reason,
+                                      onSelected: (_) =>
+                                          controller.setArDelayReason(
+                                            row,
+                                            reason,
+                                          ),
+                                    ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        controller.markArPaid(row),
+                                    child: const Text('Mark paid'),
+                                  ),
+                                ],
+                              ),
+                            ] else if (row.delayReason != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Delay: ${row.delayReason}',
                                 style: const TextStyle(fontSize: 12),
                               ),
                             ],

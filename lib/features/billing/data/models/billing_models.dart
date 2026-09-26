@@ -539,3 +539,60 @@ class PaymentEnquiryOut {
     );
   }
 }
+
+/// B16 — finalized unpaid invoice AR (5/7/14 SLA). Distinct from PE / 90d unclaimed.
+class ArAgeingExportOut {
+  const ArAgeingExportOut({
+    required this.exportId,
+    required this.status,
+    required this.arPaymentStatus,
+    required this.lineCount,
+    required this.totalAmount,
+    required this.currencyCode,
+    required this.daysOpen,
+    required this.riskBand,
+    this.delayReason,
+    this.managementType,
+    this.destinationProfileId,
+    this.destinationProfileName,
+    this.finalizedAt,
+  });
+
+  final String exportId;
+  final String status;
+  final String arPaymentStatus;
+  final String? delayReason;
+  final String? managementType;
+  final String? destinationProfileId;
+  final String? destinationProfileName;
+  final int lineCount;
+  final double totalAmount;
+  final String currencyCode;
+  final DateTime? finalizedAt;
+  final int daysOpen;
+  final String riskBand;
+
+  bool get isWatchOrWorse =>
+      riskBand == 'watch' || riskBand == 'high' || riskBand == 'critical';
+
+  factory ArAgeingExportOut.fromJson(Map<String, dynamic> json) {
+    return ArAgeingExportOut(
+      exportId: json['export_id'].toString(),
+      status: json['status'] as String? ?? 'finalized',
+      arPaymentStatus: json['ar_payment_status'] as String? ?? 'unpaid',
+      delayReason: json['delay_reason'] as String?,
+      managementType: json['management_type'] as String?,
+      destinationProfileId: json['destination_profile_id']?.toString(),
+      destinationProfileName: json['destination_profile_name'] as String?,
+      lineCount: json['line_count'] as int? ?? 0,
+      totalAmount: (json['total_amount'] as num?)?.toDouble() ?? 0,
+      currencyCode: json['currency_code'] as String? ?? 'AUD',
+      finalizedAt:
+          json['finalized_at'] != null
+              ? DateTime.tryParse(json['finalized_at'].toString())
+              : null,
+      daysOpen: json['days_open'] as int? ?? 0,
+      riskBand: json['risk_band'] as String? ?? 'ok',
+    );
+  }
+}

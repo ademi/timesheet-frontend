@@ -236,6 +236,8 @@ class VisitOut {
     this.supportItemCode,
     this.supportItemName,
     this.priceTierOverride,
+    this.tripKms,
+    this.tripKmsTravelClaimId,
   });
 
   final String id;
@@ -266,6 +268,8 @@ class VisitOut {
   final String? supportItemCode;
   final String? supportItemName;
   final String? priceTierOverride;
+  final double? tripKms;
+  final String? tripKmsTravelClaimId;
   final List<VisitTaskOut> tasks;
   final List<VisitFormRequirement> formRequirements;
   final List<VisitFormSubmissionOut> formSubmissions;
@@ -328,6 +332,8 @@ class VisitOut {
       supportItemCode: json['support_item_code'] as String?,
       supportItemName: json['support_item_name'] as String?,
       priceTierOverride: json['price_tier_override'] as String?,
+      tripKms: (json['trip_kms'] as num?)?.toDouble(),
+      tripKmsTravelClaimId: json['trip_kms_travel_claim_id']?.toString(),
       tasks: mapList(json['tasks'], VisitTaskOut.fromJson),
       formRequirements: mapList(
         json['form_requirements'] ?? json['required_forms'],
@@ -384,6 +390,8 @@ class VisitOut {
       supportItemCode: supportItemCode,
       supportItemName: supportItemName,
       priceTierOverride: priceTierOverride,
+      tripKms: tripKms,
+      tripKmsTravelClaimId: tripKmsTravelClaimId,
       tasks: tasks ?? this.tasks,
       formRequirements: formRequirements ?? this.formRequirements,
       formSubmissions: formSubmissions ?? this.formSubmissions,

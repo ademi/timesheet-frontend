@@ -142,6 +142,25 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                             isLoading: briefLoading,
                             errorMessage: briefErr,
                           ),
+                        if (v.shiftId != null && v.shiftId!.isNotEmpty) ...[
+                          const Divider(height: 32),
+                          Text('Trip kms', style: Get.textTheme.titleMedium),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Enter kilometres for this shift. Saved once into '
+                            'the travel claim used on invoice export.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _TripKmsEditor(
+                            initialKms: v.tripKms,
+                            enabled: !controller.isSaving.value,
+                            onSave: controller.saveTripKms,
+                          ),
+                        ],
                         const Divider(height: 32),
                         Text('Tasks', style: Get.textTheme.titleMedium),
                         if (v.tasks.isEmpty) const Text('No tasks.'),
@@ -360,6 +379,80 @@ class _ErrorBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(message, style: const TextStyle(color: AppColors.error)),
+    );
+  }
+}
+
+class _TripKmsEditor extends StatefulWidget {
+  const _TripKmsEditor({
+    required this.initialKms,
+    required this.enabled,
+    required this.onSave,
+  });
+
+  final double? initialKms;
+  final bool enabled;
+  final Future<void> Function(double kms) onSave;
+
+  @override
+  State<_TripKmsEditor> createState() => _TripKmsEditorState();
+}
+
+class _TripKmsEditorState extends State<_TripKmsEditor> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(
+      text: widget.initialKms != null ? widget.initialKms.toString() : '',
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _TripKmsEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialKms != widget.initialKms) {
+      _ctrl.text =
+          widget.initialKms != null ? widget.initialKms.toString() : '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _ctrl,
+            enabled: widget.enabled,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Kilometres',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        FilledButton(
+          onPressed:
+              widget.enabled
+                  ? () {
+                    final kms = double.tryParse(_ctrl.text.trim());
+                    if (kms == null) return;
+                    widget.onSave(kms);
+                  }
+                  : null,
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }

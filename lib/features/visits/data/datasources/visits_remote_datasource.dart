@@ -279,6 +279,26 @@ class VisitsRemoteDataSource {
     }
   }
 
+  Future<VisitOut> putVisitTripKms({
+    required String visitId,
+    required double tripKms,
+    String? supportItemCode,
+  }) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        ApiPaths.visitTripKms(visitId),
+        data: {
+          'trip_kms': tripKms,
+          if (supportItemCode != null && supportItemCode.isNotEmpty)
+            'support_item_code': supportItemCode,
+        },
+      );
+      return _require(response.data, VisitOut.fromJson, 'put trip kms');
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   /// Leave + availability for engaged contractors in a window (`shifts.read`).
   Future<RosterOverlayOut> fetchRosterOverlay({
     required DateTime from,
