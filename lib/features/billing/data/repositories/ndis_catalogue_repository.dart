@@ -1,5 +1,6 @@
 import '../datasources/ndis_catalogue_remote_datasource.dart';
 import '../models/billing_models.dart';
+import '../ndis_catalogue_local_filter.dart';
 
 /// Max rows requested for the session-cached full catalogue fetch (picker path).
 const kNdisCatalogueFetchLimit = 2000;
@@ -28,8 +29,9 @@ class NdisCatalogueRepository {
     return _inFlight ??= _remote
         .fetchAllActiveItems(limit: limit)
         .then((items) {
-          _cachedItems = items;
-          return items;
+          final cleaned = NdisCatalogueLocalFilter.withoutLegacyStaRatio(items);
+          _cachedItems = cleaned;
+          return cleaned;
         })
         .whenComplete(() {
           _inFlight = null;

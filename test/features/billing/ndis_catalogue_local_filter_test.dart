@@ -80,4 +80,27 @@ void main() {
     final byCode = NdisCatalogueLocalFilter.apply(sampleItems, query: '01_019');
     expect(byCode.map((i) => i.supportItemNumber), ['01_019_0120_1_1']);
   });
+
+  test('apply excludes legacy STA ratio SKUs by default', () {
+    const withLegacy = [
+      ...sampleItems,
+      NdisCatalogueItemOut(
+        supportItemNumber: '01_054_0115_1_1',
+        supportItemName: 'STA And Assistance (Inc. Respite) - 1:2 - Weekday',
+        supportCategoryNumber: '01',
+        registrationGroupNumber: '0115',
+      ),
+    ];
+    final filtered = NdisCatalogueLocalFilter.apply(withLegacy, query: '');
+    expect(
+      filtered.map((i) => i.supportItemNumber),
+      isNot(contains('01_054_0115_1_1')),
+    );
+    final kept = NdisCatalogueLocalFilter.apply(
+      withLegacy,
+      query: '',
+      excludeLegacyStaRatio: false,
+    );
+    expect(kept.map((i) => i.supportItemNumber), contains('01_054_0115_1_1'));
+  });
 }

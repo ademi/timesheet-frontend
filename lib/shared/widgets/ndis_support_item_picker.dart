@@ -7,6 +7,7 @@ import '../../app/themes/app_colors.dart';
 import '../../core/errors/app_failure.dart';
 import '../../core/services/session_service.dart';
 import '../../features/billing/bindings/billing_binding.dart';
+import '../../features/billing/data/legacy_sta.dart';
 import '../../features/billing/data/models/billing_models.dart';
 import '../../features/billing/data/ndis_catalogue_filter_prefs.dart';
 import '../../features/billing/data/ndis_catalogue_local_filter.dart';
@@ -270,6 +271,14 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
     final query = _queryCtrl.text.trim();
     if (query.isEmpty) {
       setState(() => _formatError = null);
+      return;
+    }
+    if (LegacyStaRatio.isLegacyStaRatioItem(code: query, name: query)) {
+      setState(
+        () => _formatError =
+            'Legacy STA ratio packages cannot be claimed. '
+            'Pick an unbundled support item.',
+      );
       return;
     }
     // Name-like leftover text (e.g. after a pick that didn't stick) — same guidance

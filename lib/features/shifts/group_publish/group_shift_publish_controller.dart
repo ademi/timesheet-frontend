@@ -5,6 +5,7 @@ import '../../../app/constants/app_permissions.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../billing/data/catalogue_hygiene.dart';
 import '../../billing/data/models/billing_models.dart';
 import '../../billing/data/repositories/billing_repository.dart';
 import '../../billing/data/repositories/ndis_catalogue_repository.dart';
@@ -65,6 +66,8 @@ class GroupShiftPublishController extends GetxController {
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+  /// Soft catalogue hygiene note (legacy STA / inactive job item / kind suggest).
+  final catalogueHygieneWarning = RxnString();
   final burnReport = Rxn<PublishBurnReportOut>();
   final isLoadingBurn = false.obs;
 
@@ -96,8 +99,10 @@ class GroupShiftPublishController extends GetxController {
   Future<void> _bootstrap() async {
     isLoading.value = true;
     errorMessage.value = null;
+    catalogueHygieneWarning.value = null;
     try {
       await Future.wait([_prefillFromJob(), _loadCatalogue()]);
+      _applyCatalogueHygiene();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
@@ -135,6 +140,40 @@ class GroupShiftPublishController extends GetxController {
     catalogueNationalByCode.assignAll(prices);
   }
 
+  /// B13: clear legacy/inactive prefill; auto-map first shift-kind suggestion.
+  void _applyCatalogueHygiene() {
+    final byCode = Map<String, NdisCatalogueItemOut>.from(catalogueByCode);
+    final sanitized = CatalogueHygiene.sanitizeSelection(
+      code: draft.value.supportItemCode,
+      name: draft.value.supportItemName,
+      catalogueByCode: byCode,
+    );
+    if (sanitized.clearSelection) {
+      draft.value = draft.value.copyWith(clearSupportItem: true);
+      catalogueHygieneWarning.value = sanitized.warning;
+    } else if (sanitized.code != null) {
+      draft.value = draft.value.copyWith(
+        supportItemCode: sanitized.code,
+        supportItemName: sanitized.name,
+      );
+    }
+
+    if ((draft.value.supportItemCode ?? '').trim().isNotEmpty) return;
+
+    final suggested = CatalogueHygiene.firstSuggestedInCatalogue(
+      suggestedCodes: shift.suggestedSupportItemCodes,
+      catalogueByCode: byCode,
+    );
+    if (suggested == null) return;
+    draft.value = draft.value.copyWith(
+      supportItemCode: suggested.supportItemNumber,
+      supportItemName: suggested.supportItemName,
+    );
+    catalogueHygieneWarning.value ??=
+        'Suggested ${suggested.supportItemNumber} from shift type '
+        '(${shift.shiftKind}). Confirm before publish.';
+  }
+
   void setDefaultItem({
     required String? supportItemCode,
     required String? supportItemName,
@@ -145,6 +184,7 @@ class GroupShiftPublishController extends GetxController {
       clearSupportItem: supportItemCode == null || supportItemCode.isEmpty,
     );
     errorMessage.value = null;
+    catalogueHygieneWarning.value = null;
   }
 
   void setAccommodationEnabled(bool enabled) {

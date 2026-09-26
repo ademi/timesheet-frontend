@@ -43,7 +43,11 @@ ShiftParticipantOut _participant({
   );
 }
 
-ShiftOut _shift({List<ShiftParticipantOut>? participants}) {
+ShiftOut _shift({
+  List<ShiftParticipantOut>? participants,
+  String shiftKind = 'standard',
+  List<String> suggestedSupportItemCodes = const [],
+}) {
   return ShiftOut(
     id: 'shift-1',
     tenantId: 'tenant-1',
@@ -57,6 +61,8 @@ ShiftOut _shift({List<ShiftParticipantOut>? participants}) {
     openSlots: 1,
     workerCount: 1,
     status: 'draft',
+    shiftKind: shiftKind,
+    suggestedSupportItemCodes: suggestedSupportItemCodes,
     participants: participants ??
         [
           _participant(id: 'sp-1', participantId: 'p1', name: 'Maya'),
@@ -67,7 +73,7 @@ ShiftOut _shift({List<ShiftParticipantOut>? participants}) {
   );
 }
 
-JobOut _job({String? supportItemCode}) {
+JobOut _job({String? supportItemCode, String? supportItemName}) {
   return JobOut(
     id: 'job-1',
     tenantId: 'tenant-1',
@@ -80,7 +86,9 @@ JobOut _job({String? supportItemCode}) {
     updatedAt: _now,
     clientId: 'host-1',
     supportItemCode: supportItemCode,
-    supportItemName: supportItemCode == null ? null : 'Assistance',
+    supportItemName:
+        supportItemName ??
+        (supportItemCode == null ? null : 'Assistance'),
   );
 }
 
@@ -161,6 +169,60 @@ void main() {
     expect(c.catalogueNationalByCode['01_011_0107_1_1'], 67.56);
     verify(() => catalogue.fetchAllActiveItems()).called(1);
     verifyNever(() => catalogue.searchItems(q: any(named: 'q')));
+  });
+
+  test('clears legacy STA job prefill and warns', () async {
+    when(() => jobs.getJob('job-1')).thenAnswer(
+      (_) async => _job(
+        supportItemCode: '01_054_0115_1_1',
+        supportItemName: 'STA And Assistance (Inc. Respite) - 1:2 - Weekday',
+      ),
+    );
+    when(() => catalogue.fetchAllActiveItems()).thenAnswer(
+      (_) async => [_cat('01_011_0107_1_1', '67.56')],
+    );
+    final c = GroupShiftPublishController(
+      shiftsRepository: shifts,
+      jobsRepository: jobs,
+      catalogueRepository: catalogue,
+      billingRepository: billing,
+      args: GroupShiftPublishArgs(shift: _shift()),
+    );
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    expect(c.draft.value.supportItemCode, isNull);
+    expect(c.catalogueHygieneWarning.value, contains('legacy STA'));
+  });
+
+  test('auto-maps first shift-kind suggestion when job has no item', () async {
+    when(() => jobs.getJob('job-1')).thenAnswer((_) async => _job());
+    when(() => catalogue.fetchAllActiveItems()).thenAnswer(
+      (_) async => [
+        _cat('01_010_0107_1_1', '90.00'),
+        _cat('01_011_0107_1_1', '67.56'),
+      ],
+    );
+    final c = GroupShiftPublishController(
+      shiftsRepository: shifts,
+      jobsRepository: jobs,
+      catalogueRepository: catalogue,
+      billingRepository: billing,
+      args: GroupShiftPublishArgs(
+        shift: _shift(
+          shiftKind: 'sleepover',
+          suggestedSupportItemCodes: const [
+            '01_999_9999_9_9',
+            '01_010_0107_1_1',
+          ],
+        ),
+      ),
+    );
+    c.onInit();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    expect(c.draft.value.supportItemCode, '01_010_0107_1_1');
+    expect(c.catalogueHygieneWarning.value, contains('Suggested'));
   });
 
   test('blocks Next on item step without default item', () async {

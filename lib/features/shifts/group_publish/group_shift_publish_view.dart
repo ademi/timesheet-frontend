@@ -207,6 +207,21 @@ class _ItemStep extends StatelessWidget {
           'Applies to all participants unless overridden.',
           style: TextStyle(color: AppColors.textMuted),
         ),
+        if (controller.catalogueHygieneWarning.value != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.openSlotBackground,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              controller.catalogueHygieneWarning.value!,
+              style: const TextStyle(color: AppColors.openSlot),
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         NdisSupportItemPicker(
           supportItemCode: d.supportItemCode,

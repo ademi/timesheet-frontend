@@ -1,4 +1,5 @@
 import 'models/billing_models.dart';
+import 'legacy_sta.dart';
 
 class NdisCatalogueFacet {
   const NdisCatalogueFacet({required this.number, this.name});
@@ -45,17 +46,34 @@ abstract final class NdisCatalogueLocalFilter {
     );
   }
 
+  /// Drop forbidden legacy STA ratio SKUs (B13; BE also rejects at publish).
+  static List<NdisCatalogueItemOut> withoutLegacyStaRatio(
+    List<NdisCatalogueItemOut> items,
+  ) {
+    return [
+      for (final item in items)
+        if (!LegacyStaRatio.isLegacyStaRatioItem(
+          code: item.supportItemNumber,
+          name: item.supportItemName,
+        ))
+          item,
+    ];
+  }
+
   static List<NdisCatalogueItemOut> apply(
     List<NdisCatalogueItemOut> items, {
     String? categoryNumber,
     String? registrationGroupNumber,
     String query = '',
+    bool excludeLegacyStaRatio = true,
   }) {
     final category = categoryNumber?.trim();
     final regGroup = registrationGroupNumber?.trim();
     final needle = query.trim().toLowerCase();
+    final source =
+        excludeLegacyStaRatio ? withoutLegacyStaRatio(items) : items;
 
-    return items
+    return source
         .where((item) {
           if (category != null &&
               category.isNotEmpty &&

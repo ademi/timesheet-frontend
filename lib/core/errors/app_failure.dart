@@ -284,6 +284,7 @@ class AppFailure implements Exception {
       'support_item_code',
       'support_item_not_hourly',
       'support_item_required',
+      'legacy_sta_ratio_item_forbidden',
       'quote_required_not_exportable',
       'visit_already_exported',
       'time_entry_not_closed',
@@ -356,6 +357,7 @@ class AppFailure implements Exception {
       case 'support_item_not_in_catalogue':
       case 'support_item_name_mismatch':
       case 'support_item_required':
+      case 'legacy_sta_ratio_item_forbidden':
       case 'support_item_not_hourly':
       case 'quote_required_not_exportable':
       case 'visit_already_exported':
@@ -522,6 +524,9 @@ class AppFailure implements Exception {
         return 'Name does not match the catalogue — pick from search.';
       case 'support_item_required':
         return 'Set a support item on the visit before exporting.';
+      case 'legacy_sta_ratio_item_forbidden':
+        return 'Legacy STA ratio packages cannot be claimed. '
+            'Pick an unbundled support item.';
       case 'support_item_not_hourly':
         return 'Only hourly (H) support items can be exported.';
       case 'quote_required_not_exportable':
