@@ -171,6 +171,8 @@ void main() {
           from: any(named: 'from'),
           to: any(named: 'to'),
           clientId: any(named: 'clientId'),
+          participantId: any(named: 'participantId'),
+          jobId: any(named: 'jobId'),
           status: 'completed',
           limit: 200,
         ),
@@ -197,6 +199,8 @@ void main() {
             from: any(named: 'from'),
             to: any(named: 'to'),
             clientId: any(named: 'clientId'),
+            participantId: any(named: 'participantId'),
+            jobId: any(named: 'jobId'),
             status: 'completed',
             limit: 200,
           ),
@@ -241,6 +245,8 @@ void main() {
             from: any(named: 'from'),
             to: any(named: 'to'),
             clientId: any(named: 'clientId'),
+            participantId: any(named: 'participantId'),
+            jobId: any(named: 'jobId'),
             status: 'completed',
             limit: 200,
           ),
@@ -285,6 +291,8 @@ void main() {
             from: any(named: 'from'),
             to: any(named: 'to'),
             clientId: any(named: 'clientId'),
+            participantId: any(named: 'participantId'),
+            jobId: any(named: 'jobId'),
             status: 'completed',
             limit: 200,
           ),
@@ -338,6 +346,8 @@ void main() {
           from: any(named: 'from'),
           to: any(named: 'to'),
           clientId: any(named: 'clientId'),
+          participantId: any(named: 'participantId'),
+          jobId: any(named: 'jobId'),
           status: 'completed',
           limit: 200,
         ),
@@ -375,6 +385,8 @@ void main() {
           from: any(named: 'from'),
           to: any(named: 'to'),
           clientId: any(named: 'clientId'),
+          participantId: any(named: 'participantId'),
+          jobId: any(named: 'jobId'),
           status: 'completed',
           limit: 200,
         ),
@@ -395,11 +407,51 @@ void main() {
           from: any(named: 'from'),
           to: any(named: 'to'),
           clientId: captureAny(named: 'clientId'),
+          participantId: any(named: 'participantId'),
+          jobId: any(named: 'jobId'),
           status: 'completed',
           limit: 200,
         ),
       ).captured;
       expect(captured.last, 'client-1');
+    });
+
+    test('setParticipantFilter and setJobFilter pass query params', () async {
+      when(() => session.canManageBilling).thenReturn(true);
+      when(
+        () => visitsRepository.listVisits(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          clientId: any(named: 'clientId'),
+          participantId: any(named: 'participantId'),
+          jobId: any(named: 'jobId'),
+          status: 'completed',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => [_exportableVisit(id: 'visit-b')]);
+
+      final controller = _controller(
+        repository: repository,
+        visitsRepository: visitsRepository,
+        session: session,
+        init: true,
+      );
+      controller.tabIndex.value = 1;
+      await controller.setParticipantFilter('part-9');
+      await controller.setJobFilter('job-9');
+
+      final captured = verify(
+        () => visitsRepository.listVisits(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          clientId: any(named: 'clientId'),
+          participantId: captureAny(named: 'participantId'),
+          jobId: captureAny(named: 'jobId'),
+          status: 'completed',
+          limit: 200,
+        ),
+      ).captured;
+      expect(captured, containsAll(['part-9', 'job-9']));
     });
 
     test('loadUnclaimedAgeing sorts oldest first and sets risk badge', () async {
@@ -572,6 +624,8 @@ void main() {
             from: any(named: 'from'),
             to: any(named: 'to'),
             clientId: any(named: 'clientId'),
+            participantId: any(named: 'participantId'),
+            jobId: any(named: 'jobId'),
             status: 'completed',
             limit: 200,
           ),
@@ -607,6 +661,8 @@ void main() {
             from: any(named: 'from'),
             to: any(named: 'to'),
             clientId: any(named: 'clientId'),
+            participantId: any(named: 'participantId'),
+            jobId: any(named: 'jobId'),
             status: 'completed',
             limit: 200,
           ),

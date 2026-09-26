@@ -5,6 +5,8 @@ import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../clients/bindings/clients_binding.dart';
 import '../../clients/data/repositories/clients_repository.dart';
+import '../../jobs/bindings/jobs_binding.dart';
+import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../controllers/invoice_export_detail_controller.dart';
@@ -72,6 +74,7 @@ class StaffInvoiceExportsBinding extends Bindings {
     BillingBinding.ensureShared();
     VisitsBinding.ensureShared();
     ClientsBinding.ensureShared();
+    JobsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<InvoiceExportsController>()) {
       Get.put(
@@ -83,6 +86,10 @@ class StaffInvoiceExportsBinding extends Bindings {
           clientsRepository:
               Get.isRegistered<ClientsRepository>()
                   ? Get.find<ClientsRepository>()
+                  : null,
+          jobsRepository:
+              Get.isRegistered<JobsRepository>()
+                  ? Get.find<JobsRepository>()
                   : null,
         ),
       );

@@ -18,6 +18,7 @@ class VisitsRemoteDataSource {
     DateTime? to,
     String? jobId,
     String? clientId,
+    String? participantId,
     String? contractorId,
     String? status,
     String? paymentStatus,
@@ -32,6 +33,8 @@ class VisitsRemoteDataSource {
           if (to != null) 'to': to.toUtc().toIso8601String(),
           if (jobId != null && jobId.isNotEmpty) 'job_id': jobId,
           if (clientId != null && clientId.isNotEmpty) 'client_id': clientId,
+          if (participantId != null && participantId.isNotEmpty)
+            'participant_id': participantId,
           if (contractorId != null && contractorId.isNotEmpty)
             'contractor_id': contractorId,
           if (status != null && status.isNotEmpty) 'status': status,

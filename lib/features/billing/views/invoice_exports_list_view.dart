@@ -24,10 +24,11 @@ String? _clientDropdownValue(
 }
 
 List<DropdownMenuItem<String>> _clientDropdownItems(
-  Iterable<({String id, String name})> clients,
-) {
+  Iterable<({String id, String name})> clients, {
+  String allLabel = 'All clients',
+}) {
   return [
-    const DropdownMenuItem(value: null, child: Text('All clients')),
+    DropdownMenuItem(value: null, child: Text(allLabel)),
     for (final c in clients)
       DropdownMenuItem(
         value: c.id,
@@ -260,6 +261,10 @@ class _CreateExportTab extends StatelessWidget {
       final hint = controller.createExportHint;
       final clients = controller.clientFilterOptions;
       final clientFilter = controller.clientIdFilter.value;
+      final participants = controller.participantFilterOptions;
+      final participantFilter = controller.participantIdFilter.value;
+      final jobOptions = controller.jobFilterOptions;
+      final jobFilter = controller.jobIdFilter.value;
       return Column(
         children: [
           PageContent(
@@ -274,10 +279,46 @@ class _CreateExportTab extends StatelessWidget {
                       DropdownButtonFormField<String>(
                         value: _clientDropdownValue(clientFilter, clients),
                         isExpanded: true,
-                        items: _clientDropdownItems(clients),
+                        items: _clientDropdownItems(clients, allLabel: 'All hosts'),
                         onChanged: controller.setClientFilter,
                         decoration: const InputDecoration(
-                          labelText: 'Client',
+                          labelText: 'Host client',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                      DropdownButtonFormField<String>(
+                        value: _clientDropdownValue(
+                          participantFilter,
+                          participants,
+                        ),
+                        isExpanded: true,
+                        items: _clientDropdownItems(
+                          participants,
+                          allLabel: 'All participants',
+                        ),
+                        onChanged: controller.setParticipantFilter,
+                        decoration: const InputDecoration(
+                          labelText: 'Participant',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  EqualFillRow(
+                    children: [
+                      DropdownButtonFormField<String>(
+                        value: _clientDropdownValue(jobFilter, jobOptions),
+                        isExpanded: true,
+                        items: _clientDropdownItems(
+                          jobOptions,
+                          allLabel: 'All jobs / shifts',
+                        ),
+                        onChanged: controller.setJobFilter,
+                        decoration: const InputDecoration(
+                          labelText: 'Job / support',
                           border: OutlineInputBorder(),
                           isDense: true,
                         ),

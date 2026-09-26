@@ -292,6 +292,8 @@ class AppFailure implements Exception {
       'hours_exceed_24_per_day',
       'group_allocation_invalid',
       'provider_abn_required',
+      'attendance_locked_exported',
+      'membership_locked_exported',
       'destination_profile_not_found',
       'invalid_rejection_reason',
       'task_minutes_exceed_visit_hours',
@@ -350,6 +352,8 @@ class AppFailure implements Exception {
       case 'evidence_required':
       case 'shift_full':
       case 'invalid_shift_status':
+      case 'attendance_locked_exported':
+      case 'membership_locked_exported':
       case 'contractor_on_leave':
       case 'shift_not_found':
       case 'support_item_pair':
@@ -545,6 +549,11 @@ class AppFailure implements Exception {
         return 'Group participant allocations must sum to 100%. Fix the shift first.';
       case 'provider_abn_required':
         return 'Add the provider ABN in Settings before exporting plan-managed claims.';
+      case 'attendance_locked_exported':
+        return 'Attendance is locked after invoice export. Void the export first.';
+      case 'membership_locked_exported':
+        return 'Group membership is locked after invoice export. '
+            'Void the export, then change participants and rebill.';
       case 'destination_profile_not_found':
         return 'Choose an active plan-manager destination profile.';
       case 'invalid_rejection_reason':

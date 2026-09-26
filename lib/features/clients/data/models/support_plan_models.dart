@@ -390,6 +390,8 @@ class ShiftBriefDto {
     this.deEscalation,
     this.crisisResponse,
     this.informalSupports,
+    this.briefScope = 'host',
+    this.activeParticipantCount = 1,
   });
 
   final String clientId;
@@ -412,6 +414,11 @@ class ShiftBriefDto {
   final String? deEscalation;
   final String? crisisResponse;
   final String? informalSupports;
+  /// B15: clinical brief is always the job host client.
+  final String briefScope;
+  final int activeParticipantCount;
+
+  bool get isGroupBrief => activeParticipantCount >= 2;
 
   factory ShiftBriefDto.fromJson(Map<String, dynamic> json) {
     final goalsRaw = json['goals'];
@@ -442,6 +449,9 @@ class ShiftBriefDto {
       deEscalation: json['de_escalation'] as String?,
       crisisResponse: json['crisis_response'] as String?,
       informalSupports: json['informal_supports'] as String?,
+      briefScope: json['brief_scope'] as String? ?? 'host',
+      activeParticipantCount:
+          (json['active_participant_count'] as num?)?.toInt() ?? 1,
     );
   }
 }

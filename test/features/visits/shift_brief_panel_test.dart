@@ -33,6 +33,10 @@ void main() {
     await tester.pumpWidget(_wrap(const ShiftBriefPanel(brief: brief)));
 
     expect(find.text('Shift brief'), findsOneWidget);
+    expect(
+      find.textContaining('Host client brief'),
+      findsOneWidget,
+    );
     expect(find.textContaining('Allergies: Peanuts'), findsOneWidget);
     expect(find.textContaining('Medication: 8am meds'), findsOneWidget);
     expect(find.textContaining('Behaviour support plan'), findsOneWidget);
@@ -73,4 +77,20 @@ void main() {
       expect(find.textContaining('Medication:'), findsNothing);
     },
   );
+
+  testWidgets('group brief shows participant count host-only note', (
+    tester,
+  ) async {
+    const brief = ShiftBriefDto(
+      clientId: 'c1',
+      clientName: 'Ada',
+      planBodyInvalid: false,
+      activeParticipantCount: 3,
+    );
+
+    await tester.pumpWidget(_wrap(const ShiftBriefPanel(brief: brief)));
+
+    expect(find.textContaining('3 participants'), findsOneWidget);
+    expect(find.textContaining('showing Ada only'), findsOneWidget);
+  });
 }
