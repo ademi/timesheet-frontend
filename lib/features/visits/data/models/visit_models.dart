@@ -232,6 +232,7 @@ class VisitOut {
     this.formSubmissions = const [],
     this.engagementId,
     this.shiftId,
+    this.shiftKind = 'standard',
     this.supportItemCode,
     this.supportItemName,
     this.priceTierOverride,
@@ -243,6 +244,7 @@ class VisitOut {
   final String contractorId;
   final String? engagementId;
   final String? shiftId;
+  final String shiftKind;
   final DateTime scheduledStart;
   final DateTime scheduledEnd;
   final String status; // scheduled | checked_in | completed | cancelled
@@ -295,6 +297,7 @@ class VisitOut {
       contractorId: json['contractor_id'].toString(),
       engagementId: json['engagement_id']?.toString(),
       shiftId: json['shift_id']?.toString(),
+      shiftKind: json['shift_kind'] as String? ?? 'standard',
       scheduledStart: DateTime.parse(json['scheduled_start'] as String),
       scheduledEnd: DateTime.parse(json['scheduled_end'] as String),
       status: json['status'] as String? ?? 'scheduled',
@@ -358,6 +361,7 @@ class VisitOut {
       contractorId: contractorId,
       engagementId: engagementId,
       shiftId: shiftId,
+      shiftKind: shiftKind,
       scheduledStart: scheduledStart ?? this.scheduledStart,
       scheduledEnd: scheduledEnd ?? this.scheduledEnd,
       status: status ?? this.status,

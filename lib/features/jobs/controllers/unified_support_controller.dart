@@ -22,6 +22,7 @@ import '../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
+import '../../shifts/utils/overnight_format.dart';
 import '../../visits/data/models/roster_overlay_models.dart';
 import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
@@ -102,6 +103,9 @@ class UnifiedSupportController extends GetxController
   final oneSessionStart = DateTime.now().add(const Duration(hours: 1)).obs;
   final oneSessionEnd = DateTime.now().add(const Duration(hours: 3)).obs;
   final publishImmediately = true.obs;
+  /// B1: standard | sleepover | active_night (one-session only).
+  final shiftKind = 'standard'.obs;
+  final selectedHouseTemplateId = RxnString();
 
   final selectedSiteId = RxnString();
   final frequency = RecurrenceFrequency.weekly.obs;
@@ -1010,6 +1014,70 @@ class UnifiedSupportController extends GetxController
   void setMode(UnifiedSupportMode value) {
     mode.value = value;
     errorMessage.value = null;
+    if (value == UnifiedSupportMode.ongoing) {
+      shiftKind.value = 'standard';
+      selectedHouseTemplateId.value = null;
+    }
+  }
+
+  void setShiftKind(String kind) {
+    shiftKind.value = kind;
+    selectedHouseTemplateId.value = null;
+    errorMessage.value = null;
+    if (kind == 'sleepover' || kind == 'active_night') {
+      _ensureOvernightWindow();
+    }
+  }
+
+  void applyHouseTemplate(OvernightHouseTemplate template) {
+    selectedHouseTemplateId.value = template.id;
+    shiftKind.value = template.shiftKind;
+    final start = oneSessionStart.value;
+    final startLocal = DateTime(
+      start.year,
+      start.month,
+      start.day,
+      template.startHour,
+      template.startMinute,
+    );
+    var endLocal = DateTime(
+      start.year,
+      start.month,
+      start.day,
+      template.endHour,
+      template.endMinute,
+    );
+    if (!endLocal.isAfter(startLocal)) {
+      endLocal = endLocal.add(const Duration(days: 1));
+    }
+    oneSessionStart.value = startLocal;
+    oneSessionEnd.value = endLocal;
+    if (template.suggestedSupportItemCode != null) {
+      supportItemCode.value = template.suggestedSupportItemCode;
+    }
+    errorMessage.value = null;
+  }
+
+  void _ensureOvernightWindow() {
+    final start = oneSessionStart.value;
+    final end = oneSessionEnd.value;
+    if (spansLocalMidnight(start, end)) return;
+    oneSessionEnd.value = DateTime(
+      start.year,
+      start.month,
+      start.day,
+      7,
+      0,
+    ).add(const Duration(days: 1));
+    if (!oneSessionStart.value.isBefore(oneSessionEnd.value)) {
+      oneSessionStart.value = DateTime(
+        start.year,
+        start.month,
+        start.day,
+        21,
+        0,
+      );
+    }
   }
 
   void setSupportItem({
@@ -1133,6 +1201,15 @@ class UnifiedSupportController extends GetxController
       if (!oneSessionEnd.value.isAfter(oneSessionStart.value)) {
         fail('End must be after start.');
         return false;
+      }
+      final kind = shiftKind.value;
+      if (kind == 'sleepover' || kind == 'active_night') {
+        if (!spansLocalMidnight(oneSessionStart.value, oneSessionEnd.value)) {
+          fail(
+            'Sleepover and active night must be one continuous shift spanning midnight.',
+          );
+          return false;
+        }
       }
       return true;
     }
@@ -1278,6 +1355,7 @@ class UnifiedSupportController extends GetxController
         scheduledStart: startUtc,
         scheduledEnd: endUtc,
         requiredSlots: requiredSlots.value,
+        shiftKind: shiftKind.value,
         // D6 intentional: assigned workers ⇒ published even if toggle off.
         status:
             (publishImmediately.value || ids.isNotEmpty)

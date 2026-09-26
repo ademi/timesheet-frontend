@@ -224,6 +224,9 @@ class ShiftOut {
     required this.requiredSlots,
     required this.openSlots,
     this.workerCount = 1,
+    this.shiftKind = 'standard',
+    this.sleepSegments,
+    this.suggestedSupportItemCodes = const [],
     required this.status,
     this.recurrenceRuleId,
     this.locationLabel,
@@ -251,6 +254,9 @@ class ShiftOut {
   final int requiredSlots;
   final int openSlots;
   final int workerCount;
+  final String shiftKind;
+  final Map<String, dynamic>? sleepSegments;
+  final List<String> suggestedSupportItemCodes;
   final String status;
   final String? recurrenceRuleId;
   final String? locationLabel;
@@ -268,6 +274,9 @@ class ShiftOut {
 
   int get filledSlots => requiredSlots - openSlots;
 
+  bool get isOvernightKind =>
+      shiftKind == 'sleepover' || shiftKind == 'active_night';
+
   ShiftOut copyWith({List<ShiftTravelOut>? travelClaims}) {
     return ShiftOut(
       id: id,
@@ -281,6 +290,9 @@ class ShiftOut {
       requiredSlots: requiredSlots,
       openSlots: openSlots,
       workerCount: workerCount,
+      shiftKind: shiftKind,
+      sleepSegments: sleepSegments,
+      suggestedSupportItemCodes: suggestedSupportItemCodes,
       status: status,
       recurrenceRuleId: recurrenceRuleId,
       locationLabel: locationLabel,
@@ -299,6 +311,7 @@ class ShiftOut {
   }
 
   factory ShiftOut.fromJson(Map<String, dynamic> json) {
+    final segmentsRaw = json['sleep_segments'];
     return ShiftOut(
       id: json['id'].toString(),
       tenantId: json['tenant_id'].toString(),
@@ -311,6 +324,15 @@ class ShiftOut {
       requiredSlots: json['required_slots'] as int? ?? 1,
       openSlots: json['open_slots'] as int? ?? 0,
       workerCount: json['worker_count'] as int? ?? 1,
+      shiftKind: json['shift_kind'] as String? ?? 'standard',
+      sleepSegments:
+          segmentsRaw is Map
+              ? Map<String, dynamic>.from(segmentsRaw)
+              : null,
+      suggestedSupportItemCodes: (json['suggested_support_item_codes'] as List? ??
+              const [])
+          .map((e) => e.toString())
+          .toList(growable: false),
       status: json['status'] as String? ?? 'draft',
       recurrenceRuleId: json['recurrence_rule_id']?.toString(),
       locationLabel: json['location_label'] as String?,
@@ -358,6 +380,7 @@ class OpenShiftOut {
     this.suburb,
     this.postalCode,
     this.workerCount = 1,
+    this.shiftKind = 'standard',
     this.participantsSummary = const [],
   });
 
@@ -371,6 +394,7 @@ class OpenShiftOut {
   final String? suburb;
   final String? postalCode;
   final int workerCount;
+  final String shiftKind;
   final List<ShiftParticipantOut> participantsSummary;
 
   /// Active participants on this open shift (billable group set).
@@ -392,6 +416,7 @@ class OpenShiftOut {
       suburb: json['suburb'] as String?,
       postalCode: json['postal_code'] as String?,
       workerCount: json['worker_count'] as int? ?? 1,
+      shiftKind: json['shift_kind'] as String? ?? 'standard',
       participantsSummary:
           summaryRaw is List
               ? [
@@ -585,6 +610,7 @@ class ShiftCreateRequest {
     required this.scheduledEnd,
     this.requiredSlots = 1,
     this.workerCount = 1,
+    this.shiftKind = 'standard',
     this.status = 'draft',
     this.contractorIds = const [],
     this.taskTemplate = const [],
@@ -599,6 +625,7 @@ class ShiftCreateRequest {
   final DateTime scheduledEnd;
   final int requiredSlots;
   final int workerCount;
+  final String shiftKind;
   final String status;
   final List<String> contractorIds;
   final List<TaskTemplateItem> taskTemplate;
@@ -613,6 +640,7 @@ class ShiftCreateRequest {
     'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
     'required_slots': requiredSlots,
     'worker_count': workerCount,
+    'shift_kind': shiftKind,
     'status': status,
     if (contractorIds.isNotEmpty) 'contractor_ids': contractorIds,
     if (taskTemplate.isNotEmpty)

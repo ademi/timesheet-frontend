@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../shifts/utils/overnight_format.dart';
 import '../../shifts/widgets/shift_slot_pips.dart';
 import 'roster_grid_model.dart';
 
@@ -11,7 +12,13 @@ String formatRosterDayHeader(DateTime day) {
   return '${_wd[local.weekday - 1]} ${local.day}';
 }
 
-String formatRosterTileTime(DateTime start) {
+String formatRosterTileTime(DateTime start, {DateTime? end, bool continuation = false}) {
+  if (end != null && (spansLocalMidnight(start, end) || continuation)) {
+    if (continuation) {
+      return 'cont. → ${formatHm(end)}';
+    }
+    return formatOvernightRange(start, end);
+  }
   final l = start.toLocal();
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(l.hour)}:${two(l.minute)}';
@@ -426,12 +433,30 @@ class _ShiftTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  formatRosterTileTime(tile.start),
-                  style: const TextStyle(
+                  formatRosterTileTime(
+                    tile.start,
+                    end: tile.end,
+                    continuation: tile.isContinuation,
+                  ),
+                  style: TextStyle(
                     fontSize: 11,
                     color: AppColors.textMuted,
+                    fontStyle:
+                        tile.isContinuation ? FontStyle.italic : FontStyle.normal,
                   ),
                 ),
+                if (shiftKindLabel(tile.shiftKind) != null &&
+                    !tile.isContinuation) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    shiftKindLabel(tile.shiftKind)!,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 ShiftSlotPips(
                   requiredSlots: tile.requiredSlots,

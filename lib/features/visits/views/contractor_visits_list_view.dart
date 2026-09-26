@@ -5,6 +5,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
+import '../../shifts/utils/overnight_format.dart';
 import '../../shifts/utils/participant_display.dart';
 import '../controllers/contractor_visits_controller.dart';
 
@@ -12,6 +13,15 @@ String _fmt(DateTime dt) {
   final l = dt.toLocal();
   String two(int n) => n.toString().padLeft(2, '0');
   return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
+}
+
+String _visitSubtitle(DateTime start, DateTime end, String status, String kind) {
+  final range = spansLocalMidnight(start, end)
+      ? formatOvernightRange(start, end)
+      : _fmt(start);
+  final kindLabel = shiftKindLabel(kind);
+  final kindBit = kindLabel != null ? ' · $kindLabel' : '';
+  return '$range$kindBit · $status';
 }
 
 class ContractorVisitsListView extends GetView<ContractorVisitsController> {
@@ -102,7 +112,14 @@ class _MineVisitsList extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       title: Text(v.jobTitle ?? v.tenantName ?? 'Visit'),
-                      subtitle: Text('${_fmt(v.scheduledStart)} · ${v.status}'),
+                      subtitle: Text(
+                        _visitSubtitle(
+                          v.scheduledStart,
+                          v.scheduledEnd,
+                          v.status,
+                          v.shiftKind,
+                        ),
+                      ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => controller.openDetail(v),
                     ),
@@ -172,8 +189,16 @@ class _OpenShiftsList extends StatelessWidget {
                             },
                           ),
                           Text(
-                            '${_fmt(shift.scheduledStart)}'
-                            '${shift.suburb != null ? ' · ${shift.suburb}' : ''}',
+                            spansLocalMidnight(
+                                  shift.scheduledStart,
+                                  shift.scheduledEnd,
+                                )
+                                ? '${formatOvernightRange(shift.scheduledStart, shift.scheduledEnd)}'
+                                    '${shiftKindLabel(shift.shiftKind) != null ? ' · ${shiftKindLabel(shift.shiftKind)}' : ''}'
+                                    '${shift.suburb != null ? ' · ${shift.suburb}' : ''}'
+                                : '${_fmt(shift.scheduledStart)}'
+                                    '${shiftKindLabel(shift.shiftKind) != null ? ' · ${shiftKindLabel(shift.shiftKind)}' : ''}'
+                                    '${shift.suburb != null ? ' · ${shift.suburb}' : ''}',
                           ),
                           Text(
                             '${shift.openSlots} of ${shift.requiredSlots} open',

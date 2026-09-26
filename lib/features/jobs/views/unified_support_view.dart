@@ -19,6 +19,7 @@ import '../utils/recurrence_rrule_builder.dart';
 import '../utils/required_slots_input.dart';
 import '../utils/schedule_hours_warn.dart';
 import '../utils/unified_support_args.dart';
+import '../../shifts/utils/overnight_format.dart';
 
 class UnifiedSupportView extends GetView<UnifiedSupportController> {
   const UnifiedSupportView({super.key});
@@ -331,6 +332,70 @@ class _TypeStep extends StatelessWidget {
             icon: Icons.event_repeat_outlined,
             onTap: () => controller.setMode(UnifiedSupportMode.ongoing),
           ),
+          if (controller.mode.value == UnifiedSupportMode.oneSession) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Shift kind',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Sleepover and active night are one continuous overnight shift — not two cards.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final kind in const [
+                  ('standard', 'Standard'),
+                  ('sleepover', 'Sleepover'),
+                  ('active_night', 'Active night'),
+                ])
+                  ChoiceChip(
+                    label: Text(kind.$2),
+                    selected: controller.shiftKind.value == kind.$1,
+                    onSelected: (_) => controller.setShiftKind(kind.$1),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              value: controller.selectedHouseTemplateId.value,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'House overnight template (optional)',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('None'),
+                ),
+                for (final t in kOvernightHouseTemplates)
+                  DropdownMenuItem<String?>(
+                    value: t.id,
+                    child: Text(
+                      '${t.name} · v${t.version}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged: (id) {
+                if (id == null) {
+                  controller.selectedHouseTemplateId.value = null;
+                  return;
+                }
+                for (final t in kOvernightHouseTemplates) {
+                  if (t.id == id) {
+                    controller.applyHouseTemplate(t);
+                    return;
+                  }
+                }
+              },
+            ),
+          ],
           const SizedBox(height: 16),
           if (controller.needsClientPicker ||
               controller.clients.isNotEmpty && controller.client.value == null)
