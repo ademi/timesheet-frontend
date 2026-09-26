@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
@@ -459,6 +461,48 @@ void main() {
       expect(controller.unclaimedAgeing, isEmpty);
       expect(controller.hasAgeingRiskBadge, isFalse);
     });
+
+    test(
+      'isLoading stays true until all concurrent loads finish (C5)',
+      () async {
+        final exportsDone = Completer<List<InvoiceExportOut>>();
+        final ageingDone = Completer<List<UnclaimedAgeingVisitOut>>();
+        when(
+          () => repository.listInvoiceExports(limit: any(named: 'limit')),
+        ).thenAnswer((_) => exportsDone.future);
+        when(
+          () => repository.listUnclaimedAgeing(
+            clientId: any(named: 'clientId'),
+            branchId: any(named: 'branchId'),
+            minDays: any(named: 'minDays'),
+            approaching90: any(named: 'approaching90'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => ageingDone.future);
+
+        final controller = _controller(
+          repository: repository,
+          visitsRepository: visitsRepository,
+          session: session,
+        );
+
+        final exportsFuture = controller.loadExports();
+        final ageingFuture = controller.loadUnclaimedAgeing();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.isLoading.value, isTrue);
+
+        exportsDone.complete([_export()]);
+        await Future<void>.delayed(Duration.zero);
+        // Ageing still in flight — must not clear global loading (old race).
+        expect(controller.isLoading.value, isTrue);
+        expect(controller.exports, hasLength(1));
+
+        ageingDone.complete(const []);
+        await Future.wait([exportsFuture, ageingFuture]);
+        expect(controller.isLoading.value, isFalse);
+      },
+    );
 
     test('loadBurnAlerts sets badge count', () async {
       when(

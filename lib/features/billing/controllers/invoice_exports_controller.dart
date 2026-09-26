@@ -60,7 +60,12 @@ class InvoiceExportsController extends GetxController {
   final clients = <ClientOut>[].obs;
   final clientIdFilter = ''.obs;
 
+  /// In-flight count for [isLoading] so concurrent loads (exports + ageing + …)
+  /// do not clear the spinner when the first request finishes (C5).
+  int _loadingCount = 0;
+
   late final Rx<DateTimeRange> periodRange;
+
 
   bool get canView => _session.canViewBilling;
   bool get canManage => _session.canManageBilling;
@@ -135,6 +140,20 @@ class InvoiceExportsController extends GetxController {
     }
   }
 
+  void _beginLoading() {
+    _loadingCount++;
+    isLoading.value = true;
+  }
+
+  void _endLoading() {
+    if (_loadingCount > 0) {
+      _loadingCount--;
+    }
+    if (_loadingCount == 0) {
+      isLoading.value = false;
+    }
+  }
+
   Future<void> loadBurnAlerts() async {
     if (!canView) return;
     try {
@@ -157,7 +176,7 @@ class InvoiceExportsController extends GetxController {
 
   Future<void> loadUnclaimedAgeing() async {
     if (!canView) return;
-    isLoading.value = true;
+    _beginLoading();
     errorMessage.value = null;
     try {
       final clientId = clientIdFilter.value.trim();
@@ -172,7 +191,7 @@ class InvoiceExportsController extends GetxController {
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
-      isLoading.value = false;
+      _endLoading();
     }
   }
 
@@ -242,7 +261,7 @@ class InvoiceExportsController extends GetxController {
       errorMessage.value = 'Missing billing.view permission.';
       return;
     }
-    isLoading.value = true;
+    _beginLoading();
     errorMessage.value = null;
     try {
       exports.assignAll(await _repository.listInvoiceExports());
@@ -251,7 +270,7 @@ class InvoiceExportsController extends GetxController {
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
-      isLoading.value = false;
+      _endLoading();
     }
   }
 
@@ -268,7 +287,7 @@ class InvoiceExportsController extends GetxController {
       range.end.month,
       range.end.day,
     ).add(const Duration(days: 1));
-    isLoading.value = true;
+    _beginLoading();
     errorMessage.value = null;
     try {
       final clientId = clientIdFilter.value.trim();
@@ -290,7 +309,7 @@ class InvoiceExportsController extends GetxController {
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
-      isLoading.value = false;
+      _endLoading();
     }
   }
 
