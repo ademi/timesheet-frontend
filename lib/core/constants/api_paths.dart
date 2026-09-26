@@ -263,6 +263,10 @@ abstract final class ApiPaths {
       '$_v1/billing/shifts/$shiftId/publish-burn-preview';
   static const paymentEnquiries = '$_v1/billing/payment-enquiries';
   static String paymentEnquiry(String id) => '$paymentEnquiries/$id';
+  static const pmDestinationProfiles = '$_v1/billing/pm-destination-profiles';
+  static const exportRejections = '$_v1/billing/export-rejections';
+  static String exportRejectionResubmit(String id) =>
+      '$exportRejections/$id/resubmit';
   static const fundsRiskChecks = '$_v1/billing/funds-risk-checks';
   static String fundsRiskCheck(String id) => '$fundsRiskChecks/$id';
 

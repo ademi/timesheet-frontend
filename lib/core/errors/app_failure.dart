@@ -240,6 +240,7 @@ class AppFailure implements Exception {
       'visit_already_completed',
       'clock_times_in_future',
       'visit_overlap',
+      'clock_overlap',
       'shift_overlap',
       'site_or_branch_required',
       'standing_job_exists',
@@ -287,6 +288,11 @@ class AppFailure implements Exception {
       'visit_already_exported',
       'time_entry_not_closed',
       'task_billable_minutes_required',
+      'hours_exceed_24_per_day',
+      'group_allocation_invalid',
+      'provider_abn_required',
+      'destination_profile_not_found',
+      'invalid_rejection_reason',
       'task_minutes_exceed_visit_hours',
       'delivery_postcode_required',
       'price_limit_missing_for_tier',
@@ -335,6 +341,7 @@ class AppFailure implements Exception {
       case 'split_blocked_by_active_visit':
       case 'contractor_not_found':
       case 'visit_overlap':
+      case 'clock_overlap':
       case 'shift_overlap':
       case 'site_or_branch_required':
       case 'leave_in_past':
@@ -453,6 +460,8 @@ class AppFailure implements Exception {
         return 'Arrival and departure can’t be in the future.';
       case 'visit_overlap':
         return 'Overlapping visit — adjust the window or use partial generate.';
+      case 'clock_overlap':
+        return 'This clock time overlaps another shift for this worker.';
       case 'shift_overlap':
         return 'A shift for this job already exists in that time window.';
       case 'leave_in_past':
@@ -525,6 +534,16 @@ class AppFailure implements Exception {
         return 'Set billable minutes on each billed task.';
       case 'task_minutes_exceed_visit_hours':
         return 'Task minutes exceed the visit duration.';
+      case 'hours_exceed_24_per_day':
+        return 'Closed clocks for a client exceed 24 hours on one day.';
+      case 'group_allocation_invalid':
+        return 'Group participant allocations must sum to 100%. Fix the shift first.';
+      case 'provider_abn_required':
+        return 'Add the provider ABN in Settings before exporting plan-managed claims.';
+      case 'destination_profile_not_found':
+        return 'Choose an active plan-manager destination profile.';
+      case 'invalid_rejection_reason':
+        return 'Pick a valid rejection reason.';
       case 'delivery_postcode_required':
         return 'Job location needs a postcode for pricing, or set a price tier override.';
       case 'price_limit_missing_for_tier':

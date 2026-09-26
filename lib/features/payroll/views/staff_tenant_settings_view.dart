@@ -106,6 +106,16 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                       border: OutlineInputBorder(),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: controller.providerAbnCtrl,
+                    enabled: controller.canManage,
+                    decoration: const InputDecoration(
+                      labelText: 'Provider ABN (11 digits)',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'When a visit uses enforce geofence: soft allows the punch '

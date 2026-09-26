@@ -33,6 +33,7 @@ class StaffTenantSettingsController extends GetxController {
 
   final timezoneCtrl = TextEditingController();
   final jurisdictionCtrl = TextEditingController();
+  final providerAbnCtrl = TextEditingController();
   final geofenceOutsidePolicy = 'soft'.obs;
 
   bool get canManage => _session.hasPermission(AppPermissions.tenantsManage);
@@ -54,6 +55,7 @@ class StaffTenantSettingsController extends GetxController {
   void onClose() {
     timezoneCtrl.dispose();
     jurisdictionCtrl.dispose();
+    providerAbnCtrl.dispose();
     super.onClose();
   }
 
@@ -70,6 +72,7 @@ class StaffTenantSettingsController extends GetxController {
       tenant.value = t;
       timezoneCtrl.text = t.timezone ?? '';
       jurisdictionCtrl.text = t.publicHolidayJurisdiction ?? '';
+      providerAbnCtrl.text = t.providerAbn ?? '';
       geofenceOutsidePolicy.value = t.geofenceOutsidePolicy;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -106,6 +109,10 @@ class StaffTenantSettingsController extends GetxController {
                 ? null
                 : jurisdictionCtrl.text.trim(),
         geofenceOutsidePolicy: geofenceOutsidePolicy.value,
+        providerAbn:
+            providerAbnCtrl.text.trim().isEmpty
+                ? null
+                : providerAbnCtrl.text.trim(),
       );
       tenant.value = updated;
       geofenceOutsidePolicy.value = updated.geofenceOutsidePolicy;

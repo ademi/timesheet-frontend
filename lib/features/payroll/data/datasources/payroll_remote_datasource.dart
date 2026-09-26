@@ -185,6 +185,7 @@ class PayrollRemoteDataSource {
     String? timezone,
     String? publicHolidayJurisdiction,
     String? geofenceOutsidePolicy,
+    String? providerAbn,
   }) async {
     try {
       final response = await _dio.patch<Map<String, dynamic>>(
@@ -195,6 +196,7 @@ class PayrollRemoteDataSource {
             'public_holiday_jurisdiction': publicHolidayJurisdiction,
           if (geofenceOutsidePolicy != null)
             'geofence_outside_policy': geofenceOutsidePolicy,
+          if (providerAbn != null) 'provider_abn': providerAbn,
         },
       );
       final data = response.data;
