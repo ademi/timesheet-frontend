@@ -233,6 +233,10 @@ abstract final class ApiPaths {
       '${shiftParticipants(id)}/batch';
   static String shiftParticipant(String shiftId, String participantId) =>
       '${shiftParticipants(shiftId)}/$participantId';
+  static String shiftParticipantAttendance(
+    String shiftId,
+    String participantId,
+  ) => '${shiftParticipant(shiftId, participantId)}/attendance';
   static String shiftParticipantAllocation(
     String shiftId,
     String participantId,

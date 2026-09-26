@@ -848,6 +848,21 @@ class StaffVisitsController extends GetxController {
     }
   }
 
+  Future<void> openParticipantAttendance(ShiftParticipantOut participant) async {
+    final shift = selectedShift.value;
+    if (shift == null) return;
+    final result = await Get.toNamed(
+      AppRoutes.staffGroupShiftAttendance,
+      arguments: {'shift': shift, 'participant': participant},
+    );
+    if (result is ShiftOut) {
+      selectedShift.value = result;
+      allocationHistory.clear();
+    } else {
+      await refreshSelectedShift();
+    }
+  }
+
   Future<bool> confirmAssignAnyway() async {
     if (Get.testMode) return true;
     final result = await Get.dialog<bool>(

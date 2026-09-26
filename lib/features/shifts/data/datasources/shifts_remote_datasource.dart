@@ -194,6 +194,28 @@ class ShiftsRemoteDataSource {
     }
   }
 
+  Future<ShiftOut> setParticipantAttendance(
+    String shiftId,
+    String participantId, {
+    required String attendance,
+    required String reason,
+    int? attendedMinutes,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.shiftParticipantAttendance(shiftId, participantId),
+        data: {
+          'attendance': attendance,
+          'reason': reason,
+          if (attendedMinutes != null) 'attended_minutes': attendedMinutes,
+        },
+      );
+      return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<List<AllocationChangeLogOut>> getAllocationChanges(
     String shiftId,
   ) async {

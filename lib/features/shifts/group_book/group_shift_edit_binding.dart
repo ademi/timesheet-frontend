@@ -4,6 +4,7 @@ import '../../clients/bindings/clients_binding.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../data/models/shift_models.dart';
 import '../data/repositories/shifts_repository.dart';
+import 'group_shift_attendance_controller.dart';
 import 'group_shift_edit_controller.dart';
 import 'group_shift_remove_controller.dart';
 
@@ -52,6 +53,33 @@ class GroupShiftRemoveBinding extends Bindings {
     if (args == null) return;
     Get.put(
       GroupShiftRemoveController(
+        shiftsRepository: Get.find<ShiftsRepository>(),
+        args: args,
+      ),
+    );
+  }
+}
+
+class GroupShiftAttendanceBinding extends Bindings {
+  @override
+  void dependencies() {
+    VisitsBinding.ensureShared();
+    if (!Get.isRegistered<ShiftsRepository>()) return;
+    final raw = Get.arguments;
+    GroupShiftAttendanceArgs? args;
+    if (raw is GroupShiftAttendanceArgs) {
+      args = raw;
+    } else if (raw is Map &&
+        raw['shift'] is ShiftOut &&
+        raw['participant'] is ShiftParticipantOut) {
+      args = GroupShiftAttendanceArgs(
+        shift: raw['shift'] as ShiftOut,
+        participant: raw['participant'] as ShiftParticipantOut,
+      );
+    }
+    if (args == null) return;
+    Get.put(
+      GroupShiftAttendanceController(
         shiftsRepository: Get.find<ShiftsRepository>(),
         args: args,
       ),

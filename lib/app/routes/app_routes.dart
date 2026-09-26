@@ -55,6 +55,10 @@ abstract class AppRoutes {
   static const staffGroupShiftRemove =
       '/staff/visits/shift-detail/remove-participant';
 
+  /// Full-screen billing attendance (present / no_show / partial).
+  static const staffGroupShiftAttendance =
+      '/staff/visits/shift-detail/participant-attendance';
+
   /// Full-screen Publish group shift wizard (Item · People · Stay · Review).
   static const staffGroupShiftPublish =
       '/staff/visits/shift-detail/publish-group';

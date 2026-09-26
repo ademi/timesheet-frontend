@@ -72,6 +72,20 @@ class ShiftsRepository {
     rebalance: rebalance,
   );
 
+  Future<ShiftOut> setParticipantAttendance(
+    String shiftId,
+    String participantId, {
+    required String attendance,
+    required String reason,
+    int? attendedMinutes,
+  }) => _remote.setParticipantAttendance(
+    shiftId,
+    participantId,
+    attendance: attendance,
+    reason: reason,
+    attendedMinutes: attendedMinutes,
+  );
+
   Future<List<AllocationChangeLogOut>> getAllocationChanges(String shiftId) =>
       _remote.getAllocationChanges(shiftId);
 

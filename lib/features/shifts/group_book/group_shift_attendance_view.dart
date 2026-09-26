@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
-import 'group_shift_remove_controller.dart';
+import 'group_shift_attendance_controller.dart';
 
-class GroupShiftRemoveView extends GetView<GroupShiftRemoveController> {
-  const GroupShiftRemoveView({super.key});
+class GroupShiftAttendanceView extends GetView<GroupShiftAttendanceController> {
+  const GroupShiftAttendanceView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Remove from group')),
+      appBar: AppBar(title: const Text('Attendance')),
       body: Obx(() {
         final err = controller.errorMessage.value;
+        final att = controller.attendance.value;
         return Column(
           children: [
             Expanded(
@@ -37,11 +39,6 @@ class GroupShiftRemoveView extends GetView<GroupShiftRemoveController> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Group size ${controller.currentN} → ${controller.nextN}',
-                          style: const TextStyle(color: AppColors.textMuted),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
                           controller.exportNHint,
                           style: const TextStyle(color: AppColors.textMuted),
                         ),
@@ -53,10 +50,46 @@ class GroupShiftRemoveView extends GetView<GroupShiftRemoveController> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            controller.rebalanceHint,
+                            controller.oneClockHint,
                             style: const TextStyle(color: AppColors.openSlot),
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        Text('Billing attendance', style: Get.textTheme.titleSmall),
+                        const SizedBox(height: 8),
+                        ...[
+                          ('present', 'Present — full share'),
+                          ('no_show', 'No-show — stay on roster, drop from N'),
+                          ('partial', 'Partial — bill attended minutes'),
+                        ].map(
+                          (opt) => RadioListTile<String>(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(opt.$2),
+                            value: opt.$1,
+                            groupValue: att,
+                            onChanged:
+                                controller.isSaving.value
+                                    ? null
+                                    : (v) {
+                                      if (v != null) controller.setAttendance(v);
+                                    },
+                          ),
+                        ),
+                        if (controller.showAttendedMinutes) ...[
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: controller.attendedMinutesCtrl,
+                            enabled: !controller.isSaving.value,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            decoration: const InputDecoration(
+                              labelText: 'Attended minutes *',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         TextField(
                           controller: controller.reasonCtrl,
@@ -77,9 +110,9 @@ class GroupShiftRemoveView extends GetView<GroupShiftRemoveController> {
             FormStickyActions(
               onCancel:
                   controller.isSaving.value ? null : () => Get.back(),
-              primaryLabel: 'Remove',
+              primaryLabel: 'Save',
               onPrimary:
-                  controller.isSaving.value ? null : controller.remove,
+                  controller.isSaving.value ? null : controller.save,
               isLoading: controller.isSaving.value,
             ),
           ],

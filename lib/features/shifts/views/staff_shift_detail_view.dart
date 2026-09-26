@@ -170,6 +170,7 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                               controller.isRefreshing.value,
                           onEdit: controller.openEditGroup,
                           onRemove: controller.openRemoveParticipant,
+                          onAttendance: controller.openParticipantAttendance,
                         ),
                         const Divider(height: 32),
                         Text('Assignments', style: Get.textTheme.titleMedium),
@@ -688,6 +689,7 @@ class _ParticipantsSection extends StatelessWidget {
     required this.isSaving,
     required this.onEdit,
     required this.onRemove,
+    required this.onAttendance,
   });
 
   final ShiftOut shift;
@@ -696,6 +698,19 @@ class _ParticipantsSection extends StatelessWidget {
   final bool isSaving;
   final Future<void> Function() onEdit;
   final Future<void> Function(ShiftParticipantOut participant) onRemove;
+  final Future<void> Function(ShiftParticipantOut participant) onAttendance;
+
+  String _attendanceLabel(ShiftParticipantOut p) {
+    switch (p.attendance) {
+      case 'no_show':
+        return 'No-show (not billed)';
+      case 'partial':
+        final m = p.attendedMinutes;
+        return m == null ? 'Partial' : 'Partial · $m min';
+      default:
+        return 'Present';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -715,6 +730,15 @@ class _ParticipantsSection extends StatelessWidget {
               ),
           ],
         ),
+        if (active.length >= 2)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text(
+              'One worker clocks this visit for the whole group. '
+              'Attendance only changes who is billed.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+          ),
         if (active.isEmpty) const Text('No participants yet.'),
         for (final p in active) ...[
           ListTile(
@@ -722,16 +746,30 @@ class _ParticipantsSection extends StatelessWidget {
             minVerticalPadding: 12,
             title: Text(p.participantName ?? p.participantId),
             subtitle: Text(
-              p.allocationValue != null
-                  ? '${p.allocationValue!.toStringAsFixed(2)}%'
-                  : (p.allocationStrategy ?? 'allocation'),
+              [
+                if (p.allocationValue != null)
+                  '${p.allocationValue!.toStringAsFixed(2)}%'
+                else
+                  (p.allocationStrategy ?? 'allocation'),
+                _attendanceLabel(p),
+              ].join(' · '),
               style: const TextStyle(color: AppColors.textMuted),
             ),
             trailing:
                 canManage
-                    ? TextButton(
-                      onPressed: isSaving ? null : () => onRemove(p),
-                      child: const Text('Remove'),
+                    ? Wrap(
+                      spacing: 4,
+                      children: [
+                        TextButton(
+                          onPressed:
+                              isSaving ? null : () => onAttendance(p),
+                          child: const Text('Attendance'),
+                        ),
+                        TextButton(
+                          onPressed: isSaving ? null : () => onRemove(p),
+                          child: const Text('Remove'),
+                        ),
+                      ],
                     )
                     : null,
           ),
@@ -745,9 +783,9 @@ class _ParticipantsSection extends StatelessWidget {
                 p.participantName ?? p.participantId,
                 style: const TextStyle(color: AppColors.textMuted),
               ),
-              subtitle: Text(
+              subtitle: const Text(
                 'Removed',
-                style: const TextStyle(color: AppColors.textMuted),
+                style: TextStyle(color: AppColors.textMuted),
               ),
             ),
       ],

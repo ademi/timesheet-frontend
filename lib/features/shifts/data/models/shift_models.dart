@@ -107,6 +107,8 @@ class ShiftParticipantOut {
     this.shiftId,
     this.allocationStrategy,
     this.allocationValue,
+    this.attendance = 'present',
+    this.attendedMinutes,
     this.participantName,
     this.rateSnapshot,
     this.timeWindows,
@@ -120,11 +122,16 @@ class ShiftParticipantOut {
   final String? allocationStrategy;
   final double? allocationValue;
   final String status;
+  /// present | no_show | partial (B10; independent of [status]).
+  final String attendance;
+  final int? attendedMinutes;
   final String? participantName;
   final ShiftParticipantRateSnapshotSummary? rateSnapshot;
   final List<ShiftParticipantAllocationOut>? timeWindows;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  bool get isBillable => status == 'active' && attendance != 'no_show';
 
   factory ShiftParticipantOut.fromJson(Map<String, dynamic> json) {
     final rateRaw = json['rate_snapshot'];
@@ -136,6 +143,8 @@ class ShiftParticipantOut {
       allocationStrategy: json['allocation_strategy'] as String?,
       allocationValue: (json['allocation_value'] as num?)?.toDouble(),
       status: json['status'] as String? ?? 'active',
+      attendance: json['attendance'] as String? ?? 'present',
+      attendedMinutes: (json['attended_minutes'] as num?)?.toInt(),
       participantName: json['participant_name'] as String?,
       rateSnapshot:
           rateRaw is Map
