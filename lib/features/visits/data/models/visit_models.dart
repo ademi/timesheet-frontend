@@ -505,14 +505,18 @@ class VisitFormSubmitRequest {
   const VisitFormSubmitRequest({
     required this.formTemplateId,
     required this.payloadJson,
+    this.clientEventId,
   });
 
   final String formTemplateId;
   final Map<String, dynamic> payloadJson;
+  final String? clientEventId;
 
   Map<String, dynamic> toJson() => {
     'form_template_id': formTemplateId,
     'payload_json': payloadJson,
+    if (clientEventId != null && clientEventId!.isNotEmpty)
+      'client_event_id': clientEventId,
   };
 }
 

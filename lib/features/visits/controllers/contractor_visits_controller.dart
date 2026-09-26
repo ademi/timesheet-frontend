@@ -18,12 +18,33 @@ import '../sync/outbox_models.dart';
 import '../sync/outbox_store.dart';
 import '../sync/sync_error_classifier.dart';
 import '../sync/sync_worker.dart';
+import '../sync/form_draft_models.dart';
+import '../sync/form_draft_store.dart';
+import '../sync/form_sync_worker.dart';
 import '../../documents/sync/media_blob_store.dart';
 import '../../documents/sync/media_outbox_models.dart';
 import '../../documents/sync/media_outbox_store.dart';
 import '../../documents/sync/media_sync_worker.dart';
 
 enum VisitClockSyncUi { none, pending, failed }
+
+enum FormDraftSyncUi { none, draft, pending, failed }
+
+/// Maps form draft rows for a visit+template to chip state.
+FormDraftSyncUi formDraftSyncUiFor(Iterable<FormDraftItem> items) {
+  final list = items.toList(growable: false);
+  if (list.isEmpty) return FormDraftSyncUi.none;
+  if (list.any((e) => e.isTerminalFailure || e.stage == FormDraftStage.failed)) {
+    return FormDraftSyncUi.failed;
+  }
+  if (list.any((e) => e.stage == FormDraftStage.queued)) {
+    return FormDraftSyncUi.pending;
+  }
+  if (list.any((e) => e.stage == FormDraftStage.draft && e.hasContent)) {
+    return FormDraftSyncUi.draft;
+  }
+  return FormDraftSyncUi.none;
+}
 
 /// Maps outbox rows for a visit to chip state.
 /// Retryable [ClockOutboxItem.lastError] stays Pending; only [isConflict]
@@ -46,6 +67,8 @@ class ContractorVisitsController extends GetxController {
     MediaOutboxStore? mediaOutbox,
     MediaSyncWorker? mediaSyncWorker,
     MediaBlobStore? mediaBlobs,
+    FormDraftStore? formDraftStore,
+    FormSyncWorker? formSyncWorker,
     Future<bool> Function()? isDeviceOffline,
     String Function()? newEventId,
     Future<String?> Function()? promptLateReason,
@@ -58,6 +81,8 @@ class ContractorVisitsController extends GetxController {
        _mediaOutboxOverride = mediaOutbox,
        _mediaSyncWorkerOverride = mediaSyncWorker,
        _mediaBlobsOverride = mediaBlobs,
+       _formDraftStoreOverride = formDraftStore,
+       _formSyncWorkerOverride = formSyncWorker,
        _isDeviceOffline = isDeviceOffline,
        _newEventId = newEventId ?? const Uuid().v4,
        _promptLateReason = promptLateReason;
@@ -71,6 +96,8 @@ class ContractorVisitsController extends GetxController {
   final MediaOutboxStore? _mediaOutboxOverride;
   final MediaSyncWorker? _mediaSyncWorkerOverride;
   final MediaBlobStore? _mediaBlobsOverride;
+  final FormDraftStore? _formDraftStoreOverride;
+  final FormSyncWorker? _formSyncWorkerOverride;
   final Future<bool> Function()? _isDeviceOffline;
   final String Function() _newEventId;
   final Future<String?> Function()? _promptLateReason;
@@ -80,6 +107,8 @@ class ContractorVisitsController extends GetxController {
   late final MediaOutboxStore mediaOutbox;
   MediaSyncWorker? _mediaSyncWorker;
   late final MediaBlobStore mediaBlobs;
+  late final FormDraftStore formDraftStore;
+  FormSyncWorker? _formSyncWorker;
 
   SyncWorker get syncWorker => _syncWorker!;
 
@@ -97,6 +126,12 @@ class ContractorVisitsController extends GetxController {
 
   /// Bumped when media outbox changes (form file field progress).
   final mediaOutboxRevision = 0.obs;
+
+  /// Bumped when form drafts / queued submits change (B2).
+  final formDraftRevision = 0.obs;
+
+  /// Per-form note scope: null = visit/group-level; participant id for SIL.
+  final formNoteParticipantId = RxnString();
 
   /// fieldId → document_id once media ACK completes (survives until form submit).
   final ackedMediaDocumentIds = <String, String>{}.obs;
@@ -181,6 +216,16 @@ class ContractorVisitsController extends GetxController {
         (Get.isRegistered<MediaSyncWorker>()
             ? Get.find<MediaSyncWorker>()
             : null);
+    formDraftStore =
+        _formDraftStoreOverride ??
+        (Get.isRegistered<FormDraftStore>()
+            ? Get.find<FormDraftStore>()
+            : FormDraftStore(GetStorage()));
+    _formSyncWorker =
+        _formSyncWorkerOverride ??
+        (Get.isRegistered<FormSyncWorker>()
+            ? Get.find<FormSyncWorker>()
+            : null);
     load();
   }
 
@@ -214,6 +259,93 @@ class ContractorVisitsController extends GetxController {
     if (fieldId != null && docId != null && docId.isNotEmpty) {
       ackedMediaDocumentIds[fieldId] = docId;
     }
+  }
+
+  void onFormDraftAcked(FormDraftItem item) {
+    formDraftRevision.value++;
+    submittedTemplateIds.add(item.formTemplateId);
+    final selectedId = selected.value?.id;
+    if (selectedId != item.visitId) return;
+    refreshSelected().then((_) {
+      if (Get.overlayContext == null) return;
+      AppToast.success(
+        'Form synced',
+        'Notes saved to the server.',
+      );
+    });
+  }
+
+  FormDraftItem? formDraftFor({
+    required String visitId,
+    required String formTemplateId,
+    String? participantId,
+  }) {
+    formDraftRevision.value;
+    return formDraftStore.get(
+      visitId: visitId,
+      formTemplateId: formTemplateId,
+      participantId: participantId ?? formNoteParticipantId.value,
+    );
+  }
+
+  FormDraftSyncUi formSyncUiFor({
+    required String visitId,
+    required String formTemplateId,
+    String? participantId,
+  }) {
+    formDraftRevision.value;
+    final item = formDraftStore.get(
+      visitId: visitId,
+      formTemplateId: formTemplateId,
+      participantId: participantId ?? formNoteParticipantId.value,
+    );
+    return formDraftSyncUiFor(item == null ? const [] : [item]);
+  }
+
+  /// Debounced autosave from [VisitSchemaForm] — never claims server success.
+  Future<void> saveFormDraft({
+    required String visitId,
+    required String formTemplateId,
+    required Map<String, dynamic> payloadJson,
+    String? participantId,
+    String? supportItemCode,
+  }) async {
+    final scope = participantId ?? formNoteParticipantId.value;
+    final existing = formDraftStore.get(
+      visitId: visitId,
+      formTemplateId: formTemplateId,
+      participantId: scope,
+    );
+    // Do not clobber a queued/failed submit with a fresh draft key wipe.
+    if (existing != null &&
+        (existing.stage == FormDraftStage.queued ||
+            existing.clientEventId != null)) {
+      await formDraftStore.upsert(
+        existing.copyWith(
+          payloadJson: payloadJson,
+          updatedAtIso: DateTime.now().toUtc().toIso8601String(),
+          supportItemCode: supportItemCode ?? existing.supportItemCode,
+        ),
+      );
+    } else {
+      await formDraftStore.upsert(
+        FormDraftItem(
+          draftKey: FormDraftItem.makeKey(
+            visitId: visitId,
+            formTemplateId: formTemplateId,
+            participantId: scope,
+          ),
+          visitId: visitId,
+          formTemplateId: formTemplateId,
+          participantId: scope,
+          supportItemCode: supportItemCode,
+          payloadJson: payloadJson,
+          updatedAtIso: DateTime.now().toUtc().toIso8601String(),
+          stage: FormDraftStage.draft,
+        ),
+      );
+    }
+    formDraftRevision.value++;
   }
 
   List<MediaOutboxItem> mediaPendingForVisit(String visitId) {
@@ -477,22 +609,71 @@ class ContractorVisitsController extends GetxController {
     }
     isSaving.value = true;
     errorMessage.value = null;
+    final scope = formNoteParticipantId.value;
+    final clientEventId = _newEventId();
+    final draftKey = FormDraftItem.makeKey(
+      visitId: visit.id,
+      formTemplateId: req.formTemplateId,
+      participantId: scope,
+    );
     try {
+      // Queue first — never toast success without ACK (B2).
+      await formDraftStore.upsert(
+        FormDraftItem(
+          draftKey: draftKey,
+          visitId: visit.id,
+          formTemplateId: req.formTemplateId,
+          participantId: scope,
+          supportItemCode: visit.supportItemCode,
+          payloadJson: payloadJson,
+          updatedAtIso: DateTime.now().toUtc().toIso8601String(),
+          clientEventId: clientEventId,
+          stage: FormDraftStage.queued,
+        ),
+      );
+      formDraftRevision.value++;
+
+      final offlineChecker = _isDeviceOffline;
+      final offline = offlineChecker != null
+          ? await offlineChecker()
+          : (await Connectivity().checkConnectivity()).every(
+            (r) => r == ConnectivityResult.none,
+          );
+      if (offline) {
+        AppToast.info(
+          'Saved offline',
+          'Notes will sync when you are back online.',
+        );
+        return;
+      }
+
       await _repository.submitForm(
         visitId: visit.id,
         body: VisitFormSubmitRequest(
           formTemplateId: req.formTemplateId,
           payloadJson: payloadJson,
+          clientEventId: clientEventId,
         ),
       );
+      await formDraftStore.ack(draftKey);
+      formDraftRevision.value++;
       submittedTemplateIds.add(req.formTemplateId);
       await refreshSelected();
       AppToast.success('Form submitted', req.name ?? req.formTemplateId);
     } on AppFailure catch (e) {
+      await formDraftStore.markAttempt(draftKey, e.message);
+      formDraftRevision.value++;
       errorMessage.value = e.message;
+      // Kick worker for retry when transient.
+      await _formSyncWorker?.flush();
     } finally {
       isSaving.value = false;
     }
+  }
+
+  Future<void> retryFormDrafts() async {
+    final worker = _formSyncWorker;
+    if (worker != null) await worker.flush();
   }
 
   Future<void> toggleTask(VisitTaskOut task) async {

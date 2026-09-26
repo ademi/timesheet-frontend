@@ -27,6 +27,8 @@ import '../controllers/visit_shift_brief_controller.dart';
 import '../data/datasources/visits_remote_datasource.dart';
 import '../data/repositories/visits_repository.dart';
 import '../services/visit_location_service.dart';
+import '../sync/form_draft_store.dart';
+import '../sync/form_sync_worker.dart';
 import '../sync/outbox_store.dart';
 import '../sync/sync_worker.dart';
 
@@ -137,6 +139,27 @@ class VisitsBinding extends Bindings {
       );
       Get.put<MediaSyncWorker>(mediaWorker, permanent: true);
       mediaWorker.start();
+    }
+    if (!Get.isRegistered<FormDraftStore>()) {
+      Get.put<FormDraftStore>(FormDraftStore(GetStorage()), permanent: true);
+    }
+    if (!Get.isRegistered<FormSyncWorker>()) {
+      final formWorker = FormSyncWorker(
+        store: Get.find<FormDraftStore>(),
+        repository: Get.find<VisitsRepository>(),
+        onChanged: () {
+          if (Get.isRegistered<ContractorVisitsController>()) {
+            Get.find<ContractorVisitsController>().formDraftRevision.value++;
+          }
+        },
+        onAcked: (item) {
+          if (Get.isRegistered<ContractorVisitsController>()) {
+            Get.find<ContractorVisitsController>().onFormDraftAcked(item);
+          }
+        },
+      );
+      Get.put<FormSyncWorker>(formWorker, permanent: true);
+      formWorker.start();
     }
   }
 }

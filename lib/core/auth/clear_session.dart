@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../features/documents/sync/media_outbox_store.dart';
+import '../../features/visits/sync/form_draft_store.dart';
 import '../../features/visits/sync/outbox_store.dart';
 import 'auth_session_invalidation.dart';
 import '../services/session_service.dart';
@@ -8,15 +9,16 @@ import '../services/token_storage.dart';
 
 /// Clears session state and persisted auth tokens.
 ///
-/// When the visit clock outbox or media outbox has pending items, throws
-/// [StateError] (`outbox_not_empty` / `media_outbox_not_empty`) unless
-/// [confirmDiscardOutbox] is true.
+/// When the visit clock outbox, media outbox, or form drafts have pending
+/// items, throws [StateError] (`outbox_not_empty` / `media_outbox_not_empty` /
+/// `form_draft_not_empty`) unless [confirmDiscardOutbox] is true.
 Future<void> clearSession({
   bool confirmDiscardOutbox = false,
   SessionService? sessionService,
   TokenStorage? tokenStorage,
   OutboxStore? outboxStore,
   MediaOutboxStore? mediaOutboxStore,
+  FormDraftStore? formDraftStore,
 }) async {
   final outbox =
       outboxStore ??
@@ -31,6 +33,14 @@ Future<void> clearSession({
           : null);
   if (media != null && media.pending().isNotEmpty) {
     media.clearDestructive(confirmDiscard: confirmDiscardOutbox);
+  }
+  final forms =
+      formDraftStore ??
+      (Get.isRegistered<FormDraftStore>()
+          ? Get.find<FormDraftStore>()
+          : null);
+  if (forms != null && forms.pendingUnsent().isNotEmpty) {
+    forms.clearDestructive(confirmDiscard: confirmDiscardOutbox);
   }
   await invalidateStoredAuthSession(
     sessionService: sessionService,
@@ -54,6 +64,16 @@ bool hasPendingMediaOutbox({MediaOutboxStore? mediaOutboxStore}) {
           ? Get.find<MediaOutboxStore>()
           : null);
   return media != null && media.pending().isNotEmpty;
+}
+
+/// True when a registered [FormDraftStore] has unsent drafts / queued submits.
+bool hasPendingFormDrafts({FormDraftStore? formDraftStore}) {
+  final forms =
+      formDraftStore ??
+      (Get.isRegistered<FormDraftStore>()
+          ? Get.find<FormDraftStore>()
+          : null);
+  return forms != null && forms.pendingUnsent().isNotEmpty;
 }
 
 /// Discards pending clock outbox when [confirmDiscardOutbox] is true.
@@ -80,4 +100,18 @@ void discardMediaOutboxIfConfirmed({
           ? Get.find<MediaOutboxStore>()
           : null);
   media?.clearDestructive(confirmDiscard: true);
+}
+
+/// Discards pending form drafts when [confirmDiscardOutbox] is true.
+void discardFormDraftsIfConfirmed({
+  required bool confirmDiscardOutbox,
+  FormDraftStore? formDraftStore,
+}) {
+  if (!confirmDiscardOutbox) return;
+  final forms =
+      formDraftStore ??
+      (Get.isRegistered<FormDraftStore>()
+          ? Get.find<FormDraftStore>()
+          : null);
+  forms?.clearDestructive(confirmDiscard: true);
 }

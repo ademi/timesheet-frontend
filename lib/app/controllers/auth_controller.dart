@@ -91,22 +91,29 @@ class AuthController extends GetxController {
   Future<void> logout({bool confirmDiscardOutbox = false}) async {
     final clockPending = hasPendingClockOutbox();
     final mediaPending = hasPendingMediaOutbox();
-    if (clockPending || mediaPending) {
+    final formPending = hasPendingFormDrafts();
+    if (clockPending || mediaPending || formPending) {
       if (!confirmDiscardOutbox) {
         if (Get.testMode) {
           throw StateError(
-            clockPending ? 'outbox_not_empty' : 'media_outbox_not_empty',
+            clockPending
+                ? 'outbox_not_empty'
+                : mediaPending
+                    ? 'media_outbox_not_empty'
+                    : 'form_draft_not_empty',
           );
         }
         final confirmed = await _confirmDiscardOutboxLogout(
           clockPending: clockPending,
           mediaPending: mediaPending,
+          formPending: formPending,
         );
         if (!confirmed) return;
         confirmDiscardOutbox = true;
       }
       discardClockOutboxIfConfirmed(confirmDiscardOutbox: confirmDiscardOutbox);
       discardMediaOutboxIfConfirmed(confirmDiscardOutbox: confirmDiscardOutbox);
+      discardFormDraftsIfConfirmed(confirmDiscardOutbox: confirmDiscardOutbox);
     }
     if (Get.isRegistered<PushNotificationService>()) {
       await Get.find<PushNotificationService>().unregisterCurrentDeviceToken();
@@ -128,6 +135,7 @@ class AuthController extends GetxController {
   Future<bool> _confirmDiscardOutboxLogout({
     required bool clockPending,
     required bool mediaPending,
+    required bool formPending,
   }) async {
     final parts = <String>[];
     if (clockPending) {
@@ -136,11 +144,16 @@ class AuthController extends GetxController {
     if (mediaPending) {
       parts.add('photo/video evidence waiting to upload');
     }
-    final title = mediaPending && !clockPending
-        ? 'Unsent evidence'
-        : clockPending && !mediaPending
-            ? 'Unsent check-ins'
-            : 'Unsent data';
+    if (formPending) {
+      parts.add('field notes waiting to sync');
+    }
+    final title = formPending && !clockPending && !mediaPending
+        ? 'Unsent field notes'
+        : mediaPending && !clockPending && !formPending
+            ? 'Unsent evidence'
+            : clockPending && !mediaPending && !formPending
+                ? 'Unsent check-ins'
+                : 'Unsent data';
     return await Get.dialog<bool>(
           AlertDialog(
             title: Text(title),

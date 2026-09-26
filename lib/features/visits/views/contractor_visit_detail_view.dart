@@ -53,6 +53,7 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
       appBar: AppBar(title: const Text('Visit detail')),
       body: Obx(() {
         controller.mediaOutboxRevision.value;
+        controller.formDraftRevision.value;
         final v = controller.selected.value;
         final err = controller.errorMessage.value;
         if (v == null) {
@@ -177,6 +178,36 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
                                   req.formTemplateId,
                                 ),
                                 visitId: v.id,
+                                initialDraftPayload:
+                                    controller
+                                        .formDraftFor(
+                                          visitId: v.id,
+                                          formTemplateId: req.formTemplateId,
+                                        )
+                                        ?.payloadJson,
+                                syncStatusLabel: () {
+                                  switch (controller.formSyncUiFor(
+                                    visitId: v.id,
+                                    formTemplateId: req.formTemplateId,
+                                  )) {
+                                    case FormDraftSyncUi.draft:
+                                      return 'Draft saved on device';
+                                    case FormDraftSyncUi.pending:
+                                      return 'Pending sync';
+                                    case FormDraftSyncUi.failed:
+                                      return 'Sync failed';
+                                    case FormDraftSyncUi.none:
+                                      return null;
+                                  }
+                                }(),
+                                onDraftChanged: (payload) =>
+                                    controller.saveFormDraft(
+                                      visitId: v.id,
+                                      formTemplateId: req.formTemplateId,
+                                      payloadJson: payload,
+                                      supportItemCode: v.supportItemCode,
+                                    ),
+                                onRetryFormSync: controller.retryFormDrafts,
                                 onEnqueueFile: ({
                                   required fieldId,
                                   required filename,

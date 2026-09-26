@@ -5,20 +5,23 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../documents/sync/media_outbox_store.dart';
 import '../services/visit_location_service.dart';
+import '../sync/form_draft_store.dart';
 import '../sync/outbox_store.dart';
 
-/// Worker-facing GPS / sync health panel (A20).
+/// Worker-facing GPS / sync health panel (A20 + B2 form drafts).
 class WorkerSyncDiagnosticsPanel extends StatefulWidget {
   const WorkerSyncDiagnosticsPanel({
     super.key,
     this.location = const VisitLocationService(),
     this.outboxStore,
     this.mediaOutboxStore,
+    this.formDraftStore,
   });
 
   final VisitLocationService location;
   final OutboxStore? outboxStore;
   final MediaOutboxStore? mediaOutboxStore;
+  final FormDraftStore? formDraftStore;
 
   @override
   State<WorkerSyncDiagnosticsPanel> createState() =>
@@ -41,6 +44,14 @@ class _WorkerSyncDiagnosticsPanelState extends State<WorkerSyncDiagnosticsPanel>
     if (widget.mediaOutboxStore != null) return widget.mediaOutboxStore;
     if (Get.isRegistered<MediaOutboxStore>()) {
       return Get.find<MediaOutboxStore>();
+    }
+    return null;
+  }
+
+  FormDraftStore? get _forms {
+    if (widget.formDraftStore != null) return widget.formDraftStore;
+    if (Get.isRegistered<FormDraftStore>()) {
+      return Get.find<FormDraftStore>();
     }
     return null;
   }
@@ -112,6 +123,7 @@ class _WorkerSyncDiagnosticsPanelState extends State<WorkerSyncDiagnosticsPanel>
   Widget build(BuildContext context) {
     final clockPending = _clock?.pending().length ?? 0;
     final mediaPending = _media?.pending().length ?? 0;
+    final formPending = _forms?.pendingUnsent().length ?? 0;
 
     return Card(
       elevation: 0,
@@ -151,6 +163,7 @@ class _WorkerSyncDiagnosticsPanelState extends State<WorkerSyncDiagnosticsPanel>
             _row('Last accuracy', _accuracyLabel),
             _row('Pending clock sync', '$clockPending'),
             _row('Pending media upload', '$mediaPending'),
+            _row('Pending field notes', '$formPending'),
           ],
         ),
       ),
