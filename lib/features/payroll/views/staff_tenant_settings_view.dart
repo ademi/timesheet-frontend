@@ -116,6 +116,40 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                     ),
                     keyboardType: TextInputType.number,
                   ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Unregistered providers use 90% of catalogue price limits '
+                    'from 1 Jan 2027 (snapshotted at publish).',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: controller.ndisProviderRegistrationStatus.value,
+                    decoration: const InputDecoration(
+                      labelText: 'NDIS provider registration',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'registered',
+                        child: Text('Registered'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'unregistered',
+                        child: Text('Unregistered (−10% from 2027)'),
+                      ),
+                    ],
+                    onChanged:
+                        controller.canManage
+                            ? (v) {
+                              if (v != null) {
+                                controller
+                                    .ndisProviderRegistrationStatus
+                                    .value = v;
+                              }
+                            }
+                            : null,
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'When a visit uses enforce geofence: soft allows the punch '

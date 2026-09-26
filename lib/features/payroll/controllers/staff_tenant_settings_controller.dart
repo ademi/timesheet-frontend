@@ -35,6 +35,7 @@ class StaffTenantSettingsController extends GetxController {
   final jurisdictionCtrl = TextEditingController();
   final providerAbnCtrl = TextEditingController();
   final geofenceOutsidePolicy = 'soft'.obs;
+  final ndisProviderRegistrationStatus = 'registered'.obs;
 
   bool get canManage => _session.hasPermission(AppPermissions.tenantsManage);
   bool get canViewMembers =>
@@ -74,6 +75,7 @@ class StaffTenantSettingsController extends GetxController {
       jurisdictionCtrl.text = t.publicHolidayJurisdiction ?? '';
       providerAbnCtrl.text = t.providerAbn ?? '';
       geofenceOutsidePolicy.value = t.geofenceOutsidePolicy;
+      ndisProviderRegistrationStatus.value = t.ndisProviderRegistrationStatus;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     }
@@ -113,9 +115,12 @@ class StaffTenantSettingsController extends GetxController {
             providerAbnCtrl.text.trim().isEmpty
                 ? null
                 : providerAbnCtrl.text.trim(),
+        ndisProviderRegistrationStatus: ndisProviderRegistrationStatus.value,
       );
       tenant.value = updated;
       geofenceOutsidePolicy.value = updated.geofenceOutsidePolicy;
+      ndisProviderRegistrationStatus.value =
+          updated.ndisProviderRegistrationStatus;
       AppToast.success(
         'Saved',
         'Tenant settings updated.',

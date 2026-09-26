@@ -254,6 +254,7 @@ class TenantSettingsOut {
     this.publicHolidayJurisdiction,
     this.geofenceOutsidePolicy = 'soft',
     this.providerAbn,
+    this.ndisProviderRegistrationStatus = 'registered',
   });
 
   final String id;
@@ -263,8 +264,14 @@ class TenantSettingsOut {
   /// soft = allow outside punch + exception; hard = 400 geofence_rejected.
   final String geofenceOutsidePolicy;
   final String? providerAbn;
+  /// registered | unregistered — unregistered ⇒ 0.9× ceilings from 2027-01-01.
+  final String ndisProviderRegistrationStatus;
 
   factory TenantSettingsOut.fromJson(Map<String, dynamic> json) {
+    final reg =
+        (json['ndis_provider_registration_status'] as String?)
+            ?.trim()
+            .toLowerCase();
     return TenantSettingsOut(
       id: json['id'].toString(),
       name: json['name'] as String? ?? json['display_name'] as String?,
@@ -276,6 +283,8 @@ class TenantSettingsOut {
               ? 'hard'
               : 'soft',
       providerAbn: json['provider_abn'] as String?,
+      ndisProviderRegistrationStatus:
+          reg == 'unregistered' ? 'unregistered' : 'registered',
     );
   }
 }
