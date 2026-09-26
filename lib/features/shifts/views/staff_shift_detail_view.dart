@@ -11,6 +11,7 @@ import '../../shifts/data/models/shift_travel_models.dart';
 import '../../shifts/utils/allocation_math.dart';
 import '../../shifts/utils/participant_display.dart';
 import '../../shifts/widgets/shift_slot_pips.dart';
+import '../../sil/data/models/sil_models.dart';
 import '../../visits/controllers/staff_visits_controller.dart';
 
 String _fmt(DateTime dt) {
@@ -133,7 +134,7 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                             Padding(
                               padding: const EdgeInsets.only(bottom: 4),
                               child: Text(
-                                w,
+                                silWarningLabel(w),
                                 style: const TextStyle(
                                   color: AppColors.openSlot,
                                 ),

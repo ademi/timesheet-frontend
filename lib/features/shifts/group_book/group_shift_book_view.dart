@@ -579,6 +579,15 @@ class _ReviewStep extends StatelessWidget {
             'Workers planned ${controller.workerCount.value}',
           ),
           const SizedBox(height: 16),
+          if (!controller.isTimeBased)
+            AppSwitchField(
+              label: 'Repeat this group weekly',
+              value: controller.repeatWeekly.value,
+              onChanged: (v) => controller.repeatWeekly.value = v,
+              subtitle:
+                  'Copies this participant set onto future weekly occurrences.',
+            ),
+          if (!controller.isTimeBased) const SizedBox(height: 12),
           const Text(
             'Creates a draft group shift. Publish from shift detail when ready.',
             style: TextStyle(color: AppColors.textMuted),

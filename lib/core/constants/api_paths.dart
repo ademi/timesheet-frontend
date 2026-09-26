@@ -286,4 +286,11 @@ abstract final class ApiPaths {
   static const branches = '$_v1/branches';
   static const tenantMembers = '$_v1/tenant-members';
   static String tenantMember(String id) => '$tenantMembers/$id';
+
+  // SIL / roster of care (B3)
+  static const silHouses = '$_v1/sil/houses';
+  static String silHouse(String id) => '$silHouses/$id';
+  static String silHouseMembers(String id) => '${silHouse(id)}/members';
+  static String silHouseRocBlocks(String id) => '${silHouse(id)}/roc-blocks';
+  static String jobSilHouse(String jobId) => '$_v1/sil/jobs/$jobId/house';
 }

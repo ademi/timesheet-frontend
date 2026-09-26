@@ -10,7 +10,9 @@ import '../../../shared/utils/name_sort.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../clients/data/models/client_models.dart';
 import '../../clients/data/repositories/clients_repository.dart';
+import '../../jobs/data/models/job_models.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
+import '../../jobs/utils/recurrence_rrule_builder.dart';
 import '../../jobs/utils/required_slots_input.dart';
 import '../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
@@ -78,6 +80,9 @@ class GroupShiftBookController extends GetxController {
       DateTime.now().add(const Duration(hours: 3)).obs;
   final requiredSlots = 1.obs;
   final workerCount = 1.obs;
+  /// When true (percentage groups only), also create a weekly recurrence
+  /// that copies this participant set onto future occurrences (B4).
+  final repeatWeekly = false.obs;
 
   final isLoading = false.obs;
   final isSaving = false.obs;
@@ -499,8 +504,23 @@ class GroupShiftBookController extends GetxController {
           ],
         ),
       );
+      if (repeatWeekly.value && !timeBased) {
+        await _createWeeklyGroupRecurrence(
+          jobId: support.id,
+          startLocal: scheduledStart.value,
+          endLocal: scheduledEnd.value,
+          startUtc: startUtc,
+          tz: tz ?? 'UTC',
+          equalSplit: equal,
+        );
+      }
       if (!Get.testMode) {
-        AppToast.success('Draft group shift created', created.jobTitle);
+        AppToast.success(
+          repeatWeekly.value && !timeBased
+              ? 'Draft + weekly repeat created'
+              : 'Draft group shift created',
+          created.jobTitle,
+        );
       }
       _navigate(AppRoutes.staffShiftDetail, created);
     } on AppFailure catch (e) {
@@ -524,6 +544,45 @@ class GroupShiftBookController extends GetxController {
       return;
     }
     Get.offNamed(route, arguments: arguments);
+  }
+
+  Future<void> _createWeeklyGroupRecurrence({
+    required String jobId,
+    required DateTime startLocal,
+    required DateTime endLocal,
+    required DateTime startUtc,
+    required String tz,
+    required bool equalSplit,
+  }) async {
+    final byDay = weekdayRruleCodes[startLocal.weekday];
+    if (byDay == null) return;
+    String hhmm(DateTime local) =>
+        '${local.hour.toString().padLeft(2, '0')}:'
+        '${local.minute.toString().padLeft(2, '0')}';
+    final rule = await _jobs.createRecurrenceRule(
+      jobId,
+      RecurrenceRuleCreateRequest(
+        rrule: 'FREQ=WEEKLY;BYDAY=$byDay',
+        dtstart: startUtc,
+        requiredSlots: requiredSlots.value,
+        workerCount: workerCount.value,
+        equalSplit: equalSplit,
+        participants: [
+          for (final p in draft.value.participants)
+            RecurrenceParticipantPattern(
+              participantId: p.participantId,
+              allocationValue: equalSplit ? null : p.allocationValue,
+            ),
+        ],
+        timeWindows: [
+          TimeWindow(startTime: hhmm(startLocal), endTime: hhmm(endLocal)),
+        ],
+      ),
+    );
+    final horizon = tenantHorizonWindowUtc(DateTime.now().toUtc(), tz);
+    await _jobs.ensureHorizon(
+      HorizonRequest(from: horizon.from, to: horizon.to, ruleIds: [rule.id]),
+    );
   }
 
   Future<String?> _resolveTenantTimezone() async {

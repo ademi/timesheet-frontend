@@ -1,0 +1,197 @@
+/// SIL house + funded roster-of-care models (B3).
+
+class SilHouseOut {
+  const SilHouseOut({
+    required this.id,
+    required this.tenantId,
+    required this.name,
+    this.addressLine1,
+    this.city,
+    this.postalCode,
+    this.isActive = true,
+  });
+
+  final String id;
+  final String tenantId;
+  final String name;
+  final String? addressLine1;
+  final String? city;
+  final String? postalCode;
+  final bool isActive;
+
+  factory SilHouseOut.fromJson(Map<String, dynamic> json) => SilHouseOut(
+    id: json['id'].toString(),
+    tenantId: json['tenant_id'].toString(),
+    name: json['name'] as String,
+    addressLine1: json['address_line1'] as String?,
+    city: json['city'] as String?,
+    postalCode: json['postal_code'] as String?,
+    isActive: json['is_active'] as bool? ?? true,
+  );
+}
+
+class SilHouseMemberOut {
+  const SilHouseMemberOut({
+    required this.id,
+    required this.houseId,
+    required this.clientId,
+    this.clientName,
+    required this.occupancyStatus,
+    this.bedLabel,
+  });
+
+  final String id;
+  final String houseId;
+  final String clientId;
+  final String? clientName;
+  final String occupancyStatus;
+  final String? bedLabel;
+
+  factory SilHouseMemberOut.fromJson(Map<String, dynamic> json) =>
+      SilHouseMemberOut(
+        id: json['id'].toString(),
+        houseId: json['house_id'].toString(),
+        clientId: json['client_id'].toString(),
+        clientName: json['client_name'] as String?,
+        occupancyStatus: json['occupancy_status'] as String? ?? 'present',
+        bedLabel: json['bed_label'] as String?,
+      );
+
+  bool get isPresent => occupancyStatus == 'present';
+}
+
+class SilRocBlockOut {
+  const SilRocBlockOut({
+    required this.id,
+    required this.houseId,
+    required this.band,
+    required this.fundedWorkerCount,
+    required this.fundedParticipantCount,
+  });
+
+  final String id;
+  final String houseId;
+  final String band;
+  final int fundedWorkerCount;
+  final int fundedParticipantCount;
+
+  factory SilRocBlockOut.fromJson(Map<String, dynamic> json) => SilRocBlockOut(
+    id: json['id'].toString(),
+    houseId: json['house_id'].toString(),
+    band: json['band'] as String,
+    fundedWorkerCount: json['funded_worker_count'] as int? ?? 1,
+    fundedParticipantCount: json['funded_participant_count'] as int? ?? 1,
+  );
+
+  String get ratioLabel =>
+      '$fundedWorkerCount:$fundedParticipantCount';
+}
+
+class SilHouseBundleOut {
+  const SilHouseBundleOut({
+    required this.house,
+    required this.members,
+    required this.rocBlocks,
+    required this.presentOccupancy,
+  });
+
+  final SilHouseOut house;
+  final List<SilHouseMemberOut> members;
+  final List<SilRocBlockOut> rocBlocks;
+  final int presentOccupancy;
+
+  factory SilHouseBundleOut.fromJson(Map<String, dynamic> json) =>
+      SilHouseBundleOut(
+        house: SilHouseOut.fromJson(
+          Map<String, dynamic>.from(json['house'] as Map),
+        ),
+        members: (json['members'] as List? ?? const [])
+            .whereType<Map>()
+            .map(
+              (e) => SilHouseMemberOut.fromJson(Map<String, dynamic>.from(e)),
+            )
+            .toList(growable: false),
+        rocBlocks: (json['roc_blocks'] as List? ?? const [])
+            .whereType<Map>()
+            .map((e) => SilRocBlockOut.fromJson(Map<String, dynamic>.from(e)))
+            .toList(growable: false),
+        presentOccupancy: json['present_occupancy'] as int? ?? 0,
+      );
+}
+
+class SilHouseCreateRequest {
+  const SilHouseCreateRequest({
+    required this.name,
+    this.addressLine1,
+    this.city,
+    this.postalCode,
+  });
+
+  final String name;
+  final String? addressLine1;
+  final String? city;
+  final String? postalCode;
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    if (addressLine1 != null) 'address_line1': addressLine1,
+    if (city != null) 'city': city,
+    if (postalCode != null) 'postal_code': postalCode,
+  };
+}
+
+class SilHouseMemberUpsertRequest {
+  const SilHouseMemberUpsertRequest({
+    required this.clientId,
+    this.occupancyStatus = 'present',
+    this.bedLabel,
+  });
+
+  final String clientId;
+  final String occupancyStatus;
+  final String? bedLabel;
+
+  Map<String, dynamic> toJson() => {
+    'client_id': clientId,
+    'occupancy_status': occupancyStatus,
+    if (bedLabel != null) 'bed_label': bedLabel,
+  };
+}
+
+class SilRocBlockUpsertRequest {
+  const SilRocBlockUpsertRequest({
+    required this.band,
+    required this.fundedWorkerCount,
+    required this.fundedParticipantCount,
+  });
+
+  final String band;
+  final int fundedWorkerCount;
+  final int fundedParticipantCount;
+
+  Map<String, dynamic> toJson() => {
+    'band': band,
+    'funded_worker_count': fundedWorkerCount,
+    'funded_participant_count': fundedParticipantCount,
+  };
+}
+
+/// Human labels for soft ROC publish warnings.
+String silWarningLabel(String code) {
+  switch (code) {
+    case 'roc_staffing_richer':
+      return 'Staffing richer than funded ROC';
+    case 'roc_staffing_thinner':
+      return 'Staffing thinner than funded ROC';
+    case 'roc_participant_drift':
+      return 'Participant count differs from funded / present occupancy';
+    case 'roc_occupancy_absent_on_shift':
+      return 'Shift includes a vacant/hospital housemate';
+    case 'roc_block_missing':
+      return 'No funded ROC block for this time of day';
+    case 'worker_count_slots_mismatch':
+      return 'Workers planned ≠ open slots';
+    default:
+      return code;
+  }
+}
