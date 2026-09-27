@@ -1,0 +1,286 @@
+# UX friction inventory — client docs & forms (+ web navigation)
+
+**Audience:** Engineers picking up upload / form UX work, or web refresh / back-forward navigation  
+**Date:** 2026-09-22  
+**Scope:** Flutter frontend (`frontend/lib/`), especially client onboarding, care plan, requirements, credentials, contractor profile; plus browser history / deep-link restore on web  
+**Trigger:** Care-plan clinical documents upload to the server on every file pick; that felt slow and high-friction. This doc inventories that pattern and related frictions found by code inspection. **Also added:** web refresh / back / forward throwing users out of workflows (GetX URL vs in-memory state).
+
+**Not in scope:** Landing/marketing, visits roster confirms (mostly justified), billing void confirms.
+
+---
+
+## Problem statement
+
+Several flows treat **“user chose a file”** as **“commit to the server now”**. When a step has multiple files (clinical PDFs, legal pack, credential evidence), the user waits on a network round trip after each Choose/Replace, often with the rest of the form frozen.
+
+A better default (already used in parts of the app) is:
+
+1. Pick → hold locally (`pending` / `localFiles`)
+2. Upload on **Save / Next / Submit**
+3. Keep sibling fields editable while one upload runs (or show row-level progress only)
+
+---
+
+## Shared building blocks
+
+| Piece | Path | Notes |
+|-------|------|--------|
+| `AppFileField` | `frontend/lib/shared/widgets/app_file_field.dart` | Chrome only. Does **not** upload. Parent wires `onPick`. |
+| `ProfilePhotoEditor` | `frontend/lib/shared/widgets/profile_photo_editor.dart` | Picks image → `onChanged(PickedProfilePhoto)`. Parent decides timing. |
+| `ClientLegalUploadHelper` | `frontend/lib/features/clients/services/client_legal_upload_helper.dart` | Shared **pick → upload immediately** for consent / SA / ack / legal-other. |
+| `DocumentPipeline.uploadEvidence` | `frontend/lib/features/documents/data/document_pipeline.dart` | Upload (+ optional scan poll for credentials). |
+| `RequirementDraft.localFiles` | `frontend/lib/features/clients/controllers/requirement_draft.dart` | Deferred multi-file hold pattern (good reference). |
+
+---
+
+## A. Upload on pick (primary friction)
+
+These call sites start a server request as soon as the user finishes the file picker.
+
+### A1. Care plan — clinical documents (canonical example)
+
+| | |
+|--|--|
+| **UI** | `frontend/lib/features/clients/widgets/support_plan_clinical_section.dart` |
+| **Store** | `SupportPlanClinicalStore` — `uploadMedicalPdf`, `uploadBspPdf`, `uploadNutritionPdf`, `uploadHazardPdf` → `uploadClinicalPdf` |
+| **Also shown in** | Onboarding care-plan step, support-plan review step |
+| **Files** | 4 separate single-PDF slots |
+| **Flow** | Choose/Replace → pick PDF → `uploadEvidence` + upsert document fact → set “on file” flag locally |
+| **Friction** | User waits 4 times if filling the whole section. `isBusy` disables the row (and feeds global care-plan busy — see B1). |
+| **Note** | Bool “on file” toggles still need **Save draft / Activate** via `persistFacts` — upload alone is not a full section save. |
+
+### A2. Care plan — NDIS plan PDF (funding)
+
+| | |
+|--|--|
+| **UI** | `support_plan_funding_section.dart` — `onPick: store.uploadNdisPlanPdf` |
+| **Store** | `SupportPlanFundingConsentStore.uploadNdisPlanPdf` |
+| **Files** | 1 PDF |
+| **Flow** | Pick → upload + upsert NDIS fact with `documentId` |
+| **Contrast** | Onboarding NDIS step **defers** upload until Next (`pickNdisPlanPdf` → pending → `submitNdisStep`). Same document type, two UX models. |
+
+### A3. Care plan — consent & agreements
+
+| | |
+|--|--|
+| **UI** | `support_plan_consent_section.dart` |
+| **Store** | `markConsentComplete` / `markServiceAgreementComplete` / `markAcknowledgementComplete` |
+| **Helper** | `ClientLegalUploadHelper` |
+| **Files** | Up to 3 PDFs (consent, service agreement, acknowledgement) |
+| **Flow** | Pick → upload → accept/upsert → row flips Complete |
+| **Helper copy** | “Upload PDF & mark complete” |
+
+### A4. Onboarding — legal pack
+
+| | |
+|--|--|
+| **UI** | `onboarding_legal_pack_step.dart` |
+| **Controller** | `ClientOnboardingController.markConsentComplete`, `markServiceAgreementComplete`, `markAcknowledgementComplete`, `uploadLegalOther` / `markLegalOtherComplete` |
+| **Files** | Consent + SA + optional Ack + **N dynamic “other” rows** (1 PDF each) |
+| **Flow** | Same as A3; legal-other also persists the list fact immediately after each row upload |
+| **Friction** | Multi-row variant of clinical — worst when staff attach several “other” docs |
+
+### A5. Contractor credentials — create evidence
+
+| | |
+|--|--|
+| **UI** | `credential_create_view.dart` |
+| **Controller** | `CredentialsController.uploadEvidenceForCreate` |
+| **Files** | 1 per click; multiple evidence docs accumulate as `selectedEvidence` |
+| **Flow** | Upload evidence → pick → upload + **scan poll** → Save credential later with already-uploaded IDs |
+| **Related** | B2 (scan lock) |
+
+### A6. Contractor credentials — attach to existing
+
+| | |
+|--|--|
+| **UI** | `credential_detail_view.dart`, also credentials list |
+| **Controller** | `CredentialsController.attachEvidence` |
+| **Flow** | Pick → upload + link + scan poll (standalone action; no form submit) |
+
+### A7. Contractor profile photo
+
+| | |
+|--|--|
+| **UI** | `contractor_profile_ops_view.dart` — `ProfilePhotoEditor(onChanged: controller.onPhotoPicked)` |
+| **Controller** | `ContractorProfileController.onPhotoPicked` → `uploadEvidence` + `setContractorProfilePhoto` |
+| **Contrast** | Other profile fields batch on `saveProfile`. Onboarding / client-form photos defer until Save/Next. |
+
+---
+
+## B. Related frictions (not only “upload on pick”)
+
+### B1. Global `isBusy` freezes care-plan chrome
+
+**Why it hurts:** One clinical/NDIS/consent PDF upload sets store `isBusy`. `SupportPlanController.isBusy` ORs funding + clinical busy with save/load. Sticky Back / Save draft / Next (and funding sibling fields) disable for the whole wait.
+
+| Piece | Path |
+|-------|------|
+| Clinical busy | `support_plan_clinical_store.dart` (`uploadClinicalPdf`) |
+| Funding/consent busy | `support_plan_funding_consent_store.dart` |
+| Aggregated | `support_plan_controller.dart` → `isBusy` |
+| UI gates | `support_plan_view.dart`, `client_detail_view.dart` (`_CarePlanSticky`), `support_plan_funding_section.dart` (`enabled = !store.isBusy`) |
+
+**Direction:** Prefer row-level uploading state; keep draft navigation and sibling fields usable.
+
+### B2. Credential scan poll blocks the form (~60s)
+
+**Why it hurts:** `uploadEvidenceForCreate` / `attachEvidence` hold `isSaving` through `DocumentPipeline.pollScanStatus` (≈ 2s × 30). Create form / submit stay locked until poll finishes or times out.
+
+**Direction:** Upload async; show scan status on the evidence chip; allow editing other fields; gate Save on “at least one clean doc” if required.
+
+### B3. Clinical upload vs toggle Save split
+
+**Why it hurts:** `uploadClinicalPdf` calls `setOnFileFlag(true)` so BSP/nutrition/hazard switches flip on upload, but bool facts only leave the device in `persistFacts` on Save draft / Activate. Users see “done” UI that isn’t fully persisted until Save. BSP helper text also tells them the Care-plan BSP flag is separate.
+
+**Direction:** Either defer upload until Save (with pending filenames), or make upload the sole source of truth and drop redundant draft toggles for doc-backed flags.
+
+### B4. Late permission / legal-version checks
+
+**Why it hurts:** Clinical / NDIS / legal helper often call `_canUploadDocs()` (and consent may fetch current legal version) **after** the file picker. User can fill signer name, pick a PDF, then fail.
+
+**Contrast:** Credentials evidence checks capability **before** pick.
+
+**Direction:** Gate `onPick` / disable Choose when upload isn’t allowed; prefetch legal version on step enter.
+
+### B5. Onboarding Next = mandatory network persist
+
+**Why it hurts:** `ClientOnboardingController.nextStep` → `submitIdentity` / `submitAddress` / … each round-trips before advancing. Next shows saving; Back/fields disabled. Good for resume (`onboarding_incomplete`); bad if the user wanted to skim without committing.
+
+**Note:** Identity cards / NDIS PDF / photo **picks** are deferred until that submit — only the step advance is force-network.
+
+### B6. Contacts one round trip per Add
+
+**Why it hurts:** `saveContactDraft` → `createContact` / `patchContact` per contact. `isSaving` disables the contacts step. Client detail contact form is the same one-contact-per-trip model.
+
+**Direction:** Optional local draft list + batch create on step Next (if product accepts delayed server presence).
+
+### B7. Serial cascades under one spinner
+
+| Flow | Behavior |
+|------|----------|
+| Identity Next | Photo + up to 5 identity cards uploaded sequentially under one `isSaving` |
+| Profile & docs Save | `_saveDynamicAnswers` serial per requirement + progress string |
+
+**Direction:** Parallelize safe uploads (`Future.wait`) or show per-item progress without locking unrelated chrome.
+
+### B8. Reload can wipe in-progress care-plan edits
+
+| Trigger | Effect |
+|---------|--------|
+| Clinical/funding conflict or `_persist` failure | `reload` → `applyProfileBundle` |
+| SN import (`support_plan_sn_section.dart`) | Confirm then `planController.load()` full reload |
+| Discard on step 0 | Intentional `load()` |
+
+**Direction:** Preserve dirty draft fields across import/reload, or warn and require discard confirmation when dirty.
+
+---
+
+## C. Already good patterns (use as templates)
+
+| Area | Pattern | Key symbols |
+|------|---------|-------------|
+| Onboarding NDIS PDF | Pick → pending → upload on Next | `pickNdisPlanPdf`, `submitNdisStep` |
+| Onboarding identity cards | Pending attachments → upload on `submitIdentity` | `pickIdentityCard`, `_persistIdentityCard` |
+| Onboarding / client form photo | Local until submit/save | `onPhotoPicked` → pending; `_persistPhoto` / `_persistFormPhoto` |
+| Requirement editors | Multi-file local hold → upload on requirement save | `pickFilesForRequirement`, `draft.localFiles`, `_uploadClientFiles` |
+| Care-plan body / funding switches | Local until Save draft / Activate | `persistFacts` with `Future.wait` |
+| Overview | Dirty drafts + explicit save | `saveOverviewProfile` |
+| Contractor profile fields | Local drafts + `saveProfile` (photo excluded — A7) | |
+
+**Best multi-file deferred reference:** `ClientsController.pickFilesForRequirement` + `_saveOneRequirement`.
+
+---
+
+## D. Suggested fix priority (for future work)
+
+Ordered by user-visible pain × how often the surface is used during client setup:
+
+| Pri | Item | Suggested outcome |
+|-----|------|-------------------|
+| P0 | A1 clinical (+ B1 busy scope, B3 toggle split) | Hold PDFs locally; upload on Save draft / Activate; row-level progress only |
+| P0 | A2 funding NDIS PDF | Align with onboarding deferral (`pick` pending → persist on Save) |
+| P1 | A3 / A4 legal pack & care consent | Defer or parallelize; don’t freeze sticky nav; check perms before pick (B4) |
+| P1 | A5 / A6 / B2 credentials | Non-blocking scan status; don’t lock whole create form |
+| P2 | A7 contractor photo | Match other profile fields (pending until Save) **or** keep immediate but don’t block unrelated edits |
+| P2 | B5 / B6 onboarding Next & contacts | Product call: keep resume-safe step saves vs local draft wizard |
+| P3 | B7 serial cascades | Parallel uploads where safe |
+| P3 | B8 reload/import dirty handling | Don’t clobber unsaved care-plan body |
+
+**Separate workstream (web navigation):** **§F complete** — Path B (`go_router` on web only). See `docs/2026-09-27-go-router-web-only-plan.md` and `docs/adr-go-router-web-only.md`.
+
+---
+
+## E. Quick audit checklist (when changing a form)
+
+When adding or editing a file field:
+
+1. Does `onPick` call `uploadEvidence` / `_uploadClientFile` / `ClientLegalUploadHelper` immediately?
+2. Does the step have **more than one** file slot?
+3. Does upload set a **global** `isBusy` / `isSaving` that disables Save/Next/sibling fields?
+4. Is permission checked **before** opening the picker?
+5. Is there already a deferred pattern for the same document type elsewhere (e.g. onboarding NDIS vs care-plan NDIS)? Prefer one model.
+6. After upload, is there a **second** Save required for related flags? If so, document or collapse the model.
+
+---
+
+## F. Web refresh / back / forward (platform UX)
+
+**Status:** ✅ **Complete** (2026-09-27) — Path B shipped: `go_router` on Flutter Web; GetX named routes retained on mobile. Plan: [`docs/2026-09-27-go-router-web-only-plan.md`](./2026-09-27-go-router-web-only-plan.md) (Phases 0–6). ADR: [`docs/adr-go-router-web-only.md`](./adr-go-router-web-only.md).
+
+**Why it hurt:** The app is primarily used in a browser. Refresh, Back, and Forward sometimes misbehaved, and a page refresh could throw staff out of mid-flow work (onboarding step, detail screen, support compose, etc.) into home, an empty detail, or a dead stack with no in-app back.
+
+### F1. Problem
+
+Workflow state often lives **in memory**, not in the **URL**. On web, refresh/back/forward only restore what the URL (and auth) can reconstruct.
+
+| Failure mode | What happens |
+|--------------|--------------|
+| State only in `Get.arguments` / controller Rx | Visit/workforce detail, onboarding step, support compose, etc. — refresh recreates the app; memory is gone → empty or wrong screen |
+| Session resume overrides the URL | `GatewayController` hydrates then `Get.offAllNamed(home)` — can yank the user off a deep link after refresh |
+| Stack ≠ browser history | After refresh there is one route; in-app back vanishes; Chrome back/forward don’t match GetX’s stack |
+
+**Resolution:** Web boots `GetMaterialApp.router` + `GoRouter` (`PathUrlStrategy`); feature nav via `AppNavigator` + shared `AppRoutes`; URL `?id=` / `?step=` / `?tab=` hydrate; gateway no longer steals deep links; `AppBackButton` / `backOrToParent` on pushed details; unknown routes → `UnknownRoutePage`. Mobile keeps GetX `GetPage` stack. Historical GetX-web notes: [`docs/web-refresh-back-button-fix.md`](./web-refresh-back-button-fix.md) (superseded for web).
+
+**Key files (post-fix):** `lib/main.dart`, `lib/app/router/app_go_router.dart`, `lib/app/routes/app_navigator.dart`, `lib/app/routes/middlewares/auth_route_utils.dart`, `lib/app/controllers/gateway_controller.dart`, `lib/app/views/widgets/app_back_button.dart`.
+
+### F2. Root solution
+
+Every screen a user might refresh mid-workflow must be reconstructible from:
+
+`path + query (+ auth tokens)`
+
+`Get.arguments` stays an optional cache for speed, never the only way back into the screen.
+
+### F3. Two ways to get there
+
+| Path | Approach | Pros | Cons |
+|------|----------|------|------|
+| **A. Stay on GetX (URL-first discipline)** | Enforce `parameters` on every entity/wizard route; hydrate in `onInit` from URL; gate gateway redirect; roll out `AppBackButton` + `backOrToParent` | Faster short-term; no new router package; incremental | Easy to regress; checklist incomplete = same bugs forever |
+| **B. Move navigation to `go_router`** | Declarative routes, path/query params, auth `redirect`, shell routes for staff tabs; keep GetX for DI/controllers if desired | Durable for web-primary; refresh/back/forward harder to break; shareable deep links | Higher migration cost; guards/bindings rewrite; risk during cutover |
+
+**Product fit:** Web-primary → **B chosen and delivered** (web-only; GetX remains on mobile). Path A URL-first patterns (ids/steps in URL, hydrate-from-route, gateway gate, `AppBackButton`) were completed as Phase 0 and remain the shared contract both stacks use.
+
+### F4. Highest leverage — done
+
+1. ✅ **Stop cold-start home redirect** — gateway resume no longer replaces a valid deep URL with home.
+2. ✅ **Id- and step-addressable routes** — details/wizards use URL `?id=` / `?step=` (etc.) and hydrate on load.
+3. ✅ **Refresh-safe back** — `AppBackButton` + `backOrToParent` on pushed staff/contractor detail screens.
+
+### F5. Priority (navigation workstream) — done
+
+| Pri | Item | Outcome |
+|-----|------|---------|
+| P0 | F4.1 gateway redirect gate | ✅ Refresh on `/staff/...` stays after session hydrate |
+| P0 | F4.2 client onboarding + remaining args-only details | ✅ `?id=` / `?step=` (etc.); reload from URL |
+| P1 | F4.3 AppBackButton roll-out | ✅ Back after refresh + parent fallback |
+| P2 | URL-first across visits / workforce / support / credentials | ✅ Via GoRoutes + `AppNavigator` (web) |
+| P2–P3 | Path B `go_router` | ✅ Web-only cutover complete (Phases 0–6) |
+
+---
+
+## G. Source of this inventory
+
+- Code inspection of `AppFileField` call sites, `FilePicker` / `ImagePicker` upload paths, care-plan stores, onboarding controller, credentials controller, requirement editors (2026-09-22).
+- Starting point: `support_plan_clinical_section.dart` upload-on-pick UX.
+- Web navigation: routing/auth inspection (`GetMaterialApp` / GetX, `GatewayController`, PathUrlStrategy, client-detail hydration docs) — 2026-09-22. **§F closed 2026-09-27** via web-only `go_router` (see plan + ADR linked in §F).
