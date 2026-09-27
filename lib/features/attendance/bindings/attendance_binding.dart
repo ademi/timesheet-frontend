@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -44,10 +45,10 @@ class AttendanceReviewBinding extends Bindings {
   void dependencies() {
     AttendanceBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    final args = Get.arguments;
-    String? visitId;
+    final args = routeArguments();
+    String? visitId = routeParam('visitId');
     if (args is Map && args['visitId'] != null) {
-      visitId = args['visitId'].toString();
+      visitId ??= args['visitId'].toString();
     }
     if (Get.isRegistered<AttendanceReviewController>()) {
       Get.delete<AttendanceReviewController>();

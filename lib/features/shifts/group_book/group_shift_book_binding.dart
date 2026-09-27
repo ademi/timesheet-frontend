@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/services/session_service.dart';
 import '../../clients/bindings/clients_binding.dart';
 import '../../clients/data/repositories/clients_repository.dart';
@@ -24,7 +25,7 @@ class GroupShiftBookBinding extends Bindings {
     if (!Get.isRegistered<ClientsRepository>()) return;
     if (!Get.isRegistered<JobsRepository>()) return;
 
-    final raw = Get.arguments;
+    final raw = routeArguments();
     GroupShiftBookArgs? args;
     if (raw is GroupShiftBookArgs) {
       args = raw;

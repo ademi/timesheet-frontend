@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
@@ -543,7 +544,18 @@ class GroupShiftBookController extends GetxController {
       _onNavigate(route, arguments);
       return;
     }
-    Get.offNamed(route, arguments: arguments);
+    final id =
+        arguments is ShiftOut
+            ? arguments.id
+            : (arguments is Map && arguments['id'] != null
+                ? arguments['id'].toString()
+                : null);
+    AppNavigator.go(
+      id == null
+          ? route
+          : AppNavigator.location(route, query: {'id': id}),
+      extra: arguments,
+    );
   }
 
   Future<void> _createWeeklyGroupRecurrence({

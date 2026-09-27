@@ -53,10 +53,11 @@ class SilHouseDetailBinding extends Bindings {
     if (houseId == null || houseId.isEmpty) {
       throw StateError('sil house detail requires house_id');
     }
+    final resolvedHouseId = houseId;
     Get.lazyPut(
       () => SilHouseDetailController(
         Get.find<SilRepository>(),
-        houseId: houseId,
+        houseId: resolvedHouseId,
       ),
     );
   }

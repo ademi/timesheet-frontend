@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
@@ -12,10 +13,47 @@ import '../utils/allocation_math.dart';
 import '../utils/group_participant_draft.dart';
 import '../utils/participant_window_math.dart';
 import 'group_allocation_strategy_segment.dart';
+import 'group_shift_edit_binding.dart';
 import 'group_shift_edit_controller.dart';
 
-class GroupShiftEditView extends GetView<GroupShiftEditController> {
+class GroupShiftEditView extends StatefulWidget {
   const GroupShiftEditView({super.key});
+
+  @override
+  State<GroupShiftEditView> createState() => _GroupShiftEditViewState();
+}
+
+class _GroupShiftEditViewState extends State<GroupShiftEditView> {
+  @override
+  void initState() {
+    super.initState();
+    // ignore: discarded_futures
+    _ensureController();
+  }
+
+  Future<void> _ensureController() async {
+    if (Get.isRegistered<GroupShiftEditController>()) return;
+    final id = routeParam('id');
+    if (id == null) return;
+    await GroupShiftEditBinding.ensureHydratedFromRouteId(id);
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Get.isRegistered<GroupShiftEditController>()) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(title: const Text('Edit group')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    return const _GroupShiftEditBody();
+  }
+}
+
+class _GroupShiftEditBody extends GetView<GroupShiftEditController> {
+  const _GroupShiftEditBody();
 
   @override
   Widget build(BuildContext context) {

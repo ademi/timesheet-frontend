@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/equal_fill_row.dart';
@@ -102,9 +103,14 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
   }
 
   void _openUnifiedSupport({String? clientId, UnifiedSupportMode? mode}) {
-    Get.toNamed(
-      AppRoutes.staffUnifiedSupport,
-      arguments: UnifiedSupportArgs(clientId: clientId, initialMode: mode),
+    final query = <String, String>{
+      if (clientId != null && clientId.isNotEmpty) 'clientId': clientId,
+      if (mode != null)
+        'mode': mode == UnifiedSupportMode.oneSession ? 'one' : 'ongoing',
+    };
+    AppNavigator.push(
+      AppNavigator.location(AppRoutes.staffUnifiedSupport, query: query),
+      extra: UnifiedSupportArgs(clientId: clientId, initialMode: mode),
     );
   }
 
@@ -156,9 +162,9 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
-                    Get.toNamed(
+                    AppNavigator.push(
                       AppRoutes.staffGroupShiftBook,
-                      arguments: GroupShiftBookArgs(
+                      extra: GroupShiftBookArgs(
                         participantId: participantId,
                       ),
                     );

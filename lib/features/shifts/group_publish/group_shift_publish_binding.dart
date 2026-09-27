@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../billing/bindings/billing_binding.dart';
 import '../../billing/data/repositories/billing_repository.dart';
 import '../../billing/data/repositories/ndis_catalogue_repository.dart';
@@ -7,6 +8,7 @@ import '../../jobs/bindings/jobs_binding.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../data/repositories/shifts_repository.dart';
+import '../utils/shift_route_resolve.dart';
 import 'group_shift_publish_args.dart';
 import 'group_shift_publish_controller.dart';
 
@@ -20,7 +22,12 @@ class GroupShiftPublishBinding extends Bindings {
     if (!Get.isRegistered<JobsRepository>()) return;
     if (!Get.isRegistered<NdisCatalogueRepository>()) return;
 
-    final args = GroupShiftPublishArgs.fromRaw(Get.arguments);
+    final args =
+        GroupShiftPublishArgs.fromRaw(routeArguments()) ??
+        () {
+          final shift = resolveShiftFromRoute();
+          return shift == null ? null : GroupShiftPublishArgs(shift: shift);
+        }();
     if (args == null) return;
 
     Get.put(

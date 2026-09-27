@@ -158,7 +158,8 @@ class AppNavigator {
   /// Builds `path?k=v` for shared path constants.
   static String location(String path, {Map<String, String>? query}) {
     if (query == null || query.isEmpty) return path;
-    return Uri(path: path, queryParameters: query).toString();
+    final uri = Uri.parse(path).replace(queryParameters: query);
+    return uri.toString();
   }
 
   static Uri _uri(String location) {

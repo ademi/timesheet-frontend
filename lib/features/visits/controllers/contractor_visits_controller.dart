@@ -5,6 +5,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
@@ -564,16 +565,18 @@ class ContractorVisitsController extends GetxController {
   Future<void> openDetail(VisitOut visit) async {
     selected.value = visit;
     submittedTemplateIds.clear();
-    Get.toNamed(
-      AppRoutes.contractorVisitDetail,
-      arguments: visit,
-      parameters: {'id': visit.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.contractorVisitDetail,
+        query: {'id': visit.id},
+      ),
+      extra: visit,
     );
     await refreshSelected();
   }
 
   void hydrateFromArgs() {
-    final arg = Get.arguments;
+    final arg = routeArguments();
     if (arg is VisitOut) {
       selected.value = arg;
       return;
@@ -584,7 +587,7 @@ class ContractorVisitsController extends GetxController {
   /// Visit id from hydrated selection, route args, or URL `id`.
   String? get resolvedVisitId =>
       selected.value?.id ??
-      _visitIdFromArgs(Get.arguments) ??
+      _visitIdFromArgs(routeArguments()) ??
       routeParam('id');
 
   Future<void> refreshSelected() async {

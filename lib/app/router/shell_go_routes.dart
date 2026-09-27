@@ -17,6 +17,8 @@ import '../../features/credentials/bindings/credentials_binding.dart';
 import '../../features/credentials/views/credentials_list_view.dart';
 import '../../features/engagements/bindings/engagements_binding.dart';
 import '../../features/engagements/views/workforce_list_view.dart';
+import '../../features/jobs/bindings/jobs_binding.dart';
+import '../../features/jobs/views/jobs_list_view.dart';
 import '../../features/payroll/bindings/payroll_binding.dart';
 import '../../features/payroll/views/staff_payments_view.dart';
 import '../../features/payroll/views/staff_tenant_settings_view.dart';
@@ -25,6 +27,7 @@ import '../../features/shell/staff_shell.dart';
 import '../../features/sil/bindings/sil_bindings.dart';
 import '../../features/sil/views/sil_houses_views.dart';
 import '../../features/visits/bindings/visits_binding.dart';
+import '../../features/visits/views/contractor_visit_detail_view.dart';
 import '../../features/visits/views/contractor_visits_list_view.dart';
 import '../../features/visits/views/staff_visits_board_view.dart';
 import '../constants/app_permissions.dart';
@@ -100,6 +103,12 @@ List<RouteBase> buildShellGoRoutes() => [
         onEnter: () => SilHousesBinding().dependencies(),
         child: const SilHousesListView(),
       ),
+      _staffTab(
+        path: AppRoutes.staffJobs,
+        anyOf: const [AppPermissions.jobsRead],
+        onEnter: () => JobsBinding().dependencies(),
+        child: const JobsListView(),
+      ),
       GoRoute(
         path: AppRoutes.staffSilHouseDetail,
         redirect: (context, state) {
@@ -132,6 +141,14 @@ List<RouteBase> buildShellGoRoutes() => [
         path: AppRoutes.contractorVisits,
         onEnter: () => ContractorVisitsBinding().dependencies(),
         child: const ContractorVisitsListView(),
+      ),
+      GoRoute(
+        path: AppRoutes.contractorVisitDetail,
+        builder: (context, state) {
+          syncGetxFromGoRouterState(state);
+          ContractorVisitsBinding().dependencies();
+          return const ContractorVisitDetailView();
+        },
       ),
       _contractorTab(
         path: AppRoutes.contractorSchedule,
@@ -168,6 +185,7 @@ GoRoute _staffTab({
       return denied?.name;
     },
     builder: (context, state) {
+      syncGetxFromGoRouterState(state);
       onEnter();
       return child;
     },
@@ -182,6 +200,7 @@ GoRoute _contractorTab({
   return GoRoute(
     path: path,
     builder: (context, state) {
+      syncGetxFromGoRouterState(state);
       onEnter();
       return child;
     },

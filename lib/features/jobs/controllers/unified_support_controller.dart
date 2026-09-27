@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/constants/australian_states.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
@@ -890,7 +892,7 @@ class UnifiedSupportController extends GetxController
   }
 
   UnifiedSupportArgs? _parseRouteArgs() {
-    final raw = Get.arguments;
+    final raw = routeArguments();
     if (raw is UnifiedSupportArgs) return raw;
     if (raw is ClientOut) {
       return UnifiedSupportArgs.forClient(
@@ -900,7 +902,7 @@ class UnifiedSupportController extends GetxController
     }
     if (raw is Map) {
       final map = Map<String, dynamic>.from(raw);
-      final modeRaw = map['mode']?.toString();
+      final modeRaw = map['mode']?.toString() ?? routeParam('mode');
       UnifiedSupportMode? m;
       if (modeRaw == 'one' || modeRaw == 'oneSession') {
         m = UnifiedSupportMode.oneSession;
@@ -910,9 +912,23 @@ class UnifiedSupportController extends GetxController
       final clientArg = map['client'];
       return UnifiedSupportArgs(
         client: clientArg is ClientOut ? clientArg : null,
-        clientId: map['client_id']?.toString() ?? map['clientId']?.toString(),
+        clientId:
+            map['client_id']?.toString() ??
+            map['clientId']?.toString() ??
+            routeParam('clientId'),
         initialMode: m,
       );
+    }
+    final clientId = routeParam('clientId');
+    final modeRaw = routeParam('mode');
+    if (clientId != null || modeRaw != null) {
+      UnifiedSupportMode? m;
+      if (modeRaw == 'one' || modeRaw == 'oneSession') {
+        m = UnifiedSupportMode.oneSession;
+      } else if (modeRaw == 'ongoing') {
+        m = UnifiedSupportMode.ongoing;
+      }
+      return UnifiedSupportArgs(clientId: clientId, initialMode: m);
     }
     return null;
   }
@@ -1245,10 +1261,12 @@ class UnifiedSupportController extends GetxController
       clientsCtrl.selected.value = c;
       clientsCtrl.tabIndex.value = ClientsController.tabOverview;
     }
-    await Get.toNamed(
-      AppRoutes.staffClientDetail,
-      arguments: c,
-      parameters: {'id': c.id},
+    await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientDetail,
+        query: {'id': c.id},
+      ),
+      extra: c,
     );
     await _loadClientProfile(c.id);
   }
@@ -1277,7 +1295,12 @@ class UnifiedSupportController extends GetxController
     clientsCtrl.siteIsPrimary.value = sites.isEmpty;
     clientsCtrl.errorMessage.value = null;
     clientsCtrl.geocodeHint.value = null;
-    await Get.toNamed(AppRoutes.staffClientSiteForm);
+    await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientSiteForm,
+        query: {'clientId': c.id},
+      ),
+    );
     await reloadSites();
   }
 
@@ -1436,7 +1459,7 @@ class UnifiedSupportController extends GetxController
       _onNavigate(AppRoutes.staffVisits, arguments);
       return;
     }
-    Get.offNamed(AppRoutes.staffVisits, arguments: arguments);
+    AppNavigator.go(AppRoutes.staffVisits, extra: arguments);
   }
 
   String? _pairedSupportItemCode(String? code, String? name) {

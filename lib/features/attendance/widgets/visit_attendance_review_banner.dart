@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/services/session_service.dart';
@@ -98,9 +99,12 @@ class _VisitAttendanceReviewBannerState
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap:
-              () => Get.toNamed(
-                AppRoutes.staffAttendanceReview,
-                arguments: {'visitId': widget.visitId},
+              () => AppNavigator.push(
+                AppNavigator.location(
+                  AppRoutes.staffAttendanceReview,
+                  query: {'visitId': widget.visitId},
+                ),
+                extra: {'visitId': widget.visitId},
               ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

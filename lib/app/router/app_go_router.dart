@@ -21,14 +21,18 @@ import '../views/login_view.dart';
 import '../views/v2/wrong_actor_view.dart';
 import 'clients_go_routes.dart';
 import 'go_router_redirect.dart';
+import 'jobs_go_routes.dart';
 import 'shell_go_routes.dart';
+import 'visits_go_routes.dart';
 
-/// Builds the web [GoRouter] (Phase 1–3: auth, shells, clients domain).
+/// Builds the web [GoRouter] (Phase 1–4: auth, shells, clients, visits, jobs).
 ///
 /// [AppNavigator.bindWebRouter] is called here so auth / shell call sites can
 /// navigate without importing go_router directly.
 GoRouter createAppGoRouter({String? initialLocation}) {
+  final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'appRoot');
   final router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: initialLocation ?? AppRoutes.gateway,
     debugLogDiagnostics: kDebugMode,
     redirect: appGoRouterRedirect,
@@ -82,6 +86,8 @@ GoRouter createAppGoRouter({String? initialLocation}) {
       ),
       ...buildShellGoRoutes(),
       ...buildClientsGoRoutes(),
+      ...buildVisitsGoRoutes(rootNavigatorKey: rootNavigatorKey),
+      ...buildJobsGoRoutes(),
     ],
     errorBuilder: (context, state) => Phase1UnknownRoutePage(uri: state.uri),
   );
@@ -89,7 +95,7 @@ GoRouter createAppGoRouter({String? initialLocation}) {
   return router;
 }
 
-/// Shown for bookmarks to routes not yet migrated to go_router (Phase 4+).
+/// Shown for bookmarks to routes not yet migrated to go_router (Phase 5+).
 class Phase1UnknownRoutePage extends StatelessWidget {
   const Phase1UnknownRoutePage({super.key, required this.uri});
 

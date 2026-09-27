@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
@@ -285,7 +286,7 @@ class StaffVisitsController extends GetxController {
   }
 
   void applyRouteArgs() {
-    final args = Get.arguments;
+    final args = routeArguments();
     if (args is Map) {
       final v = args['visit'];
       if (v is VisitOut) {
@@ -540,10 +541,12 @@ class StaffVisitsController extends GetxController {
 
   Future<void> openShiftDetail(ShiftOut shift) async {
     selectedShift.value = shift;
-    Get.toNamed(
-      AppRoutes.staffShiftDetail,
-      arguments: shift,
-      parameters: {'id': shift.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffShiftDetail,
+        query: {'id': shift.id},
+      ),
+      extra: shift,
     );
   }
 
@@ -562,7 +565,9 @@ class StaffVisitsController extends GetxController {
   Future<void> refreshSelectedShift({bool includeTravel = false}) async {
     final id =
         selectedShift.value?.id ??
-        (Get.arguments is ShiftOut ? (Get.arguments as ShiftOut).id : null) ??
+        (routeArguments() is ShiftOut
+            ? (routeArguments() as ShiftOut).id
+            : null) ??
         routeParam('id');
     if (id == null) return;
     isRefreshing.value = true;
@@ -613,9 +618,12 @@ class StaffVisitsController extends GetxController {
   Future<void> openTravelWizard({ShiftTravelOut? existing}) async {
     final shift = selectedShift.value;
     if (shift == null || !canManage) return;
-    final result = await Get.toNamed(
-      AppRoutes.staffGroupShiftTravel,
-      arguments: GroupShiftTravelArgs(shift: shift, existing: existing),
+    final result = await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffGroupShiftTravel,
+        query: {'id': shift.id},
+      ),
+      extra: GroupShiftTravelArgs(shift: shift, existing: existing),
     );
     if (result is ShiftTravelOut) upsertSelectedShiftTravel(result);
   }
@@ -674,7 +682,7 @@ class StaffVisitsController extends GetxController {
   }
 
   void hydrateShiftFromArgs() {
-    final arg = Get.arguments;
+    final arg = routeArguments();
     if (arg is ShiftOut) {
       selectedShift.value = arg;
       return;
@@ -770,9 +778,12 @@ class StaffVisitsController extends GetxController {
   Future<void> openPublishWizard() async {
     final shift = selectedShift.value;
     if (shift == null || shift.status != 'draft') return;
-    final result = await Get.toNamed(
-      AppRoutes.staffGroupShiftPublish,
-      arguments: shift,
+    final result = await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffGroupShiftPublish,
+        query: {'id': shift.id},
+      ),
+      extra: shift,
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
@@ -833,9 +844,12 @@ class StaffVisitsController extends GetxController {
     await refreshSelectedShift(includeTravel: true);
     final refreshed = selectedShift.value;
     if (refreshed == null || refreshed.status != 'draft') return;
-    final result = await Get.toNamed(
-      AppRoutes.staffGroupShiftEdit,
-      arguments: refreshed,
+    final result = await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffGroupShiftEdit,
+        query: {'id': refreshed.id},
+      ),
+      extra: refreshed,
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
@@ -849,9 +863,12 @@ class StaffVisitsController extends GetxController {
   Future<void> openRemoveParticipant(ShiftParticipantOut participant) async {
     final shift = selectedShift.value;
     if (shift == null) return;
-    final result = await Get.toNamed(
-      AppRoutes.staffGroupShiftRemove,
-      arguments: {'shift': shift, 'participant': participant},
+    final result = await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffGroupShiftRemove,
+        query: {'id': shift.id, 'participantId': participant.id},
+      ),
+      extra: {'shift': shift, 'participant': participant},
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
@@ -864,9 +881,12 @@ class StaffVisitsController extends GetxController {
   Future<void> openParticipantAttendance(ShiftParticipantOut participant) async {
     final shift = selectedShift.value;
     if (shift == null) return;
-    final result = await Get.toNamed(
-      AppRoutes.staffGroupShiftAttendance,
-      arguments: {'shift': shift, 'participant': participant},
+    final result = await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffGroupShiftAttendance,
+        query: {'id': shift.id, 'participantId': participant.id},
+      ),
+      extra: {'shift': shift, 'participant': participant},
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
@@ -1341,10 +1361,12 @@ class StaffVisitsController extends GetxController {
   Future<void> openDetail(VisitOut visit) async {
     selected.value = visit;
     _syncSupportItemEditors(visit);
-    Get.toNamed(
-      AppRoutes.staffVisitDetail,
-      arguments: visit,
-      parameters: {'id': visit.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffVisitDetail,
+        query: {'id': visit.id},
+      ),
+      extra: visit,
     );
     await refreshSelected();
   }
@@ -1381,7 +1403,9 @@ class StaffVisitsController extends GetxController {
   Future<void> refreshSelected() async {
     final id =
         selected.value?.id ??
-        (Get.arguments is VisitOut ? (Get.arguments as VisitOut).id : null) ??
+        (routeArguments() is VisitOut
+            ? (routeArguments() as VisitOut).id
+            : null) ??
         routeParam('id');
     if (id == null) return;
     isRefreshing.value = true;
@@ -1398,7 +1422,7 @@ class StaffVisitsController extends GetxController {
   }
 
   void hydrateFromArgs() {
-    final arg = Get.arguments;
+    final arg = routeArguments();
     if (arg is VisitOut) {
       selected.value = arg;
       _syncSupportItemEditors(arg);

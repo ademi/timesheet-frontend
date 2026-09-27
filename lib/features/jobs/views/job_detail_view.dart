@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
@@ -136,9 +137,16 @@ class _JobDetailViewState extends State<JobDetailView> {
                           onPressed:
                               controller.isSaving.value
                                   ? null
-                                  : () => Get.toNamed(
-                                    AppRoutes.staffUnifiedSupport,
-                                    arguments: UnifiedSupportArgs(
+                                  : () => AppNavigator.push(
+                                    AppNavigator.location(
+                                      AppRoutes.staffUnifiedSupport,
+                                      query: {
+                                        if (job.clientId != null)
+                                          'clientId': job.clientId!,
+                                        'mode': 'one',
+                                      },
+                                    ),
+                                    extra: UnifiedSupportArgs(
                                       clientId: job.clientId,
                                       initialMode:
                                           UnifiedSupportMode.oneSession,
@@ -206,7 +214,7 @@ class _JobDetailViewState extends State<JobDetailView> {
                           onPressed:
                               controller.isSaving.value
                                   ? null
-                                  : () => Get.toNamed(
+                                  : () => AppNavigator.push(
                                     AppRoutes.staffRecurrenceRuleForm,
                                   ),
                           icon: const Icon(Icons.add),

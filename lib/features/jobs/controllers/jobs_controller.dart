@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/mixins/pending_action_mixin.dart';
 import '../../../core/services/session_service.dart';
@@ -155,7 +157,7 @@ class JobsController extends GetxController with PendingActionMixin {
   }
 
   void hydrateSelectedFromArgs() {
-    final arg = Get.arguments;
+    final arg = routeArguments();
     if (arg is JobOut) {
       selected.value = arg;
     }
@@ -166,8 +168,8 @@ class JobsController extends GetxController with PendingActionMixin {
     hydrateSelectedFromArgs();
     final id =
         selected.value?.id ??
-        Get.parameters['id'] ??
-        (Get.arguments is String ? Get.arguments as String : null);
+        routeParam('id') ??
+        (routeArguments() is String ? routeArguments() as String : null);
     if (id == null || id.isEmpty) return;
     await loadJobDetail(id);
   }
@@ -208,7 +210,7 @@ class JobsController extends GetxController with PendingActionMixin {
 
   Future<void> openFormTemplatesAndRefresh() async {
     errorMessage.value = null;
-    await Get.toNamed(AppRoutes.staffFormTemplates);
+    await AppNavigator.push(AppRoutes.staffFormTemplates);
     await _refreshTemplatesAndCatalog();
   }
 
@@ -216,17 +218,24 @@ class JobsController extends GetxController with PendingActionMixin {
   Future<void> openManageTemplatesAndRefresh() async {
     errorMessage.value = null;
     final job = selected.value;
-    await Get.toNamed(
-      AppRoutes.staffJobManageTemplates,
-      arguments: job,
-      parameters: job != null ? {'id': job.id} : null,
+    await AppNavigator.push(
+      job == null
+          ? AppRoutes.staffJobManageTemplates
+          : AppNavigator.location(
+            AppRoutes.staffJobManageTemplates,
+            query: {'id': job.id},
+          ),
+      extra: job,
     );
     await _refreshTemplatesAndCatalog();
   }
 
   Future<void> openFormTemplateEditor({FormTemplateOut? existing}) async {
     errorMessage.value = null;
-    await Get.toNamed(AppRoutes.staffFormTemplateEditor, arguments: existing);
+    await AppNavigator.push(
+      AppRoutes.staffFormTemplateEditor,
+      extra: existing,
+    );
     await _refreshTemplatesAndCatalog();
   }
 
@@ -298,7 +307,7 @@ class JobsController extends GetxController with PendingActionMixin {
     supportItemName.value = null;
     errorMessage.value = null;
     clientSiteWarning.value = null;
-    Get.toNamed(AppRoutes.staffJobForm);
+    AppNavigator.push(AppRoutes.staffJobForm);
   }
 
   Future<void> saveJob() async {
@@ -367,10 +376,12 @@ class JobsController extends GetxController with PendingActionMixin {
     formCatalog.clear();
     lastGenerate.value = null;
     tabIndex.value = 0;
-    Get.toNamed(
-      AppRoutes.staffJobDetail,
-      arguments: job,
-      parameters: {'id': job.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffJobDetail,
+        query: {'id': job.id},
+      ),
+      extra: job,
     );
     await loadJobDetail(job.id);
   }
