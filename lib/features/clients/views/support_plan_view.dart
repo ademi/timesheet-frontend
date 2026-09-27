@@ -18,8 +18,11 @@ class SupportPlanView extends GetView<SupportPlanController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        leading: const AppBackButton(
-          fallbackRoute: AppRoutes.staffClientDetail,
+        leading: AppBackButton(
+          fallbackRoute:
+              controller.clientId.isNotEmpty
+                  ? '${AppRoutes.staffClientDetail}?id=${controller.clientId}'
+                  : AppRoutes.staffClients,
         ),
         title: const Text('Support plan'),
       ),

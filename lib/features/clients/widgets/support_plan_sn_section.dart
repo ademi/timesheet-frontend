@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
@@ -86,13 +87,15 @@ class _SupportPlanSnSectionState extends State<SupportPlanSnSection> {
 
   Future<void> _openEditor() async {
     ClientsBinding.ensureShared();
-    final result = await Get.toNamed(
-      AppRoutes.staffClientStrengthsNeeds,
-      arguments: {
-        'clientId': widget.clientId,
-        if (_editorTarget != null) 'assessmentId': _editorTarget!.id,
-      },
-      parameters: {
+    final result = await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientStrengthsNeeds,
+        query: {
+          'clientId': widget.clientId,
+          if (_editorTarget != null) 'assessmentId': _editorTarget!.id,
+        },
+      ),
+      extra: {
         'clientId': widget.clientId,
         if (_editorTarget != null) 'assessmentId': _editorTarget!.id,
       },

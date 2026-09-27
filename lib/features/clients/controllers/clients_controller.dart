@@ -6,7 +6,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/constants/australian_states.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
@@ -327,17 +329,21 @@ class ClientsController extends GetxController
     errorMessage.value = null;
     profileSaveProgress.value = null;
     _resetFormPhoto();
-    Get.toNamed(
-      AppRoutes.staffClientOnboarding,
-      parameters: {'step': '0'},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientOnboarding,
+        query: {'step': '0'},
+      ),
     );
   }
 
   Future<void> openResumeOnboarding(ClientOut c) async {
-    Get.toNamed(
-      AppRoutes.staffClientOnboarding,
-      arguments: c,
-      parameters: {'id': c.id, 'step': '0'},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientOnboarding,
+        query: {'id': c.id, 'step': '0'},
+      ),
+      extra: c,
     );
   }
 
@@ -356,10 +362,12 @@ class ClientsController extends GetxController
     errorMessage.value = null;
     profileSaveProgress.value = null;
     _resetFormPhoto();
-    Get.toNamed(
-      AppRoutes.staffClientForm,
-      arguments: client,
-      parameters: {'id': client.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientForm,
+        query: {'id': client.id},
+      ),
+      extra: client,
     );
     await loadFormProfilePhoto(client.id);
   }
@@ -1364,10 +1372,12 @@ class ClientsController extends GetxController
     int initialTab = tabOverview,
   }) async {
     _prepareDetailState(client, initialTab: initialTab);
-    Get.toNamed(
-      AppRoutes.staffClientDetail,
-      arguments: client,
-      parameters: {'id': client.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientDetail,
+        query: {'id': client.id},
+      ),
+      extra: client,
     );
     await openDetailById(client.id);
   }
@@ -1375,10 +1385,12 @@ class ClientsController extends GetxController
   /// Opens client detail after onboarding (replaces current route).
   Future<void> openDetailReplacing(ClientOut client) async {
     _prepareDetailState(client);
-    Get.offNamed(
-      AppRoutes.staffClientDetail,
-      arguments: client,
-      parameters: {'id': client.id},
+    AppNavigator.go(
+      AppNavigator.location(
+        AppRoutes.staffClientDetail,
+        query: {'id': client.id},
+      ),
+      extra: client,
     );
     await openDetailById(client.id);
   }
@@ -1388,14 +1400,14 @@ class ClientsController extends GetxController
   Future<void> ensureDetailHydratedFromRoute() async {
     if (selected.value != null) return;
 
-    final fromArgs = Get.arguments;
+    final fromArgs = routeArguments();
     if (fromArgs is ClientOut) {
       selected.value = fromArgs;
       await openDetailById(fromArgs.id);
       return;
     }
 
-    final id = Get.parameters['id'];
+    final id = routeParam('id');
     if (id != null && id.isNotEmpty) {
       await openDetailById(id);
     }
@@ -1614,17 +1626,19 @@ class ClientsController extends GetxController
   Future<void> openSupportPlan() async {
     final client = selected.value;
     if (client == null || !canManage) return;
-    await Get.toNamed(
-      AppRoutes.staffClientSupportPlan,
-      arguments: {
+    await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientSupportPlan,
+        query: {
+          'clientId': client.id,
+          if (supportPlan.value?.id != null) 'planId': supportPlan.value!.id,
+        },
+      ),
+      extra: {
         'clientId': client.id,
         'planId': supportPlan.value?.id,
         'clientName': client.fullName,
         'ndisNumber': ndisNumber,
-      },
-      parameters: {
-        'clientId': client.id,
-        if (supportPlan.value?.id != null) 'planId': supportPlan.value!.id,
       },
     );
     await loadSupportPlanSummary();
@@ -1664,9 +1678,9 @@ class ClientsController extends GetxController
   void startOngoingSupport() {
     final client = selected.value;
     if (client == null) return;
-    Get.toNamed(
+    AppNavigator.push(
       AppRoutes.staffUnifiedSupport,
-      arguments: UnifiedSupportArgs.forClient(
+      extra: UnifiedSupportArgs.forClient(
         client,
         mode: UnifiedSupportMode.ongoing,
       ),
@@ -1695,10 +1709,12 @@ class ClientsController extends GetxController
       Get.find<JobsController>().openDetail(job);
       return;
     }
-    Get.toNamed(
-      AppRoutes.staffJobDetail,
-      arguments: job,
-      parameters: {'id': job.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffJobDetail,
+        query: {'id': job.id},
+      ),
+      extra: job,
     );
   }
 
@@ -1706,9 +1722,9 @@ class ClientsController extends GetxController
   void bookOneSession() {
     final client = selected.value;
     if (client == null) return;
-    Get.toNamed(
+    AppNavigator.push(
       AppRoutes.staffUnifiedSupport,
-      arguments: UnifiedSupportArgs.forClient(
+      extra: UnifiedSupportArgs.forClient(
         client,
         mode: UnifiedSupportMode.oneSession,
       ),
@@ -1757,9 +1773,12 @@ class ClientsController extends GetxController
   }
 
   void openVisitDetail(VisitOut visit) {
-    Get.toNamed(
-      AppRoutes.staffVisitDetail,
-      arguments: <String, dynamic>{'visit': visit, 'skipBoardLoad': true},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffVisitDetail,
+        query: {'id': visit.id},
+      ),
+      extra: <String, dynamic>{'visit': visit, 'skipBoardLoad': true},
     );
   }
 
@@ -1786,7 +1805,18 @@ class ClientsController extends GetxController
     geocodeFormattedAddress.value = null;
     // Existing sites with coords are treated as already confirmed.
     addressConfirmed.value = site?.hasCoordinates ?? false;
-    Get.toNamed(AppRoutes.staffClientSiteForm);
+    final clientId = selected.value?.id;
+    AppNavigator.push(
+      clientId == null
+          ? AppRoutes.staffClientSiteForm
+          : AppNavigator.location(
+            AppRoutes.staffClientSiteForm,
+            query: {
+              'clientId': clientId,
+              if (site?.id != null) 'siteId': site!.id,
+            },
+          ),
+    );
   }
 
   /// Clears pending/confirmed geocode so the user can re-edit and look up again.
@@ -2004,7 +2034,18 @@ class ClientsController extends GetxController
     contactRelationshipPreset.value = hydrated.preset;
     contactRelationshipOtherCtrl.text = hydrated.otherText;
     errorMessage.value = null;
-    Get.toNamed(AppRoutes.staffClientContactForm);
+    final clientId = selected.value?.id;
+    AppNavigator.push(
+      clientId == null
+          ? AppRoutes.staffClientContactForm
+          : AppNavigator.location(
+            AppRoutes.staffClientContactForm,
+            query: {
+              'clientId': clientId,
+              if (contact?.id != null) 'contactId': contact!.id,
+            },
+          ),
+    );
   }
 
   Future<void> saveContact() async {

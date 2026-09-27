@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
@@ -21,8 +22,11 @@ class ClientFormView extends GetView<ClientsController> {
     // Legacy create path → redirect to onboarding wizard.
     if (controller.editing == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (Get.currentRoute == AppRoutes.staffClientForm) {
-          Get.offNamed(AppRoutes.staffClientOnboarding);
+        final path = AppNavigator.usesGoRouter
+            ? AppNavigator.currentLocation
+            : Get.currentRoute;
+        if (path.startsWith(AppRoutes.staffClientForm)) {
+          AppNavigator.go(AppRoutes.staffClientOnboarding);
         }
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));

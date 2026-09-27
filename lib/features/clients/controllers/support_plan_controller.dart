@@ -253,7 +253,7 @@ class SupportPlanController extends GetxController {
   }
 
   void _readArguments() {
-    final args = Get.arguments;
+    final args = routeArguments();
     if (args is Map) {
       final id = args['clientId']?.toString();
       if (id != null && id.isNotEmpty) clientId = id;

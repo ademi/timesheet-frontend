@@ -6,8 +6,8 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
-import '../../../app/routes/browser_url.dart';
 import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/constants/australian_states.dart';
@@ -319,6 +319,9 @@ class ClientOnboardingController extends GetxController
   bool _suppressStepUrlSync = false;
 
   /// Keeps `?id=&step=` in sync with wizard progress (browser URL on web).
+  ///
+  /// Uses [AppNavigator.replace] under go_router so router state matches the
+  /// URL (back/forward-safe). On GetX mobile, only updates [Get.parameters].
   void syncOnboardingRoute() {
     if (_suppressStepUrlSync) return;
     final id = client.value?.id;
@@ -330,16 +333,20 @@ class ClientOnboardingController extends GetxController
     if (id != null && id.isNotEmpty) {
       Get.parameters['id'] = id;
     }
-    replaceBrowserUrl(AppRoutes.staffClientOnboarding, params);
+    if (AppNavigator.usesGoRouter) {
+      AppNavigator.replace(
+        AppNavigator.location(AppRoutes.staffClientOnboarding, query: params),
+      );
+    }
   }
 
-  /// Hydrate from `Get.arguments` and/or URL `id` / `step` (refresh-safe).
+  /// Hydrate from route arguments and/or URL `id` / `step` (refresh-safe).
   ///
   /// Safe to call repeatedly: skips client reload when already hydrated for the
   /// same id; still applies [step] from the route when present.
   Future<void> ensureHydratedFromRoute() async {
     final stepParam = int.tryParse(routeParam('step') ?? '');
-    final args = Get.arguments;
+    final args = routeArguments();
     final idFromRoute = routeParam('id');
 
     if (client.value == null) {
@@ -2026,10 +2033,12 @@ class ClientOnboardingController extends GetxController
       } else {
         // Let ClientsBinding construct ClientsController; Task 3 hydrate
         // (ensureDetailHydratedFromRoute) loads by id/args on detail entry.
-        Get.offNamed(
-          AppRoutes.staffClientDetail,
-          arguments: updated,
-          parameters: {'id': id},
+        AppNavigator.go(
+          AppNavigator.location(
+            AppRoutes.staffClientDetail,
+            query: {'id': id},
+          ),
+          extra: updated,
         );
       }
       return true;

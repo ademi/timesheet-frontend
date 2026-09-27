@@ -18,8 +18,11 @@ class StrengthsNeedsView extends GetView<StrengthsNeedsController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        leading: const AppBackButton(
-          fallbackRoute: AppRoutes.staffClientSupportPlan,
+        leading: AppBackButton(
+          fallbackRoute:
+              controller.clientId.isNotEmpty
+                  ? '${AppRoutes.staffClientSupportPlan}?clientId=${controller.clientId}'
+                  : AppRoutes.staffClients,
         ),
         title: const Text('Strengths & Needs'),
       ),

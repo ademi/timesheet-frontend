@@ -13,17 +13,17 @@ class SupportPlanBinding extends Bindings {
     ClientsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<SupportPlanController>()) {
-      final args = Get.arguments;
-      String? clientId = routeParam('clientId');
-      String? planId = routeParam('planId');
-      String? clientName;
-      String? ndisNumber;
-      if (args is Map) {
-        clientId ??= args['clientId']?.toString();
-        planId ??= args['planId']?.toString();
-        clientName = args['clientName']?.toString();
-        ndisNumber = args['ndisNumber']?.toString();
-      }
+    final args = routeArguments();
+    String? clientId = routeParam('clientId');
+    String? planId = routeParam('planId');
+    String? clientName;
+    String? ndisNumber;
+    if (args is Map) {
+      clientId ??= args['clientId']?.toString();
+      planId ??= args['planId']?.toString();
+      clientName = args['clientName']?.toString();
+      ndisNumber = args['ndisNumber']?.toString();
+    }
       Get.put(
         SupportPlanController(
           repository: Get.find<ClientsRepository>(),

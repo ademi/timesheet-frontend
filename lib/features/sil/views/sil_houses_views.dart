@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
@@ -52,9 +53,12 @@ class SilHousesListView extends GetView<SilHousesController> {
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap:
-                  () => Get.toNamed(
-                    AppRoutes.staffSilHouseDetail,
-                    arguments: {'house_id': h.id},
+                  () => AppNavigator.push(
+                    AppNavigator.location(
+                      AppRoutes.staffSilHouseDetail,
+                      query: {'id': h.id},
+                    ),
+                    extra: {'house_id': h.id},
                   ),
             );
           },
@@ -88,9 +92,12 @@ class SilHousesListView extends GetView<SilHousesController> {
     if (ok != true) return;
     final created = await controller.createHouse(nameCtrl.text);
     if (created != null) {
-      Get.toNamed(
-        AppRoutes.staffSilHouseDetail,
-        arguments: {'house_id': created.id},
+      AppNavigator.push(
+        AppNavigator.location(
+          AppRoutes.staffSilHouseDetail,
+          query: {'id': created.id},
+        ),
+        extra: {'house_id': created.id},
       );
     }
   }

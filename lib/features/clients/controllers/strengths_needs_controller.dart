@@ -58,7 +58,7 @@ class StrengthsNeedsController extends GetxController {
   }
 
   void _readArguments() {
-    final args = Get.arguments;
+    final args = routeArguments();
     if (args is Map) {
       clientId = args['clientId']?.toString() ?? clientId;
       final aid = args['assessmentId']?.toString();

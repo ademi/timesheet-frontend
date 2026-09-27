@@ -105,7 +105,7 @@ void main() {
 
       final staff = routes[0] as ShellRoute;
       final contractor = routes[1] as ShellRoute;
-      expect(staff.routes.length, 9);
+      expect(staff.routes.length, 11);
       expect(contractor.routes.length, 5);
 
       final staffPaths =
@@ -114,6 +114,8 @@ void main() {
       expect(staffPaths, contains(AppRoutes.staffClients));
       expect(staffPaths, contains(AppRoutes.staffVisits));
       expect(staffPaths, contains(AppRoutes.staffSettings));
+      expect(staffPaths, contains(AppRoutes.staffSilHouses));
+      expect(staffPaths, contains(AppRoutes.staffSilHouseDetail));
 
       final contractorPaths =
           contractor.routes.whereType<GoRoute>().map((r) => r.path).toSet();

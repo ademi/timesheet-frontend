@@ -19,6 +19,10 @@ bool isGoRouterPublicLocation(String location) {
       path.startsWith('${AppRoutes.contractorRegister}/')) {
     return true;
   }
+  // Public client invite (+ legacy emailed alias).
+  if (path.startsWith('/invites/client/') || path.startsWith('/invite/')) {
+    return true;
+  }
   return false;
 }
 

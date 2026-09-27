@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/token_storage.dart';
 import '../controllers/sil_houses_controller.dart';
@@ -42,9 +43,13 @@ class SilHouseDetailBinding extends Bindings {
   @override
   void dependencies() {
     SilHousesBinding._ensureShared();
-    final args = Get.arguments;
-    final houseId =
-        args is Map ? args['house_id']?.toString() : args?.toString();
+    final args = routeArguments();
+    String? houseId = routeParam('id') ?? routeParam('house_id');
+    if (args is Map) {
+      houseId ??= args['house_id']?.toString() ?? args['id']?.toString();
+    } else if (args != null) {
+      houseId ??= args.toString();
+    }
     if (houseId == null || houseId.isEmpty) {
       throw StateError('sil house detail requires house_id');
     }

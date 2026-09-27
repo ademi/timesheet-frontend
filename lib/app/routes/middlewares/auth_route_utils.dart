@@ -7,6 +7,7 @@ import '../../../core/services/token_storage.dart';
 import '../../../features/shell/contractor_shell.dart';
 import '../../../features/shell/staff_shell.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../app_navigator.dart';
 import '../app_routes.dart';
 
 /// Redirects to gateway only when there are no credentials to recover with.
@@ -166,8 +167,20 @@ bool shouldNavigateAfterSessionResume({String? entryLocation}) {
 }
 
 /// Non-empty query/path parameter helper shared by hydrate-from-route call sites.
+///
+/// On web, prefers values synced into [Get.parameters] by GoRoute builders, then
+/// falls back to [AppNavigator] query/path params from the live GoRouter state.
 String? routeParam(String key) {
-  final value = Get.parameters[key];
-  if (value == null || value.isEmpty) return null;
-  return value;
+  final fromGet = Get.parameters[key];
+  if (fromGet != null && fromGet.isNotEmpty) return fromGet;
+  if (AppNavigator.usesGoRouter) {
+    final fromQuery = AppNavigator.queryParameters[key];
+    if (fromQuery != null && fromQuery.isNotEmpty) return fromQuery;
+    final fromPath = AppNavigator.pathParameters[key];
+    if (fromPath != null && fromPath.isNotEmpty) return fromPath;
+  }
+  return null;
 }
+
+/// Navigation arguments: GoRouter `extra` on web, [Get.arguments] on mobile.
+Object? routeArguments() => AppNavigator.arguments ?? Get.arguments;

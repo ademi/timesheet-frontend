@@ -22,12 +22,15 @@ import '../../features/payroll/views/staff_payments_view.dart';
 import '../../features/payroll/views/staff_tenant_settings_view.dart';
 import '../../features/shell/contractor_shell.dart';
 import '../../features/shell/staff_shell.dart';
+import '../../features/sil/bindings/sil_bindings.dart';
+import '../../features/sil/views/sil_houses_views.dart';
 import '../../features/visits/bindings/visits_binding.dart';
 import '../../features/visits/views/contractor_visits_list_view.dart';
 import '../../features/visits/views/staff_visits_board_view.dart';
 import '../constants/app_permissions.dart';
 import '../routes/app_routes.dart';
 import '../routes/middlewares/auth_route_utils.dart';
+import 'go_router_params.dart';
 import 'shell_tab_permissions.dart';
 
 /// Staff + contractor [ShellRoute] trees for web (Phase 2).
@@ -90,6 +93,30 @@ List<RouteBase> buildShellGoRoutes() => [
         anyOf: const [AppPermissions.authSession],
         onEnter: () => StaffTenantSettingsBinding().dependencies(),
         child: const StaffTenantSettingsView(),
+      ),
+      _staffTab(
+        path: AppRoutes.staffSilHouses,
+        anyOf: const [AppPermissions.clientsRead],
+        onEnter: () => SilHousesBinding().dependencies(),
+        child: const SilHousesListView(),
+      ),
+      GoRoute(
+        path: AppRoutes.staffSilHouseDetail,
+        redirect: (context, state) {
+          final denied = redirectMissingPermission(
+            route: state.matchedLocation,
+            anyOf: const [
+              AppPermissions.clientsRead,
+              AppPermissions.clientsManage,
+            ],
+          );
+          return denied?.name;
+        },
+        builder: (context, state) {
+          syncGetxFromGoRouterState(state);
+          SilHouseDetailBinding().dependencies();
+          return const SilHouseDetailView();
+        },
       ),
     ],
   ),

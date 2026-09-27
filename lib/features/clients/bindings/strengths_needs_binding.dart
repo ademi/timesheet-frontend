@@ -14,7 +14,7 @@ class StrengthsNeedsBinding extends Bindings {
     if (Get.isRegistered<StrengthsNeedsController>()) {
       Get.delete<StrengthsNeedsController>(force: true);
     }
-    final args = Get.arguments;
+    final args = routeArguments();
     String? clientId = routeParam('clientId');
     String? assessmentId = routeParam('assessmentId');
     String? clientName;

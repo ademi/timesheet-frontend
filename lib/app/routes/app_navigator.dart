@@ -137,6 +137,30 @@ class AppNavigator {
     return Map<String, String>.from(Get.parameters);
   }
 
+  /// Path parameters from the current GoRouter match (e.g. invite `:token`).
+  static Map<String, String> get pathParameters {
+    if (usesGoRouter) {
+      return Map<String, String>.from(
+        _router.routerDelegate.currentConfiguration.pathParameters,
+      );
+    }
+    return const {};
+  }
+
+  /// Route `extra` (web) or [Get.arguments] (mobile).
+  static Object? get arguments {
+    if (usesGoRouter) {
+      return _router.routerDelegate.currentConfiguration.extra;
+    }
+    return Get.arguments;
+  }
+
+  /// Builds `path?k=v` for shared path constants.
+  static String location(String path, {Map<String, String>? query}) {
+    if (query == null || query.isEmpty) return path;
+    return Uri(path: path, queryParameters: query).toString();
+  }
+
   static Uri _uri(String location) {
     final raw = location.startsWith('/') ? location : '/$location';
     return Uri.parse(raw);
