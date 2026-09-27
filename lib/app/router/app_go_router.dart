@@ -4,12 +4,8 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/services/session_service.dart';
-import '../../features/compliance_ops/bindings/compliance_ops_binding.dart';
-import '../../features/compliance_ops/views/home_alerts_view.dart';
 import '../../features/contractor_register/bindings/contractor_register_binding.dart';
 import '../../features/contractor_register/views/contractor_register_view.dart';
-import '../../features/shell/contractor_shell.dart';
-import '../../features/shell/staff_shell.dart';
 import '../bindings/auth_binding.dart';
 import '../bindings/branch_gateway_binding.dart';
 import '../bindings/first_login_binding.dart';
@@ -24,11 +20,12 @@ import '../views/gateway_view.dart';
 import '../views/login_view.dart';
 import '../views/v2/wrong_actor_view.dart';
 import 'go_router_redirect.dart';
+import 'shell_go_routes.dart';
 
-/// Builds the web [GoRouter] (Phase 1: auth entry + dual home shells).
+/// Builds the web [GoRouter] (Phase 1 auth entry + Phase 2 shell tabs).
 ///
-/// [AppNavigator.bindWebRouter] is called here so auth call sites can navigate
-/// without importing go_router directly.
+/// [AppNavigator.bindWebRouter] is called here so auth / shell call sites can
+/// navigate without importing go_router directly.
 GoRouter createAppGoRouter({String? initialLocation}) {
   final router = GoRouter(
     initialLocation: initialLocation ?? AppRoutes.gateway,
@@ -67,20 +64,6 @@ GoRouter createAppGoRouter({String? initialLocation}) {
         path: AppRoutes.wrongActor,
         builder: (context, state) => const WrongActorView(),
       ),
-      GoRoute(
-        path: AppRoutes.staffHome,
-        builder: (context, state) {
-          HomeAlertsBinding().dependencies();
-          return staffShellPage(const HomeAlertsView());
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.contractorHome,
-        builder: (context, state) {
-          HomeAlertsBinding().dependencies();
-          return contractorShellPage(const HomeAlertsView());
-        },
-      ),
       // Auth-entry public register (gateway / login link here).
       GoRoute(
         path: AppRoutes.contractorRegister,
@@ -96,6 +79,7 @@ GoRouter createAppGoRouter({String? initialLocation}) {
           return const ContractorRegisterView();
         },
       ),
+      ...buildShellGoRoutes(),
     ],
     errorBuilder: (context, state) => Phase1UnknownRoutePage(uri: state.uri),
   );
@@ -103,7 +87,7 @@ GoRouter createAppGoRouter({String? initialLocation}) {
   return router;
 }
 
-/// Shown for bookmarks to routes not yet migrated to go_router (Phase 2+).
+/// Shown for bookmarks to routes not yet migrated to go_router (Phase 3+).
 class Phase1UnknownRoutePage extends StatelessWidget {
   const Phase1UnknownRoutePage({super.key, required this.uri});
 

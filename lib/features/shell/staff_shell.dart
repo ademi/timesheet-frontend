@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../app/constants/app_permissions.dart';
+import '../../app/routes/app_navigator.dart';
 import '../../app/routes/app_routes.dart';
+import '../../app/routes/middlewares/auth_route_utils.dart';
 import '../../app/views/shell/adaptive_navigation_shell.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
 import '../../core/services/session_service.dart';
@@ -105,9 +107,12 @@ abstract final class StaffShellNav {
     return filtered;
   }
 
-  static int selectedIndex(String route) {
+  static String get _currentPath => locationPath(AppNavigator.currentLocation);
+
+  static int selectedIndex([String? route]) {
+    final path = route ?? _currentPath;
     final items = _visible();
-    final i = items.indexWhere((d) => route.startsWith(d.route));
+    final i = items.indexWhere((d) => path.startsWith(d.route));
     return i < 0 ? 0 : i;
   }
 
@@ -115,8 +120,8 @@ abstract final class StaffShellNav {
     final items = _visible();
     if (index < 0 || index >= items.length) return;
     final route = items[index].route;
-    if (Get.currentRoute == route) return;
-    Get.offNamed(route);
+    if (_currentPath == route) return;
+    AppNavigator.go(route);
   }
 
   static List<ResponsiveDestination> destinations() =>
@@ -160,7 +165,7 @@ class StaffShell extends StatelessWidget {
       return LayoutBuilder(
         builder: (context, constraints) {
           final destinations = StaffShellNav.destinations();
-          final index = StaffShellNav.selectedIndex(Get.currentRoute);
+          final index = StaffShellNav.selectedIndex();
 
           if (destinations.isEmpty) {
             return Column(
