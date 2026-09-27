@@ -181,8 +181,8 @@ void main() {
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
       await tester.pumpAndSettle();
 
-      expect(find.byType(Phase1UnknownRoutePage), findsOneWidget);
-      expect(find.text('This page isn’t on web yet'), findsOneWidget);
+      expect(find.byType(UnknownRoutePage), findsOneWidget);
+      expect(find.text('Page not found'), findsOneWidget);
     });
   });
 }

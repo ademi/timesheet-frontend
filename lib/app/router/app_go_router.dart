@@ -97,30 +97,58 @@ GoRouter createAppGoRouter({String? initialLocation}) {
       ...buildBillingGoRoutes(),
       ...buildContractorOnboardingGoRoutes(),
     ],
-    errorBuilder: (context, state) => Phase1UnknownRoutePage(uri: state.uri),
+    errorBuilder: (context, state) => UnknownRoutePage(uri: state.uri),
   );
   AppNavigator.bindWebRouter(router);
   return router;
 }
 
-/// Shown for bookmarks to routes not yet migrated to go_router
-/// (intentionally: [AppRoutes.staffGroupShiftWindows] stays a local overlay).
-class Phase1UnknownRoutePage extends StatelessWidget {
-  const Phase1UnknownRoutePage({super.key, required this.uri});
+/// Safe fallback for unmatched / mistyped URLs on web.
+///
+/// Logs once per build, then offers [AppNavigator.offAll] to gateway (logged out)
+/// or the post-login home (authenticated). Intentional exception:
+/// [AppRoutes.staffGroupShiftWindows] is a local overlay, not a GoRoute.
+class UnknownRoutePage extends StatefulWidget {
+  const UnknownRoutePage({super.key, required this.uri});
 
   final Uri uri;
 
   @override
-  Widget build(BuildContext context) {
+  State<UnknownRoutePage> createState() => _UnknownRoutePageState();
+}
+
+class _UnknownRoutePageState extends State<UnknownRoutePage> {
+  @override
+  void initState() {
+    super.initState();
+    final authed = redirectWhenUnauthenticated() == null;
+    debugPrint(
+      '[go_router] unknown route path=${widget.uri.path} '
+      'query=${widget.uri.query} authenticated=$authed',
+    );
+  }
+
+  String get _safeHome {
     final home =
         Get.isRegistered<SessionService>()
             ? Get.find<SessionService>().resolvePostLoginRoute()
             : AppRoutes.gateway;
-    final safeHome =
-        home == AppRoutes.login || home == AppRoutes.gateway
-            ? AppRoutes.gateway
-            : home;
+    if (home == AppRoutes.login || home == AppRoutes.gateway) {
+      return AppRoutes.gateway;
+    }
+    return home;
+  }
 
+  void _goHome() {
+    if (redirectWhenUnauthenticated() != null) {
+      AppNavigator.offAll(AppRoutes.gateway);
+    } else {
+      AppNavigator.offAll(_safeHome);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -132,7 +160,7 @@ class Phase1UnknownRoutePage extends StatelessWidget {
               const Icon(Icons.link_off, size: 48, color: AppColors.textMuted),
               const SizedBox(height: 16),
               const Text(
-                'This page isn’t on web yet',
+                'Page not found',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 20,
@@ -142,19 +170,13 @@ class Phase1UnknownRoutePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                uri.path,
+                widget.uri.path,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: AppColors.textMuted),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () {
-                  if (redirectWhenUnauthenticated() != null) {
-                    AppNavigator.offAll(AppRoutes.gateway);
-                  } else {
-                    AppNavigator.offAll(safeHome);
-                  }
-                },
+                onPressed: _goHome,
                 child: const Text('Go to home'),
               ),
             ],
@@ -163,4 +185,10 @@ class Phase1UnknownRoutePage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Deprecated alias kept for any lingering references.
+@Deprecated('Use UnknownRoutePage')
+class Phase1UnknownRoutePage extends UnknownRoutePage {
+  const Phase1UnknownRoutePage({super.key, required super.uri});
 }
