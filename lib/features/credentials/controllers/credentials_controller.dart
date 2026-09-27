@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
@@ -130,10 +131,12 @@ class CredentialsController extends GetxController {
 
   void openDetail(CredentialOut credential) {
     selected = credential;
-    Get.toNamed(
-      AppRoutes.contractorCredentialDetail,
-      arguments: credential,
-      parameters: {'id': credential.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.contractorCredentialDetail,
+        query: {'id': credential.id},
+      ),
+      extra: credential,
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
@@ -106,17 +107,19 @@ class ContractorScheduleController extends GetxController {
   }
 
   void openVisitsTab() {
-    Get.toNamed(AppRoutes.contractorVisits);
+    AppNavigator.go(AppRoutes.contractorVisits);
   }
 
   void openVisit(TimetableVisitOut visit) {
     final stub = visit.toVisitOutStub(
       contractorId: _session.contractorId.value ?? '',
     );
-    Get.toNamed(
-      AppRoutes.contractorVisitDetail,
-      arguments: stub,
-      parameters: {'id': stub.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.contractorVisitDetail,
+        query: {'id': stub.id},
+      ),
+      extra: stub,
     );
   }
 

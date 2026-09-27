@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
@@ -124,7 +125,7 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
                     leading: const Icon(Icons.payments_outlined),
                     title: const Text('My payments'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Get.toNamed(AppRoutes.contractorPayments),
+                    onTap: () => AppNavigator.push(AppRoutes.contractorPayments),
                   ),
                 ],
               ),

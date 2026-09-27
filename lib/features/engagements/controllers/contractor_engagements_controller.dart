@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
@@ -142,5 +143,5 @@ class ContractorEngagementsController extends GetxController {
     return failure.message;
   }
 
-  static void _navigateHome(String route) => Get.offAllNamed(route);
+  static void _navigateHome(String route) => AppNavigator.offAll(route);
 }

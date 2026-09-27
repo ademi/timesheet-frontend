@@ -106,7 +106,7 @@ void main() {
       final staff = routes[0] as ShellRoute;
       final contractor = routes[1] as ShellRoute;
       expect(staff.routes.length, 12);
-      expect(contractor.routes.length, 6);
+      expect(contractor.routes.length, 7);
 
       final staffPaths =
           staff.routes.whereType<GoRoute>().map((r) => r.path).toSet();
@@ -124,6 +124,7 @@ void main() {
       expect(contractorPaths, contains(AppRoutes.contractorVisits));
       expect(contractorPaths, contains(AppRoutes.contractorVisitDetail));
       expect(contractorPaths, contains(AppRoutes.contractorProfile));
+      expect(contractorPaths, contains(AppRoutes.contractorPayments));
     });
 
     testWidgets('ShellRoute keeps shell chrome across tab go()', (tester) async {

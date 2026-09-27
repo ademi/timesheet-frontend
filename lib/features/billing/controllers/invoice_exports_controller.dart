@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -156,12 +158,12 @@ class InvoiceExportsController extends GetxController {
   }
 
   void _applyInitialTabFromArgs() {
-    final raw = Get.arguments;
-    String? tab;
+    final raw = routeArguments();
+    String? tab = routeParam('tab');
     if (raw is Map) {
-      tab = raw['tab']?.toString();
+      tab ??= raw['tab']?.toString();
     } else if (raw is String) {
-      tab = raw;
+      tab ??= raw;
     }
     switch (tab) {
       case 'create':
@@ -635,17 +637,25 @@ class InvoiceExportsController extends GetxController {
   /// Opens visit detail for Fix-on-visit; reloads Create list when staff returns.
   Future<void> openVisitForFix(VisitOut visit) async {
     if (!Get.testMode) {
-      await Get.toNamed(AppRoutes.staffVisitDetail, arguments: visit);
+      await AppNavigator.push(
+        AppNavigator.location(
+          AppRoutes.staffVisitDetail,
+          query: {'id': visit.id},
+        ),
+        extra: visit,
+      );
     }
     lastVisitErrors.clear();
     await loadExportableVisits();
   }
 
   void openDetail(InvoiceExportOut export) {
-    Get.toNamed(
-      AppRoutes.staffBillingExportDetail,
-      parameters: {'id': export.id},
-      arguments: export,
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffBillingExportDetail,
+        query: {'id': export.id},
+      ),
+      extra: export,
     );
   }
 }

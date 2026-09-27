@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
@@ -81,7 +82,7 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                     leading: const Icon(Icons.work_outline),
                     title: const Text('Supports'),
                     subtitle: const Text('Advanced list of ongoing support'),
-                    onTap: () => Get.toNamed(AppRoutes.staffJobs),
+                    onTap: () => AppNavigator.push(AppRoutes.staffJobs),
                   ),
                   const Divider(height: 32),
                   const Text(

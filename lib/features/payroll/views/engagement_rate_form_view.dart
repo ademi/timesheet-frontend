@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
@@ -22,9 +23,11 @@ class _EngagementRateFormViewState extends State<EngagementRateFormView> {
   void initState() {
     super.initState();
     _controller = Get.find<EngagementRateBandsController>();
-    final arg = Get.arguments;
+    final arg = routeArguments();
     _engagementId =
-        arg is String ? arg : (_controller.engagementId.value ?? '');
+        arg is String
+            ? arg
+            : (routeParam('id') ?? _controller.engagementId.value ?? '');
     if (_engagementId.isNotEmpty) {
       _controller.loadFor(_engagementId);
     }

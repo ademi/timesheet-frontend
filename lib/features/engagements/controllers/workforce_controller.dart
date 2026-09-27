@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
@@ -277,10 +278,12 @@ class WorkforceController extends GetxController {
       photosByContractor[contractorId]?.documentId;
 
   void openDetail(EngagementOut e) {
-    Get.toNamed(
-      AppRoutes.staffWorkforceDetail,
-      arguments: e,
-      parameters: {'id': e.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffWorkforceDetail,
+        query: {'id': e.id},
+      ),
+      extra: e,
     );
     unawaited(_bindDetail(e));
   }
@@ -380,9 +383,12 @@ class WorkforceController extends GetxController {
   }
 
   void openVisitDetail(VisitOut visit) {
-    Get.toNamed(
-      AppRoutes.staffVisitDetail,
-      arguments: <String, dynamic>{'visit': visit, 'skipBoardLoad': true},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffVisitDetail,
+        query: {'id': visit.id},
+      ),
+      extra: <String, dynamic>{'visit': visit, 'skipBoardLoad': true},
     );
   }
 
@@ -778,19 +784,21 @@ class WorkforceController extends GetxController {
       _setError('This worker is no longer in your workforce.');
       return;
     }
-    Get.toNamed(
-      AppRoutes.staffCredentialReview,
-      arguments: {
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffCredentialReview,
+        query: {
+          'contractorId': engagement.contractorId,
+          'engagementId': engagement.id,
+        },
+      ),
+      extra: {
         'contractorId': engagement.contractorId,
         'engagementId': engagement.id,
         'requiredCategories':
             engagement.requiredDocCategories.map((c) => c.category).toList(),
         'canEditRequiredDocs': canManage && !engagement.isEnded,
         'isEnded': engagement.isEnded,
-      },
-      parameters: {
-        'contractorId': engagement.contractorId,
-        'engagementId': engagement.id,
       },
     );
   }

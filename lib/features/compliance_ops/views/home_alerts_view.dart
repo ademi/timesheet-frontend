@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../core/errors/app_failure.dart';
@@ -342,7 +344,13 @@ class HomeAlertsController extends GetxController {
   }
 
   void openBurnAlerts() {
-    Get.toNamed(AppRoutes.staffBillingExports, arguments: {'tab': 'burn'});
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffBillingExports,
+        query: {'tab': 'burn'},
+      ),
+      extra: {'tab': 'burn'},
+    );
   }
 
   Future<(int, int, int, int)> _loadContractorCounts() async {
@@ -414,8 +422,8 @@ class HomeAlertsController extends GetxController {
   }
 
   void openRoute(String route) {
-    if (Get.currentRoute == route) return;
-    Get.offNamed(route);
+    if (locationPath(AppNavigator.currentLocation) == route) return;
+    AppNavigator.go(route);
   }
 
   String tenantLabelFor(SharingAccessRequestOut request) {
@@ -505,7 +513,9 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                         actions: [
                           TextButton(
                             onPressed:
-                                () => Get.toNamed(AppRoutes.contractorProfile),
+                                () => AppNavigator.push(
+                                  AppRoutes.contractorProfile,
+                                ),
                             child: const Text('Complete profile'),
                           ),
                         ],
@@ -525,7 +535,7 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                         actions: [
                           TextButton(
                             onPressed:
-                                () => Get.toNamed(
+                                () => AppNavigator.push(
                                   AppRoutes.contractorCredentials,
                                 ),
                             child: const Text('Upload credentials'),
@@ -547,7 +557,7 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                         actions: [
                           TextButton(
                             onPressed:
-                                () => Get.toNamed(
+                                () => AppNavigator.push(
                                   AppRoutes.contractorCredentials,
                                 ),
                             child: const Text('View credentials'),

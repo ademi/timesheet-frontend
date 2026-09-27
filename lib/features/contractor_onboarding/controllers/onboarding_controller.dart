@@ -1,6 +1,8 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/mixins/pending_action_mixin.dart';
 import '../../../core/services/session_service.dart';
@@ -515,16 +517,16 @@ class OnboardingController extends GetxController with PendingActionMixin {
       }
       return;
     }
-    Get.offAllNamed(AppRoutes.contractorHome);
+    AppNavigator.offAll(AppRoutes.contractorHome);
     // After leaving the funnel so a dispose rebuild cannot re-ensure().
     OnboardingBinding.reset();
   }
 
   void _syncRoute() {
     final route = OnboardingRouting.routeForStep(currentStep);
-    if (Get.currentRoute != route) {
+    if (locationPath(AppNavigator.currentLocation) != route) {
       // Replace step URL only — controller stays via permanent registration.
-      Get.offNamed(route);
+      AppNavigator.replace(route);
     }
   }
 
@@ -559,8 +561,9 @@ class OnboardingController extends GetxController with PendingActionMixin {
         _platformProgressComplete = true;
         _sessionService?.refreshOnboardingFlags();
       }
-      if (Get.currentRoute != AppRoutes.contractorHome) {
-        Get.offAllNamed(AppRoutes.contractorHome);
+      if (locationPath(AppNavigator.currentLocation) !=
+          AppRoutes.contractorHome) {
+        AppNavigator.offAll(AppRoutes.contractorHome);
       }
       return;
     }

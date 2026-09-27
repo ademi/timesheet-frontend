@@ -20,6 +20,7 @@ import '../../features/engagements/views/workforce_list_view.dart';
 import '../../features/jobs/bindings/jobs_binding.dart';
 import '../../features/jobs/views/jobs_list_view.dart';
 import '../../features/payroll/bindings/payroll_binding.dart';
+import '../../features/payroll/views/contractor_payments_view.dart';
 import '../../features/payroll/views/staff_payments_view.dart';
 import '../../features/payroll/views/staff_tenant_settings_view.dart';
 import '../../features/shell/contractor_shell.dart';
@@ -164,6 +165,11 @@ List<RouteBase> buildShellGoRoutes() => [
         path: AppRoutes.contractorProfile,
         onEnter: () => ContractorProfileOpsBinding().dependencies(),
         child: const ContractorProfileOpsView(),
+      ),
+      _contractorTab(
+        path: AppRoutes.contractorPayments,
+        onEnter: () => ContractorPaymentsBinding().dependencies(),
+        child: const ContractorPaymentsView(),
       ),
     ],
   ),
