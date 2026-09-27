@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:get/get.dart' as getx;
 
+import '../../app/routes/app_navigator.dart';
 import '../../app/routes/app_routes.dart';
 
 const String kMustChangePasswordDetail = 'must_change_password';
@@ -22,6 +22,6 @@ bool dioErrorRequiresPasswordChange(DioException err) =>
 /// Navigate to first-login when required. Keeps tokens so complete_first_login works.
 void redirectToFirstLoginIfNeeded({bool mustChangePassword = true}) {
   if (!mustChangePassword) return;
-  if (getx.Get.currentRoute == AppRoutes.firstLogin) return;
-  getx.Get.offAllNamed(AppRoutes.firstLogin);
+  if (AppNavigator.currentLocation.startsWith(AppRoutes.firstLogin)) return;
+  AppNavigator.offAll(AppRoutes.firstLogin);
 }

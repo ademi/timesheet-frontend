@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/auth_controller.dart';
+import '../../routes/app_navigator.dart';
+import '../../routes/app_routes.dart';
 import '../../themes/app_colors.dart';
 
 /// Dedicated screen for `wrong_actor_type` / hard actor mismatches.
@@ -41,7 +43,7 @@ class WrongActorView extends StatelessWidget {
                   if (Get.isRegistered<AuthController>()) {
                     Get.find<AuthController>().logout();
                   } else {
-                    Get.offAllNamed('/login');
+                    AppNavigator.offAll(AppRoutes.login);
                   }
                 },
                 child: const Text('Sign out'),

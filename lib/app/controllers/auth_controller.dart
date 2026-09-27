@@ -12,6 +12,7 @@ import '../../features/contractor_onboarding/bindings/onboarding_binding.dart';
 import '../../shared/widgets/app_toast.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/repositories/auth_repository.dart';
+import '../routes/app_navigator.dart';
 import '../routes/app_routes.dart';
 import '../services/push_notification_service.dart';
 
@@ -68,10 +69,10 @@ class AuthController extends GetxController {
 
       if (Get.isRegistered<SessionService>()) {
         final session = Get.find<SessionService>();
-        Get.offAllNamed(session.resolvePostLoginRoute());
+        AppNavigator.offAll(session.resolvePostLoginRoute());
         return;
       }
-      Get.offAllNamed(AppRoutes.adminBranchGateway);
+      AppNavigator.offAll(AppRoutes.adminBranchGateway);
     } on DioException catch (e) {
       if (isMustChangePasswordResponse(e)) {
         redirectToFirstLoginIfNeeded(mustChangePassword: true);
@@ -126,7 +127,7 @@ class AuthController extends GetxController {
     await _authRepository.logout();
     emailController.clear();
     passwordController.clear();
-    Get.offAllNamed(AppRoutes.gateway);
+    AppNavigator.offAll(AppRoutes.gateway);
     // After leaving any funnel route so dispose cannot re-ensure().
     OnboardingBinding.reset();
     HomeAlertsBinding.reset();

@@ -7,6 +7,7 @@ import '../../core/services/token_refresh_service.dart';
 import '../../core/services/token_storage.dart';
 import '../../shared/utils/external_url.dart';
 import '../../shared/widgets/app_toast.dart';
+import '../routes/app_navigator.dart';
 import '../routes/app_routes.dart';
 import '../routes/middlewares/auth_route_utils.dart';
 import '../services/push_notification_service.dart';
@@ -56,16 +57,17 @@ class GatewayController extends GetxController {
         )) {
           return;
         }
-        Get.offAllNamed(route);
+        AppNavigator.offAll(route);
       }
     } finally {
       isRestoringSession.value = false;
     }
   }
 
-  void goToSignIn() => Get.toNamed(AppRoutes.login);
+  void goToSignIn() => AppNavigator.push(AppRoutes.login);
 
-  void goToContractorRegister() => Get.toNamed(AppRoutes.contractorRegister);
+  void goToContractorRegister() =>
+      AppNavigator.push(AppRoutes.contractorRegister);
 
   Future<void> openProviderSignup() async {
     final ok = await openExternalUrl(AppEnv.landingUrl);
