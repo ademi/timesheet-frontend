@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../controllers/sil_houses_controller.dart';
 import '../data/models/sil_models.dart';
@@ -112,6 +113,7 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.staffSilHouses),
         title: Obx(
           () => Text(controller.bundle.value?.house.name ?? 'SIL house'),
         ),

@@ -327,11 +327,18 @@ class ClientsController extends GetxController
     errorMessage.value = null;
     profileSaveProgress.value = null;
     _resetFormPhoto();
-    Get.toNamed(AppRoutes.staffClientOnboarding);
+    Get.toNamed(
+      AppRoutes.staffClientOnboarding,
+      parameters: {'step': '0'},
+    );
   }
 
   Future<void> openResumeOnboarding(ClientOut c) async {
-    Get.toNamed(AppRoutes.staffClientOnboarding, arguments: c);
+    Get.toNamed(
+      AppRoutes.staffClientOnboarding,
+      arguments: c,
+      parameters: {'id': c.id, 'step': '0'},
+    );
   }
 
   Future<void> openEdit(ClientOut client) async {
@@ -349,7 +356,11 @@ class ClientsController extends GetxController
     errorMessage.value = null;
     profileSaveProgress.value = null;
     _resetFormPhoto();
-    Get.toNamed(AppRoutes.staffClientForm, arguments: client);
+    Get.toNamed(
+      AppRoutes.staffClientForm,
+      arguments: client,
+      parameters: {'id': client.id},
+    );
     await loadFormProfilePhoto(client.id);
   }
 
@@ -1610,6 +1621,10 @@ class ClientsController extends GetxController
         'planId': supportPlan.value?.id,
         'clientName': client.fullName,
         'ndisNumber': ndisNumber,
+      },
+      parameters: {
+        'clientId': client.id,
+        if (supportPlan.value?.id != null) 'planId': supportPlan.value!.id,
       },
     );
     await loadSupportPlanSummary();

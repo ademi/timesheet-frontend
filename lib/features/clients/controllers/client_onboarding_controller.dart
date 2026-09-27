@@ -7,6 +7,8 @@ import 'package:get/get.dart';
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/browser_url.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/constants/australian_states.dart';
 import '../../../core/errors/app_failure.dart';
@@ -310,6 +312,79 @@ class ClientOnboardingController extends GetxController
     loadFormTemplates();
     // Resume hydrate is owned by [ClientOnboardingBinding] so put + binding
     // do not both fire unawaited [hydrateFromClient].
+    _stepUrlWorker = ever<int>(step, (_) => syncOnboardingRoute());
+  }
+
+  Worker? _stepUrlWorker;
+  bool _suppressStepUrlSync = false;
+
+  /// Keeps `?id=&step=` in sync with wizard progress (browser URL on web).
+  void syncOnboardingRoute() {
+    if (_suppressStepUrlSync) return;
+    final id = client.value?.id;
+    final params = <String, String>{
+      'step': '${step.value}',
+      if (id != null && id.isNotEmpty) 'id': id,
+    };
+    Get.parameters['step'] = params['step']!;
+    if (id != null && id.isNotEmpty) {
+      Get.parameters['id'] = id;
+    }
+    replaceBrowserUrl(AppRoutes.staffClientOnboarding, params);
+  }
+
+  /// Hydrate from `Get.arguments` and/or URL `id` / `step` (refresh-safe).
+  ///
+  /// Safe to call repeatedly: skips client reload when already hydrated for the
+  /// same id; still applies [step] from the route when present.
+  Future<void> ensureHydratedFromRoute() async {
+    final stepParam = int.tryParse(routeParam('step') ?? '');
+    final args = Get.arguments;
+    final idFromRoute = routeParam('id');
+
+    if (client.value == null) {
+      if (args is ClientOut) {
+        await hydrateFromClient(args, stepOverride: stepParam);
+      } else if (idFromRoute != null) {
+        await hydrateFromClientId(idFromRoute, stepOverride: stepParam);
+      } else if (stepParam != null) {
+        _applyStepFromRoute(stepParam);
+      }
+      syncOnboardingRoute();
+      return;
+    }
+
+    if (stepParam != null) {
+      _applyStepFromRoute(stepParam);
+    }
+    syncOnboardingRoute();
+  }
+
+  Future<void> hydrateFromClientId(
+    String id, {
+    int? stepOverride,
+  }) async {
+    if (id.isEmpty) return;
+    try {
+      final existing = await _repository.getClient(id);
+      await hydrateFromClient(existing, stepOverride: stepOverride);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (_) {
+      errorMessage.value = 'Could not load client for onboarding.';
+    }
+  }
+
+  void _applyStepFromRoute(int stepParam) {
+    final max = stepLabels.length - 1;
+    final clamped = stepParam.clamp(0, max).toInt();
+    if (step.value == clamped) return;
+    _suppressStepUrlSync = true;
+    try {
+      step.value = clamped;
+    } finally {
+      _suppressStepUrlSync = false;
+    }
   }
 
   /// Clears non-Identity step state from a prior wizard session so resume
@@ -412,17 +487,30 @@ class ClientOnboardingController extends GetxController
 
   /// CR3 resume: set client/id, prefill Identity from [ClientOut], step 0,
   /// then load profile facts (identity cards, support plan, legal other docs).
-  Future<void> hydrateFromClient(ClientOut existing) async {
-    resetForResume();
-    client.value = existing;
-    fullName.text = existing.fullName;
-    email.text = existing.email ?? '';
-    phone.text = existing.phone ?? '';
-    final rawDob = existing.dob?.trim();
-    dob.value =
-        (rawDob == null || rawDob.isEmpty) ? null : DateTime.tryParse(rawDob);
-    step.value = 0;
+  Future<void> hydrateFromClient(
+    ClientOut existing, {
+    int? stepOverride,
+  }) async {
+    _suppressStepUrlSync = true;
+    try {
+      resetForResume();
+      client.value = existing;
+      fullName.text = existing.fullName;
+      email.text = existing.email ?? '';
+      phone.text = existing.phone ?? '';
+      final rawDob = existing.dob?.trim();
+      dob.value =
+          (rawDob == null || rawDob.isEmpty)
+              ? null
+              : DateTime.tryParse(rawDob);
+      final max = stepLabels.length - 1;
+      step.value =
+          stepOverride == null ? 0 : stepOverride.clamp(0, max).toInt();
+    } finally {
+      _suppressStepUrlSync = false;
+    }
     await _loadAndHydrateProfileFacts(existing.id);
+    syncOnboardingRoute();
   }
 
   /// Fetches the profile bundle and applies resume hydrates (soft on failure).
@@ -674,6 +762,8 @@ class ClientOnboardingController extends GetxController
 
   @override
   void onClose() {
+    _stepUrlWorker?.dispose();
+    _stepUrlWorker = null;
     fullName.dispose();
     email.dispose();
     phone.dispose();
@@ -806,6 +896,7 @@ class ClientOnboardingController extends GetxController
           ),
         );
         client.value = created;
+        syncOnboardingRoute();
       } else {
         final updated = await _repository.patchClient(
           client.value!.id,
@@ -817,6 +908,7 @@ class ClientOnboardingController extends GetxController
           ),
         );
         client.value = updated;
+        syncOnboardingRoute();
       }
 
       final id = client.value!.id;

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/availability_rules_readout.dart';
@@ -31,7 +33,12 @@ class WorkforceDetailView extends GetView<WorkforceController> {
       final selected = controller.selectedRx.value;
       if (selected == null) {
         return Scaffold(
-          appBar: AppBar(title: const Text('Engagement')),
+          appBar: AppBar(
+            leading: const AppBackButton(
+              fallbackRoute: AppRoutes.staffWorkforce,
+            ),
+            title: const Text('Engagement'),
+          ),
           body:
               controller.isLoading.value
                   ? const Center(child: CircularProgressIndicator())
@@ -50,7 +57,12 @@ class WorkforceDetailView extends GetView<WorkforceController> {
 
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(title: Text(current.displayName)),
+        appBar: AppBar(
+          leading: const AppBackButton(
+            fallbackRoute: AppRoutes.staffWorkforce,
+          ),
+          title: Text(current.displayName),
+        ),
         body: Column(
           children: [
             if (err != null)

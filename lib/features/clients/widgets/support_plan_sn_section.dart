@@ -92,6 +92,10 @@ class _SupportPlanSnSectionState extends State<SupportPlanSnSection> {
         'clientId': widget.clientId,
         if (_editorTarget != null) 'assessmentId': _editorTarget!.id,
       },
+      parameters: {
+        'clientId': widget.clientId,
+        if (_editorTarget != null) 'assessmentId': _editorTarget!.id,
+      },
     );
     if (result == true) {
       await _reload();

@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -563,18 +564,28 @@ class ContractorVisitsController extends GetxController {
   Future<void> openDetail(VisitOut visit) async {
     selected.value = visit;
     submittedTemplateIds.clear();
-    Get.toNamed(AppRoutes.contractorVisitDetail, arguments: visit);
+    Get.toNamed(
+      AppRoutes.contractorVisitDetail,
+      arguments: visit,
+      parameters: {'id': visit.id},
+    );
     await refreshSelected();
   }
 
   void hydrateFromArgs() {
     final arg = Get.arguments;
-    if (arg is VisitOut) selected.value = arg;
+    if (arg is VisitOut) {
+      selected.value = arg;
+      return;
+    }
+    // Id-only refresh: [refreshSelected] loads via routeParam / resolvedVisitId.
   }
 
-  /// Visit id from hydrated selection or route args (VisitOut or String).
+  /// Visit id from hydrated selection, route args, or URL `id`.
   String? get resolvedVisitId =>
-      selected.value?.id ?? _visitIdFromArgs(Get.arguments);
+      selected.value?.id ??
+      _visitIdFromArgs(Get.arguments) ??
+      routeParam('id');
 
   Future<void> refreshSelected() async {
     final id = resolvedVisitId;

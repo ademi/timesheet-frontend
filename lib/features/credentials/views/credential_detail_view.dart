@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
@@ -17,7 +19,12 @@ class CredentialDetailView extends GetView<CredentialsController> {
       final credential = controller.selectedRx.value;
       if (credential == null) {
         return Scaffold(
-          appBar: AppBar(title: const Text('Credential')),
+          appBar: AppBar(
+            leading: const AppBackButton(
+              fallbackRoute: AppRoutes.contractorCredentials,
+            ),
+            title: const Text('Credential'),
+          ),
           body:
               controller.isLoading.value
                   ? const Center(child: CircularProgressIndicator())
@@ -29,6 +36,9 @@ class CredentialDetailView extends GetView<CredentialsController> {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
+          leading: const AppBackButton(
+            fallbackRoute: AppRoutes.contractorCredentials,
+          ),
           title: Text(credentialTypeLabel(credential.credentialType)),
         ),
         body: ListView(

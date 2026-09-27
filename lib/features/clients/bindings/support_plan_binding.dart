@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/services/session_service.dart';
 import '../../documents/data/document_pipeline.dart';
 import '../controllers/support_plan_controller.dart';
@@ -13,13 +14,13 @@ class SupportPlanBinding extends Bindings {
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<SupportPlanController>()) {
       final args = Get.arguments;
-      String? clientId;
-      String? planId;
+      String? clientId = routeParam('clientId');
+      String? planId = routeParam('planId');
       String? clientName;
       String? ndisNumber;
       if (args is Map) {
-        clientId = args['clientId']?.toString();
-        planId = args['planId']?.toString();
+        clientId ??= args['clientId']?.toString();
+        planId ??= args['planId']?.toString();
         clientName = args['clientName']?.toString();
         ndisNumber = args['ndisNumber']?.toString();
       }

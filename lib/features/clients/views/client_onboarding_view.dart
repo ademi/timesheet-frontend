@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
@@ -24,6 +26,7 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.staffClients),
         title: Obx(() {
           final i = controller.step.value;
           final label =

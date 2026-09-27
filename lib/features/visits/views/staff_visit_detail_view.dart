@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../billing/data/models/billing_models.dart';
 import '../../../shared/widgets/async_action.dart';
@@ -46,7 +48,10 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
     final controller = Get.find<StaffVisitsController>();
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Visit')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.staffVisits),
+        title: const Text('Visit'),
+      ),
       body: Obx(() {
         final v = controller.selected.value;
         final err = controller.errorMessage.value;

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
@@ -41,7 +43,10 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
     final controller = Get.find<StaffVisitsController>();
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Shift')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.staffVisits),
+        title: const Text('Shift'),
+      ),
       body: Obx(() {
         final shift = controller.selectedShift.value;
         final err = controller.errorMessage.value;

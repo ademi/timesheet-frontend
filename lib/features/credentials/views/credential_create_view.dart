@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/external_url.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -15,7 +17,12 @@ class CredentialCreateView extends GetView<CredentialsController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Add credential')),
+      appBar: AppBar(
+        leading: const AppBackButton(
+          fallbackRoute: AppRoutes.contractorCredentials,
+        ),
+        title: const Text('Add credential'),
+      ),
       body: Obx(() {
         final type = controller.selectedType.value;
         final sensitive = isSensitiveCredentialType(type);

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/external_url.dart';
 import '../../../shared/widgets/async_action.dart';
@@ -50,7 +52,12 @@ class _ContractorVisitDetailViewState extends State<ContractorVisitDetailView> {
             : null;
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Visit detail')),
+      appBar: AppBar(
+        leading: const AppBackButton(
+          fallbackRoute: AppRoutes.contractorVisits,
+        ),
+        title: const Text('Visit detail'),
+      ),
       body: Obx(() {
         controller.mediaOutboxRevision.value;
         controller.formDraftRevision.value;

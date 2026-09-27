@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -261,6 +262,13 @@ class SupportPlanController extends GetxController {
         _initialPlanId = pid;
         planId.value = pid;
       }
+    }
+    final paramClientId = routeParam('clientId');
+    if (paramClientId != null) clientId = paramClientId;
+    final paramPlanId = routeParam('planId');
+    if (paramPlanId != null) {
+      _initialPlanId = paramPlanId;
+      planId.value = paramPlanId;
     }
   }
 

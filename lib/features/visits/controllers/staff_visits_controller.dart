@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/time/tenant_civil_time.dart';
@@ -539,7 +540,11 @@ class StaffVisitsController extends GetxController {
 
   Future<void> openShiftDetail(ShiftOut shift) async {
     selectedShift.value = shift;
-    Get.toNamed(AppRoutes.staffShiftDetail, arguments: shift);
+    Get.toNamed(
+      AppRoutes.staffShiftDetail,
+      arguments: shift,
+      parameters: {'id': shift.id},
+    );
   }
 
   Future<void> openShiftFromTile(RosterTile tile) async {
@@ -557,7 +562,8 @@ class StaffVisitsController extends GetxController {
   Future<void> refreshSelectedShift({bool includeTravel = false}) async {
     final id =
         selectedShift.value?.id ??
-        (Get.arguments is ShiftOut ? (Get.arguments as ShiftOut).id : null);
+        (Get.arguments is ShiftOut ? (Get.arguments as ShiftOut).id : null) ??
+        routeParam('id');
     if (id == null) return;
     isRefreshing.value = true;
     if (includeTravel) travelLoading.value = true;
@@ -675,7 +681,9 @@ class StaffVisitsController extends GetxController {
     }
     if (arg is Map && arg['shift'] is ShiftOut) {
       selectedShift.value = arg['shift'] as ShiftOut;
+      return;
     }
+    // Id-only refresh: [refreshSelectedShift] loads via routeParam('id').
   }
 
   Future<void> publishSelectedShift({
@@ -1333,7 +1341,11 @@ class StaffVisitsController extends GetxController {
   Future<void> openDetail(VisitOut visit) async {
     selected.value = visit;
     _syncSupportItemEditors(visit);
-    Get.toNamed(AppRoutes.staffVisitDetail, arguments: visit);
+    Get.toNamed(
+      AppRoutes.staffVisitDetail,
+      arguments: visit,
+      parameters: {'id': visit.id},
+    );
     await refreshSelected();
   }
 
@@ -1369,7 +1381,8 @@ class StaffVisitsController extends GetxController {
   Future<void> refreshSelected() async {
     final id =
         selected.value?.id ??
-        (Get.arguments is VisitOut ? (Get.arguments as VisitOut).id : null);
+        (Get.arguments is VisitOut ? (Get.arguments as VisitOut).id : null) ??
+        routeParam('id');
     if (id == null) return;
     isRefreshing.value = true;
     try {
@@ -1397,7 +1410,9 @@ class StaffVisitsController extends GetxController {
       selected.value = visit;
       _syncSupportItemEditors(visit);
       _loadParticipantNdis(visit);
+      return;
     }
+    // Id-only refresh: [refreshSelected] loads via routeParam('id').
   }
 
   void setVisitSupportItemDraft({

@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/services/session_service.dart';
 import '../controllers/strengths_needs_controller.dart';
 import '../data/repositories/clients_repository.dart';
@@ -14,12 +15,12 @@ class StrengthsNeedsBinding extends Bindings {
       Get.delete<StrengthsNeedsController>(force: true);
     }
     final args = Get.arguments;
-    String? clientId;
-    String? assessmentId;
+    String? clientId = routeParam('clientId');
+    String? assessmentId = routeParam('assessmentId');
     String? clientName;
     if (args is Map) {
-      clientId = args['clientId']?.toString();
-      assessmentId = args['assessmentId']?.toString();
+      clientId ??= args['clientId']?.toString();
+      assessmentId ??= args['assessmentId']?.toString();
       clientName = args['clientName']?.toString();
     }
     Get.put(

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/app_date_field.dart';
@@ -29,6 +31,7 @@ class UnifiedSupportView extends GetView<UnifiedSupportController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.staffClients),
         title: Obx(() {
           switch (controller.step.value) {
             case 0:

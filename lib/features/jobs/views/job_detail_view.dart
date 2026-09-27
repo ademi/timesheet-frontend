@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
@@ -32,6 +33,7 @@ class _JobDetailViewState extends State<JobDetailView> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.staffJobs),
         title: Obx(() => Text(controller.selected.value?.title ?? 'Job')),
       ),
       body: Obx(() {

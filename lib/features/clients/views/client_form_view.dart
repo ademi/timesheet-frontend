@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
@@ -29,7 +30,10 @@ class ClientFormView extends GetView<ClientsController> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Edit client')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.staffClients),
+        title: const Text('Edit client'),
+      ),
       body: Obx(() {
         final err = controller.errorMessage.value;
         final progress = controller.profileSaveProgress.value;
