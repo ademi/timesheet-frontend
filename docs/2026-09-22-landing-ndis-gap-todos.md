@@ -783,7 +783,7 @@ Only reopen if a specific band/edge case fails dogfood. Prefer B9 for mid-shift 
 - [x] Soft warn: mealtime / BSP via profile facts + worker_competencies
 - [x] Hard block: medication_admin credential + SIL sil_compat_rules (vacant housemate ignored)
 - [x] Staff assign/publish override audited; claim cannot override hard blocks
-- [x] Soft codes on ShiftOut.warnings (ssign_soft:*); FE override + SIL compat CRUD
+- [x] Soft codes on ShiftOut.warnings (ssign_soft:*); FE override + SIL compat CRUD
 
 **Deferred:** full training matrix role×topic (C8); preference matching beyond SIL rules
 
