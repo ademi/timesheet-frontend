@@ -203,6 +203,19 @@ void main() {
     expect(body.toJson().containsKey('support_item_code'), isFalse);
   });
 
+  test('unknown MMM does not invent a 30-minute over-cap banner', () {
+    final controller = GroupShiftTravelController(
+      shiftsRepository: repository,
+      args: GroupShiftTravelArgs(shift: _shift()),
+      onPop: (_) {},
+    );
+    controller.setClaimKind(TravelClaimKind.labour);
+    controller.setQuantity('45');
+
+    expect(controller.mmmCategory.value, isNull);
+    expect(controller.showOverCapBanner, isFalse);
+  });
+
   test('labour edit prefills minutes from stored hours', () {
     final existing = ShiftTravelOut(
       id: 'travel-1',

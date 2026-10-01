@@ -188,14 +188,16 @@ class GroupShiftTravelController extends GetxController {
     if (!draft.value.isLabour) return false;
     final minutes = parsedQuantity;
     if (minutes == null) return false;
-    final category = mmmCategory.value;
-    if (category != null) return isOverMmmCap(minutes, category);
-    // Without a known category, warn using the lowest soft cap (MMM 1–3).
-    return minutes > 30;
+    // Unknown MMM: no false 30-min alarm (aligns with BE is_over_mmm_cap).
+    return isOverMmmCap(minutes, mmmCategory.value);
   }
 
   String overCapBannerBody() {
-    final cap = effectiveMmmCapMinutes ?? 30;
+    final cap = effectiveMmmCapMinutes;
+    if (cap == null) {
+      return 'This travel time may exceed the NDIS Provider Travel limit for '
+          'this location. You can still save — adjust if needed before export.';
+    }
     return 'This travel time exceeds the soft NDIS Provider Travel limit of '
         '$cap minutes for this location. You can still save — adjust if needed '
         'before export.';
