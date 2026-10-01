@@ -54,6 +54,7 @@ class NdisSupportItemPicker extends StatefulWidget {
     this.labelText = 'NDIS support item',
     this.searchHintText = 'Search catalogue by name or item number',
     this.allowedUnits,
+    this.itemPredicate,
   });
 
   final String? supportItemCode;
@@ -69,6 +70,9 @@ class NdisSupportItemPicker extends StatefulWidget {
   final String? labelText;
   final String searchHintText;
   final Set<String>? allowedUnits;
+
+  /// Optional extra filter applied after [allowedUnits] (e.g. travel mid-codes).
+  final bool Function(NdisCatalogueItemOut item)? itemPredicate;
 
   @override
   State<NdisSupportItemPicker> createState() => _NdisSupportItemPickerState();
@@ -110,11 +114,18 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
   }
 
   List<NdisCatalogueItemOut> get _allowedItems {
+    Iterable<NdisCatalogueItemOut> items = _allItems;
     final units = widget.allowedUnits;
-    if (units == null) return _allItems;
-    return _allItems
-        .where((item) => item.unit != null && units.contains(item.unit))
-        .toList(growable: false);
+    if (units != null) {
+      items = items.where(
+        (item) => item.unit != null && units.contains(item.unit),
+      );
+    }
+    final pred = widget.itemPredicate;
+    if (pred != null) {
+      items = items.where(pred);
+    }
+    return items.toList(growable: false);
   }
 
   NdisCatalogueRepository get _repository {
@@ -152,7 +163,8 @@ class _NdisSupportItemPickerState extends State<NdisSupportItemPicker> {
         oldWidget.supportItemName != widget.supportItemName) {
       _syncQueryFromSelection();
     }
-    if (oldWidget.allowedUnits != widget.allowedUnits) {
+    if (oldWidget.allowedUnits != widget.allowedUnits ||
+        oldWidget.itemPredicate != widget.itemPredicate) {
       _clearRegIfInvalid();
       _recomputeOptions();
     }

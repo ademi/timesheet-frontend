@@ -7,6 +7,7 @@ import 'package:rostiq/features/billing/data/models/billing_models.dart';
 import 'package:rostiq/features/billing/data/ndis_catalogue_filter_prefs.dart';
 import 'package:rostiq/features/billing/data/ndis_catalogue_local_filter.dart';
 import 'package:rostiq/features/billing/data/repositories/ndis_catalogue_repository.dart';
+import 'package:rostiq/features/shifts/utils/travel_item_rules.dart';
 import 'package:rostiq/shared/widgets/ndis_support_item_picker.dart';
 
 class _MockNdisCatalogueRepository extends Mock
@@ -65,6 +66,7 @@ class _Harness extends StatefulWidget {
     this.onChanged,
     this.filterPrefs,
     this.allowedUnits,
+    this.itemPredicate,
   });
 
   final NdisCatalogueRepository repository;
@@ -73,6 +75,7 @@ class _Harness extends StatefulWidget {
   final void Function(String? code, String? name)? onChanged;
   final NdisCatalogueFilterPrefs? filterPrefs;
   final Set<String>? allowedUnits;
+  final bool Function(NdisCatalogueItemOut item)? itemPredicate;
 
   @override
   State<_Harness> createState() => _HarnessState();
@@ -100,6 +103,7 @@ class _HarnessState extends State<_Harness> {
           filterPrefs: widget.filterPrefs,
           debounceDuration: Duration.zero,
           allowedUnits: widget.allowedUnits,
+          itemPredicate: widget.itemPredicate,
           onChanged: ({
             required String? supportItemCode,
             required String? supportItemName,
@@ -139,6 +143,7 @@ void main() {
     String? initialName,
     void Function(String? code, String? name)? onChanged,
     Set<String>? allowedUnits,
+    bool Function(NdisCatalogueItemOut item)? itemPredicate,
   }) {
     return _Harness(
       repository: repository,
@@ -147,6 +152,7 @@ void main() {
       onChanged: onChanged,
       filterPrefs: isolatedFilterPrefs(),
       allowedUnits: allowedUnits,
+      itemPredicate: itemPredicate,
     );
   }
 
@@ -188,6 +194,40 @@ void main() {
     expect(find.text(dayItem.supportItemName), findsNothing);
     expect(find.text('Filtered locally (2 of 2)'), findsOneWidget);
   });
+
+  testWidgets(
+    'itemPredicate after allowedUnits keeps travel mid-codes only',
+    (tester) async {
+      const travelKm = NdisCatalogueItemOut(
+        supportItemNumber: '01_799_0107_1_1',
+        supportItemName: 'Provider travel — Non-Labour Costs',
+        unit: 'E',
+      );
+      const nonTravelKm = NdisCatalogueItemOut(
+        supportItemNumber: '02_051_0108_1_1',
+        supportItemName: 'Activity based transport',
+        unit: 'E',
+      );
+      when(() => repository.fetchAllActiveItems()).thenAnswer(
+        (_) async => const [_item, travelKm, nonTravelKm],
+      );
+
+      await tester.pumpWidget(
+        isolatedHarness(
+          allowedUnits: travelClaimUnits,
+          itemPredicate:
+              (item) => isTravelClaimableItemNumber(item.supportItemNumber),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text(travelKm.supportItemName), findsOneWidget);
+      expect(find.text(_item.supportItemName), findsNothing);
+      expect(find.text(nonTravelKm.supportItemName), findsNothing);
+      expect(find.text('Filtered locally (1 of 1)'), findsOneWidget);
+    },
+  );
 
   testWidgets('shows selected item with clear action', (tester) async {
     String? clearedCode;
