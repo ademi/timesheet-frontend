@@ -394,17 +394,20 @@ class GroupShiftTravelController extends GetxController {
       if (saved.mmmCategory != null) {
         mmmCategory.value = saved.mmmCategory;
       }
+      // Pop before toast: Get.snackbar is a route; Get.back after it would
+      // dismiss the snackbar and leave the wizard open (201 then 409 retry).
+      final editing = isEditing;
+      _closeWizard(saved);
       if (!Get.testMode) {
         final detail =
             saved.isLabour
                 ? '${formatTravelQty(hoursToMinutes(saved.quantity))} min'
                 : (saved.supportItemCode ?? 'Travel');
         AppToast.success(
-          isEditing ? 'Travel updated' : 'Travel added',
+          editing ? 'Travel updated' : 'Travel added',
           detail,
         );
       }
-      _closeWizard(saved);
     } on AppFailure catch (failure) {
       step.value = reviewStep;
       errorMessage.value = _messageForFailure(failure);

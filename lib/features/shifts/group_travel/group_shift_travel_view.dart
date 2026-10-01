@@ -445,46 +445,23 @@ class _OverCapBanner extends StatelessWidget {
       label: '$title. $body',
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF7F1D1D),
+          color: AppColors.errorBackground,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFFECACA), width: 2),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.warning_amber_rounded,
-                  color: Color(0xFFFEF2F2),
-                  size: 22,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      color: Color(0xFFFEF2F2),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      height: 1.25,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
             Text(
-              body,
+              title,
               style: const TextStyle(
-                color: Color(0xFFFEE2E2),
-                fontSize: 14,
-                height: 1.35,
-                fontWeight: FontWeight.w500,
+                color: AppColors.error,
+                fontWeight: FontWeight.w600,
               ),
             ),
+            const SizedBox(height: 4),
+            Text(body, style: const TextStyle(color: AppColors.error)),
           ],
         ),
       ),

@@ -459,15 +459,15 @@ class _TravelRow extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7F1D1D),
+                          color: AppColors.errorBackground,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Text(
                           'Over-cap',
                           style: TextStyle(
-                            color: Color(0xFFFEF2F2),
+                            color: AppColors.error,
                             fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
