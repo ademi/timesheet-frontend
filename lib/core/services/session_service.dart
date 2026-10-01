@@ -184,6 +184,8 @@ class SessionService extends GetxController {
         tenantId: tenantFromJwt,
         engagementId: match?.id,
       );
+    } else {
+      await _tokenStorage.clearLastTenantSelection();
     }
   }
 
@@ -334,6 +336,8 @@ class SessionService extends GetxController {
   }
 
   Future<void> clear() async {
+    _meContextGeneration++;
+    _hydratingMeContext = null;
     actorType.value = null;
     tenantId.value = null;
     contractorId.value = null;

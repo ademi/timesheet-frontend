@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -112,6 +113,76 @@ void main() {
         expect(outcome, TokenRefreshOutcome.invalidRefreshToken);
       },
     );
+
+    test(
+      'in-flight refresh does not restore old tenant after login replace',
+      () async {
+        await storage.persistTokens(
+          accessToken: _fakeJwt({
+            'exp': _pastExp(),
+            'tenant_id': 'tenant-a',
+          }),
+          refreshToken: 'refresh-a',
+        );
+
+        final releaseRefresh = Completer<void>();
+        plainDio.httpClientAdapter = _GatedRefreshAdapter(
+          gate: releaseRefresh.future,
+          accessToken: _fakeJwt({
+            'exp': _futureExp(),
+            'tenant_id': 'tenant-a',
+          }),
+          refreshToken: 'refresh-a-rotated',
+        );
+
+        final refreshFuture = service.refreshIfNeeded();
+
+        await storage.persist(
+          accessToken: _fakeJwt({
+            'exp': _futureExp(),
+            'tenant_id': 'tenant-b',
+          }),
+          refreshToken: 'refresh-b',
+        );
+
+        releaseRefresh.complete();
+        final outcome = await refreshFuture;
+
+        expect(outcome, TokenRefreshOutcome.notNeeded);
+        expect(storage.refreshToken, 'refresh-b');
+        expect(storage.jwtClaims?.tenantId, 'tenant-b');
+      },
+    );
+
+    test(
+      'in-flight refresh does not persist after logout clear',
+      () async {
+        await storage.persistTokens(
+          accessToken: _fakeJwt({'exp': _pastExp(), 'tenant_id': 'tenant-a'}),
+          refreshToken: 'refresh-a',
+        );
+
+        final releaseRefresh = Completer<void>();
+        plainDio.httpClientAdapter = _GatedRefreshAdapter(
+          gate: releaseRefresh.future,
+          accessToken: _fakeJwt({
+            'exp': _futureExp(),
+            'tenant_id': 'tenant-a',
+          }),
+          refreshToken: 'refresh-a-rotated',
+        );
+
+        final refreshFuture = service.refreshIfNeeded();
+        await storage.clear();
+        releaseRefresh.complete();
+
+        final outcome = await refreshFuture;
+
+        expect(outcome, TokenRefreshOutcome.invalidRefreshToken);
+        expect(storage.accessToken, isNull);
+        expect(storage.refreshToken, isNull);
+      },
+    );
   });
 }
 
@@ -128,6 +199,42 @@ int _pastExp() =>
         .subtract(const Duration(hours: 1))
         .millisecondsSinceEpoch ~/
     1000;
+
+class _GatedRefreshAdapter implements HttpClientAdapter {
+  _GatedRefreshAdapter({
+    required this.gate,
+    required this.accessToken,
+    required this.refreshToken,
+  });
+
+  final Future<void> gate;
+  final String accessToken;
+  final String refreshToken;
+
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    await gate;
+    final body = jsonEncode({
+      'access_token': accessToken,
+      'refresh_token': refreshToken,
+      'token_type': 'bearer',
+    });
+    return ResponseBody.fromString(
+      body,
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+}
 
 class _RefreshAdapter implements HttpClientAdapter {
   @override

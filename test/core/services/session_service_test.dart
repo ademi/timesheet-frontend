@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -40,6 +41,9 @@ class _FakeTokenStorage extends Fake implements TokenStorage {
     required String tenantId,
     String? engagementId,
   }) async {}
+
+  @override
+  Future<void> clearLastTenantSelection() async {}
 }
 
 void main() {
@@ -430,6 +434,51 @@ void main() {
       expect(session.tenantMemberId.value, 'tm1');
       expect(session.tenantTimezone.value, 'Australia/Sydney');
       verify(() => authRepository.getMeContext()).called(1);
+    });
+
+    test('clear discards in-flight me/context from the previous tenant', () async {
+      tokenStorage.claims = const JwtClaims(
+        sub: 'u1',
+        tenantId: 't1',
+        permissions: ['auth.session'],
+        actorType: 'tenant_member',
+        iat: 1,
+        exp: 2,
+      );
+      final release = Completer<MeContextModel>();
+      when(() => authRepository.getMeContext()).thenAnswer((_) => release.future);
+
+      final hydrate = session.hydrateFromMeContext();
+      await session.clear();
+      tokenStorage.claims = const JwtClaims(
+        sub: 'u2',
+        tenantId: 't2',
+        permissions: ['auth.session'],
+        actorType: 'tenant_member',
+        iat: 1,
+        exp: 2,
+      );
+      await session.applyAuthTokens(
+        const AuthTokenModel(
+          accessToken: 'a2',
+          refreshToken: 'r2',
+          tokenType: 'bearer',
+          actorType: 'tenant_member',
+        ),
+      );
+
+      release.complete(
+        const MeContextModel(
+          actorType: 'tenant_member',
+          tenantId: 't1',
+          tenantMemberId: 'tm-old',
+        ),
+      );
+      await hydrate;
+
+      expect(session.tenantId.value, 't2');
+      expect(session.selectedTenantId.value, 't2');
+      expect(session.tenantMemberId.value, isNull);
     });
 
     test('shares an in-flight me/context request', () async {

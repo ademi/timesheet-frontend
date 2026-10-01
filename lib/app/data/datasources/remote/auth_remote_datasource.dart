@@ -63,7 +63,9 @@ class AuthRemoteDataSource {
   }
 
   Future<LogoutResponseModel> logout(LogoutRequestModel request) async {
-    final response = await _authenticatedDio.post<Map<String, dynamic>>(
+    // Logout is a public revoke-by-refresh-token call. Using authenticated
+    // Dio would 401-refresh the session we are trying to end.
+    final response = await _plainDio.post<Map<String, dynamic>>(
       '/v1/auth/logout',
       data: request.toJson(),
     );

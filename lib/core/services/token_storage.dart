@@ -27,6 +27,10 @@ class TokenStorage {
   String? _cachedBranchName;
   String? _cachedLastTenantId;
   String? _cachedLastEngagementId;
+  int _sessionEpoch = 0;
+
+  /// Bumps on [clear] / [persist] so a superseded writer can detect replacement.
+  int get sessionEpoch => _sessionEpoch;
 
   String? get accessToken => _cachedAccessToken;
   String? get refreshToken => _cachedRefreshToken;
@@ -116,7 +120,24 @@ class TokenStorage {
     if (engagementId != null) {
       _cachedLastEngagementId = engagementId;
       await _storage.write(key: _keyLastEngagementId, value: engagementId);
+    } else {
+      _cachedLastEngagementId = null;
+      await _storage.delete(key: _keyLastEngagementId);
     }
+  }
+
+  Future<void> clearLastTenantSelection() async {
+    _cachedLastTenantId = null;
+    _cachedLastEngagementId = null;
+    await _storage.delete(key: _keyLastTenantId);
+    await _storage.delete(key: _keyLastEngagementId);
+  }
+
+  Future<void> clearBranchSelection() async {
+    _cachedBranchId = null;
+    _cachedBranchName = null;
+    await _storage.delete(key: _keyBranch);
+    await _storage.delete(key: _keyBranchName);
   }
 
   bool needsProactiveRefresh({int thresholdSeconds = 300}) {
@@ -133,25 +154,48 @@ class TokenStorage {
     return null;
   }
 
+  /// Replaces the persisted session. Increments [sessionEpoch] so an in-flight
+  /// refresh for the previous tenant cannot write those tokens back.
   Future<void> persist({
     required String accessToken,
     required String refreshToken,
     String? branchId,
   }) async {
+    _sessionEpoch++;
     await persistTokens(accessToken: accessToken, refreshToken: refreshToken);
     if (branchId != null) {
       await persistBranchId(branchId);
+    } else {
+      await clearBranchSelection();
     }
+    await clearLastTenantSelection();
   }
 
   Future<void> persistTokens({
     required String accessToken,
     required String refreshToken,
   }) async {
+    final epoch = _sessionEpoch;
     _cachedAccessToken = accessToken;
     _cachedRefreshToken = refreshToken;
+    if (epoch != _sessionEpoch) return;
     await _storage.write(key: _keyAccess, value: accessToken);
+    if (epoch != _sessionEpoch) return;
     await _storage.write(key: _keyRefresh, value: refreshToken);
+  }
+
+  /// Persists rotated tokens only when [expectedRefreshToken] is still current.
+  ///
+  /// Returns false when logout / login / switch-tenant already replaced the
+  /// session; the caller must not treat that as a restore of the old tenant.
+  Future<bool> persistTokensIfCurrentRefresh({
+    required String expectedRefreshToken,
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    if (_cachedRefreshToken != expectedRefreshToken) return false;
+    await persistTokens(accessToken: accessToken, refreshToken: refreshToken);
+    return _cachedRefreshToken == refreshToken;
   }
 
   Future<void> persistBranchId(String branchId) async {
@@ -170,12 +214,20 @@ class TokenStorage {
   }
 
   Future<void> clear() async {
+    _sessionEpoch++;
     _cachedAccessToken = null;
     _cachedRefreshToken = null;
     _cachedBranchId = null;
     _cachedBranchName = null;
     _cachedLastTenantId = null;
     _cachedLastEngagementId = null;
-    await _storage.deleteAll();
+    // Delete only auth keys. `deleteAll()` on web wipes every localStorage
+    // entry, including GetStorage, and can race with a later session write.
+    await _storage.delete(key: _keyAccess);
+    await _storage.delete(key: _keyRefresh);
+    await _storage.delete(key: _keyBranch);
+    await _storage.delete(key: _keyBranchName);
+    await _storage.delete(key: _keyLastTenantId);
+    await _storage.delete(key: _keyLastEngagementId);
   }
 }

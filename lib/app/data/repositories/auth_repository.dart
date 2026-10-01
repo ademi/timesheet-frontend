@@ -69,16 +69,17 @@ class AuthRepository {
 
   Future<void> logout() async {
     final refresh = _storage.refreshToken;
+    // Drop local tokens first so an in-flight refresh cannot persist the
+    // previous tenant after the user has signed out or signed in again.
+    await _clearTokens();
     try {
       if (refresh != null && refresh.isNotEmpty) {
         await _remote.logout(LogoutRequestModel(refreshToken: refresh));
       }
     } on DioException catch (_) {
-      // Spec: still clear tokens on API error.
+      // Spec: still treat local clear as success on API error.
     } catch (_) {
-      // Ignore non-Dio errors; always clear locally.
-    } finally {
-      await _clearTokens();
+      // Ignore non-Dio errors; local session is already gone.
     }
   }
 

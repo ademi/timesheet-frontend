@@ -77,6 +77,44 @@ void main() {
     expect(storage.accessToken, isNull);
     expect(storage.refreshToken, isNull);
     expect(storage.branchId, isNull);
+    expect(storage.lastTenantId, isNull);
+  });
+
+  test('persist replaces leftover branch and last tenant', () async {
+    final storage = TokenStorage();
+    await storage.persistBranchSelection(
+      branchId: 'branch-old',
+      branchName: 'Old Branch',
+    );
+    await storage.persistLastTenantSelection(
+      tenantId: 'tenant-old',
+      engagementId: 'engagement-old',
+    );
+
+    await storage.persist(accessToken: 'access-b', refreshToken: 'refresh-b');
+
+    expect(storage.accessToken, 'access-b');
+    expect(storage.refreshToken, 'refresh-b');
+    expect(storage.branchId, isNull);
+    expect(storage.branchName, isNull);
+    expect(storage.lastTenantId, isNull);
+    expect(storage.lastEngagementId, isNull);
+  });
+
+  test('persistTokensIfCurrentRefresh refuses after session replace', () async {
+    final storage = TokenStorage();
+    await storage.persistTokens(accessToken: 'a1', refreshToken: 'r1');
+    await storage.persist(accessToken: 'a2', refreshToken: 'r2');
+
+    final wrote = await storage.persistTokensIfCurrentRefresh(
+      expectedRefreshToken: 'r1',
+      accessToken: 'a-old',
+      refreshToken: 'r-old',
+    );
+
+    expect(wrote, isFalse);
+    expect(storage.accessToken, 'a2');
+    expect(storage.refreshToken, 'r2');
   });
 
   test('needsProactiveRefresh is false without token', () {

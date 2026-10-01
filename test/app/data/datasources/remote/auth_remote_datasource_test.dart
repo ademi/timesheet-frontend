@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/app/data/datasources/remote/auth_remote_datasource.dart';
 import 'package:rostiq/app/data/models/auth/login_request_model.dart';
+import 'package:rostiq/app/data/models/auth/logout_request_model.dart';
 
 class MockDio extends Mock implements Dio {}
 
@@ -59,6 +60,37 @@ void main() {
     verifyNever(
       () => authenticatedDio.post<Map<String, dynamic>>(
         '/v1/auth/login',
+        data: any(named: 'data'),
+      ),
+    );
+  });
+
+  test('logout uses plain dio client', () async {
+    const request = LogoutRequestModel(refreshToken: 'refresh');
+    when(
+      () => plainDio.post<Map<String, dynamic>>(
+        '/v1/auth/logout',
+        data: request.toJson(),
+      ),
+    ).thenAnswer(
+      (_) async => Response<Map<String, dynamic>>(
+        requestOptions: RequestOptions(path: '/v1/auth/logout'),
+        statusCode: 200,
+        data: {'message': 'ok'},
+      ),
+    );
+
+    await dataSource.logout(request);
+
+    verify(
+      () => plainDio.post<Map<String, dynamic>>(
+        '/v1/auth/logout',
+        data: request.toJson(),
+      ),
+    ).called(1);
+    verifyNever(
+      () => authenticatedDio.post<Map<String, dynamic>>(
+        '/v1/auth/logout',
         data: any(named: 'data'),
       ),
     );

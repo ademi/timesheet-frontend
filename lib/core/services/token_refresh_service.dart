@@ -60,16 +60,34 @@ class TokenRefreshService {
   Future<TokenRefreshOutcome> _executeRefresh(String refreshToken) async {
     try {
       final tokens = await executeRefreshRequest(_plainDio, refreshToken);
-      await _storage.persistTokens(
+      // Logout / login / switch-tenant may have replaced the session while
+      // this refresh was in flight. Never write the old tenant back.
+      if (_storage.refreshToken != refreshToken) {
+        return _storage.hasRefreshToken
+            ? TokenRefreshOutcome.notNeeded
+            : TokenRefreshOutcome.invalidRefreshToken;
+      }
+      final wrote = await _storage.persistTokensIfCurrentRefresh(
+        expectedRefreshToken: refreshToken,
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
       );
+      if (!wrote) {
+        return _storage.hasRefreshToken
+            ? TokenRefreshOutcome.notNeeded
+            : TokenRefreshOutcome.invalidRefreshToken;
+      }
       redirectToFirstLoginIfNeeded(
         mustChangePassword: tokens.mustChangePassword,
       );
       return TokenRefreshOutcome.success;
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
+        if (_storage.refreshToken != refreshToken) {
+          return _storage.hasRefreshToken
+              ? TokenRefreshOutcome.notNeeded
+              : TokenRefreshOutcome.invalidRefreshToken;
+        }
         await invalidateStoredAuthSession(tokenStorage: _storage);
         return TokenRefreshOutcome.invalidRefreshToken;
       }

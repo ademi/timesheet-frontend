@@ -55,6 +55,7 @@ class AuthController extends GetxController {
       );
       if (Get.isRegistered<SessionService>()) {
         final session = Get.find<SessionService>();
+        await session.clear();
         await session.applyAuthTokens(tokens);
         await session.hydrateFromMeContext();
       }
