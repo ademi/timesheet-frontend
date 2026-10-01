@@ -4,13 +4,17 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../features/billing/data/ndis_catalogue_filter_prefs.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../data/models/shift_travel_models.dart';
 import 'group_shift_travel_controller.dart';
 
 class GroupShiftTravelView extends GetView<GroupShiftTravelController> {
-  const GroupShiftTravelView({super.key});
+  const GroupShiftTravelView({super.key, this.catalogueFilterPrefs});
+
+  /// Test seam so widget tests can avoid GetStorage.
+  final NdisCatalogueFilterPrefs? catalogueFilterPrefs;
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +25,10 @@ class GroupShiftTravelView extends GetView<GroupShiftTravelController> {
       ),
       body: Obx(() {
         final error = controller.errorMessage.value;
+        // Register draft + helper so Item/Split rebuild when they change.
+        controller.draft.value;
+        controller.itemClearedHelper.value;
+        final isSaving = controller.isSaving.value;
         return Column(
           children: [
             Padding(
@@ -43,6 +51,7 @@ class GroupShiftTravelView extends GetView<GroupShiftTravelController> {
                         switch (controller.step.value) {
                           GroupShiftTravelController.itemStep => _ItemStep(
                             controller: controller,
+                            catalogueFilterPrefs: catalogueFilterPrefs,
                           ),
                           GroupShiftTravelController.splitStep => _SplitStep(
                             controller: controller,
@@ -57,11 +66,10 @@ class GroupShiftTravelView extends GetView<GroupShiftTravelController> {
             ),
             if (controller.step.value == GroupShiftTravelController.reviewStep)
               FormStickyActions(
-                onCancel:
-                    controller.isSaving.value ? null : controller.previousStep,
+                onCancel: isSaving ? null : controller.previousStep,
                 primaryLabel: 'Save',
-                onPrimary: controller.isSaving.value ? null : controller.save,
-                isLoading: controller.isSaving.value,
+                onPrimary: isSaving ? null : controller.save,
+                isLoading: isSaving,
               )
             else
               SafeArea(
@@ -73,7 +81,7 @@ class GroupShiftTravelView extends GetView<GroupShiftTravelController> {
                       children: [
                         OutlinedButton(
                           onPressed:
-                              controller.isSaving.value
+                              isSaving
                                   ? null
                                   : controller.step.value == 0
                                   ? controller.cancel
@@ -87,10 +95,7 @@ class GroupShiftTravelView extends GetView<GroupShiftTravelController> {
                         ),
                         const Spacer(),
                         ElevatedButton(
-                          onPressed:
-                              controller.isSaving.value
-                                  ? null
-                                  : controller.nextStep,
+                          onPressed: isSaving ? null : controller.nextStep,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: AppColors.onPrimary,
@@ -154,9 +159,10 @@ class _StepIndicator extends StatelessWidget {
 }
 
 class _ItemStep extends StatefulWidget {
-  const _ItemStep({required this.controller});
+  const _ItemStep({required this.controller, this.catalogueFilterPrefs});
 
   final GroupShiftTravelController controller;
+  final NdisCatalogueFilterPrefs? catalogueFilterPrefs;
 
   @override
   State<_ItemStep> createState() => _ItemStepState();
@@ -187,13 +193,22 @@ class _ItemStepState extends State<_ItemStep> {
   @override
   Widget build(BuildContext context) {
     final draft = widget.controller.draft.value;
+    final clearedHelper = widget.controller.itemClearedHelper.value;
+    final showMixedEqual = widget.controller.hasMixedEqualRegistrationGroups;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (showMixedEqual) ...[
+          _ErrorBox(GroupShiftTravelController.mixedEqualErrorMessage),
+          const SizedBox(height: 12),
+        ],
         NdisSupportItemPicker(
+          key: ValueKey(widget.controller.travelPickerKey),
           supportItemCode: draft.supportItemCode,
           supportItemName: draft.supportItemName,
-          allowedUnits: const {'E', 'H'},
+          allowedUnits: const {'E'},
+          itemPredicate: widget.controller.travelCataloguePredicate,
+          filterPrefs: widget.catalogueFilterPrefs,
           labelText: 'Travel support item',
           onChanged: ({required supportItemCode, required supportItemName}) {
             widget.controller.setItem(
@@ -202,12 +217,26 @@ class _ItemStepState extends State<_ItemStep> {
             );
           },
         ),
+        if (!widget.controller.hasTravelAnchors) ...[
+          const SizedBox(height: 8),
+          const Text(
+            GroupShiftTravelController.noAnchorsHelperMessage,
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+        ],
+        if (clearedHelper != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            clearedHelper,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+        ],
         const SizedBox(height: 16),
         TextField(
           controller: _quantity,
           decoration: const InputDecoration(
-            labelText: 'Quantity',
-            hintText: 'e.g. 10',
+            labelText: 'Kilometres',
+            hintText: 'e.g. 12.5',
             border: OutlineInputBorder(),
           ),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -241,11 +270,16 @@ class _SplitStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final draft = controller.draft.value;
+    final clearedHelper = controller.itemClearedHelper.value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text('Split', style: Get.textTheme.titleMedium),
         const SizedBox(height: 8),
+        if (controller.hasMixedEqualRegistrationGroups) ...[
+          _ErrorBox(GroupShiftTravelController.mixedEqualErrorMessage),
+          const SizedBox(height: 12),
+        ],
         RadioGroup<TravelApportionmentMode>(
           groupValue: draft.apportionmentMode,
           onChanged: (value) {
@@ -288,6 +322,13 @@ class _SplitStep extends StatelessWidget {
             ),
           ),
         ],
+        if (clearedHelper != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            clearedHelper,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+        ],
       ],
     );
   }
@@ -306,7 +347,10 @@ class _ReviewStep extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ReviewRow(label: 'Item', value: draft.supportItemCode ?? '—'),
-        _ReviewRow(label: 'Total quantity', value: draft.quantity ?? '—'),
+        _ReviewRow(
+          label: 'Kilometres',
+          value: draft.quantity == null ? '—' : '${draft.quantity} km',
+        ),
         _ReviewRow(
           label: 'Split',
           value:

@@ -411,8 +411,14 @@ void main() {
             'Close the time entry before exporting this visit.',
         'support_item_required':
             'Set a support item on the visit before exporting.',
+        'visit_has_only_travel_claims':
+            'This visit has travel claims but no hourly support item. Set an hourly item on the visit, then export — travel will be included automatically.',
+        'visit_support_item_is_travel':
+            'This visit’s support item is a travel (Each) item, not hourly. Set an hourly support item on the visit, and keep travel under Travel claims.',
+        'visit_support_item_is_day_unit':
+            'This visit’s support item is a day-rate item, not hourly. Set an hourly support item on the visit; add accommodation separately if needed.',
         'support_item_not_hourly':
-            'Only hourly (H) support items can be exported.',
+            'Use an hourly (H) support item for visits. Travel and other non-hour items can’t be the visit support item.',
         'quote_required_not_exportable':
             'Quote-required items cannot be auto-exported.',
         'task_billable_minutes_required':
@@ -425,6 +431,14 @@ void main() {
             'The catalogue has no price for this pricing tier.',
         'export_already_void': 'This export was already voided.',
         'export_not_voidable': 'Only finalized exports can be voided.',
+        'travel_item_not_claimable':
+            "That support item isn’t a travel claim item. Pick Provider travel – non-labour or Activity Based Transport from the list.",
+        'travel_item_unit_not_exportable':
+            'Travel claims must use a per-kilometre (Each) item, not an hourly one. Choose a travel item from the list.',
+        'travel_equal_mixed_registration_groups':
+            "These participants have different NDIS support types, so one shared travel item can’t be split equally. Switch to Nominated, or add a separate travel claim per support type.",
+        'travel_registration_group_mismatch':
+            'This travel item doesn’t match the participant’s support type (registration group). Pick the travel item that sits under the same support group as their visit support item — or change who the claim is nominated to.',
       };
 
       for (final entry in expectedMessages.entries) {

@@ -237,6 +237,9 @@ class AppFailure implements Exception {
       'support_item_name_mismatch',
       'support_item_code',
       'support_item_not_hourly',
+      'visit_support_item_is_travel',
+      'visit_support_item_is_day_unit',
+      'visit_has_only_travel_claims',
       'support_item_required',
       'quote_required_not_exportable',
       'visit_already_exported',
@@ -247,6 +250,10 @@ class AppFailure implements Exception {
       'price_limit_missing_for_tier',
       'export_already_void',
       'export_not_voidable',
+      'travel_item_not_claimable',
+      'travel_item_unit_not_exportable',
+      'travel_equal_mixed_registration_groups',
+      'travel_registration_group_mismatch',
       'ndis_number_in_use',
       'ndis_required',
     ];
@@ -302,6 +309,9 @@ class AppFailure implements Exception {
       case 'support_item_name_mismatch':
       case 'support_item_required':
       case 'support_item_not_hourly':
+      case 'visit_support_item_is_travel':
+      case 'visit_support_item_is_day_unit':
+      case 'visit_has_only_travel_claims':
       case 'quote_required_not_exportable':
       case 'visit_already_exported':
       case 'time_entry_not_closed':
@@ -311,6 +321,10 @@ class AppFailure implements Exception {
       case 'price_limit_missing_for_tier':
       case 'export_already_void':
       case 'export_not_voidable':
+      case 'travel_item_not_claimable':
+      case 'travel_item_unit_not_exportable':
+      case 'travel_equal_mixed_registration_groups':
+      case 'travel_registration_group_mismatch':
       case 'visit_cancelled':
       case 'visit_already_completed':
       case 'clock_times_in_future':
@@ -457,8 +471,14 @@ class AppFailure implements Exception {
         return 'Name does not match the catalogue — pick from search.';
       case 'support_item_required':
         return 'Set a support item on the visit before exporting.';
+      case 'visit_has_only_travel_claims':
+        return 'This visit has travel claims but no hourly support item. Set an hourly item on the visit, then export — travel will be included automatically.';
+      case 'visit_support_item_is_travel':
+        return 'This visit’s support item is a travel (Each) item, not hourly. Set an hourly support item on the visit, and keep travel under Travel claims.';
+      case 'visit_support_item_is_day_unit':
+        return 'This visit’s support item is a day-rate item, not hourly. Set an hourly support item on the visit; add accommodation separately if needed.';
       case 'support_item_not_hourly':
-        return 'Only hourly (H) support items can be exported.';
+        return 'Use an hourly (H) support item for visits. Travel and other non-hour items can’t be the visit support item.';
       case 'quote_required_not_exportable':
         return 'Quote-required items cannot be auto-exported.';
       case 'visit_already_exported':
@@ -477,6 +497,14 @@ class AppFailure implements Exception {
         return 'This export was already voided.';
       case 'export_not_voidable':
         return 'Only finalized exports can be voided.';
+      case 'travel_item_not_claimable':
+        return "That support item isn’t a travel claim item. Pick Provider travel – non-labour or Activity Based Transport from the list.";
+      case 'travel_item_unit_not_exportable':
+        return 'Travel claims must use a per-kilometre (Each) item, not an hourly one. Choose a travel item from the list.';
+      case 'travel_equal_mixed_registration_groups':
+        return "These participants have different NDIS support types, so one shared travel item can’t be split equally. Switch to Nominated, or add a separate travel claim per support type.";
+      case 'travel_registration_group_mismatch':
+        return 'This travel item doesn’t match the participant’s support type (registration group). Pick the travel item that sits under the same support group as their visit support item — or change who the claim is nominated to.';
       default:
         return fallback;
     }

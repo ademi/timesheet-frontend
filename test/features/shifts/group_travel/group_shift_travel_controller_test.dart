@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
+import 'package:rostiq/features/billing/data/models/billing_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
@@ -33,16 +34,27 @@ class _MockSessionService extends Mock implements SessionService {}
 
 final _now = DateTime.utc(2026, 9, 12, 9);
 
-ShiftParticipantOut _participant(String id, String name) {
+ShiftParticipantOut _participant(
+  String id,
+  String name, {
+  String? supportItemCode,
+}) {
   return ShiftParticipantOut(
     id: id,
     participantId: 'client-$id',
     participantName: name,
     status: 'active',
+    rateSnapshot:
+        supportItemCode == null
+            ? null
+            : ShiftParticipantRateSnapshotSummary(
+              baseRate: 50,
+              supportItemCode: supportItemCode,
+            ),
   );
 }
 
-ShiftOut _shift() {
+ShiftOut _shift({List<ShiftParticipantOut>? participants}) {
   return ShiftOut(
     id: 'shift-1',
     tenantId: 'tenant-1',
@@ -53,7 +65,9 @@ ShiftOut _shift() {
     requiredSlots: 1,
     openSlots: 0,
     status: 'published',
-    participants: [_participant('sp-1', 'Maya'), _participant('sp-2', 'Lee')],
+    participants:
+        participants ??
+        [_participant('sp-1', 'Maya'), _participant('sp-2', 'Lee')],
     createdAt: _now,
     updatedAt: _now,
   );
@@ -61,6 +75,7 @@ ShiftOut _shift() {
 
 ShiftTravelOut _travel({
   String id = 'travel-1',
+  String supportItemCode = '01_799_0107_1_1',
   double quantity = 10,
   TravelApportionmentMode mode = TravelApportionmentMode.equal,
   String? nominee,
@@ -68,7 +83,7 @@ ShiftTravelOut _travel({
   return ShiftTravelOut(
     id: id,
     shiftId: 'shift-1',
-    supportItemCode: '02_051_0108_1_1',
+    supportItemCode: supportItemCode,
     quantity: quantity,
     apportionmentMode: mode,
     nominatedParticipantId: nominee,
@@ -79,8 +94,8 @@ ShiftTravelOut _travel({
 
 void _completeDraft(GroupShiftTravelController controller) {
   controller.setItem(
-    supportItemCode: '02_051_0108_1_1',
-    supportItemName: 'Provider travel',
+    supportItemCode: '01_799_0107_1_1',
+    supportItemName: 'Provider travel – non-labour',
   );
   controller.setQuantity('10');
 }
@@ -120,7 +135,7 @@ void main() {
               () => repository.createTravel('shift-1', captureAny()),
             ).captured.single
             as ShiftTravelWrite;
-    expect(body.supportItemCode, '02_051_0108_1_1');
+    expect(body.supportItemCode, '01_799_0107_1_1');
     expect(body.quantity, '10');
     expect(body.apportionmentMode, TravelApportionmentMode.equal);
   });
@@ -237,5 +252,100 @@ void main() {
 
     visitsController.removeSelectedShiftTravel(first.id);
     expect(visitsController.selectedShift.value!.travelClaims, isEmpty);
+  });
+
+  test('switching nominee clears mismatched travel item', () {
+    final shift = _shift(
+      participants: [
+        _participant('sp-1', 'Maya', supportItemCode: '01_011_0107_1_1'),
+        _participant('sp-2', 'Lee', supportItemCode: '04_104_0125_6_1'),
+      ],
+    );
+    final controller = GroupShiftTravelController(
+      shiftsRepository: repository,
+      args: GroupShiftTravelArgs(shift: shift),
+    );
+    controller.setMode(TravelApportionmentMode.nominated);
+    controller.setNominee('sp-1');
+    controller.setItem(
+      supportItemCode: '01_799_0107_1_1',
+      supportItemName: 'Provider travel Maya group',
+    );
+
+    controller.setNominee('sp-2');
+
+    expect(controller.draft.value.supportItemCode, isNull);
+    expect(
+      controller.itemClearedHelper.value,
+      GroupShiftTravelController.itemClearedHelperMessage,
+    );
+  });
+
+  test('equal mixed registration groups blocks next and save', () {
+    final shift = _shift(
+      participants: [
+        _participant('sp-1', 'Maya', supportItemCode: '01_011_0107_1_1'),
+        _participant('sp-2', 'Lee', supportItemCode: '04_104_0125_6_1'),
+      ],
+    );
+    final controller = GroupShiftTravelController(
+      shiftsRepository: repository,
+      args: GroupShiftTravelArgs(shift: shift),
+      onPop: (_) => fail('must not pop'),
+    );
+    _completeDraft(controller);
+    controller.step.value = GroupShiftTravelController.splitStep;
+
+    expect(controller.hasMixedEqualRegistrationGroups, isTrue);
+    controller.nextStep();
+    expect(
+      controller.errorMessage.value,
+      GroupShiftTravelController.mixedEqualErrorMessage,
+    );
+    expect(controller.step.value, GroupShiftTravelController.splitStep);
+  });
+
+  test('travelCataloguePredicate keeps matching E mid-codes only', () {
+    final shift = _shift(
+      participants: [
+        _participant('sp-1', 'Maya', supportItemCode: '01_011_0107_1_1'),
+        _participant('sp-2', 'Lee', supportItemCode: '01_012_0107_1_1'),
+      ],
+    );
+    final controller = GroupShiftTravelController(
+      shiftsRepository: repository,
+      args: GroupShiftTravelArgs(shift: shift),
+    );
+
+    expect(
+      controller.travelCataloguePredicate(
+        const NdisCatalogueItemOut(
+          supportItemNumber: '01_799_0107_1_1',
+          supportItemName: 'Provider travel',
+          unit: 'E',
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      controller.travelCataloguePredicate(
+        const NdisCatalogueItemOut(
+          supportItemNumber: '04_799_0125_6_1',
+          supportItemName: 'Wrong group travel',
+          unit: 'E',
+        ),
+      ),
+      isFalse,
+    );
+    expect(
+      controller.travelCataloguePredicate(
+        const NdisCatalogueItemOut(
+          supportItemNumber: '01_011_0107_1_1',
+          supportItemName: 'Self care',
+          unit: 'H',
+        ),
+      ),
+      isFalse,
+    );
   });
 }

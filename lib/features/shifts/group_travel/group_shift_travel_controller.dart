@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../features/billing/data/models/billing_models.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../data/models/shift_models.dart';
 import '../data/models/shift_travel_models.dart';
@@ -8,7 +9,32 @@ import '../data/repositories/shifts_repository.dart';
 import '../utils/participant_display.dart';
 import '../utils/travel_apportionment.dart';
 import '../utils/travel_draft.dart';
+import '../utils/travel_item_rules.dart';
 import 'group_shift_travel_args.dart';
+
+/// Anchor support-item codes for option 4 (registration-group narrowing).
+List<String> travelAnchorCodes({
+  required TravelApportionmentMode mode,
+  required String? nominatedParticipantId,
+  required List<ShiftParticipantOut> active,
+}) {
+  if (mode == TravelApportionmentMode.nominated) {
+    final nominee = active.where((p) => p.id == nominatedParticipantId);
+    final code =
+        nominee.isEmpty
+            ? null
+            : nominee.first.rateSnapshot?.supportItemCode?.trim();
+    return (code == null || code.isEmpty) ? const [] : [code];
+  }
+  return [
+    for (final p in active)
+      if ((p.rateSnapshot?.supportItemCode ?? '').trim().isNotEmpty)
+        p.rateSnapshot!.supportItemCode!.trim(),
+  ];
+}
+
+bool travelEqualHasMixedRegistrationGroups(List<String> anchors) =>
+    uniqueRegistrationGroups(anchors).length > 1;
 
 class GroupShiftTravelController extends GetxController {
   GroupShiftTravelController({
@@ -40,10 +66,20 @@ class GroupShiftTravelController extends GetxController {
   static const maxStep = reviewStep;
   static const stepLabels = ['Item', 'Split', 'Review'];
 
+  static const itemClearedHelperMessage =
+      'Pick a travel item that matches this participant.';
+  static const noAnchorsHelperMessage =
+      'Showing all provider travel / activity transport items. Publish the shift to narrow by participant support item.';
+  static const mixedEqualErrorMessage =
+      'These participants have different NDIS support types, so one shared travel item can’t be split equally. Switch to Nominated, or add a separate travel claim per support type.';
+
   final step = itemStep.obs;
   late final Rx<TravelDraft> draft;
   final isSaving = false.obs;
   final errorMessage = RxnString();
+
+  /// Muted helper after mode/nominee change cleared an invalid support item (D3).
+  final itemClearedHelper = RxnString();
 
   ShiftOut get shift => args.shift;
   bool get isEditing => args.isEditing;
@@ -51,6 +87,24 @@ class GroupShiftTravelController extends GetxController {
       activeParticipants(shift.participants);
   List<String> get activeParticipantIds =>
       active.map((participant) => participant.id).toList(growable: false);
+
+  List<String> get currentTravelAnchors => travelAnchorCodes(
+    mode: draft.value.apportionmentMode,
+    nominatedParticipantId: draft.value.nominatedParticipantId,
+    active: active,
+  );
+
+  bool get hasMixedEqualRegistrationGroups =>
+      draft.value.apportionmentMode == TravelApportionmentMode.equal &&
+      travelEqualHasMixedRegistrationGroups(currentTravelAnchors);
+
+  bool get hasTravelAnchors => currentTravelAnchors.isNotEmpty;
+
+  /// Stable key so the picker remounts when anchors / split mode change.
+  String get travelPickerKey =>
+      '${draft.value.apportionmentMode.name}|'
+      '${draft.value.nominatedParticipantId ?? ''}|'
+      '${currentTravelAnchors.join(',')}';
 
   Map<String, double> get apportionedQuantities {
     final quantity = double.tryParse(draft.value.quantity?.trim() ?? '');
@@ -65,6 +119,40 @@ class GroupShiftTravelController extends GetxController {
     );
   }
 
+  bool travelCataloguePredicate(NdisCatalogueItemOut item) {
+    if (item.unit != 'E') return false;
+    if (!isTravelClaimableItemNumber(item.supportItemNumber)) return false;
+    final anchors = currentTravelAnchors;
+    if (draft.value.apportionmentMode == TravelApportionmentMode.equal &&
+        travelEqualHasMixedRegistrationGroups(anchors)) {
+      return false;
+    }
+    return travelCodeMatchesAnchors(
+      travelCode: item.supportItemNumber,
+      anchorCodes: anchors,
+    );
+  }
+
+  bool _itemMatchesCurrentPredicate(String? code) {
+    final trimmed = code?.trim() ?? '';
+    if (trimmed.isEmpty) return true;
+    return travelCataloguePredicate(
+      NdisCatalogueItemOut(
+        supportItemNumber: trimmed,
+        supportItemName: draft.value.supportItemName ?? trimmed,
+        unit: 'E',
+      ),
+    );
+  }
+
+  void _clearItemIfInvalidForCurrentAnchors() {
+    final code = draft.value.supportItemCode;
+    if (!_itemMatchesCurrentPredicate(code)) {
+      draft.value = draft.value.copyWith(clearSupportItem: true);
+      itemClearedHelper.value = itemClearedHelperMessage;
+    }
+  }
+
   void setItem({
     required String? supportItemCode,
     required String? supportItemName,
@@ -75,6 +163,9 @@ class GroupShiftTravelController extends GetxController {
       clearSupportItem: supportItemCode == null || supportItemCode.isEmpty,
     );
     errorMessage.value = null;
+    if (supportItemCode != null && supportItemCode.isNotEmpty) {
+      itemClearedHelper.value = null;
+    }
   }
 
   void setQuantity(String value) {
@@ -96,6 +187,7 @@ class GroupShiftTravelController extends GetxController {
       clearNominee: mode == TravelApportionmentMode.equal,
     );
     errorMessage.value = null;
+    _clearItemIfInvalidForCurrentAnchors();
   }
 
   void setNominee(String? participantId) {
@@ -104,6 +196,7 @@ class GroupShiftTravelController extends GetxController {
       clearNominee: participantId == null,
     );
     errorMessage.value = null;
+    _clearItemIfInvalidForCurrentAnchors();
   }
 
   void previousStep() {
@@ -114,6 +207,10 @@ class GroupShiftTravelController extends GetxController {
 
   void nextStep() {
     if (isSaving.value) return;
+    if (hasMixedEqualRegistrationGroups) {
+      errorMessage.value = mixedEqualErrorMessage;
+      return;
+    }
     final error = switch (step.value) {
       itemStep => draft.value.validateItem(),
       splitStep =>
@@ -131,6 +228,10 @@ class GroupShiftTravelController extends GetxController {
 
   Future<void> save() async {
     if (isSaving.value) return;
+    if (hasMixedEqualRegistrationGroups) {
+      errorMessage.value = mixedEqualErrorMessage;
+      return;
+    }
     final error = draft.value.validateAll(activeParticipantIds);
     if (error != null) {
       errorMessage.value = error;
@@ -198,6 +299,11 @@ class GroupShiftTravelController extends GetxController {
       'travel_too_many' => 'This shift already has the maximum 16 travel rows.',
       'nominated_participant_inactive' =>
         'The nominated participant is no longer active.',
+      'travel_item_not_claimable' ||
+      'travel_item_unit_not_exportable' ||
+      'travel_equal_mixed_registration_groups' ||
+      'travel_registration_group_mismatch' =>
+        failure.message,
       _ => failure.message,
     };
   }

@@ -441,7 +441,7 @@ class _TravelRow extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        '${travel.supportItemCode} · qty ${_formatQty(travel.quantity)}',
+                        '${travel.supportItemCode} · ${_formatQty(travel.quantity)} km',
                       ),
                     ),
                     if (travel.isClaimed) ...[
