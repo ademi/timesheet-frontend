@@ -32,6 +32,9 @@ class _FakeTokenStorage extends Fake implements TokenStorage {
     required String tenantId,
     String? engagementId,
   }) async {}
+
+  @override
+  Future<void> clearLastTenantSelection() async {}
 }
 
 void main() {

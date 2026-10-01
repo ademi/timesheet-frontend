@@ -829,6 +829,7 @@ class _DetailsStep extends StatelessWidget {
             supportItemName: controller.supportItemName.value,
             enabled: !controller.isSaving.value,
             labelText: null,
+            allowedUnits: const {'H'},
             onChanged: ({
               required String? supportItemCode,
               required String? supportItemName,

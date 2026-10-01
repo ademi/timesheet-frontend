@@ -79,6 +79,7 @@ class _JobDetailViewState extends State<JobDetailView> {
                       supportItemName: controller.editingSupportItemName.value,
                       enabled: !controller.isSaving.value,
                       labelText: 'NDIS support item',
+                      allowedUnits: const {'H'},
                       onChanged: ({
                         required String? supportItemCode,
                         required String? supportItemName,

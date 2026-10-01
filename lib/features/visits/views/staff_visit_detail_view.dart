@@ -151,6 +151,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                                 controller.editingVisitSupportItemName.value,
                             enabled: !controller.isSaving.value,
                             labelText: 'Visit-level NDIS item',
+                            allowedUnits: const {'H'},
                             onChanged: ({
                               required String? supportItemCode,
                               required String? supportItemName,
@@ -427,6 +428,7 @@ class _VisitTaskRow extends StatelessWidget {
                 supportItemName: name,
                 enabled: !controller.isSaving.value,
                 labelText: 'Task NDIS item (optional)',
+                allowedUnits: const {'H'},
                 onChanged: ({
                   required String? supportItemCode,
                   required String? supportItemName,

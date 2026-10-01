@@ -189,6 +189,7 @@ class RecurrenceRuleFormView extends StatelessWidget {
                         supportItemName: c.taskSupportSlots[i].supportItemName,
                         enabled: !c.jobs.isSaving.value,
                         labelText: 'NDIS item',
+                        allowedUnits: const {'H'},
                         onChanged: ({
                           required String? supportItemCode,
                           required String? supportItemName,

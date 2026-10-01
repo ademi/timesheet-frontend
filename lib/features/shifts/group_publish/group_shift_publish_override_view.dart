@@ -181,6 +181,7 @@ class _GroupShiftPublishOverrideViewState
                         supportItemCode: _itemCode,
                         supportItemName: _itemName,
                         labelText: 'Support item (optional)',
+                        allowedUnits: const {'H'},
                         onChanged: ({
                           required supportItemCode,
                           required supportItemName,

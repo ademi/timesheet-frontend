@@ -212,6 +212,7 @@ class _ItemStep extends StatelessWidget {
           supportItemCode: d.supportItemCode,
           supportItemName: d.supportItemName,
           labelText: 'Default support item',
+          allowedUnits: const {'H'},
           onChanged: ({
             required supportItemCode,
             required supportItemName,
@@ -366,6 +367,7 @@ class _StayStepState extends State<_StayStep> {
             supportItemCode: d.accommodationSupportItemCode,
             supportItemName: d.accommodationSupportItemName,
             labelText: 'Accommodation support item',
+            allowedUnits: const {'D'},
             onChanged: ({
               required supportItemCode,
               required supportItemName,

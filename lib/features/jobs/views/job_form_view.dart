@@ -228,6 +228,7 @@ class JobFormView extends GetView<JobsController> {
                     supportItemName: controller.supportItemName.value,
                     enabled: !controller.isSaving.value,
                     labelText: 'Default NDIS support item (optional)',
+                    allowedUnits: const {'H'},
                     onChanged: ({
                       required String? supportItemCode,
                       required String? supportItemName,
