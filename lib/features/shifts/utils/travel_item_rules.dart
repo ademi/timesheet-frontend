@@ -59,3 +59,28 @@ Set<String> uniqueRegistrationGroups(List<String> codes) {
   }
   return groups;
 }
+
+/// Soft Provider Travel labour time cap (minutes) for an MMM category.
+///
+/// Mirrors BE `mmm_travel_cap_minutes`: MMM 1–3 → 30; 4–5 → 60; 6–7 / null → none.
+int? mmmTravelCapMinutes(int? mmmCategory) {
+  if (mmmCategory == null) return null;
+  if (mmmCategory >= 1 && mmmCategory <= 3) return 30;
+  if (mmmCategory >= 4 && mmmCategory <= 5) return 60;
+  return null;
+}
+
+/// True when [minutes] exceed the soft MMM travel cap (strictly greater).
+bool isOverMmmCap(num minutes, int? mmmCategory) {
+  final cap = mmmTravelCapMinutes(mmmCategory);
+  if (cap == null) return false;
+  return minutes > cap;
+}
+
+/// Convert minutes to hours quantized to 4 decimal places (mirrors BE).
+double minutesToHours(num minutes) {
+  final hours = minutes / 60.0;
+  final scaled = hours * 10000;
+  final rounded = scaled.roundToDouble();
+  return rounded / 10000;
+}

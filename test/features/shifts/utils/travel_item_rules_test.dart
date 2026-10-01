@@ -63,4 +63,32 @@ void main() {
     expect(travelClaimUnits, {'E'});
     expect(travelClaimMidSegments.contains('799'), isTrue);
   });
+
+  test('mmmTravelCapMinutes by category', () {
+    expect(mmmTravelCapMinutes(1), 30);
+    expect(mmmTravelCapMinutes(2), 30);
+    expect(mmmTravelCapMinutes(3), 30);
+    expect(mmmTravelCapMinutes(4), 60);
+    expect(mmmTravelCapMinutes(5), 60);
+    expect(mmmTravelCapMinutes(6), isNull);
+    expect(mmmTravelCapMinutes(7), isNull);
+    expect(mmmTravelCapMinutes(null), isNull);
+    expect(mmmTravelCapMinutes(0), isNull);
+  });
+
+  test('isOverMmmCap soft warn only when over', () {
+    expect(isOverMmmCap(30, 1), isFalse);
+    expect(isOverMmmCap(31, 1), isTrue);
+    expect(isOverMmmCap(60, 4), isFalse);
+    expect(isOverMmmCap(61, 5), isTrue);
+    expect(isOverMmmCap(120, 6), isFalse);
+    expect(isOverMmmCap(120, null), isFalse);
+  });
+
+  test('minutesToHours quantizes to 4dp', () {
+    expect(minutesToHours(60), 1.0);
+    expect(minutesToHours(30), 0.5);
+    expect(minutesToHours(45), 0.75);
+    expect(minutesToHours(1), 0.0167);
+  });
 }
