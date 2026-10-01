@@ -409,7 +409,7 @@ class _TravelSection extends StatelessWidget {
 
   String _splitLabel(ShiftTravelOut travel) {
     if (travel.apportionmentMode == TravelApportionmentMode.equal) {
-      return 'Equal';
+      return 'Equal split';
     }
     for (final participant in active) {
       if (participant.id == travel.nominatedParticipantId) {
