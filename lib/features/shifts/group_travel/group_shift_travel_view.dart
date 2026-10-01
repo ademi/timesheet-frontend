@@ -73,6 +73,7 @@ class GroupShiftTravelView extends GetView<GroupShiftTravelController> {
             if (controller.step.value == GroupShiftTravelController.reviewStep)
               FormStickyActions(
                 onCancel: isSaving ? null : controller.previousStep,
+                cancelLabel: 'Back',
                 primaryLabel: 'Save',
                 onPrimary: isSaving ? null : controller.save,
                 isLoading: isSaving,
@@ -365,8 +366,7 @@ class _LabourItemFields extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Paid worker travel time billed as Provider Travel against each '
-          'participant’s published hourly support item.',
+          'Billed as Provider Travel from each participant’s published hourly item.',
           style: TextStyle(color: AppColors.textMuted, fontSize: 13),
         ),
         const SizedBox(height: 16),
@@ -394,13 +394,6 @@ class _LabourItemFields extends StatelessWidget {
             style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
         ],
-        if (controller.showOverCapBanner) ...[
-          const SizedBox(height: 16),
-          _OverCapBanner(
-            title: GroupShiftTravelController.overCapBannerTitle,
-            body: controller.overCapBannerBody(),
-          ),
-        ],
         const SizedBox(height: 16),
         TextField(
           controller: quantityController,
@@ -415,6 +408,13 @@ class _LabourItemFields extends StatelessWidget {
           ],
           onChanged: controller.setQuantity,
         ),
+        if (controller.showOverCapBanner) ...[
+          const SizedBox(height: 12),
+          _OverCapBanner(
+            title: GroupShiftTravelController.overCapBannerTitle,
+            body: controller.overCapBannerBody(),
+          ),
+        ],
         const SizedBox(height: 16),
         TextField(
           controller: notesController,
@@ -613,9 +613,9 @@ class _ReviewStep extends StatelessWidget {
               participant.participantName ?? participant.participantId,
             ),
             trailing: Text(
-              GroupShiftTravelController.formatShare(
+              '${GroupShiftTravelController.formatShare(
                 shares[participant.id] ?? 0,
-              ),
+              )}${isLabour ? ' min' : ''}',
             ),
           ),
         if (draft.notes?.trim().isNotEmpty == true)
