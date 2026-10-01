@@ -200,6 +200,14 @@ class _ItemStepState extends State<_ItemStep> {
       children: [
         if (showMixedEqual) ...[
           _ErrorBox(GroupShiftTravelController.mixedEqualErrorMessage),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: widget.controller.switchToNominatedSplit,
+              child: const Text('Switch to Nominated split'),
+            ),
+          ),
           const SizedBox(height: 12),
         ],
         NdisSupportItemPicker(
@@ -278,6 +286,14 @@ class _SplitStep extends StatelessWidget {
         const SizedBox(height: 8),
         if (controller.hasMixedEqualRegistrationGroups) ...[
           _ErrorBox(GroupShiftTravelController.mixedEqualErrorMessage),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: controller.switchToNominatedSplit,
+              child: const Text('Switch to Nominated split'),
+            ),
+          ),
           const SizedBox(height: 12),
         ],
         RadioGroup<TravelApportionmentMode>(

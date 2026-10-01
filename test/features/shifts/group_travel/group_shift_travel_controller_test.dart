@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/billing/data/models/billing_models.dart';
+import 'package:rostiq/features/billing/data/repositories/ndis_catalogue_repository.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
@@ -31,6 +32,9 @@ class _MockEngagementsRepository extends Mock
 class _MockClientsRepository extends Mock implements ClientsRepository {}
 
 class _MockSessionService extends Mock implements SessionService {}
+
+class _MockCatalogueRepository extends Mock
+    implements NdisCatalogueRepository {}
 
 final _now = DateTime.utc(2026, 9, 12, 9);
 
@@ -303,6 +307,75 @@ void main() {
       GroupShiftTravelController.mixedEqualErrorMessage,
     );
     expect(controller.step.value, GroupShiftTravelController.splitStep);
+  });
+
+  test('mixed equal on Item step still advances to Split', () {
+    final shift = _shift(
+      participants: [
+        _participant('sp-1', 'Maya', supportItemCode: '01_011_0107_1_1'),
+        _participant('sp-2', 'Lee', supportItemCode: '04_104_0125_6_1'),
+      ],
+    );
+    final controller = GroupShiftTravelController(
+      shiftsRepository: repository,
+      args: GroupShiftTravelArgs(shift: shift),
+    );
+
+    expect(controller.hasMixedEqualRegistrationGroups, isTrue);
+    expect(controller.step.value, GroupShiftTravelController.itemStep);
+    controller.nextStep();
+    expect(controller.step.value, GroupShiftTravelController.splitStep);
+    expect(controller.errorMessage.value, isNull);
+  });
+
+  test('switchToNominatedSplit opens Split in nominated mode', () {
+    final shift = _shift(
+      participants: [
+        _participant('sp-1', 'Maya', supportItemCode: '01_011_0107_1_1'),
+        _participant('sp-2', 'Lee', supportItemCode: '04_104_0125_6_1'),
+      ],
+    );
+    final controller = GroupShiftTravelController(
+      shiftsRepository: repository,
+      args: GroupShiftTravelArgs(shift: shift),
+    );
+
+    controller.switchToNominatedSplit();
+
+    expect(
+      controller.draft.value.apportionmentMode,
+      TravelApportionmentMode.nominated,
+    );
+    expect(controller.step.value, GroupShiftTravelController.splitStep);
+    expect(controller.hasMixedEqualRegistrationGroups, isFalse);
+  });
+
+  test('hydrateSupportItemName fills catalogue title for edit', () async {
+    final catalogue = _MockCatalogueRepository();
+    when(() => catalogue.fetchAllActiveItems()).thenAnswer(
+      (_) async => [
+        const NdisCatalogueItemOut(
+          supportItemNumber: '01_799_0107_1_1',
+          supportItemName: 'Provider travel - non-labour costs',
+          unit: 'E',
+        ),
+      ],
+    );
+    final controller = GroupShiftTravelController(
+      shiftsRepository: repository,
+      args: GroupShiftTravelArgs(
+        shift: _shift(),
+        existing: _travel(supportItemCode: '01_799_0107_1_1'),
+      ),
+      catalogueRepository: catalogue,
+    );
+
+    expect(controller.draft.value.supportItemName, isNull);
+    await controller.hydrateSupportItemName();
+    expect(
+      controller.draft.value.supportItemName,
+      'Provider travel - non-labour costs',
+    );
   });
 
   test('travelCataloguePredicate keeps matching E mid-codes only', () {

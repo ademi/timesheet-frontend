@@ -1,7 +1,9 @@
 import 'package:get/get.dart';
 
 import '../../../core/errors/app_failure.dart';
+import '../../../features/billing/bindings/billing_binding.dart';
 import '../../../features/billing/data/models/billing_models.dart';
+import '../../../features/billing/data/repositories/ndis_catalogue_repository.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../data/models/shift_models.dart';
 import '../data/models/shift_travel_models.dart';
@@ -41,13 +43,16 @@ class GroupShiftTravelController extends GetxController {
     required ShiftsRepository shiftsRepository,
     required this.args,
     void Function(dynamic result)? onPop,
+    NdisCatalogueRepository? catalogueRepository,
   }) : _shifts = shiftsRepository,
-       _onPop = onPop {
+       _onPop = onPop,
+       _catalogueOverride = catalogueRepository {
     final existing = args.existing;
     draft =
         TravelDraft(
           supportItemCode: existing?.supportItemCode,
-          supportItemName: existing?.supportItemCode,
+          // Name is hydrated from the catalogue in [onReady] (API has code only).
+          supportItemName: null,
           quantity: existing == null ? null : _formatQty(existing.quantity),
           notes: existing?.notes,
           apportionmentMode:
@@ -59,6 +64,7 @@ class GroupShiftTravelController extends GetxController {
   final ShiftsRepository _shifts;
   final GroupShiftTravelArgs args;
   final void Function(dynamic result)? _onPop;
+  final NdisCatalogueRepository? _catalogueOverride;
 
   static const itemStep = 0;
   static const splitStep = 1;
@@ -80,6 +86,45 @@ class GroupShiftTravelController extends GetxController {
 
   /// Muted helper after mode/nominee change cleared an invalid support item (D3).
   final itemClearedHelper = RxnString();
+
+  @override
+  void onReady() {
+    super.onReady();
+    hydrateSupportItemName();
+  }
+
+  NdisCatalogueRepository get _catalogue {
+    final override = _catalogueOverride;
+    if (override != null) return override;
+    BillingBinding.ensureShared();
+    return Get.find<NdisCatalogueRepository>();
+  }
+
+  /// Resolve catalogue display name for an existing travel code (edit flow).
+  Future<void> hydrateSupportItemName() async {
+    final code = draft.value.supportItemCode?.trim();
+    if (code == null || code.isEmpty) return;
+    final currentName = draft.value.supportItemName?.trim();
+    if (currentName != null &&
+        currentName.isNotEmpty &&
+        currentName != code) {
+      return;
+    }
+    try {
+      final items = await _catalogue.fetchAllActiveItems();
+      for (final item in items) {
+        if (item.supportItemNumber == code) {
+          draft.value = draft.value.copyWith(
+            supportItemCode: code,
+            supportItemName: item.supportItemName,
+          );
+          return;
+        }
+      }
+    } catch (_) {
+      // Soft: leave name empty; picker still works once catalogue loads.
+    }
+  }
 
   ShiftOut get shift => args.shift;
   bool get isEditing => args.isEditing;
@@ -207,12 +252,15 @@ class GroupShiftTravelController extends GetxController {
 
   void nextStep() {
     if (isSaving.value) return;
-    if (hasMixedEqualRegistrationGroups) {
+    // Mixed equal: allow Item → Split so staff can switch to Nominated.
+    // Block leaving Split (and save) until the split is fixed.
+    if (hasMixedEqualRegistrationGroups && step.value >= splitStep) {
       errorMessage.value = mixedEqualErrorMessage;
       return;
     }
     final error = switch (step.value) {
-      itemStep => draft.value.validateItem(),
+      itemStep =>
+        hasMixedEqualRegistrationGroups ? null : draft.value.validateItem(),
       splitStep =>
         draft.value.validateSplit() ??
             draft.value.validateReview(activeParticipantIds),
@@ -223,6 +271,13 @@ class GroupShiftTravelController extends GetxController {
       return;
     }
     if (step.value < maxStep) step.value += 1;
+    errorMessage.value = null;
+  }
+
+  /// Jump to Split in Nominated mode when Equal cannot work (mixed reg groups).
+  void switchToNominatedSplit() {
+    setMode(TravelApportionmentMode.nominated);
+    step.value = splitStep;
     errorMessage.value = null;
   }
 
