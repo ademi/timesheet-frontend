@@ -84,3 +84,49 @@ double minutesToHours(num minutes) {
   final rounded = scaled.roundToDouble();
   return rounded / 10000;
 }
+
+/// Convert hours back to minutes (same 4dp precision as [minutesToHours]).
+double hoursToMinutes(num hours) {
+  final minutes = hours * 60.0;
+  final scaled = minutes * 10000;
+  final rounded = scaled.roundToDouble();
+  return rounded / 10000;
+}
+
+/// Therapy / early childhood capacity-building registration groups where
+/// Provider Travel labour is claimed at 50% of the catalogue hourly limit.
+///
+/// Keep in sync with BE `THERAPY_HALF_RATE_REGISTRATION_GROUPS`.
+const Set<String> therapyHalfRateRegistrationGroups = {
+  '0110',
+  '0115',
+  '0117',
+  '0118',
+  '0126',
+  '0128',
+  '0129',
+  '0134',
+  '0135',
+  '0136',
+  '0156',
+};
+
+bool isTherapyHalfRate(String? registrationGroup) {
+  if (registrationGroup == null) return false;
+  return therapyHalfRateRegistrationGroups.contains(registrationGroup.trim());
+}
+
+/// True when any of [itemCodes] sits in a therapy half-rate registration group.
+bool anyTherapyHalfRateItem(Iterable<String> itemCodes) {
+  for (final code in itemCodes) {
+    if (isTherapyHalfRate(registrationGroupFromItemNumber(code))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Strip trailing zeros from a decimal quantity for display.
+String formatTravelQty(num value) {
+  return value.toStringAsFixed(4).replaceFirst(RegExp(r'\.?0+$'), '');
+}

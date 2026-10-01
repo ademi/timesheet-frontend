@@ -17,6 +17,8 @@ class _MockShiftsRepository extends Mock implements ShiftsRepository {}
 class _MockNdisCatalogueRepository extends Mock
     implements NdisCatalogueRepository {}
 
+class _FakeTravelWrite extends Fake implements ShiftTravelWrite {}
+
 final _now = DateTime.utc(2026, 9, 12, 9);
 
 ShiftParticipantOut _participant(
@@ -77,6 +79,10 @@ void main() {
       () => catalogue.fetchAllActiveItems(),
     ).thenAnswer((_) async => const <NdisCatalogueItemOut>[]);
     Get.put<NdisCatalogueRepository>(catalogue);
+  });
+
+  setUpAll(() {
+    registerFallbackValue(_FakeTravelWrite());
   });
 
   tearDown(Get.reset);
@@ -158,5 +164,70 @@ void main() {
       find.textContaining('Publish the shift to narrow'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('Worker travel time section and Minutes label', (tester) async {
+    controller = GroupShiftTravelController(
+      shiftsRepository: shifts,
+      args: GroupShiftTravelArgs(shift: _shift()),
+    );
+    await pumpTravelView(tester, travelController: controller);
+
+    expect(find.text(GroupShiftTravelController.workerTimeSectionTitle), findsWidgets);
+    await tester.tap(
+      find.text(GroupShiftTravelController.workerTimeSectionTitle).last,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Minutes'), findsOneWidget);
+    expect(find.text('e.g. 45'), findsOneWidget);
+    expect(find.text('Kilometres'), findsNothing);
+    expect(find.text('Travel support item'), findsNothing);
+    expect(
+      find.text(GroupShiftTravelController.workerTimeSectionTitle),
+      findsWidgets,
+    );
+  });
+
+  testWidgets('over-cap banner visible and save still works', (tester) async {
+    final saved = ShiftTravelOut(
+      id: 'travel-labour',
+      shiftId: 'shift-1',
+      claimKind: TravelClaimKind.labour,
+      quantity: 0.75,
+      apportionmentMode: TravelApportionmentMode.equal,
+      mmmCategory: 1,
+      mmmCapMinutes: 30,
+      overCap: true,
+      createdAt: _now,
+      updatedAt: _now,
+    );
+    when(() => shifts.createTravel('shift-1', any())).thenAnswer((_) async => saved);
+
+    dynamic popped;
+    controller = GroupShiftTravelController(
+      shiftsRepository: shifts,
+      args: GroupShiftTravelArgs(shift: _shift()),
+      onPop: (result) => popped = result,
+      mmmCategoryOverride: 1,
+    );
+    controller.setClaimKind(TravelClaimKind.labour);
+    controller.setQuantity('45');
+    controller.step.value = GroupShiftTravelController.reviewStep;
+
+    await pumpTravelView(tester, travelController: controller);
+
+    expect(find.text(GroupShiftTravelController.overCapBannerTitle), findsOneWidget);
+    expect(find.textContaining('You can still save'), findsOneWidget);
+
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(popped, same(saved));
+    final body =
+        verify(() => shifts.createTravel('shift-1', captureAny())).captured.single
+            as ShiftTravelWrite;
+    expect(body.claimKind, TravelClaimKind.labour);
+    expect(body.quantityMinutes, '45');
   });
 }

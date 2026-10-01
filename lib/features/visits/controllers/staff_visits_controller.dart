@@ -610,7 +610,11 @@ class StaffVisitsController extends GetxController {
     return await Get.dialog<bool>(
           AlertDialog(
             title: const Text('Delete travel?'),
-            content: Text('Delete ${travel.supportItemCode} from this shift?'),
+            content: Text(
+              travel.isLabour
+                  ? 'Delete worker travel time from this shift?'
+                  : 'Delete ${travel.supportItemCode} from this shift?',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Get.back(result: false),
@@ -644,7 +648,12 @@ class StaffVisitsController extends GetxController {
       await _shiftsRepository.deleteTravel(shift.id, travel.id);
       removeSelectedShiftTravel(travel.id);
       if (!Get.testMode) {
-        AppToast.success('Travel deleted', travel.supportItemCode);
+        AppToast.success(
+          'Travel deleted',
+          travel.isLabour
+              ? 'Provider Travel'
+              : (travel.supportItemCode ?? 'Travel'),
+        );
       }
     } on AppFailure catch (failure) {
       final message =

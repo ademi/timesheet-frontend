@@ -254,6 +254,11 @@ class AppFailure implements Exception {
       'travel_item_unit_not_exportable',
       'travel_equal_mixed_registration_groups',
       'travel_registration_group_mismatch',
+      'labour_requires_rate_snapshots',
+      'labour_travel_not_permitted',
+      'labour_travel_unclaimed_exists',
+      'labour_snapshot_item_not_hourly',
+      'labour_snapshot_item_not_in_catalogue',
       'ndis_number_in_use',
       'ndis_required',
     ];
@@ -325,6 +330,11 @@ class AppFailure implements Exception {
       case 'travel_item_unit_not_exportable':
       case 'travel_equal_mixed_registration_groups':
       case 'travel_registration_group_mismatch':
+      case 'labour_requires_rate_snapshots':
+      case 'labour_travel_not_permitted':
+      case 'labour_travel_unclaimed_exists':
+      case 'labour_snapshot_item_not_hourly':
+      case 'labour_snapshot_item_not_in_catalogue':
       case 'visit_cancelled':
       case 'visit_already_completed':
       case 'clock_times_in_future':
@@ -505,6 +515,16 @@ class AppFailure implements Exception {
         return "These participants have different NDIS support types, so one shared travel item can’t be split equally. Switch to Nominated, or add a separate travel claim per support type.";
       case 'travel_registration_group_mismatch':
         return 'This travel item doesn’t match the participant’s support type (registration group). Pick the travel item that sits under the same support group as their visit support item — or change who the claim is nominated to.';
+      case 'labour_requires_rate_snapshots':
+        return 'Publish the shift first so each participant has a rate snapshot. Worker travel time uses that hourly support item.';
+      case 'labour_travel_not_permitted':
+        return 'Provider Travel isn’t allowed for this support item in the catalogue. Choose a different support item on the visit, or use vehicle kilometres instead.';
+      case 'labour_travel_unclaimed_exists':
+        return 'This shift already has an unclaimed worker travel-time claim. Edit or claim that one first, or wait until it’s exported.';
+      case 'labour_snapshot_item_not_hourly':
+        return 'Worker travel time needs an hourly (H) support item on the participant’s rate snapshot. Update the published support item and try again.';
+      case 'labour_snapshot_item_not_in_catalogue':
+        return 'The participant’s published support item isn’t in the active catalogue. Re-publish the shift with a current catalogue item.';
       default:
         return fallback;
     }

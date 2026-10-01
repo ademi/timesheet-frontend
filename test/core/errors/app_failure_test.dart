@@ -439,6 +439,16 @@ void main() {
             "These participants have different NDIS support types, so one shared travel item can’t be split equally. Switch to Nominated, or add a separate travel claim per support type.",
         'travel_registration_group_mismatch':
             'This travel item doesn’t match the participant’s support type (registration group). Pick the travel item that sits under the same support group as their visit support item — or change who the claim is nominated to.',
+        'labour_requires_rate_snapshots':
+            'Publish the shift first so each participant has a rate snapshot. Worker travel time uses that hourly support item.',
+        'labour_travel_not_permitted':
+            'Provider Travel isn’t allowed for this support item in the catalogue. Choose a different support item on the visit, or use vehicle kilometres instead.',
+        'labour_travel_unclaimed_exists':
+            'This shift already has an unclaimed worker travel-time claim. Edit or claim that one first, or wait until it’s exported.',
+        'labour_snapshot_item_not_hourly':
+            'Worker travel time needs an hourly (H) support item on the participant’s rate snapshot. Update the published support item and try again.',
+        'labour_snapshot_item_not_in_catalogue':
+            'The participant’s published support item isn’t in the active catalogue. Re-publish the shift with a current catalogue item.',
       };
 
       for (final entry in expectedMessages.entries) {

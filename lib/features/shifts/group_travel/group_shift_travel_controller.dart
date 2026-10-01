@@ -45,16 +45,28 @@ class GroupShiftTravelController extends GetxController {
     required this.args,
     void Function(dynamic result)? onPop,
     NdisCatalogueRepository? catalogueRepository,
+    int? mmmCategoryOverride,
   }) : _shifts = shiftsRepository,
        _onPop = onPop,
-       _catalogueOverride = catalogueRepository {
+       _catalogueOverride = catalogueRepository,
+       mmmCategory = RxnInt(
+         mmmCategoryOverride ?? args.existing?.mmmCategory,
+       ) {
     final existing = args.existing;
+    final isLabour = existing?.isLabour == true;
     draft =
         TravelDraft(
-          supportItemCode: existing?.supportItemCode,
+          claimKind:
+              existing?.claimKind ?? TravelClaimKind.nonLabour,
+          supportItemCode: isLabour ? null : existing?.supportItemCode,
           // Name is hydrated from the catalogue in [onReady] (API has code only).
           supportItemName: null,
-          quantity: existing == null ? null : _formatQty(existing.quantity),
+          quantity:
+              existing == null
+                  ? null
+                  : isLabour
+                  ? _formatQty(hoursToMinutes(existing.quantity))
+                  : _formatQty(existing.quantity),
           notes: existing?.notes,
           apportionmentMode:
               existing?.apportionmentMode ?? TravelApportionmentMode.equal,
@@ -79,6 +91,13 @@ class GroupShiftTravelController extends GetxController {
       'Showing all provider travel / activity transport items. Publish the shift to narrow by participant support item.';
   static const mixedEqualErrorMessage =
       'These participants have different NDIS support types, so one shared travel item can’t be split equally. Switch to Nominated, or add a separate travel claim per support type.';
+  static const overCapBannerTitle = 'Over NDIS travel-time limit';
+  static const therapyHalfRateNote =
+      'Therapy / capacity-building supports bill Provider Travel at 50% of the hourly rate.';
+  static const labourNoSnapshotHelper =
+      'Publish the shift so each participant has a rate snapshot. Worker travel time uses that hourly support item.';
+  static const workerTimeSectionTitle = 'Worker travel time';
+  static const vehicleSectionTitle = 'Vehicle kilometres';
 
   final step = itemStep.obs;
   late final Rx<TravelDraft> draft;
@@ -87,6 +106,9 @@ class GroupShiftTravelController extends GetxController {
 
   /// Muted helper after mode/nominee change cleared an invalid support item (D3).
   final itemClearedHelper = RxnString();
+
+  /// Soft MMM category for over-cap warning (from existing claim or test override).
+  final RxnInt mmmCategory;
 
   @override
   void onReady() {
@@ -103,6 +125,7 @@ class GroupShiftTravelController extends GetxController {
 
   /// Resolve catalogue display name for an existing travel code (edit flow).
   Future<void> hydrateSupportItemName() async {
+    if (draft.value.isLabour) return;
     final code = draft.value.supportItemCode?.trim();
     if (code == null || code.isEmpty) return;
     final currentName = draft.value.supportItemName?.trim();
@@ -129,6 +152,7 @@ class GroupShiftTravelController extends GetxController {
 
   ShiftOut get shift => args.shift;
   bool get isEditing => args.isEditing;
+  bool get canChangeClaimKind => !isEditing;
   List<ShiftParticipantOut> get active =>
       activeParticipants(shift.participants);
   List<String> get activeParticipantIds =>
@@ -141,10 +165,57 @@ class GroupShiftTravelController extends GetxController {
   );
 
   bool get hasMixedEqualRegistrationGroups =>
+      !draft.value.isLabour &&
       draft.value.apportionmentMode == TravelApportionmentMode.equal &&
       travelEqualHasMixedRegistrationGroups(currentTravelAnchors);
 
   bool get hasTravelAnchors => currentTravelAnchors.isNotEmpty;
+
+  bool get showTherapyHalfRateNote =>
+      draft.value.isLabour && anyTherapyHalfRateItem(currentTravelAnchors);
+
+  double? get parsedQuantity {
+    final raw = draft.value.quantity?.trim() ?? '';
+    if (raw.isEmpty) return null;
+    final value = double.tryParse(raw);
+    if (value == null || !value.isFinite || value <= 0) return null;
+    return value;
+  }
+
+  int? get effectiveMmmCapMinutes => mmmTravelCapMinutes(mmmCategory.value);
+
+  bool get showOverCapBanner {
+    if (!draft.value.isLabour) return false;
+    final minutes = parsedQuantity;
+    if (minutes == null) return false;
+    final category = mmmCategory.value;
+    if (category != null) return isOverMmmCap(minutes, category);
+    // Without a known category, warn using the lowest soft cap (MMM 1–3).
+    return minutes > 30;
+  }
+
+  String overCapBannerBody() {
+    final cap = effectiveMmmCapMinutes ?? 30;
+    return 'This travel time exceeds the soft NDIS Provider Travel limit of '
+        '$cap minutes for this location. You can still save — adjust if needed '
+        'before export.';
+  }
+
+  /// Read-only label for labour: snapshot hourly item(s), no catalogue picker.
+  String get labourSupportItemLabel {
+    final anchors = currentTravelAnchors;
+    if (anchors.isEmpty) {
+      return 'Uses each participant’s published hourly support item';
+    }
+    if (anchors.length == 1) {
+      return '${anchors.first} · Provider Travel';
+    }
+    final unique = anchors.toSet().toList(growable: false)..sort();
+    if (unique.length == 1) {
+      return '${unique.first} · Provider Travel';
+    }
+    return 'Per participant snapshot · Provider Travel';
+  }
 
   /// Stable key so the picker remounts when anchors / split mode change.
   String get travelPickerKey =>
@@ -153,8 +224,8 @@ class GroupShiftTravelController extends GetxController {
       '${currentTravelAnchors.join(',')}';
 
   Map<String, double> get apportionedQuantities {
-    final quantity = double.tryParse(draft.value.quantity?.trim() ?? '');
-    if (quantity == null || quantity <= 0 || activeParticipantIds.isEmpty) {
+    final quantity = parsedQuantity;
+    if (quantity == null || activeParticipantIds.isEmpty) {
       return const {};
     }
     return apportionTravelQuantity(
@@ -192,11 +263,24 @@ class GroupShiftTravelController extends GetxController {
   }
 
   void _clearItemIfInvalidForCurrentAnchors() {
+    if (draft.value.isLabour) return;
     final code = draft.value.supportItemCode;
     if (!_itemMatchesCurrentPredicate(code)) {
       draft.value = draft.value.copyWith(clearSupportItem: true);
       itemClearedHelper.value = itemClearedHelperMessage;
     }
+  }
+
+  void setClaimKind(TravelClaimKind kind) {
+    if (!canChangeClaimKind || draft.value.claimKind == kind) return;
+    draft.value = TravelDraft(
+      claimKind: kind,
+      apportionmentMode: draft.value.apportionmentMode,
+      nominatedParticipantId: draft.value.nominatedParticipantId,
+      notes: draft.value.notes,
+    );
+    itemClearedHelper.value = null;
+    errorMessage.value = null;
   }
 
   void setItem({
@@ -305,10 +389,17 @@ class GroupShiftTravelController extends GetxController {
                 existing.id,
                 draft.value.toWrite(),
               );
+      if (saved.mmmCategory != null) {
+        mmmCategory.value = saved.mmmCategory;
+      }
       if (!Get.testMode) {
+        final detail =
+            saved.isLabour
+                ? '${formatTravelQty(hoursToMinutes(saved.quantity))} min'
+                : (saved.supportItemCode ?? 'Travel');
         AppToast.success(
           isEditing ? 'Travel updated' : 'Travel added',
-          saved.supportItemCode,
+          detail,
         );
       }
       _closeWizard(saved);
@@ -362,14 +453,16 @@ class GroupShiftTravelController extends GetxController {
       'travel_item_not_claimable' ||
       'travel_item_unit_not_exportable' ||
       'travel_equal_mixed_registration_groups' ||
-      'travel_registration_group_mismatch' =>
+      'travel_registration_group_mismatch' ||
+      'labour_requires_rate_snapshots' ||
+      'labour_travel_not_permitted' ||
+      'labour_travel_unclaimed_exists' ||
+      'labour_snapshot_item_not_hourly' ||
+      'labour_snapshot_item_not_in_catalogue' =>
         failure.message,
       _ => failure.message,
     };
   }
 
-  static String _formatQty(double value) {
-    final fixed = value.toStringAsFixed(4);
-    return fixed.replaceFirst(RegExp(r'\.?0+$'), '');
-  }
+  static String _formatQty(double value) => formatTravelQty(value);
 }

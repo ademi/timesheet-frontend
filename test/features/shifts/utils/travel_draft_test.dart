@@ -12,6 +12,7 @@ void main() {
   test('valid equal draft passes all steps and creates body', () {
     expect(valid.validateAll(const ['sp-1']), isNull);
     expect(valid.toWrite().toJson(), {
+      'claim_kind': 'non_labour',
       'support_item_code': '02_051_0108_1_1',
       'quantity': '10',
       'apportionment_mode': 'equal',
@@ -48,6 +49,24 @@ void main() {
 
   test('review requires active participants', () {
     expect(valid.validateReview(const []), contains('Add participants'));
+  });
+
+  test('labour draft validates minutes and omits support item', () {
+    const labour = TravelDraft(
+      claimKind: TravelClaimKind.labour,
+      quantity: '45',
+    );
+    expect(labour.validateAll(const ['sp-1']), isNull);
+    expect(labour.toWrite().toJson(), {
+      'claim_kind': 'labour',
+      'quantity_minutes': '45',
+      'apportionment_mode': 'equal',
+      'nominated_participant_id': null,
+    });
+    expect(
+      const TravelDraft(claimKind: TravelClaimKind.labour).validateItem(),
+      contains('minutes'),
+    );
   });
 
   test('toWrite trims and omits blank notes', () {

@@ -152,9 +152,80 @@ void main() {
               () => repository.createTravel('shift-1', captureAny()),
             ).captured.single
             as ShiftTravelWrite;
+    expect(body.claimKind, TravelClaimKind.nonLabour);
     expect(body.supportItemCode, '01_799_0107_1_1');
     expect(body.quantity, '10');
     expect(body.apportionmentMode, TravelApportionmentMode.equal);
+  });
+
+  test('labour save posts claim_kind and quantity_minutes', () async {
+    final saved = ShiftTravelOut(
+      id: 'travel-labour',
+      shiftId: 'shift-1',
+      claimKind: TravelClaimKind.labour,
+      quantity: 0.75,
+      apportionmentMode: TravelApportionmentMode.equal,
+      mmmCategory: 1,
+      mmmCapMinutes: 30,
+      overCap: true,
+      createdAt: _now,
+      updatedAt: _now,
+    );
+    when(
+      () => repository.createTravel('shift-1', any()),
+    ).thenAnswer((_) async => saved);
+    dynamic popped;
+    final controller = GroupShiftTravelController(
+      shiftsRepository: repository,
+      args: GroupShiftTravelArgs(shift: _shift()),
+      onPop: (result) => popped = result,
+      mmmCategoryOverride: 1,
+    );
+    controller.setClaimKind(TravelClaimKind.labour);
+    controller.setQuantity('45');
+
+    expect(controller.showOverCapBanner, isTrue);
+
+    await controller.save();
+
+    expect(popped, same(saved));
+    final body =
+        verify(
+              () => repository.createTravel('shift-1', captureAny()),
+            ).captured.single
+            as ShiftTravelWrite;
+    expect(body.claimKind, TravelClaimKind.labour);
+    expect(body.quantityMinutes, '45');
+    expect(body.supportItemCode, isNull);
+    expect(body.quantity, isNull);
+    expect(body.toJson()['claim_kind'], 'labour');
+    expect(body.toJson()['quantity_minutes'], '45');
+    expect(body.toJson().containsKey('support_item_code'), isFalse);
+  });
+
+  test('labour edit prefills minutes from stored hours', () {
+    final existing = ShiftTravelOut(
+      id: 'travel-1',
+      shiftId: 'shift-1',
+      claimKind: TravelClaimKind.labour,
+      quantity: 0.5,
+      apportionmentMode: TravelApportionmentMode.nominated,
+      nominatedParticipantId: 'sp-2',
+      mmmCategory: 4,
+      mmmCapMinutes: 60,
+      overCap: false,
+      createdAt: _now,
+      updatedAt: _now,
+    );
+    final controller = GroupShiftTravelController(
+      shiftsRepository: repository,
+      args: GroupShiftTravelArgs(shift: _shift(), existing: existing),
+    );
+
+    expect(controller.draft.value.claimKind, TravelClaimKind.labour);
+    expect(controller.draft.value.quantity, '30');
+    expect(controller.mmmCategory.value, 4);
+    expect(controller.canChangeClaimKind, isFalse);
   });
 
   test('save edit prefills and patches existing travel', () async {

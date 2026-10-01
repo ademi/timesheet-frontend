@@ -9,6 +9,7 @@ import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/models/shift_travel_models.dart';
 import '../../shifts/utils/allocation_math.dart';
 import '../../shifts/utils/participant_display.dart';
+import '../../shifts/utils/travel_item_rules.dart';
 import '../../shifts/widgets/shift_slot_pips.dart';
 import '../../visits/controllers/staff_visits_controller.dart';
 
@@ -16,6 +17,16 @@ String _fmt(DateTime dt) {
   final l = dt.toLocal();
   String two(int n) => n.toString().padLeft(2, '0');
   return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
+}
+
+String _travelPrimaryLabel(ShiftTravelOut travel) {
+  if (travel.isLabour) {
+    return '${formatTravelQty(hoursToMinutes(travel.quantity))} min · Provider Travel';
+  }
+  final code = travel.supportItemCode;
+  final qty = '${formatTravelQty(travel.quantity)} km';
+  if (code == null || code.isEmpty) return qty;
+  return '$code · $qty';
 }
 
 class StaffShiftDetailView extends StatefulWidget {
@@ -439,11 +450,28 @@ class _TravelRow extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Flexible(
-                      child: Text(
-                        '${travel.supportItemCode} · ${_formatQty(travel.quantity)} km',
+                    Flexible(child: Text(_travelPrimaryLabel(travel))),
+                    if (travel.overCap == true) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7F1D1D),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Over-cap',
+                          style: TextStyle(
+                            color: Color(0xFFFEF2F2),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                     if (travel.isClaimed) ...[
                       const SizedBox(width: 8),
                       Container(
@@ -502,10 +530,6 @@ class _TravelRow extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatQty(double value) {
-    return value.toStringAsFixed(4).replaceFirst(RegExp(r'\.?0+$'), '');
   }
 }
 

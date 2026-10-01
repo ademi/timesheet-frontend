@@ -91,4 +91,21 @@ void main() {
     expect(minutesToHours(45), 0.75);
     expect(minutesToHours(1), 0.0167);
   });
+
+  test('hoursToMinutes round-trips minutesToHours', () {
+    expect(hoursToMinutes(1), 60);
+    expect(hoursToMinutes(0.75), 45);
+    expect(hoursToMinutes(minutesToHours(45)), 45);
+  });
+
+  test('therapy half-rate registration groups', () {
+    expect(isTherapyHalfRate('0128'), isTrue);
+    expect(isTherapyHalfRate('0107'), isFalse);
+    expect(isTherapyHalfRate(null), isFalse);
+    expect(
+      anyTherapyHalfRateItem(const ['15_001_0128_1_3', '01_011_0107_1_1']),
+      isTrue,
+    );
+    expect(anyTherapyHalfRateItem(const ['01_011_0107_1_1']), isFalse);
+  });
 }

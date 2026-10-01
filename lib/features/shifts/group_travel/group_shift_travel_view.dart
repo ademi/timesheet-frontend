@@ -33,6 +33,7 @@ class GroupShiftTravelView extends GetView<GroupShiftTravelController> {
         // Register draft + helper so Item/Split rebuild when they change.
         controller.draft.value;
         controller.itemClearedHelper.value;
+        controller.mmmCategory.value;
         final isSaving = controller.isSaving.value;
         return Column(
           children: [
@@ -198,39 +199,106 @@ class _ItemStepState extends State<_ItemStep> {
   @override
   Widget build(BuildContext context) {
     final draft = widget.controller.draft.value;
-    final clearedHelper = widget.controller.itemClearedHelper.value;
-    final showMixedEqual = widget.controller.hasMixedEqualRegistrationGroups;
+    final isLabour = draft.isLabour;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (widget.controller.canChangeClaimKind) ...[
+          Text('Claim type', style: Get.textTheme.titleSmall),
+          const SizedBox(height: 8),
+          SegmentedButton<TravelClaimKind>(
+            segments: const [
+              ButtonSegment(
+                value: TravelClaimKind.nonLabour,
+                label: Text(GroupShiftTravelController.vehicleSectionTitle),
+                icon: Icon(Icons.directions_car_outlined, size: 18),
+              ),
+              ButtonSegment(
+                value: TravelClaimKind.labour,
+                label: Text(GroupShiftTravelController.workerTimeSectionTitle),
+                icon: Icon(Icons.timer_outlined, size: 18),
+              ),
+            ],
+            selected: {draft.claimKind},
+            onSelectionChanged: (selection) {
+              widget.controller.setClaimKind(selection.first);
+              _quantity.clear();
+            },
+          ),
+          const SizedBox(height: 20),
+        ],
+        if (isLabour)
+          _LabourItemFields(
+            controller: widget.controller,
+            quantityController: _quantity,
+            notesController: _notes,
+          )
+        else
+          _KmItemFields(
+            controller: widget.controller,
+            catalogueFilterPrefs: widget.catalogueFilterPrefs,
+            quantityController: _quantity,
+            notesController: _notes,
+          ),
+      ],
+    );
+  }
+}
+
+class _KmItemFields extends StatelessWidget {
+  const _KmItemFields({
+    required this.controller,
+    required this.quantityController,
+    required this.notesController,
+    this.catalogueFilterPrefs,
+  });
+
+  final GroupShiftTravelController controller;
+  final NdisCatalogueFilterPrefs? catalogueFilterPrefs;
+  final TextEditingController quantityController;
+  final TextEditingController notesController;
+
+  @override
+  Widget build(BuildContext context) {
+    final draft = controller.draft.value;
+    final clearedHelper = controller.itemClearedHelper.value;
+    final showMixedEqual = controller.hasMixedEqualRegistrationGroups;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          GroupShiftTravelController.vehicleSectionTitle,
+          style: Get.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 12),
         if (showMixedEqual) ...[
           _ErrorBox(GroupShiftTravelController.mixedEqualErrorMessage),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
-              onPressed: widget.controller.switchToNominatedSplit,
+              onPressed: controller.switchToNominatedSplit,
               child: const Text('Switch to Nominated split'),
             ),
           ),
           const SizedBox(height: 12),
         ],
         NdisSupportItemPicker(
-          key: ValueKey(widget.controller.travelPickerKey),
+          key: ValueKey(controller.travelPickerKey),
           supportItemCode: draft.supportItemCode,
           supportItemName: draft.supportItemName,
           allowedUnits: const {'E'},
-          itemPredicate: widget.controller.travelCataloguePredicate,
-          filterPrefs: widget.catalogueFilterPrefs,
+          itemPredicate: controller.travelCataloguePredicate,
+          filterPrefs: catalogueFilterPrefs,
           labelText: 'Travel support item',
           onChanged: ({required supportItemCode, required supportItemName}) {
-            widget.controller.setItem(
+            controller.setItem(
               supportItemCode: supportItemCode,
               supportItemName: supportItemName,
             );
           },
         ),
-        if (!widget.controller.hasTravelAnchors) ...[
+        if (!controller.hasTravelAnchors) ...[
           const SizedBox(height: 8),
           const Text(
             GroupShiftTravelController.noAnchorsHelperMessage,
@@ -246,7 +314,7 @@ class _ItemStepState extends State<_ItemStep> {
         ],
         const SizedBox(height: 16),
         TextField(
-          controller: _quantity,
+          controller: quantityController,
           decoration: const InputDecoration(
             labelText: 'Kilometres',
             hintText: 'e.g. 12.5',
@@ -256,11 +324,11 @@ class _ItemStepState extends State<_ItemStep> {
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
           ],
-          onChanged: widget.controller.setQuantity,
+          onChanged: controller.setQuantity,
         ),
         const SizedBox(height: 16),
         TextField(
-          controller: _notes,
+          controller: notesController,
           decoration: const InputDecoration(
             labelText: 'Notes (optional)',
             border: OutlineInputBorder(),
@@ -268,9 +336,158 @@ class _ItemStepState extends State<_ItemStep> {
           ),
           maxLength: 500,
           maxLines: 3,
-          onChanged: widget.controller.setNotes,
+          onChanged: controller.setNotes,
         ),
       ],
+    );
+  }
+}
+
+class _LabourItemFields extends StatelessWidget {
+  const _LabourItemFields({
+    required this.controller,
+    required this.quantityController,
+    required this.notesController,
+  });
+
+  final GroupShiftTravelController controller;
+  final TextEditingController quantityController;
+  final TextEditingController notesController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          GroupShiftTravelController.workerTimeSectionTitle,
+          style: Get.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Paid worker travel time billed as Provider Travel against each '
+          'participant’s published hourly support item.',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+        InputDecorator(
+          decoration: const InputDecoration(
+            labelText: 'Support item',
+            border: OutlineInputBorder(),
+          ),
+          child: Text(
+            controller.labourSupportItemLabel,
+            style: const TextStyle(fontSize: 15),
+          ),
+        ),
+        if (!controller.hasTravelAnchors) ...[
+          const SizedBox(height: 8),
+          const Text(
+            GroupShiftTravelController.labourNoSnapshotHelper,
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+        ],
+        if (controller.showTherapyHalfRateNote) ...[
+          const SizedBox(height: 8),
+          const Text(
+            GroupShiftTravelController.therapyHalfRateNote,
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+        ],
+        if (controller.showOverCapBanner) ...[
+          const SizedBox(height: 16),
+          _OverCapBanner(
+            title: GroupShiftTravelController.overCapBannerTitle,
+            body: controller.overCapBannerBody(),
+          ),
+        ],
+        const SizedBox(height: 16),
+        TextField(
+          controller: quantityController,
+          decoration: const InputDecoration(
+            labelText: 'Minutes',
+            hintText: 'e.g. 45',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          ],
+          onChanged: controller.setQuantity,
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: notesController,
+          decoration: const InputDecoration(
+            labelText: 'Notes (optional)',
+            border: OutlineInputBorder(),
+            counterText: '',
+          ),
+          maxLength: 500,
+          maxLines: 3,
+          onChanged: controller.setNotes,
+        ),
+      ],
+    );
+  }
+}
+
+class _OverCapBanner extends StatelessWidget {
+  const _OverCapBanner({required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      label: '$title. $body',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF7F1D1D),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFFECACA), width: 2),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Color(0xFFFEF2F2),
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      color: Color(0xFFFEF2F2),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              body,
+              style: const TextStyle(
+                color: Color(0xFFFEE2E2),
+                fontSize: 14,
+                height: 1.35,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -364,13 +581,39 @@ class _ReviewStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final draft = controller.draft.value;
     final shares = controller.apportionedQuantities;
+    final isLabour = draft.isLabour;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _ReviewRow(label: 'Item', value: draft.supportItemCode ?? '—'),
+        if (controller.showOverCapBanner) ...[
+          _OverCapBanner(
+            title: GroupShiftTravelController.overCapBannerTitle,
+            body: controller.overCapBannerBody(),
+          ),
+          const SizedBox(height: 16),
+        ],
         _ReviewRow(
-          label: 'Kilometres',
-          value: draft.quantity == null ? '—' : '${draft.quantity} km',
+          label: 'Type',
+          value:
+              isLabour
+                  ? GroupShiftTravelController.workerTimeSectionTitle
+                  : GroupShiftTravelController.vehicleSectionTitle,
+        ),
+        _ReviewRow(
+          label: 'Item',
+          value:
+              isLabour
+                  ? controller.labourSupportItemLabel
+                  : (draft.supportItemCode ?? '—'),
+        ),
+        _ReviewRow(
+          label: isLabour ? 'Minutes' : 'Kilometres',
+          value:
+              draft.quantity == null
+                  ? '—'
+                  : isLabour
+                  ? '${draft.quantity} min'
+                  : '${draft.quantity} km',
         ),
         _ReviewRow(
           label: 'Split',
@@ -380,7 +623,10 @@ class _ReviewStep extends StatelessWidget {
                   : 'Nominated',
         ),
         const SizedBox(height: 12),
-        Text('Quantity by participant', style: Get.textTheme.titleSmall),
+        Text(
+          isLabour ? 'Minutes by participant' : 'Quantity by participant',
+          style: Get.textTheme.titleSmall,
+        ),
         const SizedBox(height: 4),
         for (final participant in controller.active)
           ListTile(
@@ -397,6 +643,13 @@ class _ReviewStep extends StatelessWidget {
           ),
         if (draft.notes?.trim().isNotEmpty == true)
           _ReviewRow(label: 'Notes', value: draft.notes!.trim()),
+        if (controller.showTherapyHalfRateNote) ...[
+          const SizedBox(height: 8),
+          const Text(
+            GroupShiftTravelController.therapyHalfRateNote,
+            style: TextStyle(color: AppColors.textMuted),
+          ),
+        ],
         const SizedBox(height: 12),
         const Text(
           'Travel is claimed once, on the first invoice export. To change '
