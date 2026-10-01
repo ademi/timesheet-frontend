@@ -210,13 +210,13 @@ class GroupShiftTravelController extends GetxController {
       return 'Uses each participant’s published hourly support item';
     }
     if (anchors.length == 1) {
-      return '${anchors.first} · Provider Travel';
+      return '${anchors.first} · hourly item';
     }
     final unique = anchors.toSet().toList(growable: false)..sort();
     if (unique.length == 1) {
-      return '${unique.first} · Provider Travel';
+      return '${unique.first} · hourly item';
     }
-    return 'Per participant snapshot · Provider Travel';
+    return 'Per participant hourly item';
   }
 
   /// Stable key so the picker remounts when anchors / split mode change.
