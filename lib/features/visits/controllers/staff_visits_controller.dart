@@ -594,6 +594,15 @@ class StaffVisitsController extends GetxController {
       arguments: GroupShiftTravelArgs(shift: shift, existing: existing),
     );
     if (result is ShiftTravelOut) upsertSelectedShiftTravel(result);
+    // Land on shift detail with fresh travel rows (wizard always pops here).
+    if (Get.currentRoute != AppRoutes.staffShiftDetail &&
+        selectedShift.value != null) {
+      await Get.offNamed(
+        AppRoutes.staffShiftDetail,
+        arguments: selectedShift.value,
+      );
+    }
+    await refreshSelectedShift(includeTravel: true);
   }
 
   Future<bool> confirmDeleteTravel(ShiftTravelOut travel) async {

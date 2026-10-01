@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../features/billing/bindings/billing_binding.dart';
 import '../../../features/billing/data/models/billing_models.dart';
@@ -310,12 +311,7 @@ class GroupShiftTravelController extends GetxController {
           saved.supportItemCode,
         );
       }
-      final pop = _onPop;
-      if (pop != null) {
-        pop(saved);
-      } else {
-        Get.back(result: saved);
-      }
+      _closeWizard(saved);
     } on AppFailure catch (failure) {
       step.value = reviewStep;
       errorMessage.value = _messageForFailure(failure);
@@ -327,13 +323,22 @@ class GroupShiftTravelController extends GetxController {
     }
   }
 
-  void cancel() {
+  void cancel() => _closeWizard(null);
+
+  /// Always return to the shift page: pop the wizard when possible, otherwise
+  /// replace the stack with shift detail (deep-link / empty stack).
+  void _closeWizard(dynamic result) {
     final pop = _onPop;
     if (pop != null) {
-      pop(null);
-    } else {
-      Get.back();
+      pop(result);
+      return;
     }
+    final nav = Get.key.currentState;
+    if (nav != null && nav.canPop()) {
+      Get.back(result: result);
+      return;
+    }
+    Get.offNamed(AppRoutes.staffShiftDetail, arguments: shift);
   }
 
   String participantName(String shiftParticipantId) {

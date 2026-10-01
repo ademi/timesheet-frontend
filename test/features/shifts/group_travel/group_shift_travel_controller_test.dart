@@ -118,6 +118,19 @@ void main() {
 
   tearDown(Get.reset);
 
+  test('cancel pops null via onPop', () {
+    dynamic popped = 'unset';
+    final controller = GroupShiftTravelController(
+      shiftsRepository: repository,
+      args: GroupShiftTravelArgs(shift: _shift()),
+      onPop: (result) => popped = result,
+    );
+
+    controller.cancel();
+
+    expect(popped, isNull);
+  });
+
   test('save create posts body and pops travel', () async {
     final saved = _travel();
     when(

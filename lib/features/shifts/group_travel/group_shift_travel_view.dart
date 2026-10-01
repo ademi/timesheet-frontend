@@ -22,6 +22,11 @@ class GroupShiftTravelView extends GetView<GroupShiftTravelController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(controller.isEditing ? 'Edit travel' : 'Add travel'),
+        leading: IconButton(
+          icon: const BackButtonIcon(),
+          tooltip: 'Back to shift',
+          onPressed: controller.cancel,
+        ),
       ),
       body: Obx(() {
         final error = controller.errorMessage.value;
