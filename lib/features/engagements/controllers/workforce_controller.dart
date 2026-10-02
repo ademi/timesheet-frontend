@@ -520,7 +520,9 @@ class WorkforceController extends GetxController {
       emailCtrl.clear();
       phoneCtrl.clear();
       selectedCategories.clear();
-      Get.back();
+      // Prefer AppNavigator: Get.back() needs Get.key attached to a Navigator,
+      // which GetMaterialApp.router does not set unless GoRouter uses Get.key.
+      AppNavigator.pop();
       final invite = result.registrationInvite;
       if (result.isRegistrationInvite && invite != null) {
         await _showInviteSentConfirmation(expiresAt: invite.expiresAt);

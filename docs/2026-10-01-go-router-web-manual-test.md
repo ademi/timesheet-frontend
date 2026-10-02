@@ -1,29 +1,39 @@
 # Manual test guide — `go_router` on web (GetX on mobile)
 
 **Date:** 2026-10-01  
-**Scope:** Verify Path B from [`2026-09-27-go-router-web-only-plan.md`](./2026-09-27-go-router-web-only-plan.md) (Phases 0–6) and §F in [`2026-09-22-ux-friction-inventory.md`](./2026-09-22-ux-friction-inventory.md).  
-**ADR:** [`adr-go-router-web-only.md`](./adr-go-router-web-only.md)
+**Scope:** Verify Path B from `[2026-09-27-go-router-web-only-plan.md](./2026-09-27-go-router-web-only-plan.md)` (Phases 0–6) and §F in `[2026-09-22-ux-friction-inventory.md](./2026-09-22-ux-friction-inventory.md)`.  
+**ADR:** `[adr-go-router-web-only.md](./adr-go-router-web-only.md)`
 
 **What you are proving**
 
-| Platform | Router | Must prove |
-|----------|--------|------------|
-| **Chrome (primary)** | `GetMaterialApp.router` + `GoRouter` | Refresh / back / forward / paste URL / deep links keep the right screen |
-| **iOS / Android (regression)** | `GetMaterialApp` + GetX `GetPage` | Login, shells, list → detail still work; app does **not** boot GoRouter |
+
+| Platform                       | Router                               | Must prove                                                              |
+| ------------------------------ | ------------------------------------ | ----------------------------------------------------------------------- |
+| **Chrome (primary)**           | `GetMaterialApp.router` + `GoRouter` | Refresh / back / forward / paste URL / deep links keep the right screen |
+| **iOS / Android (regression)** | `GetMaterialApp` + GetX `GetPage`    | Login, shells, list → detail still work; app does **not** boot GoRouter |
+
 
 Tick every checkbox. On fail, note: **case id**, URL in address bar, expected, actual, screenshot.
 
 ---
 
+
+
 ## 0. Setup
+
+
 
 ### 0.1 Accounts
 
-| Role | Use for |
-|------|---------|
-| **Staff admin** (`tenant_member`) | C1–C6, C8, shell tabs, clients/visits |
-| **Contractor** (approved engagement) | C7 wrong-actor, M2 contractor shell |
+
+| Role                                                         | Use for                               |
+| ------------------------------------------------------------ | ------------------------------------- |
+| **Staff admin** (`tenant_member`)                            | C1–C6, C8, shell tabs, clients/visits |
+| **Contractor** (approved engagement)                         | C7 wrong-actor, M2 contractor shell   |
 | Optional: staff user **without** a permission you care about | Permission-denied redirect (optional) |
+
+
+
 
 ### 0.2 Seed data (create once before web tests)
 
@@ -34,12 +44,16 @@ Tick every checkbox. On fail, note: **case id**, URL in address bar, expected, a
 
 Write them here before you start:
 
-| Entity | Id / token |
-|--------|------------|
-| Client id | |
-| Visit id | |
-| Shift id | |
-| Public invite token (optional) | |
+
+| Entity                         | Id / token |
+| ------------------------------ | ---------- |
+| Client id                      |            |
+| Visit id                       |            |
+| Shift id                       |            |
+| Public invite token (optional) |            |
+
+
+
 
 ### 0.3 Run Flutter Web (Chrome)
 
@@ -57,6 +71,8 @@ Or your usual staging defines (`TERMS_VERSION`, `PRIVACY_VERSION`, etc.).
 - [ ] Address bar uses **path URLs** (e.g. `http://localhost:xxxxx/gateway` or `/login`) — **not** hash URLs like `/#/gateway`.
 - [ ] You land on **Gateway** or **Login** when logged out.
 
+
+
 ### 0.4 How to record each case
 
 For every case below:
@@ -68,33 +84,43 @@ For every case below:
 
 ---
 
+
+
 ## Part A — Chrome (go_router)
 
 > Complete Part A fully. This is the main acceptance suite for the update.
 
+
+
 ### Prep A — Log in as staff and capture deep URLs
+
+> **If the address bar stays on** `/staff/clients` **(or** `/staff/visits`**) with no** `?id=` **after opening a detail:** do a **full restart** of the web app (`R` in the Flutter tool, or stop + `flutter run` again). Detail screens use `AppNavigator.push`; web requires `GoRouter.optionURLReflectsImperativeAPIs = true` in `main.dart` so the browser URL shows path + query. Hot reload alone may not pick that up.
 
 1. Open the app in Chrome.
 2. Log in as **staff admin**.
 3. Confirm you reach **Staff home** (`/staff/home` or equivalent post-login home).
-   - [ ] Pass
+  - [x] Pass
 4. Navigate: **Clients** → open your seeded client.
-   - Address bar should look like: `/staff/clients/detail?id=<CLIENT_ID>`
-   - [ ] URL has `?id=`
-   - Copy the full URL → paste into the seed table above.
+  - Address bar should look like: `/staff/clients/detail?id=<CLIENT_ID>`
+  - [x] URL path is `/staff/clients/detail` (not still `/staff/clients`)
+  - [x] URL has `?id=<CLIENT_ID>`
+  - Copy the full URL → paste into the seed table above.
 5. From client detail, open **Onboarding** (or start onboarding).
-   - Address bar should include `/staff/clients/onboarding` and `id=` (and often `step=`).
-   - [ ] URL has `id` (and `step` if the wizard exposes it)
-   - Advance **one step** in the wizard so `step` changes if applicable.
-   - Copy the full URL.
+  - Address bar should include `/staff/clients/onboarding` and `id=` (and often `step=`).
+  - [x] URL has `id` (and `step` if the wizard exposes it)
+  - Advance **one step** in the wizard so `step` changes if applicable.
+  - Copy the full URL.
 6. Navigate: **Visits / Roster** → open a visit.
-   - Expected: `/staff/visits/detail?id=<VISIT_ID>`
-   - [ ] URL has `?id=`
+  - Expected: `/staff/visits/detail?id=<VISIT_ID>`
+  - [x] URL path is `/staff/visits/detail` (not still `/staff/visits`)
+  - [x] URL has `?id=`
 7. From that visit (or roster), open a **shift detail** if available.
-   - Expected: `/staff/visits/shift-detail?id=<SHIFT_ID>` (or with visit id query — accept whatever the app writes, but it must be shareable).
-   - [ ] URL identifies the shift
+  - Expected: `/staff/visits/shift-detail?id=<SHIFT_ID>` (or with visit id query — accept whatever the app writes, but it must be shareable).
+  - [x] URL identifies the shift
 
 ---
+
+
 
 ### C1 — Refresh mid-flow keeps URL and hydrates
 
@@ -109,10 +135,10 @@ For every case below:
 
 **Expected**
 
-- [ ] Address bar **still** shows the same path + query (`id`, `step` unchanged or restored).
-- [ ] You are **not** sent to `/staff/home` or `/gateway`.
-- [ ] Onboarding UI loads for **that client** (name/id match).
-- [ ] If `step=` was present, the **same step** (or equivalent content) is shown — not always step 0 unless product resets intentionally.
+- [x] Address bar **still** shows the same path + query (`id`, `step` unchanged or restored).
+- [x] You are **not** sent to `/staff/home` or `/gateway`.
+- [x] Onboarding UI loads for **that client** (name/id match).
+- [x] If `step=` was present, the **same step** (or equivalent content) is shown — not always step 0 unless product resets intentionally.
 
 **Fail notes:** _______________________________________________
 
@@ -124,9 +150,9 @@ For every case below:
 
 **Expected**
 
-- [ ] URL unchanged (`id` still present).
-- [ ] Same visit loads (not empty / not “select a visit”).
-- [ ] Not redirected to home.
+- [x] URL unchanged (`id` still present).
+- [x] Same visit loads (not empty / not “select a visit”).
+- [x] Not redirected to home.
 
 **Fail notes:** _______________________________________________
 
@@ -137,12 +163,14 @@ For every case below:
 
 **Expected**
 
-- [ ] URL kept; shift content loads for that id.
-- [ ] Not redirected to home.
+- [x] URL kept; shift content loads for that id.
+- [x] Not redirected to home.
 
 **Fail notes:** _______________________________________________
 
 ---
+
+
 
 ### C2 — Chrome Back / Forward after navigation (and after refresh)
 
@@ -157,16 +185,16 @@ For every case below:
 
 **Expected**
 
-- [ ] You return to **Visits** (or the previous shell tab).
-- [ ] Address bar matches that tab (`/staff/visits` or `/staff/clients`).
-- [ ] Shell highlight matches the URL.
+- [x] You return to **Visits** (or the previous shell tab).
+- [x] Address bar matches that tab (`/staff/visits` or `/staff/clients`).
+- [x] Shell highlight matches the URL.
 
-5. Press **Chrome Forward** once.
+1. Press **Chrome Forward** once.
 
 **Expected**
 
-- [ ] You return to **Clients**.
-- [ ] URL and shell highlight match.
+- [x] You return to **Clients**.
+- [x] URL and shell highlight match.
 
 **Fail notes:** _______________________________________________
 
@@ -178,15 +206,15 @@ For every case below:
 
 **Expected**
 
-- [ ] Back control is **visible** after refresh (does not disappear).
-- [ ] Tapping it returns to a sensible parent (usually clients list `/staff/clients`), not a blank route.
+- [x] Back control is **visible** after refresh (does not disappear).
+- [x] Tapping it returns to a sensible parent (usually clients list `/staff/clients`), not a blank route.
 
-4. Open client detail again, then press **Chrome Back**.
+1. Open client detail again, then press **Chrome Back**.
 
 **Expected**
 
-- [ ] Leaves detail for the previous history entry (often clients list).
-- [ ] No logout / gateway bounce.
+- [x] Leaves detail for the previous history entry (often clients list).
+- [x] No logout / gateway bounce.
 
 **Fail notes:** _______________________________________________
 
@@ -196,28 +224,32 @@ For every case below:
 
 **Expected**
 
-- [ ] Detail reappears with the **same** `?id=`.
-- [ ] Client data loads again.
+- [x] Detail reappears with the **same** `?id=`.
+- [x] Client data loads again.
 
 **Fail notes:** _______________________________________________
 
 ---
 
+
+
 ### C3 — Paste protected URL (logged out vs logged in)
+
+
 
 #### C3.1 Logged out → protected URL
 
 1. Log out (or open **Incognito** with no session).
 2. Confirm you are on `/gateway` or `/login`.
-3. In the address bar, paste a protected URL, e.g.  
-   `http://<host>/staff/clients/detail?id=<CLIENT_ID>`  
+3. In the address bar, paste a protected URL, e.g.
+  `http://<host>/staff/clients/detail?id=<CLIENT_ID>`  
    Press Enter.
 
 **Expected**
 
-- [ ] You are **not** shown the client detail content while logged out.
-- [ ] You land on **gateway** and/or **login** (auth redirect).
-- [ ] After successful login, either you resume toward the deep link **or** land on post-login home — record which; both are acceptable if documented. Prefer: deep link restored if product supports it.
+- [x] You are **not** shown the client detail content while logged out.
+- [x] You land on **gateway** and/or **login** (auth redirect).
+- [x] After successful login, either you resume toward the deep link **or** land on post-login home — record which; both are acceptable if documented. Prefer: deep link restored if product supports it.
 
 **Actual after login:** _______________________________________
 
@@ -230,12 +262,14 @@ For every case below:
 
 **Expected**
 
-- [ ] Client detail for that `id` loads without going through gateway steal.
-- [ ] URL stays `/staff/clients/detail?id=…`.
+- [x] Client detail for that `id` loads without going through gateway steal.
+- [x] URL stays `/staff/clients/detail?id=…`.
 
 **Fail notes:** _______________________________________________
 
 ---
+
+
 
 ### C4 — Open deep URL in a new tab (same session)
 
@@ -245,15 +279,19 @@ For every case below:
 
 **Expected**
 
-- [ ] Tab B loads the same entity (same id) without forcing re-login (same browser session/cookies).
-- [ ] Tab A is unaffected.
-- [ ] Refresh in Tab B still keeps the deep URL.
+- [x] Tab B loads the same entity (same id) without forcing re-login (same browser session/cookies).
+- [x] Tab A is unaffected.
+- [x] Refresh in Tab B still keeps the deep URL.
 
 **Fail notes:** _______________________________________________
 
 ---
 
+
+
 ### C5 — Logout mid-flow and session expiry
+
+
 
 #### C5.1 Explicit logout mid-flow
 
@@ -288,6 +326,8 @@ For every case below:
 
 ---
 
+
+
 ### C6 — Must-change-password → first-login
 
 **Prerequisite:** A user whose JWT / session has `must_change_password` (or your seed “first login” staff).
@@ -297,15 +337,17 @@ For every case below:
 
 **Expected**
 
-- [ ] You are sent to `/first-login` (not staff home).
-- [ ] Completing password change then proceeds to normal post-login home.
-- [ ] Pasting `/staff/home` while still must-change should bounce back to first-login (if still flagged).
+- [x] You are sent to `/first-login` (not staff home).
+- [x] Completing password change then proceeds to normal post-login home.
+- [x] Pasting `/staff/home` while still must-change should bounce back to first-login (if still flagged).
 
 **Skip?** [ ] N/A — no such account in this environment.
 
 **Fail notes:** _______________________________________________
 
 ---
+
+
 
 ### C7 — Contractor opening `/staff/...` → wrong-actor
 
@@ -316,68 +358,76 @@ For every case below:
 
 **Expected**
 
-- [ ] You do **not** see staff clients/home content.
-- [ ] You land on **`/wrong-actor`** (or equivalent wrong-actor screen).
-- [ ] UI explains wrong account type / offers path back to login or contractor home.
+- [x] You do **not** see staff clients/home content.
+- [x] You land on `/wrong-actor` (or equivalent wrong-actor screen).
+- [x] UI explains wrong account type / offers path back to login or contractor home.
 
 **Fail notes:** _______________________________________________
 
 ---
+
+
 
 ### C8 — Unknown path → Page not found
 
 1. Log in as staff.
-2. Paste a nonsense path, e.g.  
-   `http://<host>/staff/this-route-does-not-exist` → Enter.
+2. Paste a nonsense path, e.g.
+  `http://<host>/staff/this-route-does-not-exist` → Enter.
 
 **Expected**
 
-- [ ] Screen title/copy: **“Page not found”** (or equivalent).
-- [ ] Shows the unknown path somewhere on the page.
-- [ ] Button **“Go to home”** is visible.
-3. Click **Go to home**.
+- [x] Screen title/copy: **“Page not found”** (or equivalent).
+- [x] Shows the unknown path somewhere on the page.
+- [x] Button **“Go to home”** is visible.
+
+1. Click **Go to home**.
 
 **Expected**
 
-- [ ] Unknown page dismisses.
-- [ ] You land on post-login home (e.g. `/staff/home`) — not stuck on 404.
-4. (Optional) Open DevTools Console: look for a log like  
-   `[go_router] unknown route path=... authenticated=true`
+- [x] Unknown page dismisses.
+- [x] You land on post-login home (e.g. `/staff/home`) — not stuck on 404.
+
+1. (Optional) Open DevTools Console: look for a log like
+  `[go_router] unknown route path=... authenticated=true`
 
 **Expected**
 
-- [ ] Log appears in debug builds.
+- [x] Log appears in debug builds.
 
-5. Log out → paste the same unknown path.
+1. Log out → paste the same unknown path.
 
 **Expected**
 
-- [ ] Unauthenticated users are redirected toward **gateway/login** (not a confusing authenticated 404 with staff CTAs). Record actual behavior: _______________
+- [x] Unauthenticated users are redirected toward **gateway/login** (not a confusing authenticated 404 with staff CTAs). Record actual behavior: _______________
 
 **Fail notes:** _______________________________________________
 
 ---
+
+
 
 ### C9 — Public client invite while logged out
 
 **Prerequisite:** A valid invite token (email link or API). If none, mark N/A.
 
 1. Log out / Incognito.
-2. Open:  
-   `http://<host>/invites/client/<TOKEN>`  
+2. Open:
+  `http://<host>/invites/client/<TOKEN>`  
    (also try legacy `/invite/<TOKEN>` if your emails still use it).
 
 **Expected**
 
-- [ ] Public invite UI loads **without** requiring staff login first.
-- [ ] Not redirected forever to gateway in a loop.
-- [ ] Invalid token shows a clear error (if you can test a fake token).
+- [x] Public invite UI loads **without** requiring staff login first.
+- [x] Not redirected forever to gateway in a loop.
+- [x] Invalid token shows a clear error (if you can test a fake token).
 
 **Skip?** [ ] N/A — no token.
 
 **Fail notes:** _______________________________________________
 
 ---
+
+
 
 ### C10 — Shell tabs + URL sync (extra)
 
@@ -386,13 +436,15 @@ For every case below:
 
 For each:
 
-- [ ] URL path matches the tab (e.g. Clients → `/staff/clients`).
-- [ ] Content matches the tab.
-- [ ] Refresh on that tab **stays** on that tab (not home steal).
+- [x] URL path matches the tab (e.g. Clients → `/staff/clients`).
+- [x] Content matches the tab.
+- [x] Refresh on that tab **stays** on that tab (not home steal).
 
 **Fail notes:** _______________________________________________
 
 ---
+
+
 
 ### C11 — Onboarding step in URL (extra)
 
@@ -402,25 +454,28 @@ For each:
 
 **Expected**
 
-- [ ] `step=` (or equivalent) updates when the step changes, **or** step is otherwise restorable after refresh (document which).
-4. Refresh.
-5. Confirm you remain on the same logical step.
+- [x] `step=` (or equivalent) updates when the step changes, **or** step is otherwise restorable after refresh (document which).
+
+1. Refresh.
+2. Confirm you remain on the same logical step.
 
 **Fail notes:** _______________________________________________
 
 ---
 
+
+
 ### C12 — Billing export detail / workforce detail (spot check)
 
-1. Open Billing exports → open one export detail if available.  
-   Expected shape: `/staff/billing/exports/detail?id=…` (and `tab=` if used).
+1. Open Billing exports → open one export detail if available.
+  Expected shape: `/staff/billing/exports/detail?id=…` (and `tab=` if used).
 2. Refresh.
 
-- [ ] Same export loads.
+- [x] Same export loads.
 
-3. Open Workforce → member detail `?id=…` → Refresh.
+1. Open Workforce → member detail `?id=…` → Refresh.
 
-- [ ] Same member loads.
+- [x] Same member loads.
 
 **Skip sections you have no data for.**
 
@@ -428,9 +483,13 @@ For each:
 
 ---
 
+
+
 ## Part B — iOS / Android regression (GetX, no go_router)
 
 > Prove mobile was **not** broken by the web-only router. Use emulator or device.
+
+
 
 ### B0. Run mobile
 
@@ -439,6 +498,8 @@ For each:
 adb reverse tcp:8000 tcp:8000
 flutter run -d <device_id> --dart-define=API_BASE_URL=http://127.0.0.1:8000
 ```
+
+
 
 ### M1 — Login / logout / gateway resume
 
@@ -450,7 +511,8 @@ flutter run -d <device_id> --dart-define=API_BASE_URL=http://127.0.0.1:8000
 
 - [ ] Session resumes to a sensible home (staff/contractor).
 - [ ] App does not crash on resume.
-4. Log out → back to gateway/login.
+
+1. Log out → back to gateway/login.
 
 - [ ] Pass
 
@@ -504,33 +566,39 @@ flutter run -d <device_id> --dart-define=API_BASE_URL=http://127.0.0.1:8000
 
 ---
 
+
+
 ## Part C — Results summary
 
-| Case | Pass / Fail / Skip | Tester | Date |
-|------|--------------------|--------|------|
-| C1.1 Onboarding refresh | | | |
-| C1.2 Visit refresh | | | |
-| C1.3 Shift refresh | | | |
-| C2.1 Tab back/forward | | | |
-| C2.2 Detail back after refresh | | | |
-| C2.3 Forward to detail | | | |
-| C3.1 Paste logged out | | | |
-| C3.2 Paste logged in | | | |
-| C4 New tab deep link | | | |
-| C5.1 Logout mid-flow | | | |
-| C5.2 401 → login | | | |
-| C6 First-login | | | |
-| C7 Wrong-actor | | | |
-| C8 Unknown route | | | |
-| C9 Public invite | | | |
-| C10 Shell tabs | | | |
-| C11 Onboarding step URL | | | |
-| C12 Billing/workforce spot | | | |
-| M1 Login/logout/resume | | | |
-| M2 Shells | | | |
-| M3 Clients stack | | | |
-| M4 Visits back | | | |
-| M5 No go_router on mobile | | | |
+
+| Case                           | Pass / Fail / Skip | Tester | Date |
+| ------------------------------ | ------------------ | ------ | ---- |
+| C1.1 Onboarding refresh        |                    |        |      |
+| C1.2 Visit refresh             |                    |        |      |
+| C1.3 Shift refresh             |                    |        |      |
+| C2.1 Tab back/forward          |                    |        |      |
+| C2.2 Detail back after refresh |                    |        |      |
+| C2.3 Forward to detail         |                    |        |      |
+| C3.1 Paste logged out          |                    |        |      |
+| C3.2 Paste logged in           |                    |        |      |
+| C4 New tab deep link           |                    |        |      |
+| C5.1 Logout mid-flow           |                    |        |      |
+| C5.2 401 → login               |                    |        |      |
+| C6 First-login                 |                    |        |      |
+| C7 Wrong-actor                 |                    |        |      |
+| C8 Unknown route               |                    |        |      |
+| C9 Public invite               |                    |        |      |
+| C10 Shell tabs                 |                    |        |      |
+| C11 Onboarding step URL        |                    |        |      |
+| C12 Billing/workforce spot     |                    |        |      |
+| M1 Login/logout/resume         |                    |        |      |
+| M2 Shells                      |                    |        |      |
+| M3 Clients stack               |                    |        |      |
+| M4 Visits back                 |                    |        |      |
+| M5 No go_router on mobile      |                    |        |      |
+
+
+
 
 ### Sign-off
 
@@ -542,32 +610,39 @@ flutter run -d <device_id> --dart-define=API_BASE_URL=http://127.0.0.1:8000
 
 ---
 
+
+
 ## Quick reference — important paths
 
-| Screen | Typical path |
-|--------|----------------|
-| Gateway | `/gateway` |
-| Login | `/login` |
-| First login | `/first-login` |
-| Wrong actor | `/wrong-actor` |
-| Staff home | `/staff/home` |
-| Clients | `/staff/clients` |
-| Client detail | `/staff/clients/detail?id=` |
-| Client onboarding | `/staff/clients/onboarding?id=&step=` |
-| Visits | `/staff/visits` |
-| Visit detail | `/staff/visits/detail?id=` |
-| Shift detail | `/staff/visits/shift-detail?id=` |
-| Support compose | `/staff/support/compose` |
-| Billing exports | `/staff/billing/exports` |
-| Billing export detail | `/staff/billing/exports/detail?id=` |
-| Contractor home | `/contractor/home` |
-| Public invite | `/invites/client/:token` |
-| Legacy invite | `/invite/:token` |
+
+| Screen                | Typical path                          |
+| --------------------- | ------------------------------------- |
+| Gateway               | `/gateway`                            |
+| Login                 | `/login`                              |
+| First login           | `/first-login`                        |
+| Wrong actor           | `/wrong-actor`                        |
+| Staff home            | `/staff/home`                         |
+| Clients               | `/staff/clients`                      |
+| Client detail         | `/staff/clients/detail?id=`           |
+| Client onboarding     | `/staff/clients/onboarding?id=&step=` |
+| Visits                | `/staff/visits`                       |
+| Visit detail          | `/staff/visits/detail?id=`            |
+| Shift detail          | `/staff/visits/shift-detail?id=`      |
+| Support compose       | `/staff/support/compose`              |
+| Billing exports       | `/staff/billing/exports`              |
+| Billing export detail | `/staff/billing/exports/detail?id=`   |
+| Contractor home       | `/contractor/home`                    |
+| Public invite         | `/invites/client/:token`              |
+| Legacy invite         | `/invite/:token`                      |
+
 
 ---
 
+
+
 ## Related docs
 
-- Plan + matrices: [`2026-09-27-go-router-web-only-plan.md`](./2026-09-27-go-router-web-only-plan.md) §Phase 6.4 / 6.5  
-- ADR: [`adr-go-router-web-only.md`](./adr-go-router-web-only.md)  
-- Superseded GetX-web notes: [`web-refresh-back-button-fix.md`](./web-refresh-back-button-fix.md)
+- Plan + matrices: `[2026-09-27-go-router-web-only-plan.md](./2026-09-27-go-router-web-only-plan.md)` §Phase 6.4 / 6.5  
+- ADR: `[adr-go-router-web-only.md](./adr-go-router-web-only.md)`  
+- Superseded GetX-web notes: `[web-refresh-back-button-fix.md](./web-refresh-back-button-fix.md)`
+

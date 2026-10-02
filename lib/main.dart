@@ -23,6 +23,11 @@ Future<void> main() async {
   // back/forward buttons reconcile with routing predictably.
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());
+    // AppNavigator uses GoRouter.push/replace for detail screens. By default
+    // go_router does **not** mirror imperative navigations into the browser
+    // address bar, so `?id=` / `?step=` never appear and refresh cannot
+    // restore the screen. Reflect the top route (including query) in the URL.
+    GoRouter.optionURLReflectsImperativeAPIs = true;
   }
   await GetStorage.init();
   final tokenStorage = TokenStorage();

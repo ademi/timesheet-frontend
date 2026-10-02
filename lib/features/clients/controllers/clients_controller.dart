@@ -206,6 +206,9 @@ class ClientsController extends GetxController
   final overviewClientTypeId = RxnString();
   final overviewEditing = false.obs;
 
+  /// Client id last written into Overview text controllers via [hydrateOverviewDrafts].
+  String? _overviewHydratedForId;
+
   static const overviewOwnedRequirementKeys = {'dob', 'ndis'};
 
   static bool isOverviewOwnedRequirement(String key) =>
@@ -265,8 +268,8 @@ class ClientsController extends GetxController
 
   bool _routeImpliesClientDetail() {
     if (selected.value != null) return false;
-    if (Get.arguments is ClientOut) return true;
-    final id = Get.parameters['id'];
+    if (routeArguments() is ClientOut) return true;
+    final id = routeParam('id');
     return id != null && id.isNotEmpty;
   }
 
@@ -320,6 +323,7 @@ class ClientsController extends GetxController
 
   Future<void> openCreate() async {
     selected.value = null;
+    _overviewHydratedForId = null;
     editing = null;
     nameCtrl.clear();
     emailCtrl.clear();
@@ -912,6 +916,7 @@ class ClientsController extends GetxController
     overviewClientTypeId.value =
         client.clientTypeId ?? selectedClientTypeId.value;
     overviewNdisCtrl.text = ndisFromFacts(profileFacts) ?? '';
+    _overviewHydratedForId = client.id;
   }
 
   /// True when Overview draft fields differ from persisted client + profile facts.
@@ -1365,6 +1370,10 @@ class ClientsController extends GetxController
     supportPlan.value = null;
     _disposeRequirementDrafts();
     requirementDrafts.clear();
+    // Sync Overview text controllers immediately. openDetailById used to skip
+    // hydrate when selected was already this id while controllers still held
+    // empty / previous-client values (read-only Identity looked blank / stale).
+    hydrateOverviewDrafts();
   }
 
   Future<void> openDetail(
@@ -1398,19 +1407,26 @@ class ClientsController extends GetxController
   /// Call from [onInit] (or detail view) so a fresh controller still loads the
   /// client when navigation only passed route id / arguments.
   Future<void> ensureDetailHydratedFromRoute() async {
-    if (selected.value != null) return;
-
     final fromArgs = routeArguments();
-    if (fromArgs is ClientOut) {
-      selected.value = fromArgs;
-      await openDetailById(fromArgs.id);
+    final idFromArgs = fromArgs is ClientOut ? fromArgs.id : null;
+    final id = routeParam('id') ?? idFromArgs;
+
+    if (id == null || id.isEmpty) return;
+
+    // Shared controller: switching clients (or cold URL) must re-load even when
+    // [selected] is already set to a different client.
+    if (selected.value?.id == id) {
+      if (_overviewHydratedForId != id) {
+        await openDetailById(id);
+      }
       return;
     }
 
-    final id = routeParam('id');
-    if (id != null && id.isNotEmpty) {
-      await openDetailById(id);
+    if (fromArgs is ClientOut && fromArgs.id == id) {
+      selected.value = fromArgs;
+      hydrateOverviewDrafts();
     }
+    await openDetailById(id);
   }
 
   Future<void> openDetailById(String id) async {
@@ -1421,14 +1437,17 @@ class ClientsController extends GetxController
     isLoading.value = true;
     try {
       final client = await _repository.getClient(id);
+      // Preserve in-progress Overview edits only when we already hydrated
+      // this same client (not when selected was pre-set with stale controllers).
+      final preserveDirty =
+          _overviewHydratedForId == id && isOverviewDirty;
       selected.value = client;
       await Future.wait([
         refreshDetailExtras(),
         loadTypeTabForSelected(),
         loadDetailProfilePhoto(id),
       ]);
-      final sameClient = previousId == id;
-      if (!sameClient || !isOverviewDirty) {
+      if (!preserveDirty) {
         hydrateOverviewDrafts();
       }
       if (tabIndex.value == tabCarePlan) {

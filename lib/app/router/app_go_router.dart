@@ -34,7 +34,9 @@ import 'visits_go_routes.dart';
 /// [AppNavigator.bindWebRouter] is called here so auth / shell call sites can
 /// navigate without importing go_router directly.
 GoRouter createAppGoRouter({String? initialLocation}) {
-  final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'appRoot');
+  // Reuse GetX's navigator key so Get.back / Get.dialog / Get.snackbar work
+  // under GetMaterialApp.router (that constructor leaves navigatorKey null).
+  final rootNavigatorKey = Get.key;
   final router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: initialLocation ?? AppRoutes.gateway,

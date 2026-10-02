@@ -63,6 +63,9 @@ class AppNavigator {
   }
 
   /// Pushes [location] onto the stack.
+  ///
+  /// On web, the browser address bar only mirrors this when
+  /// [GoRouter.optionURLReflectsImperativeAPIs] is true (set in `main.dart`).
   static Future<T?> push<T extends Object?>(
     String location, {
     Object? extra,
