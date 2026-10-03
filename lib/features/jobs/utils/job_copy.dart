@@ -1,6 +1,7 @@
 String kindLabel(String kind) => switch (kind) {
   'standing' => 'Ongoing support',
   'ad_hoc' => 'One-off',
+  'program' => 'Program',
   _ => kind,
 };
 

@@ -27,7 +27,7 @@ class JobOut {
   final String tenantId;
   final String? clientId;
   final String? clientName;
-  final String kind; // standing | ad_hoc
+  final String kind; // standing | ad_hoc | program
   final String status; // open | closed | cancelled
   final String title;
   final String? branchId;
@@ -46,6 +46,7 @@ class JobOut {
 
   bool get isOpen => status == 'open';
   bool get isStanding => kind == 'standing';
+  bool get isProgram => kind == 'program';
 
   factory JobOut.fromJson(Map<String, dynamic> json) {
     return JobOut(

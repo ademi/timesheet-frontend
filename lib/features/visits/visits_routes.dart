@@ -5,16 +5,12 @@ import '../../app/routes/app_routes.dart';
 import '../../app/routes/middlewares/actor_guard.dart';
 import '../../app/routes/middlewares/auth_guard.dart';
 import '../../app/routes/middlewares/permission_guard.dart';
+import '../rostering/presentation/composer/roster_composer_binding.dart';
+import '../rostering/presentation/composer/roster_composer_view.dart';
+import '../rostering/presentation/redirects/composer_cutover_middleware.dart';
 import '../shell/contractor_shell.dart';
 import '../shell/staff_shell.dart';
 import '../shifts/views/staff_shift_detail_view.dart';
-import '../shifts/group_book/group_shift_book_binding.dart';
-import '../shifts/group_book/group_shift_book_view.dart';
-import '../shifts/group_book/group_shift_edit_binding.dart';
-import '../shifts/group_book/group_shift_edit_view.dart';
-import '../shifts/group_book/group_shift_remove_view.dart';
-import '../shifts/group_publish/group_shift_publish_binding.dart';
-import '../shifts/group_publish/group_shift_publish_view.dart';
 import '../shifts/group_travel/group_shift_travel_binding.dart';
 import '../shifts/group_travel/group_shift_travel_view.dart';
 import 'bindings/visits_binding.dart';
@@ -54,9 +50,10 @@ abstract final class VisitsPages {
         PermissionGuard(
           anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
         ),
+        ComposerCutoverMiddleware(legacyRoute: AppRoutes.staffGroupShiftBook),
       ],
-      binding: GroupShiftBookBinding(),
-      page: () => const GroupShiftBookView(),
+      binding: RosterComposerBinding(),
+      page: () => const RosterComposerView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
@@ -86,9 +83,26 @@ abstract final class VisitsPages {
         PermissionGuard(
           anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
         ),
+        ComposerCutoverMiddleware(legacyRoute: AppRoutes.staffGroupShiftEdit),
       ],
-      binding: GroupShiftEditBinding(),
-      page: () => const GroupShiftEditView(),
+      binding: RosterComposerBinding(),
+      page: () => const RosterComposerView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.staffGroupShiftWindows,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
+        ),
+        ComposerCutoverMiddleware(
+          legacyRoute: AppRoutes.staffGroupShiftWindows,
+        ),
+      ],
+      binding: RosterComposerBinding(),
+      page: () => const RosterComposerView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
@@ -99,9 +113,10 @@ abstract final class VisitsPages {
         PermissionGuard(
           anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
         ),
+        ComposerCutoverMiddleware(legacyRoute: AppRoutes.staffGroupShiftRemove),
       ],
-      binding: GroupShiftRemoveBinding(),
-      page: () => const GroupShiftRemoveView(),
+      binding: RosterComposerBinding(),
+      page: () => const RosterComposerView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
@@ -112,11 +127,15 @@ abstract final class VisitsPages {
         PermissionGuard(
           anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
         ),
+        ComposerCutoverMiddleware(
+          legacyRoute: AppRoutes.staffGroupShiftPublish,
+        ),
       ],
-      binding: GroupShiftPublishBinding(),
-      page: () => const GroupShiftPublishView(),
+      binding: RosterComposerBinding(),
+      page: () => const RosterComposerView(),
       transition: Transition.rightToLeft,
     ),
+    // Travel: no auto-redirect (deep-link / detail edit only).
     GetPage(
       name: AppRoutes.staffGroupShiftTravel,
       middlewares: [

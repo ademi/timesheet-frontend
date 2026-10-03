@@ -5,6 +5,9 @@ import '../../shifts/group_book/group_shift_book_args.dart';
 import '../../shifts/group_book/group_shift_edit_controller.dart';
 import 'occurrence_draft.dart';
 
+/// Optional scroll/menu focus when opening the composer from a legacy route.
+enum ComposerFocusSection { plan, people, publish }
+
 /// Typed GetX route args for the unified rostering composer.
 class RosterComposerArgs {
   const RosterComposerArgs({
@@ -18,6 +21,7 @@ class RosterComposerArgs {
     this.recurrenceRuleId,
     this.preset = ComposerPreset.oneSession,
     this.repeatEnabled = false,
+    this.focusSection = ComposerFocusSection.plan,
   });
 
   final String? shiftId;
@@ -30,6 +34,7 @@ class RosterComposerArgs {
   final String? recurrenceRuleId;
   final ComposerPreset preset;
   final bool repeatEnabled;
+  final ComposerFocusSection focusSection;
 
   /// Parse GetX `arguments` from typed classes or legacy maps.
   factory RosterComposerArgs.fromRaw(Object? raw) {
@@ -46,6 +51,19 @@ class RosterComposerArgs {
         shift: raw.shift,
         jobId: raw.shift.jobId,
         preset: ComposerPreset.group,
+        focusSection: ComposerFocusSection.people,
+      );
+    }
+    if (raw is ShiftOut) {
+      return RosterComposerArgs(
+        shiftId: raw.id,
+        shift: raw,
+        jobId: raw.jobId,
+        clientId: raw.clientId,
+        preset:
+            raw.participants.length > 1
+                ? ComposerPreset.group
+                : ComposerPreset.oneSession,
       );
     }
     if (raw is ClientOut) {
@@ -116,6 +134,14 @@ class RosterComposerArgs {
     final shiftArg = map['shift'];
     final ShiftOut? shift = shiftArg is ShiftOut ? shiftArg : null;
 
+    final focusRaw = map['focus']?.toString() ?? map['focusSection']?.toString();
+    var focus = ComposerFocusSection.plan;
+    if (focusRaw == 'people') {
+      focus = ComposerFocusSection.people;
+    } else if (focusRaw == 'publish') {
+      focus = ComposerFocusSection.publish;
+    }
+
     return RosterComposerArgs(
       shiftId:
           map['shiftId']?.toString() ??
@@ -140,6 +166,35 @@ class RosterComposerArgs {
           map['rule_id']?.toString(),
       preset: preset,
       repeatEnabled: repeatEnabled,
+      focusSection: focus,
+    );
+  }
+
+  RosterComposerArgs copyWith({
+    String? shiftId,
+    ShiftOut? shift,
+    String? clientId,
+    ClientOut? client,
+    String? jobId,
+    String? participantId,
+    String? participantName,
+    String? recurrenceRuleId,
+    ComposerPreset? preset,
+    bool? repeatEnabled,
+    ComposerFocusSection? focusSection,
+  }) {
+    return RosterComposerArgs(
+      shiftId: shiftId ?? this.shiftId,
+      shift: shift ?? this.shift,
+      clientId: clientId ?? this.clientId,
+      client: client ?? this.client,
+      jobId: jobId ?? this.jobId,
+      participantId: participantId ?? this.participantId,
+      participantName: participantName ?? this.participantName,
+      recurrenceRuleId: recurrenceRuleId ?? this.recurrenceRuleId,
+      preset: preset ?? this.preset,
+      repeatEnabled: repeatEnabled ?? this.repeatEnabled,
+      focusSection: focusSection ?? this.focusSection,
     );
   }
 }

@@ -9,8 +9,9 @@ import '../../../core/time/tenant_civil_time.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../jobs/utils/unified_support_args.dart';
+import '../../rostering/domain/occurrence_draft.dart';
+import '../../rostering/domain/roster_composer_args.dart';
 import '../../shifts/data/models/shift_models.dart';
-import '../../shifts/group_book/group_shift_book_args.dart';
 import '../controllers/staff_visits_controller.dart';
 import '../roster/roster_grid_model.dart';
 import '../roster/roster_grid_view.dart';
@@ -102,9 +103,14 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
   }
 
   void _openUnifiedSupport({String? clientId, UnifiedSupportMode? mode}) {
+    final ongoing = mode == UnifiedSupportMode.ongoing;
     Get.toNamed(
-      AppRoutes.staffUnifiedSupport,
-      arguments: UnifiedSupportArgs(clientId: clientId, initialMode: mode),
+      AppRoutes.staffRosterCompose,
+      arguments: RosterComposerArgs(
+        clientId: clientId,
+        preset: ComposerPreset.oneSession,
+        repeatEnabled: ongoing,
+      ),
     );
   }
 
@@ -157,9 +163,11 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                   onTap: () {
                     Navigator.pop(ctx);
                     Get.toNamed(
-                      AppRoutes.staffGroupShiftBook,
-                      arguments: GroupShiftBookArgs(
+                      AppRoutes.staffRosterCompose,
+                      arguments: RosterComposerArgs(
                         participantId: participantId,
+                        clientId: participantId,
+                        preset: ComposerPreset.group,
                       ),
                     );
                   },

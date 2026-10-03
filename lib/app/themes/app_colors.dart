@@ -68,5 +68,15 @@ class AppColors {
   /// Incomplete / needs-attention wash (coral soft).
   static const Color incompleteBackground = accentSoft;
 
+  /// Composer work surface (single scroll plane — not a card kit).
+  static const Color workSurface = surface;
+
+  /// Sticky composer footer plane.
+  static const Color composerFooter = surface;
+
+  /// Draft status chip (slate, not success/error).
+  static const Color draftChip = slate600;
+  static const Color draftChipBackground = slate200;
+
   static const Color divider = slate200;
 }

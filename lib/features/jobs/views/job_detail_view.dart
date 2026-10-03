@@ -6,10 +6,11 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
+import '../../rostering/domain/occurrence_draft.dart';
+import '../../rostering/domain/roster_composer_args.dart';
 import '../controllers/jobs_controller.dart';
 import '../utils/job_copy.dart';
 import '../utils/recurrence_label.dart';
-import '../utils/unified_support_args.dart';
 
 class JobDetailView extends StatefulWidget {
   const JobDetailView({super.key});
@@ -131,16 +132,16 @@ class _JobDetailViewState extends State<JobDetailView> {
                           isLoading: controller.isSaving.value,
                           child: const Text('Cancel'),
                         ),
-                        ElevatedButton.icon(
+                          ElevatedButton.icon(
                           onPressed:
                               controller.isSaving.value
                                   ? null
                                   : () => Get.toNamed(
-                                    AppRoutes.staffUnifiedSupport,
-                                    arguments: UnifiedSupportArgs(
+                                    AppRoutes.staffRosterCompose,
+                                    arguments: RosterComposerArgs(
                                       clientId: job.clientId,
-                                      initialMode:
-                                          UnifiedSupportMode.oneSession,
+                                      jobId: job.id,
+                                      preset: ComposerPreset.oneSession,
                                     ),
                                   ),
                           icon: const Icon(Icons.event_outlined),
@@ -206,7 +207,13 @@ class _JobDetailViewState extends State<JobDetailView> {
                               controller.isSaving.value
                                   ? null
                                   : () => Get.toNamed(
-                                    AppRoutes.staffRecurrenceRuleForm,
+                                    AppRoutes.staffRosterCompose,
+                                    arguments: RosterComposerArgs(
+                                      jobId: job.id,
+                                      clientId: job.clientId,
+                                      preset: ComposerPreset.oneSession,
+                                      repeatEnabled: true,
+                                    ),
                                   ),
                           icon: const Icon(Icons.add),
                           label: const Text('Add recurrence rule'),

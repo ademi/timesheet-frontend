@@ -19,6 +19,8 @@ import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../billing/data/models/billing_models.dart';
+import '../../rostering/domain/occurrence_draft.dart';
+import '../../rostering/domain/roster_composer_args.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/models/shift_travel_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
@@ -699,8 +701,14 @@ class StaffVisitsController extends GetxController {
     final shift = selectedShift.value;
     if (shift == null || shift.status != 'draft') return;
     final result = await Get.toNamed(
-      AppRoutes.staffGroupShiftPublish,
-      arguments: shift,
+      AppRoutes.staffRosterCompose,
+      arguments: RosterComposerArgs(
+        shiftId: shift.id,
+        shift: shift,
+        jobId: shift.jobId,
+        preset: ComposerPreset.group,
+        focusSection: ComposerFocusSection.publish,
+      ),
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
@@ -762,8 +770,14 @@ class StaffVisitsController extends GetxController {
     final refreshed = selectedShift.value;
     if (refreshed == null || refreshed.status != 'draft') return;
     final result = await Get.toNamed(
-      AppRoutes.staffGroupShiftEdit,
-      arguments: refreshed,
+      AppRoutes.staffRosterCompose,
+      arguments: RosterComposerArgs(
+        shiftId: refreshed.id,
+        shift: refreshed,
+        jobId: refreshed.jobId,
+        preset: ComposerPreset.group,
+        focusSection: ComposerFocusSection.people,
+      ),
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
@@ -777,9 +791,18 @@ class StaffVisitsController extends GetxController {
   Future<void> openRemoveParticipant(ShiftParticipantOut participant) async {
     final shift = selectedShift.value;
     if (shift == null) return;
+    // Soft cutover: people focus on composer (participant selection in Task 4 UX).
     final result = await Get.toNamed(
-      AppRoutes.staffGroupShiftRemove,
-      arguments: {'shift': shift, 'participant': participant},
+      AppRoutes.staffRosterCompose,
+      arguments: RosterComposerArgs(
+        shiftId: shift.id,
+        shift: shift,
+        jobId: shift.jobId,
+        participantId: participant.participantId,
+        participantName: participant.participantName,
+        preset: ComposerPreset.group,
+        focusSection: ComposerFocusSection.people,
+      ),
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
