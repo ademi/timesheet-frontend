@@ -591,7 +591,7 @@ class JobsController extends GetxController {
       await _repository.patchRecurrenceRule(
         jobId: job.id,
         ruleId: rule.id,
-        isActive: !rule.isActive,
+        body: RecurrenceRulePatchRequest(isActive: !rule.isActive),
       );
       await refreshRules();
     } on AppFailure catch (e) {

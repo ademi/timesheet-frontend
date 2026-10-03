@@ -132,11 +132,11 @@ class ComposerFacade {
   Future<RecurrenceRuleOut> patchRecurrenceRule({
     required String jobId,
     required String ruleId,
-    required bool isActive,
+    required RecurrenceRulePatchRequest body,
   }) => jobs.patchRecurrenceRule(
     jobId: jobId,
     ruleId: ruleId,
-    isActive: isActive,
+    body: body,
   );
 
   Future<GenerateVisitsResponse> generateVisits({

@@ -15,6 +15,8 @@ import '../../../clients/data/repositories/clients_repository.dart';
 import '../../../engagements/data/models/engagement_models.dart';
 import '../../../engagements/data/repositories/engagements_repository.dart';
 import '../../../jobs/data/models/job_models.dart';
+import '../../../jobs/utils/recurrence_rrule_builder.dart';
+import '../../../jobs/utils/time_window_utils.dart';
 import '../../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../../../shifts/data/models/shift_models.dart';
 import '../../../shifts/data/models/shift_travel_models.dart';
@@ -24,6 +26,7 @@ import '../../data/composer_facade.dart';
 import '../../data/composer_models.dart';
 import '../../domain/composer_validation.dart';
 import '../../domain/occurrence_draft.dart';
+import '../../domain/repeat_template_payload.dart';
 import '../../domain/roster_composer_args.dart';
 import '../../domain/travel_shares_validation.dart';
 import '../shared/assign_context_labels.dart';
@@ -102,6 +105,20 @@ class RosterComposerController extends GetxController {
   final assignContextError = RxnString();
   final assignOverrideReasons = <String, String>{}.obs;
   bool _workersSectionOpened = false;
+
+  // ── Repeat / A7 ──────────────────────────────────────────────────────────
+  final recurrenceRuleId = RxnString();
+  final repeatFrequency = RecurrenceFrequency.weekly.obs;
+  final repeatWeekdays = <int>{DateTime.monday}.obs;
+  final repeatStartDate = DateTime.now().obs;
+  final repeatEndDate = Rx<DateTime>(defaultRecurrenceEndDate(DateTime.now()));
+  final repeatPublishPolicy = 'published'.obs; // draft | published
+  /// Soft suggestions only — maps to rule `contractor_ids` (never auto-assign).
+  final preferredContractorIds = <String>[].obs;
+  final isGeneratingRepeat = false.obs;
+  final generateOutcomeMessage = RxnString();
+  final repeatError = RxnString();
+  final Map<String, String> _generateIdempotencyKeys = {};
 
   final isHydrating = true.obs;
   final isSaving = false.obs;
@@ -217,7 +234,15 @@ class RosterComposerController extends GetxController {
       _bounceToDetail(composer.shift);
       throw _PublishedBounce();
     }
-    _applyComposerSeed(composer, repeatEnabled: _args.repeatEnabled);
+    final ruleId =
+        composer.shift.recurrenceRuleId ?? _args.recurrenceRuleId;
+    final repeatOn =
+        _args.repeatEnabled || (ruleId != null && ruleId.isNotEmpty);
+    if (ruleId != null && ruleId.isNotEmpty) {
+      recurrenceRuleId.value = ruleId;
+    }
+    _applyComposerSeed(composer, repeatEnabled: repeatOn);
+    if (repeatOn) _seedRepeatDefaults();
     unawaited(() async {
       try {
         clients.assignAll(await _clients.listClients());
@@ -298,6 +323,10 @@ class RosterComposerController extends GetxController {
     }
 
     await Future.wait(futures);
+    if (repeat) {
+      recurrenceRuleId.value = _args.recurrenceRuleId;
+      _seedRepeatDefaults();
+    }
     schedulePlaceOptionsRefresh();
   }
 
@@ -441,7 +470,333 @@ class RosterComposerController extends GetxController {
 
   void setRepeatEnabled(bool enabled) {
     draft.value = draft.value.copyWith(repeatEnabled: enabled);
+    if (enabled) {
+      _seedRepeatDefaults();
+      unawaited(_ensureEngagementsLoaded());
+    }
   }
+
+  void onRepeatSectionOpened() {
+    if (!draft.value.repeatEnabled) return;
+    _seedRepeatDefaults();
+    unawaited(_ensureEngagementsLoaded());
+  }
+
+  void _seedRepeatDefaults() {
+    final start = draft.value.scheduledStart;
+    if (start != null) {
+      final civil = DateTime(start.year, start.month, start.day);
+      if (repeatStartDate.value.isBefore(civil) ||
+          recurrenceRuleId.value == null) {
+        repeatStartDate.value = civil;
+        repeatWeekdays
+          ..clear()
+          ..add(civil.weekday);
+      }
+      if (repeatEndDate.value.isBefore(repeatStartDate.value)) {
+        repeatEndDate.value = defaultRecurrenceEndDate(repeatStartDate.value);
+      }
+    }
+    if (preferredContractorIds.isEmpty &&
+        draft.value.contractorIds.isNotEmpty) {
+      preferredContractorIds.assignAll(
+        draft.value.contractorIds.take(draft.value.requiredSlots),
+      );
+    }
+    if (_args.recurrenceRuleId != null &&
+        _args.recurrenceRuleId!.isNotEmpty &&
+        recurrenceRuleId.value == null) {
+      recurrenceRuleId.value = _args.recurrenceRuleId;
+    }
+  }
+
+  bool get repeatRequiresWeekdays =>
+      repeatFrequency.value == RecurrenceFrequency.weekly ||
+      repeatFrequency.value == RecurrenceFrequency.fortnightly;
+
+  void setRepeatFrequency(RecurrenceFrequency value) {
+    repeatFrequency.value = value;
+  }
+
+  void toggleRepeatWeekday(int day) {
+    if (repeatWeekdays.contains(day)) {
+      repeatWeekdays.remove(day);
+    } else {
+      repeatWeekdays.add(day);
+    }
+  }
+
+  void setRepeatStartDate(DateTime date) {
+    repeatStartDate.value = DateTime(date.year, date.month, date.day);
+    if (repeatEndDate.value.isBefore(repeatStartDate.value)) {
+      repeatEndDate.value = defaultRecurrenceEndDate(repeatStartDate.value);
+    }
+  }
+
+  void setRepeatEndDate(DateTime date) {
+    repeatEndDate.value = DateTime(date.year, date.month, date.day);
+  }
+
+  void setRepeatPublishPolicy(String policy) {
+    if (policy == 'draft' || policy == 'published') {
+      repeatPublishPolicy.value = policy;
+    }
+  }
+
+  void setPreferredContractorAt(int index, String? contractorId) {
+    final slots = List<String?>.generate(
+      draft.value.requiredSlots,
+      (i) => i < preferredContractorIds.length ? preferredContractorIds[i] : null,
+    );
+    while (slots.length <= index) {
+      slots.add(null);
+    }
+    if (contractorId != null &&
+        slots.asMap().entries.any(
+          (e) => e.key != index && e.value == contractorId,
+        )) {
+      repeatError.value = 'That worker is already suggested in another slot.';
+      return;
+    }
+    slots[index] = contractorId;
+    preferredContractorIds.assignAll([
+      for (final id in slots)
+        if (id != null && id.isNotEmpty) id,
+    ]);
+    if (repeatError.value?.contains('already suggested') == true) {
+      repeatError.value = null;
+    }
+  }
+
+  /// Build create body for tests / save (includes soft preferred contractor_ids).
+  RecurrenceRuleCreateRequest buildRepeatCreateRequest() {
+    return RepeatTemplatePayload.buildCreate(
+      draft: draft.value,
+      frequency: repeatFrequency.value,
+      weekdays: repeatWeekdays.toSet(),
+      startDate: repeatStartDate.value,
+      endDate: repeatEndDate.value,
+      publishPolicy: repeatPublishPolicy.value,
+      preferredContractorIds: preferredContractorIds.toList(growable: false),
+      formOverrides: formOverrides.toList(growable: false),
+    );
+  }
+
+  RecurrenceRulePatchRequest buildRepeatPatchRequest() {
+    final window = RepeatTemplatePayload.windowFromSchedule(draft.value);
+    return RepeatTemplatePayload.buildPatch(
+      draft: draft.value,
+      publishPolicy: repeatPublishPolicy.value,
+      preferredContractorIds: preferredContractorIds.toList(growable: false),
+      formOverrides: formOverrides.toList(growable: false),
+      timeWindows: window == null ? null : [window],
+    );
+  }
+
+  String? _validateRepeatFields() {
+    if (repeatRequiresWeekdays && repeatWeekdays.isEmpty) {
+      return 'Select at least one weekday.';
+    }
+    if (repeatEndDate.value.isBefore(repeatStartDate.value)) {
+      return 'End date must not be before the start date.';
+    }
+    final window = RepeatTemplatePayload.windowFromSchedule(draft.value);
+    if (window == null) {
+      return 'Set start and end times before saving a repeat pattern.';
+    }
+    final windowError = validateVisitWindows([window]);
+    if (windowError != null) return windowError;
+    if (preferredContractorIds.length > draft.value.requiredSlots) {
+      return 'Suggested workers cannot exceed required slots.';
+    }
+    return null;
+  }
+
+  /// Create or patch the A7 rule from the current occurrence draft.
+  Future<bool> saveRepeatRule() async {
+    if (!canManage || !draft.value.repeatEnabled) return false;
+    repeatError.value = null;
+    final validation = _validateRepeatFields();
+    if (validation != null) {
+      repeatError.value = validation;
+      errorMessage.value = validation;
+      return false;
+    }
+
+    try {
+      try {
+        compileRecurrenceRrule(
+          frequency: repeatFrequency.value,
+          weekdays: repeatWeekdays.toSet(),
+        );
+      } on ArgumentError {
+        repeatError.value = 'Select at least one weekday.';
+        return false;
+      }
+
+      final jobId = await _resolveJobIdForCreate();
+      final existingId = recurrenceRuleId.value;
+      if (existingId != null && existingId.isNotEmpty) {
+        final patched = await _facade.patchRecurrenceRule(
+          jobId: jobId,
+          ruleId: existingId,
+          body: buildRepeatPatchRequest(),
+        );
+        recurrenceRuleId.value = patched.id;
+        _applyRuleWarnings(patched);
+      } else {
+        final created = await _facade.createRecurrenceRule(
+          jobId,
+          buildRepeatCreateRequest(),
+        );
+        recurrenceRuleId.value = created.id;
+        _applyRuleWarnings(created);
+      }
+      return true;
+    } on AppFailure catch (e) {
+      repeatError.value = e.message;
+      errorMessage.value = e.message;
+      return false;
+    } catch (e) {
+      repeatError.value = e.toString();
+      errorMessage.value = e.toString();
+      return false;
+    }
+  }
+
+  void _applyRuleWarnings(RecurrenceRuleOut rule) {
+    if (rule.warnings.contains('worker_count_slots_mismatch') &&
+        !Get.testMode) {
+      AppToast.info(
+        'Workers vs slots',
+        'Worker count and required slots differ — open holes stay claimable.',
+      );
+    }
+  }
+
+  /// Non-blocking horizon generate — never sets [isSaving] / blocks the shell.
+  Future<void> generateRepeatHorizon() async {
+    if (!canManage || isGeneratingRepeat.value) return;
+
+    // Flip progress immediately (<300ms) without locking Save draft.
+    isGeneratingRepeat.value = true;
+    generateOutcomeMessage.value = null;
+    repeatError.value = null;
+    try {
+      var ruleId = recurrenceRuleId.value;
+      var jobId = draft.value.jobId;
+      if (ruleId == null || ruleId.isEmpty || jobId == null || jobId.isEmpty) {
+        final saved = await saveRepeatRule();
+        if (!saved || recurrenceRuleId.value == null) return;
+        ruleId = recurrenceRuleId.value;
+        jobId = draft.value.jobId;
+      }
+      if (jobId == null || ruleId == null) return;
+
+      final tz = await _resolveTenantTimezone();
+      final horizon = tenantHorizonWindowUtc(DateTime.now().toUtc(), tz);
+      final key =
+          '$ruleId|${horizon.from.toIso8601String()}|'
+          '${horizon.to.toIso8601String()}';
+      final idemKey = _generateIdempotencyKeys.putIfAbsent(
+        key,
+        () =>
+            'fe-composer-gen-$ruleId-'
+            '${DateTime.now().microsecondsSinceEpoch}',
+      );
+      final result = await _facade.generateVisits(
+        jobId: jobId,
+        ruleId: ruleId,
+        body: GenerateVisitsRequest(from: horizon.from, to: horizon.to),
+        idempotencyKey: idemKey,
+      );
+      final n = result.createdShiftIds.length;
+      final policy = repeatPublishPolicy.value;
+      if (policy == 'draft') {
+        generateOutcomeMessage.value =
+            n == 0
+                ? 'No new draft shifts in the next 14 days.'
+                : 'Created $n draft shift${n == 1 ? '' : 's'} '
+                    '(not on the claim board).';
+      } else {
+        generateOutcomeMessage.value =
+            n == 0
+                ? 'No new open shifts in the next 14 days.'
+                : 'Created $n open shift${n == 1 ? '' : 's'} '
+                    'with holes for claim.';
+      }
+      if (result.skipped.isNotEmpty) {
+        generateOutcomeMessage.value =
+            '${generateOutcomeMessage.value} '
+            'Skipped ${result.skipped.length}.';
+      }
+    } on AppFailure catch (e) {
+      repeatError.value = e.message;
+      generateOutcomeMessage.value = null;
+    } catch (e) {
+      repeatError.value = e.toString();
+      generateOutcomeMessage.value = null;
+    } finally {
+      isGeneratingRepeat.value = false;
+    }
+  }
+
+  /// This-and-future → backend split-from (copies full A7 template).
+  Future<bool> splitThisAndFuture() async {
+    if (!canManage) return false;
+    final ruleId = recurrenceRuleId.value ?? _args.recurrenceRuleId;
+    final jobId = draft.value.jobId;
+    if (ruleId == null ||
+        ruleId.isEmpty ||
+        jobId == null ||
+        jobId.isEmpty) {
+      repeatError.value = 'Save a repeat pattern before editing this and future.';
+      return false;
+    }
+    final window = RepeatTemplatePayload.windowFromSchedule(draft.value);
+    if (window == null) {
+      repeatError.value = 'Set start and end times first.';
+      return false;
+    }
+    repeatError.value = null;
+    try {
+      final tz = await _resolveTenantTimezone();
+      final start = draft.value.scheduledStart!;
+      final civil = DateTime(start.year, start.month, start.day);
+      final horizon = tenantHorizonWindowFromCivilDate(civil, tz);
+      final out = await _facade.splitRecurrenceFrom(
+        jobId: jobId,
+        ruleId: ruleId,
+        body: SplitRecurrenceRequest(
+          fromDate: civil,
+          timeWindows: [window],
+          contractorIds: preferredContractorIds.toList(growable: false),
+          requiredSlots: draft.value.requiredSlots,
+          horizonFrom: horizon.from,
+          horizonTo: horizon.to,
+        ),
+      );
+      recurrenceRuleId.value = out.newRule.id;
+      repeatPublishPolicy.value = out.newRule.publishPolicy;
+      preferredContractorIds.assignAll(out.newRule.contractorIds);
+      final n = out.horizon.createdShiftIds.length;
+      generateOutcomeMessage.value =
+          'Split complete. New pattern from ${formatAppDateCivil(civil)}; '
+          '$n shift${n == 1 ? '' : 's'} in horizon.';
+      return true;
+    } on AppFailure catch (e) {
+      repeatError.value = e.message;
+      return false;
+    } catch (e) {
+      repeatError.value = e.toString();
+      return false;
+    }
+  }
+
+  String formatAppDateCivil(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
 
   void setSchedule({DateTime? start, DateTime? end}) {
     draft.value = draft.value.copyWith(
@@ -1227,6 +1582,11 @@ class RosterComposerController extends GetxController {
         );
       }
       await _persistTravelIfNeeded(shiftId);
+
+      if (draft.value.repeatEnabled) {
+        final repeatOk = await saveRepeatRule();
+        if (!repeatOk) return false;
+      }
 
       if (!Get.testMode) {
         AppToast.success('Draft saved', 'You can keep editing or publish.');

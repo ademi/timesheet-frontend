@@ -124,12 +124,12 @@ class JobsRemoteDataSource {
   Future<RecurrenceRuleOut> patchRecurrenceRule({
     required String jobId,
     required String ruleId,
-    required bool isActive,
+    required RecurrenceRulePatchRequest body,
   }) async {
     try {
       final response = await _dio.patch<Map<String, dynamic>>(
         ApiPaths.jobRecurrenceRule(jobId, ruleId),
-        data: {'is_active': isActive},
+        data: body.toJson(),
       );
       return _require(response.data, RecurrenceRuleOut.fromJson, 'patch rule');
     } on DioException catch (e) {
