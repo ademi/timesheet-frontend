@@ -99,6 +99,12 @@ class TravelDraft {
       }
       return null;
     }
+    if (apportionmentMode == TravelApportionmentMode.explicit) {
+      if (nominatedParticipantId != null) {
+        return 'explicit split cannot have a nominated participant';
+      }
+      return null;
+    }
     if ((nominatedParticipantId?.trim() ?? '').isEmpty) {
       return 'Choose a nominated participant';
     }

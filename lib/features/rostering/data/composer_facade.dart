@@ -101,20 +101,24 @@ class ComposerFacade {
     required String shiftId,
     required String contractorId,
     List<TaskTemplateItem>? taskTemplate,
+    String? reason,
   }) => _shifts.assignShift(
     shiftId: shiftId,
     contractorId: contractorId,
     taskTemplate: taskTemplate,
+    reason: reason,
   );
 
   Future<ShiftOut> assignShiftBatch({
     required String shiftId,
     required List<String> contractorIds,
     List<TaskTemplateItem>? taskTemplate,
+    String? reason,
   }) => _shifts.assignShiftBatch(
     shiftId: shiftId,
     contractorIds: contractorIds,
     taskTemplate: taskTemplate,
+    reason: reason,
   );
 
   Future<ShiftOut> publishShift(String id, {ShiftPublishRequest? body}) =>

@@ -2,23 +2,149 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../app/themes/app_colors.dart';
+import '../../../data/composer_models.dart';
+import '../../../../jobs/data/models/job_models.dart';
+import '../roster_composer_controller.dart';
 
-/// Placeholder — form override chips land in Task 4.
-class ComposerFormsSection extends StatelessWidget {
+/// Form requirement chips — inherited read-only; overrides editable.
+///
+/// Never calls `addFormCatalog` as required. Preview runs only after edit
+/// (debounce 300ms); hydrate seeds chips without a preview RTT.
+class ComposerFormsSection extends GetView<RosterComposerController> {
   const ComposerFormsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('Forms', style: Get.textTheme.titleMedium),
-        const SizedBox(height: 4),
-        const Text(
-          'Form requirements will appear here.',
-          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-        ),
-      ],
+    return Obx(() {
+      final resolved = controller.resolvedForms.toList(growable: false);
+      final overrides = controller.formOverrides.toList(growable: false);
+      final loading = controller.formsPreviewLoading.value;
+      final err = controller.formsPreviewError.value;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Forms', style: Get.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          const Text(
+            'Inherited requirements are read-only. Add or remove overrides only.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+          const SizedBox(height: 12),
+          if (loading)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
+          if (err != null) ...[
+            Text(err, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+            TextButton(
+              onPressed: controller.retryFormsPreview,
+              child: const Text('Retry'),
+            ),
+          ],
+          if (resolved.isEmpty && overrides.isEmpty)
+            const Text(
+              'No form requirements yet.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final form in resolved)
+                  _FormChip(
+                    form: form,
+                    isOverride: form.source == 'override',
+                    onRemove: () => controller.removeFormOverride(form.formTemplateId),
+                  ),
+                for (final o in overrides)
+                  if (o.action == 'remove')
+                    Chip(
+                      key: Key('form-override-remove-${o.formTemplateId}'),
+                      label: Text('Removed: ${o.name.isEmpty ? o.formTemplateId : o.name}'),
+                      backgroundColor: AppColors.errorBackground,
+                      deleteIcon: const Icon(Icons.undo, size: 18),
+                      onDeleted: () => controller.clearFormOverride(o.formTemplateId),
+                    ),
+              ],
+            ),
+          const SizedBox(height: 12),
+          _AddFormOverrideMenu(controller: controller),
+        ],
+      );
+    });
+  }
+}
+
+class _FormChip extends StatelessWidget {
+  const _FormChip({
+    required this.form,
+    required this.isOverride,
+    required this.onRemove,
+  });
+
+  final ResolvedFormPreviewOut form;
+  final bool isOverride;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final sourceLabel = switch (form.source) {
+      'org' => 'Org',
+      'client' => 'Client',
+      'override' => 'Override',
+      _ => form.source,
+    };
+    return InputChip(
+      key: Key('form-chip-${form.formTemplateId}'),
+      label: Text(
+        '${form.name.isEmpty ? form.formTemplateId : form.name}'
+        '${form.isRequired ? '' : ' (optional)'} · $sourceLabel',
+      ),
+      onDeleted: isOverride || form.source != 'override' ? onRemove : null,
+      deleteIcon: const Icon(Icons.close, size: 18),
     );
+  }
+}
+
+class _AddFormOverrideMenu extends StatelessWidget {
+  const _AddFormOverrideMenu({required this.controller});
+
+  final RosterComposerController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final resolvedIds = {
+        for (final f in controller.resolvedForms) f.formTemplateId,
+      };
+      final templates = [
+        for (final t in controller.formTemplates)
+          if (t.isActive && !resolvedIds.contains(t.id)) t,
+      ];
+      if (templates.isEmpty) {
+        return const Text(
+          'No additional form templates available.',
+          style: TextStyle(color: AppColors.slate500, fontSize: 12),
+        );
+      }
+      return PopupMenuButton<FormTemplateOut>(
+        key: const Key('composer-add-form-override'),
+        onSelected: (t) => controller.addFormOverride(t),
+        itemBuilder:
+            (context) => [
+              for (final t in templates)
+                PopupMenuItem(value: t, child: Text(t.name)),
+            ],
+        child: const Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            '+ Add form override',
+            style: TextStyle(color: AppColors.cta, fontWeight: FontWeight.w600),
+          ),
+        ),
+      );
+    });
   }
 }

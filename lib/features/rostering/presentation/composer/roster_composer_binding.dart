@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../clients/bindings/clients_binding.dart';
 import '../../../clients/data/repositories/clients_repository.dart';
+import '../../../engagements/data/repositories/engagements_repository.dart';
 import '../../../jobs/bindings/jobs_binding.dart';
 import '../../../jobs/data/repositories/jobs_repository.dart';
 import '../../../shifts/data/repositories/shifts_repository.dart';
@@ -32,6 +33,10 @@ class RosterComposerBinding extends Bindings {
         facade: facade,
         clientsRepository: Get.find<ClientsRepository>(),
         session: Get.find<SessionService>(),
+        engagementsRepository:
+            Get.isRegistered<EngagementsRepository>()
+                ? Get.find<EngagementsRepository>()
+                : null,
         args: RosterComposerArgs.fromRaw(Get.arguments),
       ),
     );

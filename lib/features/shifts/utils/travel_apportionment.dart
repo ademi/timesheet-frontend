@@ -23,6 +23,14 @@ Map<String, double> apportionTravelQuantity({
     );
   }
 
+  if (mode == TravelApportionmentMode.explicit) {
+    throw ArgumentError.value(
+      mode,
+      'mode',
+      'explicit shares are client-supplied; do not apportion',
+    );
+  }
+
   final totalUnits = (totalQty * travelQuantityScale).round();
   if (mode == TravelApportionmentMode.nominated) {
     if (nominatedParticipantId == null ||

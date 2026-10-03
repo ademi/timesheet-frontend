@@ -90,6 +90,16 @@ void main() {
     when(
       () => shifts.fetchPlaceOptions(participantIds: any(named: 'participantIds')),
     ).thenAnswer((_) async => const PlaceOptionsOut());
+    when(
+      () => jobs.listFormTemplates(tenantLevel: any(named: 'tenantLevel')),
+    ).thenAnswer((_) async => []);
+    when(
+      () => shifts.fetchAssignContext(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        clientId: any(named: 'clientId'),
+      ),
+    ).thenAnswer((_) async => const AssignContextOut());
     when(() => jobs.ensureOngoingSupport(any())).thenAnswer(
       (_) async => JobOut(
         id: 'standing-1',

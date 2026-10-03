@@ -346,6 +346,7 @@ class ShiftsRemoteDataSource {
     required String shiftId,
     required String contractorId,
     List<TaskTemplateItem>? taskTemplate,
+    String? reason,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -354,6 +355,8 @@ class ShiftsRemoteDataSource {
           'contractor_id': contractorId,
           if (taskTemplate != null && taskTemplate.isNotEmpty)
             'task_template': [for (final task in taskTemplate) task.toJson()],
+          // Existing assign audit payload key — not a new API column.
+          if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
         },
       );
       return ShiftOut.fromJson(response.data!);
@@ -366,6 +369,7 @@ class ShiftsRemoteDataSource {
     required String shiftId,
     required List<String> contractorIds,
     List<TaskTemplateItem>? taskTemplate,
+    String? reason,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -374,6 +378,7 @@ class ShiftsRemoteDataSource {
           'contractor_ids': contractorIds,
           if (taskTemplate != null && taskTemplate.isNotEmpty)
             'task_template': [for (final task in taskTemplate) task.toJson()],
+          if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
         },
       );
       return ShiftOut.fromJson(response.data!);
