@@ -1698,7 +1698,10 @@ class ClientsController extends GetxController
     final client = selected.value;
     if (client == null) return;
     AppNavigator.push(
-      AppRoutes.staffUnifiedSupport,
+      AppNavigator.location(
+        AppRoutes.staffUnifiedSupport,
+        query: {'clientId': client.id, 'mode': 'ongoing'},
+      ),
       extra: UnifiedSupportArgs.forClient(
         client,
         mode: UnifiedSupportMode.ongoing,
@@ -1742,7 +1745,10 @@ class ClientsController extends GetxController
     final client = selected.value;
     if (client == null) return;
     AppNavigator.push(
-      AppRoutes.staffUnifiedSupport,
+      AppNavigator.location(
+        AppRoutes.staffUnifiedSupport,
+        query: {'clientId': client.id, 'mode': 'one'},
+      ),
       extra: UnifiedSupportArgs.forClient(
         client,
         mode: UnifiedSupportMode.oneSession,
