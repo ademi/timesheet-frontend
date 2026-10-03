@@ -3,6 +3,113 @@ import 'shift_travel_models.dart';
 
 /// Shift roster DTOs.
 
+/// Exactly one place mode (branch XOR client site XOR labelled ad-hoc).
+sealed class ShiftPlaceIn {
+  const ShiftPlaceIn();
+
+  const factory ShiftPlaceIn.branch(String branchId) = ShiftPlaceBranch;
+  const factory ShiftPlaceIn.clientSite(String clientSiteId) =
+      ShiftPlaceClientSite;
+  const factory ShiftPlaceIn.labelled({
+    required String label,
+    required double latitude,
+    required double longitude,
+    required String postalCode,
+    int? geofenceRadiusM,
+  }) = ShiftPlaceLabelled;
+
+  Map<String, dynamic> toJson();
+}
+
+final class ShiftPlaceBranch extends ShiftPlaceIn {
+  const ShiftPlaceBranch(this.branchId);
+  final String branchId;
+
+  @override
+  Map<String, dynamic> toJson() => {'branch_id': branchId};
+}
+
+final class ShiftPlaceClientSite extends ShiftPlaceIn {
+  const ShiftPlaceClientSite(this.clientSiteId);
+  final String clientSiteId;
+
+  @override
+  Map<String, dynamic> toJson() => {'client_site_id': clientSiteId};
+}
+
+final class ShiftPlaceLabelled extends ShiftPlaceIn {
+  const ShiftPlaceLabelled({
+    required this.label,
+    required this.latitude,
+    required this.longitude,
+    required this.postalCode,
+    this.geofenceRadiusM,
+  });
+
+  final String label;
+  final double latitude;
+  final double longitude;
+  final String postalCode;
+  final int? geofenceRadiusM;
+
+  @override
+  Map<String, dynamic> toJson() => {
+    'label': label,
+    'latitude': latitude,
+    'longitude': longitude,
+    'postal_code': postalCode,
+    if (geofenceRadiusM != null) 'geofence_radius_m': geofenceRadiusM,
+  };
+}
+
+/// Participant-keyed segment plan (A3/A7 template stamp).
+class SegmentTemplateItem {
+  const SegmentTemplateItem({
+    required this.participantId,
+    required this.anchorSupportItemCode,
+    required this.offsetStartMinutes,
+    required this.offsetEndMinutes,
+    this.kind = 'direct',
+    this.groupSize,
+    this.notes,
+    this.sortOrder = 0,
+  });
+
+  final String participantId;
+  final String anchorSupportItemCode;
+  final String kind;
+  final int offsetStartMinutes;
+  final int offsetEndMinutes;
+  final int? groupSize;
+  final String? notes;
+  final int sortOrder;
+
+  factory SegmentTemplateItem.fromJson(Map<String, dynamic> json) {
+    return SegmentTemplateItem(
+      participantId: json['participant_id'].toString(),
+      anchorSupportItemCode:
+          json['anchor_support_item_code'] as String? ?? '',
+      kind: json['kind'] as String? ?? 'direct',
+      offsetStartMinutes: json['offset_start_minutes'] as int? ?? 0,
+      offsetEndMinutes: json['offset_end_minutes'] as int? ?? 0,
+      groupSize: json['group_size'] as int?,
+      notes: json['notes'] as String?,
+      sortOrder: json['sort_order'] as int? ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'participant_id': participantId,
+    'anchor_support_item_code': anchorSupportItemCode,
+    'kind': kind,
+    'offset_start_minutes': offsetStartMinutes,
+    'offset_end_minutes': offsetEndMinutes,
+    if (groupSize != null) 'group_size': groupSize,
+    if (notes != null) 'notes': notes,
+    'sort_order': sortOrder,
+  };
+}
+
 class ShiftAssignmentOut {
   const ShiftAssignmentOut({
     required this.id,
@@ -229,6 +336,11 @@ class ShiftOut {
     this.locationLabel,
     this.suburb,
     this.postalCode,
+    this.placeBranchId,
+    this.placeClientSiteId,
+    this.placeLabel,
+    this.taskTemplate = const [],
+    this.segmentTemplate = const [],
     this.assignments = const [],
     this.participants = const [],
     this.travelClaims = const [],
@@ -256,6 +368,11 @@ class ShiftOut {
   final String? locationLabel;
   final String? suburb;
   final String? postalCode;
+  final String? placeBranchId;
+  final String? placeClientSiteId;
+  final String? placeLabel;
+  final List<TaskTemplateItem> taskTemplate;
+  final List<SegmentTemplateItem> segmentTemplate;
   final List<ShiftAssignmentOut> assignments;
   final List<ShiftParticipantOut> participants;
   final List<ShiftTravelOut> travelClaims;
@@ -286,6 +403,11 @@ class ShiftOut {
       locationLabel: locationLabel,
       suburb: suburb,
       postalCode: postalCode,
+      placeBranchId: placeBranchId,
+      placeClientSiteId: placeClientSiteId,
+      placeLabel: placeLabel,
+      taskTemplate: taskTemplate,
+      segmentTemplate: segmentTemplate,
       assignments: assignments,
       participants: participants,
       travelClaims: travelClaims ?? this.travelClaims,
@@ -316,6 +438,19 @@ class ShiftOut {
       locationLabel: json['location_label'] as String?,
       suburb: json['suburb'] as String?,
       postalCode: json['postal_code'] as String?,
+      placeBranchId: json['place_branch_id']?.toString(),
+      placeClientSiteId: json['place_client_site_id']?.toString(),
+      placeLabel: json['place_label'] as String?,
+      taskTemplate: (json['task_template'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => TaskTemplateItem.fromJson(Map<String, dynamic>.from(e)))
+          .toList(growable: false),
+      segmentTemplate: (json['segment_template'] as List? ?? const [])
+          .whereType<Map>()
+          .map(
+            (e) => SegmentTemplateItem.fromJson(Map<String, dynamic>.from(e)),
+          )
+          .toList(growable: false),
       assignments: (json['assignments'] as List? ?? const [])
           .whereType<Map>()
           .map((e) => ShiftAssignmentOut.fromJson(Map<String, dynamic>.from(e)))
@@ -561,12 +696,39 @@ class ShiftPublishRequest {
   };
 }
 
+/// Draft plan PATCH body (A8/L12). At least one field must be set.
 class ShiftPatchRequest {
-  const ShiftPatchRequest({required this.workerCount});
+  const ShiftPatchRequest({
+    this.place,
+    this.scheduledStart,
+    this.scheduledEnd,
+    this.requiredSlots,
+    this.workerCount,
+    this.taskTemplate,
+    this.segmentTemplate,
+  });
 
-  final int workerCount;
+  final ShiftPlaceIn? place;
+  final DateTime? scheduledStart;
+  final DateTime? scheduledEnd;
+  final int? requiredSlots;
+  final int? workerCount;
+  final List<TaskTemplateItem>? taskTemplate;
+  final List<SegmentTemplateItem>? segmentTemplate;
 
-  Map<String, dynamic> toJson() => {'worker_count': workerCount};
+  Map<String, dynamic> toJson() => {
+    if (place != null) 'place': place!.toJson(),
+    if (scheduledStart != null)
+      'scheduled_start': scheduledStart!.toUtc().toIso8601String(),
+    if (scheduledEnd != null)
+      'scheduled_end': scheduledEnd!.toUtc().toIso8601String(),
+    if (requiredSlots != null) 'required_slots': requiredSlots,
+    if (workerCount != null) 'worker_count': workerCount,
+    if (taskTemplate != null)
+      'task_template': [for (final t in taskTemplate!) t.toJson()],
+    if (segmentTemplate != null)
+      'segment_template': [for (final s in segmentTemplate!) s.toJson()],
+  };
 }
 
 class ShiftCreateRequest {
@@ -574,16 +736,20 @@ class ShiftCreateRequest {
     required this.jobId,
     required this.scheduledStart,
     required this.scheduledEnd,
+    this.place,
     this.requiredSlots = 1,
     this.workerCount = 1,
     this.status = 'draft',
     this.contractorIds = const [],
     this.taskTemplate = const [],
+    this.segmentTemplate = const [],
+    this.supportItemCode,
     this.equalSplit = false,
     this.participants = const [],
   });
 
   final String jobId;
+  final ShiftPlaceIn? place;
   final DateTime scheduledStart;
   final DateTime scheduledEnd;
   final int requiredSlots;
@@ -591,6 +757,8 @@ class ShiftCreateRequest {
   final String status;
   final List<String> contractorIds;
   final List<TaskTemplateItem> taskTemplate;
+  final List<SegmentTemplateItem> segmentTemplate;
+  final String? supportItemCode;
   final bool equalSplit;
   final List<ShiftParticipantCreateItem> participants;
 
@@ -601,9 +769,14 @@ class ShiftCreateRequest {
     'required_slots': requiredSlots,
     'worker_count': workerCount,
     'status': status,
+    if (place != null) 'place': place!.toJson(),
     if (contractorIds.isNotEmpty) 'contractor_ids': contractorIds,
     if (taskTemplate.isNotEmpty)
       'task_template': [for (final t in taskTemplate) t.toJson()],
+    if (segmentTemplate.isNotEmpty)
+      'segment_template': [for (final s in segmentTemplate) s.toJson()],
+    if (supportItemCode != null && supportItemCode!.isNotEmpty)
+      'support_item_code': supportItemCode,
     if (equalSplit) 'equal_split': equalSplit,
     if (participants.isNotEmpty)
       'participants': [for (final p in participants) p.toJson()],

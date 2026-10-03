@@ -1,4 +1,5 @@
 import '../../../jobs/data/models/job_models.dart';
+import '../../../rostering/data/composer_models.dart';
 import '../datasources/shifts_remote_datasource.dart';
 import '../models/shift_models.dart';
 import '../models/shift_travel_models.dart';
@@ -51,8 +52,52 @@ class ShiftsRepository {
   Future<ShiftOut> publishShift(String id, {ShiftPublishRequest? body}) =>
       _remote.publishShift(id, body: body);
 
+  /// Legacy worker_count-only PATCH (board slot editor).
   Future<ShiftOut> patchShift(String shiftId, {required int workerCount}) =>
       _remote.patchShift(shiftId, ShiftPatchRequest(workerCount: workerCount));
+
+  /// Draft plan PATCH (place / schedule / slots / templates).
+  Future<ShiftOut> patchDraftShift(String shiftId, ShiftPatchRequest body) =>
+      _remote.patchShift(shiftId, body);
+
+  Future<ComposerShiftOut> getComposer(String shiftId) =>
+      _remote.getComposer(shiftId);
+
+  Future<ComposerShiftOut> copyShift(String shiftId, ShiftCopyRequest body) =>
+      _remote.copyShift(shiftId, body);
+
+  Future<PlaceOptionsOut> fetchPlaceOptions({
+    List<String> participantIds = const [],
+  }) => _remote.fetchPlaceOptions(participantIds: participantIds);
+
+  Future<List<ShiftFormOverrideOut>> listFormOverrides(String shiftId) =>
+      _remote.listFormOverrides(shiftId);
+
+  Future<List<ShiftFormOverrideOut>> putFormOverrides(
+    String shiftId,
+    List<ShiftFormOverrideOut> overrides,
+  ) => _remote.putFormOverrides(shiftId, overrides);
+
+  Future<List<SupportSegmentOut>> listVisitSegments(
+    String shiftId,
+    String visitId,
+  ) => _remote.listVisitSegments(shiftId, visitId);
+
+  Future<List<SupportSegmentOut>> putVisitSegments(
+    String shiftId,
+    String visitId,
+    List<SupportSegmentIn> segments,
+  ) => _remote.putVisitSegments(shiftId, visitId, segments);
+
+  Future<List<ResolvedFormPreviewOut>> previewForms(
+    FormPreviewRequirementsRequest body,
+  ) => _remote.previewForms(body);
+
+  Future<AssignContextOut> fetchAssignContext({
+    required DateTime from,
+    required DateTime to,
+    String? clientId,
+  }) => _remote.fetchAssignContext(from: from, to: to, clientId: clientId);
 
   Future<ShiftOut> putParticipants(
     String shiftId,
