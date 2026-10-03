@@ -2,7 +2,10 @@ import '../../clients/data/models/client_models.dart';
 
 enum UnifiedSupportMode { oneSession, ongoing }
 
-/// Arguments for [UnifiedSupportController] / route navigation.
+/// Legacy typed args for [AppRoutes.staffUnifiedSupport] soft-cutover.
+///
+/// Call sites may still pass this type; [ComposerCutover] / [RosterComposerArgs]
+/// map it into the unified composer. The Unified Support wizard is removed.
 class UnifiedSupportArgs {
   const UnifiedSupportArgs({this.client, this.clientId, this.initialMode});
 

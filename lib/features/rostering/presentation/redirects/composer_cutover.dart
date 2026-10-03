@@ -5,7 +5,7 @@ import '../../../clients/data/models/client_models.dart';
 import '../../../jobs/utils/unified_support_args.dart';
 import '../../../shifts/data/models/shift_models.dart';
 import '../../../shifts/group_book/group_shift_book_args.dart';
-import '../../../shifts/group_book/group_shift_edit_controller.dart';
+import '../../../shifts/group_book/group_shift_edit_args.dart';
 import '../../domain/occurrence_draft.dart';
 import '../../domain/roster_composer_args.dart';
 

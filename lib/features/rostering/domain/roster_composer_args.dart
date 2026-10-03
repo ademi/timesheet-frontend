@@ -2,7 +2,7 @@ import '../../clients/data/models/client_models.dart';
 import '../../jobs/utils/unified_support_args.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/group_book/group_shift_book_args.dart';
-import '../../shifts/group_book/group_shift_edit_controller.dart';
+import '../../shifts/group_book/group_shift_edit_args.dart';
 import '../data/composer_models.dart';
 import 'occurrence_draft.dart';
 
@@ -72,7 +72,7 @@ class RosterComposerArgs {
       );
     }
     if (raw is ClientOut) {
-      // Matches UnifiedSupportController: bare ClientOut → ongoing.
+      // Legacy Unified Support: bare ClientOut → ongoing / Repeat on.
       return RosterComposerArgs(
         client: raw,
         clientId: raw.id,

@@ -5,7 +5,7 @@ import 'package:rostiq/features/rostering/domain/occurrence_draft.dart';
 import 'package:rostiq/features/rostering/domain/roster_composer_args.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/group_book/group_shift_book_args.dart';
-import 'package:rostiq/features/shifts/group_book/group_shift_edit_controller.dart';
+import 'package:rostiq/features/shifts/group_book/group_shift_edit_args.dart';
 
 ClientOut _client(String id, {String name = 'Alex'}) => ClientOut(
   id: id,
