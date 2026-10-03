@@ -183,7 +183,7 @@ void main() {
       expect(unfilled.cells[0].tiles.single.clientName, 'Maya, Jordan');
     });
 
-    test('tile label uses active participants then host fallback', () {
+    test('tile label is place-first with participant summary', () {
       final monday = DateTime(2026, 8, 10, 9);
       final withParticipants = ShiftOut(
         id: 's-p',
@@ -241,19 +241,46 @@ void main() {
         createdAt: monday,
         updatedAt: monday,
       );
+      final withPlace = ShiftOut(
+        id: 's-place',
+        tenantId: 't',
+        jobId: 'j',
+        jobTitle: 'Centre outing',
+        clientName: 'Host Client',
+        placeLabel: 'North Centre',
+        scheduledStart: monday.add(const Duration(days: 2)),
+        scheduledEnd: monday.add(const Duration(days: 2, hours: 2)),
+        requiredSlots: 1,
+        openSlots: 1,
+        status: 'published',
+        participants: const [
+          ShiftParticipantOut(
+            id: 'sp1',
+            participantId: 'maya',
+            participantName: 'Maya Smith',
+            status: 'active',
+          ),
+        ],
+        createdAt: monday,
+        updatedAt: monday,
+      );
       expect(rosterShiftTileLabel(withParticipants), 'Maya, Jordan +1 more');
+      // Bare client name only as last resort — never a Host: prefix.
       expect(rosterShiftTileLabel(hostOnly), 'Host Client');
+      expect(rosterShiftTileLabel(hostOnly).startsWith('Host:'), isFalse);
+      expect(rosterShiftTileLabel(withPlace), 'North Centre · Maya');
 
       final grid = buildRosterGrid(
         rangeStart: DateTime(2026, 8, 10),
         dayCount: 5,
-        shifts: [withParticipants, hostOnly],
+        shifts: [withParticipants, hostOnly, withPlace],
         people: const [],
         overlay: const RosterOverlayOut(contractors: []),
       );
       final unfilled = grid.rows.first;
       expect(unfilled.cells[0].tiles.single.clientName, 'Maya, Jordan +1 more');
       expect(unfilled.cells[1].tiles.single.clientName, 'Host Client');
+      expect(unfilled.cells[2].tiles.single.clientName, 'North Centre · Maya');
     });
 
     test(

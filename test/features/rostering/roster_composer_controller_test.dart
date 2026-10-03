@@ -156,6 +156,28 @@ void main() {
     expect(navigations.first.$1, AppRoutes.staffShiftDetail);
   });
 
+  test('composerSeed applies ComposerShiftOut without getComposer', () async {
+    final draft = _shift('copy-1', status: 'draft');
+    final seed = ComposerShiftOut(
+      shift: draft,
+      formOverrides: const [],
+      resolvedFormsPreview: const [],
+    );
+
+    final c = build(
+      RosterComposerArgs(
+        shiftId: draft.id,
+        shift: draft,
+        composerSeed: seed,
+      ),
+    );
+    await c.retryHydrate();
+
+    verifyNever(() => shifts.getComposer(any()));
+    expect(c.draft.value.shiftId, 'copy-1');
+    expect(c.errorMessage.value, isNull);
+  });
+
   test('one-session preset hides allocation', () async {
     final c = build(
       RosterComposerArgs(clientId: 'c1', preset: ComposerPreset.oneSession),

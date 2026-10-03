@@ -152,23 +152,34 @@ class _OpenShiftsList extends StatelessWidget {
                           Builder(
                             builder: (context) {
                               final active = shift.activeParticipantsSummary;
-                              final groupLabel = rosterTileLabel([
-                                for (final p in active)
-                                  if (p.participantName != null)
-                                    p.participantName!,
-                              ]);
-                              if (groupLabel.isNotEmpty) {
-                                return Text(
+                              final place = shiftPlaceDisplayLabel(
+                                placeLabel: shift.placeLabel,
+                                locationLabel: shift.locationLabel,
+                              );
+                              final people = shiftParticipantsSummaryLabel(
+                                active.map((p) => p.participantName),
+                              );
+                              final ratio =
                                   active.length >= 2
-                                      ? '$groupLabel · '
-                                          '${staffParticipantLabel(shift.workerCount, active.length)}'
-                                      : groupLabel,
-                                );
+                                      ? ' · ${staffParticipantLabel(shift.workerCount, active.length)}'
+                                      : '';
+                              final lines = <String>[
+                                if (place != null) place,
+                                if (people.isNotEmpty) '$people$ratio',
+                              ];
+                              if (lines.isEmpty &&
+                                  shift.clientName?.isNotEmpty == true) {
+                                lines.add(shift.clientName!);
                               }
-                              if (shift.clientName?.isNotEmpty == true) {
-                                return Text(shift.clientName!);
+                              if (lines.isEmpty) {
+                                return const SizedBox.shrink();
                               }
-                              return const SizedBox.shrink();
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (final line in lines) Text(line),
+                                ],
+                              );
                             },
                           ),
                           Text(

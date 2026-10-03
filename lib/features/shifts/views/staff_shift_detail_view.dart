@@ -94,17 +94,40 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                           const SizedBox(height: 16),
                         ],
                         Text(shift.jobTitle, style: Get.textTheme.titleMedium),
-                        if (shift.clientName?.isNotEmpty == true)
-                          Text(
-                            'Host: ${shift.clientName}',
-                            style: const TextStyle(color: AppColors.textMuted),
-                          ),
+                        Builder(
+                          builder: (_) {
+                            final place = shiftPlaceDisplayLabel(
+                              placeLabel: shift.placeLabel,
+                              locationLabel: shift.locationLabel,
+                            );
+                            final people = shiftParticipantsSummaryLabel(
+                              active.map((p) => p.participantName),
+                            );
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (place != null)
+                                  Text(
+                                    place,
+                                    style: const TextStyle(
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                                if (people.isNotEmpty)
+                                  Text(
+                                    people,
+                                    style: const TextStyle(
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
                         const SizedBox(height: 4),
                         Text('Status: ${shift.status}'),
                         Text('Start: ${_fmt(shift.scheduledStart)}'),
                         Text('End: ${_fmt(shift.scheduledEnd)}'),
-                        if (shift.locationLabel?.isNotEmpty == true)
-                          Text('Location: ${shift.locationLabel}'),
                         const SizedBox(height: 8),
                         Text(
                           'Staff:participant ${staffParticipantLabel(shift.workerCount, n)}',

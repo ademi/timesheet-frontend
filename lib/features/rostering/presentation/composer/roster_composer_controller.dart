@@ -207,6 +207,11 @@ class RosterComposerController extends GetxController {
     isHydrating.value = true;
     errorMessage.value = null;
     try {
+      final seed = _args.composerSeed;
+      if (seed != null) {
+        await _hydrateFromComposerSeed(seed);
+        return;
+      }
       final shiftId = _args.shiftId ?? _args.shift?.id;
       if (shiftId != null && shiftId.isNotEmpty) {
         await _hydrateExisting(shiftId, seed: _args.shift);
@@ -224,6 +229,15 @@ class RosterComposerController extends GetxController {
     }
   }
 
+  /// Apply a full [ComposerShiftOut] without a second hydrate RTT (copy-tile).
+  Future<void> _hydrateFromComposerSeed(ComposerShiftOut composer) async {
+    if (composer.shift.status != 'draft') {
+      _bounceToDetail(composer.shift);
+      throw _PublishedBounce();
+    }
+    _finishComposerHydrate(composer);
+  }
+
   Future<void> _hydrateExisting(String shiftId, {ShiftOut? seed}) async {
     if (seed != null && seed.status != 'draft') {
       _bounceToDetail(seed);
@@ -234,6 +248,10 @@ class RosterComposerController extends GetxController {
       _bounceToDetail(composer.shift);
       throw _PublishedBounce();
     }
+    _finishComposerHydrate(composer);
+  }
+
+  void _finishComposerHydrate(ComposerShiftOut composer) {
     final ruleId =
         composer.shift.recurrenceRuleId ?? _args.recurrenceRuleId;
     final repeatOn =

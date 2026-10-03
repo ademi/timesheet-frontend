@@ -631,6 +631,10 @@ void main() {
       'required_slots': 1,
       'open_slots': 1,
       'worker_count': 2,
+      'location_label': '12 Main St, Sydney',
+      'place_branch_id': 'branch-1',
+      'place_client_site_id': null,
+      'place_label': null,
       'participants_summary': [
         {
           'id': 'sp-1',
@@ -654,6 +658,10 @@ void main() {
     });
 
     expect(shift.workerCount, 2);
+    expect(shift.locationLabel, '12 Main St, Sydney');
+    expect(shift.placeBranchId, 'branch-1');
+    expect(shift.placeClientSiteId, isNull);
+    expect(shift.placeLabel, isNull);
     expect(shift.participantsSummary, hasLength(3));
     expect(shift.activeParticipantsSummary, hasLength(2));
     expect(

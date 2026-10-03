@@ -82,4 +82,33 @@ void main() {
       );
     });
   });
+
+  group('placeFirstShiftLabel', () {
+    test('prefers place · participants over client/host name', () {
+      expect(
+        placeFirstShiftLabel(
+          placeLabel: 'North Centre',
+          participantNames: const ['Maya Smith', 'Jordan Lee'],
+          clientName: 'Host Client',
+        ),
+        'North Centre · Maya, Jordan',
+      );
+    });
+
+    test('never emits Host: prefix', () {
+      final label = placeFirstShiftLabel(clientName: 'Host Client');
+      expect(label, 'Host Client');
+      expect(label.startsWith('Host:'), isFalse);
+    });
+
+    test('falls back to locationLabel when placeLabel empty', () {
+      expect(
+        placeFirstShiftLabel(
+          locationLabel: '12 Main St',
+          participantNames: const ['Maya Smith'],
+        ),
+        '12 Main St · Maya',
+      );
+    });
+  });
 }

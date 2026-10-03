@@ -3,6 +3,7 @@ import '../../jobs/utils/unified_support_args.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/group_book/group_shift_book_args.dart';
 import '../../shifts/group_book/group_shift_edit_controller.dart';
+import '../data/composer_models.dart';
 import 'occurrence_draft.dart';
 
 /// Optional scroll/menu focus when opening the composer from a legacy route.
@@ -13,6 +14,7 @@ class RosterComposerArgs {
   const RosterComposerArgs({
     this.shiftId,
     this.shift,
+    this.composerSeed,
     this.clientId,
     this.client,
     this.jobId,
@@ -26,6 +28,9 @@ class RosterComposerArgs {
 
   final String? shiftId;
   final ShiftOut? shift;
+
+  /// Full composer aggregate from copy / prior hydrate — skips `GET …/composer`.
+  final ComposerShiftOut? composerSeed;
   final String? clientId;
   final ClientOut? client;
   final String? jobId;
@@ -133,6 +138,9 @@ class RosterComposerArgs {
     final ClientOut? client = clientArg is ClientOut ? clientArg : null;
     final shiftArg = map['shift'];
     final ShiftOut? shift = shiftArg is ShiftOut ? shiftArg : null;
+    final seedArg = map['composerSeed'] ?? map['composer_seed'];
+    final ComposerShiftOut? composerSeed =
+        seedArg is ComposerShiftOut ? seedArg : null;
 
     final focusRaw = map['focus']?.toString() ?? map['focusSection']?.toString();
     var focus = ComposerFocusSection.plan;
@@ -146,8 +154,10 @@ class RosterComposerArgs {
       shiftId:
           map['shiftId']?.toString() ??
           map['shift_id']?.toString() ??
+          composerSeed?.shift.id ??
           shift?.id,
-      shift: shift,
+      shift: shift ?? composerSeed?.shift,
+      composerSeed: composerSeed,
       client: client,
       clientId:
           map['clientId']?.toString() ??
@@ -173,6 +183,7 @@ class RosterComposerArgs {
   RosterComposerArgs copyWith({
     String? shiftId,
     ShiftOut? shift,
+    ComposerShiftOut? composerSeed,
     String? clientId,
     ClientOut? client,
     String? jobId,
@@ -186,6 +197,7 @@ class RosterComposerArgs {
     return RosterComposerArgs(
       shiftId: shiftId ?? this.shiftId,
       shift: shift ?? this.shift,
+      composerSeed: composerSeed ?? this.composerSeed,
       clientId: clientId ?? this.clientId,
       client: client ?? this.client,
       jobId: jobId ?? this.jobId,

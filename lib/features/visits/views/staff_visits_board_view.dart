@@ -723,14 +723,23 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                               isSubmitting = true;
                               dialogError = null;
                             });
-                            await controller.copyTile(
+                            final args = await controller.copyTile(
                               source: source,
                               start: start,
                               end: end,
                             );
                             if (!ctx.mounted) return;
-                            if (controller.errorMessage.value == null) {
+                            if (args != null) {
                               Navigator.pop(ctx);
+                              // Open composer with ComposerShiftOut seed —
+                              // no second hydrate; board reload after return.
+                              await Get.toNamed(
+                                AppRoutes.staffRosterCompose,
+                                arguments: args,
+                              );
+                              if (context.mounted) {
+                                await controller.load();
+                              }
                               return;
                             }
                             setState(() {

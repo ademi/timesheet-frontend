@@ -19,6 +19,7 @@ import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../billing/data/models/billing_models.dart';
+import '../../rostering/data/composer_models.dart';
 import '../../rostering/domain/occurrence_draft.dart';
 import '../../rostering/domain/roster_composer_args.dart';
 import '../../shifts/data/models/shift_models.dart';
@@ -965,27 +966,50 @@ class StaffVisitsController extends GetxController {
     }
   }
 
-  Future<void> copyTile({
+  /// Last successful copy args (tests / callers that open composer after dialog).
+  RosterComposerArgs? lastCopyComposerArgs;
+
+  /// Copy occurrence via `POST …/copy` → [ComposerShiftOut] args for composer.
+  ///
+  /// Does **not** reload the board or hydrate again — callers open the composer
+  /// with [lastCopyComposerArgs] / the returned value (single RTT).
+  Future<RosterComposerArgs?> copyTile({
     required ShiftOut source,
     required DateTime start,
     required DateTime end,
   }) async {
-    if (!canManage) return;
+    if (!canManage) return null;
     isSaving.value = true;
     errorMessage.value = null;
+    lastCopyComposerArgs = null;
     try {
-      await _shiftsRepository.createShift(
-        ShiftCreateRequest(
-          jobId: source.jobId,
+      final composer = await _shiftsRepository.copyShift(
+        source.id,
+        ShiftCopyRequest(
           scheduledStart: start.toUtc(),
           scheduledEnd: end.toUtc(),
-          requiredSlots: source.requiredSlots,
-          status: 'published',
         ),
       );
-      await load();
+      final activeCount =
+          composer.shift.participants
+              .where((p) => p.status == 'active')
+              .length;
+      final args = RosterComposerArgs(
+        shiftId: composer.shift.id,
+        shift: composer.shift,
+        composerSeed: composer,
+        jobId: composer.shift.jobId,
+        clientId: composer.shift.clientId,
+        preset:
+            activeCount > 1
+                ? ComposerPreset.group
+                : ComposerPreset.oneSession,
+      );
+      lastCopyComposerArgs = args;
+      return args;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+      return null;
     } finally {
       isSaving.value = false;
     }

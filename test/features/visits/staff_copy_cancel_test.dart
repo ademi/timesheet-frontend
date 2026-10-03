@@ -6,6 +6,9 @@ import 'package:rostiq/features/clients/data/repositories/clients_repository.dar
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
+import 'package:rostiq/features/rostering/data/composer_models.dart';
+import 'package:rostiq/features/rostering/domain/occurrence_draft.dart';
+import 'package:rostiq/features/rostering/domain/roster_composer_args.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/controllers/staff_visits_controller.dart';
@@ -27,11 +30,16 @@ class _MockSessionService extends Mock implements SessionService {}
 
 class _FakeHorizonRequest extends Fake implements HorizonRequest {}
 
-class _FakeShiftCreateRequest extends Fake implements ShiftCreateRequest {}
+class _FakeShiftCopyRequest extends Fake implements ShiftCopyRequest {}
 
 final _now = DateTime.utc(2026, 8, 14, 9);
 
-ShiftOut _shift({String id = 'shift-1', int requiredSlots = 2}) {
+ShiftOut _shift({
+  String id = 'shift-1',
+  int requiredSlots = 2,
+  String status = 'published',
+  List<ShiftParticipantOut> participants = const [],
+}) {
   return ShiftOut(
     id: id,
     tenantId: 'tenant-1',
@@ -42,8 +50,9 @@ ShiftOut _shift({String id = 'shift-1', int requiredSlots = 2}) {
     scheduledEnd: _now.add(const Duration(hours: 3)),
     requiredSlots: requiredSlots,
     openSlots: requiredSlots,
-    status: 'published',
+    status: status,
     assignments: const [],
+    participants: participants,
     createdAt: _now,
     updatedAt: _now,
   );
@@ -61,7 +70,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(DateTime.utc(2026, 1, 1));
     registerFallbackValue(_FakeHorizonRequest());
-    registerFallbackValue(_FakeShiftCreateRequest());
+    registerFallbackValue(_FakeShiftCopyRequest());
   });
 
   setUp(() {
@@ -105,23 +114,54 @@ void main() {
 
   tearDown(Get.reset);
 
-  test('copyTile posts new shift on same job', () async {
+  test('copyTile posts copy and returns ComposerShiftOut composer args', () async {
     final shift = _shift();
-    final copied = _shift(id: 'shift-2');
-    when(() => shifts.createShift(any())).thenAnswer((_) async => copied);
+    final copied = _shift(
+      id: 'shift-2',
+      status: 'draft',
+      participants: const [
+        ShiftParticipantOut(
+          id: 'sp-1',
+          participantId: 'c-1',
+          participantName: 'Maya',
+          status: 'active',
+        ),
+        ShiftParticipantOut(
+          id: 'sp-2',
+          participantId: 'c-2',
+          participantName: 'Jordan',
+          status: 'active',
+        ),
+      ],
+    );
+    final composer = ComposerShiftOut(shift: copied);
+    when(() => shifts.copyShift(any(), any())).thenAnswer((_) async => composer);
 
-    await controller.copyTile(
+    final args = await controller.copyTile(
       source: shift,
       start: DateTime(2026, 8, 14, 9),
       end: DateTime(2026, 8, 14, 12),
     );
 
     final req =
-        verify(() => shifts.createShift(captureAny())).captured.single
-            as ShiftCreateRequest;
-    expect(req.jobId, shift.jobId);
-    expect(req.status, 'published');
-    expect(req.requiredSlots, shift.requiredSlots);
+        verify(() => shifts.copyShift(shift.id, captureAny())).captured.single
+            as ShiftCopyRequest;
+    expect(req.status, 'draft');
+    expect(req.scheduledStart.toUtc(), DateTime(2026, 8, 14, 9).toUtc());
+    expect(req.scheduledEnd.toUtc(), DateTime(2026, 8, 14, 12).toUtc());
+    expect(args, isNotNull);
+    expect(args!.composerSeed, same(composer));
+    expect(args.shiftId, 'shift-2');
+    expect(args.preset, ComposerPreset.group);
+    expect(controller.lastCopyComposerArgs, same(args));
+    // No board reload before navigate — listShifts must not be re-fetched here.
+    verifyNever(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        jobId: any(named: 'jobId'),
+      ),
+    );
   });
 
   test('cancelThisOccurrence calls cancelShift', () async {

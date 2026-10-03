@@ -13,6 +13,50 @@ List<T> activeParticipants<T>(List<T> participants) {
 
 String staffParticipantLabel(int workerCount, int n) => '$workerCount:$n';
 
+/// Resolved place display for board/detail (label, else location line).
+String? shiftPlaceDisplayLabel({
+  String? placeLabel,
+  String? locationLabel,
+}) {
+  final place = placeLabel?.trim();
+  if (place != null && place.isNotEmpty) return place;
+  final location = locationLabel?.trim();
+  if (location != null && location.isNotEmpty) return location;
+  return null;
+}
+
+/// Participant summary for board/detail (active names via [rosterTileLabel]).
+String shiftParticipantsSummaryLabel(Iterable<String?> participantNames) {
+  return rosterTileLabel([
+    for (final name in participantNames)
+      if (name != null) name,
+  ]);
+}
+
+/// Place-first primary label: `Place · Participants`, else either part,
+/// else bare client name (never a `Host:` prefix).
+String placeFirstShiftLabel({
+  String? placeLabel,
+  String? locationLabel,
+  Iterable<String?> participantNames = const [],
+  String? clientName,
+  String? jobTitle,
+}) {
+  final place = shiftPlaceDisplayLabel(
+    placeLabel: placeLabel,
+    locationLabel: locationLabel,
+  );
+  final people = shiftParticipantsSummaryLabel(participantNames);
+  if (place != null && people.isNotEmpty) return '$place · $people';
+  if (people.isNotEmpty) return people;
+  if (place != null) return place;
+  final client = clientName?.trim();
+  if (client != null && client.isNotEmpty) return client;
+  final title = jobTitle?.trim();
+  if (title != null && title.isNotEmpty) return title;
+  return '';
+}
+
 /// Roster tile label: up to two first names, then `+N more`.
 ///
 /// When two visible names share a first name, those rows use a truncated full

@@ -492,6 +492,10 @@ class OpenShiftOut {
     required this.openSlots,
     this.suburb,
     this.postalCode,
+    this.locationLabel,
+    this.placeBranchId,
+    this.placeClientSiteId,
+    this.placeLabel,
     this.workerCount = 1,
     this.participantsSummary = const [],
   });
@@ -505,6 +509,10 @@ class OpenShiftOut {
   final int openSlots;
   final String? suburb;
   final String? postalCode;
+  final String? locationLabel;
+  final String? placeBranchId;
+  final String? placeClientSiteId;
+  final String? placeLabel;
   final int workerCount;
   final List<ShiftParticipantOut> participantsSummary;
 
@@ -526,6 +534,10 @@ class OpenShiftOut {
       openSlots: json['open_slots'] as int? ?? 0,
       suburb: json['suburb'] as String?,
       postalCode: json['postal_code'] as String?,
+      locationLabel: json['location_label'] as String?,
+      placeBranchId: json['place_branch_id']?.toString(),
+      placeClientSiteId: json['place_client_site_id']?.toString(),
+      placeLabel: json['place_label'] as String?,
       workerCount: json['worker_count'] as int? ?? 1,
       participantsSummary:
           summaryRaw is List
