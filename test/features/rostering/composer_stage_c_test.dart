@@ -157,6 +157,20 @@ void main() {
           clientId: any(named: 'clientId'),
         ),
       ).thenAnswer((_) async => const AssignContextOut());
+      when(() => jobs.getJob(any())).thenAnswer(
+        (_) async => JobOut(
+          id: 'job-1',
+          tenantId: 't1',
+          kind: 'standing',
+          status: 'open',
+          title: 'Sam support',
+          clientId: 'c1',
+          geofenceRadiusM: 100,
+          geofenceMode: 'informational',
+          createdAt: DateTime.utc(2026, 1, 1),
+          updatedAt: DateTime.utc(2026, 1, 1),
+        ),
+      );
     });
 
     tearDown(Get.reset);

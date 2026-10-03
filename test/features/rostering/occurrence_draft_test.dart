@@ -39,6 +39,18 @@ void main() {
       expect(group.showsWorkerCount, isTrue);
       expect(group.workerCount, 2);
     });
+
+    test('clearJobId drops standing/program binding', () {
+      final draft = OccurrenceDraft.oneSession(clientId: 'c1').copyWith(
+        jobId: 'standing-1',
+      );
+      final cleared = draft.copyWith(
+        preset: ComposerPreset.group,
+        clearJobId: true,
+      );
+      expect(cleared.jobId, isNull);
+      expect(cleared.preset, ComposerPreset.group);
+    });
   });
 
   group('ComposerValidation', () {

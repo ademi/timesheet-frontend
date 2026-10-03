@@ -456,6 +456,20 @@ class RosterComposerController extends GetxController {
         shift.placeClientSiteId!.isNotEmpty) {
       return ShiftPlaceIn.clientSite(shift.placeClientSiteId!);
     }
+    final label = shift.placeLabel?.trim();
+    if (label != null && label.isNotEmpty) {
+      final lat = shift.placeLatitude;
+      final lng = shift.placeLongitude;
+      final postal = (shift.postalCode ?? '').trim();
+      if (lat != null && lng != null && postal.isNotEmpty) {
+        return ShiftPlaceIn.labelled(
+          label: label,
+          latitude: lat,
+          longitude: lng,
+          postalCode: postal,
+        );
+      }
+    }
     return null;
   }
 
@@ -466,6 +480,8 @@ class RosterComposerController extends GetxController {
   void setPreset(ComposerPreset preset) {
     if (draft.value.preset == preset) return;
     final current = draft.value;
+    // Standing vs program jobs must not cross presets (Bugbot: host-style group).
+    // Clear jobId so create re-resolves; persisted shifts keep their server job.
     if (preset == ComposerPreset.oneSession) {
       final clientId =
           current.clientId ??
@@ -474,6 +490,7 @@ class RosterComposerController extends GetxController {
               : null);
       draft.value = current.copyWith(
         preset: preset,
+        clearJobId: true,
         clientId: clientId,
         participantIds: clientId != null ? [clientId] : const [],
         workerCount: 1,
@@ -481,7 +498,7 @@ class RosterComposerController extends GetxController {
         equalSplit: true,
       );
     } else {
-      draft.value = current.copyWith(preset: preset);
+      draft.value = current.copyWith(preset: preset, clearJobId: true);
     }
     schedulePlaceOptionsRefresh();
   }
@@ -1529,6 +1546,9 @@ class RosterComposerController extends GetxController {
       ShiftOut? persisted;
       if (!hasPersistedShift) {
         final jobId = await _resolveJobIdForCreate();
+        // Create without contractors when per-worker override reasons exist;
+        // otherwise materialize can draft-assign in one shot.
+        final reasons = _assignReasonsForSelected();
         persisted = await _facade.createShift(
           ShiftCreateRequest(
             jobId: jobId,
@@ -1538,7 +1558,8 @@ class RosterComposerController extends GetxController {
             requiredSlots: draft.value.requiredSlots,
             workerCount: draft.value.workerCount,
             status: 'draft',
-            contractorIds: const [],
+            contractorIds:
+                reasons.isEmpty ? draft.value.contractorIds : const [],
             taskTemplate: draft.value.taskTemplate,
             segmentTemplate: draft.value.segmentTemplate,
             supportItemCode: draft.value.supportItemCode,
@@ -1589,10 +1610,12 @@ class RosterComposerController extends GetxController {
         );
       }
 
+      final shiftId = draft.value.shiftId!;
+      persisted = await _syncDraftAssignments(shiftId, persisted);
+
       shiftParticipants.assignAll(persisted.participants);
       assignments.assignAll(persisted.assignments);
 
-      final shiftId = draft.value.shiftId!;
       if (formOverrides.isNotEmpty || _formsEdited) {
         await _facade.putFormOverrides(
           shiftId,
@@ -1625,11 +1648,78 @@ class RosterComposerController extends GetxController {
     }
   }
 
+  Map<String, String> _assignReasonsForSelected() => {
+    for (final id in draft.value.contractorIds)
+      if (assignOverrideReasons[id] != null &&
+          assignOverrideReasons[id]!.trim().isNotEmpty)
+        id: assignOverrideReasons[id]!.trim(),
+  };
+
+  /// Align server assignments with [OccurrenceDraft.contractorIds] on draft save.
+  Future<ShiftOut> _syncDraftAssignments(
+    String shiftId,
+    ShiftOut current,
+  ) async {
+    final desired = draft.value.contractorIds.toSet();
+    final existing = {
+      for (final a in current.assignments)
+        if (a.status == 'active') a.contractorId,
+    };
+
+    var latest = current;
+    for (final id in existing.difference(desired)) {
+      latest = await _facade.unassignShift(shiftId, id);
+    }
+
+    final toAdd = desired.difference({
+      for (final a in latest.assignments)
+        if (a.status == 'active') a.contractorId,
+    });
+    if (toAdd.isEmpty) return latest;
+
+    final reasons = {
+      for (final id in toAdd)
+        if (assignOverrideReasons[id] != null &&
+            assignOverrideReasons[id]!.trim().isNotEmpty)
+          id: assignOverrideReasons[id]!.trim(),
+    };
+    final taskTemplate =
+        draft.value.taskTemplate.isEmpty ? null : draft.value.taskTemplate;
+
+    if (reasons.isEmpty) {
+      return _facade.assignShiftBatch(
+        shiftId: shiftId,
+        contractorIds: toAdd.toList(growable: false),
+        taskTemplate: taskTemplate,
+      );
+    }
+    for (final id in toAdd) {
+      latest = await _facade.assignShift(
+        shiftId: shiftId,
+        contractorId: id,
+        taskTemplate: taskTemplate,
+        reason: reasons[id],
+      );
+    }
+    return latest;
+  }
+
   /// Group: program job + shift place. One-session: standing job for client.
   /// Never [JobsRepository.ensureOngoingSupport] with a group "host".
   Future<String> _resolveJobIdForCreate() async {
     final existing = draft.value.jobId;
-    if (existing != null && existing.isNotEmpty) return existing;
+    if (existing != null && existing.isNotEmpty) {
+      try {
+        final job = await _facade.jobs.getJob(existing);
+        final wantProgram = draft.value.preset == ComposerPreset.group;
+        final kindOk = wantProgram ? job.isProgram : job.isStanding;
+        if (kindOk) return existing;
+        // Kind mismatch (e.g. preset switch left a stale id) — recreate below.
+      } catch (_) {
+        // Stale/missing job — recreate below.
+      }
+      draft.value = draft.value.copyWith(clearJobId: true);
+    }
 
     if (draft.value.preset == ComposerPreset.oneSession) {
       final clientId =

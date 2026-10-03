@@ -121,6 +121,9 @@ class ComposerFacade {
     reason: reason,
   );
 
+  Future<ShiftOut> unassignShift(String shiftId, String contractorId) =>
+      _shifts.unassignShift(shiftId, contractorId);
+
   Future<ShiftOut> publishShift(String id, {ShiftPublishRequest? body}) =>
       _shifts.publishShift(id, body: body);
 

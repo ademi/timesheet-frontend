@@ -339,6 +339,8 @@ class ShiftOut {
     this.placeBranchId,
     this.placeClientSiteId,
     this.placeLabel,
+    this.placeLatitude,
+    this.placeLongitude,
     this.taskTemplate = const [],
     this.segmentTemplate = const [],
     this.assignments = const [],
@@ -371,6 +373,8 @@ class ShiftOut {
   final String? placeBranchId;
   final String? placeClientSiteId;
   final String? placeLabel;
+  final double? placeLatitude;
+  final double? placeLongitude;
   final List<TaskTemplateItem> taskTemplate;
   final List<SegmentTemplateItem> segmentTemplate;
   final List<ShiftAssignmentOut> assignments;
@@ -406,6 +410,8 @@ class ShiftOut {
       placeBranchId: placeBranchId,
       placeClientSiteId: placeClientSiteId,
       placeLabel: placeLabel,
+      placeLatitude: placeLatitude,
+      placeLongitude: placeLongitude,
       taskTemplate: taskTemplate,
       segmentTemplate: segmentTemplate,
       assignments: assignments,
@@ -441,6 +447,8 @@ class ShiftOut {
       placeBranchId: json['place_branch_id']?.toString(),
       placeClientSiteId: json['place_client_site_id']?.toString(),
       placeLabel: json['place_label'] as String?,
+      placeLatitude: (json['place_latitude'] as num?)?.toDouble(),
+      placeLongitude: (json['place_longitude'] as num?)?.toDouble(),
       taskTemplate: (json['task_template'] as List? ?? const [])
           .whereType<Map>()
           .map((e) => TaskTemplateItem.fromJson(Map<String, dynamic>.from(e)))

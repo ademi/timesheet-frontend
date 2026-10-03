@@ -136,11 +136,12 @@ class OccurrenceDraft {
     String? status,
     bool clearPlace = false,
     bool clearSupportItemCode = false,
+    bool clearJobId = false,
   }) {
     return OccurrenceDraft(
       preset: preset ?? this.preset,
       shiftId: shiftId ?? this.shiftId,
-      jobId: jobId ?? this.jobId,
+      jobId: clearJobId ? null : (jobId ?? this.jobId),
       clientId: clientId ?? this.clientId,
       scheduledStart: scheduledStart ?? this.scheduledStart,
       scheduledEnd: scheduledEnd ?? this.scheduledEnd,

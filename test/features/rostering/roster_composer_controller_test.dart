@@ -114,6 +114,20 @@ void main() {
         updatedAt: DateTime.utc(2026, 1, 1),
       ),
     );
+    when(() => jobs.getJob(any())).thenAnswer(
+      (_) async => JobOut(
+        id: 'standing-1',
+        tenantId: 't1',
+        kind: 'standing',
+        status: 'open',
+        title: 'Sam support',
+        clientId: 'c1',
+        geofenceRadiusM: 100,
+        geofenceMode: 'informational',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+      ),
+    );
   });
 
   tearDown(Get.reset);
@@ -187,6 +201,126 @@ void main() {
     expect(c.showsAllocation, isFalse);
     c.setPreset(ComposerPreset.group);
     expect(c.showsAllocation, isTrue);
+  });
+
+  test('preset switch clears jobId so group cannot reuse standing job', () async {
+    final c = build(
+      RosterComposerArgs(clientId: 'c1', preset: ComposerPreset.oneSession),
+    );
+    await c.retryHydrate();
+    c.draft.value = c.draft.value.copyWith(jobId: 'standing-1');
+
+    c.setPreset(ComposerPreset.group);
+
+    expect(c.draft.value.jobId, isNull);
+    expect(c.draft.value.preset, ComposerPreset.group);
+  });
+
+  test('hydrate restores labelled place from placeLabel + coords', () async {
+    final labelled = ShiftOut(
+      id: 'lab-1',
+      tenantId: 't1',
+      jobId: 'job-1',
+      jobTitle: 'Support',
+      scheduledStart: DateTime.utc(2026, 10, 4, 9),
+      scheduledEnd: DateTime.utc(2026, 10, 4, 12),
+      requiredSlots: 1,
+      openSlots: 1,
+      status: 'draft',
+      placeLabel: 'Park gate',
+      postalCode: '2000',
+      placeLatitude: -33.86,
+      placeLongitude: 151.21,
+      createdAt: DateTime.utc(2026, 10, 4),
+      updatedAt: DateTime.utc(2026, 10, 4),
+    );
+    when(() => shifts.getComposer('lab-1')).thenAnswer(
+      (_) async => ComposerShiftOut(shift: labelled),
+    );
+
+    final c = build(const RosterComposerArgs(shiftId: 'lab-1'));
+    await c.retryHydrate();
+
+    final place = c.draft.value.place;
+    expect(place, isA<ShiftPlaceLabelled>());
+    place as ShiftPlaceLabelled;
+    expect(place.label, 'Park gate');
+    expect(place.postalCode, '2000');
+    expect(place.latitude, -33.86);
+    expect(place.longitude, 151.21);
+  });
+
+  test('saveDraft persists selected workers via create contractorIds', () async {
+    when(() => jobs.createJob(any())).thenAnswer(
+      (_) async => JobOut(
+        id: 'program-1',
+        tenantId: 't1',
+        kind: 'program',
+        status: 'open',
+        title: 'Group session',
+        branchId: 'b1',
+        geofenceRadiusM: 100,
+        geofenceMode: 'informational',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+      ),
+    );
+    when(() => shifts.createShift(any())).thenAnswer((invocation) async {
+      final body = invocation.positionalArguments.first as ShiftCreateRequest;
+      return ShiftOut(
+        id: 'new-1',
+        tenantId: 't1',
+        jobId: body.jobId,
+        jobTitle: 'Group',
+        scheduledStart: body.scheduledStart,
+        scheduledEnd: body.scheduledEnd,
+        requiredSlots: body.requiredSlots,
+        openSlots: body.requiredSlots - body.contractorIds.length,
+        status: 'draft',
+        assignments: [
+          for (final id in body.contractorIds)
+            ShiftAssignmentOut(
+              id: 'a-$id',
+              contractorId: id,
+              engagementId: 'e-$id',
+              contractorName: 'Worker',
+              visitId: 'v-$id',
+              source: 'staff',
+              status: 'active',
+            ),
+        ],
+        createdAt: DateTime.utc(2026, 10, 4),
+        updatedAt: DateTime.utc(2026, 10, 4),
+      );
+    });
+    when(
+      () => shifts.fetchPlaceOptions(participantIds: any(named: 'participantIds')),
+    ).thenAnswer(
+      (_) async => const PlaceOptionsOut(
+        branches: [PlaceBranchOption(id: 'b1', name: 'Centre')],
+      ),
+    );
+
+    final c = build(
+      const RosterComposerArgs(preset: ComposerPreset.group, participantId: 'c1'),
+    );
+    await c.retryHydrate();
+    await c.loadPlaceOptions();
+    c.setPlace(const ShiftPlaceIn.branch('b1'));
+    c.draft.value = c.draft.value.copyWith(
+      participantIds: ['c1'],
+      contractorIds: ['w1'],
+    );
+
+    final ok = await c.saveDraft();
+    expect(ok, isTrue);
+
+    final body =
+        verify(() => shifts.createShift(captureAny())).captured.single
+            as ShiftCreateRequest;
+    expect(body.contractorIds, ['w1']);
+    expect(c.draft.value.contractorIds, ['w1']);
+    expect(c.assignments.map((a) => a.contractorId), ['w1']);
   });
 
   test('group create uses program job, not ensureOngoingSupport host', () async {
