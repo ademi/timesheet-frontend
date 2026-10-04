@@ -8,10 +8,12 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../core/errors/app_failure.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../core/time/tenant_civil_time.dart';
+import '../../../../shared/models/profile_photo_models.dart';
 import '../../../../shared/utils/name_sort.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../clients/data/models/client_models.dart';
 import '../../../clients/data/repositories/clients_repository.dart';
+import '../../../clients/utils/site_geocode_apply.dart';
 import '../../../engagements/data/models/engagement_models.dart';
 import '../../../engagements/data/repositories/engagements_repository.dart';
 import '../../../jobs/data/models/job_models.dart';
@@ -29,7 +31,6 @@ import '../../domain/composer_validation.dart';
 import '../../domain/occurrence_draft.dart';
 import '../../domain/repeat_template_payload.dart';
 import '../../domain/roster_composer_args.dart';
-import '../../domain/travel_shares_validation.dart';
 import '../shared/assign_context_labels.dart';
 
 /// Publish menu choice (Assign & publish vs Open for claim).
@@ -72,9 +73,27 @@ class RosterComposerController extends GetxController {
 
   final clients = <ClientOut>[].obs;
   final clientSearch = ''.obs;
+  final photosByClient = <String, ProfilePhotoOut>{}.obs;
   final placeOptions = const PlaceOptionsOut().obs;
   final placeOptionsLoading = false.obs;
   final placeOptionsError = RxnString();
+
+  /// Display name for the selected NDIS support item (picker).
+  final supportItemName = ''.obs;
+
+  // ── Other place geocode (same modules as client sites) ───────────────────
+  final otherLabelCtrl = TextEditingController();
+  final otherAddressLine1Ctrl = TextEditingController();
+  final otherCityCtrl = TextEditingController();
+  final otherStateCtrl = TextEditingController();
+  final otherPostalCtrl = TextEditingController();
+  final otherLatCtrl = TextEditingController();
+  final otherLngCtrl = TextEditingController();
+  final otherCountry = 'AU'.obs;
+  final otherGeocodeFormatted = RxnString();
+  final otherAddressConfirmed = false.obs;
+  final otherIsGeocoding = false.obs;
+  final otherGeocodeError = RxnString();
 
   /// Shift participant rows (needed for travel share + segment participant ids).
   final shiftParticipants = <ShiftParticipantOut>[].obs;
@@ -183,15 +202,20 @@ class RosterComposerController extends GetxController {
   bool get isLastStep => currentStep.value.isLast;
 
   /// Advance wizard; returns false when the current step gate fails.
-  bool goNextStep() {
+  Future<bool> goNextStep() async {
     stepError.value = null;
-    final errors = ComposerValidation.validateStep(
-      currentStep.value,
-      draft.value,
-    );
+    if (currentStep.value == ComposerStep.place) {
+      final prepared = await prepareOtherPlaceForAdvance();
+      if (!prepared) return false;
+    }
+    final errors = _stepGateErrors(currentStep.value);
     if (errors.isNotEmpty) {
       stepError.value = errors.first;
       errorMessage.value = errors.first;
+      if (currentStep.value == ComposerStep.place) {
+        final travelErr = validateTravelDraft();
+        if (travelErr != null) travelError.value = travelErr;
+      }
       return false;
     }
     final next = currentStep.value.next;
@@ -209,13 +233,20 @@ class RosterComposerController extends GetxController {
     return true;
   }
 
-  void goToStep(ComposerStep step) {
+  Future<void> goToStep(ComposerStep step) async {
     stepError.value = null;
     // Only allow jumping backward freely; forward jumps must pass gates.
     if (step.index > currentStep.value.index) {
       for (var i = currentStep.value.index; i < step.index; i++) {
         final gate = ComposerStep.values[i];
-        final errors = ComposerValidation.validateStep(gate, draft.value);
+        if (gate == ComposerStep.place) {
+          final prepared = await prepareOtherPlaceForAdvance();
+          if (!prepared) {
+            currentStep.value = gate;
+            return;
+          }
+        }
+        final errors = _stepGateErrors(gate);
         if (errors.isNotEmpty) {
           stepError.value = errors.first;
           errorMessage.value = errors.first;
@@ -228,12 +259,32 @@ class RosterComposerController extends GetxController {
     _onStepEntered(step);
   }
 
+  List<String> _stepGateErrors(ComposerStep step) {
+    final place = draft.value.place;
+    final otherSelected = place is ShiftPlaceLabelled;
+    return ComposerValidation.validateStep(
+      step,
+      draft.value,
+      travelError:
+          step == ComposerStep.place ? validateTravelDraft() : null,
+      otherPlaceNeedsLookup:
+          step == ComposerStep.place &&
+          otherSelected &&
+          otherLatCtrl.text.trim().isEmpty,
+      otherPlaceNeedsConfirm:
+          step == ComposerStep.place &&
+          otherSelected &&
+          otherLatCtrl.text.trim().isNotEmpty &&
+          !otherAddressConfirmed.value,
+    );
+  }
+
   void _onStepEntered(ComposerStep step) {
     switch (step) {
       case ComposerStep.place:
         schedulePlaceOptionsRefresh();
       case ComposerStep.forms:
-        if (_formsEdited) unawaited(_previewFormsAndMaybePersist());
+        unawaited(ensureFormsResolved());
       case ComposerStep.workers:
         onWorkersSectionOpened();
         if (draft.value.repeatEnabled) onRepeatSectionOpened();
@@ -252,6 +303,13 @@ class RosterComposerController extends GetxController {
     _placeFetchGen++;
     _formsPreviewGen++;
     _assignContextGen++;
+    otherLabelCtrl.dispose();
+    otherAddressLine1Ctrl.dispose();
+    otherCityCtrl.dispose();
+    otherStateCtrl.dispose();
+    otherPostalCtrl.dispose();
+    otherLatCtrl.dispose();
+    otherLngCtrl.dispose();
     super.onClose();
   }
 
@@ -336,6 +394,7 @@ class RosterComposerController extends GetxController {
       } catch (_) {}
     }());
     unawaited(_loadFormTemplates());
+    unawaited(ensureParticipantPhotos());
     schedulePlaceOptionsRefresh();
   }
 
@@ -460,6 +519,10 @@ class RosterComposerController extends GetxController {
         jobId: job.id,
         supportItemCode: draft.value.supportItemCode ?? job.supportItemCode,
       );
+      if ((supportItemName.value.isEmpty) &&
+          (job.supportItemName?.trim().isNotEmpty ?? false)) {
+        supportItemName.value = job.supportItemName!.trim();
+      }
     } catch (_) {
       // Save will retry job ensure.
     }
@@ -480,6 +543,10 @@ class RosterComposerController extends GetxController {
                 ? ShiftPlaceIn.branch(job.branchId!)
                 : null),
       );
+      if ((supportItemName.value.isEmpty) &&
+          (job.supportItemName?.trim().isNotEmpty ?? false)) {
+        supportItemName.value = job.supportItemName!.trim();
+      }
     } catch (_) {}
   }
 
@@ -917,6 +984,11 @@ class RosterComposerController extends GetxController {
         place == null
             ? draft.value.copyWith(clearPlace: true)
             : draft.value.copyWith(place: place);
+    if (place is! ShiftPlaceLabelled) {
+      otherAddressConfirmed.value = false;
+      otherGeocodeFormatted.value = null;
+      otherGeocodeError.value = null;
+    }
   }
 
   void setSupportItemCode(String? code) {
@@ -924,6 +996,12 @@ class RosterComposerController extends GetxController {
         (code == null || code.isEmpty)
             ? draft.value.copyWith(clearSupportItemCode: true)
             : draft.value.copyWith(supportItemCode: code);
+    if (code == null || code.isEmpty) supportItemName.value = '';
+  }
+
+  void setSupportItem({required String? code, required String? name}) {
+    supportItemName.value = name?.trim() ?? '';
+    setSupportItemCode(code?.trim().isEmpty == true ? null : code?.trim());
   }
 
   void setWorkerCount(int n) {
@@ -949,6 +1027,19 @@ class RosterComposerController extends GetxController {
   }
 
   Future<bool> addParticipant(ClientOut client) async {
+    if (!clients.any((c) => c.id == client.id)) clients.add(client);
+    unawaited(ensureClientPhoto(client.id));
+
+    // One session: replace, never accumulate.
+    if (!isGroup) {
+      draft.value = draft.value.copyWith(
+        participantIds: [client.id],
+        clientId: client.id,
+      );
+      schedulePlaceOptionsRefresh();
+      return true;
+    }
+
     if (draft.value.participantIds.contains(client.id)) return false;
     final nextN = draft.value.participantIds.length + 1;
     if (atHardCap(draft.value.participantIds.length)) {
@@ -964,7 +1055,6 @@ class RosterComposerController extends GetxController {
       participantIds: ids,
       clientId: draft.value.clientId ?? client.id,
     );
-    if (!clients.any((c) => c.id == client.id)) clients.add(client);
     schedulePlaceOptionsRefresh();
     return true;
   }
@@ -974,8 +1064,42 @@ class RosterComposerController extends GetxController {
       for (final id in draft.value.participantIds)
         if (id != participantId) id,
     ];
-    draft.value = draft.value.copyWith(participantIds: ids);
+    final nextClientId = ids.isEmpty ? draft.value.clientId : ids.first;
+    draft.value = draft.value.copyWith(
+      participantIds: ids,
+      clientId: nextClientId,
+    );
+    if (ids.isEmpty && !isGroup) {
+      draft.value = OccurrenceDraft(
+        preset: ComposerPreset.oneSession,
+        shiftId: draft.value.shiftId,
+        jobId: draft.value.jobId,
+        scheduledStart: draft.value.scheduledStart,
+        scheduledEnd: draft.value.scheduledEnd,
+        place: draft.value.place,
+        supportItemCode: draft.value.supportItemCode,
+        taskTemplate: draft.value.taskTemplate,
+        repeatEnabled: draft.value.repeatEnabled,
+      );
+    }
     schedulePlaceOptionsRefresh();
+  }
+
+  ProfilePhotoOut? photoFor(String clientId) => photosByClient[clientId];
+
+  Future<void> ensureClientPhoto(String clientId) async {
+    if (photosByClient.containsKey(clientId)) return;
+    try {
+      photosByClient[clientId] = await _clients.getClientProfilePhoto(clientId);
+    } catch (_) {
+      photosByClient[clientId] = const ProfilePhotoOut();
+    }
+  }
+
+  Future<void> ensureParticipantPhotos() async {
+    await Future.wait([
+      for (final id in draft.value.participantIds) ensureClientPhoto(id),
+    ]);
   }
 
   Future<bool> _askLargeGroupConfirm(int nextN) async {
@@ -1058,7 +1182,46 @@ class RosterComposerController extends GetxController {
       ),
     );
     formOverrides.assignAll(existing);
+    // Show immediately — do not wait for preview RTT / jobId.
+    if (!resolvedForms.any((f) => f.formTemplateId == template.id)) {
+      resolvedForms.add(
+        ResolvedFormPreviewOut(
+          formTemplateId: template.id,
+          name: template.name,
+          isRequired: isRequired,
+          source: 'override',
+        ),
+      );
+    }
     _onFormsEdited();
+  }
+
+  /// Resolve inherited + override forms when entering the Forms step.
+  Future<void> ensureFormsResolved() async {
+    final jobId = draft.value.jobId;
+    if (jobId == null || jobId.isEmpty) {
+      // Greenfield without job yet — keep local override chips visible.
+      _syncLocalAddOverrideChips();
+      return;
+    }
+    await _previewFormsAndMaybePersist(force: true);
+  }
+
+  void _syncLocalAddOverrideChips() {
+    final resolvedIds = {for (final f in resolvedForms) f.formTemplateId};
+    for (final o in formOverrides) {
+      if (o.action != 'add' || resolvedIds.contains(o.formTemplateId)) {
+        continue;
+      }
+      resolvedForms.add(
+        ResolvedFormPreviewOut(
+          formTemplateId: o.formTemplateId,
+          name: o.name,
+          isRequired: o.isRequired,
+          source: 'override',
+        ),
+      );
+    }
   }
 
   void removeFormOverride(String formTemplateId) {
@@ -1109,10 +1272,13 @@ class RosterComposerController extends GetxController {
     });
   }
 
-  Future<void> _previewFormsAndMaybePersist() async {
+  Future<void> _previewFormsAndMaybePersist({bool force = false}) async {
     final jobId = draft.value.jobId;
-    if (jobId == null || jobId.isEmpty) return;
-    if (!_formsEdited) return;
+    if (jobId == null || jobId.isEmpty) {
+      _syncLocalAddOverrideChips();
+      return;
+    }
+    if (!_formsEdited && !force) return;
 
     final gen = ++_formsPreviewGen;
     formsPreviewLoading.value = true;
@@ -1135,6 +1301,7 @@ class RosterComposerController extends GetxController {
       );
       if (gen != _formsPreviewGen) return;
       resolvedForms.assignAll(preview);
+      _syncLocalAddOverrideChips();
 
       if (hasPersistedShift) {
         await _facade.putFormOverrides(
@@ -1145,15 +1312,18 @@ class RosterComposerController extends GetxController {
     } on AppFailure catch (e) {
       if (gen != _formsPreviewGen) return;
       formsPreviewError.value = e.message;
+      _syncLocalAddOverrideChips();
     } catch (e) {
       if (gen != _formsPreviewGen) return;
       formsPreviewError.value = e.toString();
+      _syncLocalAddOverrideChips();
     } finally {
       if (gen == _formsPreviewGen) formsPreviewLoading.value = false;
     }
   }
 
-  Future<void> retryFormsPreview() => _previewFormsAndMaybePersist();
+  Future<void> retryFormsPreview() =>
+      _previewFormsAndMaybePersist(force: true);
 
   // ── Travel ───────────────────────────────────────────────────────────────
 
@@ -1240,26 +1410,163 @@ class RosterComposerController extends GetxController {
   }
 
   String? validateTravelDraft() {
-    final minutes = travelLabourMinutes.value.trim();
-    if (minutes.isEmpty) return null; // empty OK
-    if (travelMode.value == TravelApportionmentMode.nominated &&
-        (travelNominatedClientId.value == null ||
-            travelNominatedClientId.value!.isEmpty)) {
-      return 'Choose a nominated participant';
+    return ComposerValidation.validateTravel(
+      labourMinutes: travelLabourMinutes.value,
+      mode: travelMode.value,
+      nominatedClientId: travelNominatedClientId.value,
+      explicitShares: Map<String, String>.from(travelExplicitShares),
+    );
+  }
+
+  void beginOtherPlace() {
+    if (draft.value.place is ShiftPlaceLabelled) return;
+    otherAddressConfirmed.value = false;
+    otherGeocodeFormatted.value = null;
+    otherGeocodeError.value = null;
+    otherLabelCtrl.clear();
+    otherAddressLine1Ctrl.clear();
+    otherCityCtrl.clear();
+    otherStateCtrl.clear();
+    otherPostalCtrl.clear();
+    otherLatCtrl.clear();
+    otherLngCtrl.clear();
+    // Placeholder until lookup confirms — Next is blocked until coords exist.
+    setPlace(
+      const ShiftPlaceIn.labelled(
+        label: '',
+        latitude: 0,
+        longitude: 0,
+        postalCode: '',
+      ),
+    );
+  }
+
+  void invalidateOtherAddressConfirm() {
+    if (!otherAddressConfirmed.value && otherGeocodeFormatted.value == null) {
+      return;
     }
-    if (travelMode.value == TravelApportionmentMode.explicit) {
-      return TravelSharesValidation.explicitSumMismatch(
-        journeyMinutes: minutes,
-        shareMinutesByParticipant: Map<String, String>.from(
-          travelExplicitShares,
+    otherAddressConfirmed.value = false;
+    otherGeocodeFormatted.value = null;
+    otherLatCtrl.clear();
+    otherLngCtrl.clear();
+  }
+
+  Future<void> lookupOtherAddress() async {
+    otherAddressConfirmed.value = false;
+    final line1 = otherAddressLine1Ctrl.text.trim();
+    final city = otherCityCtrl.text.trim();
+    if (line1.isEmpty || city.isEmpty) {
+      otherGeocodeError.value =
+          'Enter address line 1 and suburb before looking up.';
+      return;
+    }
+    otherIsGeocoding.value = true;
+    otherGeocodeError.value = null;
+    try {
+      final result = await _clients.geocode(
+        GeocodeRequest(
+          addressLine1: line1,
+          city: city,
+          country:
+              otherCountry.value.trim().isEmpty
+                  ? 'AU'
+                  : otherCountry.value.trim(),
+          state:
+              otherStateCtrl.text.trim().isEmpty
+                  ? null
+                  : otherStateCtrl.text.trim(),
         ),
       );
+      final outcome = applyGeocodeResponse(
+        result: result,
+        latCtrl: otherLatCtrl,
+        lngCtrl: otherLngCtrl,
+        formattedAddress: otherGeocodeFormatted,
+        addressConfirmed: otherAddressConfirmed,
+        addressFallback: '$line1, $city',
+      );
+      if (!outcome.accepted) {
+        otherGeocodeError.value = outcome.errorMessage;
+        return;
+      }
+      commitOtherPlaceFromGeocode();
+    } on AppFailure catch (e) {
+      otherGeocodeError.value = e.message;
+      otherGeocodeFormatted.value = null;
+    } catch (e) {
+      otherGeocodeError.value = e.toString();
+      otherGeocodeFormatted.value = null;
+    } finally {
+      otherIsGeocoding.value = false;
     }
-    final parsed = double.tryParse(minutes);
-    if (parsed == null || !parsed.isFinite || parsed <= 0) {
-      return 'Travel minutes must be greater than 0';
+  }
+
+  void confirmOtherAddress() {
+    final lat = double.tryParse(otherLatCtrl.text.trim());
+    final lng = double.tryParse(otherLngCtrl.text.trim());
+    if (lat == null || lng == null) {
+      otherGeocodeError.value = 'Look up an address before confirming.';
+      return;
     }
-    return null;
+    otherAddressConfirmed.value = true;
+    otherGeocodeError.value = null;
+    commitOtherPlaceFromGeocode();
+  }
+
+  void editOtherAddress() {
+    otherAddressConfirmed.value = false;
+    otherGeocodeFormatted.value = null;
+    otherLatCtrl.clear();
+    otherLngCtrl.clear();
+    otherGeocodeError.value = null;
+  }
+
+  void commitOtherPlaceFromGeocode() {
+    final lat = double.tryParse(otherLatCtrl.text.trim());
+    final lng = double.tryParse(otherLngCtrl.text.trim());
+    if (lat == null || lng == null) return;
+    final label =
+        otherLabelCtrl.text.trim().isNotEmpty
+            ? otherLabelCtrl.text.trim()
+            : (otherGeocodeFormatted.value ??
+                otherAddressLine1Ctrl.text.trim());
+    setPlace(
+      ShiftPlaceIn.labelled(
+        label: label,
+        latitude: lat,
+        longitude: lng,
+        postalCode: otherPostalCtrl.text.trim(),
+      ),
+    );
+  }
+
+  /// Auto-lookup other address on Next when fields are filled but not confirmed.
+  Future<bool> prepareOtherPlaceForAdvance() async {
+    final place = draft.value.place;
+    if (place is! ShiftPlaceLabelled) return true;
+    if (otherAddressConfirmed.value &&
+        otherLatCtrl.text.trim().isNotEmpty) {
+      commitOtherPlaceFromGeocode();
+      return true;
+    }
+    final line1 = otherAddressLine1Ctrl.text.trim();
+    final city = otherCityCtrl.text.trim();
+    if (line1.isEmpty || city.isEmpty) {
+      stepError.value = ComposerValidation.otherAddressRequired;
+      errorMessage.value = ComposerValidation.otherAddressRequired;
+      otherGeocodeError.value = ComposerValidation.otherAddressRequired;
+      return false;
+    }
+    await lookupOtherAddress();
+    if (otherLatCtrl.text.trim().isEmpty) {
+      stepError.value =
+          otherGeocodeError.value ?? ComposerValidation.otherAddressRequired;
+      errorMessage.value = stepError.value;
+      return false;
+    }
+    // Wizard advance auto-confirms a successful non-low lookup.
+    confirmOtherAddress();
+    return otherAddressConfirmed.value;
   }
 
   Future<void> _persistTravelIfNeeded(String shiftId) async {

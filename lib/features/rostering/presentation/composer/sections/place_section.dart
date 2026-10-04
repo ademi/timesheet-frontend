@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../../app/themes/app_colors.dart';
+import '../../../../../shared/widgets/async_action.dart';
+import '../../../../../shared/widgets/au_state_dropdown.dart';
 import '../../../../shifts/data/models/shift_models.dart';
 import '../../../data/composer_models.dart';
 import '../roster_composer_controller.dart';
@@ -62,29 +63,18 @@ class ComposerPlaceSection extends GetView<RosterComposerController> {
             contentPadding: EdgeInsets.zero,
             title: const Text('Other address'),
             subtitle: const Text(
-              'Ad-hoc labelled place',
+              'Look up an ad-hoc address',
               style: TextStyle(color: AppColors.textMuted, fontSize: 12),
             ),
             trailing: Icon(
               otherSelected ? Icons.check_circle : Icons.circle_outlined,
               color: otherSelected ? AppColors.brand : AppColors.slate400,
             ),
-            onTap: () {
-              if (place is! ShiftPlaceLabelled) {
-                controller.setPlace(
-                  const ShiftPlaceIn.labelled(
-                    label: '',
-                    latitude: -33.8688,
-                    longitude: 151.2093,
-                    postalCode: '',
-                  ),
-                );
-              }
-            },
+            onTap: controller.beginOtherPlace,
           ),
           if (otherSelected) ...[
             const SizedBox(height: 8),
-            _OtherPlaceFields(place: place),
+            const _OtherPlaceFields(),
           ],
           const SizedBox(height: 28),
           const ComposerTravelSection(),
@@ -100,7 +90,7 @@ class ComposerPlaceSection extends GetView<RosterComposerController> {
           contentPadding: EdgeInsets.zero,
           title: Text(b.name),
           subtitle: Text(
-            b.location ?? 'Centre',
+            b.displayAddress,
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
           trailing: Icon(
@@ -122,9 +112,11 @@ class ComposerPlaceSection extends GetView<RosterComposerController> {
       for (final s in options.participantSites)
         ListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text(s.name),
+          title: Text('${s.clientName} · ${s.name}'),
           subtitle: Text(
-            '${s.clientName} · participant site',
+            s.displayAddress.isEmpty
+                ? 'Participant site'
+                : s.displayAddress,
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
           trailing: Icon(
@@ -149,128 +141,162 @@ class ComposerPlaceSection extends GetView<RosterComposerController> {
 }
 
 class _OtherPlaceFields extends StatefulWidget {
-  const _OtherPlaceFields({required this.place});
-
-  final ShiftPlaceLabelled place;
+  const _OtherPlaceFields();
 
   @override
   State<_OtherPlaceFields> createState() => _OtherPlaceFieldsState();
 }
 
 class _OtherPlaceFieldsState extends State<_OtherPlaceFields> {
-  late final TextEditingController _label;
-  late final TextEditingController _postal;
-  late final TextEditingController _lat;
-  late final TextEditingController _lng;
   final controller = Get.find<RosterComposerController>();
 
   @override
-  void initState() {
-    super.initState();
-    _label = TextEditingController(text: widget.place.label);
-    _postal = TextEditingController(text: widget.place.postalCode);
-    _lat = TextEditingController(text: widget.place.latitude.toString());
-    _lng = TextEditingController(text: widget.place.longitude.toString());
-  }
-
-  @override
-  void didUpdateWidget(covariant _OtherPlaceFields oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.place.label != widget.place.label &&
-        _label.text != widget.place.label) {
-      _label.text = widget.place.label;
-    }
-  }
-
-  @override
-  void dispose() {
-    _label.dispose();
-    _postal.dispose();
-    _lat.dispose();
-    _lng.dispose();
-    super.dispose();
-  }
-
-  void _commit() {
-    final lat = double.tryParse(_lat.text.trim());
-    final lng = double.tryParse(_lng.text.trim());
-    if (lat == null || lng == null) return;
-    controller.setPlace(
-      ShiftPlaceIn.labelled(
-        label: _label.text.trim(),
-        latitude: lat,
-        longitude: lng,
-        postalCode: _postal.text.trim(),
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        TextField(
-          controller: _label,
-          decoration: const InputDecoration(
-            labelText: 'Label',
-            border: OutlineInputBorder(),
-            isDense: true,
-          ),
-          onChanged: (_) => _commit(),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _postal,
-          decoration: const InputDecoration(
-            labelText: 'Postal code',
-            border: OutlineInputBorder(),
-            isDense: true,
-          ),
-          onChanged: (_) => _commit(),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _lat,
-                decoration: const InputDecoration(
-                  labelText: 'Latitude',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                  signed: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]')),
-                ],
-                onChanged: (_) => _commit(),
-              ),
+    return Obx(() {
+      final formatted = controller.otherGeocodeFormatted.value;
+      final confirmed = controller.otherAddressConfirmed.value;
+      final lookingUp = controller.otherIsGeocoding.value;
+      final err = controller.otherGeocodeError.value;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: controller.otherLabelCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Label (optional)',
+              hintText: 'Community centre / park',
+              border: OutlineInputBorder(),
+              isDense: true,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: _lng,
-                decoration: const InputDecoration(
-                  labelText: 'Longitude',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+            onChanged: (_) {
+              if (confirmed) controller.commitOtherPlaceFromGeocode();
+            },
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: controller.otherAddressLine1Ctrl,
+            onChanged: (_) => controller.invalidateOtherAddressConfirm(),
+            decoration: const InputDecoration(
+              labelText: 'Address line 1 *',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: controller.otherCityCtrl,
+            onChanged: (_) => controller.invalidateOtherAddressConfirm(),
+            decoration: const InputDecoration(
+              labelText: 'Suburb / city *',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 8),
+          AuStateDropdown(
+            value: controller.otherStateCtrl.text,
+            onChanged: (selected) {
+              controller.otherStateCtrl.text = selected;
+              controller.invalidateOtherAddressConfirm();
+            },
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: controller.otherPostalCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Postal code',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (_) {
+              if (confirmed) controller.commitOtherPlaceFromGeocode();
+            },
+          ),
+          const SizedBox(height: 12),
+          if (formatted == null && !confirmed) ...[
+            AsyncOutlinedButton(
+              key: const Key('composer-other-lookup'),
+              onPressed: controller.lookupOtherAddress,
+              isLoading: lookingUp,
+              child: const Text('Look up address'),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Next also looks up automatically when address fields are filled.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: confirmed ? AppColors.primaryLight : AppColors.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color:
+                      confirmed
+                          ? AppColors.primary
+                          : AppColors.slate500.withValues(alpha: 0.4),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                  signed: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]')),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    confirmed ? 'Confirmed address' : 'Matched address',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    formatted ?? 'Coordinates ready',
+                    style: const TextStyle(color: AppColors.textDark),
+                  ),
+                  if (!confirmed) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: controller.editOtherAddress,
+                            child: const Text('Edit'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: controller.confirmOtherAddress,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.cta,
+                              foregroundColor: AppColors.onPrimary,
+                            ),
+                            child: const Text('Confirm'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: controller.editOtherAddress,
+                      child: const Text('Edit address'),
+                    ),
+                  ],
                 ],
-                onChanged: (_) => _commit(),
               ),
             ),
           ],
-        ),
-      ],
-    );
+          if (err != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              err,
+              key: const Key('composer-other-geocode-error'),
+              style: const TextStyle(color: AppColors.error, fontSize: 12),
+            ),
+          ],
+        ],
+      );
+    });
   }
 }

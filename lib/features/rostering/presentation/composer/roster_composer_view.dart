@@ -5,7 +5,6 @@ import '../../../../app/themes/app_colors.dart';
 import '../../../../core/responsive/page_content.dart';
 import '../../../../shared/widgets/async_action.dart';
 import '../../domain/composer_steps.dart';
-import '../../domain/occurrence_draft.dart';
 import '../../domain/roster_composer_args.dart';
 import 'roster_composer_controller.dart';
 import 'sections/forms_section.dart';
@@ -46,8 +45,6 @@ class RosterComposerView extends GetView<RosterComposerController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const _PresetControl(),
-                        const SizedBox(height: 8),
                         _JobOrClientLabel(controller: controller),
                         const SizedBox(height: 16),
                         const _StepIndicator(),
@@ -137,31 +134,6 @@ class _StepIndicator extends GetView<RosterComposerController> {
             ],
           ),
         ],
-      );
-    });
-  }
-}
-
-class _PresetControl extends GetView<RosterComposerController> {
-  const _PresetControl();
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      final preset = controller.draft.value.preset;
-      return SegmentedButton<ComposerPreset>(
-        key: const Key('composer-preset'),
-        segments: const [
-          ButtonSegment(
-            value: ComposerPreset.oneSession,
-            label: Text('One session'),
-          ),
-          ButtonSegment(value: ComposerPreset.group, label: Text('Group')),
-        ],
-        selected: {preset},
-        onSelectionChanged: (next) {
-          if (next.isNotEmpty) controller.setPreset(next.first);
-        },
       );
     });
   }

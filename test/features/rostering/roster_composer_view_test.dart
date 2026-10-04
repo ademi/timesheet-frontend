@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
+import 'package:rostiq/shared/models/profile_photo_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/features/rostering/data/composer_facade.dart';
 import 'package:rostiq/features/rostering/data/composer_models.dart';
@@ -52,6 +53,9 @@ void main() {
     when(() => session.tenantTimezone).thenReturn(RxnString());
     when(() => clients.listClients()).thenAnswer((_) async => [_client('c1')]);
     when(() => clients.getClient(any())).thenAnswer((_) async => _client('c1'));
+    when(
+      () => clients.getClientProfilePhoto(any()),
+    ).thenAnswer((_) async => const ProfilePhotoOut());
     when(
       () => shifts.fetchPlaceOptions(participantIds: any(named: 'participantIds')),
     ).thenAnswer((_) async => const PlaceOptionsOut());

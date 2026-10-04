@@ -2,21 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../app/themes/app_colors.dart';
+import '../../../../../shared/widgets/ndis_support_item_picker.dart';
 import '../../../data/composer_models.dart';
 import '../roster_composer_controller.dart';
 
 /// Publish anchor + post-assign segment editor (A3).
-///
-/// Keeps a simple code field for the v1 publish anchor (NDIS picker needs
-/// BillingBinding and would break Task 3 widget smoke tests). Segment editor
-/// appears only when a visit exists after assign.
 class ComposerSupportSection extends GetView<RosterComposerController> {
   const ComposerSupportSection({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final code = controller.draft.value.supportItemCode ?? '';
+      final code = controller.draft.value.supportItemCode;
+      final name = controller.supportItemName.value;
       final visitIds = controller.visitIdsWithSegments;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -24,19 +22,20 @@ class ComposerSupportSection extends GetView<RosterComposerController> {
           Text('Support', style: Get.textTheme.titleMedium),
           const SizedBox(height: 4),
           const Text(
-            'Anchor item for publish.',
+            'Anchor NDIS item for publish.',
             style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
           const SizedBox(height: 12),
-          TextFormField(
-            key: ValueKey('support-$code'),
-            initialValue: code,
-            decoration: const InputDecoration(
-              labelText: 'Support item code',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
-            onChanged: (v) => controller.setSupportItemCode(v.trim()),
+          NdisSupportItemPicker(
+            key: const Key('composer-support-item'),
+            supportItemCode: code,
+            supportItemName: name.isEmpty ? null : name,
+            onChanged: ({required supportItemCode, required supportItemName}) {
+              controller.setSupportItem(
+                code: supportItemCode,
+                name: supportItemName,
+              );
+            },
           ),
           if (visitIds.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -76,25 +75,22 @@ class _VisitSegmentsEditor extends StatefulWidget {
 }
 
 class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
-  late final TextEditingController _codeCtrl;
+  late String? _code;
+  late String? _name;
   final controller = Get.find<RosterComposerController>();
 
   @override
   void initState() {
     super.initState();
     final segments = controller.segmentsByVisit[widget.visitId] ?? const [];
-    _codeCtrl = TextEditingController(
-      text:
-          segments.isNotEmpty
-              ? segments.first.anchorSupportItemCode
-              : (controller.draft.value.supportItemCode ?? ''),
-    );
-  }
-
-  @override
-  void dispose() {
-    _codeCtrl.dispose();
-    super.dispose();
+    _code =
+        segments.isNotEmpty
+            ? segments.first.anchorSupportItemCode
+            : controller.draft.value.supportItemCode;
+    _name =
+        segments.isNotEmpty
+            ? segments.first.anchorSupportItemName
+            : controller.supportItemName.value;
   }
 
   @override
@@ -113,13 +109,17 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
             style: const TextStyle(fontSize: 12, color: AppColors.slate500),
           ),
           const SizedBox(height: 8),
-          TextFormField(
-            controller: _codeCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Segment anchor item',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
+          NdisSupportItemPicker(
+            key: Key('segments-item-${widget.visitId}'),
+            supportItemCode: _code,
+            supportItemName: _name,
+            labelText: 'Segment anchor item',
+            onChanged: ({required supportItemCode, required supportItemName}) {
+              setState(() {
+                _code = supportItemCode;
+                _name = supportItemName;
+              });
+            },
           ),
           const SizedBox(height: 8),
           Align(
@@ -127,15 +127,17 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
             child: TextButton(
               key: Key('segments-save-${widget.visitId}'),
               onPressed:
-                  saving || start == null || end == null || defaultSp.isEmpty
+                  saving ||
+                          start == null ||
+                          end == null ||
+                          defaultSp.isEmpty ||
+                          (_code?.trim().isEmpty ?? true)
                       ? null
                       : () async {
-                        final code = _codeCtrl.text.trim();
-                        if (code.isEmpty) return;
                         await controller.saveVisitSegments(widget.visitId, [
                           SupportSegmentIn(
                             shiftParticipantId: defaultSp,
-                            anchorSupportItemCode: code,
+                            anchorSupportItemCode: _code!.trim(),
                             startAt: start.toUtc(),
                             endAt: end.toUtc(),
                           ),

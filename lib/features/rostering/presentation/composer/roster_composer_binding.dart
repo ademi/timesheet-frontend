@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../../../core/services/session_service.dart';
+import '../../../billing/bindings/billing_binding.dart';
 import '../../../clients/bindings/clients_binding.dart';
 import '../../../clients/data/repositories/clients_repository.dart';
 import '../../../engagements/data/repositories/engagements_repository.dart';
@@ -18,6 +19,7 @@ class RosterComposerBinding extends Bindings {
     JobsBinding.ensureShared();
     VisitsBinding.ensureShared();
     ClientsBinding.ensureShared();
+    BillingBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<ShiftsRepository>()) return;
     if (!Get.isRegistered<ClientsRepository>()) return;

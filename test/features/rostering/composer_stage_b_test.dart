@@ -16,6 +16,7 @@ import 'package:rostiq/features/rostering/presentation/shared/assign_context_lab
 import 'package:rostiq/features/shifts/data/models/shift_travel_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
+import 'package:rostiq/shared/models/profile_photo_models.dart';
 
 class _MockShiftsRepository extends Mock implements ShiftsRepository {}
 
@@ -161,6 +162,9 @@ void main() {
         () => session.tenantTimezone,
       ).thenReturn(RxnString('Australia/Sydney'));
       when(() => clients.listClients()).thenAnswer((_) async => <ClientOut>[]);
+      when(
+        () => clients.getClientProfilePhoto(any()),
+      ).thenAnswer((_) async => const ProfilePhotoOut());
       when(
         () => shifts.fetchPlaceOptions(
           participantIds: any(named: 'participantIds'),

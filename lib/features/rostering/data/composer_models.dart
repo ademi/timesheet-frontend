@@ -191,6 +191,22 @@ class PlaceBranchOption {
   final double? longitude;
   final int? geofenceRadiusM;
 
+  String get displayAddress {
+    final parts = <String>[
+      if (addressLine1 != null && addressLine1!.trim().isNotEmpty)
+        addressLine1!.trim(),
+      if (city != null && city!.trim().isNotEmpty) city!.trim(),
+      if (state != null && state!.trim().isNotEmpty) state!.trim(),
+      if (postalCode != null && postalCode!.trim().isNotEmpty)
+        postalCode!.trim(),
+      if (country != null && country!.trim().isNotEmpty) country!.trim(),
+    ];
+    if (parts.isNotEmpty) return parts.join(', ');
+    final loc = location?.trim();
+    if (loc != null && loc.isNotEmpty) return loc;
+    return 'Centre';
+  }
+
   factory PlaceBranchOption.fromJson(Map<String, dynamic> json) {
     return PlaceBranchOption(
       id: json['id'].toString(),
@@ -238,6 +254,19 @@ class PlaceParticipantSiteOption {
   final double? longitude;
   final int? geofenceRadiusM;
   final bool isPrimary;
+
+  String get displayAddress {
+    final parts = <String>[
+      if (addressLine1 != null && addressLine1!.trim().isNotEmpty)
+        addressLine1!.trim(),
+      if (city != null && city!.trim().isNotEmpty) city!.trim(),
+      if (state != null && state!.trim().isNotEmpty) state!.trim(),
+      if (postalCode != null && postalCode!.trim().isNotEmpty)
+        postalCode!.trim(),
+      if (country != null && country!.trim().isNotEmpty) country!.trim(),
+    ];
+    return parts.join(', ');
+  }
 
   factory PlaceParticipantSiteOption.fromJson(Map<String, dynamic> json) {
     return PlaceParticipantSiteOption(

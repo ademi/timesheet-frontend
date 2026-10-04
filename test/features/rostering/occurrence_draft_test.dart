@@ -156,6 +156,36 @@ void main() {
       );
     });
 
+    test('one session rejects multiple clients at clients step', () {
+      final draft = OccurrenceDraft.oneSession(clientId: 'c1').copyWith(
+        participantIds: const ['c1', 'c2'],
+      );
+      expect(
+        ComposerValidation.validateStep(ComposerStep.clients, draft),
+        contains(ComposerValidation.oneSessionSingleClient),
+      );
+    });
+
+    test('place step gates travel explicit sum', () {
+      final draft = _scheduled(place: const DraftPlace.branch('b1'));
+      expect(
+        ComposerValidation.validateStep(
+          ComposerStep.place,
+          draft,
+          travelError: 'Share minutes must sum to travel minutes',
+        ),
+        contains('Share minutes must sum to travel minutes'),
+      );
+    });
+
+    test('support step requires anchor', () {
+      final draft = _scheduled(place: const DraftPlace.branch('b1'));
+      expect(
+        ComposerValidation.validateStep(ComposerStep.support, draft),
+        contains(ComposerValidation.supportAnchorStep),
+      );
+    });
+
     test('publish skips support anchor when auto-seed available', () {
       final draft = OccurrenceDraft.oneSession(
         clientId: 'c1',

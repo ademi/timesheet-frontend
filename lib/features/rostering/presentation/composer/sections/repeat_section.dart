@@ -201,6 +201,11 @@ class _ComposerRepeatSectionState extends State<ComposerRepeatSection> {
             const SizedBox(height: 16),
             Text('When generated', style: Get.textTheme.titleSmall),
             const SizedBox(height: 4),
+            const Text(
+              'Status of each future occurrence created by Repeat.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+            const SizedBox(height: 8),
             SegmentedButton<String>(
               segments: const [
                 ButtonSegment(value: 'draft', label: Text('Draft')),
@@ -216,8 +221,9 @@ class _ComposerRepeatSectionState extends State<ComposerRepeatSection> {
             const SizedBox(height: 4),
             Text(
               controller.repeatPublishPolicy.value == 'draft'
-                  ? 'Draft shifts stay off the claim board until published.'
-                  : 'Published shifts keep open slots for workers to claim.',
+                  ? 'Draft: generated shifts stay private until you publish them.'
+                  : 'Open holes: generated shifts are published with claimable '
+                      'slots so workers can pick them up.',
               style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
             ),
           ],

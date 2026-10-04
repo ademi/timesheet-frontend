@@ -14,6 +14,7 @@ import 'package:rostiq/features/rostering/domain/roster_composer_args.dart';
 import 'package:rostiq/features/rostering/presentation/composer/roster_composer_controller.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
+import 'package:rostiq/shared/models/profile_photo_models.dart';
 
 class _MockShiftsRepository extends Mock implements ShiftsRepository {}
 
@@ -87,6 +88,9 @@ void main() {
     when(() => clients.listClients()).thenAnswer((_) async => [_client('c1')]);
     when(() => clients.getClient(any())).thenAnswer((_) async => _client('c1'));
     when(() => clients.listSites(any())).thenAnswer((_) async => []);
+    when(
+      () => clients.getClientProfilePhoto(any()),
+    ).thenAnswer((_) async => const ProfilePhotoOut());
     when(
       () => shifts.fetchPlaceOptions(participantIds: any(named: 'participantIds')),
     ).thenAnswer((_) async => const PlaceOptionsOut());
