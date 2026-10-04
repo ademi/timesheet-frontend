@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -89,7 +90,9 @@ class PublicClientInviteBinding extends Bindings {
   @override
   void dependencies() {
     ClientsBinding.ensureShared();
-    Get.lazyPut(
+    // Token is read in onInit; recreate so a second invite link cannot reuse
+    // the prior token/state under GoRouter.
+    putFresh(
       () => PublicClientInviteController(
         repository: Get.find<ClientsRepository>(),
       ),

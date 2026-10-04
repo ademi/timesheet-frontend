@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../../app/routes/middlewares/auth_route_utils.dart';
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/token_storage.dart';
 import '../controllers/sil_houses_controller.dart';
@@ -54,7 +55,8 @@ class SilHouseDetailBinding extends Bindings {
       throw StateError('sil house detail requires house_id');
     }
     final resolvedHouseId = houseId;
-    Get.lazyPut(
+    // lazyPut kept the first houseId forever under GoRouter; always recreate.
+    putFresh(
       () => SilHouseDetailController(
         Get.find<SilRepository>(),
         houseId: resolvedHouseId,

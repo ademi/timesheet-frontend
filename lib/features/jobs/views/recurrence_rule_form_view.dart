@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/app_date_field.dart';
@@ -12,12 +13,32 @@ import '../utils/recurrence_rrule_builder.dart';
 import '../utils/required_slots_input.dart';
 import '../widgets/worker_slot_picker.dart';
 
-class RecurrenceRuleFormView extends StatelessWidget {
+class RecurrenceRuleFormView extends StatefulWidget {
   const RecurrenceRuleFormView({super.key});
 
   @override
+  State<RecurrenceRuleFormView> createState() => _RecurrenceRuleFormViewState();
+}
+
+class _RecurrenceRuleFormViewState extends State<RecurrenceRuleFormView> {
+  late final RecurrenceRuleFormController c;
+
+  @override
+  void initState() {
+    super.initState();
+    c = putFresh(RecurrenceRuleFormController.new);
+  }
+
+  @override
+  void dispose() {
+    if (Get.isRegistered<RecurrenceRuleFormController>()) {
+      Get.delete<RecurrenceRuleFormController>(force: true);
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final c = Get.put(RecurrenceRuleFormController());
     return Scaffold(
       appBar: AppBar(title: const Text('Add weekly pattern')),
       body: Obx(

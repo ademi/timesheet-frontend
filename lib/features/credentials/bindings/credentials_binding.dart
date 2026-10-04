@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -117,7 +118,7 @@ class StaffCredentialReviewBinding extends Bindings {
         fenix: true,
       );
     }
-    Get.lazyPut<StaffCredentialReviewController>(
+    putFresh(
       () => StaffCredentialReviewController(
         repository: Get.find<CredentialsRepository>(),
         engagementsRepository: Get.find<EngagementsRepository>(),

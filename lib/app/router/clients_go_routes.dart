@@ -37,6 +37,12 @@ List<RouteBase> buildClientsGoRoutes() => [
     path: AppRoutes.staffClientOnboarding,
     anyOf: const [AppPermissions.clientsManage],
     onEnter: () => ClientOnboardingBinding().dependencies(),
+    // Step URL sync uses replace on this same route — do not putFresh on enter.
+    // Delete only when truly leaving so re-enter starts clean.
+    onExit: () {
+      ClientOnboardingBinding.release();
+      return true;
+    },
     child: const ClientOnboardingView(),
   ),
   _staffClientRoute(
@@ -91,6 +97,7 @@ GoRoute _staffClientRoute({
   required String path,
   required List<String> anyOf,
   required VoidCallback onEnter,
+  bool Function()? onExit,
   required Widget child,
 }) {
   return GoRoute(
@@ -102,6 +109,11 @@ GoRoute _staffClientRoute({
       );
       return denied?.name;
     },
+    onExit: onExit == null
+        ? null
+        : (context, state) {
+            return onExit();
+          },
     builder: (context, state) {
       syncGetxFromGoRouterState(state);
       onEnter();

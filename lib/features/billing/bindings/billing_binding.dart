@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -102,14 +103,13 @@ class StaffInvoiceExportDetailBinding extends Bindings {
   void dependencies() {
     BillingBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<InvoiceExportDetailController>()) {
-      Get.put(
-        InvoiceExportDetailController(
-          repository: Get.find<BillingRepository>(),
-          session: Get.find<SessionService>(),
-          exportedVisitIds: Get.find<ExportedVisitIdsStore>(),
-        ),
-      );
-    }
+    // exportId is read in onInit; recreate so detail cannot stick to a prior export.
+    putFresh(
+      () => InvoiceExportDetailController(
+        repository: Get.find<BillingRepository>(),
+        session: Get.find<SessionService>(),
+        exportedVisitIds: Get.find<ExportedVisitIdsStore>(),
+      ),
+    );
   }
 }

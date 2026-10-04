@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../../app/routes/middlewares/auth_route_utils.dart';
+import '../../../core/getx/put_fresh.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../data/repositories/shifts_repository.dart';
 import '../utils/shift_route_resolve.dart';
@@ -19,8 +20,8 @@ class GroupShiftTravelBinding extends Bindings {
           return shift == null ? null : GroupShiftTravelArgs(shift: shift);
         }();
     if (args == null) return;
-    Get.put(
-      GroupShiftTravelController(
+    putFresh(
+      () => GroupShiftTravelController(
         shiftsRepository: Get.find<ShiftsRepository>(),
         args: args,
       ),

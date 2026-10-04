@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../../app/routes/middlewares/auth_route_utils.dart';
+import '../../../core/getx/put_fresh.dart';
 import '../../billing/bindings/billing_binding.dart';
 import '../../billing/data/repositories/billing_repository.dart';
 import '../../billing/data/repositories/ndis_catalogue_repository.dart';
@@ -30,8 +31,8 @@ class GroupShiftPublishBinding extends Bindings {
         }();
     if (args == null) return;
 
-    Get.put(
-      GroupShiftPublishController(
+    putFresh(
+      () => GroupShiftPublishController(
         shiftsRepository: Get.find<ShiftsRepository>(),
         jobsRepository: Get.find<JobsRepository>(),
         catalogueRepository: Get.find<NdisCatalogueRepository>(),

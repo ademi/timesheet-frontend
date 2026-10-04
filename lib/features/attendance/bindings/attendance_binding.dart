@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../../app/routes/middlewares/auth_route_utils.dart';
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -50,11 +51,8 @@ class AttendanceReviewBinding extends Bindings {
     if (args is Map && args['visitId'] != null) {
       visitId ??= args['visitId'].toString();
     }
-    if (Get.isRegistered<AttendanceReviewController>()) {
-      Get.delete<AttendanceReviewController>();
-    }
-    Get.put(
-      AttendanceReviewController(
+    putFresh(
+      () => AttendanceReviewController(
         repository: Get.find<AttendanceRepository>(),
         visitIdFilter: visitId,
       ),

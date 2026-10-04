@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../../app/routes/middlewares/auth_route_utils.dart';
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -75,15 +76,11 @@ class UnifiedSupportBinding extends Bindings {
 
     // GoRouter does not dispose GetX controllers on pop. Reusing the prior
     // instance left the previous client stuck on /staff/support/compose.
-    if (Get.isRegistered<UnifiedSupportController>()) {
-      Get.delete<UnifiedSupportController>(force: true);
-    }
-
     final raw = routeArguments();
     final args = raw is UnifiedSupportArgs ? raw : null;
 
-    Get.put(
-      UnifiedSupportController(
+    putFresh(
+      () => UnifiedSupportController(
         jobsRepository: Get.find<JobsRepository>(),
         clientsRepository: Get.find<ClientsRepository>(),
         engagementsRepository: Get.find<EngagementsRepository>(),

@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../../app/routes/middlewares/auth_route_utils.dart';
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/services/session_service.dart';
 import '../../clients/bindings/clients_binding.dart';
 import '../../clients/data/repositories/clients_repository.dart';
@@ -36,12 +37,8 @@ class GroupShiftBookBinding extends Bindings {
     // Always start a fresh wizard (People step). Get.put keeps the prior
     // instance after Create draft → shift detail, so reopening from Roster +
     // would otherwise land on Review with stale B4/B9 draft state.
-    if (Get.isRegistered<GroupShiftBookController>()) {
-      Get.delete<GroupShiftBookController>(force: true);
-    }
-
-    Get.put(
-      GroupShiftBookController(
+    putFresh(
+      () => GroupShiftBookController(
         clientsRepository: Get.find<ClientsRepository>(),
         jobsRepository: Get.find<JobsRepository>(),
         shiftsRepository: Get.find<ShiftsRepository>(),
