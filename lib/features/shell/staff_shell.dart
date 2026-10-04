@@ -45,6 +45,12 @@ abstract final class StaffShellNav {
     ),
     // —— mobile "More" overflow starts here (narrowPrimaryCount: 4) ——
     _StaffDest(
+      icon: Icons.holiday_village_outlined,
+      label: 'SIL houses',
+      route: AppRoutes.staffSilHouses,
+      anyOf: [AppPermissions.clientsRead],
+    ),
+    _StaffDest(
       icon: Icons.fact_check_outlined,
       label: 'Attendance review',
       route: AppRoutes.staffAttendanceReview,

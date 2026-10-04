@@ -33,6 +33,13 @@ class GroupShiftBookBinding extends Bindings {
       args = GroupShiftBookArgs.fromMap(raw);
     }
 
+    // Always start a fresh wizard (People step). Get.put keeps the prior
+    // instance after Create draft → shift detail, so reopening from Roster +
+    // would otherwise land on Review with stale B4/B9 draft state.
+    if (Get.isRegistered<GroupShiftBookController>()) {
+      Get.delete<GroupShiftBookController>(force: true);
+    }
+
     Get.put(
       GroupShiftBookController(
         clientsRepository: Get.find<ClientsRepository>(),

@@ -210,7 +210,24 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                                 () => controller.openAssignmentVisit(a.visitId),
                           ),
                         if (controller.canManage &&
-                            shift.status != 'cancelled' &&
+                            shift.status == 'draft' &&
+                            shift.openSlots > 0) ...[
+                          const Divider(height: 32),
+                          Text(
+                            'Assign worker',
+                            style: Get.textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Publish this shift first, then you can assign a worker.',
+                            style: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                        if (controller.canManage &&
+                            shift.status == 'published' &&
                             shift.openSlots > 0) ...[
                           const Divider(height: 32),
                           Text(
