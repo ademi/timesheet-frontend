@@ -11,6 +11,7 @@ import '../../../../core/time/tenant_civil_time.dart';
 import '../../../../shared/models/profile_photo_models.dart';
 import '../../../../shared/utils/name_sort.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../billing/data/models/billing_models.dart';
 import '../../../clients/data/models/client_models.dart';
 import '../../../clients/data/repositories/clients_repository.dart';
 import '../../../clients/utils/site_geocode_apply.dart';
@@ -246,6 +247,10 @@ class RosterComposerController extends GetxController {
     }
     final next = currentStep.value.next;
     if (next == null) return false;
+    // Clear banner once the gate passes.
+    stepError.value = null;
+    errorMessage.value = null;
+    travelError.value = null;
     currentStep.value = next;
     _onStepEntered(next);
     return true;
@@ -253,6 +258,7 @@ class RosterComposerController extends GetxController {
 
   bool goPreviousStep() {
     stepError.value = null;
+    errorMessage.value = null;
     final prev = currentStep.value.previous;
     if (prev == null) return false;
     currentStep.value = prev;
@@ -281,6 +287,8 @@ class RosterComposerController extends GetxController {
         }
       }
     }
+    errorMessage.value = null;
+    travelError.value = null;
     currentStep.value = step;
     _onStepEntered(step);
   }
@@ -873,6 +881,14 @@ class RosterComposerController extends GetxController {
       errorMessage.value = validation;
       return false;
     }
+    if (repeatPublishPolicy.value == 'published' &&
+        !draft.value.hasSupportAnchor) {
+      const msg =
+          'Choose a support item before generating open (published) shifts.';
+      repeatError.value = msg;
+      errorMessage.value = msg;
+      return false;
+    }
 
     try {
       try {
@@ -886,6 +902,7 @@ class RosterComposerController extends GetxController {
       }
 
       final jobId = await _resolveJobIdForCreate();
+      await _ensureJobSupportItem(jobId);
       final existingId = recurrenceRuleId.value;
       if (existingId != null && existingId.isNotEmpty) {
         final patched = await _facade.patchRecurrenceRule(
@@ -905,13 +922,40 @@ class RosterComposerController extends GetxController {
       }
       return true;
     } on AppFailure catch (e) {
-      repeatError.value = e.message;
-      errorMessage.value = e.message;
+      final msg = _mapRepeatError(e);
+      repeatError.value = msg;
+      errorMessage.value = msg;
       return false;
     } catch (e) {
       repeatError.value = e.toString();
       errorMessage.value = e.toString();
       return false;
+    }
+  }
+
+  Future<void> _ensureJobSupportItem(String jobId) async {
+    final code = draft.value.supportItemCode?.trim();
+    if (code == null || code.isEmpty) return;
+    final name = supportItemName.value.trim();
+    try {
+      await _facade.jobs.patchJobSupportItem(
+        jobId,
+        SupportItemPatch(
+          supportItemCode: code,
+          supportItemName: name.isEmpty ? null : name,
+        ),
+      );
+    } catch (_) {
+      // Non-fatal — participant overrides on the rule still carry the code.
+    }
+  }
+
+  String _mapRepeatError(AppFailure e) {
+    switch (e.code) {
+      case 'support_item_required':
+        return 'Choose a support item before generating open (published) shifts.';
+      default:
+        return e.message;
     }
   }
 
@@ -982,7 +1026,7 @@ class RosterComposerController extends GetxController {
             'Skipped ${result.skipped.length}.';
       }
     } on AppFailure catch (e) {
-      repeatError.value = e.message;
+      repeatError.value = _mapRepeatError(e);
       generateOutcomeMessage.value = null;
     } catch (e) {
       repeatError.value = e.toString();
@@ -2260,6 +2304,11 @@ class RosterComposerController extends GetxController {
         kind: 'program',
         title: 'Group session',
         branchId: branchId,
+        supportItemCode: draft.value.supportItemCode,
+        supportItemName:
+            supportItemName.value.trim().isEmpty
+                ? null
+                : supportItemName.value.trim(),
       ),
     );
     draft.value = draft.value.copyWith(jobId: created.id);
@@ -2330,36 +2379,8 @@ class RosterComposerController extends GetxController {
     errorMessage.value = null;
     try {
       final shiftId = draft.value.shiftId!;
-
-      if (draft.value.contractorIds.isNotEmpty) {
-        // Assign one-by-one when override reasons differ; batch when none.
-        final reasons = {
-          for (final id in draft.value.contractorIds)
-            if (assignOverrideReasons[id] != null) id: assignOverrideReasons[id]!,
-        };
-        if (reasons.isEmpty) {
-          await _facade.assignShiftBatch(
-            shiftId: shiftId,
-            contractorIds: draft.value.contractorIds,
-            taskTemplate:
-                draft.value.taskTemplate.isEmpty
-                    ? null
-                    : draft.value.taskTemplate,
-          );
-        } else {
-          for (final id in draft.value.contractorIds) {
-            await _facade.assignShift(
-              shiftId: shiftId,
-              contractorId: id,
-              taskTemplate:
-                  draft.value.taskTemplate.isEmpty
-                      ? null
-                      : draft.value.taskTemplate,
-              reason: reasons[id],
-            );
-          }
-        }
-      }
+      // Assignments are already synced in saveDraft — do not assign again
+      // (that surfaces contractor_already_assigned).
 
       final published = await _facade.publishShift(
         shiftId,
@@ -2404,6 +2425,9 @@ class RosterComposerController extends GetxController {
         return ComposerValidation.supportAnchorRequired;
       case 'participants_required':
         return 'Add participants before publishing';
+      case 'contractor_already_assigned':
+        // Should be rare after saveDraft sync; treat as non-fatal race.
+        return 'A selected worker is already assigned to this shift.';
       default:
         return e.message;
     }

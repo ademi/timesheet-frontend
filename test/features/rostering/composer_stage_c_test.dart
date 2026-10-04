@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/core/services/session_service.dart';
+import 'package:rostiq/features/billing/data/models/billing_models.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
@@ -127,6 +128,7 @@ void main() {
           horizonTo: DateTime.utc(2026, 1, 15),
         ),
       );
+      registerFallbackValue(const SupportItemPatch());
     });
 
     setUp(() {
@@ -173,6 +175,22 @@ void main() {
           geofenceMode: 'informational',
           createdAt: DateTime.utc(2026, 1, 1),
           updatedAt: DateTime.utc(2026, 1, 1),
+        ),
+      );
+      when(() => jobs.patchJobSupportItem(any(), any())).thenAnswer(
+        (_) async => JobOut(
+          id: 'job-1',
+          tenantId: 't1',
+          kind: 'standing',
+          status: 'open',
+          title: 'Sam support',
+          clientId: 'c1',
+          geofenceRadiusM: 100,
+          geofenceMode: 'informational',
+          createdAt: DateTime.utc(2026, 1, 1),
+          updatedAt: DateTime.utc(2026, 1, 1),
+          supportItemCode: '01_011_0107_1_1',
+          supportItemName: 'Assistance',
         ),
       );
     });
@@ -244,7 +262,9 @@ void main() {
         requiredSlots: 1,
         workerCount: 1,
         repeatEnabled: true,
+        supportItemCode: '01_011_0107_1_1',
       );
+      c.supportItemName.value = 'Assistance';
       c.preferredContractorIds.assignAll(['w-soft']);
       c.setRepeatPublishPolicy('published');
 

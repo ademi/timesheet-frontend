@@ -39,9 +39,15 @@ class RepeatTemplatePayload {
   static List<RecurrenceParticipantIn> participantsFromDraft(
     OccurrenceDraft draft,
   ) {
+    final code = draft.supportItemCode?.trim();
+    final hasCode = code != null && code.isNotEmpty;
     return [
       for (final id in draft.participantIds)
-        RecurrenceParticipantIn(participantId: id),
+        RecurrenceParticipantIn(
+          participantId: id,
+          // Stamp publish override so Open-holes generate can freeze rates.
+          supportItemCode: hasCode ? code : null,
+        ),
     ];
   }
 
@@ -61,17 +67,41 @@ class RepeatTemplatePayload {
   static List<RecurrenceSegmentTemplateIn> segmentsFromDraft(
     OccurrenceDraft draft,
   ) {
+    if (draft.segmentTemplate.isNotEmpty) {
+      return [
+        for (final s in draft.segmentTemplate)
+          RecurrenceSegmentTemplateIn(
+            participantId: s.participantId,
+            anchorSupportItemCode: s.anchorSupportItemCode,
+            kind: s.kind,
+            offsetStartMinutes: s.offsetStartMinutes,
+            offsetEndMinutes: s.offsetEndMinutes,
+            groupSize: s.groupSize,
+            notes: s.notes,
+            sortOrder: s.sortOrder,
+          ),
+      ];
+    }
+    // Auto-seed a full-window direct segment from the composer support item.
+    final code = draft.supportItemCode?.trim();
+    if (code == null || code.isEmpty || draft.participantIds.isEmpty) {
+      return const [];
+    }
+    final start = draft.scheduledStart;
+    final end = draft.scheduledEnd;
+    final durationMins =
+        (start != null && end != null && end.isAfter(start))
+            ? end.difference(start).inMinutes
+            : 120;
     return [
-      for (final s in draft.segmentTemplate)
+      for (var i = 0; i < draft.participantIds.length; i++)
         RecurrenceSegmentTemplateIn(
-          participantId: s.participantId,
-          anchorSupportItemCode: s.anchorSupportItemCode,
-          kind: s.kind,
-          offsetStartMinutes: s.offsetStartMinutes,
-          offsetEndMinutes: s.offsetEndMinutes,
-          groupSize: s.groupSize,
-          notes: s.notes,
-          sortOrder: s.sortOrder,
+          participantId: draft.participantIds[i],
+          anchorSupportItemCode: code,
+          kind: 'direct',
+          offsetStartMinutes: 0,
+          offsetEndMinutes: durationMins < 1 ? 1 : durationMins,
+          sortOrder: i,
         ),
     ];
   }
