@@ -60,6 +60,12 @@ class ContractorProfileController extends GetxController {
 
   final photo = Rxn<ProfilePhotoOut>();
   final localPhotoBytes = Rxn<List<int>>();
+  /// Local pick held until [saveProfile] (matches client form / onboarding).
+  final pendingPhoto = Rxn<PickedProfilePhoto>();
+  final photoCleared = false.obs;
+
+  bool get hasPendingPhotoChanges =>
+      pendingPhoto.value != null || photoCleared.value;
 
   final rightsNotesCtrl = TextEditingController();
   final rightsType = 'access'.obs;
@@ -510,60 +516,80 @@ class ContractorProfileController extends GetxController {
 
   Future<void> saveProfile() async {
     final meRepo = _meRepository;
-    if (meRepo == null) return;
-    if (!(profileFormKey.currentState?.validate() ?? false)) return;
+    final editingProfile = meRepo != null && canEditProfile;
+    final savingPhoto = hasPendingPhotoChanges;
+    if (!editingProfile && !savingPhoto) return;
+    if (editingProfile &&
+        !(profileFormKey.currentState?.validate() ?? false)) {
+      return;
+    }
 
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      String? abn;
-      try {
-        abn = AbnUtils.normalizeOrNull(abnCtrl.text);
-      } on FormatException catch (e) {
-        errorMessage.value = e.message;
-        return;
-      }
-
-      var me = await meRepo.patchMe(
-        fullName: _optionalText(fullNameCtrl.text),
-        phone: _optionalText(phoneCtrl.text),
-        dob: _optionalText(dobCtrl.text),
-        abn: abn,
-        addressLine1: _optionalText(addressLine1Ctrl.text),
-        addressLine2: _optionalText(addressLine2Ctrl.text),
-        suburb: _optionalText(suburbCtrl.text),
-        state: _optionalText(stateCtrl.text),
-        postcode: _optionalText(postcodeCtrl.text),
-        country: _optionalText(countryCtrl.text),
-        metadata: _metadataPayload(profile.value),
-      );
-
-      final name = accountNameCtrl.text.trim();
-      final bsb = AbnUtils.digitsOnly(bsbCtrl.text);
-      final account = AbnUtils.digitsOnly(accountNumberCtrl.text);
-      final anyPayment =
-          name.isNotEmpty || bsb.isNotEmpty || account.isNotEmpty;
-      if (anyPayment) {
-        if (name.isEmpty || bsb.isEmpty || account.isEmpty) {
-          errorMessage.value =
-              'To save payment details, fill account name, BSB, and account number.';
+      if (editingProfile && meRepo != null) {
+        String? abn;
+        try {
+          abn = AbnUtils.normalizeOrNull(abnCtrl.text);
+        } on FormatException catch (e) {
+          errorMessage.value = e.message;
           return;
         }
-        me = await meRepo.putPaymentDetails(
-          ContractorPaymentDetailsIn(
-            accountName: name,
-            bsb: bsb,
-            accountNumber: account,
-          ),
+
+        var me = await meRepo.patchMe(
+          fullName: _optionalText(fullNameCtrl.text),
+          phone: _optionalText(phoneCtrl.text),
+          dob: _optionalText(dobCtrl.text),
+          abn: abn,
+          addressLine1: _optionalText(addressLine1Ctrl.text),
+          addressLine2: _optionalText(addressLine2Ctrl.text),
+          suburb: _optionalText(suburbCtrl.text),
+          state: _optionalText(stateCtrl.text),
+          postcode: _optionalText(postcodeCtrl.text),
+          country: _optionalText(countryCtrl.text),
+          metadata: _metadataPayload(profile.value),
         );
-        accountNumberCtrl.clear();
+
+        final name = accountNameCtrl.text.trim();
+        final bsb = AbnUtils.digitsOnly(bsbCtrl.text);
+        final account = AbnUtils.digitsOnly(accountNumberCtrl.text);
+        final anyPayment =
+            name.isNotEmpty || bsb.isNotEmpty || account.isNotEmpty;
+        if (anyPayment) {
+          if (name.isEmpty || bsb.isEmpty || account.isEmpty) {
+            errorMessage.value =
+                'To save payment details, fill account name, BSB, and account number.';
+            return;
+          }
+          me = await meRepo.putPaymentDetails(
+            ContractorPaymentDetailsIn(
+              accountName: name,
+              bsb: bsb,
+              accountNumber: account,
+            ),
+          );
+          accountNumberCtrl.clear();
+        }
+
+        profile.value = me;
+        _bindFromProfile(me);
+        _session.needsProfileCompletion.value = !me.isProfileComplete;
       }
 
-      profile.value = me;
-      _bindFromProfile(me);
-      _session.needsProfileCompletion.value = !me.isProfileComplete;
-      AppToast.success('Saved', 'Profile updated.');
+      if (savingPhoto) {
+        await _persistPhoto();
+      }
+
+      AppToast.success(
+        'Saved',
+        savingPhoto && editingProfile
+            ? 'Profile and photo updated.'
+            : savingPhoto
+            ? 'Profile photo updated.'
+            : 'Profile updated.',
+      );
     } on AppFailure catch (e) {
+      await BillingGate.showIfNeeded(e);
       errorMessage.value = e.message;
     } catch (e) {
       errorMessage.value = e.toString();
@@ -598,60 +624,87 @@ class ContractorProfileController extends GetxController {
     }
   }
 
-  Future<void> onPhotoPicked(PickedProfilePhoto picked) async {
-    final contractorId = _session.contractorId.value;
-    final pipeline = _pipeline;
-    if (contractorId == null || contractorId.isEmpty || pipeline == null) {
-      errorMessage.value = 'Cannot upload photo: missing contractor session.';
-      return;
-    }
+  /// Hold a picked photo locally until [saveProfile].
+  void onPhotoPicked(PickedProfilePhoto picked) {
     if (!canUploadPhoto) {
       errorMessage.value = 'Missing documents.upload permission.';
       return;
     }
-
-    isPhotoLoading.value = true;
     errorMessage.value = null;
+    pendingPhoto.value = picked;
     localPhotoBytes.value = picked.bytes;
-    try {
-      final doc = await pipeline.uploadEvidence(
-        request: UploadUrlRequest(
-          ownerType: 'contractor',
-          ownerId: contractorId,
-          filename: picked.name,
-          contentType: picked.contentType,
-          sizeBytes: picked.bytes.length,
-          category: 'contractor_photo',
-        ),
-        bytes: picked.bytes,
-      );
-      final result = await _repository.setContractorProfilePhoto(doc.id);
-      photo.value = result;
-      AppToast.success('Profile photo updated', 'Your photo was saved.');
-    } on AppFailure catch (e) {
-      await BillingGate.showIfNeeded(e);
-      errorMessage.value = e.message;
-      localPhotoBytes.value = null;
-    } catch (e) {
-      errorMessage.value = e.toString();
-      localPhotoBytes.value = null;
-    } finally {
-      isPhotoLoading.value = false;
+    photoCleared.value = false;
+  }
+
+  /// Clear pending / mark server photo for removal on next [saveProfile].
+  void clearPendingPhoto() {
+    errorMessage.value = null;
+    pendingPhoto.value = null;
+    localPhotoBytes.value = null;
+    if (photo.value?.hasPhoto == true) {
+      photoCleared.value = true;
+    } else {
+      photoCleared.value = false;
     }
   }
 
-  Future<void> removeProfilePhoto() async {
-    isPhotoLoading.value = true;
-    errorMessage.value = null;
-    try {
-      final result = await _repository.clearContractorProfilePhoto();
-      photo.value = result;
-      localPhotoBytes.value = null;
-      AppToast.info('Profile photo removed', 'Your photo was cleared.');
-    } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-    } finally {
-      isPhotoLoading.value = false;
+  Future<void> _persistPhoto() async {
+    final contractorId = _session.contractorId.value;
+    final pipeline = _pipeline;
+    final pending = pendingPhoto.value;
+
+    if (pending != null) {
+      if (contractorId == null || contractorId.isEmpty || pipeline == null) {
+        throw const AppFailure(
+          code: 'unknown',
+          message: 'Cannot upload photo: missing contractor session.',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      if (!canUploadPhoto) {
+        throw const AppFailure(
+          code: 'forbidden',
+          message: 'Missing documents.upload permission.',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      isPhotoLoading.value = true;
+      try {
+        final doc = await pipeline.uploadEvidence(
+          request: UploadUrlRequest(
+            ownerType: 'contractor',
+            ownerId: contractorId,
+            filename: pending.name,
+            contentType: pending.contentType,
+            sizeBytes: pending.bytes.length,
+            category: 'contractor_photo',
+          ),
+          bytes: pending.bytes,
+        );
+        final result = await _repository.setContractorProfilePhoto(doc.id);
+        photo.value = result;
+        pendingPhoto.value = null;
+        photoCleared.value = false;
+        if (result.hasDisplayableUrl) {
+          localPhotoBytes.value = null;
+        }
+      } finally {
+        isPhotoLoading.value = false;
+      }
+      return;
+    }
+
+    if (photoCleared.value) {
+      isPhotoLoading.value = true;
+      try {
+        final result = await _repository.clearContractorProfilePhoto();
+        photo.value = result;
+        photoCleared.value = false;
+        localPhotoBytes.value = null;
+        pendingPhoto.value = null;
+      } finally {
+        isPhotoLoading.value = false;
+      }
     }
   }
 

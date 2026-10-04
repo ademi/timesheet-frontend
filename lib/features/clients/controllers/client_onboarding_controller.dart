@@ -85,6 +85,8 @@ class ClientOnboardingController extends GetxController
   final client = Rxn<ClientOut>();
   final errorMessage = RxnString();
   final isSaving = false.obs;
+  /// Contact Add/Save only — does not freeze sticky Back/Next (B6).
+  final isSavingContact = false.obs;
   final ndisFieldError = RxnString();
   final budgetFieldError = RxnString();
   final consentUploading = false.obs;
@@ -407,6 +409,7 @@ class ClientOnboardingController extends GetxController
     errorMessage.value = null;
     ndisFieldError.value = null;
     isSaving.value = false;
+    isSavingContact.value = false;
 
     medicareCtrl.clear();
     medicareCardAttachment.reset();
@@ -1242,7 +1245,7 @@ class ClientOnboardingController extends GetxController
       return false;
     }
 
-    isSaving.value = true;
+    isSavingContact.value = true;
     try {
       final body = ClientContactWriteRequest(
         name: _nullIfEmpty(name),
@@ -1296,7 +1299,7 @@ class ClientOnboardingController extends GetxController
       _setUnexpectedError(e);
       return false;
     } finally {
-      isSaving.value = false;
+      isSavingContact.value = false;
     }
   }
 
@@ -1383,7 +1386,7 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = 'Create the client on the Identity step first.';
       return false;
     }
-    isSaving.value = true;
+    isSavingContact.value = true;
     try {
       final patched = await _repository.patchContact(
         id,
@@ -1407,7 +1410,7 @@ class ClientOnboardingController extends GetxController
       _setUnexpectedError(e);
       return false;
     } finally {
-      isSaving.value = false;
+      isSavingContact.value = false;
     }
   }
 
@@ -1429,7 +1432,7 @@ class ClientOnboardingController extends GetxController
       return false;
     }
 
-    isSaving.value = true;
+    isSavingContact.value = true;
     try {
       final patched = await _repository.patchContact(
         id,
@@ -1455,7 +1458,7 @@ class ClientOnboardingController extends GetxController
       _setUnexpectedError(e);
       return false;
     } finally {
-      isSaving.value = false;
+      isSavingContact.value = false;
     }
   }
 

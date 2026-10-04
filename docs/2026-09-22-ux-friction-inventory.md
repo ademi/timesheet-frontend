@@ -97,13 +97,14 @@ These call sites start a server request as soon as the user finishes the file pi
 | **Controller** | `CredentialsController.attachEvidence` uses `isUploadingEvidence` (not `isSaving` through poll) |
 | **Flow (fixed)** | Pick → upload → background scan poll → reload |
 
-### A7. Contractor profile photo
+### A7. Contractor profile photo — ✅ Done (2026-10-04)
 
 | | |
 |--|--|
 | **UI** | `contractor_profile_ops_view.dart` — `ProfilePhotoEditor(onChanged: controller.onPhotoPicked)` |
-| **Controller** | `ContractorProfileController.onPhotoPicked` → `uploadEvidence` + `setContractorProfilePhoto` |
-| **Contrast** | Other profile fields batch on `saveProfile`. Onboarding / client-form photos defer until Save/Next. |
+| **Controller** | `onPhotoPicked` / `clearPendingPhoto` hold locally → `_persistPhoto` inside `saveProfile` |
+| **Flow (fixed)** | Pick/clear locally; upload or clear on **Save profile** (matches client form / onboarding) |
+| **Was** | Immediate `uploadEvidence` + `setContractorProfilePhoto` on pick |
 
 ---
 
@@ -139,17 +140,17 @@ These call sites start a server request as soon as the user finishes the file pi
 
 **Fix:** Clinical/NDIS/legal helper check permission (and consent legal version) **before** pick; care-plan UI disables Choose when `!canUploadDocs`; legal-other validates label before pick.
 
-### B5. Onboarding Next = mandatory network persist
+### B5. Onboarding Next = mandatory network persist — ✅ Product decision: KEEP (2026-10-04)
 
-**Why it hurts:** `ClientOnboardingController.nextStep` → `submitIdentity` / `submitAddress` / … each round-trips before advancing. Next shows saving; Back/fields disabled. Good for resume (`onboarding_incomplete`); bad if the user wanted to skim without committing.
+**Why it exists:** `ClientOnboardingController.nextStep` → `submitIdentity` / `submitAddress` / … each round-trips before advancing. Supports resume (`onboarding_incomplete`, URL `?id=` / `?step=`).
 
-**Note:** Identity cards / NDIS PDF / photo **picks** are deferred until that submit — only the step advance is force-network.
+**Decision:** Keep resume-safe step persists. A local-draft-only wizard would break refresh/resume unless a large draft store is added. File picks remain deferred until each step submit.
 
-### B6. Contacts one round trip per Add
+### B6. Contacts one round trip per Add — ✅ Partial (2026-10-04)
 
-**Why it hurts:** `saveContactDraft` → `createContact` / `patchContact` per contact. `isSaving` disables the contacts step. Client detail contact form is the same one-contact-per-trip model.
+**Why it hurt:** `saveContactDraft` → `createContact` / `patchContact` per contact used global `isSaving`, freezing sticky Back/Next.
 
-**Direction:** Optional local draft list + batch create on step Next (if product accepts delayed server presence).
+**Fix:** Contact saves use `isSavingContact` (row-level). Sticky nav stays usable during Add/Save contact. Full local-draft batch-on-Next deferred (high risk; needs product OK for delayed server presence).
 
 ### B7. Serial cascades under one spinner
 
@@ -178,7 +179,7 @@ These call sites start a server request as soon as the user finishes the file pi
 |------|---------|-------------|
 | Onboarding NDIS PDF | Pick → pending → upload on Next | `pickNdisPlanPdf`, `submitNdisStep` |
 | Onboarding identity cards | Pending attachments → upload on `submitIdentity` | `pickIdentityCard`, `_persistIdentityCard` |
-| Onboarding / client form photo | Local until submit/save | `onPhotoPicked` → pending; `_persistPhoto` / `_persistFormPhoto` |
+| Onboarding / client form / contractor photo | Local until submit/save | `onPhotoPicked` → pending; `_persistPhoto` / `_persistFormPhoto` |
 | Requirement editors | Multi-file local hold → upload on requirement save | `pickFilesForRequirement`, `draft.localFiles`, `_uploadClientFiles` |
 | Care-plan body / funding switches | Local until Save draft / Activate | `persistFacts` with `Future.wait` |
 | Overview | Dirty drafts + explicit save | `saveOverviewProfile` |
@@ -198,8 +199,8 @@ Ordered by user-visible pain × how often the surface is used during client setu
 | P0 | A2 funding NDIS PDF | Align with onboarding deferral (`pick` pending → persist on Save) | ✅ Done (2026-10-04) |
 | P1 | A3 / A4 legal pack & care consent | Row-level busy (keep mark-complete); don’t freeze sticky nav; check perms before pick (B4) | ✅ Done (2026-10-04) |
 | P1 | A5 / A6 / B2 credentials | Non-blocking scan status; don’t lock whole create form | ✅ Done (2026-10-04) |
-| P2 | A7 contractor photo | Match other profile fields (pending until Save) **or** keep immediate but don’t block unrelated edits | |
-| P2 | B5 / B6 onboarding Next & contacts | Product call: keep resume-safe step saves vs local draft wizard | |
+| P2 | A7 contractor photo | Match other profile fields (pending until Save) | ✅ Done (2026-10-04) |
+| P2 | B5 / B6 onboarding Next & contacts | B5 KEEP resume-safe; B6 row-level `isSavingContact` (no sticky freeze) | ✅ Done (2026-10-04) |
 | P3 | B7 serial cascades | Parallel uploads where safe | |
 | P3 | B8 reload/import dirty handling | Don’t clobber unsaved care-plan body | |
 
