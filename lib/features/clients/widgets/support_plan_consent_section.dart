@@ -20,7 +20,11 @@ class SupportPlanConsentSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final busy = store.isBusy.value;
+      final canUpload = store.canUploadDocs;
+      final consentUploading = store.consentUploading.value;
+      final saUploading = store.serviceAgreementUploading.value;
+      final ackUploading = store.acknowledgementUploading.value;
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -33,6 +37,13 @@ class SupportPlanConsentSection extends StatelessWidget {
             'Linked to onboarding Legal pack / Profile & docs',
             style: TextStyle(fontSize: 13, color: AppColors.textMuted),
           ),
+          if (!canUpload) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Missing documents.upload / clients.docs.manage permission.',
+              style: TextStyle(fontSize: 13, color: AppColors.error),
+            ),
+          ],
           const SizedBox(height: 12),
           _LegalRow(
             label: 'Consent agreement',
@@ -42,6 +53,7 @@ class SupportPlanConsentSection extends StatelessWidget {
             const SizedBox(height: 8),
             TextField(
               controller: store.consentSignerNameCtrl,
+              enabled: !consentUploading,
               decoration: const InputDecoration(
                 labelText: 'Participant or representative name',
                 border: OutlineInputBorder(
@@ -53,8 +65,9 @@ class SupportPlanConsentSection extends StatelessWidget {
             AppFileField(
               label: 'Consent PDF',
               fileName: null,
-              enabled: !busy,
+              enabled: canUpload && !consentUploading,
               onPick: () => store.markConsentComplete(clientId: clientId),
+              pickLabel: consentUploading ? 'Uploading…' : 'Choose file',
               helperText: 'Upload PDF & mark complete',
             ),
           ],
@@ -68,9 +81,10 @@ class SupportPlanConsentSection extends StatelessWidget {
             AppFileField(
               label: 'Service agreement PDF',
               fileName: null,
-              enabled: !busy,
+              enabled: canUpload && !saUploading,
               onPick:
                   () => store.markServiceAgreementComplete(clientId: clientId),
+              pickLabel: saUploading ? 'Uploading…' : 'Choose file',
               helperText: 'Upload PDF & mark complete',
             ),
           ],
@@ -84,18 +98,17 @@ class SupportPlanConsentSection extends StatelessWidget {
             AppFileField(
               label: 'Acknowledgement PDF',
               fileName: null,
-              enabled: !busy,
+              enabled: canUpload && !ackUploading,
               onPick:
-                  () =>
-                      store.markAcknowledgementComplete(clientId: clientId),
+                  () => store.markAcknowledgementComplete(clientId: clientId),
+              pickLabel: ackUploading ? 'Uploading…' : 'Choose file',
               helperText: 'Upload PDF & mark complete',
             ),
           ],
           const SizedBox(height: 16),
           AppSwitchField(
             label: 'Information share',
-            subtitle:
-                'Information may be shared with relevant providers',
+            subtitle: 'Information may be shared with relevant providers',
             value: store.infoShareConsent.value,
             onChanged: (v) => store.infoShareConsent.value = v,
           ),

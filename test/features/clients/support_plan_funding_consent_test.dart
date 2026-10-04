@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -48,6 +50,14 @@ void main() {
         contentType: 'application/pdf',
         sizeBytes: 1,
         category: 'ndis',
+      ),
+    );
+    registerFallbackValue(
+      const ClientLegalAcceptRequest(
+        eventType: 'consented',
+        legalDocumentVersionId: 'v1',
+        participantOrRepName: 'x',
+        method: 'uploaded_scan',
       ),
     );
   });
@@ -436,6 +446,61 @@ void main() {
     expect(plan.isBusy, isFalse);
     store.isBusy.value = true;
     expect(plan.isBusy, isTrue);
+    plan.onClose();
+  });
+
+  test('markConsentComplete uses row uploading not global isBusy', () async {
+    final pipeline = _MockDocumentPipeline();
+    final uploadGate = Completer<DocumentOut>();
+    when(() => mock.getLegalDocumentCurrent(any())).thenAnswer(
+      (_) async => const ClientLegalDocumentCurrent(
+        id: 'legal-v1',
+        title: 'Consent',
+        contentMd: '# Consent',
+      ),
+    );
+    when(
+      () => pipeline.uploadEvidence(
+        request: any(named: 'request'),
+        bytes: any(named: 'bytes'),
+      ),
+    ).thenAnswer((_) => uploadGate.future);
+    when(
+      () => mock.acceptClientLegal(any(), any(), any()),
+    ).thenAnswer((_) async {});
+
+    final store = SupportPlanFundingConsentStore(
+      repository: mock,
+      documentPipeline: pipeline,
+      pickPdfBytes: () async => (name: 'consent.pdf', bytes: [1, 2, 3]),
+    );
+    store.consentSignerNameCtrl.text = 'Sam Parent';
+    final plan = SupportPlanController(
+      repository: mock,
+      clientId: 'c1',
+      fundingConsent: store,
+    );
+
+    final future = store.markConsentComplete(clientId: 'c1');
+    await Future<void>.delayed(Duration.zero);
+    expect(store.consentUploading.value, isTrue);
+    expect(store.isBusy.value, isFalse);
+    expect(plan.isBusy, isFalse);
+
+    uploadGate.complete(
+      const DocumentOut(
+        id: 'doc-1',
+        ownerType: 'client',
+        ownerId: 'c1',
+        filename: 'consent.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 3,
+        scanStatus: 'clean',
+      ),
+    );
+    expect(await future, isTrue);
+    expect(store.consentUploading.value, isFalse);
+    expect(store.consentAgreementComplete.value, isTrue);
     plan.onClose();
   });
 

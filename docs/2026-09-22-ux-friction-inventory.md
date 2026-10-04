@@ -58,44 +58,44 @@ These call sites start a server request as soon as the user finishes the file pi
 | **Flow (fixed)** | Pick → pending → upload + upsert NDIS fact with `documentId` on Save (aligned with onboarding) |
 | **Was** | Pick → immediate upload under store `isBusy` |
 
-### A3. Care plan — consent & agreements
+### A3. Care plan — consent & agreements — ✅ Done (2026-10-04)
 
 | | |
 |--|--|
 | **UI** | `support_plan_consent_section.dart` |
-| **Store** | `markConsentComplete` / `markServiceAgreementComplete` / `markAcknowledgementComplete` |
-| **Helper** | `ClientLegalUploadHelper` |
+| **Store** | `markConsentComplete` / `markServiceAgreementComplete` / `markAcknowledgementComplete` with row `*Uploading` (not global `isBusy`) |
+| **Helper** | `ClientLegalUploadHelper` — perms + consent legal version **before** pick |
 | **Files** | Up to 3 PDFs (consent, service agreement, acknowledgement) |
-| **Flow** | Pick → upload → accept/upsert → row flips Complete |
+| **Flow** | Pick → upload → accept/upsert → row flips Complete (standalone mark-complete kept) |
 | **Helper copy** | “Upload PDF & mark complete” |
 
-### A4. Onboarding — legal pack
+### A4. Onboarding — legal pack — ✅ Done (2026-10-04)
 
 | | |
 |--|--|
 | **UI** | `onboarding_legal_pack_step.dart` |
-| **Controller** | `ClientOnboardingController.markConsentComplete`, `markServiceAgreementComplete`, `markAcknowledgementComplete`, `uploadLegalOther` / `markLegalOtherComplete` |
+| **Controller** | Row `*Uploading`; Finish gated on `isLegalUploading`; legal-other validates label before pick |
 | **Files** | Consent + SA + optional Ack + **N dynamic “other” rows** (1 PDF each) |
 | **Flow** | Same as A3; legal-other also persists the list fact immediately after each row upload |
-| **Friction** | Multi-row variant of clinical — worst when staff attach several “other” docs |
+| **Was** | Finish could race in-flight uploads; legal-other opened picker before label validation |
 
-### A5. Contractor credentials — create evidence
+### A5. Contractor credentials — create evidence — ✅ Done (2026-10-04)
 
 | | |
 |--|--|
 | **UI** | `credential_create_view.dart` |
 | **Controller** | `CredentialsController.uploadEvidenceForCreate` |
 | **Files** | 1 per click; multiple evidence docs accumulate as `selectedEvidence` |
-| **Flow** | Upload evidence → pick → upload + **scan poll** → Save credential later with already-uploaded IDs |
-| **Related** | B2 (scan lock) |
+| **Flow (fixed)** | Pick → upload → add chip immediately → **background** scan poll; Create gated on `hasCleanEvidenceReady` |
+| **Related** | B2 |
 
-### A6. Contractor credentials — attach to existing
+### A6. Contractor credentials — attach to existing — ✅ Done (2026-10-04)
 
 | | |
 |--|--|
 | **UI** | `credential_detail_view.dart`, also credentials list |
-| **Controller** | `CredentialsController.attachEvidence` |
-| **Flow** | Pick → upload + link + scan poll (standalone action; no form submit) |
+| **Controller** | `CredentialsController.attachEvidence` uses `isUploadingEvidence` (not `isSaving` through poll) |
+| **Flow (fixed)** | Pick → upload → background scan poll → reload |
 
 ### A7. Contractor profile photo
 
@@ -109,7 +109,7 @@ These call sites start a server request as soon as the user finishes the file pi
 
 ## B. Related frictions (not only “upload on pick”)
 
-### B1. Global `isBusy` freezes care-plan chrome — ✅ Partially done (P0 clinical/NDIS)
+### B1. Global `isBusy` freezes care-plan chrome — ✅ Done (2026-10-04)
 
 **Why it hurt:** One clinical/NDIS/consent PDF upload sets store `isBusy`. `SupportPlanController.isBusy` ORs funding + clinical busy with save/load. Sticky Back / Save draft / Next (and funding sibling fields) disable for the whole wait.
 
@@ -117,17 +117,15 @@ These call sites start a server request as soon as the user finishes the file pi
 |-------|------|
 | Clinical busy | ~~`uploadClinicalPdf`~~ — picks no longer set `isBusy`; row `isUploading*` during Save |
 | Funding NDIS | ~~`uploadNdisPlanPdf`~~ — picks no longer set `isBusy`; `isUploadingNdisPdf` during Save |
-| Funding/consent busy | Still set by legal mark-complete (A3 / P1) |
-| Aggregated | `support_plan_controller.dart` → `isBusy` |
-| UI gates | `support_plan_view.dart`, `client_detail_view.dart` (`_CarePlanSticky`), `support_plan_funding_section.dart` (`enabled = !store.isBusy`) |
+| Funding/consent busy | Legal mark-complete uses row `*Uploading` only (no global `isBusy`) |
+| Aggregated | `support_plan_controller.dart` → `isBusy` (save/load only for these uploads) |
+| UI gates | Sticky no longer freezes on clinical / NDIS / legal PDF uploads |
 
-**P0 outcome:** Clinical + NDIS picks no longer freeze sticky nav. Remaining: consent/legal uploads (P1).
+### B2. Credential scan poll blocks the form (~60s) — ✅ Done (2026-10-04)
 
-### B2. Credential scan poll blocks the form (~60s)
+**Why it hurt:** `uploadEvidenceForCreate` / `attachEvidence` held `isSaving` through `DocumentPipeline.pollScanStatus` (≈ 2s × 30).
 
-**Why it hurts:** `uploadEvidenceForCreate` / `attachEvidence` hold `isSaving` through `DocumentPipeline.pollScanStatus` (≈ 2s × 30). Create form / submit stay locked until poll finishes or times out.
-
-**Direction:** Upload async; show scan status on the evidence chip; allow editing other fields; gate Save on “at least one clean doc” if required.
+**Fix:** Upload under `isUploadingEvidence` only; add evidence chip immediately; poll in background; Create gated on `hasCleanEvidenceReady` (all evidence clean).
 
 ### B3. Clinical upload vs toggle Save split — ✅ Done (2026-10-04)
 
@@ -135,13 +133,11 @@ These call sites start a server request as soon as the user finishes the file pi
 
 **Fix:** Pick never flips toggles. PDFs and bool flags both commit in `persistFacts` on Save draft / Activate. Helper copy notes PDF uploads apply on Save.
 
-### B4. Late permission / legal-version checks
+### B4. Late permission / legal-version checks — ✅ Done for P0/P1 surfaces (2026-10-04)
 
-**Why it hurts:** Clinical / NDIS / legal helper often call `_canUploadDocs()` (and consent may fetch current legal version) **after** the file picker. User can fill signer name, pick a PDF, then fail.
+**Why it hurt:** Clinical / NDIS / legal helper often called `_canUploadDocs()` (and consent legal version) **after** the file picker.
 
-**Contrast:** Credentials evidence checks capability **before** pick.
-
-**Direction:** Gate `onPick` / disable Choose when upload isn’t allowed; prefetch legal version on step enter.
+**Fix:** Clinical/NDIS/legal helper check permission (and consent legal version) **before** pick; care-plan UI disables Choose when `!canUploadDocs`; legal-other validates label before pick.
 
 ### B5. Onboarding Next = mandatory network persist
 
@@ -200,8 +196,8 @@ Ordered by user-visible pain × how often the surface is used during client setu
 |-----|------|-------------------|--------|
 | P0 | A1 clinical (+ B1 busy scope, B3 toggle split) | Hold PDFs locally; upload on Save draft / Activate; row-level progress only | ✅ Done (2026-10-04) |
 | P0 | A2 funding NDIS PDF | Align with onboarding deferral (`pick` pending → persist on Save) | ✅ Done (2026-10-04) |
-| P1 | A3 / A4 legal pack & care consent | Defer or parallelize; don’t freeze sticky nav; check perms before pick (B4) | |
-| P1 | A5 / A6 / B2 credentials | Non-blocking scan status; don’t lock whole create form | |
+| P1 | A3 / A4 legal pack & care consent | Row-level busy (keep mark-complete); don’t freeze sticky nav; check perms before pick (B4) | ✅ Done (2026-10-04) |
+| P1 | A5 / A6 / B2 credentials | Non-blocking scan status; don’t lock whole create form | ✅ Done (2026-10-04) |
 | P2 | A7 contractor photo | Match other profile fields (pending until Save) **or** keep immediate but don’t block unrelated edits | |
 | P2 | B5 / B6 onboarding Next & contacts | Product call: keep resume-safe step saves vs local draft wizard | |
 | P3 | B7 serial cascades | Parallel uploads where safe | |

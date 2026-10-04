@@ -87,6 +87,11 @@ class SupportPlanFundingConsentStore {
   final serviceAgreementComplete = false.obs;
   final acknowledgementComplete = false.obs;
   final consentSignerNameCtrl = TextEditingController();
+  final consentUploading = false.obs;
+  final serviceAgreementUploading = false.obs;
+  final acknowledgementUploading = false.obs;
+
+  bool get canUploadDocs => _canUploadDocs();
 
   ClientLegalUploadHelper get _legalHelper => ClientLegalUploadHelper(
     repository: _repository,
@@ -547,7 +552,7 @@ class SupportPlanFundingConsentStore {
 
   Future<bool> markConsentComplete({required String clientId}) async {
     errorMessage.value = null;
-    isBusy.value = true;
+    consentUploading.value = true;
     try {
       await _legalHelper.completeConsent(
         clientId: clientId,
@@ -567,13 +572,13 @@ class SupportPlanFundingConsentStore {
       errorMessage.value = 'Something went wrong. Please try again.';
       return false;
     } finally {
-      isBusy.value = false;
+      consentUploading.value = false;
     }
   }
 
   Future<bool> markServiceAgreementComplete({required String clientId}) async {
     errorMessage.value = null;
-    isBusy.value = true;
+    serviceAgreementUploading.value = true;
     try {
       await _legalHelper.completeServiceAgreement(clientId: clientId);
       serviceAgreementComplete.value = true;
@@ -585,13 +590,13 @@ class SupportPlanFundingConsentStore {
       errorMessage.value = 'Something went wrong. Please try again.';
       return false;
     } finally {
-      isBusy.value = false;
+      serviceAgreementUploading.value = false;
     }
   }
 
   Future<bool> markAcknowledgementComplete({required String clientId}) async {
     errorMessage.value = null;
-    isBusy.value = true;
+    acknowledgementUploading.value = true;
     try {
       await _legalHelper.completeAcknowledgement(clientId: clientId);
       acknowledgementComplete.value = true;
@@ -603,7 +608,7 @@ class SupportPlanFundingConsentStore {
       errorMessage.value = 'Something went wrong. Please try again.';
       return false;
     } finally {
-      isBusy.value = false;
+      acknowledgementUploading.value = false;
     }
   }
 

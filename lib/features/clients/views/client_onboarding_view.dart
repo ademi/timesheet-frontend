@@ -99,15 +99,16 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                         controller.step.value ==
                         ClientOnboardingController.maxStep;
                     final skipCarer = controller.showSkipCarer;
+                    final stickyBusy =
+                        controller.isSaving.value ||
+                        (isLast && controller.isLegalUploading);
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (skipCarer)
                           TextButton(
                             onPressed:
-                                controller.isSaving.value
-                                    ? null
-                                    : controller.skipCarer,
+                                stickyBusy ? null : controller.skipCarer,
                             child: const Text('Skip carer'),
                           ),
                         Row(
@@ -115,14 +116,15 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                             if (controller.step.value > 0)
                               OutlinedButton(
                                 onPressed:
-                                    controller.isSaving.value
+                                    stickyBusy
                                         ? null
                                         : controller.previousStep,
                                 child: const Text('Back'),
                               ),
                             const Spacer(),
                             AsyncElevatedButton(
-                              onPressed: controller.nextStep,
+                              onPressed:
+                                  stickyBusy ? null : controller.nextStep,
                               isLoading: controller.isSaving.value,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.cta,

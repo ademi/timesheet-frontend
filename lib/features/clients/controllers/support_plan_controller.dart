@@ -37,6 +37,12 @@ class SupportPlanController extends GetxController {
              repository: repository,
              documentPipeline: documentPipeline,
              pickPdfBytes: pickPdfBytes,
+             canUploadDocs:
+                 () =>
+                     session?.hasPermission(AppPermissions.documentsUpload) ==
+                         true ||
+                     session?.hasPermission(AppPermissions.clientsDocsManage) ==
+                         true,
            ),
        clinical =
            clinical ??
@@ -44,6 +50,12 @@ class SupportPlanController extends GetxController {
              repository: repository,
              documentPipeline: documentPipeline,
              pickPdfBytes: pickPdfBytes,
+             canUploadDocs:
+                 () =>
+                     session?.hasPermission(AppPermissions.documentsUpload) ==
+                         true ||
+                     session?.hasPermission(AppPermissions.clientsDocsManage) ==
+                         true,
            ) {
     if (planId != null && planId.isNotEmpty) {
       this.planId.value = planId;

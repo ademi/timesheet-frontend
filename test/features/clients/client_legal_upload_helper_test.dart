@@ -124,6 +124,64 @@ void main() {
     );
   });
 
+  test('completeConsent checks permission before pick', () async {
+    var pickCalled = false;
+    final helper = ClientLegalUploadHelper(
+      repository: repo,
+      pipeline: pipeline,
+      canUploadDocs: () => false,
+      pickPdfBytes: () async {
+        pickCalled = true;
+        return (name: 'consent.pdf', bytes: [1, 2, 3]);
+      },
+    );
+
+    await expectLater(
+      helper.completeConsent(
+        clientId: 'c1',
+        participantOrRepName: 'Sam Parent',
+      ),
+      throwsA(
+        isA<AppFailure>().having((e) => e.code, 'code', 'forbidden'),
+      ),
+    );
+    expect(pickCalled, isFalse);
+    verifyNever(() => repo.getLegalDocumentCurrent(any()));
+  });
+
+  test('completeConsent fetches legal version before pick', () async {
+    var pickCalled = false;
+    when(() => repo.getLegalDocumentCurrent(any())).thenAnswer(
+      (_) async => throw const AppFailure(
+        code: 'legal_document_unavailable',
+        message: 'missing',
+        presentation: AppFailurePresentation.inline,
+        statusCode: 404,
+      ),
+    );
+
+    final helper = ClientLegalUploadHelper(
+      repository: repo,
+      pipeline: pipeline,
+      pickPdfBytes: () async {
+        pickCalled = true;
+        return (name: 'consent.pdf', bytes: [1, 2, 3]);
+      },
+    );
+
+    await expectLater(
+      helper.completeConsent(
+        clientId: 'c1',
+        participantOrRepName: 'Sam Parent',
+      ),
+      throwsA(isA<AppFailure>()),
+    );
+    expect(pickCalled, isFalse);
+    verify(
+      () => repo.getLegalDocumentCurrent(OnboardingKeys.consentAgreementDocKey),
+    ).called(1);
+  });
+
   test('completeServiceAgreement upserts document_id fact', () async {
     when(
       () => pipeline.uploadEvidence(

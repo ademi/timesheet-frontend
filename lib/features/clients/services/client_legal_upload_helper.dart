@@ -32,6 +32,23 @@ class ClientLegalUploadHelper {
       e.code == 'legal_version_unavailable' ||
       e.code == 'legal_document_unavailable';
 
+  void _ensureCanUpload() {
+    if (_pipeline == null) {
+      throw const AppFailure(
+        code: 'unknown',
+        message: 'Document upload is not configured.',
+        presentation: AppFailurePresentation.inline,
+      );
+    }
+    if (!_canUploadDocs()) {
+      throw const AppFailure(
+        code: 'forbidden',
+        message: 'Missing documents.upload / clients.docs.manage permission.',
+        presentation: AppFailurePresentation.inline,
+      );
+    }
+  }
+
   Future<void> completeConsent({
     required String clientId,
     required String participantOrRepName,
@@ -44,6 +61,11 @@ class ClientLegalUploadHelper {
         presentation: AppFailurePresentation.inline,
       );
     }
+    // Permission / pipeline / legal version before opening the picker (B4).
+    _ensureCanUpload();
+    final legalDoc = await _repository.getLegalDocumentCurrent(
+      OnboardingKeys.consentAgreementDocKey,
+    );
     final bytes = await _pickPdfBytes();
     if (bytes == null) {
       throw const AppFailure(
@@ -59,9 +81,6 @@ class ClientLegalUploadHelper {
       contentType: 'application/pdf',
       fileBytes: bytes.bytes,
     );
-    final legalDoc = await _repository.getLegalDocumentCurrent(
-      OnboardingKeys.consentAgreementDocKey,
-    );
     await _repository.acceptClientLegal(
       clientId,
       OnboardingKeys.consentAgreement,
@@ -76,6 +95,7 @@ class ClientLegalUploadHelper {
   }
 
   Future<void> completeServiceAgreement({required String clientId}) async {
+    _ensureCanUpload();
     final bytes = await _pickPdfBytes();
     if (bytes == null) {
       throw const AppFailure(
@@ -99,6 +119,7 @@ class ClientLegalUploadHelper {
   }
 
   Future<void> completeAcknowledgement({required String clientId}) async {
+    _ensureCanUpload();
     final bytes = await _pickPdfBytes();
     if (bytes == null) {
       throw const AppFailure(
@@ -144,6 +165,7 @@ class ClientLegalUploadHelper {
         presentation: AppFailurePresentation.inline,
       );
     }
+    _ensureCanUpload();
     return _uploadClientFile(
       clientId: clientId,
       category: OnboardingKeys.legalOtherCategory,
@@ -160,22 +182,8 @@ class ClientLegalUploadHelper {
     required String contentType,
     required List<int> fileBytes,
   }) async {
-    final pipeline = _pipeline;
-    if (pipeline == null) {
-      throw const AppFailure(
-        code: 'unknown',
-        message: 'Document upload is not configured.',
-        presentation: AppFailurePresentation.inline,
-      );
-    }
-    if (!_canUploadDocs()) {
-      throw const AppFailure(
-        code: 'forbidden',
-        message: 'Missing documents.upload / clients.docs.manage permission.',
-        presentation: AppFailurePresentation.inline,
-      );
-    }
-    final doc = await pipeline.uploadEvidence(
+    _ensureCanUpload();
+    final doc = await _pipeline!.uploadEvidence(
       request: UploadUrlRequest(
         ownerType: 'client',
         ownerId: clientId,

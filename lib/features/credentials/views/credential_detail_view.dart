@@ -118,13 +118,14 @@ class CredentialDetailView extends GetView<CredentialsController> {
                   if (controller.canManage) ...[
                     ElevatedButton.icon(
                       onPressed:
-                          controller.isSaving.value
+                          controller.isUploadingEvidence.value ||
+                                  controller.isSaving.value
                               ? null
                               : () => controller.attachEvidence(credential),
                       icon: const Icon(Icons.upload_file),
                       label: Text(
-                        controller.isSaving.value
-                            ? 'Uploading / scanning…'
+                        controller.isUploadingEvidence.value
+                            ? 'Uploading…'
                             : 'Attach evidence',
                       ),
                       style: ElevatedButton.styleFrom(

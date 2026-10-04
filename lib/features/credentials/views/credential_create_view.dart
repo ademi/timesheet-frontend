@@ -68,6 +68,7 @@ class CredentialCreateView extends GetView<CredentialsController> {
                     ],
                     onChanged:
                         controller.isSaving.value ||
+                                controller.isUploadingEvidence.value ||
                                 controller.hasSelectedEvidence
                             ? null
                             : (v) {
@@ -130,18 +131,32 @@ class CredentialCreateView extends GetView<CredentialsController> {
                   for (final document in controller.selectedEvidence)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.description_outlined),
+                      leading: Icon(
+                        document.isScanClean
+                            ? Icons.verified_outlined
+                            : document.isScanBlocked
+                            ? Icons.error_outline
+                            : Icons.hourglass_top,
+                      ),
                       title: Text(document.filename),
-                      subtitle: Text('Security scan: ${document.scanStatus}'),
+                      subtitle: Text(
+                        document.isScanClean
+                            ? 'Security scan: clean'
+                            : document.isScanBlocked
+                            ? 'Security scan: blocked'
+                            : 'Security scan: ${document.scanStatus}…',
+                      ),
                     ),
                   OutlinedButton.icon(
                     onPressed:
-                        controller.isSaving.value
+                        controller.isUploadingEvidence.value
                             ? null
                             : controller.uploadEvidenceForCreate,
                     icon: const Icon(Icons.upload_file),
                     label: Text(
-                      controller.hasSelectedEvidence
+                      controller.isUploadingEvidence.value
+                          ? 'Uploading…'
+                          : controller.hasSelectedEvidence
                           ? 'Add another evidence file'
                           : 'Upload evidence file',
                     ),
@@ -189,7 +204,8 @@ class CredentialCreateView extends GetView<CredentialsController> {
                   ElevatedButton(
                     onPressed:
                         controller.isSaving.value ||
-                                !controller.hasSelectedEvidence
+                                controller.isUploadingEvidence.value ||
+                                !controller.hasCleanEvidenceReady
                             ? null
                             : () async {
                               final created =
@@ -208,14 +224,17 @@ class CredentialCreateView extends GetView<CredentialsController> {
                       minimumSize: const Size.fromHeight(48),
                     ),
                     child:
-                        controller.isSaving.value &&
-                                controller.uploadProgress.value == null
+                        controller.isSaving.value
                             ? const SizedBox(
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                            : const Text('Create'),
+                            : Text(
+                              controller.hasPendingEvidenceScan
+                                  ? 'Waiting for scan…'
+                                  : 'Create',
+                            ),
                   ),
                 ],
               ),

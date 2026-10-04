@@ -81,6 +81,34 @@ class DocumentOut {
 
   bool get isScanBlocked => scanStatus == 'blocked';
 
+  DocumentOut copyWith({
+    String? id,
+    String? ownerType,
+    String? ownerId,
+    String? filename,
+    String? contentType,
+    int? sizeBytes,
+    String? scanStatus,
+    String? category,
+    String? credentialId,
+    String? verificationStatus,
+    DateTime? createdAt,
+  }) {
+    return DocumentOut(
+      id: id ?? this.id,
+      ownerType: ownerType ?? this.ownerType,
+      ownerId: ownerId ?? this.ownerId,
+      filename: filename ?? this.filename,
+      contentType: contentType ?? this.contentType,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
+      scanStatus: scanStatus ?? this.scanStatus,
+      category: category ?? this.category,
+      credentialId: credentialId ?? this.credentialId,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   factory DocumentOut.fromJson(Map<String, dynamic> json) {
     return DocumentOut(
       id: json['id'].toString(),

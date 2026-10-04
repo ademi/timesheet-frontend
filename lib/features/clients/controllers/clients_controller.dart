@@ -1605,6 +1605,7 @@ class ClientsController extends GetxController
         planId: supportPlan.value?.id,
         clientName: client.fullName,
         ndisNumber: ndisNumber,
+        documentPipeline: _pipeline,
       ),
     );
   }

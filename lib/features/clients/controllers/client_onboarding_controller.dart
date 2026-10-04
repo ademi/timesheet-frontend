@@ -93,6 +93,13 @@ class ClientOnboardingController extends GetxController
   /// Row ids currently uploading a legal-other PDF.
   final legalOtherUploading = <String>{}.obs;
 
+  /// True while any Legal pack PDF upload is in flight (Finish must wait).
+  bool get isLegalUploading =>
+      consentUploading.value ||
+      serviceAgreementUploading.value ||
+      acknowledgementUploading.value ||
+      legalOtherUploading.isNotEmpty;
+
   // ── Identity ──────────────────────────────────────────────────────────
   final fullName = TextEditingController();
   final email = TextEditingController();
@@ -1999,6 +2006,10 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = 'No client created yet.';
       return false;
     }
+    if (isLegalUploading) {
+      errorMessage.value = 'Wait for legal document uploads to finish.';
+      return false;
+    }
 
     final missing = <String>[];
     if (!consentComplete.value) missing.add('Consent');
@@ -2216,6 +2227,35 @@ class ClientOnboardingController extends GetxController
   Future<bool> markLegalOtherComplete(String rowId) async {
     errorMessage.value = null;
     if (legalOtherUploading.contains(rowId)) return false;
+
+    // Validate label / type before opening the picker (B4).
+    final index = legalOtherDocs.indexWhere((e) => e.id == rowId);
+    if (index < 0) {
+      errorMessage.value = 'Document row not found.';
+      return false;
+    }
+    final row = legalOtherDocs[index];
+    final label = row.displayLabel;
+    if (label == null) {
+      errorMessage.value =
+          row.typeKey == 'other'
+              ? 'Enter a name for this Other document before uploading.'
+              : 'Select a document type before uploading.';
+      return false;
+    }
+    if (row.typeKey == 'other' &&
+        label.length > legalOtherMaxCustomLabelLength) {
+      errorMessage.value =
+          'Other document name must be $legalOtherMaxCustomLabelLength '
+          'characters or fewer.';
+      return false;
+    }
+    if (!canUploadDocs) {
+      errorMessage.value =
+          'Missing documents.upload / clients.docs.manage permission.';
+      return false;
+    }
+
     legalOtherUploading.add(rowId);
     legalOtherUploading.refresh();
     try {

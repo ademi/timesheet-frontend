@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -44,6 +46,8 @@ class CredentialsController extends GetxController {
   final items = <CredentialOut>[].obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
+  /// True while an evidence file is transferring (not during scan poll).
+  final isUploadingEvidence = false.obs;
   final errorMessage = RxnString();
   final lastScanStatus = RxnString();
   final lastOpenedViaProxy = false.obs;
@@ -80,6 +84,14 @@ class CredentialsController extends GetxController {
       _session.contractorId.value ?? _session.claims?.contractorId;
 
   bool get hasSelectedEvidence => selectedEvidence.isNotEmpty;
+
+  /// Create requires every attached evidence file to finish a clean scan.
+  bool get hasCleanEvidenceReady =>
+      selectedEvidence.isNotEmpty &&
+      selectedEvidence.every((doc) => doc.isScanClean);
+
+  bool get hasPendingEvidenceScan =>
+      selectedEvidence.any((doc) => doc.isScanPending);
 
   List<DocumentOut> evidenceFor(CredentialOut credential) {
     return evidenceByCredentialId[credential.id] ?? const [];
@@ -262,6 +274,14 @@ class CredentialsController extends GetxController {
       _toast(errorMessage.value!);
       return null;
     }
+    if (!hasCleanEvidenceReady) {
+      errorMessage.value =
+          hasPendingEvidenceScan
+              ? 'Wait for security scan to finish on all evidence files.'
+              : 'Evidence must pass security scan before saving.';
+      _toast(errorMessage.value!);
+      return null;
+    }
 
     isSaving.value = true;
     errorMessage.value = null;
@@ -321,7 +341,7 @@ class CredentialsController extends GetxController {
       return;
     }
 
-    isSaving.value = true;
+    isUploadingEvidence.value = true;
     errorMessage.value = null;
     lastScanStatus.value = 'pending';
     try {
@@ -339,31 +359,51 @@ class CredentialsController extends GetxController {
           if (total > 0) uploadProgress.value = sent / total;
         },
       );
-      final polled = await _pipeline.pollScanStatus(
-        documentId: doc.id,
-        ownerType: 'contractor',
-        ownerId: ownerId,
-      );
-      lastScanStatus.value = polled.scanStatus;
-      if (polled.isScanBlocked) {
-        errorMessage.value =
-            'File failed security scan. Re-upload a clean file.';
-        return;
-      }
-      if (!polled.isScanClean) {
-        errorMessage.value =
-            'Security scan still pending. Wait for scan to finish, then retry.';
-        _toast(errorMessage.value!);
-        return;
-      }
-      selectedEvidence.add(polled);
+      selectedEvidence.add(doc);
+      lastScanStatus.value = doc.scanStatus;
+      // Unlock the form; scan continues in the background (B2).
+      unawaited(_pollCreateEvidenceScan(doc: doc, ownerId: ownerId));
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
       uploadProgress.value = null;
-      isSaving.value = false;
+      isUploadingEvidence.value = false;
+    }
+  }
+
+  Future<void> _pollCreateEvidenceScan({
+    required DocumentOut doc,
+    required String ownerId,
+  }) async {
+    try {
+      final polled = await _pipeline.pollScanStatus(
+        documentId: doc.id,
+        ownerType: 'contractor',
+        ownerId: ownerId,
+      );
+      lastScanStatus.value = polled.scanStatus;
+      final index = selectedEvidence.indexWhere((e) => e.id == doc.id);
+      if (index < 0) return;
+      if (polled.isScanBlocked) {
+        selectedEvidence.removeAt(index);
+        errorMessage.value =
+            'File failed security scan. Re-upload a clean file.';
+        _toast(errorMessage.value!);
+        return;
+      }
+      selectedEvidence[index] = polled;
+      selectedEvidence.refresh();
+      if (!polled.isScanClean) {
+        errorMessage.value =
+            'Security scan still pending. Wait for scan to finish, then retry.';
+        _toast(errorMessage.value!);
+      }
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
     }
   }
 
@@ -392,7 +432,7 @@ class CredentialsController extends GetxController {
     }
 
     final contentType = _guessContentType(file.extension, file.name);
-    isSaving.value = true;
+    isUploadingEvidence.value = true;
     errorMessage.value = null;
     lastScanStatus.value = 'pending';
     try {
@@ -412,8 +452,29 @@ class CredentialsController extends GetxController {
         },
       );
       lastScanStatus.value = doc.scanStatus;
+      unawaited(
+        _pollAttachedEvidenceScan(
+          documentId: doc.id,
+          ownerId: ownerId,
+        ),
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      uploadProgress.value = null;
+      isUploadingEvidence.value = false;
+    }
+  }
+
+  Future<void> _pollAttachedEvidenceScan({
+    required String documentId,
+    required String ownerId,
+  }) async {
+    try {
       final polled = await _pipeline.pollScanStatus(
-        documentId: doc.id,
+        documentId: documentId,
         ownerType: 'contractor',
         ownerId: ownerId,
       );
@@ -421,15 +482,13 @@ class CredentialsController extends GetxController {
       if (polled.isScanBlocked) {
         errorMessage.value =
             'File failed security scan. Re-upload a clean file.';
+        _toast(errorMessage.value!);
       }
       await load();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (e) {
       errorMessage.value = e.toString();
-    } finally {
-      uploadProgress.value = null;
-      isSaving.value = false;
     }
   }
 
