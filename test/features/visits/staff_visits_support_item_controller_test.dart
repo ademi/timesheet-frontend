@@ -33,6 +33,8 @@ final _now = DateTime.utc(2026, 8, 13, 9);
 
 VisitOut _visit({
   String status = 'scheduled',
+  String paymentStatus = 'unpaid',
+  String invoiceStatus = 'pending',
   String? supportItemCode,
   String? supportItemName,
   List<VisitTaskOut> tasks = const [],
@@ -50,7 +52,8 @@ VisitOut _visit({
     longitude: 0,
     geofenceRadiusM: 100,
     geofenceMode: 'informational',
-    paymentStatus: 'unpaid',
+    paymentStatus: paymentStatus,
+    invoiceStatus: invoiceStatus,
     createdAt: _now,
     updatedAt: _now,
     supportItemCode: supportItemCode,
@@ -141,33 +144,61 @@ void main() {
     expect(controller.canEditVisitSupportItem, isTrue);
   });
 
-  test('canEditVisitSupportItem is false when completed', () {
+  test('canEditVisitSupportItem is true when completed unpaid unexported', () {
     when(() => session.hasPermission(AppPermissions.shiftsManage))
         .thenReturn(true);
     controller.selected.value = _visit(status: 'completed');
+    expect(controller.canEditVisitSupportItem, isTrue);
+  });
+
+  test('canEditVisitSupportItem is false when completed and exported', () {
+    when(() => session.hasPermission(AppPermissions.shiftsManage))
+        .thenReturn(true);
+    controller.selected.value = _visit(
+      status: 'completed',
+      invoiceStatus: 'exported',
+    );
     expect(controller.canEditVisitSupportItem, isFalse);
   });
 
   test('canEditVisitSupportItem is false when payment is not unpaid', () {
-    controller.selected.value = _visit().copyWith();
-    controller.selected.value = VisitOut(
-      id: 'visit-1',
-      tenantId: 'tenant-1',
-      jobId: 'job-1',
-      contractorId: 'contractor-1',
-      scheduledStart: _now,
-      scheduledEnd: _now.add(const Duration(hours: 1)),
-      status: 'scheduled',
-      source: 'manual',
-      latitude: 0,
-      longitude: 0,
-      geofenceRadiusM: 100,
-      geofenceMode: 'informational',
-      paymentStatus: 'paid',
-      createdAt: _now,
-      updatedAt: _now,
-    );
+    controller.selected.value = _visit(paymentStatus: 'paid');
     expect(controller.canEditVisitSupportItem, isFalse);
+  });
+
+  test('setVisitSupportItemDraft does not patch until save', () async {
+    controller.selected.value = _visit();
+    controller.setVisitSupportItemDraft(
+      supportItemCode: '01_011_0107_1_1',
+      supportItemName: 'Self care',
+    );
+
+    expect(controller.hasUnsavedVisitSupportItem, isTrue);
+    expect(controller.editingVisitSupportItemCode.value, '01_011_0107_1_1');
+    verifyNever(() => visits.patchVisitSupportItem(any(), any()));
+  });
+
+  test('saveVisitSupportItem patches visit and clears dirty state', () async {
+    final initial = _visit();
+    final updated = _visit(
+      supportItemCode: '01_011_0107_1_1',
+      supportItemName: 'Self care',
+    );
+    controller.selected.value = initial;
+    controller.setVisitSupportItemDraft(
+      supportItemCode: '01_011_0107_1_1',
+      supportItemName: 'Self care',
+    );
+
+    when(
+      () => visits.patchVisitSupportItem('visit-1', any()),
+    ).thenAnswer((_) async => updated);
+
+    await controller.saveVisitSupportItem();
+
+    expect(controller.selected.value?.supportItemCode, '01_011_0107_1_1');
+    expect(controller.editingVisitSupportItemCode.value, '01_011_0107_1_1');
+    expect(controller.hasUnsavedVisitSupportItem, isFalse);
   });
 
   test('updateVisitSupportItem patches visit and syncs editor', () async {

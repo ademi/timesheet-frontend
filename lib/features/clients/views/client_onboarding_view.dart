@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
@@ -24,6 +26,7 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.staffClients),
         title: Obx(() {
           final i = controller.step.value;
           final label =
@@ -96,15 +99,16 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                         controller.step.value ==
                         ClientOnboardingController.maxStep;
                     final skipCarer = controller.showSkipCarer;
+                    final stickyBusy =
+                        controller.isSaving.value ||
+                        (isLast && controller.isLegalUploading);
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (skipCarer)
                           TextButton(
                             onPressed:
-                                controller.isSaving.value
-                                    ? null
-                                    : controller.skipCarer,
+                                stickyBusy ? null : controller.skipCarer,
                             child: const Text('Skip carer'),
                           ),
                         Row(
@@ -112,14 +116,15 @@ class ClientOnboardingView extends GetView<ClientOnboardingController> {
                             if (controller.step.value > 0)
                               OutlinedButton(
                                 onPressed:
-                                    controller.isSaving.value
+                                    stickyBusy
                                         ? null
                                         : controller.previousStep,
                                 child: const Text('Back'),
                               ),
                             const Spacer(),
                             AsyncElevatedButton(
-                              onPressed: controller.nextStep,
+                              onPressed:
+                                  stickyBusy ? null : controller.nextStep,
                               isLoading: controller.isSaving.value,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.cta,

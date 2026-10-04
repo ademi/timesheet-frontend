@@ -1,9 +1,14 @@
+import 'dart:async';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/widgets/app_date_field.dart';
+import '../../../shared/widgets/app_file_field.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../documents/sync/media_outbox_models.dart';
 import '../data/models/visit_models.dart';
 
 /// Renders a visit form template from `schema_json.fields` and submits payload.
@@ -15,6 +20,15 @@ class VisitSchemaForm extends StatefulWidget {
     required this.isSubmitting,
     required this.isSubmitted,
     required this.onSubmit,
+    this.visitId,
+    this.onEnqueueFile,
+    this.pendingFileForField,
+    this.ackedDocumentIdForField,
+    this.onRetryMedia,
+    this.initialDraftPayload,
+    this.onDraftChanged,
+    this.syncStatusLabel,
+    this.onRetryFormSync,
   });
 
   final VisitFormRequirement requirement;
@@ -22,6 +36,28 @@ class VisitSchemaForm extends StatefulWidget {
   final bool isSubmitting;
   final bool isSubmitted;
   final Future<void> Function(Map<String, dynamic> payload) onSubmit;
+
+  /// When set with [onEnqueueFile], file fields use the durable media outbox.
+  final String? visitId;
+  final Future<void> Function({
+    required String fieldId,
+    required String filename,
+    required String contentType,
+    required List<int> bytes,
+  })? onEnqueueFile;
+  final MediaOutboxItem? Function(String fieldId)? pendingFileForField;
+  final String? Function(String fieldId)? ackedDocumentIdForField;
+  final Future<void> Function()? onRetryMedia;
+
+  /// B2: hydrate controllers from durable draft after process kill.
+  final Map<String, dynamic>? initialDraftPayload;
+
+  /// B2: called (debounced) whenever the in-memory payload changes.
+  final Future<void> Function(Map<String, dynamic> payload)? onDraftChanged;
+
+  /// B2 honest sync chip: e.g. Draft saved / Pending sync / Sync failed.
+  final String? syncStatusLabel;
+  final Future<void> Function()? onRetryFormSync;
 
   @override
   State<VisitSchemaForm> createState() => _VisitSchemaFormState();
@@ -32,6 +68,7 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
   final _boolValues = <String, bool>{};
   final _selectedOptions = <String, String?>{};
   String? _validationError;
+  Timer? _draftDebounce;
 
   List<VisitFormFieldSchema> get _fields => widget.requirement.fields;
 
@@ -39,6 +76,7 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
   void initState() {
     super.initState();
     _ensureControllers();
+    _hydrateFromDraft(widget.initialDraftPayload);
   }
 
   @override
@@ -51,13 +89,83 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
       _boolValues.clear();
       _selectedOptions.clear();
       _ensureControllers();
+      _hydrateFromDraft(widget.initialDraftPayload);
     }
   }
 
   @override
   void dispose() {
+    _draftDebounce?.cancel();
     _disposeControllers();
     super.dispose();
+  }
+
+  void _hydrateFromDraft(Map<String, dynamic>? draft) {
+    if (draft == null || draft.isEmpty) return;
+    for (final field in _fields) {
+      final value = draft[field.id];
+      if (value == null) continue;
+      if (field.type == 'boolean') {
+        _boolValues[field.id] = value == true;
+        continue;
+      }
+      if (field.options.isNotEmpty &&
+          (field.type == 'text' || field.type == 'textarea')) {
+        _selectedOptions[field.id] = value.toString();
+        continue;
+      }
+      final c = _controllers[field.id];
+      if (c != null && c.text.isEmpty) {
+        c.text = value.toString();
+      }
+    }
+  }
+
+  void _scheduleDraftSave() {
+    if (widget.onDraftChanged == null) return;
+    _draftDebounce?.cancel();
+    _draftDebounce = Timer(const Duration(milliseconds: 400), () {
+      final payload = _buildPayloadLoose();
+      if (payload.isEmpty) return;
+      widget.onDraftChanged!(payload);
+    });
+  }
+
+  /// Like [_buildPayload] but never fails validation — for autosave only.
+  Map<String, dynamic> _buildPayloadLoose() {
+    final payload = <String, dynamic>{};
+    for (final field in _fields) {
+      if (field.type == 'boolean') {
+        payload[field.id] = _boolValues[field.id] ?? false;
+        continue;
+      }
+      if (field.options.isNotEmpty &&
+          (field.type == 'text' || field.type == 'textarea')) {
+        final selected = _selectedOptions[field.id];
+        if (selected != null && selected.isNotEmpty) {
+          payload[field.id] = selected;
+        }
+        continue;
+      }
+      if (field.type == 'file') {
+        final acked = widget.ackedDocumentIdForField?.call(field.id);
+        final text = _controllers[field.id]?.text.trim() ?? '';
+        final resolved = (acked != null && acked.isNotEmpty)
+            ? acked
+            : (text.isNotEmpty ? text : null);
+        if (resolved != null) payload[field.id] = resolved;
+        continue;
+      }
+      final text = _controllers[field.id]?.text.trim() ?? '';
+      if (text.isEmpty) continue;
+      if (field.type == 'number') {
+        final n = num.tryParse(text);
+        if (n != null) payload[field.id] = n;
+      } else {
+        payload[field.id] = text;
+      }
+    }
+    return payload;
   }
 
   void _ensureControllers() {
@@ -71,7 +179,11 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
         _selectedOptions.putIfAbsent(field.id, () => null);
         continue;
       }
-      _controllers.putIfAbsent(field.id, TextEditingController.new);
+      _controllers.putIfAbsent(field.id, () {
+        final c = TextEditingController();
+        c.addListener(_scheduleDraftSave);
+        return c;
+      });
     }
   }
 
@@ -102,13 +214,25 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
         continue;
       }
       if (field.type == 'file') {
+        final acked = widget.ackedDocumentIdForField?.call(field.id);
+        final pending = widget.pendingFileForField?.call(field.id);
         final text = _controllers[field.id]?.text.trim() ?? '';
-        if (field.required && text.isEmpty) {
+        final resolved = (acked != null && acked.isNotEmpty)
+            ? acked
+            : (text.isNotEmpty ? text : null);
+        if (field.required &&
+            resolved == null &&
+            pending == null) {
           _validationError =
-              '${field.label} is required (enter a file name / reference)';
+              '${field.label} is required — attach a file and wait for upload';
           return null;
         }
-        if (text.isNotEmpty) payload[field.id] = text;
+        if (pending != null && !pending.isTerminalFailure) {
+          _validationError =
+              '${field.label} is still uploading — wait or retry before submit';
+          return null;
+        }
+        if (resolved != null) payload[field.id] = resolved;
         continue;
       }
 
@@ -193,9 +317,29 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
                                   : AppColors.textMuted,
                         ),
                       ),
+                      if (widget.syncStatusLabel != null &&
+                          !widget.isSubmitted) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.syncStatusLabel!,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: widget.syncStatusLabel!.contains('failed')
+                                ? AppColors.error
+                                : AppColors.textMuted,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
+                if (widget.onRetryFormSync != null &&
+                    widget.syncStatusLabel?.contains('failed') == true)
+                  TextButton(
+                    onPressed: widget.isSubmitting ? null : widget.onRetryFormSync,
+                    child: const Text('Retry'),
+                  ),
                 TextButton(
                   onPressed:
                       !widget.canSubmit ||
@@ -273,7 +417,10 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
         onChanged:
             widget.isSubmitted
                 ? null
-                : (v) => setState(() => _boolValues[field.id] = v ?? false),
+                : (v) {
+                    setState(() => _boolValues[field.id] = v ?? false);
+                    _scheduleDraftSave();
+                  },
       );
     }
 
@@ -293,7 +440,10 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
         onChanged:
             widget.isSubmitted
                 ? null
-                : (v) => setState(() => _selectedOptions[field.id] = v),
+                : (v) {
+                    setState(() => _selectedOptions[field.id] = v);
+                    _scheduleDraftSave();
+                  },
       );
     }
 
@@ -319,6 +469,10 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
     final isMultiline = field.type == 'textarea';
     final isFile = field.type == 'file';
 
+    if (isFile && widget.onEnqueueFile != null) {
+      return _buildFileField(field, label);
+    }
+
     return TextField(
       controller: _controllers[field.id],
       enabled: !widget.isSubmitted,
@@ -339,5 +493,112 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
         isDense: true,
       ),
     );
+  }
+
+  Widget _buildFileField(VisitFormFieldSchema field, String label) {
+    final pending = widget.pendingFileForField?.call(field.id);
+    final acked = widget.ackedDocumentIdForField?.call(field.id);
+    final ctrl = _controllers[field.id];
+    if (acked != null && acked.isNotEmpty && ctrl != null && ctrl.text != acked) {
+      ctrl.text = acked;
+    }
+    final displayName = pending?.filename ??
+        (acked != null
+            ? 'Uploaded'
+            : (ctrl?.text.isNotEmpty == true ? ctrl!.text : null));
+    String? helper;
+    if (pending != null) {
+      if (pending.isTerminalFailure) {
+        helper = pending.lastError ?? 'Upload failed';
+      } else if (pending.stage == MediaOutboxStage.uploading) {
+        final pct = (pending.uploadProgress * 100).round();
+        helper = 'Uploading… $pct%';
+      } else if (pending.stage == MediaOutboxStage.failed) {
+        helper = pending.lastError ?? 'Upload pending retry';
+      } else {
+        helper = 'Queued for upload';
+      }
+    } else if (acked != null) {
+      helper = 'Upload complete';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppFileField(
+          label: label,
+          fileName: displayName,
+          enabled: !widget.isSubmitted,
+          helperText: helper,
+          errorText: pending?.isTerminalFailure == true
+              ? (pending!.lastError ?? 'Upload failed')
+              : null,
+          onPick: () => _pickAndEnqueue(field),
+          onClear: widget.isSubmitted
+              ? null
+              : () {
+                  ctrl?.clear();
+                  setState(() {});
+                },
+        ),
+        if (pending != null &&
+            (pending.stage == MediaOutboxStage.failed ||
+                pending.isTerminalFailure) &&
+            widget.onRetryMedia != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () async {
+                await widget.onRetryMedia!();
+                setState(() {});
+              },
+              child: const Text('Retry upload'),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _pickAndEnqueue(VisitFormFieldSchema field) async {
+    final enqueue = widget.onEnqueueFile;
+    if (enqueue == null) return;
+    final result = await FilePicker.platform.pickFiles(withData: true);
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      setState(() => _validationError = 'Could not read file bytes.');
+      return;
+    }
+    final name = file.name;
+    final ext = file.extension?.toLowerCase();
+    final contentType = _guessContentType(ext, name);
+    await enqueue(
+      fieldId: field.id,
+      filename: name,
+      contentType: contentType,
+      bytes: bytes,
+    );
+    _controllers[field.id]?.text = name;
+    setState(() => _validationError = null);
+  }
+
+  static String _guessContentType(String? ext, String name) {
+    switch (ext) {
+      case 'png':
+        return 'image/png';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'webp':
+        return 'image/webp';
+      case 'pdf':
+        return 'application/pdf';
+      case 'mp4':
+        return 'video/mp4';
+      default:
+        if (name.toLowerCase().endsWith('.pdf')) return 'application/pdf';
+        return 'application/octet-stream';
+    }
   }
 }

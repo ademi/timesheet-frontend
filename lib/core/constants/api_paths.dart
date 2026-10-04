@@ -130,6 +130,10 @@ abstract final class ApiPaths {
   static String clientSites(String id) => '${client(id)}/sites';
   static String clientSite(String id, String siteId) =>
       '${clientSites(id)}/$siteId';
+  static String clientSiteStops(String id, String siteId) =>
+      '${clientSite(id, siteId)}/stops';
+  static String clientSiteStop(String id, String siteId, String stopId) =>
+      '${clientSiteStops(id, siteId)}/$stopId';
   static String clientContacts(String id) => '${client(id)}/contacts';
   static String clientContact(String id, String contactId) =>
       '${clientContacts(id)}/$contactId';
@@ -200,6 +204,8 @@ abstract final class ApiPaths {
       '$attendanceSyncConflicts/$id/discard';
   static String visit(String id) => '$visits/$id';
   static String visitCancel(String id) => '${visit(id)}/cancel';
+  static const cancellations = '$_v1/cancellations';
+  static String cancellation(String id) => '$cancellations/$id';
   static String visitCheckIn(String id) => '${visit(id)}/check-in';
   static String visitComplete(String id) => '${visit(id)}/complete';
   static String visitSupportItem(String id) => '${visit(id)}/support-item';
@@ -213,6 +219,7 @@ abstract final class ApiPaths {
   static String visitFormSubmissions(String id) =>
       '${visit(id)}/form-submissions';
   static String visitShiftBrief(String id) => '${visit(id)}/shift-brief';
+  static String visitTripKms(String id) => '${visit(id)}/trip-kms';
 
   // Shifts / roster
   static const shifts = '$_v1/shifts';
@@ -230,6 +237,10 @@ abstract final class ApiPaths {
       '${shiftParticipants(id)}/batch';
   static String shiftParticipant(String shiftId, String participantId) =>
       '${shiftParticipants(shiftId)}/$participantId';
+  static String shiftParticipantAttendance(
+    String shiftId,
+    String participantId,
+  ) => '${shiftParticipant(shiftId, participantId)}/attendance';
   static String shiftParticipantAllocation(
     String shiftId,
     String participantId,
@@ -253,6 +264,21 @@ abstract final class ApiPaths {
   static String invoiceExport(String id) => '$invoiceExports/$id';
   static String invoiceExportCsv(String id) => '${invoiceExport(id)}/csv';
   static String invoiceExportVoid(String id) => '${invoiceExport(id)}/void';
+  static const unclaimedAgeing = '$_v1/billing/unclaimed-ageing';
+  static const arAgeing = '$_v1/billing/ar-ageing';
+  static String invoiceExportAr(String id) => '${invoiceExport(id)}/ar';
+  static const budgetAlerts = '$_v1/billing/budget-alerts';
+  static const budgetAlertSettings = '$_v1/billing/budget-alert-settings';
+  static String publishBurnPreview(String shiftId) =>
+      '$_v1/billing/shifts/$shiftId/publish-burn-preview';
+  static const paymentEnquiries = '$_v1/billing/payment-enquiries';
+  static String paymentEnquiry(String id) => '$paymentEnquiries/$id';
+  static const pmDestinationProfiles = '$_v1/billing/pm-destination-profiles';
+  static const exportRejections = '$_v1/billing/export-rejections';
+  static String exportRejectionResubmit(String id) =>
+      '$exportRejections/$id/resubmit';
+  static const fundsRiskChecks = '$_v1/billing/funds-risk-checks';
+  static String fundsRiskCheck(String id) => '$fundsRiskChecks/$id';
 
   // Payroll / payments
   static String engagementRates(String engagementId) =>
@@ -278,4 +304,22 @@ abstract final class ApiPaths {
   static const branches = '$_v1/branches';
   static const tenantMembers = '$_v1/tenant-members';
   static String tenantMember(String id) => '$tenantMembers/$id';
+
+  // SIL / roster of care (B3) + vacancy (B19)
+  static const silHouses = '$_v1/sil/houses';
+  static String silHouse(String id) => '$silHouses/$id';
+  static String silHouseOverlay(String id) => '${silHouse(id)}/overlay';
+  static String silHouseFillVacancy(String id) => '${silHouse(id)}/fill-vacancy';
+  static String silHouseMembers(String id) => '${silHouse(id)}/members';
+  static String silHouseRocBlocks(String id) => '${silHouse(id)}/roc-blocks';
+  static String silHouseCompatRules(String id) => '${silHouse(id)}/compat-rules';
+  static String silHouseCompatRule(String houseId, String ruleId) =>
+      '${silHouseCompatRules(houseId)}/$ruleId';
+  static String jobSilHouse(String jobId) => '$_v1/sil/jobs/$jobId/house';
+  static String tenantContractorCompetencies(String contractorId) =>
+      '$_v1/tenants/current/contractors/$contractorId/competencies';
+  static String tenantContractorCompetency(
+    String contractorId,
+    String skillCode,
+  ) => '${tenantContractorCompetencies(contractorId)}/$skillCode';
 }

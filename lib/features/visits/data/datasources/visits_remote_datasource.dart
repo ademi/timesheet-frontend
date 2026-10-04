@@ -18,6 +18,7 @@ class VisitsRemoteDataSource {
     DateTime? to,
     String? jobId,
     String? clientId,
+    String? participantId,
     String? contractorId,
     String? status,
     String? paymentStatus,
@@ -32,6 +33,8 @@ class VisitsRemoteDataSource {
           if (to != null) 'to': to.toUtc().toIso8601String(),
           if (jobId != null && jobId.isNotEmpty) 'job_id': jobId,
           if (clientId != null && clientId.isNotEmpty) 'client_id': clientId,
+          if (participantId != null && participantId.isNotEmpty)
+            'participant_id': participantId,
           if (contractorId != null && contractorId.isNotEmpty)
             'contractor_id': contractorId,
           if (status != null && status.isNotEmpty) 'status': status,
@@ -75,9 +78,12 @@ class VisitsRemoteDataSource {
     }
   }
 
-  Future<void> cancel(String id) async {
+  Future<void> cancel(String id, {Map<String, dynamic>? body}) async {
     try {
-      await _dio.post<void>(ApiPaths.visitCancel(id));
+      await _dio.post<void>(
+        ApiPaths.visitCancel(id),
+        data: body,
+      );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }
@@ -271,6 +277,26 @@ class VisitsRemoteDataSource {
         ShiftBriefDto.fromJson,
         'visit shift brief',
       );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<VisitOut> putVisitTripKms({
+    required String visitId,
+    required double tripKms,
+    String? supportItemCode,
+  }) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        ApiPaths.visitTripKms(visitId),
+        data: {
+          'trip_kms': tripKms,
+          if (supportItemCode != null && supportItemCode.isNotEmpty)
+            'support_item_code': supportItemCode,
+        },
+      );
+      return _require(response.data, VisitOut.fromJson, 'put trip kms');
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

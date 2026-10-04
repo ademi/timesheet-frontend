@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../data/models/strengths_needs_models.dart';
 import '../data/repositories/clients_repository.dart';
@@ -57,12 +58,19 @@ class StrengthsNeedsController extends GetxController {
   }
 
   void _readArguments() {
-    final args = Get.arguments;
-    if (args is! Map) return;
-    clientId = args['clientId']?.toString() ?? clientId;
-    final aid = args['assessmentId']?.toString();
-    if (aid != null && aid.isNotEmpty) {
-      assessmentId.value = aid;
+    final args = routeArguments();
+    if (args is Map) {
+      clientId = args['clientId']?.toString() ?? clientId;
+      final aid = args['assessmentId']?.toString();
+      if (aid != null && aid.isNotEmpty) {
+        assessmentId.value = aid;
+      }
+    }
+    final paramClientId = routeParam('clientId');
+    if (paramClientId != null) clientId = paramClientId;
+    final paramAssessmentId = routeParam('assessmentId');
+    if (paramAssessmentId != null) {
+      assessmentId.value = paramAssessmentId;
     }
   }
 

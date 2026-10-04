@@ -2,7 +2,8 @@ import '../data/models/job_models.dart';
 
 const endBeforeStartError =
     'End must be after start on the same day. Overnight windows are not supported here.';
-const windowsOverlapError = 'Visit windows must be ordered and not overlap.';
+const windowsOverlapError =
+    'Participant shifts must be ordered and not overlap.';
 
 /// Default recurrence end: one civil year after [start] (not open-ended).
 DateTime defaultRecurrenceEndDate(DateTime start) {

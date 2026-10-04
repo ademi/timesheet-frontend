@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../core/errors/app_failure.dart';
@@ -14,6 +16,8 @@ import '../../engagements/data/models/engagement_models.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../subscription/billing_gate.dart';
+import '../../billing/data/models/billing_models.dart';
+import '../../billing/data/repositories/billing_repository.dart';
 import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../../credentials/data/models/credential_models.dart';
@@ -35,6 +39,7 @@ class HomeAlertsController extends GetxController {
     JobsRepository? jobsRepository,
     VisitsRepository? visitsRepository,
     CredentialsRepository? credentialsRepository,
+    BillingRepository? billingRepository,
     NotificationsFeedController? notificationsFeed,
     void Function(String title, String message)? showSnack,
   }) : _repository = repository,
@@ -44,6 +49,7 @@ class HomeAlertsController extends GetxController {
        _jobsRepository = jobsRepository,
        _visitsRepository = visitsRepository,
        _credentialsRepository = credentialsRepository,
+       _billingRepository = billingRepository,
        _notificationsFeed = notificationsFeed,
        _showSnack = showSnack ?? _defaultSnack;
 
@@ -54,6 +60,7 @@ class HomeAlertsController extends GetxController {
   final JobsRepository? _jobsRepository;
   final VisitsRepository? _visitsRepository;
   final CredentialsRepository? _credentialsRepository;
+  final BillingRepository? _billingRepository;
   final NotificationsFeedController? _notificationsFeed;
   final void Function(String title, String message) _showSnack;
 
@@ -69,6 +76,11 @@ class HomeAlertsController extends GetxController {
   final approvingRequestId = RxnString();
   final stats = Rxn<StaffHomeStats>();
   final contractorStats = Rxn<ContractorHomeStats>();
+  final burnAlerts = <BurnEnvelopeAlertOut>[].obs;
+
+  bool get hasBurnAlerts => burnAlerts.isNotEmpty;
+  int get burnAlertCount => burnAlerts.length;
+  int get hardBurnCount => burnAlerts.where((a) => a.isHard).length;
 
   bool get isStaff => _session.isStaff;
   bool get isContractor => _session.isContractor;
@@ -155,6 +167,9 @@ class HomeAlertsController extends GetxController {
       try {
         subscription.value = await _repository.getSubscription();
       } on AppFailure catch (_) {}
+      await _loadBurnAlerts();
+    } else {
+      burnAlerts.clear();
     }
 
     await notificationsFuture;
@@ -315,6 +330,29 @@ class HomeAlertsController extends GetxController {
     }
   }
 
+  Future<void> _loadBurnAlerts() async {
+    final repo = _billingRepository;
+    if (repo == null || !_session.canViewBilling) {
+      burnAlerts.clear();
+      return;
+    }
+    try {
+      burnAlerts.assignAll(await repo.listBudgetAlerts());
+    } on AppFailure {
+      // Non-blocking: home still useful without burn strip.
+    }
+  }
+
+  void openBurnAlerts() {
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffBillingExports,
+        query: {'tab': 'burn'},
+      ),
+      extra: {'tab': 'burn'},
+    );
+  }
+
   Future<(int, int, int, int)> _loadContractorCounts() async {
     final repo = _engagementsRepository;
     if (!canReadContractors || repo == null) {
@@ -384,8 +422,8 @@ class HomeAlertsController extends GetxController {
   }
 
   void openRoute(String route) {
-    if (Get.currentRoute == route) return;
-    Get.offNamed(route);
+    if (locationPath(AppNavigator.currentLocation) == route) return;
+    AppNavigator.go(route);
   }
 
   String tenantLabelFor(SharingAccessRequestOut request) {
@@ -475,7 +513,9 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                         actions: [
                           TextButton(
                             onPressed:
-                                () => Get.toNamed(AppRoutes.contractorProfile),
+                                () => AppNavigator.push(
+                                  AppRoutes.contractorProfile,
+                                ),
                             child: const Text('Complete profile'),
                           ),
                         ],
@@ -495,7 +535,7 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                         actions: [
                           TextButton(
                             onPressed:
-                                () => Get.toNamed(
+                                () => AppNavigator.push(
                                   AppRoutes.contractorCredentials,
                                 ),
                             child: const Text('Upload credentials'),
@@ -517,7 +557,7 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                         actions: [
                           TextButton(
                             onPressed:
-                                () => Get.toNamed(
+                                () => AppNavigator.push(
                                   AppRoutes.contractorCredentials,
                                 ),
                             child: const Text('View credentials'),
@@ -598,6 +638,37 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (controller.hasBurnAlerts) ...[
+                      MaterialBanner(
+                        content: Text(
+                          controller.hardBurnCount > 0
+                              ? '${controller.burnAlertCount} plan burn alert'
+                                  '${controller.burnAlertCount == 1 ? '' : 's'}'
+                                  ' (${controller.hardBurnCount} hard block)'
+                              : '${controller.burnAlertCount} plan burn alert'
+                                  '${controller.burnAlertCount == 1 ? '' : 's'}'
+                                  ' — envelopes near thresholds',
+                        ),
+                        leading: Icon(
+                          Icons.local_fire_department_outlined,
+                          color:
+                              controller.hardBurnCount > 0
+                                  ? AppColors.error
+                                  : AppColors.openSlot,
+                        ),
+                        backgroundColor:
+                            controller.hardBurnCount > 0
+                                ? AppColors.errorBackground
+                                : AppColors.openSlotBackground,
+                        actions: [
+                          TextButton(
+                            onPressed: controller.openBurnAlerts,
+                            child: const Text('View'),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                     ],

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
@@ -77,7 +78,9 @@ class WorkforceController extends GetxController {
   final isLoadingAvailability = false.obs;
   final scheduleError = RxnString();
 
-  EngagementOut? selected;
+  EngagementOut? get selected => selectedRx.value;
+  set selected(EngagementOut? value) => selectedRx.value = value;
+  final selectedRx = Rxn<EngagementOut>();
 
   bool _detailExtrasLoaded = false;
 
@@ -159,8 +162,54 @@ class WorkforceController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    load();
     ever(tabIndex, _onTabChanged);
+    if (_routeImpliesDetail()) {
+      isLoading.value = true;
+    }
+    Future.microtask(() async {
+      await load();
+      await ensureDetailHydratedFromRoute();
+    });
+  }
+
+  /// Tier-2 shell re-enter: soft list refresh; keep status filter / selection.
+  void onScreenReenter() {
+    clearError();
+    // ignore: discarded_futures
+    load();
+    // ignore: discarded_futures
+    ensureDetailHydratedFromRoute();
+  }
+
+  bool _routeImpliesDetail() {
+    if (selected != null) return false;
+    if (Get.arguments is EngagementOut) return true;
+    final id = Get.parameters['id'];
+    return id != null && id.isNotEmpty;
+  }
+
+  /// Call from detail so a fresh controller still loads after web refresh.
+  Future<void> ensureDetailHydratedFromRoute() async {
+    if (selected != null) return;
+
+    EngagementOut? found;
+    final fromArgs = Get.arguments;
+    if (fromArgs is EngagementOut) {
+      found = fromArgs;
+    } else {
+      final id = Get.parameters['id'];
+      if (id != null && id.isNotEmpty) {
+        if (items.isEmpty) await load();
+        for (final e in items) {
+          if (e.id == id) {
+            found = e;
+            break;
+          }
+        }
+      }
+    }
+    if (found == null) return;
+    await _bindDetail(found);
   }
 
   void _onTabChanged(int tab) {
@@ -238,6 +287,17 @@ class WorkforceController extends GetxController {
       photosByContractor[contractorId]?.documentId;
 
   void openDetail(EngagementOut e) {
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffWorkforceDetail,
+        query: {'id': e.id},
+      ),
+      extra: e,
+    );
+    unawaited(_bindDetail(e));
+  }
+
+  Future<void> _bindDetail(EngagementOut e) async {
     selected = e;
     tabIndex.value = tabOverview;
     _detailExtrasLoaded = false;
@@ -254,11 +314,12 @@ class WorkforceController extends GetxController {
       ..clear()
       ..addAll(e.requiredDocCategories.map((c) => c.category));
     if (canManage && !e.isEnded) {
-      loadCredentialCategories();
+      await loadCredentialCategories();
     }
-    Get.toNamed(AppRoutes.staffWorkforceDetail, arguments: e);
-    loadDetailProfilePhoto(e.contractorId);
-    loadStaffProfile(e.contractorId);
+    await Future.wait([
+      loadDetailProfilePhoto(e.contractorId),
+      loadStaffProfile(e.contractorId),
+    ]);
   }
 
   Future<void> loadStaffProfile(String contractorId) async {
@@ -331,9 +392,12 @@ class WorkforceController extends GetxController {
   }
 
   void openVisitDetail(VisitOut visit) {
-    Get.toNamed(
-      AppRoutes.staffVisitDetail,
-      arguments: <String, dynamic>{'visit': visit, 'skipBoardLoad': true},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffVisitDetail,
+        query: {'id': visit.id},
+      ),
+      extra: <String, dynamic>{'visit': visit, 'skipBoardLoad': true},
     );
   }
 
@@ -465,7 +529,9 @@ class WorkforceController extends GetxController {
       emailCtrl.clear();
       phoneCtrl.clear();
       selectedCategories.clear();
-      Get.back();
+      // Prefer AppNavigator: Get.back() needs Get.key attached to a Navigator,
+      // which GetMaterialApp.router does not set unless GoRouter uses Get.key.
+      AppNavigator.pop();
       final invite = result.registrationInvite;
       if (result.isRegistrationInvite && invite != null) {
         await _showInviteSentConfirmation(expiresAt: invite.expiresAt);
@@ -729,19 +795,21 @@ class WorkforceController extends GetxController {
       _setError('This worker is no longer in your workforce.');
       return;
     }
-    Get.toNamed(
-      AppRoutes.staffCredentialReview,
-      arguments: {
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffCredentialReview,
+        query: {
+          'contractorId': engagement.contractorId,
+          'engagementId': engagement.id,
+        },
+      ),
+      extra: {
         'contractorId': engagement.contractorId,
         'engagementId': engagement.id,
         'requiredCategories':
             engagement.requiredDocCategories.map((c) => c.category).toList(),
         'canEditRequiredDocs': canManage && !engagement.isEnded,
         'isEnded': engagement.isEnded,
-      },
-      parameters: {
-        'contractorId': engagement.contractorId,
-        'engagementId': engagement.id,
       },
     );
   }

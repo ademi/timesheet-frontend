@@ -233,6 +233,15 @@ void main() {
     ]);
   });
 
+  test('ShiftPublishRequest.toJson includes budget_override_reason', () {
+    expect(
+      const ShiftPublishRequest(
+        budgetOverrideReason: 'Finance approved over-envelope',
+      ).toJson(),
+      {'budget_override_reason': 'Finance approved over-envelope'},
+    );
+  });
+
   test('ShiftPublishRequest.toJson omits empty support_item_code', () {
     expect(const ShiftPublishRequest().toJson(), isEmpty);
     expect(

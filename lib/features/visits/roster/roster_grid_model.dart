@@ -1,4 +1,5 @@
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
+import 'package:rostiq/features/shifts/utils/overnight_format.dart';
 import 'package:rostiq/features/shifts/utils/participant_display.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
 
@@ -36,6 +37,8 @@ class RosterTile {
     required this.requiredSlots,
     this.visitStatus,
     this.assignmentContractorId,
+    this.shiftKind = 'standard',
+    this.isContinuation = false,
   });
 
   final String shiftId;
@@ -46,6 +49,8 @@ class RosterTile {
   final int requiredSlots;
   final String? visitStatus;
   final String? assignmentContractorId;
+  final String shiftKind;
+  final bool isContinuation;
 }
 
 class RosterCell {
@@ -177,6 +182,7 @@ RosterGrid buildRosterGrid({
       end: shift.scheduledEnd,
       openSlots: shift.openSlots,
       requiredSlots: shift.requiredSlots,
+      shiftKind: shift.shiftKind,
     );
     final cell = unfilledTileCells[dayIndex];
     unfilledTileCells[dayIndex] = RosterCell(
@@ -184,6 +190,29 @@ RosterGrid buildRosterGrid({
       onLeave: cell.onLeave,
       availabilityHint: cell.availabilityHint,
     );
+
+    // Muted continuation chip on the end calendar day (same shift, not a split).
+    if (spansLocalMidnight(shift.scheduledStart, shift.scheduledEnd)) {
+      final endDayIndex = _dayIndex(dayStarts, shift.scheduledEnd);
+      if (endDayIndex != null && endDayIndex != dayIndex) {
+        final cont = RosterTile(
+          shiftId: shift.id,
+          clientName: rosterShiftTileLabel(shift),
+          start: shift.scheduledStart,
+          end: shift.scheduledEnd,
+          openSlots: shift.openSlots,
+          requiredSlots: shift.requiredSlots,
+          shiftKind: shift.shiftKind,
+          isContinuation: true,
+        );
+        final endCell = unfilledTileCells[endDayIndex];
+        unfilledTileCells[endDayIndex] = RosterCell(
+          tiles: [...endCell.tiles, cont],
+          onLeave: endCell.onLeave,
+          availabilityHint: endCell.availabilityHint,
+        );
+      }
+    }
   }
 
   final sortedPeople = [...people]..sort(
@@ -208,7 +237,13 @@ RosterGrid buildRosterGrid({
       final tiles = <RosterTile>[];
       for (final shift in filteredShifts) {
         final shiftDayIndex = _dayIndex(dayStarts, shift.scheduledStart);
-        if (shiftDayIndex != dayIndex) continue;
+        final endDayIndex = _dayIndex(dayStarts, shift.scheduledEnd);
+        final onStartDay = shiftDayIndex == dayIndex;
+        final onEndContinuation =
+            spansLocalMidnight(shift.scheduledStart, shift.scheduledEnd) &&
+            endDayIndex == dayIndex &&
+            endDayIndex != shiftDayIndex;
+        if (!onStartDay && !onEndContinuation) continue;
 
         for (final assignment in shift.assignments) {
           if (assignment.contractorId != person.contractorId) continue;
@@ -222,6 +257,8 @@ RosterGrid buildRosterGrid({
               requiredSlots: shift.requiredSlots,
               visitStatus: assignment.visitStatus,
               assignmentContractorId: assignment.contractorId,
+              shiftKind: shift.shiftKind,
+              isContinuation: onEndContinuation,
             ),
           );
         }

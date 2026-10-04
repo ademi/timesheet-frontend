@@ -1,10 +1,13 @@
 import 'package:get/get.dart';
 
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
 import '../../clients/bindings/clients_binding.dart';
 import '../../clients/data/repositories/clients_repository.dart';
+import '../../jobs/bindings/jobs_binding.dart';
+import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../controllers/invoice_export_detail_controller.dart';
@@ -72,21 +75,25 @@ class StaffInvoiceExportsBinding extends Bindings {
     BillingBinding.ensureShared();
     VisitsBinding.ensureShared();
     ClientsBinding.ensureShared();
+    JobsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<InvoiceExportsController>()) {
-      Get.put(
-        InvoiceExportsController(
-          repository: Get.find<BillingRepository>(),
-          visitsRepository: Get.find<VisitsRepository>(),
-          session: Get.find<SessionService>(),
-          exportedVisitIds: Get.find<ExportedVisitIdsStore>(),
-          clientsRepository:
-              Get.isRegistered<ClientsRepository>()
-                  ? Get.find<ClientsRepository>()
-                  : null,
-        ),
-      );
-    }
+    putOrReenter(
+      () => InvoiceExportsController(
+        repository: Get.find<BillingRepository>(),
+        visitsRepository: Get.find<VisitsRepository>(),
+        session: Get.find<SessionService>(),
+        exportedVisitIds: Get.find<ExportedVisitIdsStore>(),
+        clientsRepository:
+            Get.isRegistered<ClientsRepository>()
+                ? Get.find<ClientsRepository>()
+                : null,
+        jobsRepository:
+            Get.isRegistered<JobsRepository>()
+                ? Get.find<JobsRepository>()
+                : null,
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 }
 
@@ -95,14 +102,13 @@ class StaffInvoiceExportDetailBinding extends Bindings {
   void dependencies() {
     BillingBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<InvoiceExportDetailController>()) {
-      Get.put(
-        InvoiceExportDetailController(
-          repository: Get.find<BillingRepository>(),
-          session: Get.find<SessionService>(),
-          exportedVisitIds: Get.find<ExportedVisitIdsStore>(),
-        ),
-      );
-    }
+    // exportId is read in onInit; recreate so detail cannot stick to a prior export.
+    putFresh(
+      () => InvoiceExportDetailController(
+        repository: Get.find<BillingRepository>(),
+        session: Get.find<SessionService>(),
+        exportedVisitIds: Get.find<ExportedVisitIdsStore>(),
+      ),
+    );
   }
 }

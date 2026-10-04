@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/models/shift_travel_models.dart';
 import '../../shifts/utils/allocation_math.dart';
 import '../../shifts/utils/participant_display.dart';
 import '../../shifts/utils/travel_item_rules.dart';
 import '../../shifts/widgets/shift_slot_pips.dart';
+import '../../sil/data/models/sil_models.dart';
 import '../../visits/controllers/staff_visits_controller.dart';
 
 String _fmt(DateTime dt) {
@@ -50,7 +54,10 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
     final controller = Get.find<StaffVisitsController>();
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Shift')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.staffVisits),
+        title: const Text('Shift'),
+      ),
       body: Obx(() {
         final shift = controller.selectedShift.value;
         final err = controller.errorMessage.value;
@@ -79,6 +86,14 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                       children: [
                         if (err != null) ...[
                           _ErrorBox(err),
+                          const SizedBox(height: 12),
+                        ],
+                        if (controller.credentialGateReasons.isNotEmpty) ...[
+                          EligibilityIncompletePanel(
+                            title: 'Screening / credentials incomplete',
+                            reasons:
+                                controller.credentialGateReasons.toList(),
+                          ),
                           const SizedBox(height: 12),
                         ],
                         if (controller.canManage &&
@@ -135,7 +150,7 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                             Padding(
                               padding: const EdgeInsets.only(bottom: 4),
                               child: Text(
-                                w,
+                                silWarningLabel(w),
                                 style: const TextStyle(
                                   color: AppColors.openSlot,
                                 ),
@@ -171,6 +186,7 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                               controller.isRefreshing.value,
                           onEdit: controller.openEditGroup,
                           onRemove: controller.openRemoveParticipant,
+                          onAttendance: controller.openParticipantAttendance,
                         ),
                         const Divider(height: 32),
                         Text('Assignments', style: Get.textTheme.titleMedium),
@@ -205,7 +221,24 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                                 () => controller.openAssignmentVisit(a.visitId),
                           ),
                         if (controller.canManage &&
-                            shift.status != 'cancelled' &&
+                            shift.status == 'draft' &&
+                            shift.openSlots > 0) ...[
+                          const Divider(height: 32),
+                          Text(
+                            'Assign worker',
+                            style: Get.textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Publish this shift first, then you can assign a worker.',
+                            style: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                        if (controller.canManage &&
+                            shift.status == 'published' &&
                             shift.openSlots > 0) ...[
                           const Divider(height: 32),
                           Text(
@@ -702,6 +735,7 @@ class _ParticipantsSection extends StatelessWidget {
     required this.isSaving,
     required this.onEdit,
     required this.onRemove,
+    required this.onAttendance,
   });
 
   final ShiftOut shift;
@@ -710,6 +744,19 @@ class _ParticipantsSection extends StatelessWidget {
   final bool isSaving;
   final Future<void> Function() onEdit;
   final Future<void> Function(ShiftParticipantOut participant) onRemove;
+  final Future<void> Function(ShiftParticipantOut participant) onAttendance;
+
+  String _attendanceLabel(ShiftParticipantOut p) {
+    switch (p.attendance) {
+      case 'no_show':
+        return 'No-show (not billed)';
+      case 'partial':
+        final m = p.attendedMinutes;
+        return m == null ? 'Partial' : 'Partial · $m min';
+      default:
+        return 'Present';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -729,6 +776,15 @@ class _ParticipantsSection extends StatelessWidget {
               ),
           ],
         ),
+        if (active.length >= 2)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text(
+              'One worker clocks this visit for the whole group. '
+              'Attendance only changes who is billed.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+          ),
         if (active.isEmpty) const Text('No participants yet.'),
         for (final p in active) ...[
           ListTile(
@@ -736,16 +792,30 @@ class _ParticipantsSection extends StatelessWidget {
             minVerticalPadding: 12,
             title: Text(p.participantName ?? p.participantId),
             subtitle: Text(
-              p.allocationValue != null
-                  ? '${p.allocationValue!.toStringAsFixed(2)}%'
-                  : (p.allocationStrategy ?? 'allocation'),
+              [
+                if (p.allocationValue != null)
+                  '${p.allocationValue!.toStringAsFixed(2)}%'
+                else
+                  (p.allocationStrategy ?? 'allocation'),
+                _attendanceLabel(p),
+              ].join(' · '),
               style: const TextStyle(color: AppColors.textMuted),
             ),
             trailing:
                 canManage
-                    ? TextButton(
-                      onPressed: isSaving ? null : () => onRemove(p),
-                      child: const Text('Remove'),
+                    ? Wrap(
+                      spacing: 4,
+                      children: [
+                        TextButton(
+                          onPressed:
+                              isSaving ? null : () => onAttendance(p),
+                          child: const Text('Attendance'),
+                        ),
+                        TextButton(
+                          onPressed: isSaving ? null : () => onRemove(p),
+                          child: const Text('Remove'),
+                        ),
+                      ],
                     )
                     : null,
           ),
@@ -759,9 +829,9 @@ class _ParticipantsSection extends StatelessWidget {
                 p.participantName ?? p.participantId,
                 style: const TextStyle(color: AppColors.textMuted),
               ),
-              subtitle: Text(
+              subtitle: const Text(
                 'Removed',
-                style: const TextStyle(color: AppColors.textMuted),
+                style: TextStyle(color: AppColors.textMuted),
               ),
             ),
       ],

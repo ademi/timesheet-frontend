@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/app_date_field.dart';
@@ -14,10 +16,12 @@ import '../widgets/visit_instructions_field.dart';
 import '../widgets/worker_slot_picker.dart';
 import '../controllers/unified_support_controller.dart';
 import '../utils/partial_assign_preview.dart';
+import '../utils/prior_client_workers.dart';
 import '../utils/recurrence_rrule_builder.dart';
 import '../utils/required_slots_input.dart';
 import '../utils/schedule_hours_warn.dart';
 import '../utils/unified_support_args.dart';
+import '../../shifts/utils/overnight_format.dart';
 
 class UnifiedSupportView extends GetView<UnifiedSupportController> {
   const UnifiedSupportView({super.key});
@@ -27,6 +31,7 @@ class UnifiedSupportView extends GetView<UnifiedSupportController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.staffClients),
         title: Obx(() {
           switch (controller.step.value) {
             case 0:
@@ -330,6 +335,70 @@ class _TypeStep extends StatelessWidget {
             icon: Icons.event_repeat_outlined,
             onTap: () => controller.setMode(UnifiedSupportMode.ongoing),
           ),
+          if (controller.mode.value == UnifiedSupportMode.oneSession) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Shift kind',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Sleepover and active night are one continuous overnight shift — not two cards.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final kind in const [
+                  ('standard', 'Standard'),
+                  ('sleepover', 'Sleepover'),
+                  ('active_night', 'Active night'),
+                ])
+                  ChoiceChip(
+                    label: Text(kind.$2),
+                    selected: controller.shiftKind.value == kind.$1,
+                    onSelected: (_) => controller.setShiftKind(kind.$1),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              value: controller.selectedHouseTemplateId.value,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'House overnight template (optional)',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('None'),
+                ),
+                for (final t in kOvernightHouseTemplates)
+                  DropdownMenuItem<String?>(
+                    value: t.id,
+                    child: Text(
+                      '${t.name} · v${t.version}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              onChanged: (id) {
+                if (id == null) {
+                  controller.selectedHouseTemplateId.value = null;
+                  return;
+                }
+                for (final t in kOvernightHouseTemplates) {
+                  if (t.id == id) {
+                    controller.applyHouseTemplate(t);
+                    return;
+                  }
+                }
+              },
+            ),
+          ],
           const SizedBox(height: 16),
           if (controller.needsClientPicker ||
               controller.clients.isNotEmpty && controller.client.value == null)
@@ -623,12 +692,24 @@ class _OneSessionSchedule extends StatelessWidget {
   }
 }
 
-class _OngoingSchedule extends StatelessWidget {
+class _OngoingSchedule extends StatefulWidget {
   const _OngoingSchedule({required this.controller});
   final UnifiedSupportController controller;
 
   @override
+  State<_OngoingSchedule> createState() => _OngoingScheduleState();
+}
+
+class _OngoingScheduleState extends State<_OngoingSchedule> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.ensureLastPatternLoaded();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     return Obx(() {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -638,6 +719,15 @@ class _OngoingSchedule extends StatelessWidget {
             const _AmberNotice(message: kAtypicalScheduleHoursMessage),
             const SizedBox(height: 12),
           ],
+          if (controller.lastPatternAvailable.value)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: controller.copyLastPattern,
+                icon: const Icon(Icons.content_copy_outlined, size: 18),
+                label: const Text('Copy last pattern'),
+              ),
+            ),
           DropdownButtonFormField<RecurrenceFrequency>(
             value: controller.frequency.value,
             items: [
@@ -848,7 +938,7 @@ class _DetailsStep extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           VisitInstructionsField(
             controller: controller.instructionsCtrl,
             helperText:
@@ -856,7 +946,7 @@ class _DetailsStep extends StatelessWidget {
                     ? 'One task per line. Copied onto generated visits.'
                     : 'One task per line. Copied onto the booked visit.',
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           const Text(
             'Form templates',
             style: TextStyle(fontWeight: FontWeight.w600),
@@ -906,6 +996,7 @@ class _WorkersStepState extends State<_WorkersStep> {
     widget.controller.ensureEngagementsLoaded();
     widget.controller.ensureAssignAvailabilityLoaded();
     widget.controller.ensureClientConflictsLoaded();
+    widget.controller.ensurePriorWorkersLoaded();
   }
 
   Color _availabilityColor(String label) {
@@ -930,6 +1021,7 @@ class _WorkersStepState extends State<_WorkersStep> {
       controller.assignVisits.length;
       controller.conflictVisits.length;
       controller.conflictShifts.length;
+      controller.priorClientVisitCounts.length;
       controller.errorMessage.value;
       final seen = <String>{};
       final workers = [
@@ -991,12 +1083,26 @@ class _WorkersStepState extends State<_WorkersStep> {
                       final status = controller.availabilityStatusForContractor(
                         contractorId,
                       );
-                      return Text(
-                        ' · $label',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _availabilityColor(status),
-                        ),
+                      final worked = controller.workedWithClient(contractorId);
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            ' · $label',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _availabilityColor(status),
+                            ),
+                          ),
+                          if (worked)
+                            Text(
+                              ' · $workedWithClientLabel',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                        ],
                       );
                     },
                   ),

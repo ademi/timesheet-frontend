@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
@@ -97,6 +99,28 @@ void main() {
     session = _MockSessionService();
     when(() => session.canViewBilling).thenReturn(true);
     when(() => session.canManageBilling).thenReturn(false);
+    when(
+      () => repository.listUnclaimedAgeing(
+        clientId: any(named: 'clientId'),
+        branchId: any(named: 'branchId'),
+        minDays: any(named: 'minDays'),
+        approaching90: any(named: 'approaching90'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => <UnclaimedAgeingVisitOut>[]);
+    when(
+      () => repository.listBudgetAlerts(
+        severity: any(named: 'severity'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => <BurnEnvelopeAlertOut>[]);
+    when(
+      () => repository.listPaymentEnquiries(
+        clientId: any(named: 'clientId'),
+        status: any(named: 'status'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => <PaymentEnquiryOut>[]);
   });
 
   tearDown(Get.reset);
@@ -147,6 +171,8 @@ void main() {
           from: any(named: 'from'),
           to: any(named: 'to'),
           clientId: any(named: 'clientId'),
+          participantId: any(named: 'participantId'),
+          jobId: any(named: 'jobId'),
           status: 'completed',
           limit: 200,
         ),
@@ -173,6 +199,8 @@ void main() {
             from: any(named: 'from'),
             to: any(named: 'to'),
             clientId: any(named: 'clientId'),
+            participantId: any(named: 'participantId'),
+            jobId: any(named: 'jobId'),
             status: 'completed',
             limit: 200,
           ),
@@ -217,6 +245,8 @@ void main() {
             from: any(named: 'from'),
             to: any(named: 'to'),
             clientId: any(named: 'clientId'),
+            participantId: any(named: 'participantId'),
+            jobId: any(named: 'jobId'),
             status: 'completed',
             limit: 200,
           ),
@@ -261,6 +291,8 @@ void main() {
             from: any(named: 'from'),
             to: any(named: 'to'),
             clientId: any(named: 'clientId'),
+            participantId: any(named: 'participantId'),
+            jobId: any(named: 'jobId'),
             status: 'completed',
             limit: 200,
           ),
@@ -314,6 +346,8 @@ void main() {
           from: any(named: 'from'),
           to: any(named: 'to'),
           clientId: any(named: 'clientId'),
+          participantId: any(named: 'participantId'),
+          jobId: any(named: 'jobId'),
           status: 'completed',
           limit: 200,
         ),
@@ -351,6 +385,8 @@ void main() {
           from: any(named: 'from'),
           to: any(named: 'to'),
           clientId: any(named: 'clientId'),
+          participantId: any(named: 'participantId'),
+          jobId: any(named: 'jobId'),
           status: 'completed',
           limit: 200,
         ),
@@ -371,12 +407,268 @@ void main() {
           from: any(named: 'from'),
           to: any(named: 'to'),
           clientId: captureAny(named: 'clientId'),
+          participantId: any(named: 'participantId'),
+          jobId: any(named: 'jobId'),
           status: 'completed',
           limit: 200,
         ),
       ).captured;
       expect(captured.last, 'client-1');
     });
+
+    test('setParticipantFilter and setJobFilter pass query params', () async {
+      when(() => session.canManageBilling).thenReturn(true);
+      when(
+        () => visitsRepository.listVisits(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          clientId: any(named: 'clientId'),
+          participantId: any(named: 'participantId'),
+          jobId: any(named: 'jobId'),
+          status: 'completed',
+          limit: 200,
+        ),
+      ).thenAnswer((_) async => [_exportableVisit(id: 'visit-b')]);
+
+      final controller = _controller(
+        repository: repository,
+        visitsRepository: visitsRepository,
+        session: session,
+        init: true,
+      );
+      controller.tabIndex.value = 1;
+      await controller.setParticipantFilter('part-9');
+      await controller.setJobFilter('job-9');
+
+      final captured = verify(
+        () => visitsRepository.listVisits(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+          clientId: any(named: 'clientId'),
+          participantId: captureAny(named: 'participantId'),
+          jobId: captureAny(named: 'jobId'),
+          status: 'completed',
+          limit: 200,
+        ),
+      ).captured;
+      expect(captured, containsAll(['part-9', 'job-9']));
+    });
+
+    test('loadUnclaimedAgeing sorts oldest first and sets risk badge', () async {
+      when(
+        () => repository.listUnclaimedAgeing(
+          clientId: any(named: 'clientId'),
+          branchId: any(named: 'branchId'),
+          minDays: any(named: 'minDays'),
+          approaching90: any(named: 'approaching90'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          UnclaimedAgeingVisitOut(
+            visitId: 'v-old',
+            jobId: 'job-1',
+            contractorId: 'c-1',
+            completedAt: DateTime.utc(2026, 6, 1),
+            daysSinceCompleted: 80,
+            riskBand: 'high',
+            paymentStatus: 'unpaid',
+            invoiceStatus: 'pending',
+            jobTitle: 'Old visit',
+          ),
+          UnclaimedAgeingVisitOut(
+            visitId: 'v-new',
+            jobId: 'job-2',
+            contractorId: 'c-1',
+            completedAt: DateTime.utc(2026, 9, 1),
+            daysSinceCompleted: 10,
+            riskBand: 'ok',
+            paymentStatus: 'unpaid',
+            invoiceStatus: 'pending',
+            jobTitle: 'New visit',
+          ),
+        ],
+      );
+
+      final controller = _controller(
+        repository: repository,
+        visitsRepository: visitsRepository,
+        session: session,
+      );
+      await controller.loadUnclaimedAgeing();
+
+      expect(controller.unclaimedAgeing, hasLength(2));
+      expect(controller.unclaimedAgeing.first.visitId, 'v-old');
+      expect(controller.hasAgeingRiskBadge, isTrue);
+      expect(controller.ageingRiskCount, 1);
+    });
+
+    test('loadUnclaimedAgeing empty clears badge', () async {
+      final controller = _controller(
+        repository: repository,
+        visitsRepository: visitsRepository,
+        session: session,
+      );
+      await controller.loadUnclaimedAgeing();
+      expect(controller.unclaimedAgeing, isEmpty);
+      expect(controller.hasAgeingRiskBadge, isFalse);
+    });
+
+    test(
+      'isLoading stays true until all concurrent loads finish (C5)',
+      () async {
+        final exportsDone = Completer<List<InvoiceExportOut>>();
+        final ageingDone = Completer<List<UnclaimedAgeingVisitOut>>();
+        when(
+          () => repository.listInvoiceExports(limit: any(named: 'limit')),
+        ).thenAnswer((_) => exportsDone.future);
+        when(
+          () => repository.listUnclaimedAgeing(
+            clientId: any(named: 'clientId'),
+            branchId: any(named: 'branchId'),
+            minDays: any(named: 'minDays'),
+            approaching90: any(named: 'approaching90'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => ageingDone.future);
+
+        final controller = _controller(
+          repository: repository,
+          visitsRepository: visitsRepository,
+          session: session,
+        );
+
+        final exportsFuture = controller.loadExports();
+        final ageingFuture = controller.loadUnclaimedAgeing();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.isLoading.value, isTrue);
+
+        exportsDone.complete([_export()]);
+        await Future<void>.delayed(Duration.zero);
+        // Ageing still in flight — must not clear global loading (old race).
+        expect(controller.isLoading.value, isTrue);
+        expect(controller.exports, hasLength(1));
+
+        ageingDone.complete(const []);
+        await Future.wait([exportsFuture, ageingFuture]);
+        expect(controller.isLoading.value, isFalse);
+      },
+    );
+
+    test('loadBurnAlerts sets badge count', () async {
+      when(
+        () => repository.listBudgetAlerts(
+          severity: any(named: 'severity'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          const BurnEnvelopeAlertOut(
+            clientId: 'c1',
+            envelope: 'core',
+            severity: 'soft_warn',
+            spent: 800,
+            remaining: 100,
+            remainingPct: 11,
+            clientName: 'Maya',
+          ),
+        ],
+      );
+
+      final controller = _controller(
+        repository: repository,
+        visitsRepository: visitsRepository,
+        session: session,
+      );
+      await controller.loadBurnAlerts();
+
+      expect(controller.burnAlerts, hasLength(1));
+      expect(controller.hasBurnAlertBadge, isTrue);
+      expect(controller.burnAlertCount, 1);
+    });
+
+    test('openUnclaimedVisitForFix loads visit then opens detail path', () async {
+      when(
+        () => visitsRepository.getVisit('v-old'),
+      ).thenAnswer((_) async => _exportableVisit(id: 'v-old'));
+
+      final controller = _controller(
+        repository: repository,
+        visitsRepository: visitsRepository,
+        session: session,
+      );
+      await controller.openUnclaimedVisitForFix(
+        UnclaimedAgeingVisitOut(
+          visitId: 'v-old',
+          jobId: 'job-1',
+          contractorId: 'c-1',
+          completedAt: DateTime.utc(2026, 6, 1),
+          daysSinceCompleted: 80,
+          riskBand: 'high',
+          paymentStatus: 'unpaid',
+          invoiceStatus: 'pending',
+        ),
+      );
+
+      verify(() => visitsRepository.getVisit('v-old')).called(1);
+      expect(controller.errorMessage.value, isNull);
+    });
+
+    test(
+      'openVisitForFix clears visit errors and reloads exportable visits',
+      () async {
+        when(() => session.canManageBilling).thenReturn(true);
+        when(
+          () => visitsRepository.listVisits(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            clientId: any(named: 'clientId'),
+            participantId: any(named: 'participantId'),
+            jobId: any(named: 'jobId'),
+            status: 'completed',
+            limit: 200,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _exportableVisit(id: 'visit-1', jobTitle: 'Fixed support item'),
+          ],
+        );
+
+        final controller = _controller(
+          repository: repository,
+          visitsRepository: visitsRepository,
+          session: session,
+          init: true,
+        );
+        await controller.loadExportableVisits();
+        clearInteractions(visitsRepository);
+        controller.lastVisitErrors.add(
+          const InvoiceExportVisitError(
+            visitId: 'visit-1',
+            code: 'support_item_required',
+            message: 'Missing item',
+          ),
+        );
+
+        await controller.openVisitForFix(_exportableVisit(id: 'visit-1'));
+
+        expect(controller.lastVisitErrors, isEmpty);
+        expect(controller.exportableVisits, hasLength(1));
+        expect(controller.exportableVisits.single.id, 'visit-1');
+        verify(
+          () => visitsRepository.listVisits(
+            from: any(named: 'from'),
+            to: any(named: 'to'),
+            clientId: any(named: 'clientId'),
+            participantId: any(named: 'participantId'),
+            jobId: any(named: 'jobId'),
+            status: 'completed',
+            limit: 200,
+          ),
+        ).called(1);
+      },
+    );
   });
 
   test('invoiceExportStatusLabel formats known statuses', () {

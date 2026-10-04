@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
+import '../../visits/widgets/worker_sync_diagnostics_panel.dart';
 import '../controllers/contractor_profile_controller.dart';
 import '../widgets/contractor_profile_sections.dart';
 import '../widgets/notification_bell_button.dart';
@@ -26,6 +28,14 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
           return const Center(child: CircularProgressIndicator());
         }
         final payment = controller.profile.value?.paymentDetails;
+        final photoCleared = controller.photoCleared.value;
+        final hasLocal =
+            controller.localPhotoBytes.value?.isNotEmpty ?? false;
+        final hasServerPhoto =
+            !photoCleared && controller.photo.value?.hasPhoto == true;
+        final showSave =
+            controller.canEditProfile || controller.hasPendingPhotoChanges;
+
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -64,22 +74,39 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
                   Center(
                     child: ProfilePhotoEditor(
                       localBytes: controller.localPhotoBytes.value,
-                      networkUrl: controller.photo.value?.downloadUrl,
-                      documentId: controller.photo.value?.documentId,
-                      isLoading: controller.isPhotoLoading.value,
-                      enabled: controller.canUploadPhoto,
+                      networkUrl:
+                          photoCleared
+                              ? null
+                              : controller.photo.value?.downloadUrl,
+                      documentId:
+                          photoCleared
+                              ? null
+                              : controller.photo.value?.documentId,
+                      isLoading:
+                          controller.isPhotoLoading.value ||
+                          (controller.isSaving.value &&
+                              controller.hasPendingPhotoChanges),
+                      enabled:
+                          controller.canUploadPhoto &&
+                          !controller.isSaving.value,
                       onChanged: controller.onPhotoPicked,
                       onRemove:
-                          controller.photo.value?.hasPhoto == true ||
-                                  (controller
-                                          .localPhotoBytes
-                                          .value
-                                          ?.isNotEmpty ??
-                                      false)
-                              ? controller.removeProfilePhoto
+                          hasServerPhoto || hasLocal
+                              ? controller.clearPendingPhoto
                               : null,
                     ),
                   ),
+                  if (controller.canUploadPhoto) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Photo uploads when you Save profile.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
                   if (controller.canEditProfile) ...[
                     const Divider(height: 32),
                     ContractorProfileSections(controller: controller),
@@ -93,6 +120,8 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
                         ),
                       ),
                     ],
+                  ],
+                  if (showSave) ...[
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
@@ -116,12 +145,14 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
                     ),
                   ],
                   const Divider(height: 32),
+                  const WorkerSyncDiagnosticsPanel(),
+                  const SizedBox(height: 8),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.payments_outlined),
                     title: const Text('My payments'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Get.toNamed(AppRoutes.contractorPayments),
+                    onTap: () => AppNavigator.push(AppRoutes.contractorPayments),
                   ),
                 ],
               ),

@@ -70,8 +70,12 @@ class ClientBudgetRemainingSection extends StatelessWidget {
                     _BudgetCell(
                       _money(envelope.remaining),
                       alignEnd: true,
-                      isNegative:
-                          envelope.remaining != null && envelope.remaining! < 0,
+                      tone:
+                          envelope.isHardBurn
+                              ? _BudgetTone.hard
+                              : envelope.isSoftBurn
+                              ? _BudgetTone.soft
+                              : _BudgetTone.none,
                     ),
                   ],
                 ),
@@ -88,21 +92,33 @@ class ClientBudgetRemainingSection extends StatelessWidget {
   }
 }
 
+enum _BudgetTone { none, soft, hard }
+
 class _BudgetCell extends StatelessWidget {
   const _BudgetCell(
     this.text, {
     this.isHeader = false,
     this.alignEnd = false,
-    this.isNegative = false,
+    this.tone = _BudgetTone.none,
   });
 
   final String text;
   final bool isHeader;
   final bool alignEnd;
-  final bool isNegative;
+  final _BudgetTone tone;
 
   @override
   Widget build(BuildContext context) {
+    final Color color;
+    if (tone == _BudgetTone.hard) {
+      color = AppColors.error;
+    } else if (tone == _BudgetTone.soft) {
+      color = AppColors.openSlot;
+    } else if (isHeader) {
+      color = AppColors.textMuted;
+    } else {
+      color = AppColors.textDark;
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
       child: Text(
@@ -111,10 +127,7 @@ class _BudgetCell extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: isHeader ? FontWeight.w600 : FontWeight.normal,
-          color:
-              isNegative
-                  ? AppColors.openSlot
-                  : (isHeader ? AppColors.textMuted : AppColors.textDark),
+          color: color,
         ),
       ),
     );

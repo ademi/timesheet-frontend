@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
 import '../../../shared/widgets/form_sticky_actions.dart';
@@ -15,7 +17,15 @@ class StrengthsNeedsView extends GetView<StrengthsNeedsController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Strengths & Needs')),
+      appBar: AppBar(
+        leading: AppBackButton(
+          fallbackRoute:
+              controller.clientId.isNotEmpty
+                  ? '${AppRoutes.staffClientSupportPlan}?clientId=${controller.clientId}'
+                  : AppRoutes.staffClients,
+        ),
+        title: const Text('Strengths & Needs'),
+      ),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());

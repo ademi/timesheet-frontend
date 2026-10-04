@@ -7,9 +7,12 @@ import '../../../core/errors/app_failure.dart';
 import '../../documents/data/document_pipeline.dart';
 import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
+import '../models/identity_card_attachment.dart';
 import '../utils/clinical_keys.dart';
 
-/// Care-plan clinical on-file flags + document uploads (profile facts).
+/// Care-plan clinical on-file flags + deferred document uploads (profile facts).
+///
+/// PDFs are held locally until [persistFacts] (Save draft / Activate).
 class SupportPlanClinicalStore {
   SupportPlanClinicalStore({
     required ClientsRepository repository,
@@ -51,6 +54,22 @@ class SupportPlanClinicalStore {
   final hazardPdfOnFile = false.obs;
   final medicalPdfOnFile = false.obs;
 
+  final pendingMedical = Rxn<PendingIdentityCardFile>();
+  final pendingBsp = Rxn<PendingIdentityCardFile>();
+  final pendingNutrition = Rxn<PendingIdentityCardFile>();
+  final pendingHazard = Rxn<PendingIdentityCardFile>();
+
+  final isUploadingMedical = false.obs;
+  final isUploadingBsp = false.obs;
+  final isUploadingNutrition = false.obs;
+  final isUploadingHazard = false.obs;
+
+  bool get hasPendingUploads =>
+      pendingMedical.value != null ||
+      pendingBsp.value != null ||
+      pendingNutrition.value != null ||
+      pendingHazard.value != null;
+
   Future<({String name, List<int> bytes})?> _resolvePickPdfBytes() async {
     final override = _pickPdfBytes;
     if (override != null) return override();
@@ -64,6 +83,48 @@ class SupportPlanClinicalStore {
     final bytes = file.bytes;
     if (bytes == null || bytes.isEmpty) return null;
     return (name: file.name, bytes: bytes);
+  }
+
+  bool _ensureCanPick() {
+    errorMessage.value = null;
+    if (_pipeline == null) {
+      errorMessage.value = 'Document upload is not configured.';
+      return false;
+    }
+    if (!_canUploadDocs()) {
+      errorMessage.value =
+          'Missing documents.upload / clients.docs.manage permission.';
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _pickInto(Rxn<PendingIdentityCardFile> pending) async {
+    if (!_ensureCanPick()) return;
+    final picked = await _resolvePickPdfBytes();
+    if (picked == null) return;
+    pending.value = PendingIdentityCardFile(
+      name: picked.name,
+      bytes: picked.bytes,
+      contentType: 'application/pdf',
+    );
+  }
+
+  Future<void> pickMedicalPdf() => _pickInto(pendingMedical);
+  Future<void> pickBspPdf() => _pickInto(pendingBsp);
+  Future<void> pickNutritionPdf() => _pickInto(pendingNutrition);
+  Future<void> pickHazardPdf() => _pickInto(pendingHazard);
+
+  void clearPendingMedical() => pendingMedical.value = null;
+  void clearPendingBsp() => pendingBsp.value = null;
+  void clearPendingNutrition() => pendingNutrition.value = null;
+  void clearPendingHazard() => pendingHazard.value = null;
+
+  void _clearAllPending() {
+    pendingMedical.value = null;
+    pendingBsp.value = null;
+    pendingNutrition.value = null;
+    pendingHazard.value = null;
   }
 
   void applyProfileBundle(ClientProfileBundle bundle) {
@@ -94,6 +155,7 @@ class SupportPlanClinicalStore {
     hazardPdfOnFile.value = _hasDocument(bundle, ClinicalKeys.hazardChecklist);
     medicalPdfOnFile.value = _hasDocument(bundle, ClinicalKeys.medicalReport);
 
+    _clearAllPending();
     hasHydrated = true;
   }
 
@@ -116,6 +178,109 @@ class SupportPlanClinicalStore {
     if (!hasHydrated || clientId.isEmpty) return const [];
 
     final jobs = <({String key, String label, Future<void> future})>[];
+
+    Future<void> uploadPending({
+      required Rxn<PendingIdentityCardFile> pending,
+      required RxBool uploading,
+      required RxBool pdfOnFile,
+      required String requirementKey,
+      required String category,
+    }) async {
+      final file = pending.value;
+      if (file == null) return;
+      final pipeline = _pipeline;
+      if (pipeline == null) {
+        throw const AppFailure(
+          message: 'Document upload is not configured.',
+          code: 'upload_not_configured',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      if (!_canUploadDocs()) {
+        throw const AppFailure(
+          message:
+              'Missing documents.upload / clients.docs.manage permission.',
+          code: 'permission_denied',
+          presentation: AppFailurePresentation.inline,
+        );
+      }
+      uploading.value = true;
+      try {
+        final doc = await pipeline.uploadEvidence(
+          request: UploadUrlRequest(
+            ownerType: 'client',
+            ownerId: clientId,
+            filename: file.name,
+            contentType: file.contentType,
+            sizeBytes: file.bytes.length,
+            category: category,
+          ),
+          bytes: file.bytes,
+        );
+        await _repository.upsertProfileFact(
+          clientId,
+          requirementKey,
+          ProfileFactUpsert(documentId: doc.id),
+        );
+        pending.value = null;
+        pdfOnFile.value = true;
+      } finally {
+        uploading.value = false;
+      }
+    }
+
+    if (pendingMedical.value != null) {
+      jobs.add((
+        key: ClinicalKeys.medicalReport,
+        label: 'Medical report PDF',
+        future: uploadPending(
+          pending: pendingMedical,
+          uploading: isUploadingMedical,
+          pdfOnFile: medicalPdfOnFile,
+          requirementKey: ClinicalKeys.medicalReport,
+          category: ClinicalKeys.documentCategoryMedical,
+        ),
+      ));
+    }
+    if (pendingBsp.value != null) {
+      jobs.add((
+        key: ClinicalKeys.behaviourSupportPlanDoc,
+        label: 'Behaviour support plan PDF',
+        future: uploadPending(
+          pending: pendingBsp,
+          uploading: isUploadingBsp,
+          pdfOnFile: bspPdfOnFile,
+          requirementKey: ClinicalKeys.behaviourSupportPlanDoc,
+          category: ClinicalKeys.documentCategoryBsp,
+        ),
+      ));
+    }
+    if (pendingNutrition.value != null) {
+      jobs.add((
+        key: ClinicalKeys.nutritionChecklist,
+        label: 'Nutrition checklist PDF',
+        future: uploadPending(
+          pending: pendingNutrition,
+          uploading: isUploadingNutrition,
+          pdfOnFile: nutritionPdfOnFile,
+          requirementKey: ClinicalKeys.nutritionChecklist,
+          category: ClinicalKeys.documentCategoryNutrition,
+        ),
+      ));
+    }
+    if (pendingHazard.value != null) {
+      jobs.add((
+        key: ClinicalKeys.hazardChecklist,
+        label: 'Hazard checklist PDF',
+        future: uploadPending(
+          pending: pendingHazard,
+          uploading: isUploadingHazard,
+          pdfOnFile: hazardPdfOnFile,
+          requirementKey: ClinicalKeys.hazardChecklist,
+          category: ClinicalKeys.documentCategoryHazard,
+        ),
+      ));
+    }
 
     void putBool(String key, String label, bool value) {
       jobs.add((
@@ -161,95 +326,6 @@ class SupportPlanClinicalStore {
     );
     return results.whereType<String>().toSet().toList(growable: false);
   }
-
-  Future<bool> uploadClinicalPdf({
-    required String clientId,
-    required String requirementKey,
-    required String category,
-    required void Function(bool onFile) setOnFileFlag,
-    required RxBool pdfOnFile,
-  }) async {
-    errorMessage.value = null;
-    isBusy.value = true;
-    try {
-      final bytes = await _resolvePickPdfBytes();
-      if (bytes == null) {
-        errorMessage.value = 'Select a PDF to upload.';
-        return false;
-      }
-      final pipeline = _pipeline;
-      if (pipeline == null) {
-        errorMessage.value = 'Document upload is not configured.';
-        return false;
-      }
-      if (!_canUploadDocs()) {
-        errorMessage.value =
-            'Missing documents.upload / clients.docs.manage permission.';
-        return false;
-      }
-      final doc = await pipeline.uploadEvidence(
-        request: UploadUrlRequest(
-          ownerType: 'client',
-          ownerId: clientId,
-          filename: bytes.name,
-          contentType: 'application/pdf',
-          sizeBytes: bytes.bytes.length,
-          category: category,
-        ),
-        bytes: bytes.bytes,
-      );
-      await _repository.upsertProfileFact(
-        clientId,
-        requirementKey,
-        ProfileFactUpsert(documentId: doc.id),
-      );
-      pdfOnFile.value = true;
-      setOnFileFlag(true);
-      return true;
-    } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-      return false;
-    } catch (_) {
-      errorMessage.value = 'Something went wrong. Please try again.';
-      return false;
-    } finally {
-      isBusy.value = false;
-    }
-  }
-
-  Future<bool> uploadBspPdf({required String clientId}) => uploadClinicalPdf(
-    clientId: clientId,
-    requirementKey: ClinicalKeys.behaviourSupportPlanDoc,
-    category: ClinicalKeys.documentCategoryBsp,
-    setOnFileFlag: (v) => bspOnFile.value = v,
-    pdfOnFile: bspPdfOnFile,
-  );
-
-  Future<bool> uploadNutritionPdf({required String clientId}) =>
-      uploadClinicalPdf(
-        clientId: clientId,
-        requirementKey: ClinicalKeys.nutritionChecklist,
-        category: ClinicalKeys.documentCategoryNutrition,
-        setOnFileFlag: (v) => nutritionChecklistOnFile.value = v,
-        pdfOnFile: nutritionPdfOnFile,
-      );
-
-  Future<bool> uploadHazardPdf({required String clientId}) => uploadClinicalPdf(
-    clientId: clientId,
-    requirementKey: ClinicalKeys.hazardChecklist,
-    category: ClinicalKeys.documentCategoryHazard,
-    setOnFileFlag: (v) => hazardChecklistOnFile.value = v,
-    pdfOnFile: hazardPdfOnFile,
-  );
-
-  Future<bool> uploadMedicalPdf({required String clientId}) =>
-      uploadClinicalPdf(
-        clientId: clientId,
-        requirementKey: ClinicalKeys.medicalReport,
-        category: ClinicalKeys.documentCategoryMedical,
-        setOnFileFlag: (_) {},
-        pdfOnFile: medicalPdfOnFile,
-      );
 
   static ClientProfileFactOut? _fact(ClientProfileBundle b, String key) {
     for (final f in b.facts) {

@@ -38,8 +38,8 @@ class _FakeLocation extends VisitLocationService {
       attempt;
 }
 
-VisitOut _visit({String status = 'scheduled'}) {
-  final t = DateTime.utc(2026, 9, 7, 8);
+VisitOut _visit({String status = 'scheduled', DateTime? scheduledStart}) {
+  final t = scheduledStart ?? DateTime.now().toUtc().add(const Duration(hours: 1));
   return VisitOut(
     id: 'visit-1',
     tenantId: 't',
@@ -85,7 +85,9 @@ void main() {
   });
 
   tearDownAll(() async {
-    await storageDirectory.delete(recursive: true);
+    try {
+      await storageDirectory.delete(recursive: true);
+    } catch (_) {}
   });
 
   setUp(() async {
@@ -335,5 +337,46 @@ void main() {
     expect(store.pending(), isEmpty);
     expect(controller.selected.value?.status, 'checked_in');
     expect(controller.selectedSyncUi, VisitClockSyncUi.none);
+  });
+
+  test('late checkIn stores late_reason_code on outbox item', () async {
+    when(
+      () => visits.checkIn(
+        id: any(named: 'id'),
+        body: any(named: 'body'),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    ).thenThrow(
+      const AppFailure(
+        code: 'network_error',
+        message: 'Could not reach the API.',
+        presentation: AppFailurePresentation.inline,
+      ),
+    );
+
+    controller = ContractorVisitsController(
+      repository: visits,
+      shiftsRepository: _MockShiftsRepository(),
+      session: session,
+      location: _FakeLocation(
+        const GpsAttempt.failed('unavailable', 'airplane'),
+      ),
+      outbox: store,
+      syncWorker: worker,
+      isDeviceOffline: () async => true,
+      newEventId: () => eventId,
+      promptLateReason: () async => 'traffic',
+    );
+    controller.onInit();
+    controller.selected.value = _visit(
+      scheduledStart: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
+    );
+
+    await controller.checkIn();
+
+    expect(store.pending(), hasLength(1));
+    expect(store.pending().single.lateReasonCode, 'traffic');
+    final body = gpsBodyFromOutbox(store.pending().single);
+    expect(body.toJson()['late_reason_code'], 'traffic');
   });
 }

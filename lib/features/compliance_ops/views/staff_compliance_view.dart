@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
@@ -25,7 +26,7 @@ class StaffComplianceView extends GetView<StaffComplianceController> {
           leadingActions: [
             if (controller.canReviewCreds)
               TextButton(
-                onPressed: () => Get.toNamed(AppRoutes.staffCredentialReview),
+                onPressed: () => AppNavigator.push(AppRoutes.staffCredentialReview),
                 child: const Text('Credential review'),
               ),
           ],

@@ -11,6 +11,7 @@ import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
+import 'package:rostiq/features/shifts/group_book/group_shift_attendance_controller.dart';
 import 'package:rostiq/features/shifts/group_book/group_shift_book_args.dart';
 import 'package:rostiq/features/shifts/group_book/group_shift_book_controller.dart';
 import 'package:rostiq/features/shifts/group_book/group_shift_edit_controller.dart';
@@ -542,6 +543,9 @@ void main() {
         onRemoved: (_) {},
       );
 
+      expect(c.exportNHint, contains('billable group size at export'));
+      expect(c.exportNHint, contains('N=1'));
+
       await c.remove();
       verifyNever(
         () => shifts.removeParticipant(
@@ -713,6 +717,150 @@ void main() {
       expect(draft.equalSplit, isFalse);
       expect(draft.participants.map((p) => p.allocationValue), [70.0, 50.0]);
       expect(draft.remaining, -20.0);
+    });
+  });
+
+  group('GroupShiftAttendanceController', () {
+    late _MockShiftsRepository shifts;
+
+    setUp(() {
+      Get.testMode = true;
+      shifts = _MockShiftsRepository();
+    });
+
+    tearDown(Get.reset);
+
+    test('empty reason blocked without PATCH', () async {
+      final c = GroupShiftAttendanceController(
+        shiftsRepository: shifts,
+        args: GroupShiftAttendanceArgs(
+          shift: _shift(
+            status: 'published',
+            participants: [
+              _participant(
+                id: 'sp1',
+                participantId: _maya.id,
+                name: _maya.fullName,
+              ),
+              _participant(
+                id: 'sp2',
+                participantId: _jordan.id,
+                name: _jordan.fullName,
+              ),
+            ],
+          ),
+          participant: _participant(
+            id: 'sp1',
+            participantId: _maya.id,
+            name: _maya.fullName,
+          ),
+        ),
+        onSaved: (_) {},
+      );
+
+      await c.save();
+      verifyNever(
+        () => shifts.setParticipantAttendance(
+          any(),
+          any(),
+          attendance: any(named: 'attendance'),
+          reason: any(named: 'reason'),
+          attendedMinutes: any(named: 'attendedMinutes'),
+        ),
+      );
+      expect(c.errorMessage.value, 'Reason is required.');
+    });
+
+    test('no_show reduces billable N and PATCHes', () async {
+      when(
+        () => shifts.setParticipantAttendance(
+          any(),
+          any(),
+          attendance: any(named: 'attendance'),
+          reason: any(named: 'reason'),
+          attendedMinutes: any(named: 'attendedMinutes'),
+        ),
+      ).thenAnswer((_) async => _shift(status: 'published'));
+
+      final c = GroupShiftAttendanceController(
+        shiftsRepository: shifts,
+        args: GroupShiftAttendanceArgs(
+          shift: _shift(
+            status: 'published',
+            participants: [
+              _participant(
+                id: 'sp1',
+                participantId: _maya.id,
+                name: _maya.fullName,
+              ),
+              _participant(
+                id: 'sp2',
+                participantId: _jordan.id,
+                name: _jordan.fullName,
+              ),
+            ],
+          ),
+          participant: _participant(
+            id: 'sp1',
+            participantId: _maya.id,
+            name: _maya.fullName,
+          ),
+        ),
+        onSaved: (_) {},
+      );
+      c.setAttendance('no_show');
+      expect(c.billableNBefore, 2);
+      expect(c.billableNAfter, 1);
+      expect(c.oneClockHint, contains('One worker'));
+      c.reasonCtrl.text = 'Did not attend';
+      await c.save();
+
+      verify(
+        () => shifts.setParticipantAttendance(
+          'shift-1',
+          _maya.id,
+          attendance: 'no_show',
+          reason: 'Did not attend',
+          attendedMinutes: null,
+        ),
+      ).called(1);
+    });
+
+    test('partial requires attended minutes', () async {
+      final c = GroupShiftAttendanceController(
+        shiftsRepository: shifts,
+        args: GroupShiftAttendanceArgs(
+          shift: _shift(
+            status: 'published',
+            participants: [
+              _participant(
+                id: 'sp1',
+                participantId: _maya.id,
+                name: _maya.fullName,
+              ),
+            ],
+          ),
+          participant: _participant(
+            id: 'sp1',
+            participantId: _maya.id,
+            name: _maya.fullName,
+          ),
+        ),
+        onSaved: (_) {},
+      );
+      c.setAttendance('partial');
+      c.reasonCtrl.text = 'Left early';
+      await c.save();
+      verifyNever(
+        () => shifts.setParticipantAttendance(
+          any(),
+          any(),
+          attendance: any(named: 'attendance'),
+          reason: any(named: 'reason'),
+          attendedMinutes: any(named: 'attendedMinutes'),
+        ),
+      );
+      expect(c.errorMessage.value, 'Attended minutes are required for partial.');
     });
   });
 }

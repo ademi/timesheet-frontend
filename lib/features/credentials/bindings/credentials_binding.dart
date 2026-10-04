@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -21,21 +22,20 @@ class CredentialsBinding extends Bindings {
   /// [permanent] keeps the controller across onboarding step route replaces.
   static void ensure({bool permanent = false}) {
     _ensureShared();
-    if (!Get.isRegistered<CredentialsController>()) {
-      if (!Get.isRegistered<SessionService>()) {
-        // Session is registered by AuthBinding after login; skip if missing.
-        return;
-      }
-      Get.put<CredentialsController>(
-        CredentialsController(
-          repository: Get.find<CredentialsRepository>(),
-          documentPipeline: Get.find<DocumentPipeline>(),
-          complianceRepository: Get.find<ComplianceRepository>(),
-          session: Get.find<SessionService>(),
-        ),
-        permanent: permanent,
-      );
+    if (!Get.isRegistered<SessionService>()) {
+      // Session is registered by AuthBinding after login; skip if missing.
+      return;
     }
+    putOrReenter(
+      () => CredentialsController(
+        repository: Get.find<CredentialsRepository>(),
+        documentPipeline: Get.find<DocumentPipeline>(),
+        complianceRepository: Get.find<ComplianceRepository>(),
+        session: Get.find<SessionService>(),
+      ),
+      permanent: permanent,
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 
   static void ensureDependencies() => _ensureShared();
@@ -117,7 +117,7 @@ class StaffCredentialReviewBinding extends Bindings {
         fenix: true,
       );
     }
-    Get.lazyPut<StaffCredentialReviewController>(
+    putFresh(
       () => StaffCredentialReviewController(
         repository: Get.find<CredentialsRepository>(),
         engagementsRepository: Get.find<EngagementsRepository>(),

@@ -7,6 +7,7 @@ import '../../shared/widgets/app_toast.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/models/auth/auth_error_model.dart';
 import '../data/repositories/auth_repository.dart';
+import '../routes/app_navigator.dart';
 import '../routes/app_routes.dart';
 
 class FirstLoginController extends GetxController {
@@ -41,7 +42,7 @@ class FirstLoginController extends GetxController {
         'Password set',
         'Please log in again with your new password.',
       );
-      Get.offAllNamed(AppRoutes.login);
+      AppNavigator.offAll(AppRoutes.login);
     } on AuthErrorModel catch (e) {
       AppToast.error('Error', e.detail);
     } on DioException catch (e) {

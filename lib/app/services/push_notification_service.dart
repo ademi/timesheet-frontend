@@ -6,6 +6,10 @@ import 'package:flutter/foundation.dart';
 import '../../core/constants/api_paths.dart';
 
 /// Registers FCM/APNs device tokens for both staff and contractor sessions.
+///
+/// Navigation on notification tap is **not** wired yet. When added, map
+/// payload → [AppNavigator.go]/[AppNavigator.push] with [AppRoutes] only —
+/// never raw `Get.toNamed` (see Phase 6.3 in the go_router web-only plan).
 class PushNotificationService {
   PushNotificationService({required Dio authenticatedDio})
     : _authenticatedDio = authenticatedDio;

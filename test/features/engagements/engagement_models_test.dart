@@ -61,14 +61,20 @@ void main() {
     expect(withoutLabel.displayLabel, 'Working with Children Check');
   });
 
-  test('invite payload still sends codes only', () {
-    const request = EngagementInviteRequest(
-      email: 'contractor@example.com',
-      requiredCategories: ['passport_id', 'wwcc'],
+  test('invite preview existing_account is not blocking', () {
+    const preview = EngagementInvitePreviewOut(
+      outcome: 'existing_account',
+      message: 'Already has a login.',
     );
-    expect(request.toJson(), {
-      'email': 'contractor@example.com',
-      'required_categories': ['passport_id', 'wwcc'],
-    });
+    expect(preview.isExistingAccount, isTrue);
+    expect(preview.isBlocking, isFalse);
+  });
+
+  test('invite preview hard_split remains blocking', () {
+    const preview = EngagementInvitePreviewOut(
+      outcome: 'hard_split_violation',
+      message: 'Staff member.',
+    );
+    expect(preview.isBlocking, isTrue);
   });
 }

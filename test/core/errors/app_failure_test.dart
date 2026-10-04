@@ -116,7 +116,9 @@ void main() {
         'email_required_for_registration_invite':
             'An email address is required to send a registration invite.',
         'email_already_registered':
-            'This email is already registered. Ask the contractor to log in.',
+            'This email is already registered on another invite path.',
+        'primary_site_already_exists':
+            'This client already has a primary site. Refresh and try again.',
         'invite_token_invalid':
             'This registration invite is invalid or has expired.',
         'invite_email_mismatch':
@@ -232,6 +234,71 @@ void main() {
       );
       expect(failure.isEligibilityIncomplete, isTrue);
       expect(failure.eligibilityReasons, isNotEmpty);
+    });
+
+    test('parses credential_gate_blocked gate.reasons', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(path: '/shifts/1/assign'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/shifts/1/assign'),
+            statusCode: 409,
+            data: {
+              'detail': {
+                'code': 'credential_gate_blocked',
+                'message': 'Worker credentials do not meet roster requirements.',
+                'gate': {
+                  'decision': 'block',
+                  'reasons': [
+                    {'category': 'wwcc', 'reason': 'expired'},
+                  ],
+                },
+              },
+            },
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+      expect(failure.isCredentialGateBlocked, isTrue);
+      expect(failure.eligibilityReasons, ['wwcc: expired']);
+      expect(failure.message, contains('override'));
+    });
+
+    test('parses budget_burn_blocked burn hard_blocks', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(path: '/shifts/1/publish'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/shifts/1/publish'),
+            statusCode: 409,
+            data: {
+              'detail': {
+                'code': 'budget_burn_blocked',
+                'message': 'Publishing would exceed plan budget thresholds.',
+                'burn': {
+                  'hard_blocks': [
+                    {
+                      'participant_id': 'p1',
+                      'client_id': 'c1',
+                      'client_name': 'Maya',
+                      'envelope': 'core',
+                      'estimated_amount': 120,
+                      'severity': 'hard_block',
+                    },
+                  ],
+                  'soft_warns': [],
+                  'by_participant': [],
+                  'pace_outside_release': false,
+                },
+              },
+            },
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+      expect(failure.isBudgetBurnBlocked, isTrue);
+      expect(failure.eligibilityReasons, contains('hard_block: Maya / core'));
+      expect(failure.message, contains('budget'));
     });
 
     test('standing_job_exists is coordinator copy', () {

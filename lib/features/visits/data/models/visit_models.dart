@@ -216,6 +216,7 @@ class VisitOut {
     required this.paymentStatus,
     required this.createdAt,
     required this.updatedAt,
+    this.invoiceStatus = 'pending',
     this.recurrenceRuleId,
     this.latitude,
     this.longitude,
@@ -231,9 +232,12 @@ class VisitOut {
     this.formSubmissions = const [],
     this.engagementId,
     this.shiftId,
+    this.shiftKind = 'standard',
     this.supportItemCode,
     this.supportItemName,
     this.priceTierOverride,
+    this.tripKms,
+    this.tripKmsTravelClaimId,
   });
 
   final String id;
@@ -242,6 +246,7 @@ class VisitOut {
   final String contractorId;
   final String? engagementId;
   final String? shiftId;
+  final String shiftKind;
   final DateTime scheduledStart;
   final DateTime scheduledEnd;
   final String status; // scheduled | checked_in | completed | cancelled
@@ -252,6 +257,7 @@ class VisitOut {
   final int geofenceRadiusM;
   final String geofenceMode;
   final String paymentStatus;
+  final String invoiceStatus;
   final DateTime? completedAt;
   final DateTime? clockInAt;
   final DateTime? clockOutAt;
@@ -262,6 +268,8 @@ class VisitOut {
   final String? supportItemCode;
   final String? supportItemName;
   final String? priceTierOverride;
+  final double? tripKms;
+  final String? tripKmsTravelClaimId;
   final List<VisitTaskOut> tasks;
   final List<VisitFormRequirement> formRequirements;
   final List<VisitFormSubmissionOut> formSubmissions;
@@ -272,6 +280,7 @@ class VisitOut {
   bool get isCheckedIn => status == 'checked_in';
   bool get isCompleted => status == 'completed';
   bool get isCancelled => status == 'cancelled';
+  bool get isInvoiceExported => invoiceStatus == 'exported';
 
   bool get geofenceEnforced =>
       geofenceMode == 'enforced' || geofenceMode == 'enforce';
@@ -292,6 +301,7 @@ class VisitOut {
       contractorId: json['contractor_id'].toString(),
       engagementId: json['engagement_id']?.toString(),
       shiftId: json['shift_id']?.toString(),
+      shiftKind: json['shift_kind'] as String? ?? 'standard',
       scheduledStart: DateTime.parse(json['scheduled_start'] as String),
       scheduledEnd: DateTime.parse(json['scheduled_end'] as String),
       status: json['status'] as String? ?? 'scheduled',
@@ -302,6 +312,7 @@ class VisitOut {
       geofenceRadiusM: json['geofence_radius_m'] as int? ?? 100,
       geofenceMode: json['geofence_mode'] as String? ?? 'informational',
       paymentStatus: json['payment_status'] as String? ?? 'unpaid',
+      invoiceStatus: json['invoice_status'] as String? ?? 'pending',
       completedAt:
           json['completed_at'] != null
               ? DateTime.tryParse(json['completed_at'].toString())
@@ -321,6 +332,8 @@ class VisitOut {
       supportItemCode: json['support_item_code'] as String?,
       supportItemName: json['support_item_name'] as String?,
       priceTierOverride: json['price_tier_override'] as String?,
+      tripKms: (json['trip_kms'] as num?)?.toDouble(),
+      tripKmsTravelClaimId: json['trip_kms_travel_claim_id']?.toString(),
       tasks: mapList(json['tasks'], VisitTaskOut.fromJson),
       formRequirements: mapList(
         json['form_requirements'] ?? json['required_forms'],
@@ -354,6 +367,7 @@ class VisitOut {
       contractorId: contractorId,
       engagementId: engagementId,
       shiftId: shiftId,
+      shiftKind: shiftKind,
       scheduledStart: scheduledStart ?? this.scheduledStart,
       scheduledEnd: scheduledEnd ?? this.scheduledEnd,
       status: status ?? this.status,
@@ -364,6 +378,7 @@ class VisitOut {
       geofenceRadiusM: geofenceRadiusM,
       geofenceMode: geofenceMode,
       paymentStatus: paymentStatus,
+      invoiceStatus: invoiceStatus,
       completedAt:
           clearCompletedAt ? null : (completedAt ?? this.completedAt),
       clockInAt: clockInAt ?? this.clockInAt,
@@ -375,6 +390,8 @@ class VisitOut {
       supportItemCode: supportItemCode,
       supportItemName: supportItemName,
       priceTierOverride: priceTierOverride,
+      tripKms: tripKms,
+      tripKmsTravelClaimId: tripKmsTravelClaimId,
       tasks: tasks ?? this.tasks,
       formRequirements: formRequirements ?? this.formRequirements,
       formSubmissions: formSubmissions ?? this.formSubmissions,
@@ -394,6 +411,7 @@ class VisitGpsBody {
     this.locationStatus = 'captured',
     this.locationFailReason,
     this.deviceOffline = false,
+    this.lateReasonCode,
   });
 
   final double? lat;
@@ -404,6 +422,7 @@ class VisitGpsBody {
   final String locationStatus;
   final String? locationFailReason;
   final bool deviceOffline;
+  final String? lateReasonCode;
 
   Map<String, dynamic> toJson() => {
     if (lat != null) 'lat': lat,
@@ -415,8 +434,37 @@ class VisitGpsBody {
     if (locationFailReason != null)
       'location_fail_reason': locationFailReason,
     if (deviceOffline) 'device_offline': deviceOffline,
+    if (lateReasonCode != null && lateReasonCode!.isNotEmpty)
+      'late_reason_code': lateReasonCode,
   };
 }
+
+/// A19 late check-in reason codes (must match BE allowlist).
+const lateCheckInReasonCodes = <String>[
+  'traffic',
+  'client_delay',
+  'prior_visit_overrun',
+  'equipment_issue',
+  'other',
+];
+
+const lateCheckInReasonLabels = <String, String>{
+  'traffic': 'Traffic / travel delay',
+  'client_delay': 'Client was not ready',
+  'prior_visit_overrun': 'Previous visit ran over',
+  'equipment_issue': 'Equipment / admin issue',
+  'other': 'Other',
+};
+
+/// Grace after scheduled start before punch is considered late (matches BE).
+const lateCheckInGrace = Duration(minutes: 5);
+
+bool isLateCheckIn({
+  required DateTime scheduledStart,
+  required DateTime tapTime,
+  Duration grace = lateCheckInGrace,
+}) =>
+    tapTime.toUtc().isAfter(scheduledStart.toUtc().add(grace));
 
 class VisitCheckInOut {
   const VisitCheckInOut({
@@ -465,14 +513,18 @@ class VisitFormSubmitRequest {
   const VisitFormSubmitRequest({
     required this.formTemplateId,
     required this.payloadJson,
+    this.clientEventId,
   });
 
   final String formTemplateId;
   final Map<String, dynamic> payloadJson;
+  final String? clientEventId;
 
   Map<String, dynamic> toJson() => {
     'form_template_id': formTemplateId,
     'payload_json': payloadJson,
+    if (clientEventId != null && clientEventId!.isNotEmpty)
+      'client_event_id': clientEventId,
   };
 }
 

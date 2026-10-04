@@ -1,7 +1,20 @@
 # Web Refresh & Back-Button Fix (GetX-only)
 
+> **Superseded for web** by Path B (`go_router`) — see
+> [`docs/2026-09-27-go-router-web-only-plan.md`](./2026-09-27-go-router-web-only-plan.md)
+> (Phases 0–6). Flutter Web now boots with `GetMaterialApp.router` + `GoRouter`;
+> browser history, refresh, and shareable URLs are owned by that stack via
+> `AppNavigator`.
+>
+> **Mobile (iOS/Android) still uses GetX named routes.** Patterns below
+> (`PathUrlStrategy` on web bootstrap, `AppBackButton` / `backOrToParent`,
+> Auth/Actor/Permission guards, URL `?id=` hydrate) remain relevant on mobile
+> and as shared design ideas. Treat this document as a **historical GetX-web
+> mitigation archive**, not the current web routing source of truth.
+
 Fixes two Flutter Web (Chrome) problems while staying **100% on GetX** — no
-`go_router`, `auto_route`, or other navigation packages were introduced.
+`go_router`, `auto_route`, or other navigation packages were introduced
+**(historical; web has since adopted go_router — see banner above).**
 
 ## Problems
 

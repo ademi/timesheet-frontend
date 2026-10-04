@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/services/session_service.dart';
 import '../../documents/data/document_pipeline.dart';
 import '../controllers/client_onboarding_controller.dart';
@@ -12,6 +13,21 @@ class ClientOnboardingBinding extends Bindings {
   void dependencies() {
     ClientsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
+
+    // Do not putFresh on every enter: step changes call AppNavigator.replace
+    // and re-run this binding. Wipe only when targeting a different client, or
+    // when the route was left (see [release] / go_router onExit).
+    final incomingId = _incomingClientId();
+    if (Get.isRegistered<ClientOnboardingController>()) {
+      final existingId =
+          Get.find<ClientOnboardingController>().client.value?.id;
+      if (incomingId != null &&
+          existingId != null &&
+          incomingId != existingId) {
+        Get.delete<ClientOnboardingController>(force: true);
+      }
+    }
+
     if (!Get.isRegistered<ClientOnboardingController>()) {
       Get.put(
         ClientOnboardingController(
@@ -24,9 +40,27 @@ class ClientOnboardingBinding extends Bindings {
         ),
       );
     }
-    final args = Get.arguments;
-    if (args is ClientOut) {
-      Get.find<ClientOnboardingController>().hydrateFromClient(args);
+    // Fire-and-forget: hydrate from args or URL id/step (refresh-safe).
+    // ignore: discarded_futures
+    Get.find<ClientOnboardingController>().ensureHydratedFromRoute();
+  }
+
+  /// Drop controller when leaving the onboarding route (GoRouter onExit).
+  static void release() {
+    if (Get.isRegistered<ClientOnboardingController>()) {
+      Get.delete<ClientOnboardingController>(force: true);
     }
+  }
+
+  static String? _incomingClientId() {
+    final fromRoute = routeParam('id');
+    if (fromRoute != null && fromRoute.isNotEmpty) return fromRoute;
+    final args = routeArguments();
+    if (args is ClientOut) return args.id;
+    if (args is Map) {
+      final id = args['id']?.toString();
+      if (id != null && id.isNotEmpty) return id;
+    }
+    return null;
   }
 }

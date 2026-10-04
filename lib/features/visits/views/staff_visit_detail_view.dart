@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../billing/data/models/billing_models.dart';
 import '../../../shared/widgets/async_action.dart';
@@ -46,7 +48,10 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
     final controller = Get.find<StaffVisitsController>();
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Visit')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.staffVisits),
+        title: const Text('Visit'),
+      ),
       body: Obx(() {
         final v = controller.selected.value;
         final err = controller.errorMessage.value;
@@ -143,7 +148,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                           style: Get.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
-                        if (controller.canEditVisitSupportItem)
+                        if (controller.canEditVisitSupportItem) ...[
                           NdisSupportItemPicker(
                             supportItemCode:
                                 controller.editingVisitSupportItemCode.value,
@@ -156,13 +161,29 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                               required String? supportItemCode,
                               required String? supportItemName,
                             }) {
-                              controller.updateVisitSupportItem(
+                              controller.setVisitSupportItemDraft(
                                 supportItemCode: supportItemCode,
                                 supportItemName: supportItemName,
                               );
                             },
-                          )
-                        else if (v.supportItemCode != null &&
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: AsyncElevatedButton(
+                              onPressed:
+                                  controller.hasUnsavedVisitSupportItem
+                                      ? controller.saveVisitSupportItem
+                                      : null,
+                              isLoading: controller.isSaving.value,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.cta,
+                                foregroundColor: AppColors.onPrimary,
+                              ),
+                              child: const Text('Save'),
+                            ),
+                          ),
+                        ] else if (v.supportItemCode != null &&
                             v.supportItemName != null)
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,8 +211,9 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                         const SizedBox(height: 4),
                         Text(
                           controller.canEditVisitSupportItem
-                              ? 'Editable while scheduled or checked in and unpaid.'
-                              : 'Locked after completed or when paid.',
+                              ? 'Editable while scheduled, checked in, or completed '
+                                  '(unpaid, not exported). Pick an item, then Save.'
+                              : 'Locked when paid or already exported.',
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textMuted,

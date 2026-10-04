@@ -12,6 +12,7 @@ import '../../features/contractor_onboarding/bindings/onboarding_binding.dart';
 import '../../shared/widgets/app_toast.dart';
 import '../data/datasources/remote/auth_remote_datasource.dart';
 import '../data/repositories/auth_repository.dart';
+import '../routes/app_navigator.dart';
 import '../routes/app_routes.dart';
 import '../services/push_notification_service.dart';
 
@@ -69,10 +70,10 @@ class AuthController extends GetxController {
 
       if (Get.isRegistered<SessionService>()) {
         final session = Get.find<SessionService>();
-        Get.offAllNamed(session.resolvePostLoginRoute());
+        AppNavigator.offAll(session.resolvePostLoginRoute());
         return;
       }
-      Get.offAllNamed(AppRoutes.adminBranchGateway);
+      AppNavigator.offAll(AppRoutes.adminBranchGateway);
     } on DioException catch (e) {
       if (isMustChangePasswordResponse(e)) {
         redirectToFirstLoginIfNeeded(mustChangePassword: true);
@@ -90,16 +91,31 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout({bool confirmDiscardOutbox = false}) async {
-    if (hasPendingClockOutbox()) {
+    final clockPending = hasPendingClockOutbox();
+    final mediaPending = hasPendingMediaOutbox();
+    final formPending = hasPendingFormDrafts();
+    if (clockPending || mediaPending || formPending) {
       if (!confirmDiscardOutbox) {
         if (Get.testMode) {
-          throw StateError('outbox_not_empty');
+          throw StateError(
+            clockPending
+                ? 'outbox_not_empty'
+                : mediaPending
+                    ? 'media_outbox_not_empty'
+                    : 'form_draft_not_empty',
+          );
         }
-        final confirmed = await _confirmDiscardOutboxLogout();
+        final confirmed = await _confirmDiscardOutboxLogout(
+          clockPending: clockPending,
+          mediaPending: mediaPending,
+          formPending: formPending,
+        );
         if (!confirmed) return;
         confirmDiscardOutbox = true;
       }
       discardClockOutboxIfConfirmed(confirmDiscardOutbox: confirmDiscardOutbox);
+      discardMediaOutboxIfConfirmed(confirmDiscardOutbox: confirmDiscardOutbox);
+      discardFormDraftsIfConfirmed(confirmDiscardOutbox: confirmDiscardOutbox);
     }
     if (Get.isRegistered<PushNotificationService>()) {
       await Get.find<PushNotificationService>().unregisterCurrentDeviceToken();
@@ -112,18 +128,39 @@ class AuthController extends GetxController {
     await _authRepository.logout();
     emailController.clear();
     passwordController.clear();
-    Get.offAllNamed(AppRoutes.gateway);
+    AppNavigator.offAll(AppRoutes.gateway);
     // After leaving any funnel route so dispose cannot re-ensure().
     OnboardingBinding.reset();
     HomeAlertsBinding.reset();
   }
 
-  Future<bool> _confirmDiscardOutboxLogout() async {
+  Future<bool> _confirmDiscardOutboxLogout({
+    required bool clockPending,
+    required bool mediaPending,
+    required bool formPending,
+  }) async {
+    final parts = <String>[];
+    if (clockPending) {
+      parts.add('clock events waiting to sync');
+    }
+    if (mediaPending) {
+      parts.add('photo/video evidence waiting to upload');
+    }
+    if (formPending) {
+      parts.add('field notes waiting to sync');
+    }
+    final title = formPending && !clockPending && !mediaPending
+        ? 'Unsent field notes'
+        : mediaPending && !clockPending && !formPending
+            ? 'Unsent evidence'
+            : clockPending && !mediaPending && !formPending
+                ? 'Unsent check-ins'
+                : 'Unsent data';
     return await Get.dialog<bool>(
           AlertDialog(
-            title: const Text('Unsent check-ins'),
-            content: const Text(
-              'You have clock events waiting to sync. '
+            title: Text(title),
+            content: Text(
+              'You have ${parts.join(' and ')}. '
               'Logging out will discard them unless you wait for sync to finish.',
             ),
             actions: [

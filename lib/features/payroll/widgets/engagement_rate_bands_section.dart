@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../controllers/engagement_rate_bands_controller.dart';
@@ -92,9 +93,12 @@ class _EngagementRateBandsSectionState
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed:
-                  () => Get.toNamed(
-                    AppRoutes.staffWorkforceRateForm,
-                    arguments: widget.engagementId,
+                  () => AppNavigator.push(
+                    AppNavigator.location(
+                      AppRoutes.staffWorkforceRateForm,
+                      query: {'id': widget.engagementId},
+                    ),
+                    extra: widget.engagementId,
                   ),
               icon: const Icon(Icons.add),
               label: const Text('New payment rate'),

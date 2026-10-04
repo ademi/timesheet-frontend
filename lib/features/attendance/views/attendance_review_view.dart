@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
@@ -23,7 +24,7 @@ class AttendanceReviewView extends GetView<AttendanceReviewController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Attendance review')),
+      appBar: AppBar(title: const Text('Attendance & variance')),
       body: Obx(() {
         final err = controller.errorMessage.value;
         final actionErr = controller.actionError.value;
@@ -57,6 +58,12 @@ class AttendanceReviewView extends GetView<AttendanceReviewController> {
                     selected: filter == AttendanceReviewFilter.gps,
                     onSelected: (_) =>
                         controller.setFilter(AttendanceReviewFilter.gps),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Variance'),
+                    selected: filter == AttendanceReviewFilter.variance,
+                    onSelected: (_) =>
+                        controller.setFilter(AttendanceReviewFilter.variance),
                   ),
                   ChoiceChip(
                     label: const Text('Sync'),
@@ -118,7 +125,7 @@ class AttendanceReviewView extends GetView<AttendanceReviewController> {
                                           const SizedBox(height: 20),
                                           TextButton.icon(
                                             onPressed:
-                                                () => Get.toNamed(
+                                                () => AppNavigator.go(
                                                   AppRoutes.staffVisits,
                                                 ),
                                             icon: const Icon(

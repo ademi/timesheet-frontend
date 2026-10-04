@@ -80,6 +80,15 @@ class StaffPaymentsController extends GetxController {
     loadAll();
   }
 
+  /// Tier-2 shell re-enter: soft reload; clear batch create selection drafts.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    selectedContractorIds.clear();
+    selectedBatch.value = null;
+    // ignore: discarded_futures
+    loadAll();
+  }
+
   @override
   void onClose() {
     periodLabelCtrl.dispose();

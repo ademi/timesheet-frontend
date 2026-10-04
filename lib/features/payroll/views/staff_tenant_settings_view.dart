@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
@@ -81,7 +82,7 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                     leading: const Icon(Icons.work_outline),
                     title: const Text('Supports'),
                     subtitle: const Text('Advanced list of ongoing support'),
-                    onTap: () => Get.toNamed(AppRoutes.staffJobs),
+                    onTap: () => AppNavigator.push(AppRoutes.staffJobs),
                   ),
                   const Divider(height: 32),
                   const Text(
@@ -105,6 +106,83 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                       labelText: 'Public holiday jurisdiction',
                       border: OutlineInputBorder(),
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: controller.providerAbnCtrl,
+                    enabled: controller.canManage,
+                    decoration: const InputDecoration(
+                      labelText: 'Provider ABN (11 digits)',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Unregistered providers use 90% of catalogue price limits '
+                    'from 1 Jan 2027 (snapshotted at publish).',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: controller.ndisProviderRegistrationStatus.value,
+                    decoration: const InputDecoration(
+                      labelText: 'NDIS provider registration',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'registered',
+                        child: Text('Registered'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'unregistered',
+                        child: Text('Unregistered (−10% from 2027)'),
+                      ),
+                    ],
+                    onChanged:
+                        controller.canManage
+                            ? (v) {
+                              if (v != null) {
+                                controller
+                                    .ndisProviderRegistrationStatus
+                                    .value = v;
+                              }
+                            }
+                            : null,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'When a visit uses enforce geofence: soft allows the punch '
+                    'and opens a variance for review; hard blocks with '
+                    'geofence_rejected.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: controller.geofenceOutsidePolicy.value,
+                    decoration: const InputDecoration(
+                      labelText: 'Outside geofence policy',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'soft',
+                        child: Text('Soft (allow + variance)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'hard',
+                        child: Text('Hard (reject punch)'),
+                      ),
+                    ],
+                    onChanged:
+                        controller.canManage
+                            ? (v) {
+                              if (v != null) {
+                                controller.geofenceOutsidePolicy.value = v;
+                              }
+                            }
+                            : null,
                   ),
                   const SizedBox(height: 16),
                   if (controller.canManage)

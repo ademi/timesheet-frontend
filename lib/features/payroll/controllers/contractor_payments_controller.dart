@@ -32,6 +32,13 @@ class ContractorPaymentsController extends GetxController {
     load();
   }
 
+  /// Tier-2 shell re-enter: soft reload; keep payment filter.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    // ignore: discarded_futures
+    load();
+  }
+
   Future<void> load() async {
     if (!canView) {
       errorMessage.value = 'Missing permission to view payment status.';

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
@@ -57,6 +58,15 @@ class ContractorScheduleController extends GetxController {
     loadAll();
   }
 
+  /// Tier-2 shell re-enter: soft reload window; clear abandoned leave notes.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    leaveValidationMessage.value = null;
+    leaveNotesCtrl.clear();
+    // ignore: discarded_futures
+    loadAll();
+  }
+
   @override
   void onClose() {
     leaveStartCtrl.dispose();
@@ -106,11 +116,20 @@ class ContractorScheduleController extends GetxController {
   }
 
   void openVisitsTab() {
-    Get.toNamed(AppRoutes.contractorVisits);
+    AppNavigator.go(AppRoutes.contractorVisits);
   }
 
   void openVisit(TimetableVisitOut visit) {
-    Get.toNamed(AppRoutes.contractorVisitDetail, arguments: visit.id);
+    final stub = visit.toVisitOutStub(
+      contractorId: _session.contractorId.value ?? '',
+    );
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.contractorVisitDetail,
+        query: {'id': stub.id},
+      ),
+      extra: stub,
+    );
   }
 
   /// Seven calendar days for the current timetable range, each with its visits.

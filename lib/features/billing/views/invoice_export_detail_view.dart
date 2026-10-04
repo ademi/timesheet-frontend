@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/invoice_export_detail_controller.dart';
@@ -15,7 +17,12 @@ class InvoiceExportDetailView extends GetView<InvoiceExportDetailController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Export detail')),
+      appBar: AppBar(
+        leading: const AppBackButton(
+          fallbackRoute: AppRoutes.staffBillingExports,
+        ),
+        title: const Text('Export detail'),
+      ),
       body: Obx(() {
         final export = controller.selected.value;
         final err = controller.errorMessage.value;

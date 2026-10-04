@@ -12,6 +12,7 @@ import '../shifts/group_book/group_shift_book_binding.dart';
 import '../shifts/group_book/group_shift_book_view.dart';
 import '../shifts/group_book/group_shift_edit_binding.dart';
 import '../shifts/group_book/group_shift_edit_view.dart';
+import '../shifts/group_book/group_shift_attendance_view.dart';
 import '../shifts/group_book/group_shift_remove_view.dart';
 import '../shifts/group_publish/group_shift_publish_binding.dart';
 import '../shifts/group_publish/group_shift_publish_view.dart';
@@ -102,6 +103,19 @@ abstract final class VisitsPages {
       ],
       binding: GroupShiftRemoveBinding(),
       page: () => const GroupShiftRemoveView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.staffGroupShiftAttendance,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
+        ),
+      ],
+      binding: GroupShiftAttendanceBinding(),
+      page: () => const GroupShiftAttendanceView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

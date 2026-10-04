@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/availability_rules_readout.dart';
@@ -27,33 +29,40 @@ class WorkforceDetailView extends GetView<WorkforceController> {
 
   @override
   Widget build(BuildContext context) {
-    final arg = Get.arguments;
-    final EngagementOut? initial =
-        arg is EngagementOut ? arg : controller.selected;
-    if (initial == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Engagement')),
-        body: const Center(child: Text('Engagement not found.')),
-      );
-    }
-
     return Obx(() {
-      EngagementOut current = initial;
+      final selected = controller.selectedRx.value;
+      if (selected == null) {
+        return Scaffold(
+          appBar: AppBar(
+            leading: const AppBackButton(
+              fallbackRoute: AppRoutes.staffWorkforce,
+            ),
+            title: const Text('Engagement'),
+          ),
+          body:
+              controller.isLoading.value
+                  ? const Center(child: CircularProgressIndicator())
+                  : const Center(child: Text('Engagement not found.')),
+        );
+      }
+      EngagementOut current = selected;
       for (final e in controller.items) {
-        if (e.id == initial.id) {
+        if (e.id == selected.id) {
           current = e;
           break;
         }
-      }
-      if (controller.selected?.id == initial.id) {
-        current = controller.selected!;
       }
       final err = controller.errorMessage.value;
       final tab = controller.tabIndex.value;
 
       return Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(title: Text(current.displayName)),
+        appBar: AppBar(
+          leading: const AppBackButton(
+            fallbackRoute: AppRoutes.staffWorkforce,
+          ),
+          title: Text(current.displayName),
+        ),
         body: Column(
           children: [
             if (err != null)

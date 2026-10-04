@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -51,15 +52,14 @@ class StaffPaymentsBinding extends Bindings {
   void dependencies() {
     PayrollBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<StaffPaymentsController>()) {
-      Get.put(
-        StaffPaymentsController(
-          payroll: Get.find<PayrollRepository>(),
-          visits: Get.find<VisitsRepository>(),
-          session: Get.find<SessionService>(),
-        ),
-      );
-    }
+    putOrReenter(
+      () => StaffPaymentsController(
+        payroll: Get.find<PayrollRepository>(),
+        visits: Get.find<VisitsRepository>(),
+        session: Get.find<SessionService>(),
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 }
 
@@ -68,14 +68,13 @@ class ContractorPaymentsBinding extends Bindings {
   void dependencies() {
     VisitsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<ContractorPaymentsController>()) {
-      Get.put(
-        ContractorPaymentsController(
-          visits: Get.find<VisitsRepository>(),
-          session: Get.find<SessionService>(),
-        ),
-      );
-    }
+    putOrReenter(
+      () => ContractorPaymentsController(
+        visits: Get.find<VisitsRepository>(),
+        session: Get.find<SessionService>(),
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 }
 
@@ -85,14 +84,13 @@ class StaffTenantSettingsBinding extends Bindings {
     PayrollBinding.ensureShared();
     ComplianceOpsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<StaffTenantSettingsController>()) {
-      Get.put(
-        StaffTenantSettingsController(
-          payroll: Get.find<PayrollRepository>(),
-          complianceOps: Get.find<ComplianceOpsRepository>(),
-          session: Get.find<SessionService>(),
-        ),
-      );
-    }
+    putOrReenter(
+      () => StaffTenantSettingsController(
+        payroll: Get.find<PayrollRepository>(),
+        complianceOps: Get.find<ComplianceOpsRepository>(),
+        session: Get.find<SessionService>(),
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 }

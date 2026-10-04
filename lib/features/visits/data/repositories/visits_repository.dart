@@ -14,6 +14,7 @@ class VisitsRepository {
     DateTime? to,
     String? jobId,
     String? clientId,
+    String? participantId,
     String? contractorId,
     String? status,
     String? paymentStatus,
@@ -24,6 +25,7 @@ class VisitsRepository {
     to: to,
     jobId: jobId,
     clientId: clientId,
+    participantId: participantId,
     contractorId: contractorId,
     status: status,
     paymentStatus: paymentStatus,
@@ -43,7 +45,8 @@ class VisitsRepository {
     scheduledEnd: scheduledEnd,
   );
 
-  Future<void> cancel(String id) => _remote.cancel(id);
+  Future<void> cancel(String id, {Map<String, dynamic>? body}) =>
+      _remote.cancel(id, body: body);
 
   Future<VisitCheckInOut> checkIn({
     required String id,
@@ -117,6 +120,16 @@ class VisitsRepository {
 
   Future<ShiftBriefDto> getVisitShiftBrief(String visitId) =>
       _remote.getVisitShiftBrief(visitId);
+
+  Future<VisitOut> putVisitTripKms({
+    required String visitId,
+    required double tripKms,
+    String? supportItemCode,
+  }) => _remote.putVisitTripKms(
+    visitId: visitId,
+    tripKms: tripKms,
+    supportItemCode: supportItemCode,
+  );
 
   Future<RosterOverlayOut> fetchRosterOverlay({
     required DateTime from,

@@ -2,7 +2,44 @@
 
 enum AttendanceReviewKind { exception, syncConflict }
 
-enum AttendanceReviewFilter { all, gps, sync }
+enum AttendanceReviewFilter { all, gps, variance, sync }
+
+/// Human labels for attendance exception kinds / reason codes (B5 variance report).
+String attendanceExceptionHeadline(String kind, String reasonCode) {
+  switch (kind) {
+    case 'geofence_outside':
+      if (reasonCode == 'geofence_outside_clock_out') {
+        return 'Clock-out outside geofence';
+      }
+      return 'Clock-in outside geofence';
+    case 'early_clock_out':
+      return 'Early clock-out';
+    case 'late_check_in':
+      return 'Late check-in';
+    case 'location_missing':
+      return 'GPS missing on punch';
+    default:
+      break;
+  }
+  final cleaned = reasonCode.trim();
+  if (cleaned.isEmpty) return kind;
+  return cleaned.replaceAll('_', ' ');
+}
+
+String attendanceExceptionDetail(String kind, String reasonCode) {
+  final parts = <String>[kind.replaceAll('_', ' ')];
+  final cleaned = reasonCode.trim();
+  if (cleaned.isNotEmpty && cleaned != kind) {
+    parts.add(cleaned.replaceAll('_', ' '));
+  }
+  return parts.join(' · ');
+}
+
+bool attendanceExceptionIsVariance(String kind) {
+  return kind == 'geofence_outside' ||
+      kind == 'early_clock_out' ||
+      kind == 'late_check_in';
+}
 
 class AttendanceExceptionOut {
   const AttendanceExceptionOut({
@@ -141,8 +178,8 @@ class AttendanceReviewItem {
       visitId: e.visitId,
       status: e.status,
       sortAt: e.openedAt,
-      headline: e.reasonCode,
-      detail: e.kind,
+      headline: attendanceExceptionHeadline(e.kind, e.reasonCode),
+      detail: attendanceExceptionDetail(e.kind, e.reasonCode),
       exception: e,
     );
   }

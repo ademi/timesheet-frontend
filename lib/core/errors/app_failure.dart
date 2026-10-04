@@ -21,7 +21,7 @@ class AppFailure implements Exception {
   final AppFailurePresentation presentation;
   final int? statusCode;
 
-  /// Parsed from `eligibility_incomplete` payloads when present.
+  /// Parsed from `eligibility_incomplete` / `credential_gate_blocked` payloads.
   final List<String> eligibilityReasons;
 
   /// Per-visit issues from batch billing/export responses (`visit_errors`).
@@ -36,6 +36,14 @@ class AppFailure implements Exception {
   bool get isProxyRequired => code == 'proxy_required';
 
   bool get isEligibilityIncomplete => code == 'eligibility_incomplete';
+
+  bool get isCredentialGateBlocked => code == 'credential_gate_blocked';
+
+  bool get isAssignGateBlocked => code == 'assign_gate_blocked';
+
+  bool get isBudgetBurnBlocked => code == 'budget_burn_blocked';
+
+  bool get isBudgetOverrideForbidden => code == 'budget_override_forbidden';
 
   bool get isSharingGrantRequired => code == 'sharing_grant_required';
 
@@ -153,7 +161,12 @@ class AppFailure implements Exception {
     final map = Map<String, dynamic>.from(data);
     final detail = map['detail'];
     if (detail is Map) {
-      final reasons = detail['reasons'] ?? detail['requirements'];
+      final detailMap = Map<String, dynamic>.from(detail);
+      final gate = detailMap['gate'];
+      final reasons =
+          detailMap['reasons'] ??
+          detailMap['requirements'] ??
+          (gate is Map ? gate['reasons'] : null);
       if (reasons is List) {
         return reasons
             .map((e) {
@@ -165,6 +178,36 @@ class AppFailure implements Exception {
               return e.toString();
             })
             .toList(growable: false);
+      }
+      final burn = detailMap['burn'];
+      if (burn is Map) {
+        final burnMap = Map<String, dynamic>.from(burn);
+        final lines = <String>[];
+        void addLines(Object? raw, String label) {
+          if (raw is! List) return;
+          for (final item in raw) {
+            if (item is! Map) continue;
+            final row = Map<String, dynamic>.from(item);
+            final name =
+                row['client_name']?.toString() ??
+                row['client_id']?.toString() ??
+                'participant';
+            final envelope = row['envelope']?.toString() ?? 'envelope';
+            lines.add('$label: $name / $envelope');
+          }
+        }
+
+        addLines(burnMap['hard_blocks'], 'hard_block');
+        addLines(burnMap['soft_warns'], 'soft_warn');
+        if (burnMap['pace_outside_release'] == true) {
+          final msg = burnMap['pace_message']?.toString();
+          lines.add(
+            msg != null && msg.isNotEmpty
+                ? 'pace_outside_release: $msg'
+                : 'pace_outside_release',
+          );
+        }
+        if (lines.isNotEmpty) return lines;
       }
     }
     return const [];
@@ -187,6 +230,10 @@ class AppFailure implements Exception {
       'scan_blocked',
       'proxy_required',
       'eligibility_incomplete',
+      'credential_gate_blocked',
+      'assign_gate_blocked',
+      'budget_burn_blocked',
+      'budget_override_forbidden',
       'counsel_pending',
       'counsel_pending_policy',
       'legal_document_unavailable',
@@ -196,6 +243,7 @@ class AppFailure implements Exception {
       'visit_already_completed',
       'clock_times_in_future',
       'visit_overlap',
+      'clock_overlap',
       'shift_overlap',
       'site_or_branch_required',
       'standing_job_exists',
@@ -206,6 +254,7 @@ class AppFailure implements Exception {
       'hard_split_violation',
       'email_required_for_registration_invite',
       'email_already_registered',
+      'primary_site_already_exists',
       'invite_token_invalid',
       'invite_email_mismatch',
       'engagement_already_exists',
@@ -241,10 +290,18 @@ class AppFailure implements Exception {
       'visit_support_item_is_day_unit',
       'visit_has_only_travel_claims',
       'support_item_required',
+      'legacy_sta_ratio_item_forbidden',
       'quote_required_not_exportable',
       'visit_already_exported',
       'time_entry_not_closed',
       'task_billable_minutes_required',
+      'hours_exceed_24_per_day',
+      'group_allocation_invalid',
+      'provider_abn_required',
+      'attendance_locked_exported',
+      'membership_locked_exported',
+      'destination_profile_not_found',
+      'invalid_rejection_reason',
       'task_minutes_exceed_visit_hours',
       'delivery_postcode_required',
       'price_limit_missing_for_tier',
@@ -288,6 +345,10 @@ class AppFailure implements Exception {
       case 'billing_gate':
         return AppFailurePresentation.billingGate;
       case 'eligibility_incomplete':
+      case 'credential_gate_blocked':
+      case 'assign_gate_blocked':
+      case 'budget_burn_blocked':
+      case 'budget_override_forbidden':
       case 'geofence_rejected':
       case 'forms_incomplete':
       case 'required_forms_incomplete':
@@ -299,6 +360,7 @@ class AppFailure implements Exception {
       case 'split_blocked_by_active_visit':
       case 'contractor_not_found':
       case 'visit_overlap':
+      case 'clock_overlap':
       case 'shift_overlap':
       case 'site_or_branch_required':
       case 'leave_in_past':
@@ -306,6 +368,8 @@ class AppFailure implements Exception {
       case 'evidence_required':
       case 'shift_full':
       case 'invalid_shift_status':
+      case 'attendance_locked_exported':
+      case 'membership_locked_exported':
       case 'contractor_on_leave':
       case 'shift_not_found':
       case 'support_item_pair':
@@ -313,6 +377,7 @@ class AppFailure implements Exception {
       case 'support_item_not_in_catalogue':
       case 'support_item_name_mismatch':
       case 'support_item_required':
+      case 'legacy_sta_ratio_item_forbidden':
       case 'support_item_not_hourly':
       case 'visit_support_item_is_travel':
       case 'visit_support_item_is_day_unit':
@@ -382,6 +447,14 @@ class AppFailure implements Exception {
         return 'This file must be opened through a secure download.';
       case 'eligibility_incomplete':
         return 'Requirements incomplete — review the listed items.';
+      case 'credential_gate_blocked':
+        return 'Screening or credentials block this roster action — review the listed items or provide an audited override reason.';
+      case 'assign_gate_blocked':
+        return 'Care competency or housemate compatibility blocks this assign — review the listed items or provide an audited override reason.';
+      case 'budget_burn_blocked':
+        return 'Publishing would exceed plan budget thresholds — review burn warnings or provide an audited override reason.';
+      case 'budget_override_forbidden':
+        return 'Plan budget override requires billing.manage. Ask a finance admin to publish with an audited reason.';
       case 'mfa_required':
         return 'Multi-factor authentication required. Complete MFA, then retry.';
       case 'notice_not_presented':
@@ -423,6 +496,8 @@ class AppFailure implements Exception {
         return 'Arrival and departure can’t be in the future.';
       case 'visit_overlap':
         return 'Overlapping visit — adjust the window or use partial generate.';
+      case 'clock_overlap':
+        return 'This clock time overlaps another shift for this worker.';
       case 'shift_overlap':
         return 'A shift for this job already exists in that time window.';
       case 'leave_in_past':
@@ -450,7 +525,9 @@ class AppFailure implements Exception {
       case 'email_required_for_registration_invite':
         return 'An email address is required to send a registration invite.';
       case 'email_already_registered':
-        return 'This email is already registered. Ask the contractor to log in.';
+        return 'This email is already registered on another invite path.';
+      case 'primary_site_already_exists':
+        return 'This client already has a primary site. Refresh and try again.';
       case 'invite_token_invalid':
         return 'This registration invite is invalid or has expired.';
       case 'invite_email_mismatch':
@@ -487,6 +564,9 @@ class AppFailure implements Exception {
         return 'This visit’s support item is a travel (Each) item, not hourly. Set an hourly support item on the visit, and keep travel under Travel claims.';
       case 'visit_support_item_is_day_unit':
         return 'This visit’s support item is a day-rate item, not hourly. Set an hourly support item on the visit; add accommodation separately if needed.';
+      case 'legacy_sta_ratio_item_forbidden':
+        return 'Legacy STA ratio packages cannot be claimed. '
+            'Pick an unbundled support item.';
       case 'support_item_not_hourly':
         return 'Use an hourly (H) support item for visits. Travel and other non-hour items can’t be the visit support item.';
       case 'quote_required_not_exportable':
@@ -499,6 +579,21 @@ class AppFailure implements Exception {
         return 'Set billable minutes on each billed task.';
       case 'task_minutes_exceed_visit_hours':
         return 'Task minutes exceed the visit duration.';
+      case 'hours_exceed_24_per_day':
+        return 'Closed clocks for a client exceed 24 hours on one day.';
+      case 'group_allocation_invalid':
+        return 'Group participant allocations must sum to 100%. Fix the shift first.';
+      case 'provider_abn_required':
+        return 'Add the provider ABN in Settings before exporting plan-managed claims.';
+      case 'attendance_locked_exported':
+        return 'Attendance is locked after invoice export. Void the export first.';
+      case 'membership_locked_exported':
+        return 'Group membership is locked after invoice export. '
+            'Void the export, then change participants and rebill.';
+      case 'destination_profile_not_found':
+        return 'Choose an active plan-manager destination profile.';
+      case 'invalid_rejection_reason':
+        return 'Pick a valid rejection reason.';
       case 'delivery_postcode_required':
         return 'Job location needs a postcode for pricing, or set a price tier override.';
       case 'price_limit_missing_for_tier':

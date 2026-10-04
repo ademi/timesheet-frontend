@@ -258,8 +258,8 @@ class EngagementInvitePreviewOut {
 
   bool get needsRegistration => outcome == 'needs_registration';
   bool get isExistingContractor => outcome == 'existing_contractor';
+  bool get isExistingAccount => outcome == 'existing_account';
   bool get isBlocking =>
-      outcome == 'email_already_registered' ||
       outcome == 'email_required_for_registration' ||
       outcome == 'hard_split_violation' ||
       outcome == 'engagement_already_exists';

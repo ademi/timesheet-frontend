@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../core/getx/put_fresh.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/token_storage.dart';
 import '../controllers/branch_gateway_controller.dart';
@@ -31,7 +32,8 @@ class BranchGatewayBinding extends Bindings {
       );
     }
 
-    Get.lazyPut<BranchGatewayController>(
+    // Fresh loadBranches() on each visit (lazyPut kept prior selection UI stale).
+    putFresh(
       () => BranchGatewayController(
         branchRepository: Get.find<BranchRepository>(),
         tokenStorage: Get.find<TokenStorage>(),

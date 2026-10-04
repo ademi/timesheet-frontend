@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
@@ -101,7 +102,7 @@ class CredentialsListView extends GetView<CredentialsController> {
                                 ? (categories) {
                                   controller.selectedType.value =
                                       categories.first;
-                                  Get.toNamed(
+                                  AppNavigator.push(
                                     AppRoutes.contractorCredentialCreate,
                                   );
                                 }
@@ -114,7 +115,7 @@ class CredentialsListView extends GetView<CredentialsController> {
                       alignment: Alignment.centerLeft,
                       child: ElevatedButton.icon(
                         onPressed:
-                            () => Get.toNamed(
+                            () => AppNavigator.push(
                               AppRoutes.contractorCredentialCreate,
                             ),
                         icon: const Icon(Icons.add),
@@ -277,10 +278,7 @@ class _CredentialTile extends StatelessWidget {
               onSelected: (value) async {
                 switch (value) {
                   case 'detail':
-                    Get.toNamed(
-                      AppRoutes.contractorCredentialDetail,
-                      arguments: credential,
-                    );
+                    c.openDetail(credential);
                   case 'upload':
                     await c.attachEvidence(credential);
                   case 'supersede':
@@ -305,11 +303,7 @@ class _CredentialTile extends StatelessWidget {
                       ),
                   ],
             ),
-            onTap:
-                () => Get.toNamed(
-                  AppRoutes.contractorCredentialDetail,
-                  arguments: credential,
-                ),
+            onTap: () => c.openDetail(credential),
           ),
           if (c.evidenceFor(credential).isNotEmpty)
             Padding(

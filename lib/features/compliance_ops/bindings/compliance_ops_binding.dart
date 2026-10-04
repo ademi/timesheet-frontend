@@ -1,8 +1,11 @@
 import 'package:get/get.dart';
 
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
+import '../../billing/bindings/billing_binding.dart';
+import '../../billing/data/repositories/billing_repository.dart';
 import '../../clients/bindings/clients_binding.dart';
 import '../../clients/data/repositories/clients_repository.dart';
 import '../../contractor_me/data/datasources/contractor_me_remote_datasource.dart';
@@ -62,16 +65,15 @@ class StaffComplianceBinding extends Bindings {
     CredentialsBinding.ensureDependencies();
     EngagementsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<StaffComplianceController>()) {
-      Get.put(
-        StaffComplianceController(
-          repository: Get.find<ComplianceOpsRepository>(),
-          credentialsRepository: Get.find<CredentialsRepository>(),
-          engagementsRepository: Get.find<EngagementsRepository>(),
-          session: Get.find<SessionService>(),
-        ),
-      );
-    }
+    putOrReenter(
+      () => StaffComplianceController(
+        repository: Get.find<ComplianceOpsRepository>(),
+        credentialsRepository: Get.find<CredentialsRepository>(),
+        engagementsRepository: Get.find<EngagementsRepository>(),
+        session: Get.find<SessionService>(),
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 }
 
@@ -96,19 +98,18 @@ class ContractorProfileOpsBinding extends Bindings {
         ),
       );
     }
-    if (!Get.isRegistered<ContractorProfileController>()) {
-      Get.put(
-        ContractorProfileController(
-          repository: Get.find<ComplianceOpsRepository>(),
-          session: Get.find<SessionService>(),
-          documentPipeline:
-              Get.isRegistered<DocumentPipeline>()
-                  ? Get.find<DocumentPipeline>()
-                  : null,
-          meRepository: Get.find<ContractorMeRepository>(),
-        ),
-      );
-    }
+    putOrReenter(
+      () => ContractorProfileController(
+        repository: Get.find<ComplianceOpsRepository>(),
+        session: Get.find<SessionService>(),
+        documentPipeline:
+            Get.isRegistered<DocumentPipeline>()
+                ? Get.find<DocumentPipeline>()
+                : null,
+        meRepository: Get.find<ContractorMeRepository>(),
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 }
 
@@ -121,6 +122,7 @@ class HomeAlertsBinding extends Bindings {
     JobsBinding.ensureShared();
     VisitsBinding.ensureShared();
     CredentialsBinding.ensureDependencies();
+    BillingBinding.ensureShared();
     NotificationsFeedController.ensureRegistered();
     if (!Get.isRegistered<SessionService>()) return;
     // Keep across shell Get.offNamed tab switches to avoid refetch storms.
@@ -134,6 +136,10 @@ class HomeAlertsBinding extends Bindings {
           jobsRepository: Get.find<JobsRepository>(),
           visitsRepository: Get.find<VisitsRepository>(),
           credentialsRepository: Get.find<CredentialsRepository>(),
+          billingRepository:
+              Get.isRegistered<BillingRepository>()
+                  ? Get.find<BillingRepository>()
+                  : null,
           notificationsFeed: Get.find<NotificationsFeedController>(),
         ),
         permanent: true,

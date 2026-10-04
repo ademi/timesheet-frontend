@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../clients/data/models/client_models.dart';
 import '../../clients/data/repositories/clients_repository.dart';
+import '../../jobs/data/models/job_models.dart';
+import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../data/exported_visit_ids_store.dart';
@@ -33,33 +37,65 @@ class InvoiceExportsController extends GetxController {
     required SessionService session,
     required ExportedVisitIdsStore exportedVisitIds,
     ClientsRepository? clientsRepository,
+    JobsRepository? jobsRepository,
   }) : _repository = repository,
        _visitsRepository = visitsRepository,
        _session = session,
        _exportedVisitIds = exportedVisitIds,
-       _clientsRepository = clientsRepository;
+       _clientsRepository = clientsRepository,
+       _jobsRepository = jobsRepository;
 
   final BillingRepository _repository;
   final VisitsRepository _visitsRepository;
   final SessionService _session;
   final ExportedVisitIdsStore _exportedVisitIds;
   final ClientsRepository? _clientsRepository;
+  final JobsRepository? _jobsRepository;
 
   final tabIndex = 0.obs;
   final exports = <InvoiceExportOut>[].obs;
   final exportableVisits = <VisitOut>[].obs;
+  final unclaimedAgeing = <UnclaimedAgeingVisitOut>[].obs;
+  final ageingApproaching90Only = false.obs;
+  final burnAlerts = <BurnEnvelopeAlertOut>[].obs;
+  final paymentEnquiries = <PaymentEnquiryOut>[].obs;
+  final arAgeing = <ArAgeingExportOut>[].obs;
+  final arManagementTypeFilter = ''.obs;
   final selectedVisitIds = <String>{}.obs;
   final lastVisitErrors = <InvoiceExportVisitError>[].obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
   final clients = <ClientOut>[].obs;
+  final jobs = <JobOut>[].obs;
   final clientIdFilter = ''.obs;
+  final participantIdFilter = ''.obs;
+  final jobIdFilter = ''.obs;
+
+  /// In-flight count for [isLoading] so concurrent loads (exports + ageing + …)
+  /// do not clear the spinner when the first request finishes (C5).
+  int _loadingCount = 0;
 
   late final Rx<DateTimeRange> periodRange;
 
+
   bool get canView => _session.canViewBilling;
   bool get canManage => _session.canManageBilling;
+
+  /// True when any unclaimed visit is ≥60 days (watch / high / critical).
+  bool get hasAgeingRiskBadge =>
+      unclaimedAgeing.any((v) => v.isWatchOrWorse);
+
+  int get ageingRiskCount =>
+      unclaimedAgeing.where((v) => v.isWatchOrWorse).length;
+
+  bool get hasBurnAlertBadge => burnAlerts.isNotEmpty;
+
+  int get burnAlertCount => burnAlerts.length;
+
+  bool get hasArRiskBadge => arAgeing.any((e) => e.isWatchOrWorse);
+
+  int get arRiskCount => arAgeing.where((e) => e.isWatchOrWorse).length;
 
   /// Test/read access to the shared export exclusion set.
   ExportedVisitIdsStore get exportedVisitIds => _exportedVisitIds;
@@ -78,6 +114,27 @@ class InvoiceExportsController extends GetxController {
     return list;
   }
 
+  /// Participant filter reuses the client directory (participants are clients).
+  List<({String id, String name})> get participantFilterOptions =>
+      clientFilterOptions;
+
+  /// Job/support filter options for Create-tab.
+  List<({String id, String name})> get jobFilterOptions {
+    final list =
+        jobs
+            .map(
+              (j) => (
+                id: j.id,
+                name: (j.title.trim().isEmpty ? j.id : j.title.trim()),
+              ),
+            )
+            .toList(growable: false)
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
+    return list;
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -89,9 +146,197 @@ class InvoiceExportsController extends GetxController {
           end: today,
         ).obs;
     loadExports();
+    loadUnclaimedAgeing();
+    loadBurnAlerts();
+    loadPaymentEnquiries();
+    loadArAgeing();
     if (canManage) {
       loadClients();
+      loadJobs();
     }
+    _applyInitialTabFromArgs();
+  }
+
+  void _applyInitialTabFromArgs() {
+    final raw = routeArguments();
+    String? tab = routeParam('tab');
+    if (raw is Map) {
+      tab ??= raw['tab']?.toString();
+    } else if (raw is String) {
+      tab ??= raw;
+    }
+    switch (tab) {
+      case 'create':
+        if (canManage) switchToCreateTab();
+      case 'ageing' || '90d':
+        switchToAgeingTab();
+      case 'burn':
+        switchToBurnTab();
+      case 'pe':
+        switchToPeTab();
+      case 'ar':
+        switchToArTab();
+      default:
+        break;
+    }
+  }
+
+  void _beginLoading() {
+    _loadingCount++;
+    isLoading.value = true;
+  }
+
+  void _endLoading() {
+    if (_loadingCount > 0) {
+      _loadingCount--;
+    }
+    if (_loadingCount == 0) {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> loadBurnAlerts() async {
+    if (!canView) return;
+    try {
+      burnAlerts.assignAll(await _repository.listBudgetAlerts());
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (_) {
+      // Non-blocking for other tabs.
+    }
+  }
+
+  Future<void> loadPaymentEnquiries() async {
+    if (!canView) return;
+    try {
+      paymentEnquiries.assignAll(await _repository.listPaymentEnquiries());
+    } on AppFailure catch (_) {
+      // Optional tower tab.
+    }
+  }
+
+  Future<void> loadArAgeing() async {
+    if (!canView) return;
+    try {
+      final mt = arManagementTypeFilter.value.trim();
+      arAgeing.assignAll(
+        await _repository.listArAgeing(
+          managementType: mt.isEmpty ? null : mt,
+        ),
+      );
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (_) {
+      // Optional tower tab.
+    }
+  }
+
+  Future<void> setArManagementTypeFilter(String? value) async {
+    arManagementTypeFilter.value = value?.trim() ?? '';
+    await loadArAgeing();
+  }
+
+  Future<void> setArDelayReason(ArAgeingExportOut row, String reason) async {
+    if (!canManage) return;
+    try {
+      final updated = await _repository.patchArExport(
+        row.exportId,
+        delayReason: reason,
+      );
+      final idx = arAgeing.indexWhere((e) => e.exportId == row.exportId);
+      if (idx >= 0) arAgeing[idx] = updated;
+      AppToast.success('Saved', 'Delay reason saved');
+    } on AppFailure catch (e) {
+      AppToast.error('AR update failed', e.message);
+    }
+  }
+
+  Future<void> markArPaid(ArAgeingExportOut row) async {
+    if (!canManage) return;
+    try {
+      await _repository.patchArExport(
+        row.exportId,
+        arPaymentStatus: 'paid',
+        clearDelayReason: true,
+      );
+      arAgeing.removeWhere((e) => e.exportId == row.exportId);
+      AppToast.success('Paid', 'Marked paid');
+    } on AppFailure catch (e) {
+      AppToast.error('AR update failed', e.message);
+    }
+  }
+
+  Future<void> loadUnclaimedAgeing() async {
+    if (!canView) return;
+    _beginLoading();
+    errorMessage.value = null;
+    try {
+      final clientId = clientIdFilter.value.trim();
+      final list = await _repository.listUnclaimedAgeing(
+        clientId: clientId.isEmpty ? null : clientId,
+        approaching90: ageingApproaching90Only.value,
+      );
+      // Oldest first from API; keep that order for claim urgency.
+      unclaimedAgeing.assignAll(list);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      _endLoading();
+    }
+  }
+
+  Future<void> setAgeingApproaching90Only(bool value) async {
+    if (ageingApproaching90Only.value == value) return;
+    ageingApproaching90Only.value = value;
+    await loadUnclaimedAgeing();
+  }
+
+  Future<void> openUnclaimedVisitForFix(UnclaimedAgeingVisitOut row) async {
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final visit = await _visitsRepository.getVisit(row.visitId);
+      await openVisitForFix(visit);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      if (!Get.testMode) {
+        AppToast.error('Could not open visit', e.message);
+      }
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  /// Jump to Create tab and select this visit for export when present.
+  Future<void> openUnclaimedForExport(UnclaimedAgeingVisitOut row) async {
+    switchToCreateTab();
+    selectedVisitIds.add(row.visitId);
+    if (!exportableVisits.any((v) => v.id == row.visitId)) {
+      // Outside current period — still open Fix so staff can correct codes.
+      await openUnclaimedVisitForFix(row);
+    }
+  }
+
+  void switchToAgeingTab() {
+    tabIndex.value = 2;
+    loadUnclaimedAgeing();
+  }
+
+  void switchToBurnTab() {
+    tabIndex.value = 3;
+    loadBurnAlerts();
+  }
+
+  void switchToPeTab() {
+    tabIndex.value = 4;
+    loadPaymentEnquiries();
+  }
+
+  void switchToArTab() {
+    tabIndex.value = 5;
+    loadArAgeing();
   }
 
   Future<void> loadClients() async {
@@ -103,8 +348,26 @@ class InvoiceExportsController extends GetxController {
       if (selected.isNotEmpty && !clients.any((c) => c.id == selected)) {
         clientIdFilter.value = '';
       }
+      final participant = participantIdFilter.value;
+      if (participant.isNotEmpty && !clients.any((c) => c.id == participant)) {
+        participantIdFilter.value = '';
+      }
     } catch (_) {
       // Client filter is optional; Create still works with "All clients".
+    }
+  }
+
+  Future<void> loadJobs() async {
+    final repo = _jobsRepository;
+    if (repo == null || !canManage) return;
+    try {
+      jobs.assignAll(await repo.listJobs());
+      final selected = jobIdFilter.value;
+      if (selected.isNotEmpty && !jobs.any((j) => j.id == selected)) {
+        jobIdFilter.value = '';
+      }
+    } catch (_) {
+      // Job filter is optional.
     }
   }
 
@@ -113,7 +376,7 @@ class InvoiceExportsController extends GetxController {
       errorMessage.value = 'Missing billing.view permission.';
       return;
     }
-    isLoading.value = true;
+    _beginLoading();
     errorMessage.value = null;
     try {
       exports.assignAll(await _repository.listInvoiceExports());
@@ -122,7 +385,7 @@ class InvoiceExportsController extends GetxController {
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
-      isLoading.value = false;
+      _endLoading();
     }
   }
 
@@ -139,14 +402,18 @@ class InvoiceExportsController extends GetxController {
       range.end.month,
       range.end.day,
     ).add(const Duration(days: 1));
-    isLoading.value = true;
+    _beginLoading();
     errorMessage.value = null;
     try {
       final clientId = clientIdFilter.value.trim();
+      final participantId = participantIdFilter.value.trim();
+      final jobId = jobIdFilter.value.trim();
       final list = await _visitsRepository.listVisits(
         from: from,
         to: to,
         clientId: clientId.isEmpty ? null : clientId,
+        participantId: participantId.isEmpty ? null : participantId,
+        jobId: jobId.isEmpty ? null : jobId,
         status: 'completed',
         limit: 200,
       );
@@ -161,15 +428,27 @@ class InvoiceExportsController extends GetxController {
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
-      isLoading.value = false;
+      _endLoading();
     }
   }
 
   Future<void> loadAll() async {
     await loadExports();
+    await loadUnclaimedAgeing();
+    await loadBurnAlerts();
+    await loadPaymentEnquiries();
     if (canManage) {
       await loadExportableVisits();
     }
+  }
+
+  /// Tier-2 shell re-enter: soft reload; clear create-wizard visit selection.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    selectedVisitIds.clear();
+    lastVisitErrors.clear();
+    // ignore: discarded_futures
+    loadAll();
   }
 
   Future<void> pickPeriod(BuildContext context) async {
@@ -190,6 +469,29 @@ class InvoiceExportsController extends GetxController {
     final next = clientId?.trim() ?? '';
     if (clientIdFilter.value == next) return;
     clientIdFilter.value = next;
+    selectedVisitIds.clear();
+    lastVisitErrors.clear();
+    await loadUnclaimedAgeing();
+    if (tabIndex.value == 1 && canManage) {
+      await loadExportableVisits();
+    }
+  }
+
+  Future<void> setParticipantFilter(String? participantId) async {
+    final next = participantId?.trim() ?? '';
+    if (participantIdFilter.value == next) return;
+    participantIdFilter.value = next;
+    selectedVisitIds.clear();
+    lastVisitErrors.clear();
+    if (tabIndex.value == 1 && canManage) {
+      await loadExportableVisits();
+    }
+  }
+
+  Future<void> setJobFilter(String? jobId) async {
+    final next = jobId?.trim() ?? '';
+    if (jobIdFilter.value == next) return;
+    jobIdFilter.value = next;
     selectedVisitIds.clear();
     lastVisitErrors.clear();
     if (tabIndex.value == 1 && canManage) {
@@ -341,16 +643,28 @@ class InvoiceExportsController extends GetxController {
     ]);
   }
 
-  void openVisitForFix(VisitOut visit) {
-    if (Get.testMode) return;
-    Get.toNamed(AppRoutes.staffVisitDetail, arguments: visit);
+  /// Opens visit detail for Fix-on-visit; reloads Create list when staff returns.
+  Future<void> openVisitForFix(VisitOut visit) async {
+    if (!Get.testMode) {
+      await AppNavigator.push(
+        AppNavigator.location(
+          AppRoutes.staffVisitDetail,
+          query: {'id': visit.id},
+        ),
+        extra: visit,
+      );
+    }
+    lastVisitErrors.clear();
+    await loadExportableVisits();
   }
 
   void openDetail(InvoiceExportOut export) {
-    Get.toNamed(
-      AppRoutes.staffBillingExportDetail,
-      parameters: {'id': export.id},
-      arguments: export,
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffBillingExportDetail,
+        query: {'id': export.id},
+      ),
+      extra: export,
     );
   }
 }

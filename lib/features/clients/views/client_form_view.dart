@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
@@ -18,10 +20,13 @@ class ClientFormView extends GetView<ClientsController> {
   @override
   Widget build(BuildContext context) {
     // Legacy create path → redirect to onboarding wizard.
-    if (controller.isCreateFlow.value || controller.editing == null) {
+    if (controller.editing == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (Get.currentRoute == AppRoutes.staffClientForm) {
-          Get.offNamed(AppRoutes.staffClientOnboarding);
+        final path = AppNavigator.usesGoRouter
+            ? AppNavigator.currentLocation
+            : Get.currentRoute;
+        if (path.startsWith(AppRoutes.staffClientForm)) {
+          AppNavigator.go(AppRoutes.staffClientOnboarding);
         }
       });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -29,7 +34,10 @@ class ClientFormView extends GetView<ClientsController> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Edit client')),
+      appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.staffClients),
+        title: const Text('Edit client'),
+      ),
       body: Obx(() {
         final err = controller.errorMessage.value;
         final progress = controller.profileSaveProgress.value;

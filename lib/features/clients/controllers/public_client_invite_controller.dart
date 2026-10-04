@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../data/models/client_models.dart';
 import '../data/repositories/clients_repository.dart';
@@ -21,7 +22,7 @@ class PublicClientInviteController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    token = (Get.parameters['token'] ?? Get.arguments?.toString() ?? '').trim();
+    token = (routeParam('token') ?? Get.arguments?.toString() ?? '').trim();
     if (token.isEmpty) {
       errorMessage.value = 'Missing invite token.';
     } else {

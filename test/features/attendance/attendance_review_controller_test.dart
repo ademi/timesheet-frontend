@@ -194,4 +194,59 @@ void main() {
     controller.setFilter(AttendanceReviewFilter.all);
     expect(controller.visibleItems.length, 2);
   });
+
+  test('variance filter keeps geofence / early / late exceptions only', () async {
+    when(
+      () => repository.listExceptions(status: 'pending_ack'),
+    ).thenAnswer(
+      (_) async => [
+        sampleException(id: 'gps'),
+        AttendanceExceptionOut(
+          id: 'out',
+          tenantId: 'tenant-1',
+          visitId: 'visit-3',
+          timeEntryId: 'te-2',
+          kind: 'geofence_outside',
+          reasonCode: 'geofence_outside',
+          status: 'pending_ack',
+          openedAt: DateTime.utc(2026, 9, 17, 12),
+        ),
+        AttendanceExceptionOut(
+          id: 'early',
+          tenantId: 'tenant-1',
+          visitId: 'visit-4',
+          timeEntryId: 'te-3',
+          kind: 'early_clock_out',
+          reasonCode: 'early_clock_out',
+          status: 'pending_ack',
+          openedAt: DateTime.utc(2026, 9, 17, 13),
+        ),
+      ],
+    );
+    when(
+      () => repository.listSyncConflicts(status: 'open'),
+    ).thenAnswer((_) async => [sampleConflict()]);
+
+    final controller = buildController();
+    await controller.load();
+    controller.setFilter(AttendanceReviewFilter.variance);
+
+    expect(controller.visibleItems.length, 2);
+    expect(
+      controller.visibleItems.map((i) => i.exception!.kind).toSet(),
+      {'geofence_outside', 'early_clock_out'},
+    );
+    expect(
+      controller.visibleItems
+          .firstWhere((i) => i.exception!.kind == 'geofence_outside')
+          .headline,
+      'Clock-in outside geofence',
+    );
+    expect(
+      controller.visibleItems
+          .firstWhere((i) => i.exception!.kind == 'early_clock_out')
+          .headline,
+      'Early clock-out',
+    );
+  });
 }

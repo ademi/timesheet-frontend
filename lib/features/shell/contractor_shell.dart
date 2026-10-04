@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
+import '../../app/routes/app_navigator.dart';
 import '../../app/routes/app_routes.dart';
+import '../../app/routes/middlewares/auth_route_utils.dart';
 import '../../app/views/shell/adaptive_navigation_shell.dart';
 import '../../app/views/shell/responsive_scaffold.dart';
 import '../../shared/widgets/closed_beta_banner.dart';
@@ -33,22 +34,26 @@ abstract final class ContractorShellNav {
     AppRoutes.contractorProfile,
   ];
 
-  static int selectedIndex(String route) {
-    if (route.startsWith(AppRoutes.contractorVisitDetail)) {
+  static String get _currentPath =>
+      locationPath(AppNavigator.currentLocation);
+
+  static int selectedIndex([String? route]) {
+    final path = route ?? _currentPath;
+    if (path.startsWith(AppRoutes.contractorVisitDetail)) {
       return 1;
     }
-    if (route.startsWith(AppRoutes.contractorOnboarding)) {
+    if (path.startsWith(AppRoutes.contractorOnboarding)) {
       return 0;
     }
-    final i = _routes.indexWhere((r) => route.startsWith(r));
+    final i = _routes.indexWhere((r) => path.startsWith(r));
     return i < 0 ? 0 : i;
   }
 
   static void navigateTo(int index) {
     if (index < 0 || index >= _routes.length) return;
     final route = _routes[index];
-    if (Get.currentRoute == route) return;
-    Get.offNamed(route);
+    if (_currentPath == route) return;
+    AppNavigator.go(route);
   }
 }
 
@@ -63,9 +68,7 @@ class ContractorShell extends StatelessWidget {
     final body = _shellBody(child);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final index = ContractorShellNav.selectedIndex(
-          Get.currentRoute,
-        ).clamp(0, 4);
+        final index = ContractorShellNav.selectedIndex().clamp(0, 4);
 
         return AdaptiveNavigationShell(
           destinations: ContractorShellNav.destinations,

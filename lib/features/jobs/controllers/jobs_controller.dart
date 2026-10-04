@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/mixins/pending_action_mixin.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/utils/name_sort.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -15,7 +18,7 @@ import '../../billing/data/models/billing_models.dart';
 import '../data/models/job_models.dart';
 import '../data/repositories/jobs_repository.dart';
 
-class JobsController extends GetxController {
+class JobsController extends GetxController with PendingActionMixin {
   JobsController({
     required JobsRepository repository,
     required ClientsRepository clientsRepository,
@@ -41,6 +44,11 @@ class JobsController extends GetxController {
 
   /// Attached templates from `GET /v1/jobs/{id}/form-catalog`.
   final formCatalog = <JobFormCatalogOut>[].obs;
+
+  /// Multi-select ids pending attach on Manage templates (not yet in catalog).
+  final pendingAttachIds = <String>[].obs;
+
+  static const attachCatalogPendingKey = 'attach-catalog';
 
   final isLoading = false.obs;
   final isSaving = false.obs;
@@ -107,6 +115,31 @@ class JobsController extends GetxController {
     loadAll();
   }
 
+  /// Tier-2 shell re-enter: soft list refresh; clear create-form drafts on list tab.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    clientSiteWarning.value = null;
+    final path =
+        Uri.tryParse(AppNavigator.currentLocation)?.path ??
+        AppNavigator.currentLocation;
+    if (path == AppRoutes.staffJobs) {
+      titleCtrl.clear();
+      kind.value = 'standing';
+      locationMode.value = 'site';
+      selectedClientId.value = null;
+      selectedSiteId.value = null;
+      selectedBranchId.value = null;
+      sites.clear();
+      geofenceMode.value = 'informational';
+      geofenceRadiusCtrl.text = '100';
+      supportItemCode.value = null;
+      supportItemName.value = null;
+    }
+    // ignore: discarded_futures
+    loadAll();
+    hydrateSelectedFromArgs();
+  }
+
   @override
   void onClose() {
     titleCtrl.dispose();
@@ -149,7 +182,7 @@ class JobsController extends GetxController {
   }
 
   void hydrateSelectedFromArgs() {
-    final arg = Get.arguments;
+    final arg = routeArguments();
     if (arg is JobOut) {
       selected.value = arg;
     }
@@ -160,8 +193,8 @@ class JobsController extends GetxController {
     hydrateSelectedFromArgs();
     final id =
         selected.value?.id ??
-        Get.parameters['id'] ??
-        (Get.arguments is String ? Get.arguments as String : null);
+        routeParam('id') ??
+        (routeArguments() is String ? routeArguments() as String : null);
     if (id == null || id.isEmpty) return;
     await loadJobDetail(id);
   }
@@ -202,7 +235,7 @@ class JobsController extends GetxController {
 
   Future<void> openFormTemplatesAndRefresh() async {
     errorMessage.value = null;
-    await Get.toNamed(AppRoutes.staffFormTemplates);
+    await AppNavigator.push(AppRoutes.staffFormTemplates);
     await _refreshTemplatesAndCatalog();
   }
 
@@ -210,17 +243,24 @@ class JobsController extends GetxController {
   Future<void> openManageTemplatesAndRefresh() async {
     errorMessage.value = null;
     final job = selected.value;
-    await Get.toNamed(
-      AppRoutes.staffJobManageTemplates,
-      arguments: job,
-      parameters: job != null ? {'id': job.id} : null,
+    await AppNavigator.push(
+      job == null
+          ? AppRoutes.staffJobManageTemplates
+          : AppNavigator.location(
+            AppRoutes.staffJobManageTemplates,
+            query: {'id': job.id},
+          ),
+      extra: job,
     );
     await _refreshTemplatesAndCatalog();
   }
 
   Future<void> openFormTemplateEditor({FormTemplateOut? existing}) async {
     errorMessage.value = null;
-    await Get.toNamed(AppRoutes.staffFormTemplateEditor, arguments: existing);
+    await AppNavigator.push(
+      AppRoutes.staffFormTemplateEditor,
+      extra: existing,
+    );
     await _refreshTemplatesAndCatalog();
   }
 
@@ -292,7 +332,7 @@ class JobsController extends GetxController {
     supportItemName.value = null;
     errorMessage.value = null;
     clientSiteWarning.value = null;
-    Get.toNamed(AppRoutes.staffJobForm);
+    AppNavigator.push(AppRoutes.staffJobForm);
   }
 
   Future<void> saveJob() async {
@@ -361,10 +401,12 @@ class JobsController extends GetxController {
     formCatalog.clear();
     lastGenerate.value = null;
     tabIndex.value = 0;
-    Get.toNamed(
-      AppRoutes.staffJobDetail,
-      arguments: job,
-      parameters: {'id': job.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffJobDetail,
+        query: {'id': job.id},
+      ),
+      extra: job,
     );
     await loadJobDetail(job.id);
   }
@@ -461,21 +503,50 @@ class JobsController extends GetxController {
     }
   }
 
-  Future<void> attachFormTemplate(String templateId) async {
+  Future<void> attachFormTemplates(List<String> templateIds) async {
     final job = selected.value;
     if (job == null) return;
-    isSaving.value = true;
-    errorMessage.value = null;
-    try {
-      await _repository.addFormCatalog(job.id, templateId);
-      await refreshFormCatalog();
-      AppToast.info('Attached', 'Form template added to job catalog.');
-    } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-    } finally {
-      isSaving.value = false;
+    final ids =
+        templateIds
+            .map((id) => id.trim())
+            .where((id) => id.isNotEmpty && !isTemplateAttached(id))
+            .toSet()
+            .toList();
+    if (ids.isEmpty) return;
+    await runPendingAction(attachCatalogPendingKey, () async {
+      errorMessage.value = null;
+      try {
+        await _repository.addFormCatalog(job.id, ids);
+        pendingAttachIds.removeWhere(ids.contains);
+        await refreshFormCatalog();
+        if (!Get.testMode) {
+          AppToast.info(
+            'Attached',
+            ids.length == 1
+                ? 'Form template added to job catalog.'
+                : '${ids.length} form templates added to job catalog.',
+          );
+        }
+      } on AppFailure catch (e) {
+        errorMessage.value = e.message;
+      }
+    });
+  }
+
+  Future<void> attachSelectedFormTemplates() async {
+    await attachFormTemplates(List<String>.from(pendingAttachIds));
+  }
+
+  void togglePendingAttach(String templateId) {
+    if (isTemplateAttached(templateId)) return;
+    if (pendingAttachIds.contains(templateId)) {
+      pendingAttachIds.remove(templateId);
+    } else {
+      pendingAttachIds.add(templateId);
     }
   }
+
+  void clearPendingAttach() => pendingAttachIds.clear();
 
   /// Create or update a tenant-wide form template with a full field schema.
   Future<bool> saveFormTemplate({

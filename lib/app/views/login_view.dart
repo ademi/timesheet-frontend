@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../../core/responsive/max_width_box.dart';
 import '../controllers/auth_controller.dart';
+import '../routes/app_navigator.dart';
 import '../routes/app_routes.dart';
 import '../themes/app_colors.dart';
 import '../../shared/widgets/rostiq_logo.dart';
@@ -181,7 +182,7 @@ class LoginView extends GetView<AuthController> {
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed:
-                          () => Get.toNamed(AppRoutes.contractorRegister),
+                          () => AppNavigator.push(AppRoutes.contractorRegister),
                       child: const Text('Register as contractor'),
                     ),
                     const SizedBox(height: 24),

@@ -84,11 +84,12 @@ class JobsRemoteDataSource {
     }
   }
 
-  Future<void> addFormCatalog(String jobId, String formTemplateId) async {
+  Future<void> addFormCatalog(String jobId, List<String> formTemplateIds) async {
+    if (formTemplateIds.isEmpty) return;
     try {
       await _dio.post<void>(
         ApiPaths.jobFormCatalog(jobId),
-        data: {'form_template_id': formTemplateId},
+        data: {'form_template_ids': formTemplateIds},
       );
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);

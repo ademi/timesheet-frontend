@@ -33,6 +33,9 @@ class StaffTenantSettingsController extends GetxController {
 
   final timezoneCtrl = TextEditingController();
   final jurisdictionCtrl = TextEditingController();
+  final providerAbnCtrl = TextEditingController();
+  final geofenceOutsidePolicy = 'soft'.obs;
+  final ndisProviderRegistrationStatus = 'registered'.obs;
 
   bool get canManage => _session.hasPermission(AppPermissions.tenantsManage);
   bool get canViewMembers =>
@@ -49,10 +52,18 @@ class StaffTenantSettingsController extends GetxController {
     load();
   }
 
+  /// Tier-2 shell re-enter: reload tenant settings (refills form from server).
+  void onScreenReenter() {
+    errorMessage.value = null;
+    // ignore: discarded_futures
+    load();
+  }
+
   @override
   void onClose() {
     timezoneCtrl.dispose();
     jurisdictionCtrl.dispose();
+    providerAbnCtrl.dispose();
     super.onClose();
   }
 
@@ -69,6 +80,9 @@ class StaffTenantSettingsController extends GetxController {
       tenant.value = t;
       timezoneCtrl.text = t.timezone ?? '';
       jurisdictionCtrl.text = t.publicHolidayJurisdiction ?? '';
+      providerAbnCtrl.text = t.providerAbn ?? '';
+      geofenceOutsidePolicy.value = t.geofenceOutsidePolicy;
+      ndisProviderRegistrationStatus.value = t.ndisProviderRegistrationStatus;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     }
@@ -103,11 +117,20 @@ class StaffTenantSettingsController extends GetxController {
             jurisdictionCtrl.text.trim().isEmpty
                 ? null
                 : jurisdictionCtrl.text.trim(),
+        geofenceOutsidePolicy: geofenceOutsidePolicy.value,
+        providerAbn:
+            providerAbnCtrl.text.trim().isEmpty
+                ? null
+                : providerAbnCtrl.text.trim(),
+        ndisProviderRegistrationStatus: ndisProviderRegistrationStatus.value,
       );
       tenant.value = updated;
+      geofenceOutsidePolicy.value = updated.geofenceOutsidePolicy;
+      ndisProviderRegistrationStatus.value =
+          updated.ndisProviderRegistrationStatus;
       AppToast.success(
         'Saved',
-        'Tenant timezone / holiday jurisdiction updated.',
+        'Tenant settings updated.',
       );
     } on AppFailure catch (e) {
       await BillingGate.showIfNeeded(e);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../app/themes/app_colors.dart';
 import '../../../../shared/widgets/app_date_field.dart';
 import '../../../../shared/widgets/other_text_field.dart';
 import '../../../../shared/widgets/profile_photo_editor.dart';
@@ -70,6 +71,7 @@ class OnboardingIdentityStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final enabled = !controller.isSaving.value;
+      final uploadEnabled = enabled && controller.canUploadDocs;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -78,10 +80,18 @@ class OnboardingIdentityStep extends StatelessWidget {
             'Participant identity',
             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
+          if (!controller.canUploadDocs) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Document upload is unavailable without documents.upload '
+              'permission — photo and ID cards stay read-only.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          ],
           const SizedBox(height: 12),
           ProfilePhotoEditor(
             localBytes: controller.localPhotoBytes.value,
-            enabled: enabled,
+            enabled: uploadEnabled,
             onChanged: controller.onPhotoPicked,
             onRemove: controller.clearPhoto,
           ),
@@ -161,7 +171,7 @@ class OnboardingIdentityStep extends StatelessWidget {
             numberController: controller.medicareCtrl,
             numberLabel: 'Medicare number (optional)',
             attachment: controller.medicareCardAttachment,
-            enabled: enabled,
+            enabled: uploadEnabled,
             onPick:
                 () => controller.pickIdentityCard(
                   controller.medicareCardAttachment,
@@ -176,7 +186,7 @@ class OnboardingIdentityStep extends StatelessWidget {
             numberController: controller.companionCardNumberCtrl,
             numberLabel: 'Companion card number (optional)',
             attachment: controller.companionCardAttachment,
-            enabled: enabled,
+            enabled: uploadEnabled,
             onPick:
                 () => controller.pickIdentityCard(
                   controller.companionCardAttachment,
@@ -191,7 +201,7 @@ class OnboardingIdentityStep extends StatelessWidget {
             numberController: controller.disabilityCardNumberCtrl,
             numberLabel: 'Disability card number (optional)',
             attachment: controller.disabilityCardAttachment,
-            enabled: enabled,
+            enabled: uploadEnabled,
             onPick:
                 () => controller.pickIdentityCard(
                   controller.disabilityCardAttachment,
@@ -206,7 +216,7 @@ class OnboardingIdentityStep extends StatelessWidget {
             numberController: controller.pensionCardNumberCtrl,
             numberLabel: 'Pension card number (optional)',
             attachment: controller.pensionCardAttachment,
-            enabled: enabled,
+            enabled: uploadEnabled,
             onPick:
                 () => controller.pickIdentityCard(
                   controller.pensionCardAttachment,
@@ -221,7 +231,7 @@ class OnboardingIdentityStep extends StatelessWidget {
             numberController: controller.photoIdNumberCtrl,
             numberLabel: 'ID number (optional)',
             attachment: controller.photoIdAttachment,
-            enabled: enabled,
+            enabled: uploadEnabled,
             onPick:
                 () => controller.pickIdentityCard(controller.photoIdAttachment),
             onClearPending:

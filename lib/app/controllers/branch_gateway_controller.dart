@@ -6,6 +6,7 @@ import '../../core/services/token_storage.dart';
 import '../../shared/widgets/app_toast.dart';
 import '../data/models/branch/branch_model.dart';
 import '../data/repositories/branch_repository.dart';
+import '../routes/app_navigator.dart';
 import '../routes/app_routes.dart';
 import 'auth_controller.dart';
 
@@ -51,10 +52,10 @@ class BranchGatewayController extends GetxController {
       branchName: branch.name,
     );
     if (Get.isRegistered<SessionService>()) {
-      Get.offAllNamed(Get.find<SessionService>().resolvePostLoginRoute());
+      AppNavigator.offAll(Get.find<SessionService>().resolvePostLoginRoute());
       return;
     }
-    Get.offAllNamed(AppRoutes.staffHome);
+    AppNavigator.offAll(AppRoutes.staffHome);
   }
 
   Future<void> logout() async {

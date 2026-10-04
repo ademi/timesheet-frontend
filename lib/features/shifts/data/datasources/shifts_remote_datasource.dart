@@ -194,6 +194,28 @@ class ShiftsRemoteDataSource {
     }
   }
 
+  Future<ShiftOut> setParticipantAttendance(
+    String shiftId,
+    String participantId, {
+    required String attendance,
+    required String reason,
+    int? attendedMinutes,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.shiftParticipantAttendance(shiftId, participantId),
+        data: {
+          'attendance': attendance,
+          'reason': reason,
+          if (attendedMinutes != null) 'attended_minutes': attendedMinutes,
+        },
+      );
+      return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<List<AllocationChangeLogOut>> getAllocationChanges(
     String shiftId,
   ) async {
@@ -211,6 +233,7 @@ class ShiftsRemoteDataSource {
     required String shiftId,
     required String contractorId,
     List<TaskTemplateItem>? taskTemplate,
+    String? overrideReason,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -219,6 +242,8 @@ class ShiftsRemoteDataSource {
           'contractor_id': contractorId,
           if (taskTemplate != null && taskTemplate.isNotEmpty)
             'task_template': [for (final task in taskTemplate) task.toJson()],
+          if (overrideReason != null && overrideReason.trim().isNotEmpty)
+            'override_reason': overrideReason.trim(),
         },
       );
       return ShiftOut.fromJson(response.data!);
@@ -231,6 +256,7 @@ class ShiftsRemoteDataSource {
     required String shiftId,
     required List<String> contractorIds,
     List<TaskTemplateItem>? taskTemplate,
+    String? overrideReason,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -239,6 +265,8 @@ class ShiftsRemoteDataSource {
           'contractor_ids': contractorIds,
           if (taskTemplate != null && taskTemplate.isNotEmpty)
             'task_template': [for (final task in taskTemplate) task.toJson()],
+          if (overrideReason != null && overrideReason.trim().isNotEmpty)
+            'override_reason': overrideReason.trim(),
         },
       );
       return ShiftOut.fromJson(response.data!);

@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:get/get.dart' as getx;
 
+import '../../app/routes/app_navigator.dart';
 import '../../app/routes/app_routes.dart';
 import '../auth/auth_session_invalidation.dart';
 import '../services/token_refresh_service.dart';
@@ -34,7 +34,7 @@ class AuthInterceptor extends Interceptor {
   }
 
   void _redirectToLogin() {
-    getx.Get.offAllNamed(AppRoutes.login);
+    AppNavigator.offAll(AppRoutes.login);
   }
 
   @override

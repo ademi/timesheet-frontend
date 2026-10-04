@@ -41,6 +41,7 @@ VisitGpsBody gpsBodyFromOutbox(ClockOutboxItem item) => VisitGpsBody(
       locationStatus: item.locationStatus,
       locationFailReason: item.locationFailReason,
       deviceOffline: item.deviceOffline,
+      lateReasonCode: item.lateReasonCode,
     );
 
 /// Pushes pending clock events when online (D5) with single-flight + backoff (D8).

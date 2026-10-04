@@ -6,7 +6,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/constants/australian_states.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
@@ -75,9 +77,6 @@ class ClientsController extends GetxController
   final notesCtrl = TextEditingController();
   final status = 'active'.obs;
   ClientOut? editing;
-  final isCreateFlow = false.obs;
-  final createStepIndex = 0.obs;
-  final createdClient = Rxn<ClientOut>();
 
   // Profile photo (create / edit form)
   final formPhoto = Rxn<ProfilePhotoOut>();
@@ -101,6 +100,8 @@ class ClientsController extends GetxController
   // Detail
   final selected = Rxn<ClientOut>();
   final sites = <ClientSiteOut>[].obs;
+  /// Extra geofence stops keyed by site id (B5 multi-stop).
+  final siteStopsBySiteId = <String, List<ClientSiteStopOut>>{}.obs;
   final contacts = <ClientContactOut>[].obs;
   final lastInvite = Rxn<ClientInviteCreateResponse>();
   final invites = <ClientInviteOut>[].obs;
@@ -208,6 +209,9 @@ class ClientsController extends GetxController
   final overviewClientTypeId = RxnString();
   final overviewEditing = false.obs;
 
+  /// Client id last written into Overview text controllers via [hydrateOverviewDrafts].
+  String? _overviewHydratedForId;
+
   static const overviewOwnedRequirementKeys = {'dob', 'ndis'};
 
   static bool isOverviewOwnedRequirement(String key) =>
@@ -265,10 +269,32 @@ class ClientsController extends GetxController
     });
   }
 
+  /// Tier-2 shell re-enter: soft list refresh; hard-clear abandoned form drafts
+  /// only on the clients list tab (detail/form routes share this controller).
+  void onScreenReenter() {
+    errorMessage.value = null;
+    final path =
+        Uri.tryParse(AppNavigator.currentLocation)?.path ??
+        AppNavigator.currentLocation;
+    if (path == AppRoutes.staffClients) {
+      nameCtrl.clear();
+      emailCtrl.clear();
+      phoneCtrl.clear();
+      notesCtrl.clear();
+      _resetFormPhoto();
+    }
+    // ignore: discarded_futures
+    load();
+    if (_routeImpliesClientDetail() || routeParam('id') != null) {
+      // ignore: discarded_futures
+      ensureDetailHydratedFromRoute();
+    }
+  }
+
   bool _routeImpliesClientDetail() {
     if (selected.value != null) return false;
-    if (Get.arguments is ClientOut) return true;
-    final id = Get.parameters['id'];
+    if (routeArguments() is ClientOut) return true;
+    final id = routeParam('id');
     return id != null && id.isNotEmpty;
   }
 
@@ -333,10 +359,8 @@ class ClientsController extends GetxController
   }
 
   Future<void> openCreate() async {
-    isCreateFlow.value = false;
-    createStepIndex.value = 0;
-    createdClient.value = null;
     selected.value = null;
+    _overviewHydratedForId = null;
     editing = null;
     nameCtrl.clear();
     emailCtrl.clear();
@@ -346,17 +370,25 @@ class ClientsController extends GetxController
     errorMessage.value = null;
     profileSaveProgress.value = null;
     _resetFormPhoto();
-    Get.toNamed(AppRoutes.staffClientOnboarding);
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientOnboarding,
+        query: {'step': '0'},
+      ),
+    );
   }
 
   Future<void> openResumeOnboarding(ClientOut c) async {
-    Get.toNamed(AppRoutes.staffClientOnboarding, arguments: c);
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientOnboarding,
+        query: {'id': c.id, 'step': '0'},
+      ),
+      extra: c,
+    );
   }
 
   Future<void> openEdit(ClientOut client) async {
-    isCreateFlow.value = false;
-    createStepIndex.value = 0;
-    createdClient.value = null;
     editing = client;
     // I5: prefer dirty Overview drafts when editing the selected client
     if (selected.value?.id == client.id && isOverviewDirty) {
@@ -371,7 +403,13 @@ class ClientsController extends GetxController
     errorMessage.value = null;
     profileSaveProgress.value = null;
     _resetFormPhoto();
-    Get.toNamed(AppRoutes.staffClientForm, arguments: client);
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientForm,
+        query: {'id': client.id},
+      ),
+      extra: client,
+    );
     await loadFormProfilePhoto(client.id);
   }
 
@@ -844,13 +882,6 @@ class ClientsController extends GetxController
             return;
           }
         }
-        if (isCreateFlow.value) {
-          createdClient.value = created;
-          editing = created;
-          selected.value = created;
-          await openDetailById(created.id);
-          return;
-        }
         Get.back();
         await load();
         openDetail(created, initialTab: ClientsController.tabDetails);
@@ -870,10 +901,6 @@ class ClientsController extends GetxController
         }
         // I5: keep Overview drafts aligned with AppBar Edit after save
         syncOverviewDraftsFromForm();
-        if (isCreateFlow.value) {
-          await openDetailById(editing!.id);
-          return;
-        }
         Get.back();
         await load();
         if (selected.value?.id == editing!.id) {
@@ -906,74 +933,6 @@ class ClientsController extends GetxController
     return null;
   }
 
-  Future<void> continueCreateFlow() async {
-    errorMessage.value = null;
-    if (createStepIndex.value == 0) {
-      final hadClient = createdClient.value != null;
-      await saveClient();
-      if (createdClient.value != null || hadClient) {
-        createStepIndex.value = 1;
-      }
-      return;
-    }
-    if (createStepIndex.value < 3) {
-      createStepIndex.value++;
-    }
-  }
-
-  void backCreateFlow() {
-    if (createStepIndex.value > 0) {
-      createStepIndex.value--;
-    }
-  }
-
-  Future<void> finishCreateFlow() async {
-    final client = createdClient.value ?? selected.value;
-    if (client == null) {
-      await continueCreateFlow();
-      return;
-    }
-    isSaving.value = true;
-    errorMessage.value = null;
-    profileSaveProgress.value = null;
-    try {
-      final typeId =
-          selectedClientTypeId.value ?? await _resolveDefaultPatientTypeId();
-      final dob = _resolveDobForCore();
-      await _repository.patchClient(
-        client.id,
-        ClientUpdateRequest(clientTypeId: typeId, dob: dob),
-      );
-      if (typeId != null && typeId.isNotEmpty && requirementDrafts.isNotEmpty) {
-        for (final draft in requirementDrafts) {
-          if (!draft.requirement.isRequired) continue;
-          if (draft.hasAnyContent) continue;
-          errorMessage.value = '${draft.requirement.label} is required.';
-          return;
-        }
-        final profileErrors = await _saveDynamicAnswers(client.id);
-        if (profileErrors.isNotEmpty) {
-          AppToast.info(
-            'Saved with warnings',
-            profileErrors.take(3).join('\n'),
-            duration: const Duration(seconds: 6),
-          );
-        }
-      }
-      isCreateFlow.value = false;
-      Get.back();
-      await load();
-      await openDetail(client, initialTab: ClientsController.tabDetails);
-    } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-    } catch (e) {
-      errorMessage.value = e.toString();
-    } finally {
-      isSaving.value = false;
-      profileSaveProgress.value = null;
-    }
-  }
-
   /// Reloads type + profile drafts from the server, dropping unsaved edits.
   Future<void> discardProfileDrafts() async {
     errorMessage.value = null;
@@ -994,6 +953,7 @@ class ClientsController extends GetxController
     overviewClientTypeId.value =
         client.clientTypeId ?? selectedClientTypeId.value;
     overviewNdisCtrl.text = ndisFromFacts(profileFacts) ?? '';
+    _overviewHydratedForId = client.id;
   }
 
   /// True when Overview draft fields differ from persisted client + profile facts.
@@ -1194,44 +1154,49 @@ class ClientsController extends GetxController
     }
   }
 
-  String? _resolveDobForCore() {
-    for (final draft in requirementDrafts) {
-      if (draft.requirement.requirementKey != 'dob') continue;
-      final d = draft.dateValue.value;
-      if (d == null) return selected.value?.dob ?? editing?.dob;
-      return RequirementDraft.formatDate(d);
-    }
-    return selected.value?.dob ?? editing?.dob;
-  }
-
   Future<List<String>> _saveDynamicAnswers(String clientId) async {
-    final errors = <String>[];
-    final total = requirementDrafts.where((d) => d.hasAnyContent).length;
+    final drafts =
+        requirementDrafts.where((draft) {
+          if (isOverviewOwnedRequirement(draft.requirement.requirementKey) ||
+              isCarePlanOwnedFundingRequirement(
+                draft.requirement.requirementKey,
+              ) ||
+              isCarePlanOwnedClinicalRequirement(
+                draft.requirement.requirementKey,
+              )) {
+            return false;
+          }
+          return draft.hasAnyContent;
+        }).toList();
+
+    final total = drafts.length;
+    if (total == 0) return const [];
+
     var done = 0;
+    profileSaveProgress.value = 'Saving profile (0/$total)…';
 
-    for (final draft in requirementDrafts) {
-      if (isOverviewOwnedRequirement(draft.requirement.requirementKey) ||
-          isCarePlanOwnedFundingRequirement(draft.requirement.requirementKey) ||
-          isCarePlanOwnedClinicalRequirement(
-            draft.requirement.requirementKey,
-          )) {
-        continue;
-      }
-      if (!draft.hasAnyContent) continue;
-
-      done++;
-      profileSaveProgress.value =
-          'Saving profile ($done/$total): ${draft.requirement.label}';
-
-      try {
-        await _saveOneRequirement(clientId, draft);
-      } on AppFailure catch (e) {
-        errors.add('${draft.requirement.label}: ${e.message}');
-      } catch (e) {
-        errors.add('${draft.requirement.label}: $e');
-      }
-    }
-    return errors;
+    final results = await Future.wait(
+      drafts.map((draft) async {
+        try {
+          await _saveOneRequirement(clientId, draft);
+          done++;
+          profileSaveProgress.value =
+              'Saving profile ($done/$total): ${draft.requirement.label}';
+          return null;
+        } on AppFailure catch (e) {
+          done++;
+          profileSaveProgress.value =
+              'Saving profile ($done/$total): ${draft.requirement.label}';
+          return '${draft.requirement.label}: ${e.message}';
+        } catch (e) {
+          done++;
+          profileSaveProgress.value =
+              'Saving profile ($done/$total): ${draft.requirement.label}';
+          return '${draft.requirement.label}: $e';
+        }
+      }),
+    );
+    return results.whereType<String>().toList(growable: false);
   }
 
   Future<void> _saveOneRequirement(
@@ -1368,21 +1333,23 @@ class ClientsController extends GetxController
       );
     }
 
-    String? lastId;
-    for (final file in files) {
-      final doc = await pipeline.uploadEvidence(
-        request: UploadUrlRequest(
-          ownerType: 'client',
-          ownerId: clientId,
-          filename: file.name,
-          contentType: file.contentType,
-          sizeBytes: file.bytes.length,
-          category: category,
+    if (files.isEmpty) return null;
+    final docs = await Future.wait(
+      files.map(
+        (file) => pipeline.uploadEvidence(
+          request: UploadUrlRequest(
+            ownerType: 'client',
+            ownerId: clientId,
+            filename: file.name,
+            contentType: file.contentType,
+            sizeBytes: file.bytes.length,
+            category: category,
+          ),
+          bytes: file.bytes,
         ),
-        bytes: file.bytes,
-      );
-      lastId = doc.id;
-    }
+      ),
+    );
+    final lastId = docs.isEmpty ? null : docs.last.id;
     return lastId;
   }
 
@@ -1510,6 +1477,10 @@ class ClientsController extends GetxController
     supportPlan.value = null;
     _disposeRequirementDrafts();
     requirementDrafts.clear();
+    // Sync Overview text controllers immediately. openDetailById used to skip
+    // hydrate when selected was already this id while controllers still held
+    // empty / previous-client values (read-only Identity looked blank / stale).
+    hydrateOverviewDrafts();
   }
 
   Future<void> openDetail(
@@ -1517,10 +1488,12 @@ class ClientsController extends GetxController
     int initialTab = tabOverview,
   }) async {
     _prepareDetailState(client, initialTab: initialTab);
-    Get.toNamed(
-      AppRoutes.staffClientDetail,
-      arguments: client,
-      parameters: {'id': client.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientDetail,
+        query: {'id': client.id},
+      ),
+      extra: client,
     );
     await openDetailById(client.id);
   }
@@ -1528,10 +1501,12 @@ class ClientsController extends GetxController
   /// Opens client detail after onboarding (replaces current route).
   Future<void> openDetailReplacing(ClientOut client) async {
     _prepareDetailState(client);
-    Get.offNamed(
-      AppRoutes.staffClientDetail,
-      arguments: client,
-      parameters: {'id': client.id},
+    AppNavigator.go(
+      AppNavigator.location(
+        AppRoutes.staffClientDetail,
+        query: {'id': client.id},
+      ),
+      extra: client,
     );
     await openDetailById(client.id);
   }
@@ -1539,19 +1514,26 @@ class ClientsController extends GetxController
   /// Call from [onInit] (or detail view) so a fresh controller still loads the
   /// client when navigation only passed route id / arguments.
   Future<void> ensureDetailHydratedFromRoute() async {
-    if (selected.value != null) return;
+    final fromArgs = routeArguments();
+    final idFromArgs = fromArgs is ClientOut ? fromArgs.id : null;
+    final id = routeParam('id') ?? idFromArgs;
 
-    final fromArgs = Get.arguments;
-    if (fromArgs is ClientOut) {
-      selected.value = fromArgs;
-      await openDetailById(fromArgs.id);
+    if (id == null || id.isEmpty) return;
+
+    // Shared controller: switching clients (or cold URL) must re-load even when
+    // [selected] is already set to a different client.
+    if (selected.value?.id == id) {
+      if (_overviewHydratedForId != id) {
+        await openDetailById(id);
+      }
       return;
     }
 
-    final id = Get.parameters['id'];
-    if (id != null && id.isNotEmpty) {
-      await openDetailById(id);
+    if (fromArgs is ClientOut && fromArgs.id == id) {
+      selected.value = fromArgs;
+      hydrateOverviewDrafts();
     }
+    await openDetailById(id);
   }
 
   Future<void> openDetailById(String id) async {
@@ -1562,14 +1544,17 @@ class ClientsController extends GetxController
     isLoading.value = true;
     try {
       final client = await _repository.getClient(id);
+      // Preserve in-progress Overview edits only when we already hydrated
+      // this same client (not when selected was pre-set with stale controllers).
+      final preserveDirty =
+          _overviewHydratedForId == id && isOverviewDirty;
       selected.value = client;
       await Future.wait([
         refreshDetailExtras(),
         loadTypeTabForSelected(),
         loadDetailProfilePhoto(id),
       ]);
-      final sameClient = previousId == id;
-      if (!sameClient || !isOverviewDirty) {
+      if (!preserveDirty) {
         hydrateOverviewDrafts();
       }
       if (tabIndex.value == tabCarePlan) {
@@ -1624,12 +1609,87 @@ class ClientsController extends GetxController
       ]);
       sites.assignAll(results[0] as List<ClientSiteOut>);
       contacts.assignAll(results[1] as List<ClientContactOut>);
+      await _reloadAllSiteStops(id);
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     }
     await loadClientVisits();
     await loadStandingJob();
     await loadSupportPlanSummary();
+  }
+
+  Future<void> _reloadAllSiteStops(String clientId) async {
+    final next = <String, List<ClientSiteStopOut>>{};
+    for (final site in sites) {
+      try {
+        next[site.id] = await _repository.listSiteStops(clientId, site.id);
+      } on AppFailure {
+        next[site.id] = siteStopsBySiteId[site.id] ?? const [];
+      }
+    }
+    siteStopsBySiteId
+      ..clear()
+      ..addAll(next);
+  }
+
+  List<ClientSiteStopOut> stopsForSite(String siteId) =>
+      List<ClientSiteStopOut>.from(siteStopsBySiteId[siteId] ?? const []);
+
+  Future<void> addSiteStop(
+    ClientSiteOut site, {
+    required String label,
+    required double latitude,
+    required double longitude,
+    int geofenceRadiusM = 100,
+  }) async {
+    final clientId = selected.value?.id;
+    if (clientId == null) return;
+    final cleaned = label.trim();
+    if (cleaned.isEmpty) {
+      errorMessage.value = 'Stop label is required.';
+      return;
+    }
+    isSaving.value = true;
+    errorMessage.value = null;
+    try {
+      final created = await _repository.createSiteStop(
+        clientId,
+        site.id,
+        ClientSiteStopWriteRequest(
+          label: cleaned,
+          latitude: latitude,
+          longitude: longitude,
+          geofenceRadiusM: geofenceRadiusM.clamp(10, 5000),
+        ),
+      );
+      final existing = List<ClientSiteStopOut>.from(
+        siteStopsBySiteId[site.id] ?? const [],
+      )..add(created);
+      siteStopsBySiteId[site.id] = existing;
+      siteStopsBySiteId.refresh();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
+  }
+
+  Future<void> deleteSiteStop(ClientSiteOut site, ClientSiteStopOut stop) async {
+    final clientId = selected.value?.id;
+    if (clientId == null) return;
+    isSaving.value = true;
+    try {
+      await _repository.deleteSiteStop(clientId, site.id, stop.id);
+      final existing = List<ClientSiteStopOut>.from(
+        siteStopsBySiteId[site.id] ?? const [],
+      )..removeWhere((s) => s.id == stop.id);
+      siteStopsBySiteId[site.id] = existing;
+      siteStopsBySiteId.refresh();
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } finally {
+      isSaving.value = false;
+    }
   }
 
   /// Puts or replaces [SupportPlanController] for the selected client (CR2).
@@ -1652,6 +1712,7 @@ class ClientsController extends GetxController
         planId: supportPlan.value?.id,
         clientName: client.fullName,
         ndisNumber: ndisNumber,
+        documentPipeline: _pipeline,
       ),
     );
   }
@@ -1692,9 +1753,15 @@ class ClientsController extends GetxController
   Future<void> openSupportPlan() async {
     final client = selected.value;
     if (client == null || !canManage) return;
-    await Get.toNamed(
-      AppRoutes.staffClientSupportPlan,
-      arguments: {
+    await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientSupportPlan,
+        query: {
+          'clientId': client.id,
+          if (supportPlan.value?.id != null) 'planId': supportPlan.value!.id,
+        },
+      ),
+      extra: {
         'clientId': client.id,
         'planId': supportPlan.value?.id,
         'clientName': client.fullName,
@@ -1738,9 +1805,12 @@ class ClientsController extends GetxController
   void startOngoingSupport() {
     final client = selected.value;
     if (client == null) return;
-    Get.toNamed(
-      AppRoutes.staffUnifiedSupport,
-      arguments: UnifiedSupportArgs.forClient(
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffUnifiedSupport,
+        query: {'clientId': client.id, 'mode': 'ongoing'},
+      ),
+      extra: UnifiedSupportArgs.forClient(
         client,
         mode: UnifiedSupportMode.ongoing,
       ),
@@ -1769,10 +1839,12 @@ class ClientsController extends GetxController
       Get.find<JobsController>().openDetail(job);
       return;
     }
-    Get.toNamed(
-      AppRoutes.staffJobDetail,
-      arguments: job,
-      parameters: {'id': job.id},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffJobDetail,
+        query: {'id': job.id},
+      ),
+      extra: job,
     );
   }
 
@@ -1780,9 +1852,12 @@ class ClientsController extends GetxController
   void bookOneSession() {
     final client = selected.value;
     if (client == null) return;
-    Get.toNamed(
-      AppRoutes.staffUnifiedSupport,
-      arguments: UnifiedSupportArgs.forClient(
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffUnifiedSupport,
+        query: {'clientId': client.id, 'mode': 'one'},
+      ),
+      extra: UnifiedSupportArgs.forClient(
         client,
         mode: UnifiedSupportMode.oneSession,
       ),
@@ -1831,9 +1906,12 @@ class ClientsController extends GetxController
   }
 
   void openVisitDetail(VisitOut visit) {
-    Get.toNamed(
-      AppRoutes.staffVisitDetail,
-      arguments: <String, dynamic>{'visit': visit, 'skipBoardLoad': true},
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffVisitDetail,
+        query: {'id': visit.id},
+      ),
+      extra: <String, dynamic>{'visit': visit, 'skipBoardLoad': true},
     );
   }
 
@@ -1860,7 +1938,18 @@ class ClientsController extends GetxController
     geocodeFormattedAddress.value = null;
     // Existing sites with coords are treated as already confirmed.
     addressConfirmed.value = site?.hasCoordinates ?? false;
-    Get.toNamed(AppRoutes.staffClientSiteForm);
+    final clientId = selected.value?.id;
+    AppNavigator.push(
+      clientId == null
+          ? AppRoutes.staffClientSiteForm
+          : AppNavigator.location(
+            AppRoutes.staffClientSiteForm,
+            query: {
+              'clientId': clientId,
+              if (site?.id != null) 'siteId': site!.id,
+            },
+          ),
+    );
   }
 
   /// Clears pending/confirmed geocode so the user can re-edit and look up again.
@@ -2042,6 +2131,8 @@ class ClientsController extends GetxController
     isSaving.value = true;
     try {
       await _repository.deleteSite(clientId, site.id);
+      siteStopsBySiteId.remove(site.id);
+      siteStopsBySiteId.refresh();
       await refreshDetailExtras();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -2076,7 +2167,18 @@ class ClientsController extends GetxController
     contactRelationshipPreset.value = hydrated.preset;
     contactRelationshipOtherCtrl.text = hydrated.otherText;
     errorMessage.value = null;
-    Get.toNamed(AppRoutes.staffClientContactForm);
+    final clientId = selected.value?.id;
+    AppNavigator.push(
+      clientId == null
+          ? AppRoutes.staffClientContactForm
+          : AppNavigator.location(
+            AppRoutes.staffClientContactForm,
+            query: {
+              'clientId': clientId,
+              if (contact?.id != null) 'contactId': contact!.id,
+            },
+          ),
+    );
   }
 
   Future<void> saveContact() async {

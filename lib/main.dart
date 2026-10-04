@@ -5,8 +5,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:go_router/go_router.dart';
 
 import 'app/bindings/initial_binding.dart';
+import 'app/router/app_go_router.dart';
 import 'app/routes/app_pages.dart';
 import 'app/themes/app_colors.dart';
 import 'core/services/session_service.dart';
@@ -18,15 +20,26 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   ensureTimezoneDatabaseInitialized();
   // Web-only: use clean path URLs (no `#`) so browser history, refresh, and the
-  // back/forward buttons reconcile with GetX routing predictably.
+  // back/forward buttons reconcile with routing predictably.
   if (kIsWeb) {
     setUrlStrategy(PathUrlStrategy());
+    // AppNavigator uses GoRouter.push/replace for detail screens. By default
+    // go_router does **not** mirror imperative navigations into the browser
+    // address bar, so `?id=` / `?step=` never appear and refresh cannot
+    // restore the screen. Reflect the top route (including query) in the URL.
+    GoRouter.optionURLReflectsImperativeAPIs = true;
   }
   await GetStorage.init();
   final tokenStorage = TokenStorage();
   await tokenStorage.loadFromStorage();
 
   Get.put<TokenStorage>(tokenStorage, permanent: true);
+
+  // Bind go_router before InitialBinding so GatewayController session resume
+  // can navigate via AppNavigator on web.
+  final GoRouter? webRouter = kIsWeb ? createAppGoRouter() : null;
+  InitialBinding().dependencies();
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -37,11 +50,14 @@ Future<void> main() async {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-  runApp(const RostiqApp());
+  runApp(RostiqApp(webRouter: webRouter));
 }
 
 class RostiqApp extends StatefulWidget {
-  const RostiqApp({super.key});
+  const RostiqApp({super.key, this.webRouter});
+
+  /// Non-null on web; owns browser history via go_router.
+  final GoRouter? webRouter;
 
   @override
   State<RostiqApp> createState() => _RostiqAppState();
@@ -101,15 +117,31 @@ class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
         final scale = instance.scaleText;
         return fontSize * (scale > 1 ? 1 : scale);
       },
-      builder:
-          (context, child) => GetMaterialApp(
+      builder: (context, child) {
+        final theme = _appTheme();
+        final router = widget.webRouter;
+        if (router != null) {
+          // GetMaterialApp.router keeps GetX snackbars/DI while go_router owns
+          // browser history and deep links on web.
+          return GetMaterialApp.router(
             title: 'Rostiq',
             debugShowCheckedModeBanner: false,
-            theme: _appTheme(),
-            initialBinding: InitialBinding(),
-            initialRoute: AppPages.initial,
-            getPages: AppPages.routes,
-          ),
+            theme: theme,
+            routerDelegate: router.routerDelegate,
+            routeInformationParser: router.routeInformationParser,
+            routeInformationProvider: router.routeInformationProvider,
+            backButtonDispatcher: router.backButtonDispatcher,
+          );
+        }
+        return GetMaterialApp(
+          title: 'Rostiq',
+          debugShowCheckedModeBanner: false,
+          theme: theme,
+          initialBinding: InitialBinding(),
+          initialRoute: AppPages.initial,
+          getPages: AppPages.routes,
+        );
+      },
     );
   }
 }

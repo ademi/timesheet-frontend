@@ -9,6 +9,7 @@ const Set<String> kTerminalSyncFailureDetails = {
   'visit_not_found',
   'geofence_rejected',
   'tap_time_out_of_skew',
+  'clock_overlap',
 };
 
 /// Network / unknown → retryable; known terminal 4xx details → terminal;

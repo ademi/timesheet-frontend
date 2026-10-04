@@ -149,4 +149,55 @@ void main() {
       startsWith('Locked'),
     );
   });
+
+  test('parses burn envelope alert and publish burn report', () {
+    final alert = BurnEnvelopeAlertOut.fromJson({
+      'client_id': 'c1',
+      'client_name': 'Maya',
+      'envelope': 'core',
+      'severity': 'hard_block',
+      'declared': 1000,
+      'spent': 1010,
+      'remaining': -10,
+      'remaining_pct': -1,
+    });
+    expect(alert.isHard, isTrue);
+    expect(alert.clientName, 'Maya');
+
+    final report = PublishBurnReportOut.fromJson({
+      'soft_warns': [
+        {
+          'participant_id': 'p1',
+          'client_name': 'Maya',
+          'envelope': 'core',
+          'estimated_amount': 50,
+          'severity': 'soft_warn',
+        },
+      ],
+      'hard_blocks': [],
+      'by_participant': [],
+      'pace_outside_release': true,
+      'pace_message': 'Outside release window',
+    });
+    expect(report.hasAnyWarn, isTrue);
+    expect(report.softWarns, hasLength(1));
+    expect(report.paceOutsideRelease, isTrue);
+  });
+
+  test('parses payment enquiry ageing bands', () {
+    final pe = PaymentEnquiryOut.fromJson({
+      'id': 'pe-1',
+      'client_id': 'c1',
+      'client_name': 'Maya',
+      'status': 'open',
+      'lodged_at': '2026-08-01T00:00:00Z',
+      'amount': 220.5,
+      'days_open': 45,
+      'risk_band': 'watch',
+      'notes': 'Awaiting remittance',
+    });
+    expect(pe.daysOpen, 45);
+    expect(pe.riskBand, 'watch');
+    expect(pe.amount, 220.5);
+  });
 }

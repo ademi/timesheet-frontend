@@ -6,7 +6,9 @@ import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
 import '../../../app/data/models/document/document_models.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/constants/australian_states.dart';
 import '../../../core/errors/app_failure.dart';
@@ -83,6 +85,8 @@ class ClientOnboardingController extends GetxController
   final client = Rxn<ClientOut>();
   final errorMessage = RxnString();
   final isSaving = false.obs;
+  /// Contact Add/Save only — does not freeze sticky Back/Next (B6).
+  final isSavingContact = false.obs;
   final ndisFieldError = RxnString();
   final budgetFieldError = RxnString();
   final consentUploading = false.obs;
@@ -90,6 +94,13 @@ class ClientOnboardingController extends GetxController
   final acknowledgementUploading = false.obs;
   /// Row ids currently uploading a legal-other PDF.
   final legalOtherUploading = <String>{}.obs;
+
+  /// True while any Legal pack PDF upload is in flight (Finish must wait).
+  bool get isLegalUploading =>
+      consentUploading.value ||
+      serviceAgreementUploading.value ||
+      acknowledgementUploading.value ||
+      legalOtherUploading.isNotEmpty;
 
   // ── Identity ──────────────────────────────────────────────────────────
   final fullName = TextEditingController();
@@ -310,6 +321,86 @@ class ClientOnboardingController extends GetxController
     loadFormTemplates();
     // Resume hydrate is owned by [ClientOnboardingBinding] so put + binding
     // do not both fire unawaited [hydrateFromClient].
+    _stepUrlWorker = ever<int>(step, (_) => syncOnboardingRoute());
+  }
+
+  Worker? _stepUrlWorker;
+  bool _suppressStepUrlSync = false;
+
+  /// Keeps `?id=&step=` in sync with wizard progress (browser URL on web).
+  ///
+  /// Uses [AppNavigator.replace] under go_router so router state matches the
+  /// URL (back/forward-safe). On GetX mobile, only updates [Get.parameters].
+  void syncOnboardingRoute() {
+    if (_suppressStepUrlSync) return;
+    final id = client.value?.id;
+    final params = <String, String>{
+      'step': '${step.value}',
+      if (id != null && id.isNotEmpty) 'id': id,
+    };
+    Get.parameters['step'] = params['step']!;
+    if (id != null && id.isNotEmpty) {
+      Get.parameters['id'] = id;
+    }
+    if (AppNavigator.usesGoRouter) {
+      AppNavigator.replace(
+        AppNavigator.location(AppRoutes.staffClientOnboarding, query: params),
+      );
+    }
+  }
+
+  /// Hydrate from route arguments and/or URL `id` / `step` (refresh-safe).
+  ///
+  /// Safe to call repeatedly: skips client reload when already hydrated for the
+  /// same id; still applies [step] from the route when present.
+  Future<void> ensureHydratedFromRoute() async {
+    final stepParam = int.tryParse(routeParam('step') ?? '');
+    final args = routeArguments();
+    final idFromRoute = routeParam('id');
+
+    if (client.value == null) {
+      if (args is ClientOut) {
+        await hydrateFromClient(args, stepOverride: stepParam);
+      } else if (idFromRoute != null) {
+        await hydrateFromClientId(idFromRoute, stepOverride: stepParam);
+      } else if (stepParam != null) {
+        _applyStepFromRoute(stepParam);
+      }
+      syncOnboardingRoute();
+      return;
+    }
+
+    if (stepParam != null) {
+      _applyStepFromRoute(stepParam);
+    }
+    syncOnboardingRoute();
+  }
+
+  Future<void> hydrateFromClientId(
+    String id, {
+    int? stepOverride,
+  }) async {
+    if (id.isEmpty) return;
+    try {
+      final existing = await _repository.getClient(id);
+      await hydrateFromClient(existing, stepOverride: stepOverride);
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+    } catch (_) {
+      errorMessage.value = 'Could not load client for onboarding.';
+    }
+  }
+
+  void _applyStepFromRoute(int stepParam) {
+    final max = stepLabels.length - 1;
+    final clamped = stepParam.clamp(0, max).toInt();
+    if (step.value == clamped) return;
+    _suppressStepUrlSync = true;
+    try {
+      step.value = clamped;
+    } finally {
+      _suppressStepUrlSync = false;
+    }
   }
 
   /// Clears non-Identity step state from a prior wizard session so resume
@@ -318,6 +409,7 @@ class ClientOnboardingController extends GetxController
     errorMessage.value = null;
     ndisFieldError.value = null;
     isSaving.value = false;
+    isSavingContact.value = false;
 
     medicareCtrl.clear();
     medicareCardAttachment.reset();
@@ -412,17 +504,30 @@ class ClientOnboardingController extends GetxController
 
   /// CR3 resume: set client/id, prefill Identity from [ClientOut], step 0,
   /// then load profile facts (identity cards, support plan, legal other docs).
-  Future<void> hydrateFromClient(ClientOut existing) async {
-    resetForResume();
-    client.value = existing;
-    fullName.text = existing.fullName;
-    email.text = existing.email ?? '';
-    phone.text = existing.phone ?? '';
-    final rawDob = existing.dob?.trim();
-    dob.value =
-        (rawDob == null || rawDob.isEmpty) ? null : DateTime.tryParse(rawDob);
-    step.value = 0;
+  Future<void> hydrateFromClient(
+    ClientOut existing, {
+    int? stepOverride,
+  }) async {
+    _suppressStepUrlSync = true;
+    try {
+      resetForResume();
+      client.value = existing;
+      fullName.text = existing.fullName;
+      email.text = existing.email ?? '';
+      phone.text = existing.phone ?? '';
+      final rawDob = existing.dob?.trim();
+      dob.value =
+          (rawDob == null || rawDob.isEmpty)
+              ? null
+              : DateTime.tryParse(rawDob);
+      final max = stepLabels.length - 1;
+      step.value =
+          stepOverride == null ? 0 : stepOverride.clamp(0, max).toInt();
+    } finally {
+      _suppressStepUrlSync = false;
+    }
     await _loadAndHydrateProfileFacts(existing.id);
+    syncOnboardingRoute();
   }
 
   /// Fetches the profile bundle and applies resume hydrates (soft on failure).
@@ -674,6 +779,8 @@ class ClientOnboardingController extends GetxController
 
   @override
   void onClose() {
+    _stepUrlWorker?.dispose();
+    _stepUrlWorker = null;
     fullName.dispose();
     email.dispose();
     phone.dispose();
@@ -806,6 +913,7 @@ class ClientOnboardingController extends GetxController
           ),
         );
         client.value = created;
+        syncOnboardingRoute();
       } else {
         final updated = await _repository.patchClient(
           client.value!.id,
@@ -817,23 +925,31 @@ class ClientOnboardingController extends GetxController
           ),
         );
         client.value = updated;
+        syncOnboardingRoute();
       }
 
       final id = client.value!.id;
+      final hadPendingPhoto = pendingPhoto.value != null;
 
-      if (pendingPhoto.value != null) {
-        await _persistPhoto(id);
+      // Photo + identity cards are independent — upload in parallel (B7).
+      await Future.wait([
+        if (hadPendingPhoto) _persistPhoto(id, refreshClient: false),
+        _persistIdentityCards(id),
+      ]);
+
+      await Future.wait([
+        _putOptionalFact(id, OnboardingKeys.sexGender, resolvedSexGender),
+        _putOptionalFact(id, OnboardingKeys.atsiStatus, atsiStatus.value),
+        _putOptionalFact(
+          id,
+          OnboardingKeys.referralSource,
+          resolvedReferralSource,
+        ),
+      ]);
+
+      if (hadPendingPhoto) {
+        client.value = await _repository.getClient(id);
       }
-
-      await _persistIdentityCards(id);
-
-      await _putOptionalFact(id, OnboardingKeys.sexGender, resolvedSexGender);
-      await _putOptionalFact(id, OnboardingKeys.atsiStatus, atsiStatus.value);
-      await _putOptionalFact(
-        id,
-        OnboardingKeys.referralSource,
-        resolvedReferralSource,
-      );
 
       if (step.value == 0) step.value = 1;
       return true;
@@ -1136,7 +1252,7 @@ class ClientOnboardingController extends GetxController
       return false;
     }
 
-    isSaving.value = true;
+    isSavingContact.value = true;
     try {
       final body = ClientContactWriteRequest(
         name: _nullIfEmpty(name),
@@ -1190,7 +1306,7 @@ class ClientOnboardingController extends GetxController
       _setUnexpectedError(e);
       return false;
     } finally {
-      isSaving.value = false;
+      isSavingContact.value = false;
     }
   }
 
@@ -1277,7 +1393,7 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = 'Create the client on the Identity step first.';
       return false;
     }
-    isSaving.value = true;
+    isSavingContact.value = true;
     try {
       final patched = await _repository.patchContact(
         id,
@@ -1301,7 +1417,7 @@ class ClientOnboardingController extends GetxController
       _setUnexpectedError(e);
       return false;
     } finally {
-      isSaving.value = false;
+      isSavingContact.value = false;
     }
   }
 
@@ -1323,7 +1439,7 @@ class ClientOnboardingController extends GetxController
       return false;
     }
 
-    isSaving.value = true;
+    isSavingContact.value = true;
     try {
       final patched = await _repository.patchContact(
         id,
@@ -1349,7 +1465,7 @@ class ClientOnboardingController extends GetxController
       _setUnexpectedError(e);
       return false;
     } finally {
-      isSaving.value = false;
+      isSavingContact.value = false;
     }
   }
 
@@ -1900,6 +2016,10 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = 'No client created yet.';
       return false;
     }
+    if (isLegalUploading) {
+      errorMessage.value = 'Wait for legal document uploads to finish.';
+      return false;
+    }
 
     final missing = <String>[];
     if (!consentComplete.value) missing.add('Consent');
@@ -1934,10 +2054,12 @@ class ClientOnboardingController extends GetxController
       } else {
         // Let ClientsBinding construct ClientsController; Task 3 hydrate
         // (ensureDetailHydratedFromRoute) loads by id/args on detail entry.
-        Get.offNamed(
-          AppRoutes.staffClientDetail,
-          arguments: updated,
-          parameters: {'id': id},
+        AppNavigator.go(
+          AppNavigator.location(
+            AppRoutes.staffClientDetail,
+            query: {'id': id},
+          ),
+          extra: updated,
         );
       }
       return true;
@@ -2115,6 +2237,35 @@ class ClientOnboardingController extends GetxController
   Future<bool> markLegalOtherComplete(String rowId) async {
     errorMessage.value = null;
     if (legalOtherUploading.contains(rowId)) return false;
+
+    // Validate label / type before opening the picker (B4).
+    final index = legalOtherDocs.indexWhere((e) => e.id == rowId);
+    if (index < 0) {
+      errorMessage.value = 'Document row not found.';
+      return false;
+    }
+    final row = legalOtherDocs[index];
+    final label = row.displayLabel;
+    if (label == null) {
+      errorMessage.value =
+          row.typeKey == 'other'
+              ? 'Enter a name for this Other document before uploading.'
+              : 'Select a document type before uploading.';
+      return false;
+    }
+    if (row.typeKey == 'other' &&
+        label.length > legalOtherMaxCustomLabelLength) {
+      errorMessage.value =
+          'Other document name must be $legalOtherMaxCustomLabelLength '
+          'characters or fewer.';
+      return false;
+    }
+    if (!canUploadDocs) {
+      errorMessage.value =
+          'Missing documents.upload / clients.docs.manage permission.';
+      return false;
+    }
+
     legalOtherUploading.add(rowId);
     legalOtherUploading.refresh();
     try {
@@ -2239,45 +2390,43 @@ class ClientOnboardingController extends GetxController
 
   Future<void> _persistIdentityCards(String clientId) async {
     final medicare = medicareCtrl.text.trim();
-    await _persistIdentityCard(
-      clientId: clientId,
-      requirementKey: OnboardingKeys.medicareCard,
-      category: OnboardingKeys.medicareCard,
-      attachment: medicareCardAttachment,
-      valueJson: medicare.isEmpty ? null : medicare,
-    );
-    await _persistIdentityCard(
-      clientId: clientId,
-      requirementKey: OnboardingKeys.companionCard,
-      category: OnboardingKeys.companionCard,
-      attachment: companionCardAttachment,
-      valueJson: _nullIfEmpty(companionCardNumberCtrl.text.trim()),
-    );
-    await _persistIdentityCard(
-      clientId: clientId,
-      requirementKey: OnboardingKeys.disabilityCard,
-      category: OnboardingKeys.disabilityCard,
-      attachment: disabilityCardAttachment,
-      valueJson: _nullIfEmpty(disabilityCardNumberCtrl.text.trim()),
-    );
-    await _persistIdentityCard(
-      clientId: clientId,
-      requirementKey: OnboardingKeys.pensionCard,
-      category: OnboardingKeys.pensionCard,
-      attachment: pensionCardAttachment,
-      valueJson: _nullIfEmpty(pensionCardNumberCtrl.text.trim()),
-    );
-    await _persistPhotoId(clientId);
-  }
-
-  Future<void> _persistPhotoId(String clientId) async {
-    await _persistIdentityCard(
-      clientId: clientId,
-      requirementKey: OnboardingKeys.photoId,
-      category: OnboardingKeys.photoId,
-      attachment: photoIdAttachment,
-      valueJson: _nullIfEmpty(photoIdNumberCtrl.text.trim()),
-    );
+    await Future.wait([
+      _persistIdentityCard(
+        clientId: clientId,
+        requirementKey: OnboardingKeys.medicareCard,
+        category: OnboardingKeys.medicareCard,
+        attachment: medicareCardAttachment,
+        valueJson: medicare.isEmpty ? null : medicare,
+      ),
+      _persistIdentityCard(
+        clientId: clientId,
+        requirementKey: OnboardingKeys.companionCard,
+        category: OnboardingKeys.companionCard,
+        attachment: companionCardAttachment,
+        valueJson: _nullIfEmpty(companionCardNumberCtrl.text.trim()),
+      ),
+      _persistIdentityCard(
+        clientId: clientId,
+        requirementKey: OnboardingKeys.disabilityCard,
+        category: OnboardingKeys.disabilityCard,
+        attachment: disabilityCardAttachment,
+        valueJson: _nullIfEmpty(disabilityCardNumberCtrl.text.trim()),
+      ),
+      _persistIdentityCard(
+        clientId: clientId,
+        requirementKey: OnboardingKeys.pensionCard,
+        category: OnboardingKeys.pensionCard,
+        attachment: pensionCardAttachment,
+        valueJson: _nullIfEmpty(pensionCardNumberCtrl.text.trim()),
+      ),
+      _persistIdentityCard(
+        clientId: clientId,
+        requirementKey: OnboardingKeys.photoId,
+        category: OnboardingKeys.photoId,
+        attachment: photoIdAttachment,
+        valueJson: _nullIfEmpty(photoIdNumberCtrl.text.trim()),
+      ),
+    ]);
   }
 
   Future<void> _persistIdentityCard({
@@ -2340,7 +2489,10 @@ class ClientOnboardingController extends GetxController
     return 'image/jpeg';
   }
 
-  Future<void> _persistPhoto(String clientId) async {
+  Future<void> _persistPhoto(
+    String clientId, {
+    bool refreshClient = true,
+  }) async {
     final pending = pendingPhoto.value;
     if (pending == null) return;
     final docId = await _uploadClientFile(
@@ -2353,7 +2505,9 @@ class ClientOnboardingController extends GetxController
     await _repository.setClientProfilePhoto(clientId, docId);
     pendingPhoto.value = null;
     // Defense in depth: keep local metadata aligned with server after photo set.
-    client.value = await _repository.getClient(clientId);
+    if (refreshClient) {
+      client.value = await _repository.getClient(clientId);
+    }
   }
 
   Future<String> _uploadClientFile({

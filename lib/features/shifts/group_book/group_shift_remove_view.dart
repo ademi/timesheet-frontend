@@ -40,6 +40,11 @@ class GroupShiftRemoveView extends GetView<GroupShiftRemoveController> {
                           'Group size ${controller.currentN} → ${controller.nextN}',
                           style: const TextStyle(color: AppColors.textMuted),
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          controller.exportNHint,
+                          style: const TextStyle(color: AppColors.textMuted),
+                        ),
                         const SizedBox(height: 12),
                         Container(
                           padding: const EdgeInsets.all(12),

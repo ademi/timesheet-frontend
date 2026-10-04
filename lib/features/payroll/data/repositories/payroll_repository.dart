@@ -40,9 +40,15 @@ class PayrollRepository {
     String tenantId, {
     String? timezone,
     String? publicHolidayJurisdiction,
+    String? geofenceOutsidePolicy,
+    String? providerAbn,
+    String? ndisProviderRegistrationStatus,
   }) => _remote.patchTenant(
     tenantId,
     timezone: timezone,
     publicHolidayJurisdiction: publicHolidayJurisdiction,
+    geofenceOutsidePolicy: geofenceOutsidePolicy,
+    providerAbn: providerAbn,
+    ndisProviderRegistrationStatus: ndisProviderRegistrationStatus,
   );
 }

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rostiq/features/attendance/data/attendance_review_models.dart';
 import 'package:rostiq/features/attendance/views/attendance_review_view.dart';
 
 void main() {
@@ -15,5 +16,23 @@ void main() {
 
   test('attendanceVisitSubtitleRef omits blank', () {
     expect(attendanceVisitSubtitleRef('  '), '');
+  });
+
+  test('attendanceExceptionHeadline labels B5 variance kinds', () {
+    expect(
+      attendanceExceptionHeadline('geofence_outside', 'geofence_outside'),
+      'Clock-in outside geofence',
+    );
+    expect(
+      attendanceExceptionHeadline(
+        'geofence_outside',
+        'geofence_outside_clock_out',
+      ),
+      'Clock-out outside geofence',
+    );
+    expect(
+      attendanceExceptionHeadline('early_clock_out', 'early_clock_out'),
+      'Early clock-out',
+    );
   });
 }

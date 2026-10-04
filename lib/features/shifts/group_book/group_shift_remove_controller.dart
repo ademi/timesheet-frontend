@@ -54,6 +54,12 @@ class GroupShiftRemoveController extends GetxController {
           ? 'Remaining participants keep their time windows unchanged.'
           : 'Remaining participants will be equal-split again.';
 
+  /// B9: soft-remove changes N for the whole claim at export (not mid-shift ÷N segments).
+  String get exportNHint =>
+      'Invoice share uses the billable group size at export '
+      '(N=${nextN} after remove). Mid-shift join/leave does not split the claim '
+      'into overlapping ÷N time segments — use time windows for partial presence.';
+
   @override
   void onClose() {
     reasonCtrl.dispose();

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
@@ -13,24 +15,33 @@ class CredentialDetailView extends GetView<CredentialsController> {
 
   @override
   Widget build(BuildContext context) {
-    final arg = Get.arguments;
-    final CredentialOut? credential =
-        arg is CredentialOut ? arg : controller.selected;
-    if (credential == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Credential')),
-        body: const Center(child: Text('Credential not found.')),
-      );
-    }
+    return Obx(() {
+      final credential = controller.selectedRx.value;
+      if (credential == null) {
+        return Scaffold(
+          appBar: AppBar(
+            leading: const AppBackButton(
+              fallbackRoute: AppRoutes.contractorCredentials,
+            ),
+            title: const Text('Credential'),
+          ),
+          body:
+              controller.isLoading.value
+                  ? const Center(child: CircularProgressIndicator())
+                  : const Center(child: Text('Credential not found.')),
+        );
+      }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(credentialTypeLabel(credential.credentialType)),
-      ),
-      body: Obx(() {
-        final err = controller.errorMessage.value;
-        return ListView(
+      final err = controller.errorMessage.value;
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          leading: const AppBackButton(
+            fallbackRoute: AppRoutes.contractorCredentials,
+          ),
+          title: Text(credentialTypeLabel(credential.credentialType)),
+        ),
+        body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             PageContent(
@@ -107,13 +118,14 @@ class CredentialDetailView extends GetView<CredentialsController> {
                   if (controller.canManage) ...[
                     ElevatedButton.icon(
                       onPressed:
-                          controller.isSaving.value
+                          controller.isUploadingEvidence.value ||
+                                  controller.isSaving.value
                               ? null
                               : () => controller.attachEvidence(credential),
                       icon: const Icon(Icons.upload_file),
                       label: Text(
-                        controller.isSaving.value
-                            ? 'Uploading / scanning…'
+                        controller.isUploadingEvidence.value
+                            ? 'Uploading…'
                             : 'Attach evidence',
                       ),
                       style: ElevatedButton.styleFrom(
@@ -156,9 +168,9 @@ class CredentialDetailView extends GetView<CredentialsController> {
               ),
             ),
           ],
-        );
-      }),
-    );
+        ),
+      );
+    });
   }
 
   Widget _statusRow(String status) {

@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -14,6 +16,7 @@ import '../controllers/jobs_controller.dart';
 import '../controllers/unified_support_controller.dart';
 import '../data/datasources/jobs_remote_datasource.dart';
 import '../data/repositories/jobs_repository.dart';
+import '../utils/unified_support_args.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../../visits/data/repositories/visits_repository.dart';
@@ -23,16 +26,15 @@ class JobsBinding extends Bindings {
   void dependencies() {
     ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<JobsController>()) {
-      Get.put(
-        JobsController(
-          repository: Get.find<JobsRepository>(),
-          clientsRepository: Get.find<ClientsRepository>(),
-          engagementsRepository: Get.find<EngagementsRepository>(),
-          session: Get.find<SessionService>(),
-        ),
-      );
-    }
+    putOrReenter(
+      () => JobsController(
+        repository: Get.find<JobsRepository>(),
+        clientsRepository: Get.find<ClientsRepository>(),
+        engagementsRepository: Get.find<EngagementsRepository>(),
+        session: Get.find<SessionService>(),
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 
   static void ensureShared() {
@@ -70,8 +72,14 @@ class UnifiedSupportBinding extends Bindings {
     ClientsBinding().dependencies();
     if (!Get.isRegistered<SessionService>()) return;
     if (!Get.isRegistered<ShiftsRepository>()) return;
-    Get.put(
-      UnifiedSupportController(
+
+    // GoRouter does not dispose GetX controllers on pop. Reusing the prior
+    // instance left the previous client stuck on /staff/support/compose.
+    final raw = routeArguments();
+    final args = raw is UnifiedSupportArgs ? raw : null;
+
+    putFresh(
+      () => UnifiedSupportController(
         jobsRepository: Get.find<JobsRepository>(),
         clientsRepository: Get.find<ClientsRepository>(),
         engagementsRepository: Get.find<EngagementsRepository>(),
@@ -82,6 +90,7 @@ class UnifiedSupportBinding extends Bindings {
             Get.isRegistered<PayrollRepository>()
                 ? Get.find<PayrollRepository>()
                 : null,
+        args: args,
       ),
     );
   }

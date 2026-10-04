@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -19,17 +20,16 @@ class ClientsBinding extends Bindings {
   void dependencies() {
     ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<ClientsController>()) {
-      Get.put(
-        ClientsController(
-          repository: Get.find<ClientsRepository>(),
-          session: Get.find<SessionService>(),
-          documentPipeline: Get.find<DocumentPipeline>(),
-          visitsRepository: Get.find<VisitsRepository>(),
-          jobsRepository: Get.find<JobsRepository>(),
-        ),
-      );
-    }
+    putOrReenter(
+      () => ClientsController(
+        repository: Get.find<ClientsRepository>(),
+        session: Get.find<SessionService>(),
+        documentPipeline: Get.find<DocumentPipeline>(),
+        visitsRepository: Get.find<VisitsRepository>(),
+        jobsRepository: Get.find<JobsRepository>(),
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 
   static void ensureShared() {
@@ -89,7 +89,9 @@ class PublicClientInviteBinding extends Bindings {
   @override
   void dependencies() {
     ClientsBinding.ensureShared();
-    Get.lazyPut(
+    // Token is read in onInit; recreate so a second invite link cannot reuse
+    // the prior token/state under GoRouter.
+    putFresh(
       () => PublicClientInviteController(
         repository: Get.find<ClientsRepository>(),
       ),

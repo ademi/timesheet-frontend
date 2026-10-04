@@ -166,6 +166,9 @@ class RecurrenceRuleOut {
     required this.jobId,
     this.contractorIds = const [],
     required this.requiredSlots,
+    this.workerCount = 1,
+    this.equalSplit = false,
+    this.participantsJson = const [],
     required this.rrule,
     required this.dtstart,
     required this.timeWindows,
@@ -186,6 +189,9 @@ class RecurrenceRuleOut {
   final String jobId;
   final List<String> contractorIds;
   final int requiredSlots;
+  final int workerCount;
+  final bool equalSplit;
+  final List<Map<String, dynamic>> participantsJson;
   final List<String> contractorNames;
   final String rrule;
   final DateTime dtstart;
@@ -220,6 +226,9 @@ class RecurrenceRuleOut {
       jobId: json['job_id'].toString(),
       contractorIds: stringList(json['contractor_ids']),
       requiredSlots: json['required_slots'] as int? ?? 1,
+      workerCount: json['worker_count'] as int? ?? 1,
+      equalSplit: json['equal_split'] as bool? ?? false,
+      participantsJson: mapList(json['participants_json']),
       contractorNames: stringList(json['contractor_names']),
       rrule: json['rrule'] as String,
       dtstart: DateTime.parse(json['dtstart'] as String),
@@ -243,10 +252,31 @@ class RecurrenceRuleOut {
   }
 }
 
+class RecurrenceParticipantPattern {
+  const RecurrenceParticipantPattern({
+    required this.participantId,
+    this.allocationStrategy = 'percentage',
+    this.allocationValue,
+  });
+
+  final String participantId;
+  final String allocationStrategy;
+  final double? allocationValue;
+
+  Map<String, dynamic> toJson() => {
+    'participant_id': participantId,
+    'allocation_strategy': allocationStrategy,
+    if (allocationValue != null) 'allocation_value': allocationValue,
+  };
+}
+
 class RecurrenceRuleCreateRequest {
   const RecurrenceRuleCreateRequest({
     this.contractorIds = const [],
     this.requiredSlots = 1,
+    this.workerCount = 1,
+    this.equalSplit = false,
+    this.participants = const [],
     required this.rrule,
     required this.dtstart,
     required this.timeWindows,
@@ -258,6 +288,9 @@ class RecurrenceRuleCreateRequest {
 
   final List<String> contractorIds;
   final int requiredSlots;
+  final int workerCount;
+  final bool equalSplit;
+  final List<RecurrenceParticipantPattern> participants;
   final String rrule;
   final DateTime dtstart;
   final DateTime? until;
@@ -277,6 +310,10 @@ class RecurrenceRuleCreateRequest {
   Map<String, dynamic> toJson() => {
     'contractor_ids': contractorIds,
     'required_slots': requiredSlots,
+    'worker_count': workerCount,
+    'equal_split': equalSplit,
+    if (participants.isNotEmpty)
+      'participants': [for (final p in participants) p.toJson()],
     'rrule': rrule,
     'dtstart': dtstart.toUtc().toIso8601String(),
     if (until != null) 'until': until!.toUtc().toIso8601String(),
@@ -428,11 +465,15 @@ class OngoingSupportCreateRequest {
     required this.title,
     this.clientSiteId,
     this.branchId,
+    this.silHouseId,
     this.contractorIds = const [],
     required this.rrule,
     required this.dtstart,
     this.until,
     this.requiredSlots = 1,
+    this.workerCount = 1,
+    this.equalSplit = false,
+    this.participants = const [],
     required this.timeWindows,
     required this.horizonFrom,
     required this.horizonTo,
@@ -445,11 +486,15 @@ class OngoingSupportCreateRequest {
   final String title;
   final String? clientSiteId;
   final String? branchId;
+  final String? silHouseId;
   final List<String> contractorIds;
   final String rrule;
   final DateTime dtstart;
   final DateTime? until;
   final int requiredSlots;
+  final int workerCount;
+  final bool equalSplit;
+  final List<RecurrenceParticipantPattern> participants;
   final List<TimeWindow> timeWindows;
   final DateTime horizonFrom;
   final DateTime horizonTo;
@@ -462,11 +507,16 @@ class OngoingSupportCreateRequest {
     'title': title,
     'client_site_id': clientSiteId,
     'branch_id': branchId,
+    if (silHouseId != null) 'sil_house_id': silHouseId,
     'contractor_ids': contractorIds,
     'rrule': rrule,
     'dtstart': dtstart.toUtc().toIso8601String(),
     if (until != null) 'until': until!.toUtc().toIso8601String(),
     'required_slots': requiredSlots,
+    'worker_count': workerCount,
+    'equal_split': equalSplit,
+    if (participants.isNotEmpty)
+      'participants': [for (final p in participants) p.toJson()],
     'time_windows': [for (final window in timeWindows) window.toJson()],
     'horizon_from': horizonFrom.toUtc().toIso8601String(),
     'horizon_to': horizonTo.toUtc().toIso8601String(),

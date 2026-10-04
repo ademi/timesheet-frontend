@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
@@ -86,9 +87,15 @@ class _SupportPlanSnSectionState extends State<SupportPlanSnSection> {
 
   Future<void> _openEditor() async {
     ClientsBinding.ensureShared();
-    final result = await Get.toNamed(
-      AppRoutes.staffClientStrengthsNeeds,
-      arguments: {
+    final result = await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffClientStrengthsNeeds,
+        query: {
+          'clientId': widget.clientId,
+          if (_editorTarget != null) 'assessmentId': _editorTarget!.id,
+        },
+      ),
+      extra: {
         'clientId': widget.clientId,
         if (_editorTarget != null) 'assessmentId': _editorTarget!.id,
       },
@@ -161,13 +168,40 @@ class _SupportPlanSnSectionState extends State<SupportPlanSnSection> {
     );
     if (confirmed != true || !mounted) return;
 
+    // Warn before clobbering unsaved care-plan body edits (B8).
+    if (widget.planController.isBodyDirty) {
+      final discardOk = await showDialog<bool>(
+        context: context,
+        builder:
+            (ctx) => AlertDialog(
+              title: const Text('Replace unsaved edits?'),
+              content: const Text(
+                'You have unsaved care-plan edits. Importing Strengths & Needs '
+                'will replace the plan body. Continue?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Import anyway'),
+                ),
+              ],
+            ),
+      );
+      if (discardOk != true || !mounted) return;
+    }
+
     try {
-      await _repository.importStrengthsNeedsToPlan(
+      final imported = await _repository.importStrengthsNeedsToPlan(
         widget.clientId,
         assessment.id,
         SnImportRequest(sectionKeys: selected.toList()..sort()),
       );
-      await widget.planController.load();
+      // Apply returned body only — avoid full load wiping funding/clinical drafts.
+      widget.planController.applyImportedPlan(imported);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Imported into care plan draft')),

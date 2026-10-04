@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -24,24 +25,22 @@ class EngagementsBinding extends Bindings {
     CredentialsBinding.ensureDependencies();
     PayrollBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<EngagementRateBandsController>()) {
-      Get.put(
-        EngagementRateBandsController(
-          payroll: Get.find<PayrollRepository>(),
-          session: Get.find<SessionService>(),
-        ),
-      );
-    }
-    if (!Get.isRegistered<WorkforceController>()) {
-      Get.put(
-        WorkforceController(
-          repository: Get.find<EngagementsRepository>(),
-          credentialsRepository: Get.find<CredentialsRepository>(),
-          session: Get.find<SessionService>(),
-          visits: Get.find<VisitsRepository>(),
-        ),
-      );
-    }
+    putOrReenter(
+      () => EngagementRateBandsController(
+        payroll: Get.find<PayrollRepository>(),
+        session: Get.find<SessionService>(),
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
+    putOrReenter(
+      () => WorkforceController(
+        repository: Get.find<EngagementsRepository>(),
+        credentialsRepository: Get.find<CredentialsRepository>(),
+        session: Get.find<SessionService>(),
+        visits: Get.find<VisitsRepository>(),
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 
   static void ensureShared() {

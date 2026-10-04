@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
@@ -27,7 +28,7 @@ class WorkforceListView extends GetView<WorkforceController> {
           controller.canInvite
               ? FloatingActionButton.extended(
                 heroTag: 'workforce-invite',
-                onPressed: () => Get.toNamed(AppRoutes.staffWorkforceInvite),
+                onPressed: () => AppNavigator.push(AppRoutes.staffWorkforceInvite),
                 backgroundColor: AppColors.cta,
                 foregroundColor: AppColors.onCta,
                 icon: const Icon(Icons.mail_outline),
@@ -208,7 +209,7 @@ class WorkforceListView extends GetView<WorkforceController> {
                                       const SizedBox(height: 16),
                                       TextButton.icon(
                                         onPressed:
-                                            () => Get.toNamed(
+                                            () => AppNavigator.push(
                                               AppRoutes.staffWorkforceInvite,
                                             ),
                                         icon: const Icon(Icons.mail_outline),

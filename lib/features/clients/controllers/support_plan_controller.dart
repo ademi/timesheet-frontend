@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/widgets/app_toast.dart';
@@ -36,6 +39,12 @@ class SupportPlanController extends GetxController {
              repository: repository,
              documentPipeline: documentPipeline,
              pickPdfBytes: pickPdfBytes,
+             canUploadDocs:
+                 () =>
+                     session?.hasPermission(AppPermissions.documentsUpload) ==
+                         true ||
+                     session?.hasPermission(AppPermissions.clientsDocsManage) ==
+                         true,
            ),
        clinical =
            clinical ??
@@ -43,6 +52,12 @@ class SupportPlanController extends GetxController {
              repository: repository,
              documentPipeline: documentPipeline,
              pickPdfBytes: pickPdfBytes,
+             canUploadDocs:
+                 () =>
+                     session?.hasPermission(AppPermissions.documentsUpload) ==
+                         true ||
+                     session?.hasPermission(AppPermissions.clientsDocsManage) ==
+                         true,
            ) {
     if (planId != null && planId.isNotEmpty) {
       this.planId.value = planId;
@@ -82,6 +97,22 @@ class SupportPlanController extends GetxController {
 
   /// Last PATCH/create body map (for OV1 full-replace tests).
   Map<String, dynamic>? lastSavedPayload;
+
+  /// Snapshot of care body + next review after last load/save (B8 dirty detect).
+  Map<String, dynamic>? _bodyBaselineJson;
+  String? _nextReviewBaseline;
+
+  /// True when care-plan body fields differ from the last loaded/saved snapshot.
+  bool get isBodyDirty {
+    if (_bodyBaselineJson == null) return false;
+    return jsonEncode(buildBody().toJson()) !=
+            jsonEncode(_bodyBaselineJson) ||
+        nextReviewAt.value != _nextReviewBaseline;
+  }
+
+  /// Pending clinical/funding PDF picks that would be lost on store reload.
+  bool get hasPendingDocumentUploads =>
+      clinical.hasPendingUploads || fundingConsent.hasPendingUploads;
 
   // ── Disability / health ───────────────────────────────────────────────
   final primaryDisabilityCtrl = TextEditingController();
@@ -252,7 +283,7 @@ class SupportPlanController extends GetxController {
   }
 
   void _readArguments() {
-    final args = Get.arguments;
+    final args = routeArguments();
     if (args is Map) {
       final id = args['clientId']?.toString();
       if (id != null && id.isNotEmpty) clientId = id;
@@ -261,6 +292,13 @@ class SupportPlanController extends GetxController {
         _initialPlanId = pid;
         planId.value = pid;
       }
+    }
+    final paramClientId = routeParam('clientId');
+    if (paramClientId != null) clientId = paramClientId;
+    final paramPlanId = routeParam('planId');
+    if (paramPlanId != null) {
+      _initialPlanId = paramPlanId;
+      planId.value = paramPlanId;
     }
   }
 
@@ -318,6 +356,17 @@ class SupportPlanController extends GetxController {
 
     final body = dto.bodyInvalid ? const SupportPlanBody() : dto.body;
     _applyBody(body);
+    _captureBodyBaseline();
+  }
+
+  /// Apply SN import result to care body without reloading funding/clinical.
+  void applyImportedPlan(SupportPlanDto dto) {
+    applyLoadedPlan(dto);
+  }
+
+  void _captureBodyBaseline() {
+    _bodyBaselineJson = buildBody().toJson();
+    _nextReviewBaseline = nextReviewAt.value;
   }
 
   void _applyBody(SupportPlanBody body) {
@@ -565,7 +614,10 @@ class SupportPlanController extends GetxController {
               isConflict
                   ? SupportPlanClinicalStore.conflictMessage
                   : 'Could not save clinical documents: ${clinicalFailed.join(', ')}';
-          await clinical.reload(clientId);
+          // Keep pending PDFs / local toggles when upload still in draft (B8).
+          if (!clinical.hasPendingUploads) {
+            await clinical.reload(clientId);
+          }
           return;
         }
       }
@@ -580,8 +632,10 @@ class SupportPlanController extends GetxController {
               isConflict
                   ? SupportPlanFundingConsentStore.conflictMessage
                   : 'Could not save funding/consent: ${failed.join(', ')}';
-          await fundingConsent.reload(clientId);
-          await clinical.reload(clientId);
+          if (!hasPendingDocumentUploads) {
+            await fundingConsent.reload(clientId);
+            await clinical.reload(clientId);
+          }
           return;
         }
       }
@@ -649,11 +703,14 @@ class SupportPlanController extends GetxController {
       }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
-      if (fundingConsent.hasHydrated) {
-        await fundingConsent.reload(clientId);
-      }
-      if (clinical.hasHydrated) {
-        await clinical.reload(clientId);
+      // Avoid wiping pending PDF picks / in-progress fact edits (B8).
+      if (!hasPendingDocumentUploads) {
+        if (fundingConsent.hasHydrated) {
+          await fundingConsent.reload(clientId);
+        }
+        if (clinical.hasHydrated) {
+          await clinical.reload(clientId);
+        }
       }
     } finally {
       isSaving.value = false;

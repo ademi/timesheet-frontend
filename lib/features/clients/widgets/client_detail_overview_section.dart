@@ -29,6 +29,10 @@ class ClientDetailOverviewSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      // Touch loading + selected so read-only Identity rebuilds after
+      // [hydrateOverviewDrafts] (TextEditingController changes alone do not).
+      final _ = controller.isLoading.value;
+      final __ = controller.selected.value?.id;
       final canEdit =
           canEditOverride ??
           (controller.canManage || controller.canManageProfile);

@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/constants/app_permissions.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/time/tenant_civil_time.dart';
 import '../../../shared/utils/name_sort.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../../payroll/controllers/staff_tenant_settings_controller.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../clients/data/repositories/clients_repository.dart';
@@ -40,13 +43,16 @@ class StaffVisitsController extends GetxController {
     required ClientsRepository clientsRepository,
     required SessionService session,
     PayrollRepository? payroll,
+    Future<String?> Function({required List<String> reasons})?
+    promptBurnOverride,
   }) : _repository = repository,
        _shiftsRepository = shiftsRepository,
        _jobsRepository = jobsRepository,
        _engagementsRepository = engagementsRepository,
        _clientsRepository = clientsRepository,
        _session = session,
-       _payroll = payroll;
+       _payroll = payroll,
+       _promptBurnOverride = promptBurnOverride;
 
   final VisitsRepository _repository;
   final ShiftsRepository _shiftsRepository;
@@ -55,6 +61,8 @@ class StaffVisitsController extends GetxController {
   final ClientsRepository _clientsRepository;
   final SessionService _session;
   final PayrollRepository? _payroll;
+  final Future<String?> Function({required List<String> reasons})?
+  _promptBurnOverride;
 
   final shifts = <ShiftOut>[].obs;
   final jobs = <JobOut>[].obs;
@@ -67,6 +75,9 @@ class StaffVisitsController extends GetxController {
   final travelLoading = false.obs;
   final isFillingHorizon = false.obs;
   final errorMessage = RxnString();
+
+  /// Structured reasons from ``credential_gate_blocked`` on assign/publish.
+  final credentialGateReasons = <String>[].obs;
   final overlay = Rxn<RosterOverlayOut>();
   final overlayWarning = RxnString();
   final boardVisits = <VisitOut>[].obs;
@@ -105,8 +116,17 @@ class StaffVisitsController extends GetxController {
     final visit = selected.value;
     return visit != null &&
         canManage &&
-        (visit.isScheduled || visit.isCheckedIn) &&
-        visit.paymentStatus == 'unpaid';
+        (visit.isScheduled || visit.isCheckedIn || visit.isCompleted) &&
+        visit.paymentStatus == 'unpaid' &&
+        !visit.isInvoiceExported;
+  }
+
+  /// True when the support-item picker differs from the last saved visit.
+  bool get hasUnsavedVisitSupportItem {
+    final visit = selected.value;
+    if (visit == null || !canEditVisitSupportItem) return false;
+    return editingVisitSupportItemCode.value != visit.supportItemCode ||
+        editingVisitSupportItemName.value != visit.supportItemName;
   }
 
   bool get canRecordVisit {
@@ -259,6 +279,13 @@ class StaffVisitsController extends GetxController {
         _effectiveTenantTimezone,
       ).to;
 
+  /// Tier-2 shell re-enter: soft board refresh; keep date/filters/selection.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    // ignore: discarded_futures
+    load();
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -266,7 +293,7 @@ class StaffVisitsController extends GetxController {
   }
 
   void applyRouteArgs() {
-    final args = Get.arguments;
+    final args = routeArguments();
     if (args is Map) {
       final v = args['visit'];
       if (v is VisitOut) {
@@ -521,7 +548,13 @@ class StaffVisitsController extends GetxController {
 
   Future<void> openShiftDetail(ShiftOut shift) async {
     selectedShift.value = shift;
-    Get.toNamed(AppRoutes.staffShiftDetail, arguments: shift);
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffShiftDetail,
+        query: {'id': shift.id},
+      ),
+      extra: shift,
+    );
   }
 
   Future<void> openShiftFromTile(RosterTile tile) async {
@@ -539,7 +572,10 @@ class StaffVisitsController extends GetxController {
   Future<void> refreshSelectedShift({bool includeTravel = false}) async {
     final id =
         selectedShift.value?.id ??
-        (Get.arguments is ShiftOut ? (Get.arguments as ShiftOut).id : null);
+        (routeArguments() is ShiftOut
+            ? (routeArguments() as ShiftOut).id
+            : null) ??
+        routeParam('id');
     if (id == null) return;
     isRefreshing.value = true;
     if (includeTravel) travelLoading.value = true;
@@ -589,9 +625,12 @@ class StaffVisitsController extends GetxController {
   Future<void> openTravelWizard({ShiftTravelOut? existing}) async {
     final shift = selectedShift.value;
     if (shift == null || !canManage) return;
-    final result = await Get.toNamed(
-      AppRoutes.staffGroupShiftTravel,
-      arguments: GroupShiftTravelArgs(shift: shift, existing: existing),
+    final result = await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffGroupShiftTravel,
+        query: {'id': shift.id},
+      ),
+      extra: GroupShiftTravelArgs(shift: shift, existing: existing),
     );
     if (result is ShiftTravelOut) upsertSelectedShiftTravel(result);
     // Land on shift detail with fresh travel rows (wizard always pops here).
@@ -668,28 +707,94 @@ class StaffVisitsController extends GetxController {
   }
 
   void hydrateShiftFromArgs() {
-    final arg = Get.arguments;
+    final arg = routeArguments();
     if (arg is ShiftOut) {
       selectedShift.value = arg;
       return;
     }
     if (arg is Map && arg['shift'] is ShiftOut) {
       selectedShift.value = arg['shift'] as ShiftOut;
+      return;
     }
+    // Id-only refresh: [refreshSelectedShift] loads via routeParam('id').
   }
 
-  Future<void> publishSelectedShift() async {
+  Future<void> publishSelectedShift({
+    String? overrideReason,
+    String? budgetOverrideReason,
+  }) async {
     final shift = selectedShift.value;
     if (shift == null) return;
     isSaving.value = true;
     errorMessage.value = null;
+    credentialGateReasons.clear();
     try {
-      selectedShift.value = await _shiftsRepository.publishShift(shift.id);
-      AppToast.success('Published', selectedShift.value!.jobTitle);
+      selectedShift.value = await _shiftsRepository.publishShift(
+        shift.id,
+        body: ShiftPublishRequest(
+          overrideReason: overrideReason,
+          budgetOverrideReason: budgetOverrideReason,
+        ),
+      );
+      if (!Get.testMode) {
+        AppToast.success('Published', selectedShift.value!.jobTitle);
+      }
       await load();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
-      AppToast.error('Could not publish', e.message);
+      if (e.isCredentialGateBlocked ||
+          e.isAssignGateBlocked ||
+          e.isEligibilityIncomplete) {
+        credentialGateReasons.assignAll(e.eligibilityReasons);
+        if (overrideReason == null || overrideReason.trim().isEmpty) {
+          final reason = await promptCredentialGateOverride(
+            reasons: e.eligibilityReasons,
+            title: e.isAssignGateBlocked
+                ? 'Care / compatibility block'
+                : 'Credentials block assign',
+          );
+          if (reason != null && reason.trim().isNotEmpty) {
+            await publishSelectedShift(
+              overrideReason: reason.trim(),
+              budgetOverrideReason: budgetOverrideReason,
+            );
+          }
+        }
+      } else if (e.isBudgetBurnBlocked) {
+        if (budgetOverrideReason == null ||
+            budgetOverrideReason.trim().isEmpty) {
+          if (!_session.hasPermission(AppPermissions.billingManage)) {
+            if (!Get.testMode) {
+              AppToast.error(
+                'Could not publish',
+                'Plan budget override requires billing.manage.',
+              );
+            }
+          } else {
+            final reason = await promptBudgetBurnOverride(
+              reasons: e.eligibilityReasons.isEmpty
+                  ? const ['Plan budget hard block']
+                  : e.eligibilityReasons,
+            );
+            if (reason != null && reason.trim().isNotEmpty) {
+              isSaving.value = false;
+              await publishSelectedShift(
+                overrideReason: overrideReason,
+                budgetOverrideReason: reason.trim(),
+              );
+              return;
+            }
+          }
+        }
+      } else if (e.isBudgetOverrideForbidden) {
+        if (!Get.testMode) {
+          AppToast.error('Could not publish', e.message);
+        }
+      } else {
+        if (!Get.testMode) {
+          AppToast.error('Could not publish', e.message);
+        }
+      }
     } finally {
       isSaving.value = false;
     }
@@ -698,9 +803,12 @@ class StaffVisitsController extends GetxController {
   Future<void> openPublishWizard() async {
     final shift = selectedShift.value;
     if (shift == null || shift.status != 'draft') return;
-    final result = await Get.toNamed(
-      AppRoutes.staffGroupShiftPublish,
-      arguments: shift,
+    final result = await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffGroupShiftPublish,
+        query: {'id': shift.id},
+      ),
+      extra: shift,
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
@@ -761,9 +869,12 @@ class StaffVisitsController extends GetxController {
     await refreshSelectedShift(includeTravel: true);
     final refreshed = selectedShift.value;
     if (refreshed == null || refreshed.status != 'draft') return;
-    final result = await Get.toNamed(
-      AppRoutes.staffGroupShiftEdit,
-      arguments: refreshed,
+    final result = await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffGroupShiftEdit,
+        query: {'id': refreshed.id},
+      ),
+      extra: refreshed,
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
@@ -777,9 +888,30 @@ class StaffVisitsController extends GetxController {
   Future<void> openRemoveParticipant(ShiftParticipantOut participant) async {
     final shift = selectedShift.value;
     if (shift == null) return;
-    final result = await Get.toNamed(
-      AppRoutes.staffGroupShiftRemove,
-      arguments: {'shift': shift, 'participant': participant},
+    final result = await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffGroupShiftRemove,
+        query: {'id': shift.id, 'participantId': participant.id},
+      ),
+      extra: {'shift': shift, 'participant': participant},
+    );
+    if (result is ShiftOut) {
+      selectedShift.value = result;
+      allocationHistory.clear();
+    } else {
+      await refreshSelectedShift();
+    }
+  }
+
+  Future<void> openParticipantAttendance(ShiftParticipantOut participant) async {
+    final shift = selectedShift.value;
+    if (shift == null) return;
+    final result = await AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffGroupShiftAttendance,
+        query: {'id': shift.id, 'participantId': participant.id},
+      ),
+      extra: {'shift': shift, 'participant': participant},
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
@@ -836,6 +968,7 @@ class StaffVisitsController extends GetxController {
   Future<void> assignSelectedShift(
     String contractorId, {
     bool skipConfirm = false,
+    String? overrideReason,
   }) async {
     final shift = selectedShift.value;
     if (shift == null) return;
@@ -848,17 +981,162 @@ class StaffVisitsController extends GetxController {
     }
     isSaving.value = true;
     errorMessage.value = null;
+    credentialGateReasons.clear();
     try {
       selectedShift.value = await _shiftsRepository.assignShift(
         shiftId: shift.id,
         contractorId: contractorId,
+        overrideReason: overrideReason,
       );
       await load();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+      if (e.isCredentialGateBlocked ||
+          e.isAssignGateBlocked ||
+          e.isEligibilityIncomplete) {
+        credentialGateReasons.assignAll(e.eligibilityReasons);
+        if (overrideReason == null || overrideReason.trim().isEmpty) {
+          final reason = await promptCredentialGateOverride(
+            reasons: e.eligibilityReasons,
+            title: e.isAssignGateBlocked
+                ? 'Care / compatibility block'
+                : 'Credentials block assign',
+          );
+          if (reason != null && reason.trim().isNotEmpty) {
+            await assignSelectedShift(
+              contractorId,
+              skipConfirm: true,
+              overrideReason: reason.trim(),
+            );
+          }
+        }
+      }
     } finally {
       isSaving.value = false;
     }
+  }
+
+  @visibleForTesting
+  Future<String?> promptCredentialGateOverride({
+    required List<String> reasons,
+    String title = 'Credentials block assign',
+  }) async {
+    if (Get.testMode) return null;
+    final controller = TextEditingController();
+    final result = await Get.dialog<String>(
+      AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              EligibilityIncompletePanel(
+                title: title,
+                reasons: reasons,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'To continue, enter an audited override reason '
+                '(no silent bypass).',
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Override reason',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                autofocus: true,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              Get.back(result: text);
+            },
+            child: const Text('Assign with override'),
+          ),
+        ],
+      ),
+    );
+    return result;
+  }
+
+  /// Budget hard-block override (C6) — distinct copy from credential gate.
+  @visibleForTesting
+  Future<String?> promptBudgetBurnOverride({
+    required List<String> reasons,
+  }) async {
+    final custom = _promptBurnOverride;
+    if (custom != null) return custom(reasons: reasons);
+    if (Get.testMode) return null;
+    final controller = TextEditingController();
+    final result = await Get.dialog<String>(
+      AlertDialog(
+        title: const Text('Plan budget hard block'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Publishing would exceed declared plan envelopes '
+                '(ledger vs declared — not a live NDIA balance).',
+              ),
+              if (reasons.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                for (final r in reasons)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('• $r', style: const TextStyle(fontSize: 13)),
+                  ),
+              ],
+              const SizedBox(height: 12),
+              const Text(
+                'To continue, enter an audited override reason '
+                '(no silent bypass).',
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Override reason',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                autofocus: true,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              Get.back(result: text);
+            },
+            child: const Text('Override & publish'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    return result;
   }
 
   Future<void> cancelSelectedShift() async {
@@ -1108,7 +1386,13 @@ class StaffVisitsController extends GetxController {
   Future<void> openDetail(VisitOut visit) async {
     selected.value = visit;
     _syncSupportItemEditors(visit);
-    Get.toNamed(AppRoutes.staffVisitDetail, arguments: visit);
+    AppNavigator.push(
+      AppNavigator.location(
+        AppRoutes.staffVisitDetail,
+        query: {'id': visit.id},
+      ),
+      extra: visit,
+    );
     await refreshSelected();
   }
 
@@ -1144,7 +1428,10 @@ class StaffVisitsController extends GetxController {
   Future<void> refreshSelected() async {
     final id =
         selected.value?.id ??
-        (Get.arguments is VisitOut ? (Get.arguments as VisitOut).id : null);
+        (routeArguments() is VisitOut
+            ? (routeArguments() as VisitOut).id
+            : null) ??
+        routeParam('id');
     if (id == null) return;
     isRefreshing.value = true;
     try {
@@ -1160,7 +1447,7 @@ class StaffVisitsController extends GetxController {
   }
 
   void hydrateFromArgs() {
-    final arg = Get.arguments;
+    final arg = routeArguments();
     if (arg is VisitOut) {
       selected.value = arg;
       _syncSupportItemEditors(arg);
@@ -1172,7 +1459,25 @@ class StaffVisitsController extends GetxController {
       selected.value = visit;
       _syncSupportItemEditors(visit);
       _loadParticipantNdis(visit);
+      return;
     }
+    // Id-only refresh: [refreshSelected] loads via routeParam('id').
+  }
+
+  void setVisitSupportItemDraft({
+    required String? supportItemCode,
+    required String? supportItemName,
+  }) {
+    if (!canEditVisitSupportItem) return;
+    editingVisitSupportItemCode.value = supportItemCode;
+    editingVisitSupportItemName.value = supportItemName;
+  }
+
+  Future<void> saveVisitSupportItem() async {
+    await updateVisitSupportItem(
+      supportItemCode: editingVisitSupportItemCode.value,
+      supportItemName: editingVisitSupportItemName.value,
+    );
   }
 
   Future<void> updateVisitSupportItem({
@@ -1185,8 +1490,8 @@ class StaffVisitsController extends GetxController {
         supportItemName == visit.supportItemName) {
       return;
     }
-    final previousCode = editingVisitSupportItemCode.value;
-    final previousName = editingVisitSupportItemName.value;
+    final previousCode = visit.supportItemCode;
+    final previousName = visit.supportItemName;
     editingVisitSupportItemCode.value = supportItemCode;
     editingVisitSupportItemName.value = supportItemName;
     isSaving.value = true;
@@ -1425,11 +1730,115 @@ class StaffVisitsController extends GetxController {
   Future<void> cancelSelected() async {
     final visit = selected.value;
     if (visit == null) return;
+
+    final claimEligible = false.obs;
+    final payEligible = false.obs;
+    final redeploy = 'skip'.obs;
+    final reason = 'other'.obs;
+
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Cancel visit'),
+        content: Obx(
+          () => SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: reason.value,
+                  decoration: const InputDecoration(labelText: 'Reason'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'participant',
+                      child: Text('Participant'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'provider',
+                      child: Text('Provider'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'worker_no_show',
+                      child: Text('Worker no-show'),
+                    ),
+                    DropdownMenuItem(value: 'other', child: Text('Other')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) reason.value = v;
+                  },
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: redeploy.value,
+                  decoration: const InputDecoration(labelText: 'Redeploy'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'keep_open',
+                      child: Text('Keep slot open'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'cancel_shift',
+                      child: Text('Cancel whole shift'),
+                    ),
+                    DropdownMenuItem(value: 'skip', child: Text('Skip')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) redeploy.value = v;
+                  },
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Claim eligible (NDIS)'),
+                  value: claimEligible.value,
+                  onChanged: (v) => claimEligible.value = v ?? false,
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Pay eligible (SCHADS / make-up)'),
+                  subtitle: const Text(
+                    'Tracks pay reminder until award engine (C2)',
+                    style: TextStyle(fontSize: 11),
+                  ),
+                  value: payEligible.value,
+                  onChanged: (v) => payEligible.value = v ?? false,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Back'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Cancel visit'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      await _repository.cancel(visit.id);
+      await _repository.cancel(
+        visit.id,
+        body: {
+          'reason': reason.value,
+          'redeploy': redeploy.value,
+          'claim_eligible': claimEligible.value,
+          'pay_eligible': payEligible.value,
+        },
+      );
       await refreshSelected();
+      if (!Get.testMode) {
+        AppToast.success(
+          'Visit cancelled',
+          'Tracked on cancellations queue for redeploy / pay / claim.',
+        );
+      }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {

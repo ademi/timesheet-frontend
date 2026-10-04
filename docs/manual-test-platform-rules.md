@@ -147,7 +147,7 @@ Fail the build if any of these are violated.
 - [x] Staff → Workforce → **Invite** with new email + required categories (allowlist only).
 - [x] Success shows **Registration email sent** (not only “Engagement created”) when API returns registration-invite union.
 - [x] Invite without email+phone or empty categories → validation; no crash.
-- [x] Inviting an **already registered** email → clear message: ask contractor to log in (`email_already_registered`).
+- [x] Inviting an **already registered** email (no contractor profile) → creates engagement + contractor row (`existing_account`); ask them to **log in** (no registration token).
 
 
 

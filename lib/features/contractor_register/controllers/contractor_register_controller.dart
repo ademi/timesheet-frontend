@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../../app/utils/email_utils.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/australian_states.dart';
 import '../../../core/constants/feature_flags.dart';
@@ -489,7 +490,7 @@ class ContractorRegisterController extends GetxController {
         'Account created',
         'Sign in with your new contractor account.',
       );
-      Get.offAllNamed(AppRoutes.login);
+      AppNavigator.offAll(AppRoutes.login);
     } on AppFailure catch (e) {
       _showError(e.message);
     } catch (e) {
@@ -499,7 +500,7 @@ class ContractorRegisterController extends GetxController {
     }
   }
 
-  void goToLogin() => Get.offNamed(AppRoutes.login);
+  void goToLogin() => AppNavigator.go(AppRoutes.login);
 
   void _showError(String message) {
     errorMessage.value = message;

@@ -141,6 +141,27 @@ VisitExportPreflight buildVisitExportPreflight(VisitOut visit) {
     ),
   );
 
+  final durationMin = visitScheduledDurationMinutes(visit);
+  if (durationMin > 24 * 60) {
+    checks.add(
+      VisitExportCheck(
+        label: 'Under 24h / day',
+        status: VisitExportCheckStatus.block,
+        detail:
+            'Scheduled duration is $durationMin min (>24h). Split or fix clocks before export.',
+      ),
+    );
+  } else {
+    checks.add(
+      const VisitExportCheck(
+        label: 'Under 24h / day',
+        status: VisitExportCheckStatus.ok,
+        detail:
+            'Server also blocks if closed clocks for a client exceed 24h on one day.',
+      ),
+    );
+  }
+
   return VisitExportPreflight(visit: visit, checks: checks);
 }
 

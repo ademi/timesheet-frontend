@@ -71,7 +71,7 @@ class OnboardingContactsStep extends StatelessWidget {
             const SizedBox(height: 12),
             AsyncOutlinedButton(
               onPressed: controller.saveContactDraft,
-              isLoading: controller.isSaving.value,
+              isLoading: controller.isSavingContact.value,
               child: Text(
                 editingEmergency ? 'Save emergency contact' : 'Save contact',
               ),
@@ -83,23 +83,35 @@ class OnboardingContactsStep extends StatelessWidget {
           ] else if (!editingRep) ...[
             if (!controller.hasEmergencyContact)
               OutlinedButton(
-                onPressed: controller.beginEmergencyDraft,
+                onPressed:
+                    controller.isSavingContact.value
+                        ? null
+                        : controller.beginEmergencyDraft,
                 child: const Text('Add emergency contact'),
               ),
             if (controller.hasEmergencyContact || hasSavedContacts)
               TextButton(
-                onPressed: controller.beginMoreContactDraft,
+                onPressed:
+                    controller.isSavingContact.value
+                        ? null
+                        : controller.beginMoreContactDraft,
                 child: const Text('Add another contact'),
               ),
           ] else ...[
             if (!controller.hasEmergencyContact)
               OutlinedButton(
-                onPressed: controller.beginEmergencyDraft,
+                onPressed:
+                    controller.isSavingContact.value
+                        ? null
+                        : controller.beginEmergencyDraft,
                 child: const Text('Add emergency contact'),
               )
             else
               TextButton(
-                onPressed: controller.beginMoreContactDraft,
+                onPressed:
+                    controller.isSavingContact.value
+                        ? null
+                        : controller.beginMoreContactDraft,
                 child: const Text('Add another contact'),
               ),
           ],
@@ -200,7 +212,7 @@ class _RepresentativeSection extends StatelessWidget {
               const SizedBox(height: 12),
               AsyncOutlinedButton(
                 onPressed: controller.saveExistingContactAsRepresentative,
-                isLoading: controller.isSaving.value,
+                isLoading: controller.isSavingContact.value,
                 child: Text(
                   required ? 'Save as representative' : 'Save as nominee',
                 ),
@@ -238,7 +250,7 @@ class _RepresentativeSection extends StatelessWidget {
                         }
                         await controller.saveContactDraft();
                       },
-                      isLoading: controller.isSaving.value,
+                      isLoading: controller.isSavingContact.value,
                       child: Text(
                         required ? 'Save representative' : 'Save nominee',
                       ),

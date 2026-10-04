@@ -50,5 +50,11 @@ app.*.map.json
 
 .worktrees/
 
-#docs
-docs/
+#docs (ignore by default; allowlisted plans/reviews below are tracked)
+docs/*
+!docs/2026-09-22-landing-ndis-gap-todos.md
+!docs/2026-09-22-ux-friction-inventory.md
+!docs/2026-09-25-frontend-feat-upgrading-vs-ios-review.md
+!docs/2026-09-26-feat-upgrading-review-fix-plan.md
+!docs/2026-09-27-go-router-web-only-plan.md
+!docs/2026-10-01-go-router-web-manual-test.md

@@ -19,6 +19,8 @@ import 'views/clients_list_view.dart';
 import 'views/public_client_invite_view.dart';
 import 'views/strengths_needs_view.dart';
 import 'views/support_plan_view.dart';
+import '../sil/bindings/sil_bindings.dart';
+import '../sil/views/sil_houses_views.dart';
 
 abstract final class ClientsPages {
   ClientsPages._();
@@ -33,6 +35,30 @@ abstract final class ClientsPages {
       ],
       binding: ClientsBinding(),
       page: () => staffShellPage(const ClientsListView()),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.staffSilHouses,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(anyOf: [AppPermissions.clientsRead]),
+      ],
+      binding: SilHousesBinding(),
+      page: () => staffShellPage(const SilHousesListView()),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.staffSilHouseDetail,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(
+          anyOf: [AppPermissions.clientsRead, AppPermissions.clientsManage],
+        ),
+      ],
+      binding: SilHouseDetailBinding(),
+      page: () => staffShellPage(const SilHouseDetailView()),
       transition: Transition.fadeIn,
     ),
     GetPage(
