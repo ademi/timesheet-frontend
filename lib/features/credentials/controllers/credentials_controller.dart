@@ -110,6 +110,29 @@ class CredentialsController extends GetxController {
     _loadCredentialCategories();
   }
 
+  /// Tier-2 shell re-enter: soft list refresh; clear abandoned create form
+  /// only on the credentials list tab (create/detail share this controller).
+  /// Safe with onboarding `permanent: true` (does not delete the controller).
+  void onScreenReenter() {
+    errorMessage.value = null;
+    final path =
+        Uri.tryParse(AppNavigator.currentLocation)?.path ??
+        AppNavigator.currentLocation;
+    if (path == AppRoutes.contractorCredentials) {
+      issuerCtrl.clear();
+      identifierCtrl.clear();
+      sensitiveConsentConfirmed.value = false;
+      governmentIdAcknowledged.value = false;
+      selectedEvidence.clear();
+      uploadProgress.value = null;
+      lastScanStatus.value = null;
+    }
+    // ignore: discarded_futures
+    load();
+    // ignore: discarded_futures
+    ensureDetailHydratedFromRoute();
+  }
+
   bool _routeImpliesDetail() {
     if (selected != null) return false;
     if (Get.arguments is CredentialOut) return true;

@@ -26,16 +26,15 @@ class JobsBinding extends Bindings {
   void dependencies() {
     ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<JobsController>()) {
-      Get.put(
-        JobsController(
-          repository: Get.find<JobsRepository>(),
-          clientsRepository: Get.find<ClientsRepository>(),
-          engagementsRepository: Get.find<EngagementsRepository>(),
-          session: Get.find<SessionService>(),
-        ),
-      );
-    }
+    putOrReenter(
+      () => JobsController(
+        repository: Get.find<JobsRepository>(),
+        clientsRepository: Get.find<ClientsRepository>(),
+        engagementsRepository: Get.find<EngagementsRepository>(),
+        session: Get.find<SessionService>(),
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 
   static void ensureShared() {

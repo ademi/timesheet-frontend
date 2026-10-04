@@ -115,6 +115,31 @@ class JobsController extends GetxController with PendingActionMixin {
     loadAll();
   }
 
+  /// Tier-2 shell re-enter: soft list refresh; clear create-form drafts on list tab.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    clientSiteWarning.value = null;
+    final path =
+        Uri.tryParse(AppNavigator.currentLocation)?.path ??
+        AppNavigator.currentLocation;
+    if (path == AppRoutes.staffJobs) {
+      titleCtrl.clear();
+      kind.value = 'standing';
+      locationMode.value = 'site';
+      selectedClientId.value = null;
+      selectedSiteId.value = null;
+      selectedBranchId.value = null;
+      sites.clear();
+      geofenceMode.value = 'informational';
+      geofenceRadiusCtrl.text = '100';
+      supportItemCode.value = null;
+      supportItemName.value = null;
+    }
+    // ignore: discarded_futures
+    loadAll();
+    hydrateSelectedFromArgs();
+  }
+
   @override
   void onClose() {
     titleCtrl.dispose();

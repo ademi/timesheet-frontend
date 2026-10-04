@@ -20,6 +20,13 @@ class SilHousesController extends GetxController {
     refreshHouses();
   }
 
+  /// Tier-2 shell re-enter: soft list refresh.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    // ignore: discarded_futures
+    refreshHouses();
+  }
+
   Future<void> refreshHouses() async {
     isLoading.value = true;
     errorMessage.value = null;

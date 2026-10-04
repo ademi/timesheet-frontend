@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -174,22 +175,21 @@ class StaffVisitsBinding extends Bindings {
     ClientsBinding.ensureShared();
     AttendanceBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<StaffVisitsController>()) {
-      Get.put(
-        StaffVisitsController(
-          repository: Get.find<VisitsRepository>(),
-          shiftsRepository: Get.find<ShiftsRepository>(),
-          jobsRepository: Get.find<JobsRepository>(),
-          engagementsRepository: Get.find<EngagementsRepository>(),
-          clientsRepository: Get.find<ClientsRepository>(),
-          session: Get.find<SessionService>(),
-          payroll:
-              Get.isRegistered<PayrollRepository>()
-                  ? Get.find<PayrollRepository>()
-                  : null,
-        ),
-      );
-    }
+    putOrReenter(
+      () => StaffVisitsController(
+        repository: Get.find<VisitsRepository>(),
+        shiftsRepository: Get.find<ShiftsRepository>(),
+        jobsRepository: Get.find<JobsRepository>(),
+        engagementsRepository: Get.find<EngagementsRepository>(),
+        clientsRepository: Get.find<ClientsRepository>(),
+        session: Get.find<SessionService>(),
+        payroll:
+            Get.isRegistered<PayrollRepository>()
+                ? Get.find<PayrollRepository>()
+                : null,
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 }
 
@@ -198,19 +198,21 @@ class ContractorVisitsBinding extends Bindings {
   void dependencies() {
     VisitsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<ContractorVisitsController>()) {
-      final controller = ContractorVisitsController(
+    final visits = putOrReenter(
+      () => ContractorVisitsController(
         repository: Get.find<VisitsRepository>(),
         shiftsRepository: Get.find<ShiftsRepository>(),
         session: Get.find<SessionService>(),
         location: Get.find<VisitLocationService>(),
         outbox: Get.find<OutboxStore>(),
         syncWorker: Get.find<SyncWorker>(),
-      );
-      Get.put(controller);
-    }
-    if (!Get.isRegistered<VisitShiftBriefController>()) {
-      Get.put(VisitShiftBriefController(repo: Get.find<VisitsRepository>()));
-    }
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
+    putOrReenter(
+      () => VisitShiftBriefController(repo: Get.find<VisitsRepository>()),
+      onReenter:
+          (c) => c.onScreenReenter(visitId: visits.selected.value?.id),
+    );
   }
 }

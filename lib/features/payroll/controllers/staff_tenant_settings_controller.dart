@@ -52,6 +52,13 @@ class StaffTenantSettingsController extends GetxController {
     load();
   }
 
+  /// Tier-2 shell re-enter: reload tenant settings (refills form from server).
+  void onScreenReenter() {
+    errorMessage.value = null;
+    // ignore: discarded_futures
+    load();
+  }
+
   @override
   void onClose() {
     timezoneCtrl.dispose();

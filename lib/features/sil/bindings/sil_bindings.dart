@@ -12,9 +12,9 @@ class SilHousesBinding extends Bindings {
   @override
   void dependencies() {
     _ensureShared();
-    Get.lazyPut(
+    putOrReenter(
       () => SilHousesController(Get.find<SilRepository>()),
-      fenix: true,
+      onReenter: (c) => c.onScreenReenter(),
     );
   }
 

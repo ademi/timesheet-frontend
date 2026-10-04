@@ -77,24 +77,23 @@ class StaffInvoiceExportsBinding extends Bindings {
     ClientsBinding.ensureShared();
     JobsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<InvoiceExportsController>()) {
-      Get.put(
-        InvoiceExportsController(
-          repository: Get.find<BillingRepository>(),
-          visitsRepository: Get.find<VisitsRepository>(),
-          session: Get.find<SessionService>(),
-          exportedVisitIds: Get.find<ExportedVisitIdsStore>(),
-          clientsRepository:
-              Get.isRegistered<ClientsRepository>()
-                  ? Get.find<ClientsRepository>()
-                  : null,
-          jobsRepository:
-              Get.isRegistered<JobsRepository>()
-                  ? Get.find<JobsRepository>()
-                  : null,
-        ),
-      );
-    }
+    putOrReenter(
+      () => InvoiceExportsController(
+        repository: Get.find<BillingRepository>(),
+        visitsRepository: Get.find<VisitsRepository>(),
+        session: Get.find<SessionService>(),
+        exportedVisitIds: Get.find<ExportedVisitIdsStore>(),
+        clientsRepository:
+            Get.isRegistered<ClientsRepository>()
+                ? Get.find<ClientsRepository>()
+                : null,
+        jobsRepository:
+            Get.isRegistered<JobsRepository>()
+                ? Get.find<JobsRepository>()
+                : null,
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 }
 

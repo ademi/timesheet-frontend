@@ -73,6 +73,16 @@ class StaffComplianceController extends GetxController {
     load();
   }
 
+  /// Tier-2 shell re-enter: soft reload; clear abandoned incident form drafts.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    incidentsError.value = null;
+    incidentTitleCtrl.clear();
+    incidentDescCtrl.clear();
+    // ignore: discarded_futures
+    load();
+  }
+
   @override
   void onClose() {
     incidentTitleCtrl.dispose();

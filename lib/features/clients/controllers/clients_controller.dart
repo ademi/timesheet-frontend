@@ -266,6 +266,28 @@ class ClientsController extends GetxController
     });
   }
 
+  /// Tier-2 shell re-enter: soft list refresh; hard-clear abandoned form drafts
+  /// only on the clients list tab (detail/form routes share this controller).
+  void onScreenReenter() {
+    errorMessage.value = null;
+    final path =
+        Uri.tryParse(AppNavigator.currentLocation)?.path ??
+        AppNavigator.currentLocation;
+    if (path == AppRoutes.staffClients) {
+      nameCtrl.clear();
+      emailCtrl.clear();
+      phoneCtrl.clear();
+      notesCtrl.clear();
+      _resetFormPhoto();
+    }
+    // ignore: discarded_futures
+    load();
+    if (_routeImpliesClientDetail() || routeParam('id') != null) {
+      // ignore: discarded_futures
+      ensureDetailHydratedFromRoute();
+    }
+  }
+
   bool _routeImpliesClientDetail() {
     if (selected.value != null) return false;
     if (routeArguments() is ClientOut) return true;

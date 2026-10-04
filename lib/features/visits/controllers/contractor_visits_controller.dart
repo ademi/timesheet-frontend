@@ -231,6 +231,18 @@ class ContractorVisitsController extends GetxController {
     load();
   }
 
+  /// Tier-2 shell re-enter: soft list refresh; keep tab/selection.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    if (selectedTab.value == 'open') {
+      // ignore: discarded_futures
+      loadOpenShifts();
+    } else {
+      // ignore: discarded_futures
+      load();
+    }
+  }
+
   /// Bind ACK callbacks when the shared worker was created by [VisitsBinding].
   void attachSyncWorker(SyncWorker worker) {
     _syncWorker = worker;

@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
@@ -64,16 +65,15 @@ class StaffComplianceBinding extends Bindings {
     CredentialsBinding.ensureDependencies();
     EngagementsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
-    if (!Get.isRegistered<StaffComplianceController>()) {
-      Get.put(
-        StaffComplianceController(
-          repository: Get.find<ComplianceOpsRepository>(),
-          credentialsRepository: Get.find<CredentialsRepository>(),
-          engagementsRepository: Get.find<EngagementsRepository>(),
-          session: Get.find<SessionService>(),
-        ),
-      );
-    }
+    putOrReenter(
+      () => StaffComplianceController(
+        repository: Get.find<ComplianceOpsRepository>(),
+        credentialsRepository: Get.find<CredentialsRepository>(),
+        engagementsRepository: Get.find<EngagementsRepository>(),
+        session: Get.find<SessionService>(),
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 }
 
@@ -98,19 +98,18 @@ class ContractorProfileOpsBinding extends Bindings {
         ),
       );
     }
-    if (!Get.isRegistered<ContractorProfileController>()) {
-      Get.put(
-        ContractorProfileController(
-          repository: Get.find<ComplianceOpsRepository>(),
-          session: Get.find<SessionService>(),
-          documentPipeline:
-              Get.isRegistered<DocumentPipeline>()
-                  ? Get.find<DocumentPipeline>()
-                  : null,
-          meRepository: Get.find<ContractorMeRepository>(),
-        ),
-      );
-    }
+    putOrReenter(
+      () => ContractorProfileController(
+        repository: Get.find<ComplianceOpsRepository>(),
+        session: Get.find<SessionService>(),
+        documentPipeline:
+            Get.isRegistered<DocumentPipeline>()
+                ? Get.find<DocumentPipeline>()
+                : null,
+        meRepository: Get.find<ContractorMeRepository>(),
+      ),
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 }
 

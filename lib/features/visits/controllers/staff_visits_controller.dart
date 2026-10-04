@@ -279,6 +279,13 @@ class StaffVisitsController extends GetxController {
         _effectiveTenantTimezone,
       ).to;
 
+  /// Tier-2 shell re-enter: soft board refresh; keep date/filters/selection.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    // ignore: discarded_futures
+    load();
+  }
+
   @override
   void onInit() {
     super.onInit();

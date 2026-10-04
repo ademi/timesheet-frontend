@@ -172,6 +172,15 @@ class WorkforceController extends GetxController {
     });
   }
 
+  /// Tier-2 shell re-enter: soft list refresh; keep status filter / selection.
+  void onScreenReenter() {
+    clearError();
+    // ignore: discarded_futures
+    load();
+    // ignore: discarded_futures
+    ensureDetailHydratedFromRoute();
+  }
+
   bool _routeImpliesDetail() {
     if (selected != null) return false;
     if (Get.arguments is EngagementOut) return true;

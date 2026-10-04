@@ -442,6 +442,15 @@ class InvoiceExportsController extends GetxController {
     }
   }
 
+  /// Tier-2 shell re-enter: soft reload; clear create-wizard visit selection.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    selectedVisitIds.clear();
+    lastVisitErrors.clear();
+    // ignore: discarded_futures
+    loadAll();
+  }
+
   Future<void> pickPeriod(BuildContext context) async {
     final picked = await showDateRangePicker(
       context: context,

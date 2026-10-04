@@ -58,6 +58,15 @@ class ContractorScheduleController extends GetxController {
     loadAll();
   }
 
+  /// Tier-2 shell re-enter: soft reload window; clear abandoned leave notes.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    leaveValidationMessage.value = null;
+    leaveNotesCtrl.clear();
+    // ignore: discarded_futures
+    loadAll();
+  }
+
   @override
   void onClose() {
     leaveStartCtrl.dispose();

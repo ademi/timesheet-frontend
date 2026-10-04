@@ -132,6 +132,19 @@ class ContractorProfileController extends GetxController {
     loadProfile();
   }
 
+  /// Tier-2 shell re-enter: drop pending photo / rights draft; reload profile.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    pendingPhoto.value = null;
+    photoCleared.value = false;
+    localPhotoBytes.value = null;
+    rightsNotesCtrl.clear();
+    // ignore: discarded_futures
+    loadProfile();
+    // ignore: discarded_futures
+    loadProfilePhoto();
+  }
+
   @override
   void onClose() {
     rightsNotesCtrl.dispose();

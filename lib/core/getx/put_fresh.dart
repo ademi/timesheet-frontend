@@ -26,11 +26,12 @@ T putFresh<T extends GetxController>(T Function() create) {
 T putOrReenter<T extends GetxController>(
   T Function() create, {
   void Function(T controller)? onReenter,
+  bool permanent = false,
 }) {
   if (Get.isRegistered<T>()) {
     final existing = Get.find<T>();
     onReenter?.call(existing);
     return existing;
   }
-  return Get.put(create());
+  return Get.put(create(), permanent: permanent);
 }

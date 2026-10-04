@@ -13,6 +13,17 @@ class VisitShiftBriefController extends GetxController {
   final isLoading = false.obs;
   final errorMessage = RxnString();
 
+  /// Tier-2 re-enter: reload brief for [visitId], or clear when none selected.
+  void onScreenReenter({String? visitId}) {
+    if (visitId == null || visitId.isEmpty) {
+      brief.value = null;
+      errorMessage.value = null;
+      return;
+    }
+    // ignore: discarded_futures
+    load(visitId);
+  }
+
   Future<void> load(String visitId) async {
     isLoading.value = true;
     errorMessage.value = null;

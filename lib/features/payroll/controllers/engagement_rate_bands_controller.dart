@@ -44,9 +44,34 @@ class EngagementRateBandsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _resetFormDefaults();
+  }
+
+  /// Tier-2 re-enter: hard-clear rate form drafts; reload bands if engaged.
+  void onScreenReenter() {
+    errorMessage.value = null;
+    _resetFormDefaults();
+    eveningRateCtrl.clear();
+    nightRateCtrl.clear();
+    saturdayRateCtrl.clear();
+    sundayRateCtrl.clear();
+    phRateCtrl.clear();
+    final id = engagementId.value;
+    if (id != null && id.isNotEmpty) {
+      // ignore: discarded_futures
+      loadFor(id);
+    }
+  }
+
+  void _resetFormDefaults() {
     final now = DateTime.now();
     effectiveFromCtrl.text =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    baseRateCtrl.text = '45.00';
+    eveningStartCtrl.text = '18:00:00';
+    eveningEndCtrl.text = '22:00:00';
+    nightStartCtrl.text = '22:00:00';
+    nightEndCtrl.text = '06:00:00';
   }
 
   @override

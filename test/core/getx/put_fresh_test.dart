@@ -40,4 +40,10 @@ void main() {
     expect(second.label, 'a');
     expect(second.reenterCount, 1);
   });
+
+  test('putOrReenter permanent keeps instance across SmartManagement', () {
+    putOrReenter(() => _ProbeController('a'), permanent: true);
+    expect(Get.isRegistered<_ProbeController>(), isTrue);
+    expect(Get.find<_ProbeController>().label, 'a');
+  });
 }
