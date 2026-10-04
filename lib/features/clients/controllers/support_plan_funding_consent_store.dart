@@ -93,6 +93,8 @@ class SupportPlanFundingConsentStore {
 
   bool get canUploadDocs => _canUploadDocs();
 
+  bool get hasPendingUploads => ndisPdfPending.value != null;
+
   ClientLegalUploadHelper get _legalHelper => ClientLegalUploadHelper(
     repository: _repository,
     pipeline: _pipeline,

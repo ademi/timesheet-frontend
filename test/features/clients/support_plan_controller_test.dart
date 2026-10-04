@@ -58,6 +58,39 @@ void main() {
     expect(c.needsBodyRepair.value, isTrue);
   });
 
+  test('isBodyDirty tracks edits after applyLoadedPlan', () {
+    c.applyLoadedPlan(
+      _plan(
+        body: const SupportPlanBody(
+          disabilityHealth: DisabilityHealthSection(
+            primaryDisability: 'ASD',
+          ),
+        ),
+      ),
+    );
+    expect(c.isBodyDirty, isFalse);
+    c.primaryDisabilityCtrl.text = 'ASD + epilepsy';
+    expect(c.isBodyDirty, isTrue);
+  });
+
+  test('applyImportedPlan updates body baseline', () {
+    c.applyLoadedPlan(_plan(body: const SupportPlanBody()));
+    c.primaryDisabilityCtrl.text = 'Local draft';
+    expect(c.isBodyDirty, isTrue);
+
+    c.applyImportedPlan(
+      _plan(
+        body: const SupportPlanBody(
+          disabilityHealth: DisabilityHealthSection(
+            primaryDisability: 'From SN',
+          ),
+        ),
+      ),
+    );
+    expect(c.primaryDisabilityCtrl.text, 'From SN');
+    expect(c.isBodyDirty, isFalse);
+  });
+
   test(
     'edit goals only → PATCH payload still has prior risk/disability_health',
     () async {

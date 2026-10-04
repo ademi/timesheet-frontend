@@ -1118,33 +1118,48 @@ class ClientsController extends GetxController
   }
 
   Future<List<String>> _saveDynamicAnswers(String clientId) async {
-    final errors = <String>[];
-    final total = requirementDrafts.where((d) => d.hasAnyContent).length;
+    final drafts =
+        requirementDrafts.where((draft) {
+          if (isOverviewOwnedRequirement(draft.requirement.requirementKey) ||
+              isCarePlanOwnedFundingRequirement(
+                draft.requirement.requirementKey,
+              ) ||
+              isCarePlanOwnedClinicalRequirement(
+                draft.requirement.requirementKey,
+              )) {
+            return false;
+          }
+          return draft.hasAnyContent;
+        }).toList();
+
+    final total = drafts.length;
+    if (total == 0) return const [];
+
     var done = 0;
+    profileSaveProgress.value = 'Saving profile (0/$total)…';
 
-    for (final draft in requirementDrafts) {
-      if (isOverviewOwnedRequirement(draft.requirement.requirementKey) ||
-          isCarePlanOwnedFundingRequirement(draft.requirement.requirementKey) ||
-          isCarePlanOwnedClinicalRequirement(
-            draft.requirement.requirementKey,
-          )) {
-        continue;
-      }
-      if (!draft.hasAnyContent) continue;
-
-      done++;
-      profileSaveProgress.value =
-          'Saving profile ($done/$total): ${draft.requirement.label}';
-
-      try {
-        await _saveOneRequirement(clientId, draft);
-      } on AppFailure catch (e) {
-        errors.add('${draft.requirement.label}: ${e.message}');
-      } catch (e) {
-        errors.add('${draft.requirement.label}: $e');
-      }
-    }
-    return errors;
+    final results = await Future.wait(
+      drafts.map((draft) async {
+        try {
+          await _saveOneRequirement(clientId, draft);
+          done++;
+          profileSaveProgress.value =
+              'Saving profile ($done/$total): ${draft.requirement.label}';
+          return null;
+        } on AppFailure catch (e) {
+          done++;
+          profileSaveProgress.value =
+              'Saving profile ($done/$total): ${draft.requirement.label}';
+          return '${draft.requirement.label}: ${e.message}';
+        } catch (e) {
+          done++;
+          profileSaveProgress.value =
+              'Saving profile ($done/$total): ${draft.requirement.label}';
+          return '${draft.requirement.label}: $e';
+        }
+      }),
+    );
+    return results.whereType<String>().toList(growable: false);
   }
 
   Future<void> _saveOneRequirement(
@@ -1281,21 +1296,23 @@ class ClientsController extends GetxController
       );
     }
 
-    String? lastId;
-    for (final file in files) {
-      final doc = await pipeline.uploadEvidence(
-        request: UploadUrlRequest(
-          ownerType: 'client',
-          ownerId: clientId,
-          filename: file.name,
-          contentType: file.contentType,
-          sizeBytes: file.bytes.length,
-          category: category,
+    if (files.isEmpty) return null;
+    final docs = await Future.wait(
+      files.map(
+        (file) => pipeline.uploadEvidence(
+          request: UploadUrlRequest(
+            ownerType: 'client',
+            ownerId: clientId,
+            filename: file.name,
+            contentType: file.contentType,
+            sizeBytes: file.bytes.length,
+            category: category,
+          ),
+          bytes: file.bytes,
         ),
-        bytes: file.bytes,
-      );
-      lastId = doc.id;
-    }
+      ),
+    );
+    final lastId = docs.isEmpty ? null : docs.last.id;
     return lastId;
   }
 

@@ -929,20 +929,27 @@ class ClientOnboardingController extends GetxController
       }
 
       final id = client.value!.id;
+      final hadPendingPhoto = pendingPhoto.value != null;
 
-      if (pendingPhoto.value != null) {
-        await _persistPhoto(id);
+      // Photo + identity cards are independent — upload in parallel (B7).
+      await Future.wait([
+        if (hadPendingPhoto) _persistPhoto(id, refreshClient: false),
+        _persistIdentityCards(id),
+      ]);
+
+      await Future.wait([
+        _putOptionalFact(id, OnboardingKeys.sexGender, resolvedSexGender),
+        _putOptionalFact(id, OnboardingKeys.atsiStatus, atsiStatus.value),
+        _putOptionalFact(
+          id,
+          OnboardingKeys.referralSource,
+          resolvedReferralSource,
+        ),
+      ]);
+
+      if (hadPendingPhoto) {
+        client.value = await _repository.getClient(id);
       }
-
-      await _persistIdentityCards(id);
-
-      await _putOptionalFact(id, OnboardingKeys.sexGender, resolvedSexGender);
-      await _putOptionalFact(id, OnboardingKeys.atsiStatus, atsiStatus.value);
-      await _putOptionalFact(
-        id,
-        OnboardingKeys.referralSource,
-        resolvedReferralSource,
-      );
 
       if (step.value == 0) step.value = 1;
       return true;
@@ -2383,45 +2390,43 @@ class ClientOnboardingController extends GetxController
 
   Future<void> _persistIdentityCards(String clientId) async {
     final medicare = medicareCtrl.text.trim();
-    await _persistIdentityCard(
-      clientId: clientId,
-      requirementKey: OnboardingKeys.medicareCard,
-      category: OnboardingKeys.medicareCard,
-      attachment: medicareCardAttachment,
-      valueJson: medicare.isEmpty ? null : medicare,
-    );
-    await _persistIdentityCard(
-      clientId: clientId,
-      requirementKey: OnboardingKeys.companionCard,
-      category: OnboardingKeys.companionCard,
-      attachment: companionCardAttachment,
-      valueJson: _nullIfEmpty(companionCardNumberCtrl.text.trim()),
-    );
-    await _persistIdentityCard(
-      clientId: clientId,
-      requirementKey: OnboardingKeys.disabilityCard,
-      category: OnboardingKeys.disabilityCard,
-      attachment: disabilityCardAttachment,
-      valueJson: _nullIfEmpty(disabilityCardNumberCtrl.text.trim()),
-    );
-    await _persistIdentityCard(
-      clientId: clientId,
-      requirementKey: OnboardingKeys.pensionCard,
-      category: OnboardingKeys.pensionCard,
-      attachment: pensionCardAttachment,
-      valueJson: _nullIfEmpty(pensionCardNumberCtrl.text.trim()),
-    );
-    await _persistPhotoId(clientId);
-  }
-
-  Future<void> _persistPhotoId(String clientId) async {
-    await _persistIdentityCard(
-      clientId: clientId,
-      requirementKey: OnboardingKeys.photoId,
-      category: OnboardingKeys.photoId,
-      attachment: photoIdAttachment,
-      valueJson: _nullIfEmpty(photoIdNumberCtrl.text.trim()),
-    );
+    await Future.wait([
+      _persistIdentityCard(
+        clientId: clientId,
+        requirementKey: OnboardingKeys.medicareCard,
+        category: OnboardingKeys.medicareCard,
+        attachment: medicareCardAttachment,
+        valueJson: medicare.isEmpty ? null : medicare,
+      ),
+      _persistIdentityCard(
+        clientId: clientId,
+        requirementKey: OnboardingKeys.companionCard,
+        category: OnboardingKeys.companionCard,
+        attachment: companionCardAttachment,
+        valueJson: _nullIfEmpty(companionCardNumberCtrl.text.trim()),
+      ),
+      _persistIdentityCard(
+        clientId: clientId,
+        requirementKey: OnboardingKeys.disabilityCard,
+        category: OnboardingKeys.disabilityCard,
+        attachment: disabilityCardAttachment,
+        valueJson: _nullIfEmpty(disabilityCardNumberCtrl.text.trim()),
+      ),
+      _persistIdentityCard(
+        clientId: clientId,
+        requirementKey: OnboardingKeys.pensionCard,
+        category: OnboardingKeys.pensionCard,
+        attachment: pensionCardAttachment,
+        valueJson: _nullIfEmpty(pensionCardNumberCtrl.text.trim()),
+      ),
+      _persistIdentityCard(
+        clientId: clientId,
+        requirementKey: OnboardingKeys.photoId,
+        category: OnboardingKeys.photoId,
+        attachment: photoIdAttachment,
+        valueJson: _nullIfEmpty(photoIdNumberCtrl.text.trim()),
+      ),
+    ]);
   }
 
   Future<void> _persistIdentityCard({
@@ -2484,7 +2489,10 @@ class ClientOnboardingController extends GetxController
     return 'image/jpeg';
   }
 
-  Future<void> _persistPhoto(String clientId) async {
+  Future<void> _persistPhoto(
+    String clientId, {
+    bool refreshClient = true,
+  }) async {
     final pending = pendingPhoto.value;
     if (pending == null) return;
     final docId = await _uploadClientFile(
@@ -2497,7 +2505,9 @@ class ClientOnboardingController extends GetxController
     await _repository.setClientProfilePhoto(clientId, docId);
     pendingPhoto.value = null;
     // Defense in depth: keep local metadata aligned with server after photo set.
-    client.value = await _repository.getClient(clientId);
+    if (refreshClient) {
+      client.value = await _repository.getClient(clientId);
+    }
   }
 
   Future<String> _uploadClientFile({

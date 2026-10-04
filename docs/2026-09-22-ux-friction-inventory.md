@@ -152,24 +152,20 @@ These call sites start a server request as soon as the user finishes the file pi
 
 **Fix:** Contact saves use `isSavingContact` (row-level). Sticky nav stays usable during Add/Save contact. Full local-draft batch-on-Next deferred (high risk; needs product OK for delayed server presence).
 
-### B7. Serial cascades under one spinner
+### B7. Serial cascades under one spinner — ✅ Done (2026-10-04)
 
-| Flow | Behavior |
-|------|----------|
-| Identity Next | Photo + up to 5 identity cards uploaded sequentially under one `isSaving` |
-| Profile & docs Save | `_saveDynamicAnswers` serial per requirement + progress string |
+| Flow | Behavior (fixed) |
+|------|------------------|
+| Identity Next | Photo + identity cards + optional facts via `Future.wait` under one `isSaving` |
+| Profile & docs Save | `_saveDynamicAnswers` / multi-file upload parallelized; progress `k/N` |
 
-**Direction:** Parallelize safe uploads (`Future.wait`) or show per-item progress without locking unrelated chrome.
+### B8. Reload can wipe in-progress care-plan edits — ✅ Done (2026-10-04)
 
-### B8. Reload can wipe in-progress care-plan edits
-
-| Trigger | Effect |
-|---------|--------|
-| Clinical/funding conflict or `_persist` failure | `reload` → `applyProfileBundle` |
-| SN import (`support_plan_sn_section.dart`) | Confirm then `planController.load()` full reload |
-| Discard on step 0 | Intentional `load()` |
-
-**Direction:** Preserve dirty draft fields across import/reload, or warn and require discard confirmation when dirty.
+| Trigger | Behavior (fixed) |
+|---------|------------------|
+| Clinical/funding conflict or `_persist` failure | Skip auto-reload when pending PDF uploads exist |
+| SN import | Warn when `isBodyDirty`; apply returned plan body (no full funding/clinical wipe) |
+| Discard on step 0 | Intentional `load()` unchanged |
 
 ---
 
@@ -201,8 +197,8 @@ Ordered by user-visible pain × how often the surface is used during client setu
 | P1 | A5 / A6 / B2 credentials | Non-blocking scan status; don’t lock whole create form | ✅ Done (2026-10-04) |
 | P2 | A7 contractor photo | Match other profile fields (pending until Save) | ✅ Done (2026-10-04) |
 | P2 | B5 / B6 onboarding Next & contacts | B5 KEEP resume-safe; B6 row-level `isSavingContact` (no sticky freeze) | ✅ Done (2026-10-04) |
-| P3 | B7 serial cascades | Parallel uploads where safe | |
-| P3 | B8 reload/import dirty handling | Don’t clobber unsaved care-plan body | |
+| P3 | B7 serial cascades | Parallel uploads where safe | ✅ Done (2026-10-04) |
+| P3 | B8 reload/import dirty handling | Don’t clobber unsaved care-plan body | ✅ Done (2026-10-04) |
 
 **Separate workstream (web navigation):** **§F complete** — Path B (`go_router` on web only). See `docs/2026-09-27-go-router-web-only-plan.md` and `docs/adr-go-router-web-only.md`.
 

@@ -64,6 +64,12 @@ class SupportPlanClinicalStore {
   final isUploadingNutrition = false.obs;
   final isUploadingHazard = false.obs;
 
+  bool get hasPendingUploads =>
+      pendingMedical.value != null ||
+      pendingBsp.value != null ||
+      pendingNutrition.value != null ||
+      pendingHazard.value != null;
+
   Future<({String name, List<int> bytes})?> _resolvePickPdfBytes() async {
     final override = _pickPdfBytes;
     if (override != null) return override();
