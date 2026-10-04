@@ -1,7 +1,8 @@
 import 'package:get/get.dart';
 
-import '../../../../core/network/api_client.dart';
-import '../../../../core/services/token_storage.dart';
+import '../../../core/getx/put_fresh.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/services/token_storage.dart';
 import '../controllers/contractor_register_controller.dart';
 import '../data/datasources/contractor_register_remote_datasource.dart';
 import '../data/repositories/contractor_register_repository.dart';
@@ -29,12 +30,12 @@ class ContractorRegisterBinding extends Bindings {
         ),
       );
     }
-    if (!Get.isRegistered<ContractorRegisterController>()) {
-      Get.lazyPut<ContractorRegisterController>(
-        () => ContractorRegisterController(
-          repository: Get.find<ContractorRegisterRepository>(),
-        ),
-      );
-    }
+    // Recreate so invite token / form drafts cannot stick across re-enter
+    // (register vs register/:token, or leave and come back).
+    putFresh(
+      () => ContractorRegisterController(
+        repository: Get.find<ContractorRegisterRepository>(),
+      ),
+    );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/token_storage.dart';
 import '../controllers/complete_account_controller.dart';
@@ -13,6 +14,6 @@ class CompleteAccountBinding extends Bindings {
     if (!Get.isRegistered<ApiClient>()) {
       Get.put<ApiClient>(ApiClient(Get.find<TokenStorage>()), permanent: true);
     }
-    Get.lazyPut(CompleteAccountController.new);
+    putFresh(CompleteAccountController.new);
   }
 }
