@@ -644,5 +644,45 @@ flutter run -d <device_id> --dart-define=API_BASE_URL=http://127.0.0.1:8000
 
 - Plan + matrices: `[2026-09-27-go-router-web-only-plan.md](./2026-09-27-go-router-web-only-plan.md)` §Phase 6.4 / 6.5  
 - ADR: `[adr-go-router-web-only.md](./adr-go-router-web-only.md)`  
-- Superseded GetX-web notes: `[web-refresh-back-button-fix.md](./web-refresh-back-button-fix.md)`
+- Superseded GetX-web notes: `[web-refresh-back-button-fix.md](./web-refresh-back-button-fix.md)`  
+- GetX lifecycle vs GoRouter: `[2026-10-04-getx-controller-lifecycle-gorouter.md](./2026-10-04-getx-controller-lifecycle-gorouter.md)`
+
+---
+
+## Controller freshness (leave → re-enter)
+
+**Why:** GoRouter `onEnter` bindings do not dispose GetX controllers. After Phases 0–3 of the lifecycle plan, Tier-3 screens use `putFresh` (or onboarding `onExit` release) and shell tabs use `putOrReenter` + `onScreenReenter()`.
+
+**Pass =** leave the screen, change something elsewhere (or open another entity), come back → UI is clean or shows the **current** route entity — not the previous draft/id.
+
+### F1. Tier-3 entity / wizard (must recreate)
+
+| # | Flow | Steps | Pass |
+|---|------|-------|------|
+| F1.1 | Support plan | Open support plan for client A → edit a field → back → open for client B | [ ] Shows B (not A’s draft) |
+| F1.2 | Client onboarding | Start/resume client A → advance a step → leave (back to list) → open client B onboarding | [ ] Shows B; step URL sync within one client still works |
+| F1.3 | Group shift edit | Edit shift A → leave → open edit for shift B | [ ] Shift B fields |
+| F1.4 | Group shift book | Start book wizard → leave mid-flow → open book again | [ ] Starts on People (not stale Review) |
+| F1.5 | SIL house detail | Open house A → leave → open house B | [ ] House B |
+| F1.6 | Invoice export detail | Open export A → leave → open export B | [ ] Export B |
+| F1.7 | Support compose | Compose for client A → leave → compose for client B | [ ] Client B |
+| F1.8 | Recurrence form | Fill pattern → leave → reopen | [ ] Empty/default form |
+
+### F2. Shell tabs (soft refresh; drafts cleared)
+
+| # | Tab | Steps | Pass |
+|---|-----|-------|------|
+| F2.1 | Clients | Type into create/edit fields if exposed → switch to Jobs → back to Clients | [ ] Abandoned form drafts cleared; list reloads |
+| F2.2 | Jobs | Same for create-job drafts | [ ] Drafts cleared; list reloads |
+| F2.3 | Billing exports | Select visits for create → switch tab → back | [ ] Selection cleared; lists reload |
+| F2.4 | Contractor credentials | Start create fields → switch tab → back to list | [ ] Create fields cleared; list reloads |
+| F2.5 | Home alerts | Switch away and back | [ ] Does **not** hard-reset (permanent until logout) |
+
+### F3. Logout cleanup
+
+| # | Steps | Pass |
+|---|-------|------|
+| F3.1 | Log in → visit Home + start contractor onboarding if available → Logout → Log in again | [ ] No leftover home-alerts / onboarding funnel state |
+
+Automated coverage: `test/core/getx/put_fresh_test.dart`, `test/core/getx/controller_freshness_regression_test.dart`, `test/app/controllers/auth_logout_reset_test.dart`.
 
