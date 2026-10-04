@@ -63,10 +63,7 @@ class OnboardingCarePlanStep extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           if (id.isNotEmpty)
-            SupportPlanClinicalSection(
-              store: controller.clinical,
-              clientId: id,
-            ),
+            SupportPlanClinicalSection(store: controller.clinical),
           const SizedBox(height: 16),
           const Text(
             'Consent flags',

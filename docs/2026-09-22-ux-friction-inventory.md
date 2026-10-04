@@ -37,27 +37,26 @@ A better default (already used in parts of the app) is:
 
 These call sites start a server request as soon as the user finishes the file picker.
 
-### A1. Care plan — clinical documents (canonical example)
+### A1. Care plan — clinical documents (canonical example) — ✅ Done (2026-10-04)
 
 | | |
 |--|--|
 | **UI** | `frontend/lib/features/clients/widgets/support_plan_clinical_section.dart` |
-| **Store** | `SupportPlanClinicalStore` — `uploadMedicalPdf`, `uploadBspPdf`, `uploadNutritionPdf`, `uploadHazardPdf` → `uploadClinicalPdf` |
+| **Store** | `SupportPlanClinicalStore` — `pickMedicalPdf` / `pickBspPdf` / `pickNutritionPdf` / `pickHazardPdf` → pending → upload in `persistFacts` |
 | **Also shown in** | Onboarding care-plan step, support-plan review step |
 | **Files** | 4 separate single-PDF slots |
-| **Flow** | Choose/Replace → pick PDF → `uploadEvidence` + upsert document fact → set “on file” flag locally |
-| **Friction** | User waits 4 times if filling the whole section. `isBusy` disables the row (and feeds global care-plan busy — see B1). |
-| **Note** | Bool “on file” toggles still need **Save draft / Activate** via `persistFacts` — upload alone is not a full section save. |
+| **Flow (fixed)** | Choose/Replace → hold locally (`pending*`) → upload + upsert on **Save draft / Activate**; row-level `isUploading*`; toggles independent until Save (B3) |
+| **Was** | Pick → immediate `uploadEvidence` + `isBusy` froze sticky nav (B1) |
 
-### A2. Care plan — NDIS plan PDF (funding)
+### A2. Care plan — NDIS plan PDF (funding) — ✅ Done (2026-10-04)
 
 | | |
 |--|--|
-| **UI** | `support_plan_funding_section.dart` — `onPick: store.uploadNdisPlanPdf` |
-| **Store** | `SupportPlanFundingConsentStore.uploadNdisPlanPdf` |
+| **UI** | `support_plan_funding_section.dart` — `onPick: store.pickNdisPlanPdf` |
+| **Store** | `SupportPlanFundingConsentStore.pickNdisPlanPdf` → `ndisPdfPending` → upload in `persistFacts` |
 | **Files** | 1 PDF |
-| **Flow** | Pick → upload + upsert NDIS fact with `documentId` |
-| **Contrast** | Onboarding NDIS step **defers** upload until Next (`pickNdisPlanPdf` → pending → `submitNdisStep`). Same document type, two UX models. |
+| **Flow (fixed)** | Pick → pending → upload + upsert NDIS fact with `documentId` on Save (aligned with onboarding) |
+| **Was** | Pick → immediate upload under store `isBusy` |
 
 ### A3. Care plan — consent & agreements
 
@@ -110,18 +109,19 @@ These call sites start a server request as soon as the user finishes the file pi
 
 ## B. Related frictions (not only “upload on pick”)
 
-### B1. Global `isBusy` freezes care-plan chrome
+### B1. Global `isBusy` freezes care-plan chrome — ✅ Partially done (P0 clinical/NDIS)
 
-**Why it hurts:** One clinical/NDIS/consent PDF upload sets store `isBusy`. `SupportPlanController.isBusy` ORs funding + clinical busy with save/load. Sticky Back / Save draft / Next (and funding sibling fields) disable for the whole wait.
+**Why it hurt:** One clinical/NDIS/consent PDF upload sets store `isBusy`. `SupportPlanController.isBusy` ORs funding + clinical busy with save/load. Sticky Back / Save draft / Next (and funding sibling fields) disable for the whole wait.
 
 | Piece | Path |
 |-------|------|
-| Clinical busy | `support_plan_clinical_store.dart` (`uploadClinicalPdf`) |
-| Funding/consent busy | `support_plan_funding_consent_store.dart` |
+| Clinical busy | ~~`uploadClinicalPdf`~~ — picks no longer set `isBusy`; row `isUploading*` during Save |
+| Funding NDIS | ~~`uploadNdisPlanPdf`~~ — picks no longer set `isBusy`; `isUploadingNdisPdf` during Save |
+| Funding/consent busy | Still set by legal mark-complete (A3 / P1) |
 | Aggregated | `support_plan_controller.dart` → `isBusy` |
 | UI gates | `support_plan_view.dart`, `client_detail_view.dart` (`_CarePlanSticky`), `support_plan_funding_section.dart` (`enabled = !store.isBusy`) |
 
-**Direction:** Prefer row-level uploading state; keep draft navigation and sibling fields usable.
+**P0 outcome:** Clinical + NDIS picks no longer freeze sticky nav. Remaining: consent/legal uploads (P1).
 
 ### B2. Credential scan poll blocks the form (~60s)
 
@@ -129,11 +129,11 @@ These call sites start a server request as soon as the user finishes the file pi
 
 **Direction:** Upload async; show scan status on the evidence chip; allow editing other fields; gate Save on “at least one clean doc” if required.
 
-### B3. Clinical upload vs toggle Save split
+### B3. Clinical upload vs toggle Save split — ✅ Done (2026-10-04)
 
-**Why it hurts:** `uploadClinicalPdf` calls `setOnFileFlag(true)` so BSP/nutrition/hazard switches flip on upload, but bool facts only leave the device in `persistFacts` on Save draft / Activate. Users see “done” UI that isn’t fully persisted until Save. BSP helper text also tells them the Care-plan BSP flag is separate.
+**Why it hurt:** Immediate upload flipped BSP/nutrition/hazard switches locally while bool facts only persisted on Save draft / Activate.
 
-**Direction:** Either defer upload until Save (with pending filenames), or make upload the sole source of truth and drop redundant draft toggles for doc-backed flags.
+**Fix:** Pick never flips toggles. PDFs and bool flags both commit in `persistFacts` on Save draft / Activate. Helper copy notes PDF uploads apply on Save.
 
 ### B4. Late permission / legal-version checks
 
@@ -196,16 +196,16 @@ These call sites start a server request as soon as the user finishes the file pi
 
 Ordered by user-visible pain × how often the surface is used during client setup:
 
-| Pri | Item | Suggested outcome |
-|-----|------|-------------------|
-| P0 | A1 clinical (+ B1 busy scope, B3 toggle split) | Hold PDFs locally; upload on Save draft / Activate; row-level progress only |
-| P0 | A2 funding NDIS PDF | Align with onboarding deferral (`pick` pending → persist on Save) |
-| P1 | A3 / A4 legal pack & care consent | Defer or parallelize; don’t freeze sticky nav; check perms before pick (B4) |
-| P1 | A5 / A6 / B2 credentials | Non-blocking scan status; don’t lock whole create form |
-| P2 | A7 contractor photo | Match other profile fields (pending until Save) **or** keep immediate but don’t block unrelated edits |
-| P2 | B5 / B6 onboarding Next & contacts | Product call: keep resume-safe step saves vs local draft wizard |
-| P3 | B7 serial cascades | Parallel uploads where safe |
-| P3 | B8 reload/import dirty handling | Don’t clobber unsaved care-plan body |
+| Pri | Item | Suggested outcome | Status |
+|-----|------|-------------------|--------|
+| P0 | A1 clinical (+ B1 busy scope, B3 toggle split) | Hold PDFs locally; upload on Save draft / Activate; row-level progress only | ✅ Done (2026-10-04) |
+| P0 | A2 funding NDIS PDF | Align with onboarding deferral (`pick` pending → persist on Save) | ✅ Done (2026-10-04) |
+| P1 | A3 / A4 legal pack & care consent | Defer or parallelize; don’t freeze sticky nav; check perms before pick (B4) | |
+| P1 | A5 / A6 / B2 credentials | Non-blocking scan status; don’t lock whole create form | |
+| P2 | A7 contractor photo | Match other profile fields (pending until Save) **or** keep immediate but don’t block unrelated edits | |
+| P2 | B5 / B6 onboarding Next & contacts | Product call: keep resume-safe step saves vs local draft wizard | |
+| P3 | B7 serial cascades | Parallel uploads where safe | |
+| P3 | B8 reload/import dirty handling | Don’t clobber unsaved care-plan body | |
 
 **Separate workstream (web navigation):** **§F complete** — Path B (`go_router` on web only). See `docs/2026-09-27-go-router-web-only-plan.md` and `docs/adr-go-router-web-only.md`.
 

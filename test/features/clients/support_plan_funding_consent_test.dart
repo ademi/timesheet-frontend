@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:rostiq/app/data/models/document/document_models.dart';
 import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/features/clients/controllers/support_plan_controller.dart';
 import 'package:rostiq/features/clients/controllers/support_plan_funding_consent_store.dart';
@@ -12,8 +13,11 @@ import 'package:rostiq/features/clients/utils/onboarding_keys.dart';
 import 'package:rostiq/features/clients/utils/support_plan_keys.dart';
 import 'package:rostiq/features/clients/widgets/support_plan_consent_section.dart';
 import 'package:rostiq/features/clients/widgets/support_plan_funding_section.dart';
+import 'package:rostiq/features/documents/data/document_pipeline.dart';
 
 class _MockClientsRepository extends Mock implements ClientsRepository {}
+
+class _MockDocumentPipeline extends Mock implements DocumentPipeline {}
 
 final _now = DateTime.utc(2026, 8, 27, 9);
 
@@ -36,6 +40,16 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const ProfileFactUpsert(valueJson: true));
     registerFallbackValue(<String, dynamic>{});
+    registerFallbackValue(
+      const UploadUrlRequest(
+        ownerType: 'client',
+        ownerId: 'c1',
+        filename: 'x.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1,
+        category: 'ndis',
+      ),
+    );
   });
 
   late _MockClientsRepository mock;
@@ -596,6 +610,73 @@ void main() {
     final failed = await store.persistFacts(clientId: 'c1');
     expect(failed, contains('NDIS number'));
     expect(store.ndisFieldError.value, contains('already used'));
+    store.dispose();
+  });
+
+  test('pickNdisPlanPdf holds locally and does not set isBusy', () async {
+    final store = SupportPlanFundingConsentStore(
+      repository: mock,
+      documentPipeline: _MockDocumentPipeline(),
+      pickPdfBytes: () async => (name: 'ndia.pdf', bytes: [1, 2, 3]),
+    );
+    store.applyProfileBundle(const ClientProfileBundle(facts: []));
+
+    await store.pickNdisPlanPdf();
+
+    expect(store.ndisPdfPending.value?.name, 'ndia.pdf');
+    expect(store.ndisPdfOnFile.value, isFalse);
+    expect(store.isBusy.value, isFalse);
+    verifyNever(() => mock.upsertProfileFact(any(), any(), any()));
+    store.dispose();
+  });
+
+  test('persistFacts uploads pending NDIA PDF with documentId', () async {
+    final pipeline = _MockDocumentPipeline();
+    when(
+      () => pipeline.uploadEvidence(
+        request: any(named: 'request'),
+        bytes: any(named: 'bytes'),
+      ),
+    ).thenAnswer(
+      (_) async => const DocumentOut(
+        id: 'doc-ndis-1',
+        ownerType: 'client',
+        ownerId: 'c1',
+        filename: 'ndia.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 3,
+        scanStatus: 'clean',
+      ),
+    );
+    when(
+      () => mock.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async => const ClientProfileFactOut(requirementKey: 'x'));
+
+    final store = SupportPlanFundingConsentStore(
+      repository: mock,
+      documentPipeline: pipeline,
+      pickPdfBytes: () async => (name: 'ndia.pdf', bytes: [1, 2, 3]),
+    );
+    store.applyProfileBundle(const ClientProfileBundle(facts: []));
+    store.ndisCtrl.text = '431234567';
+    await store.pickNdisPlanPdf();
+
+    final failed = await store.persistFacts(clientId: 'c1');
+    expect(failed, isEmpty);
+    expect(store.ndisPdfPending.value, isNull);
+    expect(store.ndisPdfOnFile.value, isTrue);
+    expect(store.isBusy.value, isFalse);
+    verify(
+      () => mock.upsertProfileFact(
+        'c1',
+        OnboardingKeys.ndis,
+        any(
+          that: predicate<ProfileFactUpsert>(
+            (u) => u.documentId == 'doc-ndis-1' && u.valueJson == '431234567',
+          ),
+        ),
+      ),
+    ).called(1);
     store.dispose();
   });
 

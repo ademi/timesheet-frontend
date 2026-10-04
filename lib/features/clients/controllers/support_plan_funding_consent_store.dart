@@ -8,6 +8,7 @@ import '../../documents/data/document_pipeline.dart';
 import '../data/models/client_profile_models.dart';
 import '../data/repositories/clients_repository.dart';
 import '../services/client_legal_upload_helper.dart';
+import '../models/identity_card_attachment.dart';
 import '../models/support_plan_specialist_entry.dart';
 import '../models/support_plan_specialist_types.dart';
 import '../utils/support_plan_specialists_codec.dart';
@@ -76,6 +77,8 @@ class SupportPlanFundingConsentStore {
   final preferredClaimingMethod = RxnString();
   final preferredClaimingOtherCtrl = TextEditingController();
   final ndisPdfOnFile = false.obs;
+  final ndisPdfPending = Rxn<PendingIdentityCardFile>();
+  final isUploadingNdisPdf = false.obs;
 
   // ── Consent ───────────────────────────────────────────────────────────
   final infoShareConsent = false.obs;
@@ -163,6 +166,7 @@ class SupportPlanFundingConsentStore {
     final ndis = _fact(bundle, OnboardingKeys.ndis);
     ndisPdfOnFile.value =
         ndis?.documentId != null && ndis!.documentId!.isNotEmpty;
+    ndisPdfPending.value = null;
 
     infoShareConsent.value =
         _boolFact(bundle, OnboardingKeys.infoShareConsent) ?? false;
@@ -267,7 +271,21 @@ class SupportPlanFundingConsentStore {
       putValue(OnboardingKeys.planManagementType, 'Plan management', planType);
     }
 
-    putValue(OnboardingKeys.ndis, 'NDIS number', ndisCtrl.text.trim());
+    final ndisNumber = ndisCtrl.text.trim();
+    final ndisPending = ndisPdfPending.value;
+    if (ndisPending != null) {
+      jobs.add((
+        key: OnboardingKeys.ndis,
+        label: 'NDIA plan PDF',
+        future: _persistNdisWithPendingPdf(
+          clientId: clientId,
+          ndisNumber: ndisNumber,
+          pending: ndisPending,
+        ),
+      ));
+    } else {
+      putValue(OnboardingKeys.ndis, 'NDIS number', ndisNumber);
+    }
     putValue(
       OnboardingKeys.supportPlanOther,
       'Other',
@@ -453,54 +471,77 @@ class SupportPlanFundingConsentStore {
     return results.whereType<String>().toSet().toList(growable: false);
   }
 
-  Future<bool> uploadNdisPlanPdf({required String clientId}) async {
+  /// Holds an NDIA plan PDF locally until [persistFacts] (Save draft / Activate).
+  Future<void> pickNdisPlanPdf() async {
     errorMessage.value = null;
-    isBusy.value = true;
+    if (_pipeline == null) {
+      errorMessage.value = 'Document upload is not configured.';
+      return;
+    }
+    if (!_canUploadDocs()) {
+      errorMessage.value =
+          'Missing documents.upload / clients.docs.manage permission.';
+      return;
+    }
+    final bytes = await _resolvePickPdfBytes();
+    if (bytes == null) return;
+    ndisPdfPending.value = PendingIdentityCardFile(
+      name: bytes.name,
+      bytes: bytes.bytes,
+      contentType: 'application/pdf',
+    );
+  }
+
+  void clearNdisPlanPdfPending() {
+    ndisPdfPending.value = null;
+  }
+
+  Future<void> _persistNdisWithPendingPdf({
+    required String clientId,
+    required String ndisNumber,
+    required PendingIdentityCardFile pending,
+  }) async {
+    final pipeline = _pipeline;
+    if (pipeline == null) {
+      throw const AppFailure(
+        message: 'Document upload is not configured.',
+        code: 'upload_not_configured',
+        presentation: AppFailurePresentation.inline,
+      );
+    }
+    if (!_canUploadDocs()) {
+      throw const AppFailure(
+        message: 'Missing documents.upload / clients.docs.manage permission.',
+        code: 'permission_denied',
+        presentation: AppFailurePresentation.inline,
+      );
+    }
+    isUploadingNdisPdf.value = true;
     try {
-      final bytes = await _resolvePickPdfBytes();
-      if (bytes == null) {
-        errorMessage.value = 'Select an NDIA plan PDF to upload.';
-        return false;
-      }
-      final pipeline = _pipeline;
-      if (pipeline == null) {
-        errorMessage.value = 'Document upload is not configured.';
-        return false;
-      }
-      if (!_canUploadDocs()) {
-        errorMessage.value =
-            'Missing documents.upload / clients.docs.manage permission.';
-        return false;
-      }
       final doc = await pipeline.uploadEvidence(
         request: UploadUrlRequest(
           ownerType: 'client',
           ownerId: clientId,
-          filename: bytes.name,
-          contentType: 'application/pdf',
-          sizeBytes: bytes.bytes.length,
+          filename: pending.name,
+          contentType: pending.contentType,
+          sizeBytes: pending.bytes.length,
           category: 'ndis',
         ),
-        bytes: bytes.bytes,
+        bytes: pending.bytes,
       );
       await _repository.upsertProfileFact(
         clientId,
         OnboardingKeys.ndis,
         ProfileFactUpsert(
-          valueJson: ndisCtrl.text.trim().isEmpty ? null : ndisCtrl.text.trim(),
+          valueJson: ndisNumber.isEmpty ? null : ndisNumber,
           documentId: doc.id,
+          expectedUpdatedAt: _factUpdatedAt[OnboardingKeys.ndis],
         ),
       );
+      ndisPdfPending.value = null;
       ndisPdfOnFile.value = true;
-      return true;
-    } on AppFailure catch (e) {
-      errorMessage.value = e.message;
-      return false;
-    } catch (_) {
-      errorMessage.value = 'Something went wrong. Please try again.';
-      return false;
     } finally {
-      isBusy.value = false;
+      isUploadingNdisPdf.value = false;
     }
   }
 

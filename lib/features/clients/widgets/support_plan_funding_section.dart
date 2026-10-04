@@ -39,6 +39,10 @@ class SupportPlanFundingSection extends StatelessWidget {
       final isPlanManaged = planType == 'plan_managed';
       final claiming = store.preferredClaimingMethod.value;
       final enabled = !store.isBusy.value;
+      final ndisPending = store.ndisPdfPending.value;
+      final ndisOnFile = store.ndisPdfOnFile.value;
+      final uploadingNdis = store.isUploadingNdisPdf.value;
+      final ndisFileEnabled = enabled && !uploadingNdis;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -343,11 +347,20 @@ class SupportPlanFundingSection extends StatelessWidget {
           const SizedBox(height: 16),
           AppFileField(
             label: 'NDIA plan PDF',
-            fileName: store.ndisPdfOnFile.value ? 'On file' : null,
-            enabled: enabled,
-            onPick: () => store.uploadNdisPlanPdf(clientId: clientId),
+            fileName: ndisPending?.name ?? (ndisOnFile ? 'On file' : null),
+            enabled: ndisFileEnabled,
+            onPick: store.pickNdisPlanPdf,
+            onClear:
+                ndisPending != null && ndisFileEnabled
+                    ? store.clearNdisPlanPdfPending
+                    : null,
             pickLabel:
-                store.ndisPdfOnFile.value ? 'Replace file' : 'Choose file',
+                uploadingNdis
+                    ? 'Uploading…'
+                    : (ndisPending != null || ndisOnFile
+                        ? 'Replace file'
+                        : 'Choose file'),
+            helperText: 'Uploads when you Save draft or Activate.',
           ),
         ],
       );

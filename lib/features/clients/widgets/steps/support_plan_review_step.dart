@@ -65,10 +65,7 @@ class SupportPlanReviewStep extends StatelessWidget {
         const SizedBox(height: 24),
         const SupportPlanSectionTitle('Clinical pack'),
         const SizedBox(height: 12),
-        SupportPlanClinicalSection(
-          store: controller.clinical,
-          clientId: controller.clientId,
-        ),
+        SupportPlanClinicalSection(store: controller.clinical),
         const SizedBox(height: 24),
         SupportPlanSnSection(
           planController: controller,
