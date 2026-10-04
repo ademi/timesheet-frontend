@@ -1,7 +1,23 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rostiq/features/rostering/domain/composer_steps.dart';
 import 'package:rostiq/features/rostering/domain/composer_validation.dart';
 import 'package:rostiq/features/rostering/domain/occurrence_draft.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
+
+OccurrenceDraft _scheduled({
+  List<String> participantIds = const ['p1'],
+  DraftPlace? place,
+  String? supportItemCode,
+}) {
+  return OccurrenceDraft.group(
+    jobId: 'job-1',
+    participantIds: participantIds,
+    place: place,
+    supportItemCode: supportItemCode,
+    scheduledStart: DateTime(2026, 10, 6, 9),
+    scheduledEnd: DateTime(2026, 10, 6, 12),
+  );
+}
 
 void main() {
   group('OccurrenceDraft preset visibility', () {
@@ -55,12 +71,7 @@ void main() {
 
   group('ComposerValidation', () {
     test('requires place for save', () {
-      final draft = OccurrenceDraft.group(
-        jobId: 'job-1',
-        participantIds: const ['p1'],
-      );
-
-      final errors = ComposerValidation.validate(draft);
+      final errors = ComposerValidation.validate(_scheduled());
 
       expect(errors, contains(ComposerValidation.placeRequired));
     });
@@ -68,11 +79,7 @@ void main() {
     test('accepts branch / site / labelled place', () {
       expect(
         ComposerValidation.validate(
-          OccurrenceDraft.group(
-            jobId: 'job-1',
-            participantIds: const ['p1'],
-            place: const DraftPlace.branch('branch-1'),
-          ),
+          _scheduled(place: const DraftPlace.branch('branch-1')),
         ),
         isEmpty,
       );
@@ -81,15 +88,15 @@ void main() {
           OccurrenceDraft.oneSession(
             clientId: 'c1',
             place: const DraftPlace.clientSite('site-1'),
+            scheduledStart: DateTime(2026, 10, 6, 9),
+            scheduledEnd: DateTime(2026, 10, 6, 12),
           ),
         ),
         isEmpty,
       );
       expect(
         ComposerValidation.validate(
-          OccurrenceDraft.group(
-            jobId: 'job-1',
-            participantIds: const ['p1'],
+          _scheduled(
             place: const DraftPlace.labelled(
               label: 'Park',
               latitude: -33.8,
@@ -104,8 +111,7 @@ void main() {
 
     test('rejects more than 32 participants', () {
       final ids = List.generate(33, (i) => 'p$i');
-      final draft = OccurrenceDraft.group(
-        jobId: 'job-1',
+      final draft = _scheduled(
         participantIds: ids,
         place: const DraftPlace.branch('b1'),
       );
@@ -117,11 +123,7 @@ void main() {
     });
 
     test('publish requires support anchor when no auto-seed', () {
-      final draft = OccurrenceDraft.group(
-        jobId: 'job-1',
-        participantIds: const ['p1'],
-        place: const DraftPlace.branch('b1'),
-      );
+      final draft = _scheduled(place: const DraftPlace.branch('b1'));
 
       final errors = ComposerValidation.validate(
         draft,
@@ -132,10 +134,34 @@ void main() {
       expect(errors, contains(ComposerValidation.supportAnchorRequired));
     });
 
+    test('step gates: clients then when then place', () {
+      final empty = OccurrenceDraft.group(jobId: 'job-1');
+      expect(
+        ComposerValidation.validateStep(ComposerStep.clients, empty),
+        contains(ComposerValidation.participantsRequired),
+      );
+
+      final withClient = _scheduled();
+      expect(
+        ComposerValidation.validateStep(ComposerStep.clients, withClient),
+        isEmpty,
+      );
+      expect(
+        ComposerValidation.validateStep(ComposerStep.when, withClient),
+        isEmpty,
+      );
+      expect(
+        ComposerValidation.validateStep(ComposerStep.place, withClient),
+        contains(ComposerValidation.placeRequired),
+      );
+    });
+
     test('publish skips support anchor when auto-seed available', () {
       final draft = OccurrenceDraft.oneSession(
         clientId: 'c1',
         place: const DraftPlace.clientSite('site-1'),
+        scheduledStart: DateTime(2026, 10, 6, 9),
+        scheduledEnd: DateTime(2026, 10, 6, 12),
       );
 
       expect(
@@ -149,9 +175,7 @@ void main() {
     });
 
     test('publish accepts supportItemCode or segment template as anchor', () {
-      final withItem = OccurrenceDraft.group(
-        jobId: 'job-1',
-        participantIds: const ['p1'],
+      final withItem = _scheduled(
         place: const DraftPlace.branch('b1'),
         supportItemCode: '01_011_0107_1_1',
       );
@@ -159,6 +183,8 @@ void main() {
         jobId: 'job-1',
         participantIds: const ['p1'],
         place: const DraftPlace.branch('b1'),
+        scheduledStart: DateTime(2026, 10, 6, 9),
+        scheduledEnd: DateTime(2026, 10, 6, 12),
         segmentTemplate: const [
           SegmentTemplateItem(
             participantId: 'p1',

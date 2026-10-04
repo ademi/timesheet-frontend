@@ -5,6 +5,7 @@ import '../../../../../app/themes/app_colors.dart';
 import '../../../../shifts/utils/allocation_math.dart';
 import '../roster_composer_controller.dart';
 
+/// Step 1 — clients (+ allocation / slots for group).
 class ComposerPeopleSection extends GetView<RosterComposerController> {
   const ComposerPeopleSection({super.key});
 
@@ -13,10 +14,13 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
     return Obx(() {
       final ids = controller.draft.value.participantIds;
       final showAlloc = controller.showsAllocation;
+      final showSlots = controller.showsWorkerCount;
+      final count = controller.draft.value.workerCount;
+      final slotsCount = controller.draft.value.requiredSlots;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('People', style: Get.textTheme.titleMedium),
+          Text('Clients', style: Get.textTheme.titleMedium),
           const SizedBox(height: 4),
           Text(
             controller.isGroup
@@ -54,6 +58,50 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
               'Allocation ${controller.draft.value.equalSplit ? 'equal' : 'custom'}',
               key: const Key('composer-allocation'),
               style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+          ],
+          if (showSlots) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    key: const Key('composer-worker-count'),
+                    value: count,
+                    decoration: const InputDecoration(
+                      labelText: 'Workers planned',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: [
+                      for (var n = 1; n <= 8; n++)
+                        DropdownMenuItem(value: n, child: Text('$n')),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) controller.setWorkerCount(v);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    key: const Key('composer-required-slots'),
+                    value: slotsCount,
+                    decoration: const InputDecoration(
+                      labelText: 'Open slots',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: [
+                      for (var n = 1; n <= 8; n++)
+                        DropdownMenuItem(value: n, child: Text('$n')),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) controller.setRequiredSlots(v);
+                    },
+                  ),
+                ),
+              ],
             ),
           ],
           const SizedBox(height: 8),

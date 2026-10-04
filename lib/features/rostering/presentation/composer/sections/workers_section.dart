@@ -5,8 +5,10 @@ import '../../../../../app/themes/app_colors.dart';
 import '../../../../jobs/widgets/worker_slot_picker.dart';
 import '../../shared/assign_context_labels.dart';
 import '../roster_composer_controller.dart';
+import 'publish_section.dart';
+import 'repeat_section.dart';
 
-/// Workers + assign-context availability chips (non-blocking for Save draft).
+/// Step 6 — workers + publish (+ Repeat preferred/generate when enabled).
 class ComposerWorkersSection extends StatefulWidget {
   const ComposerWorkersSection({super.key});
 
@@ -39,7 +41,6 @@ class _ComposerWorkersSectionState extends State<ComposerWorkersSection> {
   Widget build(BuildContext context) {
     return Obx(() {
       final count = controller.draft.value.workerCount;
-      final slotsCount = controller.draft.value.requiredSlots;
       final selected = controller.draft.value.contractorIds;
       final loading = controller.assignContextLoading.value;
       final err = controller.assignContextError.value;
@@ -56,52 +57,10 @@ class _ComposerWorkersSectionState extends State<ComposerWorkersSection> {
           Text('Workers', style: Get.textTheme.titleMedium),
           const SizedBox(height: 4),
           const Text(
-            'Optional assign now, or leave open for claim.',
+            'Optional assign now, or leave open for claim. Save draft anytime.',
             style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
           const SizedBox(height: 12),
-          if (controller.showsWorkerCount) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: count,
-                    decoration: const InputDecoration(
-                      labelText: 'Workers planned',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    items: [
-                      for (var n = 1; n <= 8; n++)
-                        DropdownMenuItem(value: n, child: Text('$n')),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) controller.setWorkerCount(v);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: slotsCount,
-                    decoration: const InputDecoration(
-                      labelText: 'Open slots',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    items: [
-                      for (var n = 1; n <= 8; n++)
-                        DropdownMenuItem(value: n, child: Text('$n')),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) controller.setRequiredSlots(v);
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-          ],
           if (loading)
             const Padding(
               padding: EdgeInsets.only(bottom: 8),
@@ -149,12 +108,10 @@ class _ComposerWorkersSectionState extends State<ComposerWorkersSection> {
                   contractorId,
                 );
                 if (assignLabelRequiresOverrideReason(label)) {
-                  // Async dialog; reject immediate apply until reason lands.
                   controller.setContractorSlot(index, contractorId);
                   return false;
                 }
               }
-              // Free / clear: async fn runs sync until first await.
               controller.setContractorSlot(index, contractorId);
               return true;
             },
@@ -180,6 +137,12 @@ class _ComposerWorkersSectionState extends State<ComposerWorkersSection> {
               style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
             ),
           ],
+          const SizedBox(height: 28),
+          const ComposerRepeatSection(
+            mode: ComposerRepeatUiMode.preferredAndGenerate,
+          ),
+          const SizedBox(height: 28),
+          const ComposerPublishSection(),
         ],
       );
     });

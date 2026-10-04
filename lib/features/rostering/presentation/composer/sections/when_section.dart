@@ -4,8 +4,10 @@ import 'package:get/get.dart';
 import '../../../../../app/themes/app_colors.dart';
 import '../../../../../shared/widgets/app_date_field.dart';
 import '../../../../../shared/widgets/keyboard_time_field.dart';
+import 'repeat_section.dart';
 import '../roster_composer_controller.dart';
 
+/// Step 2 — schedule + optional Repeat collect (does not persist the rule yet).
 class ComposerWhenSection extends GetView<RosterComposerController> {
   const ComposerWhenSection({super.key});
 
@@ -22,7 +24,7 @@ class ComposerWhenSection extends GetView<RosterComposerController> {
           Text('When', style: Get.textTheme.titleMedium),
           const SizedBox(height: 4),
           const Text(
-            'Session start and end.',
+            'Session start and end. Turn on Repeat to collect the series pattern — it is saved with the draft on the last step.',
             style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
           const SizedBox(height: 12),
@@ -46,9 +48,10 @@ class ComposerWhenSection extends GetView<RosterComposerController> {
               );
               controller.setSchedule(
                 start: nextStart,
-                end: nextEnd.isAfter(nextStart)
-                    ? nextEnd
-                    : nextStart.add(const Duration(hours: 1)),
+                end:
+                    nextEnd.isAfter(nextStart)
+                        ? nextEnd
+                        : nextStart.add(const Duration(hours: 1)),
               );
             },
           ),
@@ -92,6 +95,8 @@ class ComposerWhenSection extends GetView<RosterComposerController> {
               ),
             ],
           ),
+          const SizedBox(height: 20),
+          const ComposerRepeatSection(mode: ComposerRepeatUiMode.scheduleOnly),
         ],
       );
     });

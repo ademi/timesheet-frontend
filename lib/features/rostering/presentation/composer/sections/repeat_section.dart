@@ -7,9 +7,23 @@ import '../../../../jobs/utils/recurrence_rrule_builder.dart';
 import '../../../../jobs/widgets/worker_slot_picker.dart';
 import '../roster_composer_controller.dart';
 
-/// A7 Repeat section — frequency, horizon, publish_policy, soft preferred.
+/// Which Repeat UI blocks to show (schedule collect vs soft-preferred + generate).
+enum ComposerRepeatUiMode {
+  /// Toggle + RRULE/horizon/publish_policy — collected early, written on Save.
+  scheduleOnly,
+
+  /// Soft preferred + generate / this-and-future on the Workers step.
+  preferredAndGenerate,
+}
+
+/// A7 Repeat UI — split across When (collect) and Workers (preferred/generate).
 class ComposerRepeatSection extends StatefulWidget {
-  const ComposerRepeatSection({super.key});
+  const ComposerRepeatSection({
+    super.key,
+    this.mode = ComposerRepeatUiMode.scheduleOnly,
+  });
+
+  final ComposerRepeatUiMode mode;
 
   @override
   State<ComposerRepeatSection> createState() => _ComposerRepeatSectionState();
@@ -22,7 +36,9 @@ class _ComposerRepeatSectionState extends State<ComposerRepeatSection> {
   void initState() {
     super.initState();
     controller = Get.find<RosterComposerController>();
-    controller.onRepeatSectionOpened();
+    if (widget.mode == ComposerRepeatUiMode.preferredAndGenerate) {
+      controller.onRepeatSectionOpened();
+    }
   }
 
   @override
@@ -39,13 +55,84 @@ class _ComposerRepeatSectionState extends State<ComposerRepeatSection> {
         (i) => i < preferred.length ? preferred[i] : null,
       );
 
+      if (widget.mode == ComposerRepeatUiMode.preferredAndGenerate) {
+        if (!enabled) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Repeat series', style: Get.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            const Text(
+              'Suggested workers (not auto-assigned). Generate never auto-rosters them.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            WorkerSlotPicker(
+              slots: slotList,
+              engagements: [
+                for (final e in controller.assignableEngagements)
+                  WorkerSlotEngagement(
+                    contractorId: e.contractorId,
+                    displayName: e.displayName,
+                  ),
+              ],
+              onChanged: (index, contractorId) {
+                controller.setPreferredContractorAt(index, contractorId);
+                return true;
+              },
+            ),
+            if (err != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                err,
+                style: const TextStyle(color: AppColors.error, fontSize: 12),
+              ),
+            ],
+            if (generating)
+              const Padding(
+                padding: EdgeInsets.only(top: 12),
+                child: LinearProgressIndicator(minHeight: 2),
+              ),
+            if (outcome != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                outcome,
+                style: const TextStyle(color: AppColors.slate700, fontSize: 13),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton(
+                  onPressed:
+                      generating
+                          ? null
+                          : () => controller.generateRepeatHorizon(),
+                  child: const Text('Generate next 14 days'),
+                ),
+                if (controller.recurrenceRuleId.value != null)
+                  TextButton(
+                    onPressed:
+                        generating
+                            ? null
+                            : () => controller.splitThisAndFuture(),
+                    child: const Text('This and future'),
+                  ),
+              ],
+            ),
+          ],
+        );
+      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('Repeat', style: Get.textTheme.titleMedium),
           const SizedBox(height: 4),
           const Text(
-            'Turn on to write a recurrence template from this draft.',
+            'Collect the series pattern here. The rule is written when you save the draft.',
             style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
           SwitchListTile(
@@ -132,72 +219,6 @@ class _ComposerRepeatSectionState extends State<ComposerRepeatSection> {
                   ? 'Draft shifts stay off the claim board until published.'
                   : 'Published shifts keep open slots for workers to claim.',
               style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Suggested workers (not auto-assigned)',
-              style: Get.textTheme.titleSmall,
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Soft suggestions only. Generate never auto-rosters these workers.',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            WorkerSlotPicker(
-              slots: slotList,
-              engagements: [
-                for (final e in controller.assignableEngagements)
-                  WorkerSlotEngagement(
-                    contractorId: e.contractorId,
-                    displayName: e.displayName,
-                  ),
-              ],
-              onChanged: (index, contractorId) {
-                controller.setPreferredContractorAt(index, contractorId);
-                return true;
-              },
-            ),
-            if (err != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                err,
-                style: const TextStyle(color: AppColors.error, fontSize: 12),
-              ),
-            ],
-            if (generating)
-              const Padding(
-                padding: EdgeInsets.only(top: 12),
-                child: LinearProgressIndicator(minHeight: 2),
-              ),
-            if (outcome != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                outcome,
-                style: const TextStyle(color: AppColors.slate700, fontSize: 13),
-              ),
-            ],
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                OutlinedButton(
-                  onPressed:
-                      generating
-                          ? null
-                          : () => controller.generateRepeatHorizon(),
-                  child: const Text('Generate next 14 days'),
-                ),
-                if (controller.recurrenceRuleId.value != null)
-                  TextButton(
-                    onPressed:
-                        generating
-                            ? null
-                            : () => controller.splitThisAndFuture(),
-                    child: const Text('This and future'),
-                  ),
-              ],
             ),
           ],
         ],

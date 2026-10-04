@@ -24,6 +24,7 @@ import '../../../shifts/utils/allocation_math.dart';
 import '../../../visits/utils/assign_schedule_window.dart';
 import '../../data/composer_facade.dart';
 import '../../data/composer_models.dart';
+import '../../domain/composer_steps.dart';
 import '../../domain/composer_validation.dart';
 import '../../domain/occurrence_draft.dart';
 import '../../domain/repeat_template_payload.dart';
@@ -34,7 +35,7 @@ import '../shared/assign_context_labels.dart';
 /// Publish menu choice (Assign & publish vs Open for claim).
 enum ComposerPublishMode { assignAndPublish, openForClaim }
 
-/// Unified rostering occurrence composer (Stage A shell).
+/// Unified rostering occurrence composer (stepped wizard).
 class RosterComposerController extends GetxController {
   RosterComposerController({
     required ComposerFacade facade,
@@ -66,6 +67,8 @@ class RosterComposerController extends GetxController {
 
   final draft = OccurrenceDraft.oneSession().obs;
   final focusSection = ComposerFocusSection.plan.obs;
+  final currentStep = ComposerStep.clients.obs;
+  final stepError = RxnString();
 
   final clients = <ClientOut>[].obs;
   final clientSearch = ''.obs;
@@ -170,9 +173,75 @@ class RosterComposerController extends GetxController {
   void onInit() {
     super.onInit();
     focusSection.value = _args.focusSection;
+    currentStep.value = ComposerStepX.fromFocus(_args.focusSection);
     // Skeleton first paint < 300ms — do not block onInit on network.
     isHydrating.value = true;
     unawaited(_bootstrap());
+  }
+
+  bool get isFirstStep => currentStep.value.isFirst;
+  bool get isLastStep => currentStep.value.isLast;
+
+  /// Advance wizard; returns false when the current step gate fails.
+  bool goNextStep() {
+    stepError.value = null;
+    final errors = ComposerValidation.validateStep(
+      currentStep.value,
+      draft.value,
+    );
+    if (errors.isNotEmpty) {
+      stepError.value = errors.first;
+      errorMessage.value = errors.first;
+      return false;
+    }
+    final next = currentStep.value.next;
+    if (next == null) return false;
+    currentStep.value = next;
+    _onStepEntered(next);
+    return true;
+  }
+
+  bool goPreviousStep() {
+    stepError.value = null;
+    final prev = currentStep.value.previous;
+    if (prev == null) return false;
+    currentStep.value = prev;
+    return true;
+  }
+
+  void goToStep(ComposerStep step) {
+    stepError.value = null;
+    // Only allow jumping backward freely; forward jumps must pass gates.
+    if (step.index > currentStep.value.index) {
+      for (var i = currentStep.value.index; i < step.index; i++) {
+        final gate = ComposerStep.values[i];
+        final errors = ComposerValidation.validateStep(gate, draft.value);
+        if (errors.isNotEmpty) {
+          stepError.value = errors.first;
+          errorMessage.value = errors.first;
+          currentStep.value = gate;
+          return;
+        }
+      }
+    }
+    currentStep.value = step;
+    _onStepEntered(step);
+  }
+
+  void _onStepEntered(ComposerStep step) {
+    switch (step) {
+      case ComposerStep.place:
+        schedulePlaceOptionsRefresh();
+      case ComposerStep.forms:
+        if (_formsEdited) unawaited(_previewFormsAndMaybePersist());
+      case ComposerStep.workers:
+        onWorkersSectionOpened();
+        if (draft.value.repeatEnabled) onRepeatSectionOpened();
+      case ComposerStep.clients:
+      case ComposerStep.when:
+      case ComposerStep.support:
+        break;
+    }
   }
 
   @override
