@@ -231,45 +231,16 @@ class _ComposerFooter extends GetView<RosterComposerController> {
                     const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
-                      child: PopupMenuButton<ComposerPublishMode>(
+                      child: AsyncElevatedButton(
                         key: const Key('composer-publish'),
-                        enabled: !saving,
-                        onSelected: controller.publish,
-                        itemBuilder:
-                            (context) => const [
-                              PopupMenuItem(
-                                value: ComposerPublishMode.assignAndPublish,
-                                child: Text('Assign & publish'),
-                              ),
-                              PopupMenuItem(
-                                value: ComposerPublishMode.openForClaim,
-                                child: Text('Open for claim'),
-                              ),
-                            ],
-                        child: AbsorbPointer(
-                          child: ElevatedButton(
-                            onPressed:
-                                saving
-                                    ? null
-                                    : () => controller.openPublishMenu(),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.cta,
-                              foregroundColor: AppColors.onCta,
-                              minimumSize: const Size.fromHeight(48),
-                            ),
-                            child:
-                                controller.isPublishing.value
-                                    ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: AppColors.onCta,
-                                      ),
-                                    )
-                                    : const Text('Publish'),
-                          ),
+                        onPressed: saving ? null : controller.publish,
+                        isLoading: controller.isPublishing.value,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.cta,
+                          foregroundColor: AppColors.onCta,
+                          minimumSize: const Size.fromHeight(48),
                         ),
+                        child: const Text('Publish'),
                       ),
                     ),
                   ],

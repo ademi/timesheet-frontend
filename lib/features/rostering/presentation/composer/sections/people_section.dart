@@ -19,8 +19,7 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
       final ids = controller.draft.value.participantIds;
       final showAlloc = controller.showsAllocation;
       final showSlots = controller.showsWorkerCount;
-      final count = controller.draft.value.workerCount;
-      final slotsCount = controller.draft.value.requiredSlots;
+      final slotsCount = controller.workerSlotCount;
       final preset = controller.draft.value.preset;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -152,54 +151,22 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
           ],
           if (showSlots) ...[
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    key: const Key('composer-worker-count'),
-                    value: count,
-                    decoration: const InputDecoration(
-                      labelText: 'Workers planned',
-                      helperText: 'How many workers you expect',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    items: [
-                      for (var n = 1; n <= 8; n++)
-                        DropdownMenuItem(value: n, child: Text('$n')),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) controller.setWorkerCount(v);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    key: const Key('composer-required-slots'),
-                    value: slotsCount,
-                    decoration: const InputDecoration(
-                      labelText: 'Open claim slots',
-                      helperText: 'Holes left on the board',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    items: [
-                      for (var n = 1; n <= 8; n++)
-                        DropdownMenuItem(value: n, child: Text('$n')),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) controller.setRequiredSlots(v);
-                    },
-                  ),
-                ),
+            DropdownButtonFormField<int>(
+              key: const Key('composer-worker-count'),
+              value: slotsCount,
+              decoration: const InputDecoration(
+                labelText: 'Worker slots',
+                helperText: 'Fill on the Workers step; empty slots open for claim',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              items: [
+                for (var n = 1; n <= 8; n++)
+                  DropdownMenuItem(value: n, child: Text('$n')),
               ],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'These can differ — e.g. plan 2 workers but leave 1 open claim '
-              'slot, or pre-assign some and leave the rest claimable.',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              onChanged: (v) {
+                if (v != null) controller.setWorkerSlots(v);
+              },
             ),
           ],
           if (atHardCap(ids.length))

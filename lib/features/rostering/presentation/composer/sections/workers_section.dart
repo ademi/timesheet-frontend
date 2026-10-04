@@ -40,14 +40,15 @@ class _ComposerWorkersSectionState extends State<ComposerWorkersSection> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final count = controller.draft.value.workerCount;
       final selected = controller.draft.value.contractorIds;
       final loading = controller.assignContextLoading.value;
       final err = controller.assignContextError.value;
       final workers = controller.assignableEngagements;
+      final slots = controller.workerSlotCount;
+      final open = controller.unassignedSlotCount;
 
       final slotList = List<String?>.generate(
-        controller.showsWorkerCount ? count : 1,
+        slots,
         (i) => i < selected.length ? selected[i] : null,
       );
 
@@ -56,9 +57,11 @@ class _ComposerWorkersSectionState extends State<ComposerWorkersSection> {
         children: [
           Text('Workers', style: Get.textTheme.titleMedium),
           const SizedBox(height: 4),
-          const Text(
-            'Optional assign now, or leave open for claim. Save draft anytime.',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          Text(
+            open == 0
+                ? 'Assign workers to each slot, then publish.'
+                : 'Assign workers now; leave slots empty to open them for claim on publish.',
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
           const SizedBox(height: 12),
           if (loading)
@@ -130,13 +133,13 @@ class _ComposerWorkersSectionState extends State<ComposerWorkersSection> {
               );
             },
           ),
-          if (selected.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              '${selected.length} worker${selected.length == 1 ? '' : 's'} selected.',
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-            ),
-          ],
+          const SizedBox(height: 8),
+          Text(
+            open == 0
+                ? '${selected.length} of $slots slots filled.'
+                : '${selected.length} of $slots slots filled · $open open for claim after publish.',
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
           const SizedBox(height: 28),
           const ComposerRepeatSection(
             mode: ComposerRepeatUiMode.preferredAndGenerate,

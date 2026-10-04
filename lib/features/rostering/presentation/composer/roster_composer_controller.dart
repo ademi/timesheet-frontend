@@ -33,9 +33,6 @@ import '../../domain/repeat_template_payload.dart';
 import '../../domain/roster_composer_args.dart';
 import '../shared/assign_context_labels.dart';
 
-/// Publish menu choice (Assign & publish vs Open for claim).
-enum ComposerPublishMode { assignAndPublish, openForClaim }
-
 /// Unified rostering occurrence composer (stepped wizard).
 class RosterComposerController extends GetxController {
   RosterComposerController({
@@ -47,6 +44,7 @@ class RosterComposerController extends GetxController {
     void Function(String route, dynamic arguments)? onNavigate,
     Future<bool> Function(int nextN)? confirmLargeGroup,
     Future<String?> Function({required String label})? promptAssignOverrideReason,
+    Future<bool> Function(int unassignedSlots)? confirmPublishOpenSlots,
   }) : _facade = facade,
        _clients = clientsRepository,
        _session = session,
@@ -54,7 +52,8 @@ class RosterComposerController extends GetxController {
        _args = args ?? const RosterComposerArgs(),
        _onNavigate = onNavigate,
        _confirmLargeGroup = confirmLargeGroup,
-       _promptAssignOverrideReason = promptAssignOverrideReason;
+       _promptAssignOverrideReason = promptAssignOverrideReason,
+       _confirmPublishOpenSlots = confirmPublishOpenSlots;
 
   final ComposerFacade _facade;
   final ClientsRepository _clients;
@@ -65,6 +64,7 @@ class RosterComposerController extends GetxController {
   final Future<bool> Function(int nextN)? _confirmLargeGroup;
   final Future<String?> Function({required String label})?
   _promptAssignOverrideReason;
+  final Future<bool> Function(int unassignedSlots)? _confirmPublishOpenSlots;
 
   final draft = OccurrenceDraft.oneSession().obs;
   final focusSection = ComposerFocusSection.plan.obs;
@@ -148,7 +148,23 @@ class RosterComposerController extends GetxController {
   final errorMessage = RxnString();
   final saveErrorDetail = RxnString();
 
-  final showPublishMenu = false.obs;
+  /// How many worker slots this occurrence needs (drives picker + claim holes).
+  int get workerSlotCount {
+    final n =
+        draft.value.showsWorkerCount
+            ? draft.value.requiredSlots
+            : 1;
+    return n < 1 ? 1 : n;
+  }
+
+  int get assignedWorkerCount => draft.value.contractorIds.length;
+
+  int get unassignedSlotCount {
+    final open = workerSlotCount - assignedWorkerCount;
+    return open < 0 ? 0 : open;
+  }
+
+  bool get hasUnassignedSlots => unassignedSlotCount > 0;
 
   Timer? _placeDebounce;
   int _placeFetchGen = 0;
@@ -1005,11 +1021,29 @@ class RosterComposerController extends GetxController {
   }
 
   void setWorkerCount(int n) {
-    draft.value = draft.value.copyWith(workerCount: n < 1 ? 1 : n);
+    // Keep planned workers and claim holes aligned — fill on Workers step.
+    setWorkerSlots(n);
   }
 
   void setRequiredSlots(int n) {
-    draft.value = draft.value.copyWith(requiredSlots: n < 1 ? 1 : n);
+    setWorkerSlots(n);
+  }
+
+  /// Single control: how many worker slots (assigned now + open for claim).
+  void setWorkerSlots(int n) {
+    final slots = n < 1 ? 1 : n;
+    final contractors =
+        draft.value.contractorIds.length > slots
+            ? draft.value.contractorIds.take(slots).toList()
+            : draft.value.contractorIds;
+    draft.value = draft.value.copyWith(
+      workerCount: slots,
+      requiredSlots: slots,
+      contractorIds: contractors,
+    );
+    if (preferredContractorIds.length > slots) {
+      preferredContractorIds.assignAll(preferredContractorIds.take(slots));
+    }
   }
 
   void setEqualSplit(bool equal) {
@@ -2143,12 +2177,37 @@ class RosterComposerController extends GetxController {
     return null;
   }
 
-  void openPublishMenu() => showPublishMenu.value = true;
-  void closePublishMenu() => showPublishMenu.value = false;
+  Future<bool> _confirmOpenSlotsPublish(int unassigned) async {
+    if (_confirmPublishOpenSlots != null) {
+      return _confirmPublishOpenSlots(unassigned);
+    }
+    if (Get.testMode) return true;
+    final result = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Publish with open slots?'),
+        content: Text(
+          unassigned == 1
+              ? '1 worker slot is unassigned. Once published, contractors can claim it.'
+              : '$unassigned worker slots are unassigned. Once published, contractors can claim them.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Publish'),
+          ),
+        ],
+      ),
+    );
+    return result == true;
+  }
 
-  Future<bool> publish(ComposerPublishMode mode) async {
+  /// Publish: assign chosen contractors; any empty slots stay claimable.
+  Future<bool> publish() async {
     if (isPublishing.value || !canManage) return false;
-    closePublishMenu();
 
     final errors = ComposerValidation.validate(
       draft.value,
@@ -2159,6 +2218,12 @@ class RosterComposerController extends GetxController {
       return false;
     }
 
+    final open = unassignedSlotCount;
+    if (open > 0) {
+      final ok = await _confirmOpenSlotsPublish(open);
+      if (!ok) return false;
+    }
+
     final saved = await saveDraft();
     if (!saved || draft.value.shiftId == null) return false;
 
@@ -2167,8 +2232,7 @@ class RosterComposerController extends GetxController {
     try {
       final shiftId = draft.value.shiftId!;
 
-      if (mode == ComposerPublishMode.assignAndPublish &&
-          draft.value.contractorIds.isNotEmpty) {
+      if (draft.value.contractorIds.isNotEmpty) {
         // Assign one-by-one when override reasons differ; batch when none.
         final reasons = {
           for (final id in draft.value.contractorIds)
@@ -2207,9 +2271,7 @@ class RosterComposerController extends GetxController {
       draft.value = draft.value.copyWith(status: published.status);
       if (!Get.testMode) {
         AppToast.success(
-          mode == ComposerPublishMode.openForClaim
-              ? 'Open for claim'
-              : 'Published',
+          open > 0 ? 'Published — open slots claimable' : 'Published',
           published.jobTitle,
         );
       }
