@@ -159,21 +159,28 @@ class _AddFormOverrideMenu extends StatelessWidget {
           style: TextStyle(color: AppColors.slate500, fontSize: 12),
         );
       }
-      return DropdownButtonFormField<FormTemplateOut>(
+      // PopupMenu avoids DropdownButtonFormField retaining a selected value
+      // after that template is removed from the items list.
+      return PopupMenuButton<FormTemplateOut>(
         key: const Key('composer-add-form-override'),
-        value: null,
-        decoration: const InputDecoration(
-          labelText: 'Add form override',
-          border: OutlineInputBorder(),
-          isDense: true,
+        onSelected: controller.addFormOverride,
+        itemBuilder:
+            (context) => [
+              for (final t in templates)
+                PopupMenuItem(value: t, child: Text(t.name)),
+            ],
+        child: const InputDecorator(
+          decoration: InputDecoration(
+            labelText: 'Add form override',
+            border: OutlineInputBorder(),
+            isDense: true,
+            suffixIcon: Icon(Icons.arrow_drop_down),
+          ),
+          child: Text(
+            'Choose a form…',
+            style: TextStyle(color: AppColors.textMuted),
+          ),
         ),
-        items: [
-          for (final t in templates)
-            DropdownMenuItem(value: t, child: Text(t.name)),
-        ],
-        onChanged: (t) {
-          if (t != null) controller.addFormOverride(t);
-        },
       );
     });
   }

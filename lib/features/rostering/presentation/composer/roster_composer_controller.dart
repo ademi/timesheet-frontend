@@ -147,6 +147,14 @@ class RosterComposerController extends GetxController {
   final isPublishing = false.obs;
   final errorMessage = RxnString();
   final saveErrorDetail = RxnString();
+  /// Set only for recoverable network failures (never validation).
+  Future<void> Function()? _retryHandler;
+  bool get canRetryFailure => _retryHandler != null;
+
+  Future<void> retryLastFailure() async {
+    final fn = _retryHandler;
+    if (fn != null) await fn();
+  }
 
   /// How many worker slots this occurrence needs (drives picker + claim holes).
   int get workerSlotCount {
@@ -349,6 +357,7 @@ class RosterComposerController extends GetxController {
   Future<void> _bootstrap() async {
     isHydrating.value = true;
     errorMessage.value = null;
+    _retryHandler = null;
     try {
       final seed = _args.composerSeed;
       if (seed != null) {
@@ -365,8 +374,10 @@ class RosterComposerController extends GetxController {
       // Navigation already requested.
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+      _retryHandler = retryHydrate;
     } catch (e) {
       errorMessage.value = e.toString();
+      _retryHandler = retryHydrate;
     } finally {
       isHydrating.value = false;
     }
@@ -1820,8 +1831,7 @@ class RosterComposerController extends GetxController {
     String? contractorId, {
     String? overrideReason,
   }) async {
-    final slotCount =
-        draft.value.showsWorkerCount ? draft.value.workerCount : 1;
+    final slotCount = workerSlotCount;
     final slots = List<String?>.generate(
       slotCount,
       (i) =>
@@ -1921,10 +1931,20 @@ class RosterComposerController extends GetxController {
     }
   }
 
+  /// Keep one-session [clientId] and [participantIds] aligned before gates.
+  void _syncParticipantsFromClientId() {
+    if (draft.value.participantIds.isNotEmpty) return;
+    final clientId = draft.value.clientId?.trim();
+    if (clientId == null || clientId.isEmpty) return;
+    draft.value = draft.value.copyWith(participantIds: [clientId]);
+  }
+
   Future<bool> saveDraft() async {
     if (isSaving.value || !canManage) return false;
     errorMessage.value = null;
     saveErrorDetail.value = null;
+    _retryHandler = null;
+    _syncParticipantsFromClientId();
 
     final errors = ComposerValidation.validate(draft.value);
     if (errors.isNotEmpty) {
@@ -2046,11 +2066,17 @@ class RosterComposerController extends GetxController {
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
       saveErrorDetail.value = e.message;
+      _retryHandler = () async {
+        await saveDraft();
+      };
       if (!Get.testMode) AppToast.error('Could not save', e.message);
       return false;
     } catch (e) {
       errorMessage.value = e.toString();
       saveErrorDetail.value = e.toString();
+      _retryHandler = () async {
+        await saveDraft();
+      };
       if (!Get.testMode) AppToast.error('Could not save', e.toString());
       return false;
     } finally {
@@ -2208,6 +2234,8 @@ class RosterComposerController extends GetxController {
   /// Publish: assign chosen contractors; any empty slots stay claimable.
   Future<bool> publish() async {
     if (isPublishing.value || !canManage) return false;
+    _retryHandler = null;
+    _syncParticipantsFromClientId();
 
     final errors = ComposerValidation.validate(
       draft.value,
@@ -2280,12 +2308,18 @@ class RosterComposerController extends GetxController {
       return true;
     } on AppFailure catch (e) {
       errorMessage.value = _mapPublishError(e);
+      _retryHandler = () async {
+        await publish();
+      };
       if (!Get.testMode) {
         AppToast.error('Could not publish', errorMessage.value!);
       }
       return false;
     } catch (e) {
       errorMessage.value = e.toString();
+      _retryHandler = () async {
+        await publish();
+      };
       if (!Get.testMode) AppToast.error('Could not publish', e.toString());
       return false;
     } finally {

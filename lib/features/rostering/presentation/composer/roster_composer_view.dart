@@ -52,13 +52,12 @@ class RosterComposerView extends GetView<RosterComposerController> {
                           const SizedBox(height: 12),
                           _ErrorBox(
                             message: err,
-                            onRetry: () async {
-                              if (controller.saveErrorDetail.value != null) {
-                                await controller.saveDraft();
-                              } else {
-                                await controller.retryHydrate();
-                              }
-                            },
+                            // Validation errors have no retry — hydrate/save
+                            // retries must not wipe a filled draft.
+                            onRetry:
+                                controller.canRetryFailure
+                                    ? controller.retryLastFailure
+                                    : null,
                           ),
                         ],
                         const SizedBox(height: 20),

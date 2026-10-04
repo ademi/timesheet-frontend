@@ -70,70 +70,7 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
             ),
           if (controller.isGroup || ids.isEmpty) ...[
             const SizedBox(height: 4),
-            Autocomplete<ClientOut>(
-              key: const Key('composer-client-autocomplete'),
-              displayStringForOption: (c) => c.fullName,
-              optionsBuilder: (textEditingValue) {
-                controller.clientSearch.value = textEditingValue.text;
-                return controller.pickerCandidates.take(12);
-              },
-              onSelected: (client) {
-                controller.addParticipant(client);
-                controller.clientSearch.value = '';
-              },
-              fieldViewBuilder: (
-                context,
-                textController,
-                focusNode,
-                onFieldSubmitted,
-              ) {
-                return TextField(
-                  controller: textController,
-                  focusNode: focusNode,
-                  decoration: InputDecoration(
-                    labelText:
-                        controller.isGroup
-                            ? 'Search clients to add'
-                            : 'Search clients',
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                  ),
-                  onSubmitted: (_) => onFieldSubmitted(),
-                );
-              },
-              optionsViewBuilder: (context, onSelected, options) {
-                return Align(
-                  alignment: Alignment.topLeft,
-                  child: Material(
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(8),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxHeight: 240,
-                        maxWidth: 480,
-                      ),
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        shrinkWrap: true,
-                        itemCount: options.length,
-                        itemBuilder: (context, index) {
-                          final client = options.elementAt(index);
-                          return ListTile(
-                            leading: _ClientPhoto(
-                              photo: controller.photoFor(client.id),
-                              size: 36,
-                            ),
-                            title: Text(client.fullName),
-                            onTap: () => onSelected(client),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
+            _ClientSearchField(controller: controller),
           ],
           if (showAlloc) ...[
             const SizedBox(height: 8),
@@ -177,6 +114,90 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
         ],
       );
     });
+  }
+}
+
+/// Autocomplete kept outside draft Obx writes so selecting a row cannot lose
+/// the pick to a rebuild race (mutating [clientSearch] used to rebuild parent).
+class _ClientSearchField extends StatelessWidget {
+  const _ClientSearchField({required this.controller});
+
+  final RosterComposerController controller;
+
+  Iterable<ClientOut> _optionsFor(String raw) {
+    final q = raw.trim().toLowerCase();
+    final taken = controller.draft.value.participantIds.toSet();
+    final list = <ClientOut>[
+      for (final c in controller.clients)
+        if (!taken.contains(c.id) &&
+            (q.isEmpty || c.fullName.toLowerCase().contains(q)))
+          c,
+    ];
+    list.sort(
+      (a, b) => a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase()),
+    );
+    return list.take(12);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Autocomplete<ClientOut>(
+      key: const Key('composer-client-autocomplete'),
+      displayStringForOption: (c) => c.fullName,
+      optionsBuilder: (textEditingValue) => _optionsFor(textEditingValue.text),
+      onSelected: (client) async {
+        await controller.addParticipant(client);
+      },
+      fieldViewBuilder: (
+        context,
+        textController,
+        focusNode,
+        onFieldSubmitted,
+      ) {
+        return TextField(
+          controller: textController,
+          focusNode: focusNode,
+          decoration: InputDecoration(
+            labelText:
+                controller.isGroup
+                    ? 'Search clients to add'
+                    : 'Search clients',
+            border: const OutlineInputBorder(),
+            isDense: true,
+            prefixIcon: const Icon(Icons.search, size: 20),
+          ),
+          onSubmitted: (_) => onFieldSubmitted(),
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(8),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 240, maxWidth: 480),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final client = options.elementAt(index);
+                  return ListTile(
+                    leading: _ClientPhoto(
+                      photo: controller.photoFor(client.id),
+                      size: 36,
+                    ),
+                    title: Text(client.fullName),
+                    onTap: () => onSelected(client),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
