@@ -1,5 +1,6 @@
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/models/shift_travel_models.dart';
+import '../../shifts/utils/allocation_math.dart';
 import 'composer_steps.dart';
 import 'occurrence_draft.dart';
 import 'travel_shares_validation.dart';
@@ -20,6 +21,10 @@ abstract final class ComposerValidation {
   static const scheduleOrder = 'End must be after start';
   static const otherAddressRequired = 'Enter and look up the other address';
   static const otherAddressConfirm = 'Confirm the looked-up address';
+  static const allocationRequired =
+      'Enter allocation % for each client (must sum to 100)';
+  static const allocationSum =
+      'Custom allocation percentages must sum to 100';
 
   /// Returns human-readable errors (empty when valid).
   ///
@@ -67,6 +72,7 @@ abstract final class ComposerValidation {
     ComposerStep step,
     OccurrenceDraft draft, {
     String? travelError,
+    String? allocationError,
     bool otherPlaceNeedsLookup = false,
     bool otherPlaceNeedsConfirm = false,
   }) {
@@ -82,6 +88,9 @@ abstract final class ComposerValidation {
         }
         if (draft.participantIds.length > maxParticipants) {
           errors.add(participantsCap);
+        }
+        if (allocationError != null && allocationError.isNotEmpty) {
+          errors.add(allocationError);
         }
         return errors;
       case ComposerStep.when:
@@ -136,5 +145,27 @@ abstract final class ComposerValidation {
   static bool isIncompleteLabelledPlace(ShiftPlaceIn? place) {
     if (place is! ShiftPlaceLabelled) return false;
     return place.label.trim().isEmpty || place.postalCode.trim().isEmpty;
+  }
+
+  /// Custom percentage allocations when equal_split is off.
+  static String? validateCustomAllocation({
+    required OccurrenceDraft draft,
+    required Map<String, double> percentByParticipant,
+  }) {
+    if (draft.preset != ComposerPreset.group || draft.equalSplit) {
+      return null;
+    }
+    final ids = draft.participantIds;
+    if (ids.isEmpty) return null;
+    final values = <double>[];
+    for (final id in ids) {
+      final value = percentByParticipant[id];
+      if (value == null || !value.isFinite || value <= 0) {
+        return allocationRequired;
+      }
+      values.add(value);
+    }
+    if (!sumsTo100(values)) return allocationSum;
+    return null;
   }
 }

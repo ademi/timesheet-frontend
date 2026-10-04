@@ -77,6 +77,10 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Equal split'),
+              subtitle: const Text(
+                'Split 100% evenly across clients',
+                style: TextStyle(fontSize: 12),
+              ),
               value: controller.draft.value.equalSplit,
               onChanged: controller.setEqualSplit,
             ),
@@ -85,6 +89,36 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
               key: const Key('composer-allocation'),
               style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
             ),
+            if (!controller.draft.value.equalSplit && ids.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              for (final id in ids) ...[
+                _AllocationPercentField(
+                  key: Key('composer-alloc-$id'),
+                  participantId: id,
+                  label: controller.participantName(id) ?? id,
+                  initial: controller.allocationPercents[id],
+                  onChanged: controller.setAllocationPercent,
+                ),
+                const SizedBox(height: 8),
+              ],
+              Text(
+                key: const Key('composer-alloc-remaining'),
+                remainingCapacityLabel([
+                  for (final id in ids)
+                    controller.allocationPercents[id] ?? 0.0,
+                ]),
+                style: TextStyle(
+                  color:
+                      sumsTo100([
+                            for (final id in ids)
+                              controller.allocationPercents[id] ?? 0.0,
+                          ])
+                          ? AppColors.textMuted
+                          : AppColors.error,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ],
           if (showSlots) ...[
             const SizedBox(height: 12),
@@ -114,6 +148,79 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
         ],
       );
     });
+  }
+}
+
+class _AllocationPercentField extends StatefulWidget {
+  const _AllocationPercentField({
+    super.key,
+    required this.participantId,
+    required this.label,
+    required this.initial,
+    required this.onChanged,
+  });
+
+  final String participantId;
+  final String label;
+  final double? initial;
+  final void Function(String participantId, double? percent) onChanged;
+
+  @override
+  State<_AllocationPercentField> createState() =>
+      _AllocationPercentFieldState();
+}
+
+class _AllocationPercentFieldState extends State<_AllocationPercentField> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final v = widget.initial;
+    _ctrl = TextEditingController(
+      text: v == null ? '' : (v == v.roundToDouble() ? '${v.round()}' : v.toString()),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _AllocationPercentField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initial != widget.initial) {
+      final v = widget.initial;
+      final next =
+          v == null
+              ? ''
+              : (v == v.roundToDouble() ? '${v.round()}' : v.toString());
+      if (_ctrl.text != next) _ctrl.text = next;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _ctrl,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(
+        labelText: 'Allocation % · ${widget.label}',
+        border: const OutlineInputBorder(),
+        isDense: true,
+        suffixText: '%',
+      ),
+      onChanged: (raw) {
+        final trimmed = raw.trim();
+        if (trimmed.isEmpty) {
+          widget.onChanged(widget.participantId, null);
+          return;
+        }
+        widget.onChanged(widget.participantId, double.tryParse(trimmed));
+      },
+    );
   }
 }
 

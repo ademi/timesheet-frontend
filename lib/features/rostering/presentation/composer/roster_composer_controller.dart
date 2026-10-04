@@ -74,6 +74,8 @@ class RosterComposerController extends GetxController {
   final clients = <ClientOut>[].obs;
   final clientSearch = ''.obs;
   final photosByClient = <String, ProfilePhotoOut>{}.obs;
+  /// Custom % when equal split is off (participant id → percent).
+  final allocationPercents = <String, double>{}.obs;
   final placeOptions = const PlaceOptionsOut().obs;
   final placeOptionsLoading = false.obs;
   final placeOptionsError = RxnString();
@@ -289,6 +291,8 @@ class RosterComposerController extends GetxController {
     return ComposerValidation.validateStep(
       step,
       draft.value,
+      allocationError:
+          step == ComposerStep.clients ? validateAllocationDraft() : null,
       travelError:
           step == ComposerStep.place ? validateTravelDraft() : null,
       otherPlaceNeedsLookup:
@@ -301,6 +305,55 @@ class RosterComposerController extends GetxController {
           otherLatCtrl.text.trim().isNotEmpty &&
           !otherAddressConfirmed.value,
     );
+  }
+
+  String? validateAllocationDraft() {
+    return ComposerValidation.validateCustomAllocation(
+      draft: draft.value,
+      percentByParticipant: Map<String, double>.from(allocationPercents),
+    );
+  }
+
+  /// Prefer equal-split for N≤1; otherwise honour the toggle.
+  bool get _useEqualSplitOnSave {
+    if (draft.value.participantIds.length <= 1) return true;
+    return draft.value.equalSplit;
+  }
+
+  List<ShiftParticipantCreateItem> _participantCreateItems() {
+    final equal = _useEqualSplitOnSave;
+    return [
+      for (final id in draft.value.participantIds)
+        ShiftParticipantCreateItem(
+          participantId: id,
+          allocationStrategy: 'percentage',
+          reason: 'roster_composer',
+          allocationValue: equal ? null : allocationPercents[id],
+        ),
+    ];
+  }
+
+  List<ShiftParticipantReplaceItem> _participantReplaceItems() {
+    final equal = _useEqualSplitOnSave;
+    return [
+      for (final id in draft.value.participantIds)
+        ShiftParticipantReplaceItem(
+          participantId: id,
+          allocationValue: equal ? null : allocationPercents[id],
+        ),
+    ];
+  }
+
+  void _seedCustomAllocations() {
+    final ids = draft.value.participantIds;
+    if (ids.isEmpty) {
+      allocationPercents.clear();
+      return;
+    }
+    final values = equalPercentageValues(ids.length);
+    allocationPercents.assignAll({
+      for (var i = 0; i < ids.length; i++) ids[i]: values[i],
+    });
   }
 
   void _onStepEntered(ComposerStep step) {
@@ -1059,6 +1112,24 @@ class RosterComposerController extends GetxController {
 
   void setEqualSplit(bool equal) {
     draft.value = draft.value.copyWith(equalSplit: equal);
+    if (equal) {
+      allocationPercents.clear();
+    } else {
+      _seedCustomAllocations();
+    }
+  }
+
+  void setAllocationPercent(String participantId, double? percent) {
+    final next = Map<String, double>.from(allocationPercents);
+    if (percent == null) {
+      next.remove(participantId);
+    } else {
+      next[participantId] = percent;
+    }
+    allocationPercents.assignAll(next);
+    if (draft.value.equalSplit) {
+      draft.value = draft.value.copyWith(equalSplit: false);
+    }
   }
 
   void toggleContractor(String contractorId) {
@@ -1080,7 +1151,9 @@ class RosterComposerController extends GetxController {
       draft.value = draft.value.copyWith(
         participantIds: [client.id],
         clientId: client.id,
+        equalSplit: true,
       );
+      allocationPercents.clear();
       schedulePlaceOptionsRefresh();
       return true;
     }
@@ -1100,6 +1173,7 @@ class RosterComposerController extends GetxController {
       participantIds: ids,
       clientId: draft.value.clientId ?? client.id,
     );
+    if (!draft.value.equalSplit) _seedCustomAllocations();
     schedulePlaceOptionsRefresh();
     return true;
   }
@@ -1126,6 +1200,9 @@ class RosterComposerController extends GetxController {
         taskTemplate: draft.value.taskTemplate,
         repeatEnabled: draft.value.repeatEnabled,
       );
+      allocationPercents.clear();
+    } else if (!draft.value.equalSplit) {
+      _seedCustomAllocations();
     }
     schedulePlaceOptionsRefresh();
   }
@@ -1951,6 +2028,11 @@ class RosterComposerController extends GetxController {
       errorMessage.value = errors.first;
       return false;
     }
+    final allocErr = validateAllocationDraft();
+    if (allocErr != null) {
+      errorMessage.value = allocErr;
+      return false;
+    }
 
     final start = draft.value.scheduledStart;
     final end = draft.value.scheduledEnd;
@@ -1993,16 +2075,8 @@ class RosterComposerController extends GetxController {
             taskTemplate: draft.value.taskTemplate,
             segmentTemplate: draft.value.segmentTemplate,
             supportItemCode: draft.value.supportItemCode,
-            equalSplit: draft.value.equalSplit,
-            participants: [
-              for (final id in draft.value.participantIds)
-                ShiftParticipantCreateItem(
-                  participantId: id,
-                  allocationStrategy: 'percentage',
-                  reason: 'roster_composer',
-                  allocationValue: draft.value.equalSplit ? null : null,
-                ),
-            ],
+            equalSplit: _useEqualSplitOnSave,
+            participants: _participantCreateItems(),
           ),
         );
         draft.value = draft.value.copyWith(
@@ -2031,11 +2105,8 @@ class RosterComposerController extends GetxController {
           shiftId,
           ShiftParticipantsReplaceRequest(
             allocationStrategy: 'percentage',
-            equalSplit: draft.value.equalSplit,
-            participants: [
-              for (final id in draft.value.participantIds)
-                ShiftParticipantReplaceItem(participantId: id),
-            ],
+            equalSplit: _useEqualSplitOnSave,
+            participants: _participantReplaceItems(),
           ),
         );
       }

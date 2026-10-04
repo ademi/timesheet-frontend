@@ -186,6 +186,35 @@ void main() {
       );
     });
 
+    test('clients step gates custom allocation sum', () {
+      final draft = OccurrenceDraft.group(
+        participantIds: const ['c1', 'c2'],
+        equalSplit: false,
+      );
+      expect(
+        ComposerValidation.validateStep(
+          ComposerStep.clients,
+          draft,
+          allocationError: ComposerValidation.allocationSum,
+        ),
+        contains(ComposerValidation.allocationSum),
+      );
+      expect(
+        ComposerValidation.validateCustomAllocation(
+          draft: draft,
+          percentByParticipant: const {'c1': 40, 'c2': 60},
+        ),
+        isNull,
+      );
+      expect(
+        ComposerValidation.validateCustomAllocation(
+          draft: draft,
+          percentByParticipant: const {'c1': 40, 'c2': 40},
+        ),
+        ComposerValidation.allocationSum,
+      );
+    });
+
     test('publish skips support anchor when auto-seed available', () {
       final draft = OccurrenceDraft.oneSession(
         clientId: 'c1',

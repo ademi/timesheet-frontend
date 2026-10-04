@@ -797,7 +797,8 @@ class ShiftCreateRequest {
       'segment_template': [for (final s in segmentTemplate) s.toJson()],
     if (supportItemCode != null && supportItemCode!.isNotEmpty)
       'support_item_code': supportItemCode,
-    if (equalSplit) 'equal_split': equalSplit,
+    // Always send when participants are present — backend defaults false.
+    if (participants.isNotEmpty) 'equal_split': equalSplit,
     if (participants.isNotEmpty)
       'participants': [for (final p in participants) p.toJson()],
   };
