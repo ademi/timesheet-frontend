@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../app/constants/app_permissions.dart';
+import '../../../../app/routes/app_navigator.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../core/errors/app_failure.dart';
 import '../../../../core/services/session_service.dart';
@@ -2715,7 +2716,15 @@ class RosterComposerController extends GetxController {
       return;
     }
     if (Get.testMode) return;
-    Get.offNamed(route, arguments: arguments);
+    // Prefer AppNavigator so web GoRouter gets query/extra (not Get.offNamed).
+    if (arguments is ShiftOut) {
+      AppNavigator.go(
+        AppNavigator.location(route, query: {'id': arguments.id}),
+        extra: arguments,
+      );
+      return;
+    }
+    AppNavigator.go(route, extra: arguments);
   }
 
   Future<String?> _resolveTenantTimezone() async {

@@ -497,7 +497,10 @@ void main() {
         'delivery_postcode_required':
             'Job location needs a postcode for pricing, or set a price tier override.',
         'price_limit_missing_for_tier':
-            'The catalogue has no price for this pricing tier.',
+            'That support item has no catalogue price for one of the '
+            'pricing tiers (national / remote / very remote). '
+            'Pick a different hourly support item on the Support step, '
+            'or update the NDIS catalogue prices for this item.',
         'export_already_void': 'This export was already voided.',
         'export_not_voidable': 'Only finalized exports can be voided.',
         'travel_item_not_claimable':

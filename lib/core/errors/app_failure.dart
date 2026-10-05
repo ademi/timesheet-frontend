@@ -601,7 +601,10 @@ class AppFailure implements Exception {
       case 'delivery_postcode_required':
         return 'Job location needs a postcode for pricing, or set a price tier override.';
       case 'price_limit_missing_for_tier':
-        return 'The catalogue has no price for this pricing tier.';
+        return 'That support item has no catalogue price for one of the '
+            'pricing tiers (national / remote / very remote). '
+            'Pick a different hourly support item on the Support step, '
+            'or update the NDIS catalogue prices for this item.';
       case 'export_already_void':
         return 'This export was already voided.';
       case 'export_not_voidable':
