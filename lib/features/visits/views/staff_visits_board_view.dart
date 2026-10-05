@@ -738,9 +738,16 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                               Navigator.pop(ctx);
                               // Open composer with ComposerShiftOut seed —
                               // no second hydrate; board reload after return.
-                              await Get.toNamed(
-                                AppRoutes.staffRosterCompose,
-                                arguments: args,
+                              final shiftId = args.shiftId?.trim();
+                              await AppNavigator.push(
+                                AppNavigator.location(
+                                  AppRoutes.staffRosterCompose,
+                                  query: {
+                                    if (shiftId != null && shiftId.isNotEmpty)
+                                      'id': shiftId,
+                                  },
+                                ),
+                                extra: args,
                               );
                               if (context.mounted) {
                                 await controller.load();

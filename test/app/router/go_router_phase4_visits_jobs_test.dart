@@ -83,6 +83,7 @@ void main() {
           buildJobsGoRoutes().whereType<GoRoute>().map((r) => r.path).toSet();
       expect(paths, contains(AppRoutes.staffJobDetail));
       expect(paths, contains(AppRoutes.staffJobForm));
+      expect(paths, contains(AppRoutes.staffRosterCompose));
       expect(paths, contains(AppRoutes.staffUnifiedSupport));
       expect(paths, contains(AppRoutes.staffOngoingSupport));
       expect(paths, contains(AppRoutes.staffFormTemplates));

@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../features/billing/bindings/billing_binding.dart';
@@ -434,7 +435,13 @@ class GroupShiftTravelController extends GetxController {
       Get.back(result: result);
       return;
     }
-    Get.offNamed(AppRoutes.staffShiftDetail, arguments: shift);
+    AppNavigator.replace(
+      AppNavigator.location(
+        AppRoutes.staffShiftDetail,
+        query: {'id': shift.id},
+      ),
+      extra: shift,
+    );
   }
 
   String participantName(String shiftParticipantId) {
