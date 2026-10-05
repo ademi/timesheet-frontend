@@ -86,6 +86,70 @@ class RosterComposerArgs {
     return const RosterComposerArgs();
   }
 
+  /// Resolve composer args from navigation [raw] plus URL query/path [params].
+  ///
+  /// On web refresh GoRouter `extra` is null; query still carries `clientId`,
+  /// `id` / `shiftId`, `mode`, etc. Typed [raw] wins for set fields; params fill
+  /// gaps. When [raw] yields empty defaults, params also drive preset/repeat/focus.
+  factory RosterComposerArgs.fromRawAndParams(
+    Object? raw, {
+    Map<String, String?> params = const {},
+  }) {
+    final base = RosterComposerArgs.fromRaw(raw);
+    final overlay = <dynamic, dynamic>{};
+    void put(String key, String? value) {
+      if (value != null && value.isNotEmpty) overlay[key] = value;
+    }
+
+    put(
+      'shiftId',
+      params['shiftId'] ?? params['id'] ?? params['shift_id'],
+    );
+    put('clientId', params['clientId'] ?? params['client_id']);
+    put('jobId', params['jobId'] ?? params['job_id']);
+    put('mode', params['mode']);
+    put('preset', params['preset']);
+    put('focus', params['focus'] ?? params['focusSection']);
+    put(
+      'participantId',
+      params['participantId'] ?? params['participant_id'],
+    );
+    put(
+      'participantName',
+      params['participantName'] ?? params['participant_name'],
+    );
+    put(
+      'ruleId',
+      params['ruleId'] ?? params['rule_id'] ?? params['recurrenceRuleId'],
+    );
+    put('repeat', params['repeat']);
+
+    if (overlay.isEmpty) return base;
+
+    final fromParams = RosterComposerArgs.fromMap(overlay);
+    final baseIsEmpty =
+        base.shiftId == null &&
+        base.clientId == null &&
+        base.jobId == null &&
+        base.shift == null &&
+        base.client == null &&
+        base.composerSeed == null &&
+        base.participantId == null &&
+        base.recurrenceRuleId == null;
+
+    return base.copyWith(
+      shiftId: base.shiftId ?? fromParams.shiftId,
+      clientId: base.clientId ?? fromParams.clientId,
+      jobId: base.jobId ?? fromParams.jobId,
+      participantId: base.participantId ?? fromParams.participantId,
+      participantName: base.participantName ?? fromParams.participantName,
+      recurrenceRuleId: base.recurrenceRuleId ?? fromParams.recurrenceRuleId,
+      preset: baseIsEmpty ? fromParams.preset : base.preset,
+      repeatEnabled: baseIsEmpty ? fromParams.repeatEnabled : base.repeatEnabled,
+      focusSection: baseIsEmpty ? fromParams.focusSection : base.focusSection,
+    );
+  }
+
   factory RosterComposerArgs.fromUnifiedSupport(UnifiedSupportArgs args) {
     final ongoing = args.initialMode == UnifiedSupportMode.ongoing;
     return RosterComposerArgs(

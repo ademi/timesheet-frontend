@@ -11,6 +11,7 @@ import '../../../../core/time/tenant_civil_time.dart';
 import '../../../../shared/models/profile_photo_models.dart';
 import '../../../../shared/utils/name_sort.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../../../billing/data/models/billing_models.dart';
 import '../../../clients/data/models/client_models.dart';
 import '../../../clients/data/repositories/clients_repository.dart';
@@ -46,6 +47,13 @@ class RosterComposerController extends GetxController {
     Future<bool> Function(int nextN)? confirmLargeGroup,
     Future<String?> Function({required String label})? promptAssignOverrideReason,
     Future<bool> Function(int unassignedSlots)? confirmPublishOpenSlots,
+    Future<String?> Function({required List<String> reasons})?
+    promptBurnOverride,
+    Future<String?> Function({
+      required List<String> reasons,
+      required String title,
+    })?
+    promptCredentialGateOverride,
   }) : _facade = facade,
        _clients = clientsRepository,
        _session = session,
@@ -54,7 +62,9 @@ class RosterComposerController extends GetxController {
        _onNavigate = onNavigate,
        _confirmLargeGroup = confirmLargeGroup,
        _promptAssignOverrideReason = promptAssignOverrideReason,
-       _confirmPublishOpenSlots = confirmPublishOpenSlots;
+       _confirmPublishOpenSlots = confirmPublishOpenSlots,
+       _promptBurnOverride = promptBurnOverride,
+       _promptCredentialGateOverride = promptCredentialGateOverride;
 
   final ComposerFacade _facade;
   final ClientsRepository _clients;
@@ -66,6 +76,13 @@ class RosterComposerController extends GetxController {
   final Future<String?> Function({required String label})?
   _promptAssignOverrideReason;
   final Future<bool> Function(int unassignedSlots)? _confirmPublishOpenSlots;
+  final Future<String?> Function({required List<String> reasons})?
+  _promptBurnOverride;
+  final Future<String?> Function({
+    required List<String> reasons,
+    required String title,
+  })?
+  _promptCredentialGateOverride;
 
   final draft = OccurrenceDraft.oneSession().obs;
   final focusSection = ComposerFocusSection.plan.obs;
@@ -129,6 +146,8 @@ class RosterComposerController extends GetxController {
   final assignContextLoading = false.obs;
   final assignContextError = RxnString();
   final assignOverrideReasons = <String, String>{}.obs;
+  /// Structured reasons from ``credential_gate_blocked`` / assign gate on save/publish.
+  final credentialGateReasons = <String>[].obs;
   bool _workersSectionOpened = false;
 
   // ── Repeat / A7 ──────────────────────────────────────────────────────────
@@ -2237,23 +2256,73 @@ class RosterComposerController extends GetxController {
     final taskTemplate =
         draft.value.taskTemplate.isEmpty ? null : draft.value.taskTemplate;
 
+    // Prefer batch when no override reasons; fall back to one-by-one on gate.
     if (reasons.isEmpty) {
-      return _facade.assignShiftBatch(
-        shiftId: shiftId,
-        contractorIds: toAdd.toList(growable: false),
-        taskTemplate: taskTemplate,
-      );
+      try {
+        return await _facade.assignShiftBatch(
+          shiftId: shiftId,
+          contractorIds: toAdd.toList(growable: false),
+          taskTemplate: taskTemplate,
+        );
+      } on AppFailure catch (e) {
+        if (!_isAssignOrCredentialGate(e)) rethrow;
+        credentialGateReasons.assignAll(e.eligibilityReasons);
+        // Continue one-by-one so each worker can get an audited override.
+      }
     }
+
     for (final id in toAdd) {
-      latest = await _facade.assignShift(
+      latest = await _assignWithCredentialGate(
         shiftId: shiftId,
         contractorId: id,
         taskTemplate: taskTemplate,
-        reason: reasons[id],
+        overrideReason: reasons[id],
       );
     }
     return latest;
   }
+
+  Future<ShiftOut> _assignWithCredentialGate({
+    required String shiftId,
+    required String contractorId,
+    List<TaskTemplateItem>? taskTemplate,
+    String? overrideReason,
+  }) async {
+    try {
+      return await _facade.assignShift(
+        shiftId: shiftId,
+        contractorId: contractorId,
+        taskTemplate: taskTemplate,
+        reason: overrideReason,
+      );
+    } on AppFailure catch (e) {
+      if (!_isAssignOrCredentialGate(e)) rethrow;
+      credentialGateReasons.assignAll(e.eligibilityReasons);
+      if (overrideReason != null && overrideReason.trim().isNotEmpty) {
+        rethrow;
+      }
+      final reason = await promptCredentialGateOverride(
+        reasons: e.eligibilityReasons,
+        title:
+            e.isAssignGateBlocked
+                ? 'Care / compatibility block'
+                : 'Credentials block assign',
+      );
+      if (reason == null || reason.trim().isEmpty) rethrow;
+      assignOverrideReasons[contractorId] = reason.trim();
+      return _facade.assignShift(
+        shiftId: shiftId,
+        contractorId: contractorId,
+        taskTemplate: taskTemplate,
+        reason: reason.trim(),
+      );
+    }
+  }
+
+  bool _isAssignOrCredentialGate(AppFailure e) =>
+      e.isCredentialGateBlocked ||
+      e.isAssignGateBlocked ||
+      e.isEligibilityIncomplete;
 
   /// Group: program job + shift place. One-session: standing job for client.
   /// Never [JobsRepository.ensureOngoingSupport] with a group "host".
@@ -2352,31 +2421,45 @@ class RosterComposerController extends GetxController {
   }
 
   /// Publish: assign chosen contractors; any empty slots stay claimable.
-  Future<bool> publish() async {
+  ///
+  /// On credential / budget hard-block, prompts for an audited override and
+  /// retries (same contract as board [StaffVisitsController.publishSelectedShift]).
+  Future<bool> publish({
+    String? overrideReason,
+    String? budgetOverrideReason,
+    bool skipOpenSlotsConfirm = false,
+    bool skipSaveDraft = false,
+  }) async {
     if (isPublishing.value || !canManage) return false;
     _retryHandler = null;
     _syncParticipantsFromClientId();
 
-    final errors = ComposerValidation.validate(
-      draft.value,
-      forPublish: true,
-    );
-    if (errors.isNotEmpty) {
-      errorMessage.value = errors.first;
+    if (!skipSaveDraft) {
+      final errors = ComposerValidation.validate(
+        draft.value,
+        forPublish: true,
+      );
+      if (errors.isNotEmpty) {
+        errorMessage.value = errors.first;
+        return false;
+      }
+
+      final open = unassignedSlotCount;
+      if (open > 0 && !skipOpenSlotsConfirm) {
+        final ok = await _confirmOpenSlotsPublish(open);
+        if (!ok) return false;
+      }
+
+      final saved = await saveDraft();
+      if (!saved || draft.value.shiftId == null) return false;
+    } else if (draft.value.shiftId == null) {
       return false;
     }
 
     final open = unassignedSlotCount;
-    if (open > 0) {
-      final ok = await _confirmOpenSlotsPublish(open);
-      if (!ok) return false;
-    }
-
-    final saved = await saveDraft();
-    if (!saved || draft.value.shiftId == null) return false;
-
     isPublishing.value = true;
     errorMessage.value = null;
+    credentialGateReasons.clear();
     try {
       final shiftId = draft.value.shiftId!;
       // Assignments are already synced in saveDraft — do not assign again
@@ -2386,6 +2469,8 @@ class RosterComposerController extends GetxController {
         shiftId,
         body: ShiftPublishRequest(
           supportItemCode: draft.value.supportItemCode,
+          overrideReason: overrideReason,
+          budgetOverrideReason: budgetOverrideReason,
         ),
       );
       draft.value = draft.value.copyWith(status: published.status);
@@ -2400,23 +2485,210 @@ class RosterComposerController extends GetxController {
       return true;
     } on AppFailure catch (e) {
       errorMessage.value = _mapPublishError(e);
-      _retryHandler = () async {
-        await publish();
-      };
-      if (!Get.testMode) {
+      if (_isAssignOrCredentialGate(e)) {
+        credentialGateReasons.assignAll(e.eligibilityReasons);
+        if (overrideReason == null || overrideReason.trim().isEmpty) {
+          final reason = await promptCredentialGateOverride(
+            reasons: e.eligibilityReasons,
+            title:
+                e.isAssignGateBlocked
+                    ? 'Care / compatibility block'
+                    : 'Credentials block assign',
+          );
+          if (reason != null && reason.trim().isNotEmpty) {
+            isPublishing.value = false;
+            return publish(
+              overrideReason: reason.trim(),
+              budgetOverrideReason: budgetOverrideReason,
+              skipOpenSlotsConfirm: true,
+              skipSaveDraft: true,
+            );
+          }
+        }
+      } else if (e.isBudgetBurnBlocked) {
+        if (budgetOverrideReason == null ||
+            budgetOverrideReason.trim().isEmpty) {
+          if (!_session.hasPermission(AppPermissions.billingManage)) {
+            if (!Get.testMode) {
+              AppToast.error(
+                'Could not publish',
+                'Plan budget override requires billing.manage.',
+              );
+            }
+          } else {
+            final reason = await promptBudgetBurnOverride(
+              reasons:
+                  e.eligibilityReasons.isEmpty
+                      ? const ['Plan budget hard block']
+                      : e.eligibilityReasons,
+            );
+            if (reason != null && reason.trim().isNotEmpty) {
+              isPublishing.value = false;
+              return publish(
+                overrideReason: overrideReason,
+                budgetOverrideReason: reason.trim(),
+                skipOpenSlotsConfirm: true,
+                skipSaveDraft: true,
+              );
+            }
+          }
+        }
+      } else if (!e.isBudgetOverrideForbidden) {
+        _retryHandler = () async {
+          await publish(
+            overrideReason: overrideReason,
+            budgetOverrideReason: budgetOverrideReason,
+            skipOpenSlotsConfirm: true,
+            skipSaveDraft: true,
+          );
+        };
+      }
+      if (!Get.testMode &&
+          !_isAssignOrCredentialGate(e) &&
+          !e.isBudgetBurnBlocked) {
         AppToast.error('Could not publish', errorMessage.value!);
+      } else if (!Get.testMode && e.isBudgetOverrideForbidden) {
+        AppToast.error('Could not publish', e.message);
       }
       return false;
     } catch (e) {
       errorMessage.value = e.toString();
       _retryHandler = () async {
-        await publish();
+        await publish(
+          overrideReason: overrideReason,
+          budgetOverrideReason: budgetOverrideReason,
+          skipOpenSlotsConfirm: true,
+          skipSaveDraft: true,
+        );
       };
       if (!Get.testMode) AppToast.error('Could not publish', e.toString());
       return false;
     } finally {
       isPublishing.value = false;
     }
+  }
+
+  /// Budget hard-block override (C6) — distinct copy from credential gate.
+  @visibleForTesting
+  Future<String?> promptBudgetBurnOverride({
+    required List<String> reasons,
+  }) async {
+    final custom = _promptBurnOverride;
+    if (custom != null) return custom(reasons: reasons);
+    if (Get.testMode) return null;
+    final controller = TextEditingController();
+    final result = await Get.dialog<String>(
+      AlertDialog(
+        title: const Text('Plan budget hard block'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Publishing would exceed declared plan envelopes '
+                '(ledger vs declared — not a live NDIA balance).',
+              ),
+              if (reasons.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                for (final r in reasons)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text('• $r', style: const TextStyle(fontSize: 13)),
+                  ),
+              ],
+              const SizedBox(height: 12),
+              const Text(
+                'To continue, enter an audited override reason '
+                '(no silent bypass).',
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Override reason',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                autofocus: true,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              Get.back(result: text);
+            },
+            child: const Text('Override & publish'),
+          ),
+        ],
+      ),
+    );
+    return result;
+  }
+
+  @visibleForTesting
+  Future<String?> promptCredentialGateOverride({
+    required List<String> reasons,
+    String title = 'Credentials block assign',
+  }) async {
+    final custom = _promptCredentialGateOverride;
+    if (custom != null) {
+      return custom(reasons: reasons, title: title);
+    }
+    if (Get.testMode) return null;
+    final controller = TextEditingController();
+    final result = await Get.dialog<String>(
+      AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              EligibilityIncompletePanel(title: title, reasons: reasons),
+              const SizedBox(height: 12),
+              const Text(
+                'To continue, enter an audited override reason '
+                '(no silent bypass).',
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Override reason',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                autofocus: true,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              Get.back(result: text);
+            },
+            child: const Text('Assign with override'),
+          ),
+        ],
+      ),
+    );
+    return result;
   }
 
   String _mapPublishError(AppFailure e) {
@@ -2428,6 +2700,10 @@ class RosterComposerController extends GetxController {
       case 'contractor_already_assigned':
         // Should be rare after saveDraft sync; treat as non-fatal race.
         return 'A selected worker is already assigned to this shift.';
+      case 'budget_burn_blocked':
+        return e.message;
+      case 'budget_override_forbidden':
+        return e.message;
       default:
         return e.message;
     }

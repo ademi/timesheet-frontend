@@ -32,7 +32,32 @@ class RosterComposerBinding extends Bindings {
     );
 
     // Prefer GoRouter-synced args when present (web), else GetX arguments.
+    // Query/path params (synced into Get.parameters) fill gaps on web refresh.
     final raw = routeArguments() ?? Get.arguments;
+    final args = RosterComposerArgs.fromRawAndParams(
+      raw,
+      params: {
+        'id': routeParam('id'),
+        'shiftId': routeParam('shiftId'),
+        'shift_id': routeParam('shift_id'),
+        'clientId': routeParam('clientId'),
+        'client_id': routeParam('client_id'),
+        'jobId': routeParam('jobId'),
+        'job_id': routeParam('job_id'),
+        'mode': routeParam('mode'),
+        'preset': routeParam('preset'),
+        'focus': routeParam('focus'),
+        'focusSection': routeParam('focusSection'),
+        'participantId': routeParam('participantId'),
+        'participant_id': routeParam('participant_id'),
+        'participantName': routeParam('participantName'),
+        'participant_name': routeParam('participant_name'),
+        'ruleId': routeParam('ruleId'),
+        'rule_id': routeParam('rule_id'),
+        'recurrenceRuleId': routeParam('recurrenceRuleId'),
+        'repeat': routeParam('repeat'),
+      },
+    );
 
     if (Get.isRegistered<RosterComposerController>()) {
       Get.delete<RosterComposerController>(force: true);
@@ -46,7 +71,7 @@ class RosterComposerBinding extends Bindings {
             Get.isRegistered<EngagementsRepository>()
                 ? Get.find<EngagementsRepository>()
                 : null,
-        args: RosterComposerArgs.fromRaw(raw),
+        args: args,
       ),
     );
   }

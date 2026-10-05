@@ -9,9 +9,12 @@ import 'package:rostiq/features/clients/controllers/support_plan_controller.dart
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/models/client_profile_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
+import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
+import 'package:rostiq/features/rostering/data/composer_facade.dart';
+import 'package:rostiq/features/rostering/domain/roster_composer_args.dart';
+import 'package:rostiq/features/rostering/presentation/composer/roster_composer_controller.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
-import 'package:rostiq/features/shifts/group_book/group_shift_edit_controller.dart';
 import 'package:rostiq/features/sil/controllers/sil_houses_controller.dart';
 import 'package:rostiq/features/sil/data/models/sil_models.dart';
 import 'package:rostiq/features/sil/data/repositories/sil_repository.dart';
@@ -19,6 +22,8 @@ import 'package:rostiq/features/sil/data/repositories/sil_repository.dart';
 class _MockClientsRepository extends Mock implements ClientsRepository {}
 
 class _MockSessionService extends Mock implements SessionService {}
+
+class _MockJobsRepository extends Mock implements JobsRepository {}
 
 class _MockShiftsRepository extends Mock implements ShiftsRepository {}
 
@@ -67,22 +72,28 @@ SilHouseBundleOut _bundle(String houseId) => SilHouseBundleOut(
 void main() {
   late _MockClientsRepository clients;
   late _MockSessionService session;
+  late _MockJobsRepository jobs;
   late _MockShiftsRepository shifts;
   late _MockSilRepository sil;
+  late ComposerFacade facade;
 
   setUp(() {
     Get.reset();
     Get.testMode = true;
     clients = _MockClientsRepository();
     session = _MockSessionService();
+    jobs = _MockJobsRepository();
     shifts = _MockShiftsRepository();
     sil = _MockSilRepository();
+    facade = ComposerFacade(shifts: shifts, jobs: jobs);
     when(() => session.hasPermission(any())).thenReturn(true);
+    when(() => session.tenantTimezone).thenReturn(RxnString());
     when(() => clients.listSupportPlans(any())).thenAnswer((_) async => []);
     when(() => clients.getBudgetSummary(any())).thenThrow(Exception('skip'));
     when(
       () => clients.getClientProfile(any()),
     ).thenAnswer((_) async => const ClientProfileBundle());
+    when(() => clients.listClients()).thenAnswer((_) async => []);
     when(() => sil.getHouse(any())).thenAnswer(
       (inv) async => _bundle(inv.positionalArguments.first as String),
     );
@@ -115,24 +126,41 @@ void main() {
     });
   });
 
-  group('GroupShiftEditController', () {
-    test('putFresh replaces prior shift args', () {
+  group('RosterComposerController', () {
+    test('putFresh replaces prior args (composer cutover re-enter)', () {
       final first = putFresh(
-        () => GroupShiftEditController(
-          shiftsRepository: shifts,
-          args: GroupShiftEditArgs(shift: _shift('shift-a')),
+        () => RosterComposerController(
+          facade: facade,
+          clientsRepository: clients,
+          session: session,
+          args: RosterComposerArgs(
+            shiftId: 'shift-a',
+            shift: _shift('shift-a'),
+            focusSection: ComposerFocusSection.people,
+          ),
+          onNavigate: (_, __) {},
         ),
       );
-      expect(first.args.shift.id, 'shift-a');
+      expect(first.focusSection.value, ComposerFocusSection.people);
 
       final second = putFresh(
-        () => GroupShiftEditController(
-          shiftsRepository: shifts,
-          args: GroupShiftEditArgs(shift: _shift('shift-b')),
+        () => RosterComposerController(
+          facade: facade,
+          clientsRepository: clients,
+          session: session,
+          args: RosterComposerArgs(
+            shiftId: 'shift-b',
+            shift: _shift('shift-b'),
+            focusSection: ComposerFocusSection.publish,
+          ),
+          onNavigate: (_, __) {},
         ),
       );
       expect(identical(first, second), isFalse);
-      expect(Get.find<GroupShiftEditController>().args.shift.id, 'shift-b');
+      expect(
+        Get.find<RosterComposerController>().focusSection.value,
+        ComposerFocusSection.publish,
+      );
     });
   });
 

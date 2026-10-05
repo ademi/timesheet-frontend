@@ -334,6 +334,8 @@ void main() {
               offsetEndMinutes: 60,
             ),
           ],
+          shiftKind: 'sleepover',
+          sleepSegments: const {'active_overnight_start': '22:00'},
         ).toJson();
 
     expect(json['place'], {'branch_id': 'branch-1'});
@@ -345,6 +347,8 @@ void main() {
       {'title': 'Care', 'sort_order': 0},
     ]);
     expect(json['segment_template'][0]['offset_end_minutes'], 60);
+    expect(json['shift_kind'], 'sleepover');
+    expect(json['sleep_segments'], {'active_overnight_start': '22:00'});
   });
 
   test('ShiftCreateRequest.toJson includes place and segment_template', () {
@@ -386,6 +390,7 @@ void main() {
       'place_branch_id': 'branch-1',
       'place_client_site_id': null,
       'place_label': null,
+      'roc_block_id': 'roc-block-1',
       'task_template': [
         {'title': 'Meds', 'sort_order': 1},
       ],
@@ -407,6 +412,7 @@ void main() {
     expect(shift.placeBranchId, 'branch-1');
     expect(shift.placeClientSiteId, isNull);
     expect(shift.placeLabel, isNull);
+    expect(shift.rocBlockId, 'roc-block-1');
     expect(shift.taskTemplate.single.title, 'Meds');
     expect(shift.segmentTemplate.single.offsetEndMinutes, 60);
   });

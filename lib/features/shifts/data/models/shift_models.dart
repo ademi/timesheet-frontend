@@ -353,6 +353,7 @@ class ShiftOut {
     this.placeLabel,
     this.placeLatitude,
     this.placeLongitude,
+    this.rocBlockId,
     this.taskTemplate = const [],
     this.segmentTemplate = const [],
     this.assignments = const [],
@@ -390,6 +391,7 @@ class ShiftOut {
   final String? placeLabel;
   final double? placeLatitude;
   final double? placeLongitude;
+  final String? rocBlockId;
   final List<TaskTemplateItem> taskTemplate;
   final List<SegmentTemplateItem> segmentTemplate;
   final List<ShiftAssignmentOut> assignments;
@@ -433,6 +435,7 @@ class ShiftOut {
       placeLabel: placeLabel,
       placeLatitude: placeLatitude,
       placeLongitude: placeLongitude,
+      rocBlockId: rocBlockId,
       taskTemplate: taskTemplate,
       segmentTemplate: segmentTemplate,
       assignments: assignments,
@@ -480,6 +483,7 @@ class ShiftOut {
       placeLabel: json['place_label'] as String?,
       placeLatitude: (json['place_latitude'] as num?)?.toDouble(),
       placeLongitude: (json['place_longitude'] as num?)?.toDouble(),
+      rocBlockId: json['roc_block_id']?.toString(),
       taskTemplate: (json['task_template'] as List? ?? const [])
           .whereType<Map>()
           .map((e) => TaskTemplateItem.fromJson(Map<String, dynamic>.from(e)))
@@ -769,6 +773,8 @@ class ShiftPatchRequest {
     this.workerCount,
     this.taskTemplate,
     this.segmentTemplate,
+    this.shiftKind,
+    this.sleepSegments,
   });
 
   final ShiftPlaceIn? place;
@@ -778,6 +784,8 @@ class ShiftPatchRequest {
   final int? workerCount;
   final List<TaskTemplateItem>? taskTemplate;
   final List<SegmentTemplateItem>? segmentTemplate;
+  final String? shiftKind;
+  final Map<String, dynamic>? sleepSegments;
 
   Map<String, dynamic> toJson() => {
     if (place != null) 'place': place!.toJson(),
@@ -791,6 +799,8 @@ class ShiftPatchRequest {
       'task_template': [for (final t in taskTemplate!) t.toJson()],
     if (segmentTemplate != null)
       'segment_template': [for (final s in segmentTemplate!) s.toJson()],
+    if (shiftKind != null && shiftKind!.isNotEmpty) 'shift_kind': shiftKind,
+    if (sleepSegments != null) 'sleep_segments': sleepSegments,
   };
 }
 

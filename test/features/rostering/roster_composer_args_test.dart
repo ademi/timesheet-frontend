@@ -160,4 +160,61 @@ void main() {
       expect(args.repeatEnabled, isFalse);
     });
   });
+
+  group('RosterComposerArgs.fromRawAndParams', () {
+    test('hydrates clientId + ongoing mode from query when raw is null', () {
+      final args = RosterComposerArgs.fromRawAndParams(
+        null,
+        params: {'clientId': 'c-web', 'mode': 'ongoing'},
+      );
+
+      expect(args.clientId, 'c-web');
+      expect(args.preset, ComposerPreset.oneSession);
+      expect(args.repeatEnabled, isTrue);
+    });
+
+    test('hydrates shiftId from id query key (web refresh)', () {
+      final args = RosterComposerArgs.fromRawAndParams(
+        null,
+        params: {'id': 'shift-refresh'},
+      );
+
+      expect(args.shiftId, 'shift-refresh');
+    });
+
+    test('typed extra wins; params fill gaps only', () {
+      const typed = RosterComposerArgs(
+        clientId: 'from-extra',
+        preset: ComposerPreset.group,
+      );
+      final args = RosterComposerArgs.fromRawAndParams(
+        typed,
+        params: {
+          'clientId': 'from-query',
+          'jobId': 'job-q',
+          'mode': 'ongoing',
+        },
+      );
+
+      expect(args.clientId, 'from-extra');
+      expect(args.jobId, 'job-q');
+      expect(args.preset, ComposerPreset.group);
+      expect(args.repeatEnabled, isFalse);
+    });
+
+    test('maps group preset from query when raw empty', () {
+      final args = RosterComposerArgs.fromRawAndParams(
+        null,
+        params: {
+          'participantId': 'p1',
+          'preset': 'group',
+          'focus': 'people',
+        },
+      );
+
+      expect(args.participantId, 'p1');
+      expect(args.preset, ComposerPreset.group);
+      expect(args.focusSection, ComposerFocusSection.people);
+    });
+  });
 }
