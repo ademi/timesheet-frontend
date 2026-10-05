@@ -315,6 +315,102 @@ void main() {
     });
   });
 
+  test('ShiftPatchRequest.toJson includes draft plan fields', () {
+    final start = DateTime.utc(2026, 10, 4, 9);
+    final end = DateTime.utc(2026, 10, 4, 12);
+    final json =
+        ShiftPatchRequest(
+          place: const ShiftPlaceIn.branch('branch-1'),
+          scheduledStart: start,
+          scheduledEnd: end,
+          requiredSlots: 2,
+          workerCount: 2,
+          taskTemplate: const [TaskTemplateItem(title: 'Care', sortOrder: 0)],
+          segmentTemplate: const [
+            SegmentTemplateItem(
+              participantId: 'p1',
+              anchorSupportItemCode: '01_011_0107_1_1',
+              offsetStartMinutes: 0,
+              offsetEndMinutes: 60,
+            ),
+          ],
+        ).toJson();
+
+    expect(json['place'], {'branch_id': 'branch-1'});
+    expect(json['scheduled_start'], '2026-10-04T09:00:00.000Z');
+    expect(json['scheduled_end'], '2026-10-04T12:00:00.000Z');
+    expect(json['required_slots'], 2);
+    expect(json['worker_count'], 2);
+    expect(json['task_template'], [
+      {'title': 'Care', 'sort_order': 0},
+    ]);
+    expect(json['segment_template'][0]['offset_end_minutes'], 60);
+  });
+
+  test('ShiftCreateRequest.toJson includes place and segment_template', () {
+    final start = DateTime.utc(2026, 10, 4, 9);
+    final end = DateTime.utc(2026, 10, 4, 12);
+    final json =
+        ShiftCreateRequest(
+          jobId: 'job-1',
+          scheduledStart: start,
+          scheduledEnd: end,
+          place: const ShiftPlaceIn.clientSite('site-1'),
+          supportItemCode: '01_011_0107_1_1',
+          segmentTemplate: const [
+            SegmentTemplateItem(
+              participantId: 'p1',
+              anchorSupportItemCode: '01_011_0107_1_1',
+              offsetStartMinutes: 0,
+              offsetEndMinutes: 90,
+            ),
+          ],
+        ).toJson();
+
+    expect(json['place'], {'client_site_id': 'site-1'});
+    expect(json['support_item_code'], '01_011_0107_1_1');
+    expect(json['segment_template'][0]['offset_end_minutes'], 90);
+  });
+
+  test('ShiftOut parses place triad and templates', () {
+    final shift = ShiftOut.fromJson({
+      'id': 'shift-1',
+      'tenant_id': 'tenant-1',
+      'job_id': 'job-1',
+      'job_title': 'Support',
+      'scheduled_start': '2026-10-04T09:00:00Z',
+      'scheduled_end': '2026-10-04T12:00:00Z',
+      'required_slots': 1,
+      'open_slots': 1,
+      'status': 'draft',
+      'place_branch_id': 'branch-1',
+      'place_client_site_id': null,
+      'place_label': null,
+      'task_template': [
+        {'title': 'Meds', 'sort_order': 1},
+      ],
+      'segment_template': [
+        {
+          'participant_id': 'p1',
+          'anchor_support_item_code': '01_011_0107_1_1',
+          'kind': 'direct',
+          'offset_start_minutes': 0,
+          'offset_end_minutes': 60,
+          'sort_order': 0,
+        },
+      ],
+      'assignments': [],
+      'created_at': '2026-10-04T08:00:00Z',
+      'updated_at': '2026-10-04T08:05:00Z',
+    });
+
+    expect(shift.placeBranchId, 'branch-1');
+    expect(shift.placeClientSiteId, isNull);
+    expect(shift.placeLabel, isNull);
+    expect(shift.taskTemplate.single.title, 'Meds');
+    expect(shift.segmentTemplate.single.offsetEndMinutes, 60);
+  });
+
   test('parses engagement_id on shift assignment', () {
     final assignment = ShiftAssignmentOut.fromJson({
       'id': 'assignment-1',
@@ -544,6 +640,10 @@ void main() {
       'required_slots': 1,
       'open_slots': 1,
       'worker_count': 2,
+      'location_label': '12 Main St, Sydney',
+      'place_branch_id': 'branch-1',
+      'place_client_site_id': null,
+      'place_label': null,
       'participants_summary': [
         {
           'id': 'sp-1',
@@ -567,6 +667,10 @@ void main() {
     });
 
     expect(shift.workerCount, 2);
+    expect(shift.locationLabel, '12 Main St, Sydney');
+    expect(shift.placeBranchId, 'branch-1');
+    expect(shift.placeClientSiteId, isNull);
+    expect(shift.placeLabel, isNull);
     expect(shift.participantsSummary, hasLength(3));
     expect(shift.activeParticipantsSummary, hasLength(2));
     expect(

@@ -5,6 +5,9 @@ import '../../app/routes/app_routes.dart';
 import '../../app/routes/middlewares/actor_guard.dart';
 import '../../app/routes/middlewares/auth_guard.dart';
 import '../../app/routes/middlewares/permission_guard.dart';
+import '../rostering/presentation/composer/roster_composer_binding.dart';
+import '../rostering/presentation/composer/roster_composer_view.dart';
+import '../rostering/presentation/redirects/composer_cutover_middleware.dart';
 import '../shell/staff_shell.dart';
 import 'bindings/jobs_binding.dart';
 import 'views/form_template_editor_view.dart';
@@ -13,8 +16,6 @@ import 'views/job_detail_view.dart';
 import 'views/job_form_view.dart';
 import 'views/job_manage_templates_view.dart';
 import 'views/jobs_list_view.dart';
-import 'views/recurrence_rule_form_view.dart';
-import 'views/unified_support_view.dart';
 
 abstract final class JobsPages {
   JobsPages._();
@@ -47,10 +48,13 @@ abstract final class JobsPages {
       middlewares: [
         AuthGuard(),
         ActorGuard(),
-        PermissionGuard(anyOf: [AppPermissions.jobsManage]),
+        PermissionGuard(
+          anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
+        ),
+        ComposerCutoverMiddleware(legacyRoute: AppRoutes.staffOngoingSupport),
       ],
-      binding: UnifiedSupportBinding(),
-      page: () => const UnifiedSupportView(),
+      binding: RosterComposerBinding(),
+      page: () => const RosterComposerView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
@@ -58,10 +62,13 @@ abstract final class JobsPages {
       middlewares: [
         AuthGuard(),
         ActorGuard(),
-        PermissionGuard(anyOf: [AppPermissions.jobsManage]),
+        PermissionGuard(
+          anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
+        ),
+        ComposerCutoverMiddleware(legacyRoute: AppRoutes.staffUnifiedSupport),
       ],
-      binding: UnifiedSupportBinding(),
-      page: () => const UnifiedSupportView(),
+      binding: RosterComposerBinding(),
+      page: () => const RosterComposerView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
@@ -80,10 +87,15 @@ abstract final class JobsPages {
       middlewares: [
         AuthGuard(),
         ActorGuard(),
-        PermissionGuard(anyOf: [AppPermissions.jobsManage]),
+        PermissionGuard(
+          anyOf: [AppPermissions.shiftsManage, AppPermissions.jobsManage],
+        ),
+        ComposerCutoverMiddleware(
+          legacyRoute: AppRoutes.staffRecurrenceRuleForm,
+        ),
       ],
-      binding: JobsBinding(),
-      page: () => const RecurrenceRuleFormView(),
+      binding: RosterComposerBinding(),
+      page: () => const RosterComposerView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

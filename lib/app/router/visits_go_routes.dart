@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/rostering/presentation/composer/roster_composer_binding.dart';
+import '../../features/rostering/presentation/composer/roster_composer_view.dart';
+import '../../features/shifts/group_book/group_shift_attendance_binding.dart';
 import '../../features/shifts/group_book/group_shift_attendance_view.dart';
-import '../../features/shifts/group_book/group_shift_book_binding.dart';
-import '../../features/shifts/group_book/group_shift_book_view.dart';
-import '../../features/shifts/group_book/group_shift_edit_binding.dart';
-import '../../features/shifts/group_book/group_shift_edit_view.dart';
-import '../../features/shifts/group_book/group_shift_remove_view.dart';
-import '../../features/shifts/group_publish/group_shift_publish_binding.dart';
-import '../../features/shifts/group_publish/group_shift_publish_view.dart';
 import '../../features/shifts/group_travel/group_shift_travel_binding.dart';
 import '../../features/shifts/group_travel/group_shift_travel_view.dart';
 import '../../features/shifts/views/staff_shift_detail_view.dart';
@@ -32,14 +28,10 @@ const _groupManageAnyOf = [
   AppPermissions.jobsManage,
 ];
 
-/// Full-screen visit / shift / group-wizard GoRoutes (Phase 4).
+/// Full-screen visit / shift GoRoutes.
 ///
-/// Board + attendance stay under [ShellRoute] (see [buildShellGoRoutes]).
-///
-/// Group wizards under `/staff/visits/shift-detail/…` are **child routes** of
-/// shift detail, pushed on [rootNavigatorKey] so they stay full-screen (no
-/// nested navigator chrome). Query: `?id=` (+ `?participantId=` when needed).
-/// [staffGroupShiftWindows] stays a local overlay (not a GoRoute).
+/// Legacy group book/edit/publish paths open the Roster Composer.
+/// Participant attendance (ios) is kept as its own screen.
 List<RouteBase> buildVisitsGoRoutes({
   required GlobalKey<NavigatorState> rootNavigatorKey,
 }) => [
@@ -56,8 +48,8 @@ List<RouteBase> buildVisitsGoRoutes({
   _staffRoute(
     path: AppRoutes.staffGroupShiftBook,
     anyOf: _groupManageAnyOf,
-    onEnter: () => GroupShiftBookBinding().dependencies(),
-    child: const GroupShiftBookView(),
+    onEnter: () => RosterComposerBinding().dependencies(),
+    child: const RosterComposerView(),
   ),
   GoRoute(
     path: AppRoutes.staffShiftDetail,
@@ -78,15 +70,15 @@ List<RouteBase> buildVisitsGoRoutes({
         rootNavigatorKey: rootNavigatorKey,
         path: 'edit-group',
         anyOf: _groupManageAnyOf,
-        onEnter: () => GroupShiftEditBinding().dependencies(),
-        child: const GroupShiftEditView(),
+        onEnter: () => RosterComposerBinding().dependencies(),
+        child: const RosterComposerView(),
       ),
       _shiftWizardChild(
         rootNavigatorKey: rootNavigatorKey,
         path: 'remove-participant',
         anyOf: _groupManageAnyOf,
-        onEnter: () => GroupShiftRemoveBinding().dependencies(),
-        child: const GroupShiftRemoveView(),
+        onEnter: () => RosterComposerBinding().dependencies(),
+        child: const RosterComposerView(),
       ),
       _shiftWizardChild(
         rootNavigatorKey: rootNavigatorKey,
@@ -99,8 +91,8 @@ List<RouteBase> buildVisitsGoRoutes({
         rootNavigatorKey: rootNavigatorKey,
         path: 'publish-group',
         anyOf: _groupManageAnyOf,
-        onEnter: () => GroupShiftPublishBinding().dependencies(),
-        child: const GroupShiftPublishView(),
+        onEnter: () => RosterComposerBinding().dependencies(),
+        child: const RosterComposerView(),
       ),
       _shiftWizardChild(
         rootNavigatorKey: rootNavigatorKey,

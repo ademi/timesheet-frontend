@@ -7,18 +7,17 @@ import '../../features/jobs/views/form_templates_view.dart';
 import '../../features/jobs/views/job_detail_view.dart';
 import '../../features/jobs/views/job_form_view.dart';
 import '../../features/jobs/views/job_manage_templates_view.dart';
-import '../../features/jobs/views/recurrence_rule_form_view.dart';
-import '../../features/jobs/views/unified_support_view.dart';
+import '../../features/rostering/presentation/composer/roster_composer_binding.dart';
+import '../../features/rostering/presentation/composer/roster_composer_view.dart';
 import '../constants/app_permissions.dart';
 import '../routes/app_routes.dart';
 import '../routes/middlewares/auth_route_utils.dart';
 import 'go_router_params.dart';
 
-/// Full-screen jobs / templates / unified-support GoRoutes (Phase 4).
+/// Full-screen jobs / templates / roster-composer GoRoutes.
 ///
+/// Legacy unified-support / recurrence-form paths open the Roster Composer.
 /// Jobs list lives under the staff [ShellRoute] (see [buildShellGoRoutes]).
-/// Query shape: `?id=` for job detail / manage-templates; unified support uses
-/// `?clientId=` / `?mode=` / `?step=` when present.
 List<RouteBase> buildJobsGoRoutes() => [
   _staffRoute(
     path: AppRoutes.staffJobDetail,
@@ -33,22 +32,28 @@ List<RouteBase> buildJobsGoRoutes() => [
     child: const JobFormView(),
   ),
   _staffRoute(
+    path: AppRoutes.staffRosterCompose,
+    anyOf: const [AppPermissions.shiftsManage, AppPermissions.jobsManage],
+    onEnter: () => RosterComposerBinding().dependencies(),
+    child: const RosterComposerView(),
+  ),
+  _staffRoute(
     path: AppRoutes.staffUnifiedSupport,
     anyOf: const [AppPermissions.jobsManage],
-    onEnter: () => UnifiedSupportBinding().dependencies(),
-    child: const UnifiedSupportView(),
+    onEnter: () => RosterComposerBinding().dependencies(),
+    child: const RosterComposerView(),
   ),
   _staffRoute(
     path: AppRoutes.staffOngoingSupport,
     anyOf: const [AppPermissions.jobsManage],
-    onEnter: () => UnifiedSupportBinding().dependencies(),
-    child: const UnifiedSupportView(),
+    onEnter: () => RosterComposerBinding().dependencies(),
+    child: const RosterComposerView(),
   ),
   _staffRoute(
     path: AppRoutes.staffRecurrenceRuleForm,
     anyOf: const [AppPermissions.jobsManage],
-    onEnter: () => JobsBinding().dependencies(),
-    child: const RecurrenceRuleFormView(),
+    onEnter: () => RosterComposerBinding().dependencies(),
+    child: const RosterComposerView(),
   ),
   _staffRoute(
     path: AppRoutes.staffFormTemplates,

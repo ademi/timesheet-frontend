@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/constants/api_paths.dart';
 import '../../../../core/errors/app_failure.dart';
 import '../../../jobs/data/models/job_models.dart';
+import '../../../rostering/data/composer_models.dart';
 import '../models/shift_models.dart';
 import '../models/shift_travel_models.dart';
 
@@ -156,6 +157,140 @@ class ShiftsRemoteDataSource {
         data: body.toJson(),
       );
       return ShiftOut.fromJson(response.data!);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ComposerShiftOut> getComposer(String shiftId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.shiftComposer(shiftId),
+      );
+      return ComposerShiftOut.fromJson(_require(response.data));
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<ComposerShiftOut> copyShift(
+    String shiftId,
+    ShiftCopyRequest body,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.shiftCopy(shiftId),
+        data: body.toJson(),
+      );
+      return ComposerShiftOut.fromJson(_require(response.data));
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<PlaceOptionsOut> fetchPlaceOptions({
+    List<String> participantIds = const [],
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.shiftsPlaceOptions,
+        data: {'participant_ids': participantIds},
+      );
+      return PlaceOptionsOut.fromJson(_require(response.data));
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<ShiftFormOverrideOut>> listFormOverrides(String shiftId) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.shiftFormOverrides(shiftId),
+      );
+      return _mapList(response.data, ShiftFormOverrideOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<ShiftFormOverrideOut>> putFormOverrides(
+    String shiftId,
+    List<ShiftFormOverrideOut> overrides,
+  ) async {
+    try {
+      final response = await _dio.put<List<dynamic>>(
+        ApiPaths.shiftFormOverrides(shiftId),
+        data: {
+          'overrides': [for (final o in overrides) o.toJson()],
+        },
+      );
+      return _mapList(response.data, ShiftFormOverrideOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<SupportSegmentOut>> listVisitSegments(
+    String shiftId,
+    String visitId,
+  ) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.shiftVisitSegments(shiftId, visitId),
+      );
+      return _mapList(response.data, SupportSegmentOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<SupportSegmentOut>> putVisitSegments(
+    String shiftId,
+    String visitId,
+    List<SupportSegmentIn> segments,
+  ) async {
+    try {
+      final response = await _dio.put<List<dynamic>>(
+        ApiPaths.shiftVisitSegments(shiftId, visitId),
+        data: {
+          'segments': [for (final s in segments) s.toJson()],
+        },
+      );
+      return _mapList(response.data, SupportSegmentOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<ResolvedFormPreviewOut>> previewForms(
+    FormPreviewRequirementsRequest body,
+  ) async {
+    try {
+      final response = await _dio.post<List<dynamic>>(
+        ApiPaths.formsPreviewRequirements,
+        data: body.toJson(),
+      );
+      return _mapList(response.data, ResolvedFormPreviewOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<AssignContextOut> fetchAssignContext({
+    required DateTime from,
+    required DateTime to,
+    String? clientId,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.rosterAssignContext,
+        queryParameters: {
+          'from': from.toUtc().toIso8601String(),
+          'to': to.toUtc().toIso8601String(),
+          if (clientId != null && clientId.isNotEmpty) 'client_id': clientId,
+        },
+      );
+      return AssignContextOut.fromJson(_require(response.data));
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }

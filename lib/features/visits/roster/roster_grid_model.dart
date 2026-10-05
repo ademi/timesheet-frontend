@@ -3,13 +3,17 @@ import 'package:rostiq/features/shifts/utils/overnight_format.dart';
 import 'package:rostiq/features/shifts/utils/participant_display.dart';
 import 'package:rostiq/features/visits/data/models/roster_overlay_models.dart';
 
-/// Roster tile label from active participant names; falls back to host name.
+/// Place-first roster tile label (place · participants; never `Host:`).
 String rosterShiftTileLabel(ShiftOut shift) {
-  final label = rosterTileLabel(
-    activeParticipants(shift.participants).map((p) => p.participantName ?? ''),
+  return placeFirstShiftLabel(
+    placeLabel: shift.placeLabel,
+    locationLabel: shift.locationLabel,
+    participantNames: activeParticipants(
+      shift.participants,
+    ).map((p) => p.participantName),
+    clientName: shift.clientName,
+    jobTitle: shift.jobTitle,
   );
-  if (label.isNotEmpty) return label;
-  return shift.clientName ?? '';
 }
 
 bool _shiftMatchesClientFilter(ShiftOut shift, String clientIdFilter) {

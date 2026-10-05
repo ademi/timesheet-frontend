@@ -291,6 +291,7 @@ class AppFailure implements Exception {
       'visit_has_only_travel_claims',
       'support_item_required',
       'legacy_sta_ratio_item_forbidden',
+      'contractor_already_assigned',
       'quote_required_not_exportable',
       'visit_already_exported',
       'time_entry_not_closed',
@@ -378,6 +379,7 @@ class AppFailure implements Exception {
       case 'support_item_name_mismatch':
       case 'support_item_required':
       case 'legacy_sta_ratio_item_forbidden':
+      case 'contractor_already_assigned':
       case 'support_item_not_hourly':
       case 'visit_support_item_is_travel':
       case 'visit_support_item_is_day_unit':
@@ -557,7 +559,9 @@ class AppFailure implements Exception {
       case 'support_item_name_mismatch':
         return 'Name does not match the catalogue — pick from search.';
       case 'support_item_required':
-        return 'Set a support item on the visit before exporting.';
+        return 'Choose a support item before publishing or generating shifts.';
+      case 'contractor_already_assigned':
+        return 'That worker is already assigned to this shift.';
       case 'visit_has_only_travel_claims':
         return 'This visit has travel claims but no hourly support item. Set an hourly item on the visit, then export — travel will be included automatically.';
       case 'visit_support_item_is_travel':

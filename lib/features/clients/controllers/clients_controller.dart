@@ -19,7 +19,8 @@ import '../../documents/data/document_pipeline.dart';
 import '../../jobs/controllers/jobs_controller.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
-import '../../jobs/utils/unified_support_args.dart';
+import '../../rostering/domain/occurrence_draft.dart';
+import '../../rostering/domain/roster_composer_args.dart';
 import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../data/models/client_models.dart';
@@ -1807,12 +1808,14 @@ class ClientsController extends GetxController
     if (client == null) return;
     AppNavigator.push(
       AppNavigator.location(
-        AppRoutes.staffUnifiedSupport,
+        AppRoutes.staffRosterCompose,
         query: {'clientId': client.id, 'mode': 'ongoing'},
       ),
-      extra: UnifiedSupportArgs.forClient(
-        client,
-        mode: UnifiedSupportMode.ongoing,
+      extra: RosterComposerArgs(
+        client: client,
+        clientId: client.id,
+        preset: ComposerPreset.oneSession,
+        repeatEnabled: true,
       ),
     );
   }
@@ -1848,18 +1851,19 @@ class ClientsController extends GetxController
     );
   }
 
-  /// Client-first book-one: open the unified support composer in one-session mode.
+  /// Client-first book-one: open the unified rostering composer in one-session mode.
   void bookOneSession() {
     final client = selected.value;
     if (client == null) return;
     AppNavigator.push(
       AppNavigator.location(
-        AppRoutes.staffUnifiedSupport,
+        AppRoutes.staffRosterCompose,
         query: {'clientId': client.id, 'mode': 'one'},
       ),
-      extra: UnifiedSupportArgs.forClient(
-        client,
-        mode: UnifiedSupportMode.oneSession,
+      extra: RosterComposerArgs(
+        client: client,
+        clientId: client.id,
+        preset: ComposerPreset.oneSession,
       ),
     );
   }

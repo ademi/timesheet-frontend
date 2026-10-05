@@ -31,6 +31,10 @@ abstract class AppRoutes {
 
   /// Unified one-session / ongoing support stepped composer (Phase 6.1).
   static const staffUnifiedSupport = '/staff/support/compose';
+
+  /// Unified rostering occurrence composer (A8). Soft-cutover target for legacy compose routes.
+  static const staffRosterCompose = '/staff/roster/compose';
+
   static const staffJobDetail = '/staff/jobs/detail';
   static const staffRecurrenceRuleForm = '/staff/jobs/recurrence-rule-form';
   static const staffFormTemplates = '/staff/jobs/form-templates';

@@ -10,8 +10,9 @@ import '../../../core/time/tenant_civil_time.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../jobs/utils/unified_support_args.dart';
+import '../../rostering/domain/occurrence_draft.dart';
+import '../../rostering/domain/roster_composer_args.dart';
 import '../../shifts/data/models/shift_models.dart';
-import '../../shifts/group_book/group_shift_book_args.dart';
 import '../controllers/staff_visits_controller.dart';
 import '../roster/roster_grid_model.dart';
 import '../roster/roster_grid_view.dart';
@@ -103,14 +104,18 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
   }
 
   void _openUnifiedSupport({String? clientId, UnifiedSupportMode? mode}) {
+    final ongoing = mode == UnifiedSupportMode.ongoing;
     final query = <String, String>{
       if (clientId != null && clientId.isNotEmpty) 'clientId': clientId,
-      if (mode != null)
-        'mode': mode == UnifiedSupportMode.oneSession ? 'one' : 'ongoing',
+      'mode': ongoing ? 'ongoing' : 'one',
     };
     AppNavigator.push(
-      AppNavigator.location(AppRoutes.staffUnifiedSupport, query: query),
-      extra: UnifiedSupportArgs(clientId: clientId, initialMode: mode),
+      AppNavigator.location(AppRoutes.staffRosterCompose, query: query),
+      extra: RosterComposerArgs(
+        clientId: clientId,
+        preset: ComposerPreset.oneSession,
+        repeatEnabled: ongoing,
+      ),
     );
   }
 
@@ -163,9 +168,11 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                   onTap: () {
                     Navigator.pop(ctx);
                     AppNavigator.push(
-                      AppRoutes.staffGroupShiftBook,
-                      extra: GroupShiftBookArgs(
+                      AppRoutes.staffRosterCompose,
+                      extra: RosterComposerArgs(
                         participantId: participantId,
+                        clientId: participantId,
+                        preset: ComposerPreset.group,
                       ),
                     );
                   },
@@ -721,14 +728,23 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                               isSubmitting = true;
                               dialogError = null;
                             });
-                            await controller.copyTile(
+                            final args = await controller.copyTile(
                               source: source,
                               start: start,
                               end: end,
                             );
                             if (!ctx.mounted) return;
-                            if (controller.errorMessage.value == null) {
+                            if (args != null) {
                               Navigator.pop(ctx);
+                              // Open composer with ComposerShiftOut seed —
+                              // no second hydrate; board reload after return.
+                              await Get.toNamed(
+                                AppRoutes.staffRosterCompose,
+                                arguments: args,
+                              );
+                              if (context.mounted) {
+                                await controller.load();
+                              }
                               return;
                             }
                             setState(() {

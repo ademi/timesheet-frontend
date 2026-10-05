@@ -22,6 +22,9 @@ import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
 import '../../billing/data/models/billing_models.dart';
+import '../../rostering/data/composer_models.dart';
+import '../../rostering/domain/occurrence_draft.dart';
+import '../../rostering/domain/roster_composer_args.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/models/shift_travel_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
@@ -805,10 +808,16 @@ class StaffVisitsController extends GetxController {
     if (shift == null || shift.status != 'draft') return;
     final result = await AppNavigator.push(
       AppNavigator.location(
-        AppRoutes.staffGroupShiftPublish,
+        AppRoutes.staffRosterCompose,
         query: {'id': shift.id},
       ),
-      extra: shift,
+      extra: RosterComposerArgs(
+        shiftId: shift.id,
+        shift: shift,
+        jobId: shift.jobId,
+        preset: ComposerPreset.group,
+        focusSection: ComposerFocusSection.publish,
+      ),
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
@@ -871,10 +880,16 @@ class StaffVisitsController extends GetxController {
     if (refreshed == null || refreshed.status != 'draft') return;
     final result = await AppNavigator.push(
       AppNavigator.location(
-        AppRoutes.staffGroupShiftEdit,
+        AppRoutes.staffRosterCompose,
         query: {'id': refreshed.id},
       ),
-      extra: refreshed,
+      extra: RosterComposerArgs(
+        shiftId: refreshed.id,
+        shift: refreshed,
+        jobId: refreshed.jobId,
+        preset: ComposerPreset.group,
+        focusSection: ComposerFocusSection.people,
+      ),
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
@@ -888,12 +903,21 @@ class StaffVisitsController extends GetxController {
   Future<void> openRemoveParticipant(ShiftParticipantOut participant) async {
     final shift = selectedShift.value;
     if (shift == null) return;
+    // Soft cutover: people focus on composer for participant changes.
     final result = await AppNavigator.push(
       AppNavigator.location(
-        AppRoutes.staffGroupShiftRemove,
+        AppRoutes.staffRosterCompose,
         query: {'id': shift.id, 'participantId': participant.id},
       ),
-      extra: {'shift': shift, 'participant': participant},
+      extra: RosterComposerArgs(
+        shiftId: shift.id,
+        shift: shift,
+        jobId: shift.jobId,
+        participantId: participant.participantId,
+        participantName: participant.participantName,
+        preset: ComposerPreset.group,
+        focusSection: ComposerFocusSection.people,
+      ),
     );
     if (result is ShiftOut) {
       selectedShift.value = result;
@@ -1220,27 +1244,50 @@ class StaffVisitsController extends GetxController {
     }
   }
 
-  Future<void> copyTile({
+  /// Last successful copy args (tests / callers that open composer after dialog).
+  RosterComposerArgs? lastCopyComposerArgs;
+
+  /// Copy occurrence via `POST …/copy` → [ComposerShiftOut] args for composer.
+  ///
+  /// Does **not** reload the board or hydrate again — callers open the composer
+  /// with [lastCopyComposerArgs] / the returned value (single RTT).
+  Future<RosterComposerArgs?> copyTile({
     required ShiftOut source,
     required DateTime start,
     required DateTime end,
   }) async {
-    if (!canManage) return;
+    if (!canManage) return null;
     isSaving.value = true;
     errorMessage.value = null;
+    lastCopyComposerArgs = null;
     try {
-      await _shiftsRepository.createShift(
-        ShiftCreateRequest(
-          jobId: source.jobId,
+      final composer = await _shiftsRepository.copyShift(
+        source.id,
+        ShiftCopyRequest(
           scheduledStart: start.toUtc(),
           scheduledEnd: end.toUtc(),
-          requiredSlots: source.requiredSlots,
-          status: 'published',
         ),
       );
-      await load();
+      final activeCount =
+          composer.shift.participants
+              .where((p) => p.status == 'active')
+              .length;
+      final args = RosterComposerArgs(
+        shiftId: composer.shift.id,
+        shift: composer.shift,
+        composerSeed: composer,
+        jobId: composer.shift.jobId,
+        clientId: composer.shift.clientId,
+        preset:
+            activeCount > 1
+                ? ComposerPreset.group
+                : ComposerPreset.oneSession,
+      );
+      lastCopyComposerArgs = args;
+      return args;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+      return null;
     } finally {
       isSaving.value = false;
     }

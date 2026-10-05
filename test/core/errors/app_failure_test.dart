@@ -477,7 +477,9 @@ void main() {
         'time_entry_not_closed':
             'Close the time entry before exporting this visit.',
         'support_item_required':
-            'Set a support item on the visit before exporting.',
+            'Choose a support item before publishing or generating shifts.',
+        'contractor_already_assigned':
+            'That worker is already assigned to this shift.',
         'visit_has_only_travel_claims':
             'This visit has travel claims but no hourly support item. Set an hourly item on the visit, then export — travel will be included automatically.',
         'visit_support_item_is_travel':

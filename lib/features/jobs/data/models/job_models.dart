@@ -27,7 +27,7 @@ class JobOut {
   final String tenantId;
   final String? clientId;
   final String? clientName;
-  final String kind; // standing | ad_hoc
+  final String kind; // standing | ad_hoc | program
   final String status; // open | closed | cancelled
   final String title;
   final String? branchId;
@@ -46,6 +46,7 @@ class JobOut {
 
   bool get isOpen => status == 'open';
   bool get isStanding => kind == 'standing';
+  bool get isProgram => kind == 'program';
 
   factory JobOut.fromJson(Map<String, dynamic> json) {
     return JobOut(
@@ -159,6 +160,128 @@ class TaskTemplateItem {
   };
 }
 
+class RecurrenceParticipantIn {
+  const RecurrenceParticipantIn({
+    required this.participantId,
+    this.allocationPct,
+    this.supportItemCode,
+  });
+
+  final String participantId;
+  final double? allocationPct;
+  final String? supportItemCode;
+
+  Map<String, dynamic> toJson() => {
+    'participant_id': participantId,
+    if (allocationPct != null) 'allocation_pct': allocationPct,
+    if (supportItemCode != null) 'support_item_code': supportItemCode,
+  };
+}
+
+class RecurrenceFormOverrideIn {
+  const RecurrenceFormOverrideIn({
+    required this.formTemplateId,
+    required this.action,
+    this.isRequired = true,
+  });
+
+  final String formTemplateId;
+  final String action; // add | remove
+  final bool isRequired;
+
+  Map<String, dynamic> toJson() => {
+    'form_template_id': formTemplateId,
+    'action': action,
+    'is_required': isRequired,
+  };
+}
+
+class RecurrenceSegmentTemplateIn {
+  const RecurrenceSegmentTemplateIn({
+    required this.participantId,
+    required this.anchorSupportItemCode,
+    required this.offsetStartMinutes,
+    required this.offsetEndMinutes,
+    this.kind = 'direct',
+    this.groupSize,
+    this.notes,
+    this.sortOrder = 0,
+  });
+
+  final String participantId;
+  final String anchorSupportItemCode;
+  final String kind;
+  final int offsetStartMinutes;
+  final int offsetEndMinutes;
+  final int? groupSize;
+  final String? notes;
+  final int sortOrder;
+
+  Map<String, dynamic> toJson() => {
+    'participant_id': participantId,
+    'anchor_support_item_code': anchorSupportItemCode,
+    'kind': kind,
+    'offset_start_minutes': offsetStartMinutes,
+    'offset_end_minutes': offsetEndMinutes,
+    if (groupSize != null) 'group_size': groupSize,
+    if (notes != null) 'notes': notes,
+    'sort_order': sortOrder,
+  };
+}
+
+/// Place triad for A7 recurrence templates (mirrors shift place XOR).
+class RecurrencePlaceIn {
+  const RecurrencePlaceIn._({
+    this.branchId,
+    this.clientSiteId,
+    this.label,
+    this.latitude,
+    this.longitude,
+    this.postalCode,
+    this.geofenceRadiusM,
+  });
+
+  const RecurrencePlaceIn.branch(String branchId)
+    : this._(branchId: branchId);
+
+  const RecurrencePlaceIn.clientSite(String clientSiteId)
+    : this._(clientSiteId: clientSiteId);
+
+  const RecurrencePlaceIn.labelled({
+    required String label,
+    required double latitude,
+    required double longitude,
+    required String postalCode,
+    int? geofenceRadiusM,
+  }) : this._(
+         label: label,
+         latitude: latitude,
+         longitude: longitude,
+         postalCode: postalCode,
+         geofenceRadiusM: geofenceRadiusM,
+       );
+
+  final String? branchId;
+  final String? clientSiteId;
+  final String? label;
+  final double? latitude;
+  final double? longitude;
+  final String? postalCode;
+  final int? geofenceRadiusM;
+
+  Map<String, dynamic> toJson() {
+    if (branchId != null) return {'branch_id': branchId};
+    if (clientSiteId != null) return {'client_site_id': clientSiteId};
+    return {
+      'label': label,
+      'latitude': latitude,
+      'longitude': longitude,
+      'postal_code': postalCode,
+      if (geofenceRadiusM != null) 'geofence_radius_m': geofenceRadiusM,
+    };
+  }
+}
+
 class RecurrenceRuleOut {
   const RecurrenceRuleOut({
     required this.id,
@@ -168,7 +291,7 @@ class RecurrenceRuleOut {
     required this.requiredSlots,
     this.workerCount = 1,
     this.equalSplit = false,
-    this.participantsJson = const [],
+    this.publishPolicy = 'published',
     required this.rrule,
     required this.dtstart,
     required this.timeWindows,
@@ -179,9 +302,17 @@ class RecurrenceRuleOut {
     this.contractorNames = const [],
     this.taskTemplateJson = const [],
     this.formRequirementsJson = const [],
+    this.formOverridesJson = const [],
+    this.participantsJson = const [],
+    this.segmentTemplateJson = const [],
+    this.placeBranchId,
+    this.placeClientSiteId,
+    this.placeLabel,
+    this.placePostalCode,
     this.latitude,
     this.longitude,
     this.geofenceRadiusMOverride,
+    this.warnings = const [],
   });
 
   final String id;
@@ -191,7 +322,7 @@ class RecurrenceRuleOut {
   final int requiredSlots;
   final int workerCount;
   final bool equalSplit;
-  final List<Map<String, dynamic>> participantsJson;
+  final String publishPolicy; // draft | published
   final List<String> contractorNames;
   final String rrule;
   final DateTime dtstart;
@@ -199,9 +330,17 @@ class RecurrenceRuleOut {
   final List<TimeWindow> timeWindows;
   final List<Map<String, dynamic>> taskTemplateJson;
   final List<Map<String, dynamic>> formRequirementsJson;
+  final List<Map<String, dynamic>> formOverridesJson;
+  final List<Map<String, dynamic>> participantsJson;
+  final List<Map<String, dynamic>> segmentTemplateJson;
+  final String? placeBranchId;
+  final String? placeClientSiteId;
+  final String? placeLabel;
+  final String? placePostalCode;
   final double? latitude;
   final double? longitude;
   final int? geofenceRadiusMOverride;
+  final List<String> warnings;
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -228,7 +367,7 @@ class RecurrenceRuleOut {
       requiredSlots: json['required_slots'] as int? ?? 1,
       workerCount: json['worker_count'] as int? ?? 1,
       equalSplit: json['equal_split'] as bool? ?? false,
-      participantsJson: mapList(json['participants_json']),
+      publishPolicy: json['publish_policy'] as String? ?? 'published',
       contractorNames: stringList(json['contractor_names']),
       rrule: json['rrule'] as String,
       dtstart: DateTime.parse(json['dtstart'] as String),
@@ -242,9 +381,17 @@ class RecurrenceRuleOut {
           .toList(growable: false),
       taskTemplateJson: mapList(json['task_template_json']),
       formRequirementsJson: mapList(json['form_requirements_json']),
+      formOverridesJson: mapList(json['form_overrides_json']),
+      participantsJson: mapList(json['participants_json']),
+      segmentTemplateJson: mapList(json['segment_template_json']),
+      placeBranchId: json['place_branch_id']?.toString(),
+      placeClientSiteId: json['place_client_site_id']?.toString(),
+      placeLabel: json['place_label'] as String?,
+      placePostalCode: json['place_postal_code'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       geofenceRadiusMOverride: json['geofence_radius_m_override'] as int?,
+      warnings: stringList(json['warnings']),
       isActive: json['is_active'] as bool? ?? true,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -276,7 +423,7 @@ class RecurrenceRuleCreateRequest {
     this.requiredSlots = 1,
     this.workerCount = 1,
     this.equalSplit = false,
-    this.participants = const [],
+    this.publishPolicy = 'published',
     required this.rrule,
     required this.dtstart,
     required this.timeWindows,
@@ -284,13 +431,18 @@ class RecurrenceRuleCreateRequest {
     this.taskTitles = const [],
     this.taskTemplate = const [],
     this.formTemplateIds = const [],
+    this.place,
+    this.participants = const [],
+    this.formOverrides = const [],
+    this.segmentTemplate = const [],
   });
 
+  /// Soft preferred contractors (A7/10C) — never auto-assigned on generate.
   final List<String> contractorIds;
   final int requiredSlots;
   final int workerCount;
   final bool equalSplit;
-  final List<RecurrenceParticipantPattern> participants;
+  final String publishPolicy; // draft | published
   final String rrule;
   final DateTime dtstart;
   final DateTime? until;
@@ -298,6 +450,10 @@ class RecurrenceRuleCreateRequest {
   final List<String> taskTitles;
   final List<TaskTemplateItem> taskTemplate;
   final List<String> formTemplateIds;
+  final RecurrencePlaceIn? place;
+  final List<RecurrenceParticipantIn> participants;
+  final List<RecurrenceFormOverrideIn> formOverrides;
+  final List<RecurrenceSegmentTemplateIn> segmentTemplate;
 
   List<TaskTemplateItem> get _resolvedTaskTemplate {
     if (taskTemplate.isNotEmpty) return taskTemplate;
@@ -312,17 +468,72 @@ class RecurrenceRuleCreateRequest {
     'required_slots': requiredSlots,
     'worker_count': workerCount,
     'equal_split': equalSplit,
-    if (participants.isNotEmpty)
-      'participants': [for (final p in participants) p.toJson()],
+    'publish_policy': publishPolicy,
     'rrule': rrule,
     'dtstart': dtstart.toUtc().toIso8601String(),
     if (until != null) 'until': until!.toUtc().toIso8601String(),
     'time_windows': [for (final window in timeWindows) window.toJson()],
     'task_template': [for (final task in _resolvedTaskTemplate) task.toJson()],
-    'form_requirements': [
-      for (final id in formTemplateIds)
-        {'form_template_id': id, 'is_required': true},
-    ],
+    if (formTemplateIds.isNotEmpty)
+      'form_requirements': [
+        for (final id in formTemplateIds)
+          {'form_template_id': id, 'is_required': true},
+      ],
+    if (place != null) 'place': place!.toJson(),
+    'participants': [for (final p in participants) p.toJson()],
+    'form_overrides': [for (final o in formOverrides) o.toJson()],
+    'segment_template': [for (final s in segmentTemplate) s.toJson()],
+  };
+}
+
+/// Partial update of a recurrence template (A7).
+class RecurrenceRulePatchRequest {
+  const RecurrenceRulePatchRequest({
+    this.isActive,
+    this.requiredSlots,
+    this.workerCount,
+    this.publishPolicy,
+    this.timeWindows,
+    this.taskTemplate,
+    this.place,
+    this.clearPlace = false,
+    this.participants,
+    this.formOverrides,
+    this.segmentTemplate,
+    this.contractorIds,
+  });
+
+  final bool? isActive;
+  final int? requiredSlots;
+  final int? workerCount;
+  final String? publishPolicy;
+  final List<TimeWindow>? timeWindows;
+  final List<TaskTemplateItem>? taskTemplate;
+  final RecurrencePlaceIn? place;
+  final bool clearPlace;
+  final List<RecurrenceParticipantIn>? participants;
+  final List<RecurrenceFormOverrideIn>? formOverrides;
+  final List<RecurrenceSegmentTemplateIn>? segmentTemplate;
+  final List<String>? contractorIds;
+
+  Map<String, dynamic> toJson() => {
+    if (isActive != null) 'is_active': isActive,
+    if (requiredSlots != null) 'required_slots': requiredSlots,
+    if (workerCount != null) 'worker_count': workerCount,
+    if (publishPolicy != null) 'publish_policy': publishPolicy,
+    if (timeWindows != null)
+      'time_windows': [for (final w in timeWindows!) w.toJson()],
+    if (taskTemplate != null)
+      'task_template': [for (final t in taskTemplate!) t.toJson()],
+    if (place != null) 'place': place!.toJson(),
+    if (clearPlace) 'clear_place': true,
+    if (participants != null)
+      'participants': [for (final p in participants!) p.toJson()],
+    if (formOverrides != null)
+      'form_overrides': [for (final o in formOverrides!) o.toJson()],
+    if (segmentTemplate != null)
+      'segment_template': [for (final s in segmentTemplate!) s.toJson()],
+    if (contractorIds != null) 'contractor_ids': contractorIds,
   };
 }
 

@@ -178,6 +178,7 @@ abstract final class ApiPaths {
   // Forms / jobs / visits
   static const formTemplates = '$_v1/form-templates';
   static String formTemplate(String id) => '$formTemplates/$id';
+  static const formsPreviewRequirements = '$_v1/forms/preview-requirements';
   static const jobs = '$_v1/jobs';
   static const jobsHorizon = '$_v1/jobs/horizon';
   static const jobsOngoingSupport = '$_v1/jobs/ongoing-support';
@@ -224,7 +225,10 @@ abstract final class ApiPaths {
   // Shifts / roster
   static const shifts = '$_v1/shifts';
   static const shiftsOpen = '$_v1/shifts/open';
+  static const shiftsPlaceOptions = '$_v1/shifts/place-options';
   static String shift(String id) => '$shifts/$id';
+  static String shiftComposer(String id) => '${shift(id)}/composer';
+  static String shiftCopy(String id) => '${shift(id)}/copy';
   static String shiftPublish(String id) => '${shift(id)}/publish';
   static String shiftClaim(String id) => '${shift(id)}/claim';
   static String shiftAssign(String id) => '${shift(id)}/assign';
@@ -247,12 +251,16 @@ abstract final class ApiPaths {
   ) => '${shiftParticipant(shiftId, participantId)}/allocation';
   static String shiftAllocationChanges(String id) =>
       '${shift(id)}/allocation-changes';
+  static String shiftFormOverrides(String id) => '${shift(id)}/form-overrides';
+  static String shiftVisitSegments(String shiftId, String visitId) =>
+      '${shift(shiftId)}/visits/$visitId/segments';
   static String shiftTravel(String id) => '${shift(id)}/travel';
   static String shiftTravelItem(String shiftId, String travelId) =>
       '${shiftTravel(shiftId)}/$travelId';
 
-  // Workforce / roster overlay
+  // Workforce / roster overlay + assign-context
   static const workforceRosterOverlay = '$_v1/workforce/roster-overlay';
+  static const rosterAssignContext = '$_v1/roster/assign-context';
 
   // NDIS Support Catalogue (staff search; import is platform.admin)
   static const ndisCatalogueItems = '$_v1/ndis-catalogue/items';

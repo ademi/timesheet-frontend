@@ -1,9 +1,9 @@
 import '../../clients/data/models/client_models.dart';
 
-/// Route args for [AppRoutes.staffGroupShiftBook].
+/// Legacy route args for [AppRoutes.staffGroupShiftBook] (soft-cutover source).
 ///
-/// Design D11: roster client filter prefills a **participant** only; host stays
-/// empty and Include-host stays off.
+/// Design D11: roster client filter prefills a **participant** only. The book
+/// wizard is removed; [ComposerCutover] maps these into the unified composer.
 class GroupShiftBookArgs {
   const GroupShiftBookArgs({
     this.participantId,
