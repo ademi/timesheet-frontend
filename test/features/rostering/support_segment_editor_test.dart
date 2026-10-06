@@ -226,6 +226,7 @@ void main() {
           kind: 'shadow',
           startAt: DateTime(2026, 10, 6, 9),
           endAt: DateTime(2026, 10, 6, 11),
+          notes: 'Intro handover',
         ),
         SupportSegmentRowDraft(
           shiftParticipantId: '',
@@ -242,6 +243,7 @@ void main() {
       );
       expect(template, hasLength(2));
       expect(template[0].kind, 'shadow');
+      expect(template[0].notes, 'Intro handover');
       expect(template[0].offsetStartMinutes, 0);
       expect(template[0].offsetEndMinutes, 120);
       expect(template[1].offsetStartMinutes, 120);
@@ -252,8 +254,14 @@ void main() {
         windowStart: windowStart,
       );
       expect(hydrated[0].kind, 'shadow');
+      expect(hydrated[0].notes, 'Intro handover');
       expect(hydrated[0].participantId, 'c1');
       expect(hydrated[1].startAt, DateTime(2026, 10, 6, 11));
+    });
+
+    test('publish segment hint copies are set', () {
+      expect(kPublishModeASegmentsCopy, contains('Mode A'));
+      expect(kPublishTemplateSegmentsCopy, contains('expand'));
     });
 
     test('seedDraftSegmentRows creates one full-window direct per person', () {

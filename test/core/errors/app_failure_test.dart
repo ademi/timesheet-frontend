@@ -444,6 +444,10 @@ void main() {
         'segment_overlap':
             'Segments overlap for the same participant. Adjust times or kinds.',
         'segment_end_before_start': 'Segment end must be after start.',
+        'segment_sleepover_too_short':
+            'A sleepover must be at least 8 hours.',
+        'segment_sleepover_must_cross_midnight':
+            'A sleepover should cross midnight.',
       };
 
       for (final entry in expectedMessages.entries) {

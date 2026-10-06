@@ -328,6 +328,8 @@ class AppFailure implements Exception {
       'segment_outside_visit_window',
       'segment_overlap',
       'segment_end_before_start',
+      'segment_sleepover_too_short',
+      'segment_sleepover_must_cross_midnight',
     ];
     for (final k in known) {
       if (d == k || d.contains(k)) return k;
@@ -420,6 +422,8 @@ class AppFailure implements Exception {
       case 'segment_outside_visit_window':
       case 'segment_overlap':
       case 'segment_end_before_start':
+      case 'segment_sleepover_too_short':
+      case 'segment_sleepover_must_cross_midnight':
       case 'visit_cancelled':
       case 'visit_already_completed':
       case 'clock_times_in_future':
@@ -663,6 +667,10 @@ class AppFailure implements Exception {
         return 'Segments overlap for the same participant. Adjust times or kinds.';
       case 'segment_end_before_start':
         return 'Segment end must be after start.';
+      case 'segment_sleepover_too_short':
+        return 'A sleepover must be at least 8 hours.';
+      case 'segment_sleepover_must_cross_midnight':
+        return 'A sleepover should cross midnight.';
       default:
         return fallback;
     }

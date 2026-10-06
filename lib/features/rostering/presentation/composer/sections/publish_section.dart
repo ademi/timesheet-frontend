@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../app/themes/app_colors.dart';
+import '../../../domain/support_segment_editor.dart';
 import '../roster_composer_controller.dart';
 
 /// Publish status + open-slot warning (action lives in the footer).
@@ -14,6 +15,10 @@ class ComposerPublishSection extends GetView<RosterComposerController> {
       final status = controller.draft.value.status;
       final open = controller.unassignedSlotCount;
       final assigned = controller.assignedWorkerCount;
+      final templateLen = controller.draft.value.segmentTemplate.length;
+      final hasLiveSegments = controller.segmentsByVisit.values.any(
+        (rows) => rows.isNotEmpty,
+      );
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -35,6 +40,16 @@ class ComposerPublishSection extends GetView<RosterComposerController> {
               style: TextStyle(color: AppColors.textMuted, fontSize: 12),
             ),
           ],
+          const SizedBox(height: 8),
+          Text(
+            key: const Key('composer-publish-segments-hint'),
+            hasLiveSegments
+                ? 'Support segments are already on assigned visits.'
+                : templateLen > 0
+                ? kPublishTemplateSegmentsCopy
+                : kPublishModeASegmentsCopy,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
           const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerLeft,

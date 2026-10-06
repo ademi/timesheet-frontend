@@ -16,6 +16,7 @@ class SupportSegmentRowDraft {
     /// Client / roster participant id for draft templates (not shift_participant).
     this.participantId,
     this.groupSize,
+    this.notes,
   });
 
   String shiftParticipantId;
@@ -27,6 +28,8 @@ class SupportSegmentRowDraft {
   DateTime endAt;
   /// Optional ratio context (N = participants in group, not worker count).
   int? groupSize;
+  /// Optional reason (irregular SIL / dual workers / shadow).
+  String? notes;
 }
 
 /// Backend [SegmentKind] values exposed in the composer.
@@ -70,6 +73,14 @@ const String kDraftSegmentsIntroCopy =
 const String kDraftSegmentsModeACopy =
     'No planned windows yet — when a worker is assigned, one full-window '
     'Direct segment is created per participant unless you add rows here.';
+
+const String kPublishModeASegmentsCopy =
+    'No planned support windows — on assign/publish, one full-window Direct '
+    'segment is created per active participant (Mode A).';
+
+const String kPublishTemplateSegmentsCopy =
+    'Planned support windows will expand onto assigned visits '
+    '(kinds and times preserved).';
 
 const String kDualWorkerSegmentsHint =
     'Two or more workers on this shift — if both support the same person, '
@@ -361,6 +372,7 @@ List<SupportSegmentRowDraft> supportSegmentRowsFromTemplate({
           startAt: window.startAt,
           endAt: window.endAt,
           groupSize: s.groupSize,
+          notes: s.notes,
         );
       }(),
   ];
@@ -387,6 +399,7 @@ List<SegmentTemplateItem> segmentTemplateFromRows({
           offsetStartMinutes: offsets.offsetStartMinutes,
           offsetEndMinutes: offsets.offsetEndMinutes,
           groupSize: row.groupSize,
+          notes: row.notes?.trim().isEmpty == true ? null : row.notes?.trim(),
           sortOrder: i,
         );
       }(),
@@ -445,6 +458,7 @@ List<SupportSegmentRowDraft> expandTemplateRowsForLiveEditor({
         startAt: window.startAt,
         endAt: window.endAt,
         groupSize: s.groupSize,
+        notes: s.notes,
       ),
     );
   }

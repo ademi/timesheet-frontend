@@ -492,6 +492,7 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
             startAt: s.startAt.toLocal(),
             endAt: s.endAt.toLocal(),
             groupSize: s.groupSize,
+            notes: s.notes,
           ),
       ];
     }
@@ -607,6 +608,9 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
           startAt: _rows[i].startAt.toUtc(),
           endAt: _rows[i].endAt.toUtc(),
           groupSize: _rows[i].groupSize,
+          notes: _rows[i].notes?.trim().isEmpty == true
+              ? null
+              : _rows[i].notes?.trim(),
           sortOrder: i,
         ),
     ]);
@@ -919,6 +923,22 @@ class _SegmentRowCard extends StatelessWidget {
               },
             ),
           ],
+          const SizedBox(height: 8),
+          TextFormField(
+            key: Key('segment-notes-$index'),
+            initialValue: row.notes ?? '',
+            decoration: const InputDecoration(
+              labelText: 'Notes (optional)',
+              helperText: 'Reason for irregular SIL, dual workers, or shadow',
+              isDense: true,
+            ),
+            maxLines: 2,
+            onChanged: (v) {
+              final trimmed = v.trim();
+              row.notes = trimmed.isEmpty ? null : trimmed;
+              onChanged();
+            },
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
