@@ -84,7 +84,10 @@ class ComposerSupportSection extends GetView<RosterComposerController> {
           if (showLive)
             for (final visitId in visitIds) ...[
               _VisitSegmentsEditor(
-                key: Key('segments-visit-$visitId'),
+                key: Key(
+                  'segments-visit-$visitId-'
+                  '${controller.segmentsByVisit[visitId]?.length ?? 0}',
+                ),
                 visitId: visitId,
               ),
               const SizedBox(height: 12),
@@ -454,11 +457,15 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
     final defaultCode = controller.draft.value.supportItemCode ?? '';
     final defaultName = controller.supportItemName.value;
 
+    // Live segments are source of truth after assign.
     if (existing.isNotEmpty) {
       return [
         for (final s in existing)
           SupportSegmentRowDraft(
             shiftParticipantId: s.shiftParticipantId,
+            participantId: controller.participantIdForShiftParticipant(
+              s.shiftParticipantId,
+            ),
             anchorSupportItemCode: s.anchorSupportItemCode,
             anchorSupportItemName: s.anchorSupportItemName,
             kind: s.kind,
@@ -468,7 +475,24 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
       ];
     }
 
-    if (start == null || end == null || participants.isEmpty) {
+    if (start == null || end == null) {
+      return [];
+    }
+
+    // No live rows yet — expand draft template locally (kinds preserved).
+    final template = controller.draft.value.segmentTemplate;
+    if (template.isNotEmpty) {
+      final expanded = expandTemplateRowsForLiveEditor(
+        template: template,
+        windowStart: start,
+        participantIdToShiftParticipantId:
+            controller.participantIdToShiftParticipantId,
+        defaultItemName: defaultName.isEmpty ? null : defaultName,
+      );
+      if (expanded.isNotEmpty) return expanded;
+    }
+
+    if (participants.isEmpty) {
       return [];
     }
 
@@ -477,6 +501,7 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
       for (final p in participants)
         SupportSegmentRowDraft(
           shiftParticipantId: p.id,
+          participantId: p.participantId,
           anchorSupportItemCode: defaultCode,
           anchorSupportItemName: defaultName.isEmpty ? null : defaultName,
           startAt: start,

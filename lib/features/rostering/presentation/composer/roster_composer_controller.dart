@@ -34,6 +34,7 @@ import '../../domain/composer_validation.dart';
 import '../../domain/occurrence_draft.dart';
 import '../../domain/repeat_template_payload.dart';
 import '../../domain/roster_composer_args.dart';
+import '../../domain/support_segment_editor.dart';
 import '../shared/assign_context_labels.dart';
 
 /// Unified rostering occurrence composer (stepped wizard).
@@ -1951,6 +1952,96 @@ class RosterComposerController extends GetxController {
 
   // ── Segments ─────────────────────────────────────────────────────────────
 
+  /// shift_participant id → client participant id (active rows preferred).
+  String? participantIdForShiftParticipant(String shiftParticipantId) {
+    for (final p in shiftParticipants) {
+      if (p.id == shiftParticipantId) return p.participantId;
+    }
+    return null;
+  }
+
+  /// client participant id → first active shift_participant id.
+  Map<String, String> get participantIdToShiftParticipantId {
+    final map = <String, String>{};
+    for (final p in shiftParticipants) {
+      if (p.status != 'active') continue;
+      map.putIfAbsent(p.participantId, () => p.id);
+    }
+    return map;
+  }
+
+  /// After assign: reload live segments (BE expand / Mode A) into [segmentsByVisit].
+  Future<void> refreshSegmentsAfterAssign(String shiftId) async {
+    try {
+      final composer = await _facade.getComposer(shiftId);
+      final segments = <String, List<SupportSegmentOut>>{};
+      for (final entry in composer.segmentsByVisit.entries) {
+        segments[entry.key] = [
+          for (final row in entry.value) SupportSegmentOut.fromJson(row),
+        ];
+      }
+      segmentsByVisit.assignAll(segments);
+      // Keep draft template in sync with server stamp when present.
+      if (composer.shift.segmentTemplate.isNotEmpty) {
+        setSegmentTemplate(composer.shift.segmentTemplate);
+      }
+    } catch (_) {
+      // Best-effort: list per visit.
+      final next = <String, List<SupportSegmentOut>>{};
+      for (final visitId in visitIdsWithSegments) {
+        try {
+          next[visitId] = await _facade.listVisitSegments(shiftId, visitId);
+        } catch (_) {}
+      }
+      if (next.isNotEmpty) segmentsByVisit.assignAll(next);
+    }
+  }
+
+  /// Derive [OccurrenceDraft.segmentTemplate] from all live visit segments.
+  /// Best-effort PATCH so Repeat/copy stay aligned without waiting for Save draft.
+  Future<void> syncSegmentTemplateFromLiveSegments({
+    bool patchRemote = true,
+  }) async {
+    final start = draft.value.scheduledStart;
+    if (start == null) return;
+
+    final windows = <LiveSegmentWindow>[
+      for (final entry in segmentsByVisit.entries)
+        for (final s in entry.value)
+          LiveSegmentWindow(
+            shiftParticipantId: s.shiftParticipantId,
+            anchorSupportItemCode: s.anchorSupportItemCode,
+            kind: s.kind,
+            startAt: s.startAt.toLocal(),
+            endAt: s.endAt.toLocal(),
+            groupSize: s.groupSize,
+            notes: s.notes,
+          ),
+    ];
+    if (windows.isEmpty) return;
+
+    final template = segmentTemplateFromLiveWindows(
+      windowStart: start,
+      segments: windows,
+      participantIdForShiftParticipant: participantIdForShiftParticipant,
+    );
+    if (template.isEmpty) return;
+
+    setSegmentTemplate(template);
+
+    if (!patchRemote) return;
+    final shiftId = draft.value.shiftId;
+    if (shiftId == null || shiftId.isEmpty) return;
+    try {
+      await _facade.patchDraftShift(
+        shiftId,
+        ShiftPatchRequest(segmentTemplate: template),
+      );
+    } catch (_) {
+      // Local draft updated; next Save draft persists.
+    }
+  }
+
   Future<void> saveVisitSegments(
     String visitId,
     List<SupportSegmentIn> segments,
@@ -1964,6 +2055,8 @@ class RosterComposerController extends GetxController {
       final next = Map<String, List<SupportSegmentOut>>.from(segmentsByVisit);
       next[visitId] = saved;
       segmentsByVisit.assignAll(next);
+      // Dual-write: live is source of truth; keep template for Repeat/copy.
+      await syncSegmentTemplateFromLiveSegments();
     } on AppFailure catch (e) {
       segmentsError.value = e.message;
     } catch (e) {
@@ -2308,6 +2401,11 @@ class RosterComposerController extends GetxController {
 
       shiftParticipants.assignAll(persisted.participants);
       assignments.assignAll(persisted.assignments);
+
+      // After assign, BE expands segment_template (or Mode A) — refresh live rows.
+      if (visitIdsWithSegments.isNotEmpty) {
+        await refreshSegmentsAfterAssign(shiftId);
+      }
 
       if (formOverrides.isNotEmpty || _formsEdited) {
         await _facade.putFormOverrides(

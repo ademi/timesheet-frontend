@@ -360,3 +360,95 @@ List<SupportSegmentRowDraft> seedDraftSegmentRows({
       ),
   ];
 }
+
+/// Expand draft template into live-editor rows (maps client → shift_participant).
+///
+/// Used when a visit exists but live segments are empty (post-assign, before
+/// first PUT / before BE expand hydrates). Preserves [kind].
+List<SupportSegmentRowDraft> expandTemplateRowsForLiveEditor({
+  required List<SegmentTemplateItem> template,
+  required DateTime windowStart,
+  required Map<String, String> participantIdToShiftParticipantId,
+  String? defaultItemName,
+}) {
+  final out = <SupportSegmentRowDraft>[];
+  for (final s in template) {
+    final spId = participantIdToShiftParticipantId[s.participantId];
+    if (spId == null || spId.isEmpty) continue;
+    final window = segmentWindowFromOffsets(
+      windowStart: windowStart,
+      offsetStartMinutes: s.offsetStartMinutes,
+      offsetEndMinutes: s.offsetEndMinutes,
+    );
+    out.add(
+      SupportSegmentRowDraft(
+        shiftParticipantId: spId,
+        participantId: s.participantId,
+        anchorSupportItemCode: s.anchorSupportItemCode,
+        anchorSupportItemName: defaultItemName,
+        kind: s.kind,
+        startAt: window.startAt,
+        endAt: window.endAt,
+      ),
+    );
+  }
+  return out;
+}
+
+/// Derive `segment_template` from absolute live segment windows (dual-write).
+///
+/// [participantIdForShiftParticipant] must resolve shift_participant → client id.
+/// Rows that cannot be mapped are skipped. Preserves [kind].
+List<SegmentTemplateItem> segmentTemplateFromLiveWindows({
+  required DateTime windowStart,
+  required List<LiveSegmentWindow> segments,
+  required String? Function(String shiftParticipantId)
+  participantIdForShiftParticipant,
+}) {
+  final items = <SegmentTemplateItem>[];
+  for (var i = 0; i < segments.length; i++) {
+    final s = segments[i];
+    final participantId =
+        participantIdForShiftParticipant(s.shiftParticipantId)?.trim();
+    if (participantId == null || participantId.isEmpty) continue;
+    final offsets = segmentOffsetsFromWindow(
+      windowStart: windowStart,
+      startAt: s.startAt,
+      endAt: s.endAt,
+    );
+    items.add(
+      SegmentTemplateItem(
+        participantId: participantId,
+        anchorSupportItemCode: s.anchorSupportItemCode.trim(),
+        kind: s.kind,
+        offsetStartMinutes: offsets.offsetStartMinutes,
+        offsetEndMinutes: offsets.offsetEndMinutes,
+        groupSize: s.groupSize,
+        notes: s.notes,
+        sortOrder: i,
+      ),
+    );
+  }
+  return items;
+}
+
+/// Minimal live-segment shape for dual-write (avoids domain → DTO import).
+class LiveSegmentWindow {
+  const LiveSegmentWindow({
+    required this.shiftParticipantId,
+    required this.anchorSupportItemCode,
+    required this.kind,
+    required this.startAt,
+    required this.endAt,
+    this.groupSize,
+    this.notes,
+  });
+
+  final String shiftParticipantId;
+  final String anchorSupportItemCode;
+  final String kind;
+  final DateTime startAt;
+  final DateTime endAt;
+  final int? groupSize;
+  final String? notes;
+}

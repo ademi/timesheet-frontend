@@ -267,6 +267,70 @@ void main() {
       expect(seeded.every((r) => r.kind == 'direct'), isTrue);
       expect(seeded.map((r) => r.participantId), ['c1', 'c2']);
     });
+
+    test('expandTemplateRowsForLiveEditor maps participant → SP and keeps kind', () {
+      final template = [
+        const SegmentTemplateItem(
+          participantId: 'c1',
+          anchorSupportItemCode: '01_011_0107_1_1',
+          kind: 'shadow',
+          offsetStartMinutes: 0,
+          offsetEndMinutes: 60,
+        ),
+        const SegmentTemplateItem(
+          participantId: 'c2',
+          anchorSupportItemCode: '01_015_0107_1_1',
+          kind: 'irregular_sil',
+          offsetStartMinutes: 60,
+          offsetEndMinutes: 180,
+        ),
+        const SegmentTemplateItem(
+          participantId: 'missing',
+          anchorSupportItemCode: '01_011_0107_1_1',
+          offsetStartMinutes: 0,
+          offsetEndMinutes: 30,
+        ),
+      ];
+      final rows = expandTemplateRowsForLiveEditor(
+        template: template,
+        windowStart: windowStart,
+        participantIdToShiftParticipantId: const {'c1': 'sp1', 'c2': 'sp2'},
+      );
+      expect(rows, hasLength(2));
+      expect(rows[0].shiftParticipantId, 'sp1');
+      expect(rows[0].kind, 'shadow');
+      expect(rows[0].endAt, DateTime(2026, 10, 6, 10));
+      expect(rows[1].kind, 'irregular_sil');
+      expect(rows[1].participantId, 'c2');
+    });
+
+    test('segmentTemplateFromLiveWindows dual-write preserves kinds', () {
+      final template = segmentTemplateFromLiveWindows(
+        windowStart: windowStart,
+        segments: [
+          LiveSegmentWindow(
+            shiftParticipantId: 'sp1',
+            anchorSupportItemCode: '01_011_0107_1_1',
+            kind: 'sleepover',
+            startAt: DateTime(2026, 10, 6, 22),
+            endAt: DateTime(2026, 10, 7, 6),
+          ),
+          LiveSegmentWindow(
+            shiftParticipantId: 'sp1',
+            anchorSupportItemCode: '01_011_0107_1_1',
+            kind: 'shadow',
+            startAt: DateTime(2026, 10, 6, 22),
+            endAt: DateTime(2026, 10, 7, 6),
+          ),
+        ],
+        participantIdForShiftParticipant: (sp) => sp == 'sp1' ? 'c1' : null,
+      );
+      expect(template, hasLength(2));
+      expect(template[0].kind, 'sleepover');
+      expect(template[0].participantId, 'c1');
+      expect(template[0].offsetStartMinutes, 13 * 60); // 09:00 → 22:00
+      expect(template[1].kind, 'shadow');
+    });
   });
 
   group('clientConflictChipLabel', () {
