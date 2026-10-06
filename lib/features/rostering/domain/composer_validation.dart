@@ -21,10 +21,15 @@ abstract final class ComposerValidation {
   static const scheduleOrder = 'End must be after start';
   static const otherAddressRequired = 'Enter and look up the other address';
   static const otherAddressConfirm = 'Confirm the looked-up address';
+  static const postalCodeRequired =
+      'Enter a postal code (at least 3 characters)';
   static const allocationRequired =
       'Enter allocation % for each client (must sum to 100)';
   static const allocationSum =
       'Custom allocation percentages must sum to 100';
+
+  /// Matches backend `ShiftPlaceIn.postal_code` min_length.
+  static const minPostalCodeLength = 3;
 
   /// Returns human-readable errors (empty when valid).
   ///
@@ -46,6 +51,10 @@ abstract final class ComposerValidation {
 
     if (draft.place == null) {
       errors.add(placeRequired);
+    } else if (labelledPlacePostalMissing(draft.place)) {
+      errors.add(postalCodeRequired);
+    } else if (isIncompleteLabelledPlace(draft.place)) {
+      errors.add(otherAddressRequired);
     }
 
     if (draft.participantIds.length > maxParticipants) {
@@ -103,6 +112,12 @@ abstract final class ComposerValidation {
         if (draft.place == null) return [placeRequired];
         if (otherPlaceNeedsLookup) return [otherAddressRequired];
         if (otherPlaceNeedsConfirm) return [otherAddressConfirm];
+        if (labelledPlacePostalMissing(draft.place)) {
+          return [postalCodeRequired];
+        }
+        if (isIncompleteLabelledPlace(draft.place)) {
+          return [otherAddressRequired];
+        }
         if (travelError != null && travelError.isNotEmpty) {
           return [travelError];
         }
@@ -142,9 +157,14 @@ abstract final class ComposerValidation {
     return null;
   }
 
+  static bool labelledPlacePostalMissing(ShiftPlaceIn? place) {
+    if (place is! ShiftPlaceLabelled) return false;
+    return place.postalCode.trim().length < minPostalCodeLength;
+  }
+
   static bool isIncompleteLabelledPlace(ShiftPlaceIn? place) {
     if (place is! ShiftPlaceLabelled) return false;
-    return place.label.trim().isEmpty || place.postalCode.trim().isEmpty;
+    return place.label.trim().isEmpty || labelledPlacePostalMissing(place);
   }
 
   /// Custom percentage allocations when equal_split is off.

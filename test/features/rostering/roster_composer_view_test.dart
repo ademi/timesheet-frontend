@@ -137,7 +137,41 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.byKey(const Key('composer-allocation')), findsOneWidget);
+    // Allocation waits until at least one participant is selected.
+    expect(find.byKey(const Key('composer-allocation')), findsNothing);
     expect(find.byKey(const Key('composer-worker-count')), findsOneWidget);
+
+    await controller.addParticipant(_client('c1'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('composer-allocation')), findsOneWidget);
+  });
+
+  testWidgets('Support step shows tasks field and writes task_template', (
+    tester,
+  ) async {
+    await controller.retryHydrate();
+    await tester.pumpWidget(const GetMaterialApp(home: RosterComposerView()));
+    await tester.pumpAndSettle();
+
+    controller.currentStep.value = ComposerStep.support;
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('composer-support-item')), findsOneWidget);
+    expect(find.byKey(const Key('composer-tasks-field')), findsOneWidget);
+    expect(find.byKey(const Key('composer-tasks-count')), findsOneWidget);
+    expect(find.text('None yet'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('visit-instructions-field')),
+      'Meds\nWalk dog',
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.draft.value.taskTemplate.map((t) => t.title), [
+      'Meds',
+      'Walk dog',
+    ]);
+    expect(find.text('2 listed'), findsOneWidget);
   });
 }

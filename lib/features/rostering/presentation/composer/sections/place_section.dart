@@ -204,12 +204,13 @@ class _OtherPlaceFieldsState extends State<_OtherPlaceFields> {
           TextField(
             controller: controller.otherPostalCtrl,
             decoration: const InputDecoration(
-              labelText: 'Postal code',
+              labelText: 'Postal code *',
+              hintText: 'e.g. 2000',
               border: OutlineInputBorder(),
               isDense: true,
             ),
             onChanged: (_) {
-              if (confirmed) controller.commitOtherPlaceFromGeocode();
+              controller.commitOtherPlaceFromGeocode();
             },
           ),
           const SizedBox(height: 12),

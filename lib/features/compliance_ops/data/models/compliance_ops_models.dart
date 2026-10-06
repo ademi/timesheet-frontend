@@ -196,12 +196,16 @@ class NotificationEventOut {
     required this.eventType,
     required this.createdAt,
     this.payload = const {},
+    this.entityType,
+    this.entityId,
   });
 
   final String id;
   final String eventType;
   final DateTime createdAt;
   final Map<String, dynamic> payload;
+  final String? entityType;
+  final String? entityId;
 
   factory NotificationEventOut.fromJson(Map<String, dynamic> json) {
     final payload = json['payload'] ?? json['payload_json'];
@@ -212,6 +216,8 @@ class NotificationEventOut {
         (json['created_at'] ?? DateTime.now().toIso8601String()) as String,
       ),
       payload: payload is Map ? Map<String, dynamic>.from(payload) : const {},
+      entityType: json['entity_type'] as String?,
+      entityId: json['entity_id']?.toString(),
     );
   }
 

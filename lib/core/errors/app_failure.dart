@@ -312,6 +312,8 @@ class AppFailure implements Exception {
       'travel_item_unit_not_exportable',
       'travel_equal_mixed_registration_groups',
       'travel_registration_group_mismatch',
+      'trip_kms_requires_rate_snapshots',
+      'trip_kms_travel_unresolvable',
       'labour_requires_rate_snapshots',
       'labour_travel_not_permitted',
       'labour_travel_unclaimed_exists',
@@ -397,6 +399,8 @@ class AppFailure implements Exception {
       case 'travel_item_unit_not_exportable':
       case 'travel_equal_mixed_registration_groups':
       case 'travel_registration_group_mismatch':
+      case 'trip_kms_requires_rate_snapshots':
+      case 'trip_kms_travel_unresolvable':
       case 'labour_requires_rate_snapshots':
       case 'labour_travel_not_permitted':
       case 'labour_travel_unclaimed_exists':
@@ -617,6 +621,10 @@ class AppFailure implements Exception {
         return "These participants have different NDIS support types, so one shared travel item can’t be split equally. Switch to Nominated, or add a separate travel claim per support type.";
       case 'travel_registration_group_mismatch':
         return 'This travel item doesn’t match the participant’s support type (registration group). Pick the travel item that sits under the same support group as their visit support item — or change who the claim is nominated to.';
+      case 'trip_kms_requires_rate_snapshots':
+        return 'Publish the shift first so each participant has a support item. Trip kilometres need that to pick the matching travel claim item.';
+      case 'trip_kms_travel_unresolvable':
+        return 'No Provider travel / Activity Based Transport kilometre item exists in the catalogue for this support type. Import the current NDIS catalogue, or ask staff to add the travel claim with the correct item.';
       case 'labour_requires_rate_snapshots':
         return 'Publish the shift first so each participant has a rate snapshot. Worker travel time uses that hourly support item.';
       case 'labour_travel_not_permitted':

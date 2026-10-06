@@ -226,6 +226,59 @@ class RosterComposerController extends GetxController {
     return [for (final c in filteredClients) if (!taken.contains(c.id)) c];
   }
 
+  /// Type-to-search options for the client autocomplete (empty query → none).
+  ///
+  /// Dedupes by id, matches name/email/phone, and caps results so identical
+  /// display names from seed/test data cannot bury every other client.
+  List<ClientOut> clientPickerOptions(String raw, {int limit = 20}) {
+    final q = raw.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    final taken = draft.value.participantIds.toSet();
+    final seen = <String>{};
+    final list = <ClientOut>[];
+    for (final c in clients) {
+      if (taken.contains(c.id) || !seen.add(c.id)) continue;
+      if (!_clientMatchesPickerQuery(c, q)) continue;
+      list.add(c);
+    }
+    list.sort((a, b) {
+      final byName = a.fullName.toLowerCase().compareTo(
+        b.fullName.toLowerCase(),
+      );
+      if (byName != 0) return byName;
+      final ae = (a.email ?? '').toLowerCase();
+      final be = (b.email ?? '').toLowerCase();
+      final byEmail = ae.compareTo(be);
+      if (byEmail != 0) return byEmail;
+      return a.id.compareTo(b.id);
+    });
+    if (list.length <= limit) return list;
+    return list.sublist(0, limit);
+  }
+
+  /// Subtitle so duplicate full names stay distinguishable in the picker.
+  String clientPickerSubtitle(ClientOut client) {
+    final parts = <String>[
+      if (client.email != null && client.email!.trim().isNotEmpty)
+        client.email!.trim(),
+      if (client.phone != null && client.phone!.trim().isNotEmpty)
+        client.phone!.trim(),
+      if (client.primaryDisplayAddress.isNotEmpty) client.primaryDisplayAddress,
+    ];
+    if (parts.isNotEmpty) return parts.join(' · ');
+    final id = client.id;
+    return id.length > 8 ? id.substring(0, 8) : id;
+  }
+
+  static bool _clientMatchesPickerQuery(ClientOut c, String q) {
+    if (c.fullName.toLowerCase().contains(q)) return true;
+    final email = c.email?.toLowerCase();
+    if (email != null && email.contains(q)) return true;
+    final phone = c.phone?.toLowerCase();
+    if (phone != null && phone.contains(q)) return true;
+    return false;
+  }
+
   String? participantName(String id) {
     for (final c in clients) {
       if (c.id == id) return c.fullName;
@@ -1148,6 +1201,51 @@ class RosterComposerController extends GetxController {
     setSupportItemCode(code?.trim().isEmpty == true ? null : code?.trim());
   }
 
+  /// Replace visit task checklist (A8 Support step). One title → one task.
+  void setTaskTitles(Iterable<String> titles) {
+    final cleaned = <String>[
+      for (final t in titles)
+        if (t.trim().isNotEmpty) t.trim(),
+    ];
+    draft.value = draft.value.copyWith(
+      taskTemplate: [
+        for (var i = 0; i < cleaned.length; i++)
+          TaskTemplateItem(title: cleaned[i], sortOrder: i),
+      ],
+    );
+  }
+
+  void setTaskTemplate(List<TaskTemplateItem> tasks) {
+    draft.value = draft.value.copyWith(
+      taskTemplate: [
+        for (var i = 0; i < tasks.length; i++)
+          TaskTemplateItem(
+            title: tasks[i].title.trim(),
+            sortOrder: i,
+            supportItemCode: tasks[i].supportItemCode,
+          ),
+      ].where((t) => t.title.isNotEmpty).toList(growable: false),
+    );
+  }
+
+  void addTaskTitle(String title) {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) return;
+    setTaskTitles([
+      for (final t in draft.value.taskTemplate) t.title,
+      trimmed,
+    ]);
+  }
+
+  void removeTaskAt(int index) {
+    final current = draft.value.taskTemplate;
+    if (index < 0 || index >= current.length) return;
+    setTaskTitles([
+      for (var i = 0; i < current.length; i++)
+        if (i != index) current[i].title,
+    ]);
+  }
+
   void setWorkerCount(int n) {
     // Keep planned workers and claim holes aligned — fill on Workers step.
     setWorkerSlots(n);
@@ -1752,6 +1850,12 @@ class RosterComposerController extends GetxController {
     }
     // Wizard advance auto-confirms a successful non-low lookup.
     confirmOtherAddress();
+    if (ComposerValidation.labelledPlacePostalMissing(draft.value.place)) {
+      stepError.value = ComposerValidation.postalCodeRequired;
+      errorMessage.value = ComposerValidation.postalCodeRequired;
+      otherGeocodeError.value = ComposerValidation.postalCodeRequired;
+      return false;
+    }
     return otherAddressConfirmed.value;
   }
 

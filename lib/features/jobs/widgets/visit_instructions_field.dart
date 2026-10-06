@@ -8,6 +8,7 @@ class VisitInstructionsField extends StatelessWidget {
   const VisitInstructionsField({
     super.key,
     required this.controller,
+    this.sectionTitle = 'Instructions for workers',
     this.labelText = 'Further instructions (optional)',
     this.helperText =
         'One task per line. Copied onto visits for workers to follow.',
@@ -15,6 +16,9 @@ class VisitInstructionsField extends StatelessWidget {
   });
 
   final TextEditingController controller;
+
+  /// When null, the section heading is omitted (parent already titled).
+  final String? sectionTitle;
   final String labelText;
   final String? helperText;
   final int maxLines;
@@ -24,15 +28,23 @@ class VisitInstructionsField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Instructions for workers', style: Get.textTheme.titleSmall),
-        if (helperText != null) ...[
-          const SizedBox(height: 4),
+        if (sectionTitle != null) ...[
+          Text(sectionTitle!, style: Get.textTheme.titleSmall),
+          if (helperText != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              helperText!,
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          ],
+          const SizedBox(height: 12),
+        ] else if (helperText != null) ...[
           Text(
             helperText!,
             style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
+          const SizedBox(height: 12),
         ],
-        const SizedBox(height: 12),
         TextField(
           key: const Key('visit-instructions-field'),
           controller: controller,

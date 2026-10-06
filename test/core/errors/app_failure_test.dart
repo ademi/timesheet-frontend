@@ -511,6 +511,10 @@ void main() {
             "These participants have different NDIS support types, so one shared travel item can’t be split equally. Switch to Nominated, or add a separate travel claim per support type.",
         'travel_registration_group_mismatch':
             'This travel item doesn’t match the participant’s support type (registration group). Pick the travel item that sits under the same support group as their visit support item — or change who the claim is nominated to.',
+        'trip_kms_requires_rate_snapshots':
+            'Publish the shift first so each participant has a support item. Trip kilometres need that to pick the matching travel claim item.',
+        'trip_kms_travel_unresolvable':
+            'No Provider travel / Activity Based Transport kilometre item exists in the catalogue for this support type. Import the current NDIS catalogue, or ask staff to add the travel claim with the correct item.',
         'labour_requires_rate_snapshots':
             'Publish the shift first so each participant has a rate snapshot. Worker travel time uses that hourly support item.',
         'labour_travel_not_permitted':

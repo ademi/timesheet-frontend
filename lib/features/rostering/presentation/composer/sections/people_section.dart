@@ -9,7 +9,11 @@ import '../../../../shifts/utils/allocation_math.dart';
 import '../../../domain/occurrence_draft.dart';
 import '../roster_composer_controller.dart';
 
-/// Step 1 — clients (+ allocation / slots for group).
+/// Step 1 — who is this for (preset + client pick).
+///
+/// In-page command search + results list (not an overlay autocomplete), so
+/// duplicate names stay scannable and the parent ListView does not fight an
+/// Overlay. Allocation / worker slots only appear for group after clients exist.
 class ComposerPeopleSection extends GetView<RosterComposerController> {
   const ComposerPeopleSection({super.key});
 
@@ -17,63 +21,94 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
   Widget build(BuildContext context) {
     return Obx(() {
       final ids = controller.draft.value.participantIds;
-      final showAlloc = controller.showsAllocation;
+      final showAlloc = controller.showsAllocation && ids.isNotEmpty;
       final showSlots = controller.showsWorkerCount;
       final slotsCount = controller.workerSlotCount;
       final preset = controller.draft.value.preset;
+      final isGroup = controller.isGroup;
+      final showSearch = isGroup || ids.isEmpty;
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text('Session type', style: Get.textTheme.titleMedium),
+          const SizedBox(height: 8),
           SegmentedButton<ComposerPreset>(
             key: const Key('composer-preset'),
             segments: const [
               ButtonSegment(
                 value: ComposerPreset.oneSession,
                 label: Text('One session'),
+                icon: Icon(Icons.person_outline, size: 18),
               ),
-              ButtonSegment(value: ComposerPreset.group, label: Text('Group')),
+              ButtonSegment(
+                value: ComposerPreset.group,
+                label: Text('Group'),
+                icon: Icon(Icons.groups_outlined, size: 18),
+              ),
             ],
             selected: {preset},
             onSelectionChanged: (next) {
               if (next.isNotEmpty) controller.setPreset(next.first);
             },
           ),
-          const SizedBox(height: 16),
-          Text('Clients', style: Get.textTheme.titleMedium),
+          const SizedBox(height: 28),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  isGroup ? 'Participants' : 'Client',
+                  style: Get.textTheme.titleMedium,
+                ),
+              ),
+              if (ids.isNotEmpty)
+                Text(
+                  isGroup ? '${ids.length} selected' : 'Selected',
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 4),
           Text(
-            controller.isGroup
+            isGroup
                 ? 'Search and add participants (max 32).'
                 : 'Search and select the client for this session.',
             style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
           const SizedBox(height: 12),
-          for (final id in ids)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: _ClientPhoto(
+          if (ids.isNotEmpty) ...[
+            for (final id in ids)
+              _SelectedClientTile(
+                name: controller.participantName(id) ?? id,
                 photo: controller.photoFor(id),
+                subtitle: _selectedSubtitle(id),
+                onRemove: () => controller.removeParticipant(id),
               ),
-              title: Text(controller.participantName(id) ?? id),
-              trailing: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => controller.removeParticipant(id),
-              ),
-            ),
-          if (ids.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
-              child: Text(
-                'No client selected yet.',
-                style: TextStyle(color: AppColors.textMuted),
-              ),
-            ),
-          if (controller.isGroup || ids.isEmpty) ...[
-            const SizedBox(height: 4),
-            _ClientSearchField(controller: controller),
-          ],
-          if (showAlloc) ...[
             const SizedBox(height: 8),
+          ] else
+            const _EmptyClientHint(),
+          if (showSearch) ...[
+            _ClientCommandSearch(controller: controller),
+            const SizedBox(height: 8),
+            _ClientResultsList(controller: controller),
+          ] else if (!isGroup && ids.isNotEmpty)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const Key('composer-change-client'),
+                onPressed: () => controller.removeParticipant(ids.first),
+                icon: const Icon(Icons.swap_horiz, size: 18),
+                label: const Text('Change client'),
+              ),
+            ),
+          if (showAlloc) ...[
+            const SizedBox(height: 20),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Text('Allocation', style: Get.textTheme.titleSmall),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Equal split'),
@@ -89,7 +124,7 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
               key: const Key('composer-allocation'),
               style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
             ),
-            if (!controller.draft.value.equalSplit && ids.isNotEmpty) ...[
+            if (!controller.draft.value.equalSplit) ...[
               const SizedBox(height: 12),
               for (final id in ids) ...[
                 _AllocationPercentField(
@@ -121,13 +156,14 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
             ],
           ],
           if (showSlots) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             DropdownButtonFormField<int>(
               key: const Key('composer-worker-count'),
               value: slotsCount,
               decoration: const InputDecoration(
                 labelText: 'Worker slots',
-                helperText: 'Fill on the Workers step; empty slots open for claim',
+                helperText:
+                    'Fill on the Workers step; empty slots open for claim',
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
@@ -141,13 +177,284 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
             ),
           ],
           if (atHardCap(ids.length))
-            const Text(
-              'Groups are limited to 32 participants',
-              style: TextStyle(color: AppColors.error, fontSize: 13),
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                'Groups are limited to 32 participants',
+                style: TextStyle(color: AppColors.error, fontSize: 13),
+              ),
             ),
         ],
       );
     });
+  }
+
+  String? _selectedSubtitle(String id) {
+    for (final c in controller.clients) {
+      if (c.id == id) return controller.clientPickerSubtitle(c);
+    }
+    return null;
+  }
+}
+
+class _EmptyClientHint extends StatelessWidget {
+  const _EmptyClientHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        color: AppColors.brandSoft.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.slate200),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.person_search_outlined, color: AppColors.brand, size: 22),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'No client selected yet. Type a name below to find one.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectedClientTile extends StatelessWidget {
+  const _SelectedClientTile({
+    required this.name,
+    required this.onRemove,
+    this.photo,
+    this.subtitle,
+  });
+
+  final String name;
+  final ProfilePhotoOut? photo;
+  final String? subtitle;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.brand.withValues(alpha: 0.35)),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.only(left: 12, right: 4),
+        leading: _ClientPhoto(photo: photo),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle:
+            subtitle == null || subtitle!.isEmpty
+                ? null
+                : Text(
+                  subtitle!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+        trailing: IconButton(
+          tooltip: 'Remove',
+          icon: const Icon(Icons.close),
+          onPressed: onRemove,
+        ),
+      ),
+    );
+  }
+}
+
+class _ClientCommandSearch extends StatefulWidget {
+  const _ClientCommandSearch({required this.controller});
+
+  final RosterComposerController controller;
+
+  @override
+  State<_ClientCommandSearch> createState() => _ClientCommandSearchState();
+}
+
+class _ClientCommandSearchState extends State<_ClientCommandSearch> {
+  late final TextEditingController _text;
+
+  @override
+  void initState() {
+    super.initState();
+    _text = TextEditingController(text: widget.controller.clientSearch.value);
+  }
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final q = widget.controller.clientSearch.value;
+      if (_text.text != q) {
+        final synced = q;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _text.text == synced) return;
+          _text.value = TextEditingValue(
+            text: synced,
+            selection: TextSelection.collapsed(offset: synced.length),
+          );
+          setState(() {});
+        });
+      }
+      return TextField(
+        key: const Key('composer-client-search'),
+        controller: _text,
+        autofocus: false,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          labelText:
+              widget.controller.isGroup
+                  ? 'Search clients to add'
+                  : 'Search clients',
+          hintText: 'Name, email, or phone',
+          border: const OutlineInputBorder(),
+          isDense: true,
+          prefixIcon: const Icon(Icons.search, size: 20),
+          suffixIcon:
+              q.isEmpty
+                  ? null
+                  : IconButton(
+                    tooltip: 'Clear',
+                    icon: const Icon(Icons.clear, size: 18),
+                    onPressed: () {
+                      _text.clear();
+                      widget.controller.clientSearch.value = '';
+                    },
+                  ),
+        ),
+        onChanged: (value) {
+          widget.controller.clientSearch.value = value;
+        },
+      );
+    });
+  }
+}
+
+class _ClientResultsList extends StatelessWidget {
+  const _ClientResultsList({required this.controller});
+
+  final RosterComposerController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final q = controller.clientSearch.value.trim();
+      if (q.isEmpty) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'Keep typing to filter the client list.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+        );
+      }
+
+      final options = controller.clientPickerOptions(q);
+      if (options.isEmpty) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'No clients match “$q”.',
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+        );
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '${options.length} match${options.length == 1 ? '' : 'es'}',
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+          const SizedBox(height: 6),
+          for (final client in options)
+            _ClientResultRow(
+              key: ValueKey(client.id),
+              client: client,
+              subtitle: controller.clientPickerSubtitle(client),
+              photo: controller.photoFor(client.id),
+              onTap: () async {
+                await controller.addParticipant(client);
+                controller.clientSearch.value = '';
+              },
+            ),
+        ],
+      );
+    });
+  }
+}
+
+class _ClientResultRow extends StatelessWidget {
+  const _ClientResultRow({
+    super.key,
+    required this.client,
+    required this.subtitle,
+    required this.onTap,
+    this.photo,
+  });
+
+  final ClientOut client;
+  final String subtitle;
+  final ProfilePhotoOut? photo;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surface,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            children: [
+              _ClientPhoto(photo: photo, size: 40),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      client.fullName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.add_circle_outline, color: AppColors.brand),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -219,90 +526,6 @@ class _AllocationPercentFieldState extends State<_AllocationPercentField> {
           return;
         }
         widget.onChanged(widget.participantId, double.tryParse(trimmed));
-      },
-    );
-  }
-}
-
-/// Autocomplete kept outside draft Obx writes so selecting a row cannot lose
-/// the pick to a rebuild race (mutating [clientSearch] used to rebuild parent).
-class _ClientSearchField extends StatelessWidget {
-  const _ClientSearchField({required this.controller});
-
-  final RosterComposerController controller;
-
-  Iterable<ClientOut> _optionsFor(String raw) {
-    final q = raw.trim().toLowerCase();
-    final taken = controller.draft.value.participantIds.toSet();
-    final list = <ClientOut>[
-      for (final c in controller.clients)
-        if (!taken.contains(c.id) &&
-            (q.isEmpty || c.fullName.toLowerCase().contains(q)))
-          c,
-    ];
-    list.sort(
-      (a, b) => a.fullName.toLowerCase().compareTo(b.fullName.toLowerCase()),
-    );
-    return list.take(12);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Autocomplete<ClientOut>(
-      key: const Key('composer-client-autocomplete'),
-      displayStringForOption: (c) => c.fullName,
-      optionsBuilder: (textEditingValue) => _optionsFor(textEditingValue.text),
-      onSelected: (client) async {
-        await controller.addParticipant(client);
-      },
-      fieldViewBuilder: (
-        context,
-        textController,
-        focusNode,
-        onFieldSubmitted,
-      ) {
-        return TextField(
-          controller: textController,
-          focusNode: focusNode,
-          decoration: InputDecoration(
-            labelText:
-                controller.isGroup
-                    ? 'Search clients to add'
-                    : 'Search clients',
-            border: const OutlineInputBorder(),
-            isDense: true,
-            prefixIcon: const Icon(Icons.search, size: 20),
-          ),
-          onSubmitted: (_) => onFieldSubmitted(),
-        );
-      },
-      optionsViewBuilder: (context, onSelected, options) {
-        return Align(
-          alignment: Alignment.topLeft,
-          child: Material(
-            elevation: 4,
-            borderRadius: BorderRadius.circular(8),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 240, maxWidth: 480),
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                shrinkWrap: true,
-                itemCount: options.length,
-                itemBuilder: (context, index) {
-                  final client = options.elementAt(index);
-                  return ListTile(
-                    leading: _ClientPhoto(
-                      photo: controller.photoFor(client.id),
-                      size: 36,
-                    ),
-                    title: Text(client.fullName),
-                    onTap: () => onSelected(client),
-                  );
-                },
-              ),
-            ),
-          ),
-        );
       },
     );
   }

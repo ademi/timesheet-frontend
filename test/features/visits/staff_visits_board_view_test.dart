@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:rostiq/app/routes/app_routes.dart';
 import 'package:rostiq/core/responsive/page_content.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
@@ -173,10 +174,20 @@ void main() {
     },
   );
 
-  testWidgets('FAB opens Book one / Group shift sheet', (tester) async {
+  testWidgets('FAB opens composer without Book one / Group shift sheet', (
+    tester,
+  ) async {
     putController();
     await tester.pumpWidget(
-      const GetMaterialApp(home: StaffVisitsBoardView()),
+      GetMaterialApp(
+        home: const StaffVisitsBoardView(),
+        getPages: [
+          GetPage(
+            name: AppRoutes.staffRosterCompose,
+            page: () => const Scaffold(body: Text('composer-stub')),
+          ),
+        ],
+      ),
     );
     await tester.pump();
     await tester.pump();
@@ -184,8 +195,9 @@ void main() {
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
 
-    expect(find.text('Book one'), findsOneWidget);
-    expect(find.text('Group shift'), findsOneWidget);
+    expect(find.text('Book one'), findsNothing);
+    expect(find.text('Group shift'), findsNothing);
+    expect(find.text('composer-stub'), findsOneWidget);
   });
 
   testWidgets('wide roster content is centered', (tester) async {

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../app/controllers/auth_controller.dart';
+import '../../../app/routes/app_navigator.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../core/services/session_service.dart';
 import '../controllers/notifications_feed_controller.dart';
+import '../data/models/notification_destination.dart';
 import '../data/models/notification_display.dart';
 
 /// Standard AppBar actions: notification bell (+ optional extras) + logout.
@@ -91,6 +94,9 @@ Future<void> showNotificationsSheet(BuildContext context) async {
           return Obx(() {
             final err = feed.errorMessage.value;
             final events = feed.events.toList(growable: false);
+            final isContractor =
+                Get.isRegistered<SessionService>() &&
+                Get.find<SessionService>().isContractor;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -169,6 +175,10 @@ Future<void> showNotificationsSheet(BuildContext context) async {
                                   (_, __) => const Divider(height: 1),
                               itemBuilder: (context, index) {
                                 final e = events[index];
+                                final dest = resolveNotificationDestination(
+                                  e,
+                                  isContractor: isContractor,
+                                );
                                 return ListTile(
                                   leading: const Icon(
                                     Icons.notifications_outlined,
@@ -179,6 +189,20 @@ Future<void> showNotificationsSheet(BuildContext context) async {
                                   subtitle: Text(
                                     formatNotificationTime(e.createdAt),
                                   ),
+                                  trailing:
+                                      dest == null
+                                          ? null
+                                          : const Icon(
+                                            Icons.chevron_right,
+                                            color: AppColors.textMuted,
+                                          ),
+                                  onTap:
+                                      dest == null
+                                          ? null
+                                          : () {
+                                            Navigator.of(sheetContext).pop();
+                                            AppNavigator.push(dest.location);
+                                          },
                                 );
                               },
                             ),

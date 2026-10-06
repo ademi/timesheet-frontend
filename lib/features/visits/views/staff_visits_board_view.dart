@@ -9,8 +9,6 @@ import '../../../core/responsive/page_content.dart';
 import '../../../core/time/tenant_civil_time.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
-import '../../jobs/utils/unified_support_args.dart';
-import '../../rostering/domain/occurrence_draft.dart';
 import '../../rostering/domain/roster_composer_args.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../controllers/staff_visits_controller.dart';
@@ -92,31 +90,9 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
       await c.ensureBoardLoaded();
       if (!mounted) return;
       if (c.consumePendingCreateShift()) {
-        _openUnifiedSupport(
-          clientId:
-              c.clientIdFilter.value.trim().isEmpty
-                  ? null
-                  : c.clientIdFilter.value.trim(),
-          mode: UnifiedSupportMode.oneSession,
-        );
+        _openComposer(clientId: _clientFilterId(c));
       }
     });
-  }
-
-  void _openUnifiedSupport({String? clientId, UnifiedSupportMode? mode}) {
-    final ongoing = mode == UnifiedSupportMode.ongoing;
-    final query = <String, String>{
-      if (clientId != null && clientId.isNotEmpty) 'clientId': clientId,
-      'mode': ongoing ? 'ongoing' : 'one',
-    };
-    AppNavigator.push(
-      AppNavigator.location(AppRoutes.staffRosterCompose, query: query),
-      extra: RosterComposerArgs(
-        clientId: clientId,
-        preset: ComposerPreset.oneSession,
-        repeatEnabled: ongoing,
-      ),
-    );
   }
 
   String? _clientFilterId(StaffVisitsController controller) {
@@ -124,64 +100,14 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
     return id.isEmpty ? null : id;
   }
 
-  Future<void> _openBookActionsSheet(
-    BuildContext context,
-    StaffVisitsController controller,
-  ) async {
-    final participantId = _clientFilterId(controller);
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.surface,
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 44),
-                child: ListTile(
-                  leading: const Icon(
-                    Icons.person_outline,
-                    color: AppColors.textDark,
-                  ),
-                  title: const Text(
-                    'Book one',
-                    style: TextStyle(color: AppColors.textDark),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _openUnifiedSupport(clientId: participantId);
-                  },
-                ),
-              ),
-              ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 44),
-                child: ListTile(
-                  leading: const Icon(
-                    Icons.groups_outlined,
-                    color: AppColors.textDark,
-                  ),
-                  title: const Text(
-                    'Group shift',
-                    style: TextStyle(color: AppColors.textDark),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    AppNavigator.push(
-                      AppRoutes.staffRosterCompose,
-                      extra: RosterComposerArgs(
-                        participantId: participantId,
-                        clientId: participantId,
-                        preset: ComposerPreset.group,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  /// Greenfield composer — preset (one session / group) is chosen in-pipeline.
+  void _openComposer({String? clientId}) {
+    final query = <String, String>{
+      if (clientId != null && clientId.isNotEmpty) 'clientId': clientId,
+    };
+    AppNavigator.push(
+      AppNavigator.location(AppRoutes.staffRosterCompose, query: query),
+      extra: RosterComposerArgs(clientId: clientId),
     );
   }
 
@@ -197,7 +123,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
       floatingActionButton:
           controller.canManage
               ? FloatingActionButton(
-                onPressed: () => _openBookActionsSheet(context, controller),
+                onPressed: () => _openComposer(clientId: _clientFilterId(controller)),
                 child: const Icon(Icons.add),
               )
               : null,

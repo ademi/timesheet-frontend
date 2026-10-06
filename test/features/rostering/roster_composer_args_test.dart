@@ -202,6 +202,17 @@ void main() {
       expect(args.repeatEnabled, isFalse);
     });
 
+    test('typed greenfield ignores sticky shiftId from params', () {
+      const typed = RosterComposerArgs(clientId: 'c-new');
+      final args = RosterComposerArgs.fromRawAndParams(
+        typed,
+        params: {'id': 'shift-stale', 'clientId': 'c-stale'},
+      );
+
+      expect(args.shiftId, isNull);
+      expect(args.clientId, 'c-new');
+    });
+
     test('maps group preset from query when raw empty', () {
       final args = RosterComposerArgs.fromRawAndParams(
         null,

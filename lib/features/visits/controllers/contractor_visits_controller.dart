@@ -117,6 +117,8 @@ class ContractorVisitsController extends GetxController {
   final visits = <VisitOut>[].obs;
   final openShifts = <OpenShiftOut>[].obs;
   final selectedTab = 'mine'.obs;
+  /// From notification deep link (`?shiftId=`) — highlight while Open tab is shown.
+  final highlightOpenShiftId = RxnString();
   final selected = Rxn<VisitOut>();
   final isLoading = false.obs;
   final isSaving = false.obs;
@@ -228,12 +230,28 @@ class ContractorVisitsController extends GetxController {
         (Get.isRegistered<FormSyncWorker>()
             ? Get.find<FormSyncWorker>()
             : null);
+    applyNotificationRouteArgs();
     load();
+  }
+
+  /// Deep link from in-app notification (`?tab=open&shiftId=`).
+  void applyNotificationRouteArgs() {
+    final tab = routeParam('tab');
+    final shiftId = routeParam('shiftId') ?? routeParam('shift_id');
+    if (shiftId != null && shiftId.isNotEmpty) {
+      highlightOpenShiftId.value = shiftId;
+    }
+    if (tab == 'open' && canClaimShifts) {
+      selectedTab.value = 'open';
+      // ignore: discarded_futures
+      loadOpenShifts();
+    }
   }
 
   /// Tier-2 shell re-enter: soft list refresh; keep tab/selection.
   void onScreenReenter() {
     errorMessage.value = null;
+    applyNotificationRouteArgs();
     if (selectedTab.value == 'open') {
       // ignore: discarded_futures
       loadOpenShifts();

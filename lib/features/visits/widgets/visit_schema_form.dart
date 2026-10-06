@@ -29,6 +29,7 @@ class VisitSchemaForm extends StatefulWidget {
     this.onDraftChanged,
     this.syncStatusLabel,
     this.onRetryFormSync,
+    this.embedded = false,
   });
 
   final VisitFormRequirement requirement;
@@ -58,6 +59,9 @@ class VisitSchemaForm extends StatefulWidget {
   /// B2 honest sync chip: e.g. Draft saved / Pending sync / Sync failed.
   final String? syncStatusLabel;
   final Future<void> Function()? onRetryFormSync;
+
+  /// Parent accordion provides title chrome — render fields + submit only.
+  final bool embedded;
 
   @override
   State<VisitSchemaForm> createState() => _VisitSchemaFormState();
@@ -278,6 +282,133 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
   Widget build(BuildContext context) {
     final title = widget.requirement.name ?? 'Form';
     final fields = _fields;
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!widget.embedded)
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.isSubmitted
+                          ? 'Submitted'
+                          : (widget.requirement.isRequired
+                              ? 'Required'
+                              : 'Optional'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color:
+                            widget.isSubmitted
+                                ? AppColors.brand
+                                : AppColors.textMuted,
+                      ),
+                    ),
+                    if (widget.syncStatusLabel != null &&
+                        !widget.isSubmitted) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.syncStatusLabel!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color:
+                              widget.syncStatusLabel!.contains('failed')
+                                  ? AppColors.error
+                                  : AppColors.textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (widget.onRetryFormSync != null &&
+                  widget.syncStatusLabel?.contains('failed') == true)
+                TextButton(
+                  onPressed:
+                      widget.isSubmitting ? null : widget.onRetryFormSync,
+                  child: const Text('Retry'),
+                ),
+              TextButton(
+                onPressed:
+                    !widget.canSubmit ||
+                            widget.isSubmitting ||
+                            widget.isSubmitted ||
+                            fields.isEmpty
+                        ? null
+                        : _submit,
+                child: AsyncButtonChild(
+                  isLoading: widget.isSubmitting,
+                  child: const Text('Submit'),
+                ),
+              ),
+            ],
+          ),
+        if (fields.isEmpty) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'This form has no fields in its template schema.',
+            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+        ] else ...[
+          if (!widget.embedded) const SizedBox(height: 12),
+          ..._buildFieldWidgets(fields),
+        ],
+        if (_validationError != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _validationError!,
+            style: const TextStyle(color: AppColors.error, fontSize: 12),
+          ),
+        ],
+        if (widget.embedded) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (widget.onRetryFormSync != null &&
+                  widget.syncStatusLabel?.contains('failed') == true)
+                TextButton(
+                  onPressed:
+                      widget.isSubmitting ? null : widget.onRetryFormSync,
+                  child: const Text('Retry sync'),
+                ),
+              const Spacer(),
+              FilledButton(
+                onPressed:
+                    !widget.canSubmit ||
+                            widget.isSubmitting ||
+                            widget.isSubmitted ||
+                            fields.isEmpty
+                        ? null
+                        : _submit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.cta,
+                  foregroundColor: AppColors.onCta,
+                ),
+                child: AsyncButtonChild(
+                  isLoading: widget.isSubmitting,
+                  child: Text(widget.isSubmitted ? 'Submitted' : 'Submit'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+
+    if (widget.embedded) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+        child: body,
+      );
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -287,94 +418,7 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: AppColors.primary.withValues(alpha: 0.12)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.isSubmitted
-                            ? 'Submitted ✓'
-                            : (widget.requirement.isRequired
-                                ? 'Required'
-                                : 'Optional'),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color:
-                              widget.isSubmitted
-                                  ? AppColors.primary
-                                  : AppColors.textMuted,
-                        ),
-                      ),
-                      if (widget.syncStatusLabel != null &&
-                          !widget.isSubmitted) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.syncStatusLabel!,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: widget.syncStatusLabel!.contains('failed')
-                                ? AppColors.error
-                                : AppColors.textMuted,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (widget.onRetryFormSync != null &&
-                    widget.syncStatusLabel?.contains('failed') == true)
-                  TextButton(
-                    onPressed: widget.isSubmitting ? null : widget.onRetryFormSync,
-                    child: const Text('Retry'),
-                  ),
-                TextButton(
-                  onPressed:
-                      !widget.canSubmit ||
-                              widget.isSubmitting ||
-                              widget.isSubmitted ||
-                              fields.isEmpty
-                          ? null
-                          : _submit,
-                  child: AsyncButtonChild(
-                    isLoading: widget.isSubmitting,
-                    child: const Text('Submit'),
-                  ),
-                ),
-              ],
-            ),
-            if (fields.isEmpty) ...[
-              const SizedBox(height: 8),
-              const Text(
-                'This form has no fields in its template schema.',
-                style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-              ),
-            ] else ...[
-              const SizedBox(height: 12),
-              ..._buildFieldWidgets(fields),
-            ],
-            if (_validationError != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                _validationError!,
-                style: const TextStyle(color: AppColors.error, fontSize: 12),
-              ),
-            ],
-          ],
-        ),
-      ),
+      child: Padding(padding: const EdgeInsets.all(12), child: body),
     );
   }
 

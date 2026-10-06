@@ -38,11 +38,18 @@ ShiftOut _shift(String id, {String status = 'draft'}) => ShiftOut(
   updatedAt: DateTime.utc(2026, 10, 4),
 );
 
-ClientOut _client(String id) => ClientOut(
+ClientOut _client(
+  String id, {
+  String fullName = 'Sam',
+  String? email,
+  String? phone,
+}) => ClientOut(
   id: id,
   tenantId: 't1',
-  fullName: 'Sam',
+  fullName: fullName,
   status: 'active',
+  email: email,
+  phone: phone,
   metadata: const {},
   createdAt: DateTime.utc(2026, 1, 1),
   updatedAt: DateTime.utc(2026, 1, 1),
@@ -371,5 +378,67 @@ void main() {
             as JobCreateRequest;
     expect(jobBody.kind, 'program');
     verifyNever(() => jobs.ensureOngoingSupport(any()));
+  });
+
+  test('setTaskTitles builds ordered task_template for Support step', () async {
+    final c = build(const RosterComposerArgs());
+    await c.retryHydrate();
+
+    c.setTaskTitles(const ['Meds', '', ' Walk dog ', 'Meds']);
+    expect(c.draft.value.taskTemplate.map((t) => t.title).toList(), [
+      'Meds',
+      'Walk dog',
+      'Meds',
+    ]);
+    expect(c.draft.value.taskTemplate.map((t) => t.sortOrder).toList(), [
+      0,
+      1,
+      2,
+    ]);
+
+    c.removeTaskAt(1);
+    expect(c.draft.value.taskTemplate.map((t) => t.title).toList(), [
+      'Meds',
+      'Meds',
+    ]);
+
+    c.addTaskTitle('Progress note');
+    expect(c.draft.value.taskTemplate.last.title, 'Progress note');
+    expect(c.draft.value.taskTemplate.last.sortOrder, 2);
+  });
+
+  test('clientPickerOptions requires query and surfaces non-duplicate names', () async {
+    final alexes = [
+      for (var i = 0; i < 11; i++)
+        _client('alex-$i', fullName: 'Alex Test Participant', email: 'alex$i@ex.com'),
+    ];
+    final jane = _client('jane-1', fullName: 'Jane Example', email: 'jane@ex.com');
+    when(() => clients.listClients()).thenAnswer(
+      (_) async => [...alexes, jane],
+    );
+
+    final c = build(const RosterComposerArgs());
+    await c.retryHydrate();
+
+    expect(c.clientPickerOptions(''), isEmpty);
+    expect(c.clientPickerOptions('jane').map((e) => e.id), ['jane-1']);
+    expect(c.clientPickerOptions('alex').length, 11);
+    expect(
+      c.clientPickerSubtitle(alexes.first),
+      'alex0@ex.com',
+    );
+  });
+
+  test('clientPickerOptions dedupes by id and skips taken participants', () async {
+    final a = _client('c1', fullName: 'Alex Test Participant', email: 'a@ex.com');
+    final b = _client('c2', fullName: 'Alex Test Participant', email: 'b@ex.com');
+    when(() => clients.listClients()).thenAnswer((_) async => [a, a, b]);
+
+    final c = build(const RosterComposerArgs(preset: ComposerPreset.group));
+    await c.retryHydrate();
+    c.draft.value = c.draft.value.copyWith(participantIds: ['c1']);
+
+    final opts = c.clientPickerOptions('alex');
+    expect(opts.map((e) => e.id).toList(), ['c2']);
   });
 }

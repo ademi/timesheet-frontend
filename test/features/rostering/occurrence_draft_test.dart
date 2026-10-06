@@ -109,6 +109,25 @@ void main() {
       );
     });
 
+    test('rejects labelled place without postal code', () {
+      final draft = _scheduled(
+        place: const DraftPlace.labelled(
+          label: 'Park',
+          latitude: -33.8,
+          longitude: 151.2,
+          postalCode: '',
+        ),
+      );
+      expect(
+        ComposerValidation.validate(draft),
+        contains(ComposerValidation.postalCodeRequired),
+      );
+      expect(
+        ComposerValidation.validateStep(ComposerStep.place, draft),
+        contains(ComposerValidation.postalCodeRequired),
+      );
+    });
+
     test('rejects more than 32 participants', () {
       final ids = List.generate(33, (i) => 'p$i');
       final draft = _scheduled(

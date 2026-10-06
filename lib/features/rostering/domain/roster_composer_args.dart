@@ -91,6 +91,10 @@ class RosterComposerArgs {
   /// On web refresh GoRouter `extra` is null; query still carries `clientId`,
   /// `id` / `shiftId`, `mode`, etc. Typed [raw] wins for set fields; params fill
   /// gaps. When [raw] yields empty defaults, params also drive preset/repeat/focus.
+  ///
+  /// Explicit typed navigation (non-null, non-Map [raw]) never picks up a
+  /// sticky `shiftId` from params — null means greenfield. Maps / null [raw]
+  /// still hydrate `shiftId` from query (bookmarks + web refresh).
   factory RosterComposerArgs.fromRawAndParams(
     Object? raw, {
     Map<String, String?> params = const {},
@@ -137,8 +141,14 @@ class RosterComposerArgs {
         base.participantId == null &&
         base.recurrenceRuleId == null;
 
+    // Typed push (RosterComposerArgs / cutover args) owns identity; sticky
+    // Get.parameters `id` must not reopen the previous shift on greenfield +.
+    final typedNavigation = raw != null && raw is! Map;
+    final shiftId =
+        base.shiftId ?? (typedNavigation ? null : fromParams.shiftId);
+
     return base.copyWith(
-      shiftId: base.shiftId ?? fromParams.shiftId,
+      shiftId: shiftId,
       clientId: base.clientId ?? fromParams.clientId,
       jobId: base.jobId ?? fromParams.jobId,
       participantId: base.participantId ?? fromParams.participantId,

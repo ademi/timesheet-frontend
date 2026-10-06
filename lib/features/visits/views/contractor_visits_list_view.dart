@@ -156,7 +156,20 @@ class _OpenShiftsList extends StatelessWidget {
                 for (final shift in controller.openShifts)
                   Card(
                     margin: const EdgeInsets.only(bottom: 8),
-                    color: AppColors.openSlotBackground,
+                    color:
+                        controller.highlightOpenShiftId.value == shift.id
+                            ? AppColors.brandSoft
+                            : AppColors.openSlotBackground,
+                    shape:
+                        controller.highlightOpenShiftId.value == shift.id
+                            ? RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(
+                                color: AppColors.brand,
+                                width: 1.5,
+                              ),
+                            )
+                            : null,
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Column(
