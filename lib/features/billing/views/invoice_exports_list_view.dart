@@ -4,7 +4,11 @@ import 'package:get/get.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/equal_fill_row.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../core/services/session_service.dart';
+import '../../../shared/data/recent_clients_prefs.dart';
+import '../../../shared/utils/client_search.dart';
 import '../../../shared/widgets/async_action.dart';
+import '../../../shared/widgets/searchable_client_field.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../visits/data/models/visit_models.dart';
 import '../controllers/invoice_exports_controller.dart';
@@ -12,29 +16,59 @@ import '../data/models/billing_models.dart';
 import '../utils/visit_export_preflight.dart';
 import '../widgets/billing_ui.dart';
 
-String? _clientDropdownValue(
+String? _clientName(
   String? filter,
   Iterable<({String id, String name})> clients,
 ) {
   if (filter == null || filter.isEmpty) return null;
   for (final c in clients) {
-    if (c.id == filter) return filter;
+    if (c.id == filter) return c.name;
   }
   return null;
 }
 
-List<DropdownMenuItem<String>> _clientDropdownItems(
-  Iterable<({String id, String name})> clients, {
-  String allLabel = 'All clients',
+List<ClientSearchCandidate> _clientCandidates(
+  Iterable<({String id, String name})> clients,
+) => [
+  for (final c in clients)
+    ClientSearchCandidate.fromIdName(id: c.id, name: c.name),
+];
+
+RecentClientsPrefs _billingRecentPrefs() {
+  final session =
+      Get.isRegistered<SessionService>() ? Get.find<SessionService>() : null;
+  return RecentClientsPrefs(tenantId: session?.tenantId.value);
+}
+
+Widget _clientFilterSearch({
+  required String label,
+  required String clearLabel,
+  required String filterId,
+  required Iterable<({String id, String name})> clients,
+  required Future<void> Function(String? id) onChanged,
+  Key? key,
 }) {
-  return [
-    DropdownMenuItem(value: null, child: Text(allLabel)),
-    for (final c in clients)
-      DropdownMenuItem(
-        value: c.id,
-        child: Text(c.name, overflow: TextOverflow.ellipsis),
-      ),
-  ];
+  final prefs = _billingRecentPrefs();
+  return SearchableClientField(
+    key: key,
+    candidates: _clientCandidates(clients),
+    recentIds: prefs.load(),
+    labelText: label,
+    hintText: 'Search clients',
+    showPhotos: false,
+    compactSelected: true,
+    selectedId: filterId.isEmpty ? null : filterId,
+    selectedLabel: _clientName(filterId, clients),
+    allowClearSelection: true,
+    clearSelectionLabel: clearLabel,
+    maxResultsHeight: 200,
+    browseLimit: 8,
+    onClearSelection: () => onChanged(null),
+    onSelected: (candidate) async {
+      prefs.record(candidate.id);
+      await onChanged(candidate.id);
+    },
+  );
 }
 
 class InvoiceExportsListView extends GetView<InvoiceExportsController> {
@@ -293,33 +327,21 @@ class _CreateExportTab extends StatelessWidget {
                 children: [
                   EqualFillRow(
                     children: [
-                      DropdownButtonFormField<String>(
-                        value: _clientDropdownValue(clientFilter, clients),
-                        isExpanded: true,
-                        items: _clientDropdownItems(clients, allLabel: 'All hosts'),
+                      _clientFilterSearch(
+                        key: const Key('invoice-host-client-search'),
+                        label: 'Host client',
+                        clearLabel: 'All hosts',
+                        filterId: clientFilter,
+                        clients: clients,
                         onChanged: controller.setClientFilter,
-                        decoration: const InputDecoration(
-                          labelText: 'Host client',
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
                       ),
-                      DropdownButtonFormField<String>(
-                        value: _clientDropdownValue(
-                          participantFilter,
-                          participants,
-                        ),
-                        isExpanded: true,
-                        items: _clientDropdownItems(
-                          participants,
-                          allLabel: 'All participants',
-                        ),
+                      _clientFilterSearch(
+                        key: const Key('invoice-participant-search'),
+                        label: 'Participant',
+                        clearLabel: 'All participants',
+                        filterId: participantFilter,
+                        clients: participants,
                         onChanged: controller.setParticipantFilter,
-                        decoration: const InputDecoration(
-                          labelText: 'Participant',
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
                       ),
                     ],
                   ),
@@ -327,12 +349,28 @@ class _CreateExportTab extends StatelessWidget {
                   EqualFillRow(
                     children: [
                       DropdownButtonFormField<String>(
-                        value: _clientDropdownValue(jobFilter, jobOptions),
+                        value: () {
+                          if (jobFilter.isEmpty) return null;
+                          for (final c in jobOptions) {
+                            if (c.id == jobFilter) return jobFilter;
+                          }
+                          return null;
+                        }(),
                         isExpanded: true,
-                        items: _clientDropdownItems(
-                          jobOptions,
-                          allLabel: 'All jobs / shifts',
-                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('All jobs / shifts'),
+                          ),
+                          for (final c in jobOptions)
+                            DropdownMenuItem(
+                              value: c.id,
+                              child: Text(
+                                c.name,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
                         onChanged: controller.setJobFilter,
                         decoration: const InputDecoration(
                           labelText: 'Job / support',
@@ -931,17 +969,12 @@ class _AgeingTab extends StatelessWidget {
                     onChanged: (v) => controller.setAgeingApproaching90Only(v),
                   ),
                   if (controller.clientFilterOptions.isNotEmpty) ...[
-                    DropdownButtonFormField<String>(
-                      value: _clientDropdownValue(
-                        controller.clientIdFilter.value,
-                        controller.clientFilterOptions,
-                      ),
-                      items: _clientDropdownItems(controller.clientFilterOptions),
-                      decoration: const InputDecoration(
-                        labelText: 'Client',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
+                    _clientFilterSearch(
+                      key: const Key('invoice-ageing-client-search'),
+                      label: 'Client',
+                      clearLabel: 'All clients',
+                      filterId: controller.clientIdFilter.value,
+                      clients: controller.clientFilterOptions,
                       onChanged: controller.setClientFilter,
                     ),
                     const SizedBox(height: 12),

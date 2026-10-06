@@ -6,7 +6,11 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/equal_fill_row.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../core/services/session_service.dart';
 import '../../../core/time/tenant_civil_time.dart';
+import '../../../shared/data/recent_clients_prefs.dart';
+import '../../../shared/utils/client_search.dart';
+import '../../../shared/widgets/searchable_client_field.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../rostering/domain/roster_composer_args.dart';
@@ -37,28 +41,15 @@ List<DropdownMenuItem<String>> _supportDropdownItems(Iterable<JobOut> jobs) {
   ];
 }
 
-String? _clientDropdownValue(
+String? _clientName(
   String? filter,
   Iterable<({String id, String name})> clients,
 ) {
   if (filter == null || filter.isEmpty) return null;
   for (final c in clients) {
-    if (c.id == filter) return filter;
+    if (c.id == filter) return c.name;
   }
   return null;
-}
-
-List<DropdownMenuItem<String>> _clientDropdownItems(
-  Iterable<({String id, String name})> clients,
-) {
-  return [
-    const DropdownMenuItem(value: null, child: Text('All clients')),
-    for (final c in clients)
-      DropdownMenuItem(
-        value: c.id,
-        child: Text(c.name, overflow: TextOverflow.ellipsis),
-      ),
-  ];
 }
 
 String _fmt(DateTime dt) {
@@ -81,9 +72,16 @@ class StaffVisitsBoardView extends StatefulWidget {
 }
 
 class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
+  late final RecentClientsPrefs _recentPrefs;
+  List<String> _recentIds = const [];
+
   @override
   void initState() {
     super.initState();
+    final session =
+        Get.isRegistered<SessionService>() ? Get.find<SessionService>() : null;
+    _recentPrefs = RecentClientsPrefs(tenantId: session?.tenantId.value);
+    _recentIds = _recentPrefs.load();
     final c = Get.find<StaffVisitsController>();
     c.applyRouteArgs();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -177,18 +175,40 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                       ),
                     EqualFillRow(
                       children: [
-                        DropdownButtonFormField<String>(
-                          value: _clientDropdownValue(
+                        SearchableClientField(
+                          key: const Key('board-client-search'),
+                          candidates: [
+                            for (final c in clients)
+                              ClientSearchCandidate.fromIdName(
+                                id: c.id,
+                                name: c.name,
+                              ),
+                          ],
+                          recentIds: _recentIds,
+                          labelText: 'Client',
+                          hintText: 'Search clients',
+                          showPhotos: false,
+                          compactSelected: true,
+                          selectedId:
+                              controller.clientIdFilter.value.isEmpty
+                                  ? null
+                                  : controller.clientIdFilter.value,
+                          selectedLabel: _clientName(
                             controller.clientIdFilter.value,
                             clients,
                           ),
-                          isExpanded: true,
-                          items: _clientDropdownItems(clients),
-                          onChanged: controller.setClientFilter,
-                          decoration: const InputDecoration(
-                            labelText: 'Client',
-                            border: OutlineInputBorder(),
-                          ),
+                          allowClearSelection: true,
+                          clearSelectionLabel: 'All clients',
+                          maxResultsHeight: 200,
+                          browseLimit: 8,
+                          onClearSelection: () => controller.setClientFilter(null),
+                          onSelected: (candidate) async {
+                            _recentPrefs.record(candidate.id);
+                            setState(() {
+                              _recentIds = _recentPrefs.load();
+                            });
+                            controller.setClientFilter(candidate.id);
+                          },
                         ),
                         DropdownButtonFormField<String>(
                           value:

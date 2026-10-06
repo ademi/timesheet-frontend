@@ -14,6 +14,7 @@ import 'package:rostiq/features/rostering/domain/roster_composer_args.dart';
 import 'package:rostiq/features/rostering/presentation/composer/roster_composer_controller.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
+import 'package:rostiq/shared/data/recent_clients_prefs.dart';
 import 'package:rostiq/shared/models/profile_photo_models.dart';
 
 class _MockShiftsRepository extends Mock implements ShiftsRepository {}
@@ -92,6 +93,7 @@ void main() {
 
     when(() => session.hasPermission(any())).thenReturn(true);
     when(() => session.tenantTimezone).thenReturn(RxnString('Australia/Sydney'));
+    when(() => session.tenantId).thenReturn(RxnString('t1'));
     when(() => clients.listClients()).thenAnswer((_) async => [_client('c1')]);
     when(() => clients.getClient(any())).thenAnswer((_) async => _client('c1'));
     when(() => clients.listSites(any())).thenAnswer((_) async => []);
@@ -143,13 +145,24 @@ void main() {
 
   tearDown(Get.reset);
 
-  RosterComposerController build(RosterComposerArgs args) {
+  RosterComposerController build(
+    RosterComposerArgs args, {
+    RecentClientsPrefs? recentPrefs,
+  }) {
+    final store = <String, dynamic>{};
     final c = RosterComposerController(
       facade: facade,
       clientsRepository: clients,
       session: session,
       args: args,
       onNavigate: (route, arguments) => navigations.add((route, arguments)),
+      recentClientsPrefs:
+          recentPrefs ??
+          RecentClientsPrefs(
+            read: (k) => store[k],
+            write: (k, v) => store[k] = v,
+            remove: store.remove,
+          ),
     );
     Get.put(c);
     return c;
@@ -405,6 +418,40 @@ void main() {
     c.addTaskTitle('Progress note');
     expect(c.draft.value.taskTemplate.last.title, 'Progress note');
     expect(c.draft.value.taskTemplate.last.sortOrder, 2);
+  });
+
+  test('clientPickerOptions ranks starts-with and supports idle browse', () async {
+    final directory = [
+      _client('j1', fullName: 'Jordan Lee', email: 'jordan@ex.com'),
+      _client('j2', fullName: 'John Smith', email: 'john@ex.com'),
+      _client('s1', fullName: 'Sam Jordan', email: 'sam@ex.com'),
+    ];
+    when(() => clients.listClients()).thenAnswer((_) async => directory);
+
+    final store = <String, dynamic>{};
+    final c = build(
+      const RosterComposerArgs(),
+      recentPrefs: RecentClientsPrefs(
+        read: (k) => store[k],
+        write: (k, v) => store[k] = v,
+        remove: store.remove,
+      ),
+    );
+    await c.retryHydrate();
+
+    expect(c.clientPickerOptions(''), isEmpty);
+    expect(c.clientPickerOptions('jo').map((e) => e.id), ['j2', 'j1', 's1']);
+    expect(c.clientPickerIdleOptions().map((e) => e.id), ['j2', 'j1', 's1']);
+
+    await c.addParticipant(directory[0]);
+    expect(c.recentClientIds, ['j1']);
+    expect(c.replacingClient.value, isFalse);
+
+    c.beginReplaceClient();
+    expect(c.replacingClient.value, isTrue);
+    expect(c.clientPickerOptions('sam').map((e) => e.id), ['s1']);
+    c.cancelReplaceClient();
+    expect(c.replacingClient.value, isFalse);
   });
 
   test('clientPickerOptions requires query and surfaces non-duplicate names', () async {

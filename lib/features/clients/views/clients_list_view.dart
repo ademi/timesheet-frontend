@@ -78,10 +78,16 @@ class ClientsListView extends GetView<ClientsController> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    const _ClientsListSearchField(),
+                    const SizedBox(height: 12),
                     if (visible.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 32),
-                        child: Text('No clients yet.'),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Text(
+                          controller.listSearchQuery.value.trim().isEmpty
+                              ? 'No clients yet.'
+                              : 'No clients match “${controller.listSearchQuery.value.trim()}”.',
+                        ),
                       ),
                     for (final c in visible)
                       _ClientCard(
@@ -105,6 +111,63 @@ class ClientsListView extends GetView<ClientsController> {
         );
       }),
     );
+  }
+}
+
+class _ClientsListSearchField extends StatefulWidget {
+  const _ClientsListSearchField();
+
+  @override
+  State<_ClientsListSearchField> createState() =>
+      _ClientsListSearchFieldState();
+}
+
+class _ClientsListSearchFieldState extends State<_ClientsListSearchField> {
+  late final TextEditingController _text;
+
+  @override
+  void initState() {
+    super.initState();
+    final c = Get.find<ClientsController>();
+    _text = TextEditingController(text: c.listSearchQuery.value);
+  }
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<ClientsController>();
+    return Obx(() {
+      final q = controller.listSearchQuery.value;
+      return TextField(
+        key: const Key('clients-list-search'),
+        controller: _text,
+        textInputAction: TextInputAction.search,
+        onChanged: (v) => controller.listSearchQuery.value = v,
+        decoration: InputDecoration(
+          labelText: 'Search clients',
+          hintText: 'Name, email, or phone',
+          border: const OutlineInputBorder(),
+          isDense: true,
+          prefixIcon: const Icon(Icons.search, size: 20),
+          suffixIcon:
+              q.isEmpty
+                  ? null
+                  : IconButton(
+                    tooltip: 'Clear',
+                    icon: const Icon(Icons.clear, size: 18),
+                    onPressed: () {
+                      _text.clear();
+                      controller.listSearchQuery.value = '';
+                    },
+                  ),
+        ),
+      );
+    });
   }
 }
 

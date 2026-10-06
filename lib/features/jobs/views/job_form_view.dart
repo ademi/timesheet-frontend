@@ -3,8 +3,12 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../core/services/session_service.dart';
+import '../../../shared/data/recent_clients_prefs.dart';
+import '../../../shared/utils/client_search.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
+import '../../../shared/widgets/searchable_client_field.dart';
 import '../controllers/jobs_controller.dart';
 import '../utils/job_copy.dart';
 
@@ -94,23 +98,54 @@ class JobFormView extends GetView<JobsController> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: controller.selectedClientId.value,
-                    items: [
-                      for (final c in controller.clients)
-                        DropdownMenuItem(value: c.id, child: Text(c.fullName)),
-                    ],
-                    onChanged:
-                        controller.isLoadingSites.value
-                            ? null
-                            : controller.onClientChanged,
-                    decoration: InputDecoration(
-                      labelText:
-                          controller.kind.value == 'standing'
-                              ? 'Client *'
-                              : 'Client (optional)',
-                      border: const OutlineInputBorder(),
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final prefs = RecentClientsPrefs(
+                        tenantId:
+                            Get.isRegistered<SessionService>()
+                                ? Get.find<SessionService>().tenantId.value
+                                : null,
+                      );
+                      final selectedId = controller.selectedClientId.value;
+                      String? selectedLabel;
+                      if (selectedId != null) {
+                        for (final c in controller.clients) {
+                          if (c.id == selectedId) {
+                            selectedLabel = c.fullName;
+                            break;
+                          }
+                        }
+                      }
+                      return SearchableClientField(
+                        key: const Key('job-client-search'),
+                        candidates: [
+                          for (final c in controller.clients)
+                            ClientSearchCandidate.fromClient(c),
+                        ],
+                        recentIds: prefs.load(),
+                        labelText:
+                            controller.kind.value == 'standing'
+                                ? 'Client *'
+                                : 'Client (optional)',
+                        showPhotos: false,
+                        compactSelected: true,
+                        selectedId: selectedId,
+                        selectedLabel: selectedLabel,
+                        allowClearSelection:
+                            controller.kind.value != 'standing',
+                        clearSelectionLabel: 'Clear client',
+                        enabled: !controller.isLoadingSites.value,
+                        maxResultsHeight: 220,
+                        onClearSelection:
+                            controller.kind.value == 'standing'
+                                ? null
+                                : () => controller.onClientChanged(null),
+                        onSelected: (candidate) async {
+                          prefs.record(candidate.id);
+                          await controller.onClientChanged(candidate.id);
+                        },
+                      );
+                    },
                   ),
                   if (controller.clientSiteWarning.value != null) ...[
                     const SizedBox(height: 8),

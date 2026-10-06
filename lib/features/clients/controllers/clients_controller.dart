@@ -13,6 +13,7 @@ import '../../../core/constants/australian_states.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/models/profile_photo_models.dart';
+import '../../../shared/utils/client_search.dart';
 import '../../../shared/utils/name_sort.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../documents/data/document_pipeline.dart';
@@ -65,6 +66,9 @@ class ClientsController extends GetxController
 
   /// Manage-only: include archived clients in the list fetch.
   final showArchived = false.obs;
+
+  /// Name / email / phone filter for the directory list.
+  final listSearchQuery = ''.obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
   final errorMessage = RxnString();
@@ -232,11 +236,25 @@ class ClientsController extends GetxController
   static bool isCarePlanOwnedClinicalRequirement(String key) =>
       ClinicalKeys.carePlanOwnedClinicalKeys.contains(key);
 
-  /// Clients for the list UI — incomplete onboarding excluded unless toggled.
+  /// Clients for the list UI — incomplete onboarding excluded unless toggled;
+  /// optional name/email/phone search via [listSearchQuery].
   List<ClientOut> get visibleItems {
-    final list = items.toList();
-    if (showIncompleteOnboarding.value) return list;
-    return list.where((c) => !isOnboardingIncomplete(c)).toList();
+    var list = items.toList();
+    if (!showIncompleteOnboarding.value) {
+      list = list.where((c) => !isOnboardingIncomplete(c)).toList();
+    }
+    final q = listSearchQuery.value.trim();
+    if (q.isEmpty) return list;
+    final ranked = searchClients(
+      candidates: [for (final c in list) ClientSearchCandidate.fromClient(c)],
+      query: q,
+      limit: list.isEmpty ? 20 : list.length,
+    );
+    final byId = {for (final c in list) c.id: c};
+    return [
+      for (final row in ranked.items)
+        if (byId.containsKey(row.id)) byId[row.id]!,
+    ];
   }
 
   static bool isOnboardingIncomplete(ClientOut client) =>

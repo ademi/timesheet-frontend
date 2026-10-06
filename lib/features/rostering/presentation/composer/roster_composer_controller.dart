@@ -9,7 +9,9 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../core/errors/app_failure.dart';
 import '../../../../core/services/session_service.dart';
 import '../../../../core/time/tenant_civil_time.dart';
+import '../../../../shared/data/recent_clients_prefs.dart';
 import '../../../../shared/models/profile_photo_models.dart';
+import '../../../../shared/utils/client_search.dart';
 import '../../../../shared/utils/name_sort.dart';
 import '../../../../shared/widgets/app_toast.dart';
 import '../../../../shared/widgets/eligibility_incomplete_panel.dart';
@@ -56,6 +58,7 @@ class RosterComposerController extends GetxController {
       required String title,
     })?
     promptCredentialGateOverride,
+    RecentClientsPrefs? recentClientsPrefs,
   }) : _facade = facade,
        _clients = clientsRepository,
        _session = session,
@@ -66,7 +69,8 @@ class RosterComposerController extends GetxController {
        _promptAssignOverrideReason = promptAssignOverrideReason,
        _confirmPublishOpenSlots = confirmPublishOpenSlots,
        _promptBurnOverride = promptBurnOverride,
-       _promptCredentialGateOverride = promptCredentialGateOverride;
+       _promptCredentialGateOverride = promptCredentialGateOverride,
+       _recentClientsPrefs = recentClientsPrefs;
 
   final ComposerFacade _facade;
   final ClientsRepository _clients;
@@ -85,6 +89,7 @@ class RosterComposerController extends GetxController {
     required String title,
   })?
   _promptCredentialGateOverride;
+  RecentClientsPrefs? _recentClientsPrefs;
 
   final draft = OccurrenceDraft.oneSession().obs;
   final focusSection = ComposerFocusSection.plan.obs;
@@ -93,6 +98,9 @@ class RosterComposerController extends GetxController {
 
   final clients = <ClientOut>[].obs;
   final clientSearch = ''.obs;
+  /// One-session: keep selection while searching for a replacement.
+  final replacingClient = false.obs;
+  final recentClientIds = <String>[].obs;
   final photosByClient = <String, ProfilePhotoOut>{}.obs;
   /// Custom % when equal split is off (participant id → percent).
   final allocationPercents = <String, double>{}.obs;
@@ -227,57 +235,83 @@ class RosterComposerController extends GetxController {
     return [for (final c in filteredClients) if (!taken.contains(c.id)) c];
   }
 
-  /// Type-to-search options for the client autocomplete (empty query → none).
+  Set<String> get _pickerExcludeIds {
+    // While replacing one-session client, still hide the current pick so the
+    // list is alternatives only — selection stays on the tile above.
+    return draft.value.participantIds.toSet();
+  }
+
+  /// Type-to-search options (empty query → none; use [clientPickerIdleOptions]).
   ///
-  /// Dedupes by id, matches name/email/phone, and caps results so identical
-  /// display names from seed/test data cannot bury every other client.
+  /// Dedupes by id, token-matches name/email/phone, ranks by relevance, and
+  /// caps results so identical display names cannot bury every other client.
   List<ClientOut> clientPickerOptions(String raw, {int limit = 20}) {
-    final q = raw.trim().toLowerCase();
-    if (q.isEmpty) return const [];
-    final taken = draft.value.participantIds.toSet();
-    final seen = <String>{};
-    final list = <ClientOut>[];
-    for (final c in clients) {
-      if (taken.contains(c.id) || !seen.add(c.id)) continue;
-      if (!_clientMatchesPickerQuery(c, q)) continue;
-      list.add(c);
-    }
-    list.sort((a, b) {
-      final byName = a.fullName.toLowerCase().compareTo(
-        b.fullName.toLowerCase(),
-      );
-      if (byName != 0) return byName;
-      final ae = (a.email ?? '').toLowerCase();
-      final be = (b.email ?? '').toLowerCase();
-      final byEmail = ae.compareTo(be);
-      if (byEmail != 0) return byEmail;
-      return a.id.compareTo(b.id);
-    });
-    if (list.length <= limit) return list;
-    return list.sublist(0, limit);
+    final result = clientPickerSearch(raw, limit: limit);
+    return _clientsFromCandidates(result.items);
+  }
+
+  ClientSearchResult clientPickerSearch(String raw, {int limit = 20}) {
+    return searchClients(
+      candidates: [
+        for (final c in clients) ClientSearchCandidate.fromClient(c),
+      ],
+      query: raw,
+      limit: limit,
+      excludeIds: _pickerExcludeIds,
+    );
+  }
+
+  /// Empty-query browse: recents first, then A–Z fill.
+  List<ClientOut> clientPickerIdleOptions({int limit = 8}) {
+    final browsed = browseClients(
+      candidates: [
+        for (final c in clients) ClientSearchCandidate.fromClient(c),
+      ],
+      recentIds: recentClientIds.toList(),
+      limit: limit,
+      excludeIds: _pickerExcludeIds,
+    );
+    return _clientsFromCandidates(browsed);
+  }
+
+  List<ClientOut> _clientsFromCandidates(List<ClientSearchCandidate> rows) {
+    final byId = {for (final c in clients) c.id: c};
+    return [
+      for (final row in rows)
+        if (byId.containsKey(row.id)) byId[row.id]!,
+    ];
   }
 
   /// Subtitle so duplicate full names stay distinguishable in the picker.
   String clientPickerSubtitle(ClientOut client) {
-    final parts = <String>[
-      if (client.email != null && client.email!.trim().isNotEmpty)
-        client.email!.trim(),
-      if (client.phone != null && client.phone!.trim().isNotEmpty)
-        client.phone!.trim(),
-      if (client.primaryDisplayAddress.isNotEmpty) client.primaryDisplayAddress,
-    ];
-    if (parts.isNotEmpty) return parts.join(' · ');
-    final id = client.id;
-    return id.length > 8 ? id.substring(0, 8) : id;
+    return clientSearchSubtitle(ClientSearchCandidate.fromClient(client));
   }
 
-  static bool _clientMatchesPickerQuery(ClientOut c, String q) {
-    if (c.fullName.toLowerCase().contains(q)) return true;
-    final email = c.email?.toLowerCase();
-    if (email != null && email.contains(q)) return true;
-    final phone = c.phone?.toLowerCase();
-    if (phone != null && phone.contains(q)) return true;
-    return false;
+  void beginReplaceClient() {
+    replacingClient.value = true;
+    clientSearch.value = '';
+  }
+
+  void cancelReplaceClient() {
+    replacingClient.value = false;
+    clientSearch.value = '';
+  }
+
+  void _ensureRecentPrefs() {
+    _recentClientsPrefs ??= RecentClientsPrefs(
+      tenantId: _session.tenantId.value,
+    );
+  }
+
+  void _loadRecentClientIds() {
+    _ensureRecentPrefs();
+    recentClientIds.assignAll(_recentClientsPrefs!.load());
+  }
+
+  void _recordRecentClient(String clientId) {
+    _ensureRecentPrefs();
+    _recentClientsPrefs!.record(clientId);
+    recentClientIds.assignAll(_recentClientsPrefs!.load());
   }
 
   String? participantName(String id) {
@@ -294,6 +328,7 @@ class RosterComposerController extends GetxController {
     super.onInit();
     focusSection.value = _args.focusSection;
     currentStep.value = ComposerStepX.fromFocus(_args.focusSection);
+    _loadRecentClientIds();
     // Skeleton first paint < 300ms — do not block onInit on network.
     isHydrating.value = true;
     unawaited(_bootstrap());
@@ -1335,6 +1370,8 @@ class RosterComposerController extends GetxController {
   Future<bool> addParticipant(ClientOut client) async {
     if (!clients.any((c) => c.id == client.id)) clients.add(client);
     unawaited(ensureClientPhoto(client.id));
+    _recordRecentClient(client.id);
+    replacingClient.value = false;
 
     // One session: replace, never accumulate.
     if (!isGroup) {
