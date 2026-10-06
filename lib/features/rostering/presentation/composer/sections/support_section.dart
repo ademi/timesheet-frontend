@@ -21,6 +21,7 @@ class ComposerSupportSection extends GetView<RosterComposerController> {
       final name = controller.supportItemName.value;
       final visitIds = controller.visitIdsWithSegments;
       final taskCount = controller.draft.value.taskTemplate.length;
+      final showLive = visitIds.isNotEmpty;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -60,33 +61,36 @@ class ComposerSupportSection extends GetView<RosterComposerController> {
           ),
           const SizedBox(height: 8),
           _ComposerTasksField(controller: controller),
-          if (visitIds.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Text('Segments', style: Get.textTheme.titleSmall),
-            const SizedBox(height: 4),
-            const Text(
-              'Add timed support items after a worker is assigned. '
-              'Every active participant needs at least one segment.',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            if (controller.segmentsError.value != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  controller.segmentsError.value!,
-                  key: const Key('composer-segments-error'),
-                  style: const TextStyle(color: AppColors.error, fontSize: 12),
-                ),
+          const SizedBox(height: 24),
+          Text('Segments', style: Get.textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Text(
+            showLive
+                ? 'Add timed support items after a worker is assigned. '
+                    'Every active participant needs at least one segment.'
+                : kDraftSegmentsIntroCopy,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          if (controller.segmentsError.value != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                controller.segmentsError.value!,
+                key: const Key('composer-segments-error'),
+                style: const TextStyle(color: AppColors.error, fontSize: 12),
               ),
+            ),
+          if (showLive)
             for (final visitId in visitIds) ...[
               _VisitSegmentsEditor(
                 key: Key('segments-visit-$visitId'),
                 visitId: visitId,
               ),
               const SizedBox(height: 12),
-            ],
-          ],
+            ]
+          else
+            const _DraftSegmentsEditor(key: Key('segments-draft-template')),
         ],
       );
     });
@@ -142,6 +146,280 @@ class _ComposerTasksFieldState extends State<_ComposerTasksField> {
   }
 }
 
+/// Pre-assign planner → `draft.segmentTemplate` (offsets), saved with Save draft.
+class _DraftSegmentsEditor extends StatefulWidget {
+  const _DraftSegmentsEditor({super.key});
+
+  @override
+  State<_DraftSegmentsEditor> createState() => _DraftSegmentsEditorState();
+}
+
+class _DraftSegmentsEditorState extends State<_DraftSegmentsEditor> {
+  final controller = Get.find<RosterComposerController>();
+  late List<SupportSegmentRowDraft> _rows;
+  String? _localError;
+  List<String> _warnings = const [];
+  bool _dirty = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rows = _hydrateRows();
+  }
+
+  List<String> get _participantIds => controller.draft.value.participantIds;
+
+  List<SupportSegmentRowDraft> _hydrateRows() {
+    final start = controller.draft.value.scheduledStart;
+    final end = controller.draft.value.scheduledEnd;
+    final template = controller.draft.value.segmentTemplate;
+    final defaultName = controller.supportItemName.value;
+
+    if (start == null || end == null) return [];
+
+    if (template.isNotEmpty) {
+      return supportSegmentRowsFromTemplate(
+        template: template,
+        windowStart: start,
+        defaultItemName: defaultName.isEmpty ? null : defaultName,
+      );
+    }
+
+    return seedDraftSegmentRows(
+      windowStart: start,
+      windowEnd: end,
+      participantIds: _participantIds,
+      supportItemCode: controller.draft.value.supportItemCode,
+      supportItemName: defaultName.isEmpty ? null : defaultName,
+    );
+  }
+
+  void _addRow() {
+    if (_rows.length >= kMaxSupportSegments) {
+      setState(() => _localError = 'At most $kMaxSupportSegments segments are allowed.');
+      return;
+    }
+    final start = controller.draft.value.scheduledStart;
+    final end = controller.draft.value.scheduledEnd;
+    if (start == null || end == null) return;
+    final ids = _participantIds;
+    final defaultName = controller.supportItemName.value;
+    setState(() {
+      _localError = null;
+      _dirty = true;
+      _rows = [
+        ..._rows,
+        SupportSegmentRowDraft(
+          shiftParticipantId: '',
+          participantId: ids.isNotEmpty ? ids.first : null,
+          anchorSupportItemCode:
+              controller.draft.value.supportItemCode?.trim() ?? '',
+          anchorSupportItemName: defaultName.isEmpty ? null : defaultName,
+          startAt: start,
+          endAt: end,
+        ),
+      ];
+    });
+  }
+
+  void _removeRow(int index) {
+    setState(() {
+      _localError = null;
+      _dirty = true;
+      _rows = [
+        for (var i = 0; i < _rows.length; i++)
+          if (i != index) _rows[i],
+      ];
+      _warnings = supportSegmentKindWarnings(_rows);
+    });
+  }
+
+  void _clearToModeA() {
+    setState(() {
+      _localError = null;
+      _warnings = const [];
+      _dirty = false;
+      _rows = [];
+    });
+    controller.clearSegmentTemplate();
+  }
+
+  void _applyToDraft() {
+    final start = controller.draft.value.scheduledStart;
+    final end = controller.draft.value.scheduledEnd;
+    if (start == null || end == null) {
+      setState(() => _localError = 'Set the visit schedule before saving segments.');
+      return;
+    }
+    if (_participantIds.isEmpty) {
+      setState(
+        () =>
+            _localError =
+                'Add at least one person before saving planned segments.',
+      );
+      return;
+    }
+
+    // Ensure each row has a participant id (default first).
+    for (final row in _rows) {
+      final id = (row.participantId ?? '').trim();
+      if (id.isEmpty) {
+        row.participantId = _participantIds.first;
+      }
+    }
+
+    final validation = validateSupportSegmentRows(
+      rows: _rows,
+      visitStart: start,
+      visitEnd: end,
+      draftParticipantIds: _participantIds.toSet(),
+      useParticipantId: true,
+      // Phase 3 hardens full coverage; Phase 1 allows partial plans.
+      requireCoverage: false,
+    );
+    if (validation != null) {
+      setState(() {
+        _localError = validation;
+        _warnings = supportSegmentKindWarnings(_rows);
+      });
+      controller.segmentsError.value = validation;
+      return;
+    }
+
+    final items = segmentTemplateFromRows(rows: _rows, windowStart: start);
+    controller.setSegmentTemplate(items);
+    setState(() {
+      _localError = null;
+      _warnings = supportSegmentKindWarnings(_rows);
+      _dirty = false;
+      _rows = _hydrateRows();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      // Touch draft fields so schedule / people / template updates rebuild.
+      final start = controller.draft.value.scheduledStart;
+      final end = controller.draft.value.scheduledEnd;
+      final templateLen = controller.draft.value.segmentTemplate.length;
+      final people = List<String>.from(controller.draft.value.participantIds);
+
+      if (start == null || end == null) {
+        return const Text(
+          key: Key('segments-draft-need-schedule'),
+          'Set start and end times before planning support windows.',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+        );
+      }
+
+      if (people.isEmpty && _rows.isEmpty) {
+        return const Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              key: Key('segments-draft-mode-a-hint'),
+              kDraftSegmentsModeACopy,
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Add people on the People step to plan windows per participant.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ],
+        );
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (templateLen == 0 && !_dirty && _rows.isNotEmpty)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Text(
+                key: Key('segments-draft-seed-hint'),
+                'Suggested full-window rows from the anchor item — edit and save '
+                'to the draft, or clear to keep Mode A.',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              ),
+            ),
+          if (templateLen == 0 && _rows.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Text(
+                key: Key('segments-draft-mode-a-hint'),
+                kDraftSegmentsModeACopy,
+                style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              ),
+            ),
+          for (var i = 0; i < _rows.length; i++) ...[
+            _SegmentRowCard(
+              key: Key('segment-draft-row-$i'),
+              index: i,
+              row: _rows[i],
+              draftParticipantIds: people,
+              participantLabel: controller.participantName,
+              visitEnd: end,
+              canRemove: _rows.length > 1 || templateLen > 0,
+              onChanged: () {
+                setState(() {
+                  _localError = null;
+                  _dirty = true;
+                  _warnings = supportSegmentKindWarnings(_rows);
+                });
+              },
+              onRemove: () => _removeRow(i),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (_localError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                _localError!,
+                key: const Key('segments-draft-local-error'),
+                style: const TextStyle(color: AppColors.error, fontSize: 12),
+              ),
+            ),
+          for (final w in _warnings)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                w,
+                style: const TextStyle(color: AppColors.slate500, fontSize: 11),
+              ),
+            ),
+          Row(
+            children: [
+              TextButton.icon(
+                key: const Key('segments-draft-add'),
+                onPressed: _addRow,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add segment'),
+              ),
+              TextButton(
+                key: const Key('segments-draft-clear'),
+                onPressed:
+                    templateLen == 0 && _rows.isEmpty ? null : _clearToModeA,
+                child: const Text('Clear (Mode A)'),
+              ),
+              const Spacer(),
+              TextButton(
+                key: const Key('segments-draft-save'),
+                onPressed: _rows.isEmpty ? null : _applyToDraft,
+                child: Text(
+                  _dirty || templateLen == 0 ? 'Save to draft' : 'Saved',
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    });
+  }
+}
+
 class _VisitSegmentsEditor extends StatefulWidget {
   const _VisitSegmentsEditor({super.key, required this.visitId});
 
@@ -155,6 +433,7 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
   final controller = Get.find<RosterComposerController>();
   late List<SupportSegmentRowDraft> _rows;
   String? _localError;
+  List<String> _warnings = const [];
 
   @override
   void initState() {
@@ -207,12 +486,15 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
   }
 
   void _addRow() {
+    if (_rows.length >= kMaxSupportSegments) {
+      setState(() => _localError = 'At most $kMaxSupportSegments segments are allowed.');
+      return;
+    }
     final start = controller.draft.value.scheduledStart;
     final end = controller.draft.value.scheduledEnd;
     if (start == null || end == null) return;
     final participants = _activeParticipants;
-    final defaultSp =
-        participants.isNotEmpty ? participants.first.id : '';
+    final defaultSp = participants.isNotEmpty ? participants.first.id : '';
     final defaultCode = controller.draft.value.supportItemCode ?? '';
     final defaultName = controller.supportItemName.value;
     setState(() {
@@ -238,6 +520,7 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
         for (var i = 0; i < _rows.length; i++)
           if (i != index) _rows[i],
       ];
+      _warnings = supportSegmentKindWarnings(_rows);
     });
   }
 
@@ -257,12 +540,18 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
       activeShiftParticipantIds: activeIds,
     );
     if (validation != null) {
-      setState(() => _localError = validation);
+      setState(() {
+        _localError = validation;
+        _warnings = supportSegmentKindWarnings(_rows);
+      });
       controller.segmentsError.value = validation;
       return;
     }
 
-    setState(() => _localError = null);
+    setState(() {
+      _localError = null;
+      _warnings = supportSegmentKindWarnings(_rows);
+    });
     await controller.saveVisitSegments(widget.visitId, [
       for (var i = 0; i < _rows.length; i++)
         SupportSegmentIn(
@@ -292,6 +581,7 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
           widget.visitId.length > 8
               ? '${widget.visitId.substring(0, 8)}…'
               : widget.visitId;
+      final end = controller.draft.value.scheduledEnd;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -307,8 +597,14 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
               index: i,
               row: _rows[i],
               participants: participants,
+              visitEnd: end,
               canRemove: _rows.length > 1 && !saving,
-              onChanged: () => setState(() => _localError = null),
+              onChanged: () {
+                setState(() {
+                  _localError = null;
+                  _warnings = supportSegmentKindWarnings(_rows);
+                });
+              },
               onRemove: () => _removeRow(i),
             ),
             const SizedBox(height: 12),
@@ -320,6 +616,14 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
                 _localError!,
                 key: Key('segments-local-error-${widget.visitId}'),
                 style: const TextStyle(color: AppColors.error, fontSize: 12),
+              ),
+            ),
+          for (final w in _warnings)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                w,
+                style: const TextStyle(color: AppColors.slate500, fontSize: 11),
               ),
             ),
           Row(
@@ -356,28 +660,54 @@ class _SegmentRowCard extends StatelessWidget {
     super.key,
     required this.index,
     required this.row,
-    required this.participants,
     required this.canRemove,
     required this.onChanged,
     required this.onRemove,
+    this.participants = const [],
+    this.draftParticipantIds = const [],
+    this.participantLabel,
+    this.visitEnd,
   });
 
   final int index;
   final SupportSegmentRowDraft row;
   final List<ShiftParticipantOut> participants;
+  final List<String> draftParticipantIds;
+  final String? Function(String id)? participantLabel;
+  final DateTime? visitEnd;
   final bool canRemove;
   final VoidCallback onChanged;
   final VoidCallback onRemove;
 
+  bool get _useDraftParticipants => draftParticipantIds.isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
-    final participantIds = {for (final p in participants) p.id};
-    final selectedSp =
-        participantIds.contains(row.shiftParticipantId)
-            ? row.shiftParticipantId
-            : (participants.isNotEmpty ? participants.first.id : null);
     final kind =
         kSupportSegmentKinds.contains(row.kind) ? row.kind : 'direct';
+    final kindHelp = supportSegmentKindHelper(kind);
+
+    String? selectedSp;
+    if (_useDraftParticipants) {
+      final id = (row.participantId ?? '').trim();
+      selectedSp =
+          draftParticipantIds.contains(id)
+              ? id
+              : (draftParticipantIds.isNotEmpty
+                  ? draftParticipantIds.first
+                  : null);
+    } else {
+      final participantIds = {for (final p in participants) p.id};
+      selectedSp =
+          participantIds.contains(row.shiftParticipantId)
+              ? row.shiftParticipantId
+              : (participants.isNotEmpty ? participants.first.id : null);
+    }
+
+    final showParticipantDropdown =
+        _useDraftParticipants
+            ? draftParticipantIds.length > 1
+            : participants.length > 1;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -409,7 +739,7 @@ class _SegmentRowCard extends StatelessWidget {
                 ),
             ],
           ),
-          if (participants.length > 1) ...[
+          if (showParticipantDropdown) ...[
             DropdownButtonFormField<String>(
               key: Key('segment-participant-$index'),
               value: selectedSp,
@@ -418,20 +748,36 @@ class _SegmentRowCard extends StatelessWidget {
                 isDense: true,
               ),
               items: [
-                for (final p in participants)
-                  DropdownMenuItem(
-                    value: p.id,
-                    child: Text(
-                      p.participantName?.trim().isNotEmpty == true
-                          ? p.participantName!
-                          : 'Participant',
-                      overflow: TextOverflow.ellipsis,
+                if (_useDraftParticipants)
+                  for (final id in draftParticipantIds)
+                    DropdownMenuItem(
+                      value: id,
+                      child: Text(
+                        participantLabel?.call(id)?.trim().isNotEmpty == true
+                            ? participantLabel!(id)!
+                            : 'Participant',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    )
+                else
+                  for (final p in participants)
+                    DropdownMenuItem(
+                      value: p.id,
+                      child: Text(
+                        p.participantName?.trim().isNotEmpty == true
+                            ? p.participantName!
+                            : 'Participant',
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
               ],
               onChanged: (v) {
                 if (v == null) return;
-                row.shiftParticipantId = v;
+                if (_useDraftParticipants) {
+                  row.participantId = v;
+                } else {
+                  row.shiftParticipantId = v;
+                }
                 onChanged();
               },
             ),
@@ -472,6 +818,14 @@ class _SegmentRowCard extends StatelessWidget {
               onChanged();
             },
           ),
+          if (kindHelp != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              kindHelp,
+              key: Key('segment-kind-help-$index'),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+            ),
+          ],
           const SizedBox(height: 8),
           Row(
             children: [
@@ -491,6 +845,13 @@ class _SegmentRowCard extends StatelessWidget {
                       t.hour,
                       t.minute,
                     );
+                    // Re-resolve end if overnight.
+                    row.endAt = resolveSegmentEndAt(
+                      startAt: row.startAt,
+                      endHour: row.endAt.hour,
+                      endMinute: row.endAt.minute,
+                      visitEnd: visitEnd,
+                    );
                     onChanged();
                   },
                 ),
@@ -505,12 +866,11 @@ class _SegmentRowCard extends StatelessWidget {
                     minute: row.endAt.minute,
                   ),
                   onChanged: (t) {
-                    row.endAt = DateTime(
-                      row.endAt.year,
-                      row.endAt.month,
-                      row.endAt.day,
-                      t.hour,
-                      t.minute,
+                    row.endAt = resolveSegmentEndAt(
+                      startAt: row.startAt,
+                      endHour: t.hour,
+                      endMinute: t.minute,
+                      visitEnd: visitEnd,
                     );
                     onChanged();
                   },

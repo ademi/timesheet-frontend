@@ -1228,6 +1228,33 @@ class RosterComposerController extends GetxController {
     );
   }
 
+  /// Replace planned support windows on the draft (`segment_template` offsets).
+  /// Persisted on the next create/patch Save draft.
+  void setSegmentTemplate(List<SegmentTemplateItem> items) {
+    draft.value = draft.value.copyWith(
+      segmentTemplate: [
+        for (var i = 0; i < items.length; i++)
+          SegmentTemplateItem(
+            participantId: items[i].participantId.trim(),
+            anchorSupportItemCode: items[i].anchorSupportItemCode.trim(),
+            kind: items[i].kind,
+            offsetStartMinutes: items[i].offsetStartMinutes,
+            offsetEndMinutes: items[i].offsetEndMinutes,
+            groupSize: items[i].groupSize,
+            notes: items[i].notes,
+            sortOrder: i,
+          ),
+      ],
+    );
+    segmentsError.value = null;
+  }
+
+  /// Clear planned windows so assign uses Mode A.
+  void clearSegmentTemplate() {
+    draft.value = draft.value.copyWith(segmentTemplate: const []);
+    segmentsError.value = null;
+  }
+
   void addTaskTitle(String title) {
     final trimmed = title.trim();
     if (trimmed.isEmpty) return;
@@ -2263,10 +2290,7 @@ class RosterComposerController extends GetxController {
             requiredSlots: draft.value.requiredSlots,
             workerCount: draft.value.workerCount,
             taskTemplate: draft.value.taskTemplate,
-            segmentTemplate:
-                draft.value.segmentTemplate.isEmpty
-                    ? null
-                    : draft.value.segmentTemplate,
+            segmentTemplate: draft.value.segmentTemplate,
           ),
         );
         persisted = await _facade.putParticipants(
