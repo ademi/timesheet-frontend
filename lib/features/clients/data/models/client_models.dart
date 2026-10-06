@@ -577,3 +577,42 @@ class ClientInviteAcknowledgeResponse {
     );
   }
 }
+
+/// One row from `GET/PUT /v1/clients/{id}/form-defaults` (A5 / A8-X1).
+class ClientFormDefaultOut {
+  const ClientFormDefaultOut({
+    required this.formTemplateId,
+    required this.name,
+    required this.isActive,
+    required this.isRequired,
+  });
+
+  final String formTemplateId;
+  final String name;
+  final bool isActive;
+  final bool isRequired;
+
+  factory ClientFormDefaultOut.fromJson(Map<String, dynamic> json) {
+    return ClientFormDefaultOut(
+      formTemplateId: json['form_template_id'].toString(),
+      name: json['name'] as String? ?? '',
+      isActive: json['is_active'] as bool? ?? true,
+      isRequired: json['is_required'] as bool? ?? true,
+    );
+  }
+}
+
+class ClientFormDefaultItem {
+  const ClientFormDefaultItem({
+    required this.formTemplateId,
+    this.isRequired = true,
+  });
+
+  final String formTemplateId;
+  final bool isRequired;
+
+  Map<String, dynamic> toJson() => {
+    'form_template_id': formTemplateId,
+    'is_required': isRequired,
+  };
+}

@@ -27,6 +27,14 @@ class ComposerPublishSection extends GetView<RosterComposerController> {
                 : 'Publish assigns selected workers; empty slots stay open for claim.',
             style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
+          if (assigned > 0) ...[
+            const SizedBox(height: 6),
+            const Text(
+              'Workers are notified when you publish — draft assigns stay silent.',
+              key: Key('composer-publish-notify-hint'),
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ],
           const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerLeft,

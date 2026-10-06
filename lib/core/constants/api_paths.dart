@@ -148,6 +148,8 @@ abstract final class ApiPaths {
       '${clientSupportPlans(clientId)}/$planId';
   static String clientBudgetSummary(String clientId) =>
       '${client(clientId)}/budget-summary';
+  static String clientFormDefaults(String clientId) =>
+      '${client(clientId)}/form-defaults';
   static String clientStrengthsNeeds(String clientId) =>
       '${client(clientId)}/strengths-needs';
   static String clientStrengthsNeedsCurrent(String clientId) =>

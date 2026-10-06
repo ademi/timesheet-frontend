@@ -185,4 +185,13 @@ class ClientsRepository {
     required String token,
     bool accept = true,
   }) => _remote.acknowledgePublicInvite(token: token, accept: accept);
+
+  Future<List<ClientFormDefaultOut>> listClientFormDefaults(String clientId) =>
+      _remote.listClientFormDefaults(clientId);
+
+  Future<List<ClientFormDefaultOut>> replaceClientFormDefaults(
+    String clientId,
+    List<ClientFormDefaultItem> defaults,
+  ) =>
+      _remote.replaceClientFormDefaults(clientId, defaults);
 }

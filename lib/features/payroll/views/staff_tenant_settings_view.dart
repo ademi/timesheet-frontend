@@ -153,6 +153,44 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
+                    'Default progress-note template for visits when a client '
+                    'has no form defaults of their own.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String?>(
+                    key: const Key('tenant-default-progress-note'),
+                    value: () {
+                      final id = controller.defaultProgressNoteTemplateId.value;
+                      final ids = {
+                        for (final t in controller.formTemplates) t.id,
+                      };
+                      return id != null && ids.contains(id) ? id : null;
+                    }(),
+                    decoration: const InputDecoration(
+                      labelText: 'Org default progress note',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('None'),
+                      ),
+                      for (final t in controller.formTemplates)
+                        DropdownMenuItem<String?>(
+                          value: t.id,
+                          child: Text(t.name, overflow: TextOverflow.ellipsis),
+                        ),
+                    ],
+                    onChanged:
+                        controller.canManage
+                            ? (v) =>
+                                controller.defaultProgressNoteTemplateId.value =
+                                    v
+                            : null,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
                     'When a visit uses enforce geofence: soft allows the punch '
                     'and opens a variance for review; hard blocks with '
                     'geofence_rejected.',

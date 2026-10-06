@@ -20,4 +20,15 @@ void main() {
     final missing = TenantSettingsOut.fromJson({'id': 't1'});
     expect(missing.ndisProviderRegistrationStatus, 'registered');
   });
+
+  test('TenantSettingsOut parses default_progress_note_template_id', () {
+    final withTpl = TenantSettingsOut.fromJson({
+      'id': 't1',
+      'default_progress_note_template_id': 'tpl-99',
+    });
+    expect(withTpl.defaultProgressNoteTemplateId, 'tpl-99');
+
+    final cleared = TenantSettingsOut.fromJson({'id': 't1'});
+    expect(cleared.defaultProgressNoteTemplateId, isNull);
+  });
 }

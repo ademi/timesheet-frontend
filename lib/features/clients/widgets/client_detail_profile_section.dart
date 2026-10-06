@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../controllers/clients_controller.dart';
+import 'client_detail_form_defaults_section.dart';
 import 'client_requirement_editors.dart';
 
 class ClientDetailProfileSection extends StatelessWidget {
@@ -60,6 +61,8 @@ class ClientDetailProfileSection extends StatelessWidget {
               style: TextStyle(color: AppColors.textMuted),
             ),
           ],
+          const SizedBox(height: 28),
+          ClientDetailFormDefaultsSection(controller: controller),
         ],
       );
     });

@@ -108,8 +108,9 @@ GoRouter createAppGoRouter({String? initialLocation}) {
 /// Safe fallback for unmatched / mistyped URLs on web.
 ///
 /// Logs once per build, then offers [AppNavigator.offAll] to gateway (logged out)
-/// or the post-login home (authenticated). Intentional exception:
-/// [AppRoutes.staffGroupShiftWindows] is a local overlay, not a GoRoute.
+/// or the post-login home (authenticated). Legacy cutover:
+/// [AppRoutes.staffGroupShiftWindows] is registered as shift-detail
+/// `participant-windows` → Roster Composer.
 class UnknownRoutePage extends StatefulWidget {
   const UnknownRoutePage({super.key, required this.uri});
 

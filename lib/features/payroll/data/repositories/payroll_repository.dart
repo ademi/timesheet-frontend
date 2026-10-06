@@ -43,6 +43,8 @@ class PayrollRepository {
     String? geofenceOutsidePolicy,
     String? providerAbn,
     String? ndisProviderRegistrationStatus,
+    String? defaultProgressNoteTemplateId,
+    bool setDefaultProgressNoteTemplate = false,
   }) => _remote.patchTenant(
     tenantId,
     timezone: timezone,
@@ -50,5 +52,7 @@ class PayrollRepository {
     geofenceOutsidePolicy: geofenceOutsidePolicy,
     providerAbn: providerAbn,
     ndisProviderRegistrationStatus: ndisProviderRegistrationStatus,
+    defaultProgressNoteTemplateId: defaultProgressNoteTemplateId,
+    setDefaultProgressNoteTemplate: setDefaultProgressNoteTemplate,
   );
 }

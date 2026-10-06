@@ -82,6 +82,13 @@ List<RouteBase> buildVisitsGoRoutes({
       ),
       _shiftWizardChild(
         rootNavigatorKey: rootNavigatorKey,
+        path: 'participant-windows',
+        anyOf: _groupManageAnyOf,
+        onEnter: () => RosterComposerBinding().dependencies(),
+        child: const RosterComposerView(),
+      ),
+      _shiftWizardChild(
+        rootNavigatorKey: rootNavigatorKey,
         path: 'participant-attendance',
         anyOf: _groupManageAnyOf,
         onEnter: () => GroupShiftAttendanceBinding().dependencies(),

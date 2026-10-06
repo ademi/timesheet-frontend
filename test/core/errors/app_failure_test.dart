@@ -352,6 +352,26 @@ void main() {
       );
     });
 
+    test('maps shift_not_published for contractor delivery gate', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(path: '/visits/x/check-in'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/visits/x/check-in'),
+            statusCode: 409,
+            data: {'detail': 'shift_not_published'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+      expect(failure.code, 'shift_not_published');
+      expect(
+        failure.message,
+        'This shift is not live yet — ask your coordinator to publish.',
+      );
+      expect(failure.presentation, AppFailurePresentation.inline);
+    });
+
     test('maps shift claim error codes', () {
       const expectedMessages = {
         'shift_full': 'This shift is already filled.',
@@ -410,6 +430,38 @@ void main() {
         ).message,
         'This worker is no longer in your workforce.',
       );
+    });
+
+    test('maps support segment validation errors', () {
+      const expectedMessages = {
+        'segments_required': 'Add at least one segment before saving.',
+        'participant_segments_missing':
+            'Every active participant needs at least one segment.',
+        'shift_participant_not_on_shift':
+            'A segment references a participant who is not on this shift.',
+        'segment_outside_visit_window':
+            'Each segment must sit inside the visit start and end times.',
+        'segment_overlap':
+            'Segments overlap for the same participant. Adjust times or kinds.',
+        'segment_end_before_start': 'Segment end must be after start.',
+      };
+
+      for (final entry in expectedMessages.entries) {
+        final failure = AppFailure.fromDio(
+          DioException(
+            requestOptions: RequestOptions(path: '/shifts/segments'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/shifts/segments'),
+              statusCode: 422,
+              data: {'detail': entry.key},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        expect(failure.code, entry.key);
+        expect(failure.message, entry.value);
+      }
     });
 
     test('maps NDIS support item validation errors', () {

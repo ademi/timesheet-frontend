@@ -278,6 +278,7 @@ class AppFailure implements Exception {
       'evidence_required',
       'shift_full',
       'invalid_shift_status',
+      'shift_not_published',
       'contractor_on_leave',
       'shift_not_found',
       'shift_overlap',
@@ -321,6 +322,12 @@ class AppFailure implements Exception {
       'labour_snapshot_item_not_in_catalogue',
       'ndis_number_in_use',
       'ndis_required',
+      'segments_required',
+      'participant_segments_missing',
+      'shift_participant_not_on_shift',
+      'segment_outside_visit_window',
+      'segment_overlap',
+      'segment_end_before_start',
     ];
     for (final k in known) {
       if (d == k || d.contains(k)) return k;
@@ -371,6 +378,7 @@ class AppFailure implements Exception {
       case 'evidence_required':
       case 'shift_full':
       case 'invalid_shift_status':
+      case 'shift_not_published':
       case 'attendance_locked_exported':
       case 'membership_locked_exported':
       case 'contractor_on_leave':
@@ -406,6 +414,12 @@ class AppFailure implements Exception {
       case 'labour_travel_unclaimed_exists':
       case 'labour_snapshot_item_not_hourly':
       case 'labour_snapshot_item_not_in_catalogue':
+      case 'segments_required':
+      case 'participant_segments_missing':
+      case 'shift_participant_not_on_shift':
+      case 'segment_outside_visit_window':
+      case 'segment_overlap':
+      case 'segment_end_before_start':
       case 'visit_cancelled':
       case 'visit_already_completed':
       case 'clock_times_in_future':
@@ -550,6 +564,8 @@ class AppFailure implements Exception {
         return 'This shift is already filled.';
       case 'invalid_shift_status':
         return 'This shift can’t be changed in its current state.';
+      case 'shift_not_published':
+        return 'This shift is not live yet — ask your coordinator to publish.';
       case 'contractor_on_leave':
         return 'You’re on leave for this day.';
       case 'shift_not_found':
@@ -635,6 +651,18 @@ class AppFailure implements Exception {
         return 'Worker travel time needs an hourly (H) support item on the participant’s rate snapshot. Update the published support item and try again.';
       case 'labour_snapshot_item_not_in_catalogue':
         return 'The participant’s published support item isn’t in the active catalogue. Re-publish the shift with a current catalogue item.';
+      case 'segments_required':
+        return 'Add at least one segment before saving.';
+      case 'participant_segments_missing':
+        return 'Every active participant needs at least one segment.';
+      case 'shift_participant_not_on_shift':
+        return 'A segment references a participant who is not on this shift.';
+      case 'segment_outside_visit_window':
+        return 'Each segment must sit inside the visit start and end times.';
+      case 'segment_overlap':
+        return 'Segments overlap for the same participant. Adjust times or kinds.';
+      case 'segment_end_before_start':
+        return 'Segment end must be after start.';
       default:
         return fallback;
     }

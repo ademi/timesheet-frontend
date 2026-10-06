@@ -4,6 +4,8 @@ import '../../../core/getx/put_fresh.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/token_storage.dart';
+import '../../clients/bindings/clients_binding.dart';
+import '../../clients/data/repositories/clients_repository.dart';
 import '../../engagements/bindings/engagements_binding.dart';
 import '../../compliance_ops/bindings/compliance_ops_binding.dart';
 import '../../compliance_ops/data/repositories/compliance_ops_repository.dart';
@@ -83,12 +85,14 @@ class StaffTenantSettingsBinding extends Bindings {
   void dependencies() {
     PayrollBinding.ensureShared();
     ComplianceOpsBinding.ensureShared();
+    ClientsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     putOrReenter(
       () => StaffTenantSettingsController(
         payroll: Get.find<PayrollRepository>(),
         complianceOps: Get.find<ComplianceOpsRepository>(),
         session: Get.find<SessionService>(),
+        clients: Get.find<ClientsRepository>(),
       ),
       onReenter: (c) => c.onScreenReenter(),
     );

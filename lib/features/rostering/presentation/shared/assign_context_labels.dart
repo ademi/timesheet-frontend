@@ -73,3 +73,10 @@ String assignAvailabilityLabelFromContext({
 /// True when [label] requires a staff override reason before assign.
 bool assignLabelRequiresOverrideReason(String label) =>
     label == 'Busy' || label == 'Leave';
+
+/// Short chip copy for assign-context [ClientConflictOut] (warn-only).
+String clientConflictChipLabel(ClientConflictOut conflict) =>
+    switch (conflict.kind) {
+      'shift' => 'Open shift hole…',
+      _ => 'Overlapping visit…',
+    };

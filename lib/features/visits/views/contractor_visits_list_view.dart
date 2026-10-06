@@ -175,39 +175,36 @@ class _OpenShiftsList extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            shift.jobTitle,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
                           Builder(
                             builder: (context) {
                               final active = shift.activeParticipantsSummary;
-                              final place = shiftPlaceDisplayLabel(
+                              final headline = placeFirstShiftLabel(
                                 placeLabel: shift.placeLabel,
                                 locationLabel: shift.locationLabel,
-                              );
-                              final people = shiftParticipantsSummaryLabel(
-                                active.map((p) => p.participantName),
+                                participantNames: active.map(
+                                  (p) => p.participantName,
+                                ),
+                                clientName: shift.clientName,
+                                jobTitle: shift.jobTitle,
                               );
                               final ratio =
                                   active.length >= 2
-                                      ? ' · ${staffParticipantLabel(shift.workerCount, active.length)}'
-                                      : '';
-                              final lines = <String>[
-                                if (place != null) place,
-                                if (people.isNotEmpty) '$people$ratio',
-                              ];
-                              if (lines.isEmpty &&
-                                  shift.clientName?.isNotEmpty == true) {
-                                lines.add(shift.clientName!);
-                              }
-                              if (lines.isEmpty) {
-                                return const SizedBox.shrink();
-                              }
+                                      ? staffParticipantLabel(
+                                        shift.workerCount,
+                                        active.length,
+                                      )
+                                      : null;
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  for (final line in lines) Text(line),
+                                  Text(
+                                    headline.isEmpty ? shift.jobTitle : headline,
+                                    key: Key('open-shift-title-${shift.id}'),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (ratio != null) Text(ratio),
                                 ],
                               );
                             },

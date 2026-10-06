@@ -255,6 +255,7 @@ class TenantSettingsOut {
     this.geofenceOutsidePolicy = 'soft',
     this.providerAbn,
     this.ndisProviderRegistrationStatus = 'registered',
+    this.defaultProgressNoteTemplateId,
   });
 
   final String id;
@@ -266,6 +267,8 @@ class TenantSettingsOut {
   final String? providerAbn;
   /// registered | unregistered — unregistered ⇒ 0.9× ceilings from 2027-01-01.
   final String ndisProviderRegistrationStatus;
+  /// Org-wide default progress-note template (A8-X2 / A5 resolver).
+  final String? defaultProgressNoteTemplateId;
 
   factory TenantSettingsOut.fromJson(Map<String, dynamic> json) {
     final reg =
@@ -285,6 +288,8 @@ class TenantSettingsOut {
       providerAbn: json['provider_abn'] as String?,
       ndisProviderRegistrationStatus:
           reg == 'unregistered' ? 'unregistered' : 'registered',
+      defaultProgressNoteTemplateId:
+          json['default_progress_note_template_id']?.toString(),
     );
   }
 }

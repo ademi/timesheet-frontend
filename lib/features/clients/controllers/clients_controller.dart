@@ -118,6 +118,14 @@ class ClientsController extends GetxController
   final supportPlan = Rxn<SupportPlanDto>();
   final isLoadingSupportPlan = false.obs;
 
+  /// A8-X1 — per-client form defaults (visit form resolver input).
+  final formDefaults = <ClientFormDefaultOut>[].obs;
+  final formDefaultsCatalog = <FormTemplateSummary>[].obs;
+  final formDefaultsSelectedIds = <String>[].obs;
+  final formDefaultsLoading = false.obs;
+  final formDefaultsSaving = false.obs;
+  final formDefaultsError = RxnString();
+
   String? get ndisNumber =>
       ndisFromFacts(profileFacts) ?? ndisFromDrafts(requirementDrafts);
 
@@ -1554,6 +1562,7 @@ class ClientsController extends GetxController
         refreshDetailExtras(),
         loadTypeTabForSelected(),
         loadDetailProfilePhoto(id),
+        loadFormDefaults(id),
       ]);
       if (!preserveDirty) {
         hydrateOverviewDrafts();
@@ -1578,6 +1587,65 @@ class ClientsController extends GetxController
       detailPhoto.value = null;
     } finally {
       isDetailPhotoLoading.value = false;
+    }
+  }
+
+  Future<void> loadFormDefaults(String clientId) async {
+    formDefaultsLoading.value = true;
+    formDefaultsError.value = null;
+    try {
+      final results = await Future.wait([
+        _repository.listClientFormDefaults(clientId),
+        _repository.listFormTemplates(tenantLevel: true),
+      ]);
+      final defaults = results[0] as List<ClientFormDefaultOut>;
+      final catalog = results[1] as List<FormTemplateSummary>;
+      formDefaults.assignAll(defaults);
+      formDefaultsCatalog.assignAll([
+        for (final t in catalog)
+          if (t.isActive) t,
+      ]);
+      formDefaultsSelectedIds.assignAll([
+        for (final d in defaults) d.formTemplateId,
+      ]);
+    } on AppFailure catch (e) {
+      formDefaultsError.value = e.message;
+      formDefaults.clear();
+      formDefaultsSelectedIds.clear();
+    } finally {
+      formDefaultsLoading.value = false;
+    }
+  }
+
+  void toggleFormDefaultTemplate(String templateId, bool selected) {
+    final next = [...formDefaultsSelectedIds];
+    if (selected) {
+      if (!next.contains(templateId)) next.add(templateId);
+    } else {
+      next.remove(templateId);
+    }
+    formDefaultsSelectedIds.assignAll(next);
+  }
+
+  Future<void> saveFormDefaults() async {
+    final clientId = selected.value?.id;
+    if (clientId == null || !canManage) return;
+    formDefaultsSaving.value = true;
+    formDefaultsError.value = null;
+    try {
+      final saved = await _repository.replaceClientFormDefaults(clientId, [
+        for (final id in formDefaultsSelectedIds)
+          ClientFormDefaultItem(formTemplateId: id),
+      ]);
+      formDefaults.assignAll(saved);
+      formDefaultsSelectedIds.assignAll([
+        for (final d in saved) d.formTemplateId,
+      ]);
+      AppToast.success('Saved', 'Form defaults updated.');
+    } on AppFailure catch (e) {
+      formDefaultsError.value = e.message;
+    } finally {
+      formDefaultsSaving.value = false;
     }
   }
 

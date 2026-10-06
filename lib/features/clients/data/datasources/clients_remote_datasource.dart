@@ -690,6 +690,36 @@ class ClientsRemoteDataSource {
     }
   }
 
+  Future<List<ClientFormDefaultOut>> listClientFormDefaults(
+    String clientId,
+  ) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiPaths.clientFormDefaults(clientId),
+      );
+      return _mapList(response.data, ClientFormDefaultOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<List<ClientFormDefaultOut>> replaceClientFormDefaults(
+    String clientId,
+    List<ClientFormDefaultItem> defaults,
+  ) async {
+    try {
+      final response = await _dio.put<List<dynamic>>(
+        ApiPaths.clientFormDefaults(clientId),
+        data: {
+          'defaults': [for (final d in defaults) d.toJson()],
+        },
+      );
+      return _mapList(response.data, ClientFormDefaultOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   List<T> _mapList<T>(
     List<dynamic>? raw,
     T Function(Map<String, dynamic>) fromJson,

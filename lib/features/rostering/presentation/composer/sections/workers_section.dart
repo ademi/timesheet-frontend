@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../../app/themes/app_colors.dart';
 import '../../../../jobs/widgets/worker_slot_picker.dart';
+import '../../../data/composer_models.dart';
 import '../../shared/assign_context_labels.dart';
 import '../roster_composer_controller.dart';
 import 'publish_section.dart';
@@ -46,6 +47,9 @@ class _ComposerWorkersSectionState extends State<ComposerWorkersSection> {
       final workers = controller.assignableEngagements;
       final slots = controller.workerSlotCount;
       final open = controller.unassignedSlotCount;
+      final clientConflicts =
+          controller.assignContext.value?.clientConflicts ??
+          const <ClientConflictOut>[];
 
       final slotList = List<String?>.generate(
         slots,
@@ -63,6 +67,41 @@ class _ComposerWorkersSectionState extends State<ComposerWorkersSection> {
                 : 'Assign workers now; leave slots empty to open them for claim on publish.',
             style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
+          if (clientConflicts.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Client schedule conflicts (warning only)',
+              key: const Key('composer-client-conflicts-title'),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.openSlot,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              key: const Key('composer-client-conflicts'),
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                for (final c in clientConflicts)
+                  Chip(
+                    key: Key('composer-client-conflict-${c.id}'),
+                    avatar: const Icon(
+                      Icons.warning_amber_rounded,
+                      size: 16,
+                      color: AppColors.openSlot,
+                    ),
+                    label: Text(
+                      clientConflictChipLabel(c),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
           if (loading)
             const Padding(

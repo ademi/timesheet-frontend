@@ -12,6 +12,7 @@ import 'package:rostiq/app/routes/app_navigator.dart';
 import 'package:rostiq/app/routes/app_routes.dart';
 import 'package:rostiq/app/routes/middlewares/auth_route_utils.dart';
 import 'package:rostiq/core/services/token_storage.dart';
+import 'package:rostiq/features/rostering/presentation/redirects/composer_cutover.dart';
 
 String _fakeJwt(Map<String, dynamic> payload) {
   final header = base64Url.encode(
@@ -73,9 +74,41 @@ void main() {
       expect(paths, contains(AppRoutes.staffGroupShiftBook));
       expect(paths, contains('edit-group'));
       expect(paths, contains('remove-participant'));
+      expect(paths, contains('participant-windows'));
       expect(paths, contains('participant-attendance'));
       expect(paths, contains('publish-group'));
       expect(paths, contains('travel'));
+    });
+
+    test('GoRouter cutover paths cover GetX redirectedLegacyRoutes (web parity)', () {
+      // Top-level + nested path segments registered for soft cutover.
+      final rootKey = GlobalKey<NavigatorState>();
+      final top = buildVisitsGoRoutes(rootNavigatorKey: rootKey);
+      final paths = <String>{};
+      void walk(List<RouteBase> routes) {
+        for (final r in routes) {
+          if (r is GoRoute) {
+            paths.add(r.path);
+            walk(r.routes);
+          } else if (r is ShellRoute) {
+            walk(r.routes);
+          }
+        }
+      }
+
+      walk(top);
+      // Nested under shift-detail — path segment must match AppRoutes suffix.
+      expect(paths, contains('participant-windows'));
+      expect(
+        AppRoutes.staffGroupShiftWindows.endsWith('/participant-windows'),
+        isTrue,
+      );
+      expect(
+        ComposerCutover.redirectedLegacyRoutes.contains(
+          AppRoutes.staffGroupShiftWindows,
+        ),
+        isTrue,
+      );
     });
 
     test('buildJobsGoRoutes covers detail + compose + templates', () {

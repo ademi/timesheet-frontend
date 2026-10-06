@@ -5,6 +5,8 @@ import '../../../app/constants/app_permissions.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../clients/data/models/client_profile_models.dart';
+import '../../clients/data/repositories/clients_repository.dart';
 import '../../compliance_ops/data/models/compliance_ops_models.dart';
 import '../../compliance_ops/data/repositories/compliance_ops_repository.dart';
 import '../../subscription/billing_gate.dart';
@@ -16,13 +18,16 @@ class StaffTenantSettingsController extends GetxController {
     required PayrollRepository payroll,
     required ComplianceOpsRepository complianceOps,
     required SessionService session,
+    required ClientsRepository clients,
   }) : _payroll = payroll,
        _complianceOps = complianceOps,
-       _session = session;
+       _session = session,
+       _clients = clients;
 
   final PayrollRepository _payroll;
   final ComplianceOpsRepository _complianceOps;
   final SessionService _session;
+  final ClientsRepository _clients;
 
   final isLoading = false.obs;
   final isSaving = false.obs;
@@ -30,12 +35,14 @@ class StaffTenantSettingsController extends GetxController {
   final tenant = Rxn<TenantSettingsOut>();
   final subscription = Rxn<SubscriptionStatusOut>();
   final members = <TenantMemberOut>[].obs;
+  final formTemplates = <FormTemplateSummary>[].obs;
 
   final timezoneCtrl = TextEditingController();
   final jurisdictionCtrl = TextEditingController();
   final providerAbnCtrl = TextEditingController();
   final geofenceOutsidePolicy = 'soft'.obs;
   final ndisProviderRegistrationStatus = 'registered'.obs;
+  final defaultProgressNoteTemplateId = RxnString();
 
   bool get canManage => _session.hasPermission(AppPermissions.tenantsManage);
   bool get canViewMembers =>
@@ -83,8 +90,18 @@ class StaffTenantSettingsController extends GetxController {
       providerAbnCtrl.text = t.providerAbn ?? '';
       geofenceOutsidePolicy.value = t.geofenceOutsidePolicy;
       ndisProviderRegistrationStatus.value = t.ndisProviderRegistrationStatus;
+      defaultProgressNoteTemplateId.value = t.defaultProgressNoteTemplateId;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+    }
+    try {
+      final templates = await _clients.listFormTemplates(tenantLevel: true);
+      formTemplates.assignAll([
+        for (final t in templates)
+          if (t.isActive) t,
+      ]);
+    } on AppFailure catch (_) {
+      formTemplates.clear();
     }
     if (canViewBilling) {
       try {
@@ -123,11 +140,15 @@ class StaffTenantSettingsController extends GetxController {
                 ? null
                 : providerAbnCtrl.text.trim(),
         ndisProviderRegistrationStatus: ndisProviderRegistrationStatus.value,
+        defaultProgressNoteTemplateId: defaultProgressNoteTemplateId.value,
+        setDefaultProgressNoteTemplate: true,
       );
       tenant.value = updated;
       geofenceOutsidePolicy.value = updated.geofenceOutsidePolicy;
       ndisProviderRegistrationStatus.value =
           updated.ndisProviderRegistrationStatus;
+      defaultProgressNoteTemplateId.value =
+          updated.defaultProgressNoteTemplateId;
       AppToast.success(
         'Saved',
         'Tenant settings updated.',

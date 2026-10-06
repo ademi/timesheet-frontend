@@ -187,6 +187,8 @@ class PayrollRemoteDataSource {
     String? geofenceOutsidePolicy,
     String? providerAbn,
     String? ndisProviderRegistrationStatus,
+    String? defaultProgressNoteTemplateId,
+    bool setDefaultProgressNoteTemplate = false,
   }) async {
     try {
       final response = await _dio.patch<Map<String, dynamic>>(
@@ -201,6 +203,9 @@ class PayrollRemoteDataSource {
           if (ndisProviderRegistrationStatus != null)
             'ndis_provider_registration_status':
                 ndisProviderRegistrationStatus,
+          if (setDefaultProgressNoteTemplate)
+            'default_progress_note_template_id':
+                defaultProgressNoteTemplateId,
         },
       );
       final data = response.data;
