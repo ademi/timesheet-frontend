@@ -3,6 +3,7 @@ import '../../shifts/data/models/shift_travel_models.dart';
 import '../../shifts/utils/allocation_math.dart';
 import 'composer_steps.dart';
 import 'occurrence_draft.dart';
+import 'support_segment_editor.dart';
 import 'travel_shares_validation.dart';
 
 /// Client-side gates before save / publish / step advance.
@@ -73,6 +74,14 @@ abstract final class ComposerValidation {
       errors.add(supportAnchorRequired);
     }
 
+    if (forPublish) {
+      final coverage = draftSegmentTemplateCoverageError(
+        template: draft.segmentTemplate,
+        participantIds: draft.participantIds,
+      );
+      if (coverage != null) errors.add(coverage);
+    }
+
     return errors;
   }
 
@@ -124,6 +133,11 @@ abstract final class ComposerValidation {
         return const [];
       case ComposerStep.support:
         if (!draft.hasSupportAnchor) return [supportAnchorStep];
+        final coverage = draftSegmentTemplateCoverageError(
+          template: draft.segmentTemplate,
+          participantIds: draft.participantIds,
+        );
+        if (coverage != null) return [coverage];
         return const [];
       case ComposerStep.forms:
       case ComposerStep.workers:

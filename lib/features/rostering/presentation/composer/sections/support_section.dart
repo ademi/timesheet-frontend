@@ -277,8 +277,7 @@ class _DraftSegmentsEditorState extends State<_DraftSegmentsEditor> {
       visitEnd: end,
       draftParticipantIds: _participantIds.toSet(),
       useParticipantId: true,
-      // Phase 3 hardens full coverage; Phase 1 allows partial plans.
-      requireCoverage: false,
+      requireCoverage: true,
     );
     if (validation != null) {
       setState(() {
@@ -337,17 +336,7 @@ class _DraftSegmentsEditorState extends State<_DraftSegmentsEditor> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (templateLen == 0 && !_dirty && _rows.isNotEmpty)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
-              child: Text(
-                key: Key('segments-draft-seed-hint'),
-                'Suggested full-window rows from the anchor item — edit and save '
-                'to the draft, or clear to keep Mode A.',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-              ),
-            ),
-          if (templateLen == 0 && _rows.isEmpty)
+          if (templateLen == 0) ...[
             const Padding(
               padding: EdgeInsets.only(bottom: 8),
               child: Text(
@@ -356,6 +345,35 @@ class _DraftSegmentsEditorState extends State<_DraftSegmentsEditor> {
                 style: TextStyle(color: AppColors.textMuted, fontSize: 12),
               ),
             ),
+            if (!_dirty && _rows.isNotEmpty)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text(
+                  key: Key('segments-draft-seed-hint'),
+                  'Suggested full-window rows from the anchor item — edit and '
+                  'save to the draft, or clear to keep Mode A.',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                ),
+              ),
+          ],
+          if (shouldShowDualWorkerHint(
+            workerCount: controller.workerSlotCount,
+            rowKinds: _rows.map((r) => r.kind),
+          ))
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Text(
+                key: Key('segments-dual-worker-hint'),
+                kDualWorkerSegmentsHint,
+                style: TextStyle(color: AppColors.slate500, fontSize: 11),
+              ),
+            ),
+          Text(
+            key: const Key('segments-draft-cap'),
+            '${_rows.length} / $kMaxSupportSegments segments',
+            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+          ),
+          const SizedBox(height: 8),
           for (var i = 0; i < _rows.length; i++) ...[
             _SegmentRowCard(
               key: Key('segment-draft-row-$i'),
@@ -364,6 +382,7 @@ class _DraftSegmentsEditorState extends State<_DraftSegmentsEditor> {
               draftParticipantIds: people,
               participantLabel: controller.participantName,
               visitEnd: end,
+              showGroupSize: people.length > 1,
               canRemove: _rows.length > 1 || templateLen > 0,
               onChanged: () {
                 setState(() {
@@ -397,7 +416,8 @@ class _DraftSegmentsEditorState extends State<_DraftSegmentsEditor> {
             children: [
               TextButton.icon(
                 key: const Key('segments-draft-add'),
-                onPressed: _addRow,
+                onPressed:
+                    _rows.length >= kMaxSupportSegments ? null : _addRow,
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add segment'),
               ),
@@ -471,6 +491,7 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
             kind: s.kind,
             startAt: s.startAt.toLocal(),
             endAt: s.endAt.toLocal(),
+            groupSize: s.groupSize,
           ),
       ];
     }
@@ -585,6 +606,7 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
           kind: _rows[i].kind,
           startAt: _rows[i].startAt.toUtc(),
           endAt: _rows[i].endAt.toUtc(),
+          groupSize: _rows[i].groupSize,
           sortOrder: i,
         ),
     ]);
@@ -615,6 +637,23 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
             'Visit $shortId',
             style: const TextStyle(fontSize: 12, color: AppColors.slate500),
           ),
+          const SizedBox(height: 4),
+          Text(
+            '${_rows.length} / $kMaxSupportSegments segments',
+            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+          ),
+          if (shouldShowDualWorkerHint(
+            workerCount: controller.workerSlotCount,
+            rowKinds: _rows.map((r) => r.kind),
+          ))
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                key: Key('segments-live-dual-worker-hint'),
+                kDualWorkerSegmentsHint,
+                style: TextStyle(color: AppColors.slate500, fontSize: 11),
+              ),
+            ),
           const SizedBox(height: 8),
           for (var i = 0; i < _rows.length; i++) ...[
             _SegmentRowCard(
@@ -623,6 +662,7 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
               row: _rows[i],
               participants: participants,
               visitEnd: end,
+              showGroupSize: participants.length > 1,
               canRemove: _rows.length > 1 && !saving,
               onChanged: () {
                 setState(() {
@@ -655,7 +695,10 @@ class _VisitSegmentsEditorState extends State<_VisitSegmentsEditor> {
             children: [
               TextButton.icon(
                 key: Key('segments-add-${widget.visitId}'),
-                onPressed: saving ? null : _addRow,
+                onPressed:
+                    saving || _rows.length >= kMaxSupportSegments
+                        ? null
+                        : _addRow,
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Add segment'),
               ),
@@ -692,6 +735,7 @@ class _SegmentRowCard extends StatelessWidget {
     this.draftParticipantIds = const [],
     this.participantLabel,
     this.visitEnd,
+    this.showGroupSize = false,
   });
 
   final int index;
@@ -700,6 +744,7 @@ class _SegmentRowCard extends StatelessWidget {
   final List<String> draftParticipantIds;
   final String? Function(String id)? participantLabel;
   final DateTime? visitEnd;
+  final bool showGroupSize;
   final bool canRemove;
   final VoidCallback onChanged;
   final VoidCallback onRemove;
@@ -849,6 +894,29 @@ class _SegmentRowCard extends StatelessWidget {
               kindHelp,
               key: Key('segment-kind-help-$index'),
               style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+            ),
+          ],
+          if (showGroupSize) ...[
+            const SizedBox(height: 8),
+            TextFormField(
+              key: Key('segment-group-size-$index'),
+              initialValue:
+                  row.groupSize == null ? '' : row.groupSize.toString(),
+              decoration: const InputDecoration(
+                labelText: 'Group size (optional)',
+                helperText: 'Participants in the group for this window, not workers',
+                isDense: true,
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (v) {
+                final trimmed = v.trim();
+                if (trimmed.isEmpty) {
+                  row.groupSize = null;
+                } else {
+                  row.groupSize = int.tryParse(trimmed);
+                }
+                onChanged();
+              },
             ),
           ],
           const SizedBox(height: 8),

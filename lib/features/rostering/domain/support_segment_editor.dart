@@ -15,6 +15,7 @@ class SupportSegmentRowDraft {
     this.kind = 'direct',
     /// Client / roster participant id for draft templates (not shift_participant).
     this.participantId,
+    this.groupSize,
   });
 
   String shiftParticipantId;
@@ -24,6 +25,8 @@ class SupportSegmentRowDraft {
   String kind;
   DateTime startAt;
   DateTime endAt;
+  /// Optional ratio context (N = participants in group, not worker count).
+  int? groupSize;
 }
 
 /// Backend [SegmentKind] values exposed in the composer.
@@ -68,6 +71,56 @@ const String kDraftSegmentsModeACopy =
     'No planned windows yet — when a worker is assigned, one full-window '
     'Direct segment is created per participant unless you add rows here.';
 
+const String kDualWorkerSegmentsHint =
+    'Two or more workers on this shift — if both support the same person, '
+    'use Shadow for an intro handover, or note why both are needed.';
+
+/// Soft banner when multiple workers and no shadow row explains dual support.
+bool shouldShowDualWorkerHint({
+  required int workerCount,
+  required Iterable<String> rowKinds,
+}) {
+  if (workerCount < 2) return false;
+  return !rowKinds.any((k) => k == 'shadow');
+}
+
+/// Non-empty template must cover every draft participant; empty = Mode A OK.
+String? draftSegmentTemplateCoverageError({
+  required List<SegmentTemplateItem> template,
+  required List<String> participantIds,
+}) {
+  if (template.isEmpty || participantIds.isEmpty) return null;
+  final covered = <String>{
+    for (final s in template)
+      if (s.participantId.trim().isNotEmpty) s.participantId.trim(),
+  };
+  if (participantIds.any((id) => !covered.contains(id))) {
+    return 'Every participant needs at least one planned segment '
+        '(or Clear to keep Mode A).';
+  }
+  return null;
+}
+
+/// Full-window direct row for a newly added person when a template already exists.
+SegmentTemplateItem fullWindowDirectTemplateItem({
+  required String participantId,
+  required String anchorSupportItemCode,
+  required DateTime windowStart,
+  required DateTime windowEnd,
+  required int sortOrder,
+  int? groupSize,
+}) {
+  final mins = windowEnd.difference(windowStart).inMinutes;
+  return SegmentTemplateItem(
+    participantId: participantId,
+    anchorSupportItemCode: anchorSupportItemCode.trim(),
+    kind: 'direct',
+    offsetStartMinutes: 0,
+    offsetEndMinutes: mins < 1 ? 1 : mins,
+    groupSize: groupSize,
+    sortOrder: sortOrder,
+  );
+}
 /// Half-open overlap used by the segments service.
 bool supportSegmentTimesOverlap(
   DateTime aStart,
@@ -307,6 +360,7 @@ List<SupportSegmentRowDraft> supportSegmentRowsFromTemplate({
           kind: s.kind,
           startAt: window.startAt,
           endAt: window.endAt,
+          groupSize: s.groupSize,
         );
       }(),
   ];
@@ -332,6 +386,7 @@ List<SegmentTemplateItem> segmentTemplateFromRows({
           kind: row.kind,
           offsetStartMinutes: offsets.offsetStartMinutes,
           offsetEndMinutes: offsets.offsetEndMinutes,
+          groupSize: row.groupSize,
           sortOrder: i,
         );
       }(),
@@ -389,6 +444,7 @@ List<SupportSegmentRowDraft> expandTemplateRowsForLiveEditor({
         kind: s.kind,
         startAt: window.startAt,
         endAt: window.endAt,
+        groupSize: s.groupSize,
       ),
     );
   }

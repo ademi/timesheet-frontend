@@ -205,6 +205,41 @@ void main() {
       );
     });
 
+    test('support step requires segment template coverage when planned', () {
+      final draft = OccurrenceDraft.group(
+        participantIds: const ['c1', 'c2'],
+        place: const DraftPlace.branch('b1'),
+        scheduledStart: DateTime(2026, 10, 6, 9),
+        scheduledEnd: DateTime(2026, 10, 6, 12),
+        supportItemCode: '01_011_0107_1_1',
+        segmentTemplate: const [
+          SegmentTemplateItem(
+            participantId: 'c1',
+            anchorSupportItemCode: '01_011_0107_1_1',
+            offsetStartMinutes: 0,
+            offsetEndMinutes: 60,
+          ),
+        ],
+      );
+      expect(
+        ComposerValidation.validateStep(ComposerStep.support, draft).first,
+        contains('Every participant'),
+      );
+      expect(
+        ComposerValidation.validate(draft, forPublish: true).any(
+          (e) => e.contains('Every participant'),
+        ),
+        isTrue,
+      );
+      // Save draft (not publish) does not block on incomplete template.
+      expect(
+        ComposerValidation.validate(draft).any(
+          (e) => e.contains('Every participant'),
+        ),
+        isFalse,
+      );
+    });
+
     test('clients step gates custom allocation sum', () {
       final draft = OccurrenceDraft.group(
         participantIds: const ['c1', 'c2'],

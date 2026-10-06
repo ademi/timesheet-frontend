@@ -333,6 +333,114 @@ void main() {
     });
   });
 
+  group('phase 3 coverage and dual-worker', () {
+    test('empty template has no coverage error (Mode A)', () {
+      expect(
+        draftSegmentTemplateCoverageError(
+          template: const [],
+          participantIds: const ['c1', 'c2'],
+        ),
+        isNull,
+      );
+    });
+
+    test('non-empty template missing a participant fails', () {
+      final err = draftSegmentTemplateCoverageError(
+        template: const [
+          SegmentTemplateItem(
+            participantId: 'c1',
+            anchorSupportItemCode: '01_011_0107_1_1',
+            offsetStartMinutes: 0,
+            offsetEndMinutes: 60,
+          ),
+        ],
+        participantIds: const ['c1', 'c2'],
+      );
+      expect(err, contains('Every participant'));
+      expect(err, contains('Mode A'));
+    });
+
+    test('full coverage passes', () {
+      expect(
+        draftSegmentTemplateCoverageError(
+          template: const [
+            SegmentTemplateItem(
+              participantId: 'c1',
+              anchorSupportItemCode: '01_011_0107_1_1',
+              offsetStartMinutes: 0,
+              offsetEndMinutes: 60,
+            ),
+            SegmentTemplateItem(
+              participantId: 'c2',
+              anchorSupportItemCode: '01_011_0107_1_1',
+              offsetStartMinutes: 0,
+              offsetEndMinutes: 60,
+            ),
+          ],
+          participantIds: const ['c1', 'c2'],
+        ),
+        isNull,
+      );
+    });
+
+    test('dual-worker hint when ≥2 workers and no shadow', () {
+      expect(
+        shouldShowDualWorkerHint(workerCount: 2, rowKinds: const ['direct']),
+        isTrue,
+      );
+      expect(
+        shouldShowDualWorkerHint(
+          workerCount: 2,
+          rowKinds: const ['direct', 'shadow'],
+        ),
+        isFalse,
+      );
+      expect(
+        shouldShowDualWorkerHint(workerCount: 1, rowKinds: const ['direct']),
+        isFalse,
+      );
+    });
+
+    test('fullWindowDirectTemplateItem spans the window', () {
+      final item = fullWindowDirectTemplateItem(
+        participantId: 'c3',
+        anchorSupportItemCode: '01_011_0107_1_1',
+        windowStart: DateTime(2026, 10, 6, 9),
+        windowEnd: DateTime(2026, 10, 6, 15),
+        sortOrder: 2,
+        groupSize: 3,
+      );
+      expect(item.participantId, 'c3');
+      expect(item.kind, 'direct');
+      expect(item.offsetStartMinutes, 0);
+      expect(item.offsetEndMinutes, 360);
+      expect(item.groupSize, 3);
+      expect(item.sortOrder, 2);
+    });
+
+    test('draft requireCoverage rejects missing participant', () {
+      final visitStart = DateTime(2026, 10, 6, 9);
+      final visitEnd = DateTime(2026, 10, 6, 15);
+      final err = validateSupportSegmentRows(
+        rows: [
+          SupportSegmentRowDraft(
+            shiftParticipantId: '',
+            participantId: 'c1',
+            anchorSupportItemCode: '01_011_0107_1_1',
+            startAt: visitStart,
+            endAt: visitEnd,
+          ),
+        ],
+        visitStart: visitStart,
+        visitEnd: visitEnd,
+        draftParticipantIds: {'c1', 'c2'},
+        useParticipantId: true,
+        requireCoverage: true,
+      );
+      expect(err, contains('Every participant'));
+    });
+  });
+
   group('clientConflictChipLabel', () {
     test('maps visit and shift kinds', () {
       expect(

@@ -1338,12 +1338,28 @@ class RosterComposerController extends GetxController {
 
     // One session: replace, never accumulate.
     if (!isGroup) {
+      final priorTemplate = draft.value.segmentTemplate;
       draft.value = draft.value.copyWith(
         participantIds: [client.id],
         clientId: client.id,
         equalSplit: true,
       );
       allocationPercents.clear();
+      if (priorTemplate.isNotEmpty) {
+        setSegmentTemplate([
+          for (var i = 0; i < priorTemplate.length; i++)
+            SegmentTemplateItem(
+              participantId: client.id,
+              anchorSupportItemCode: priorTemplate[i].anchorSupportItemCode,
+              kind: priorTemplate[i].kind,
+              offsetStartMinutes: priorTemplate[i].offsetStartMinutes,
+              offsetEndMinutes: priorTemplate[i].offsetEndMinutes,
+              groupSize: priorTemplate[i].groupSize,
+              notes: priorTemplate[i].notes,
+              sortOrder: i,
+            ),
+        ]);
+      }
       schedulePlaceOptionsRefresh();
       return true;
     }
@@ -1364,8 +1380,37 @@ class RosterComposerController extends GetxController {
       clientId: draft.value.clientId ?? client.id,
     );
     if (!draft.value.equalSplit) _seedCustomAllocations();
+    _ensureSegmentTemplateCoversParticipant(client.id);
     schedulePlaceOptionsRefresh();
     return true;
+  }
+
+  /// When a planned template exists, add a full-window Direct row for [participantId].
+  void _ensureSegmentTemplateCoversParticipant(String participantId) {
+    final template = draft.value.segmentTemplate;
+    if (template.isEmpty) return;
+    if (template.any((s) => s.participantId == participantId)) return;
+    final start = draft.value.scheduledStart;
+    final end = draft.value.scheduledEnd;
+    if (start == null || end == null) return;
+    final code =
+        draft.value.supportItemCode?.trim().isNotEmpty == true
+            ? draft.value.supportItemCode!.trim()
+            : template.first.anchorSupportItemCode;
+    final groupSize = draft.value.participantIds.length > 1
+        ? draft.value.participantIds.length
+        : null;
+    setSegmentTemplate([
+      ...template,
+      fullWindowDirectTemplateItem(
+        participantId: participantId,
+        anchorSupportItemCode: code,
+        windowStart: start,
+        windowEnd: end,
+        sortOrder: template.length,
+        groupSize: groupSize,
+      ),
+    ]);
   }
 
   void removeParticipant(String participantId) {
@@ -1378,6 +1423,13 @@ class RosterComposerController extends GetxController {
       participantIds: ids,
       clientId: nextClientId,
     );
+    // Drop planned rows for the removed person.
+    if (draft.value.segmentTemplate.isNotEmpty) {
+      setSegmentTemplate([
+        for (final s in draft.value.segmentTemplate)
+          if (s.participantId != participantId) s,
+      ]);
+    }
     if (ids.isEmpty && !isGroup) {
       draft.value = OccurrenceDraft(
         preset: ComposerPreset.oneSession,
@@ -1388,6 +1440,7 @@ class RosterComposerController extends GetxController {
         place: draft.value.place,
         supportItemCode: draft.value.supportItemCode,
         taskTemplate: draft.value.taskTemplate,
+        segmentTemplate: draft.value.segmentTemplate,
         repeatEnabled: draft.value.repeatEnabled,
       );
       allocationPercents.clear();
