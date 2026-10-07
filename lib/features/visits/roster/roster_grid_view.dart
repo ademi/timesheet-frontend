@@ -12,16 +12,21 @@ String formatRosterDayHeader(DateTime day) {
   return '${_wd[local.weekday - 1]} ${local.day}';
 }
 
-String formatRosterTileTime(DateTime start, {DateTime? end, bool continuation = false}) {
-  if (end != null && (spansLocalMidnight(start, end) || continuation)) {
-    if (continuation) {
-      return 'cont. → ${formatHm(end)}';
-    }
+String formatRosterTileTime(
+  DateTime start, {
+  DateTime? end,
+  bool continuation = false,
+}) {
+  if (continuation && end != null) {
+    return 'cont. → ${formatHm(end)}';
+  }
+  if (end != null && spansLocalMidnight(start, end)) {
     return formatOvernightRange(start, end);
   }
-  final l = start.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(l.hour)}:${two(l.minute)}';
+  if (end != null) {
+    return '${formatHm(start)} – ${formatHm(end)}';
+  }
+  return formatHm(start);
 }
 
 String? visitStatusChipLabel(String? visitStatus) {

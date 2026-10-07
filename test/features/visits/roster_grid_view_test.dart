@@ -6,6 +6,18 @@ import 'package:rostiq/features/visits/roster/roster_grid_model.dart';
 import 'package:rostiq/features/visits/roster/roster_grid_view.dart';
 
 void main() {
+  test('formatRosterTileTime shows start and end for same-day shifts', () {
+    final start = DateTime(2026, 10, 4, 14, 46);
+    final end = DateTime(2026, 10, 4, 16, 46);
+    expect(formatRosterTileTime(start, end: end), '14:46 – 16:46');
+  });
+
+  test('formatRosterTileTime keeps overnight arrow range', () {
+    final start = DateTime(2026, 10, 4, 21);
+    final end = DateTime(2026, 10, 5, 7);
+    expect(formatRosterTileTime(start, end: end), '21:00 → 07:00 (+1)');
+  });
+
   testWidgets('shows Unfilled row and day headers', (tester) async {
     final monday = DateTime(2026, 8, 10);
     final grid = buildRosterGrid(
@@ -67,7 +79,7 @@ void main() {
     );
     expect(find.text('Sam'), findsOneWidget);
     expect(find.text('Live'), findsOneWidget);
-    expect(find.text('09:00'), findsOneWidget);
+    expect(find.text('09:00 – 11:00'), findsOneWidget);
   });
 
   testWidgets('name cell height matches multi-tile day cell row', (
