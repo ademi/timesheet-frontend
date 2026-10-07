@@ -18,6 +18,9 @@ abstract final class StaffShellNav {
   /// Compliance stays in routes for later; hide it from the staff menu for now.
   static const showComplianceNav = false;
 
+  /// SIL houses stays in routes for later; hide it from the staff menu for now.
+  static const showSilHousesNav = false;
+
   static const _all = <_StaffDest>[
     _StaffDest(
       icon: Icons.home_outlined,
@@ -48,6 +51,7 @@ abstract final class StaffShellNav {
       icon: Icons.holiday_village_outlined,
       label: 'SIL houses',
       route: AppRoutes.staffSilHouses,
+      showInNav: showSilHousesNav,
       anyOf: [AppPermissions.clientsRead],
     ),
     _StaffDest(

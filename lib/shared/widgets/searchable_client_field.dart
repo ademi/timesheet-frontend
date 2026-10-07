@@ -77,8 +77,9 @@ class _SearchableClientFieldState extends State<SearchableClientField> {
   late final TextEditingController _text;
   late final FocusNode _focus;
   var _ownsFocus = false;
-  var _focused = false;
   var _editingSelection = false;
+  /// Idle browse/recents list is collapsed until the hint is tapped.
+  var _browseExpanded = false;
 
   @override
   void initState() {
@@ -90,7 +91,6 @@ class _SearchableClientFieldState extends State<SearchableClientField> {
       _focus = FocusNode();
       _ownsFocus = true;
     }
-    _focus.addListener(_onFocusChanged);
   }
 
   @override
@@ -106,25 +106,25 @@ class _SearchableClientFieldState extends State<SearchableClientField> {
     if (widget.selectedId != oldWidget.selectedId &&
         widget.selectedId != null) {
       _editingSelection = false;
+      _browseExpanded = false;
     }
   }
 
   @override
   void dispose() {
-    _focus.removeListener(_onFocusChanged);
     if (_ownsFocus) _focus.dispose();
     _text.dispose();
     super.dispose();
   }
 
-  void _onFocusChanged() {
-    if (!mounted) return;
-    setState(() => _focused = _focus.hasFocus);
-  }
-
   void _setQuery(String value) {
     widget.onQueryChanged?.call(value);
-    setState(() {});
+    setState(() {
+      // Typing switches to search results; clearing collapses browse again.
+      if (value.trim().isNotEmpty) {
+        _browseExpanded = false;
+      }
+    });
   }
 
   Future<void> _selectTopOrFocused() async {
@@ -138,6 +138,7 @@ class _SearchableClientFieldState extends State<SearchableClientField> {
   List<ClientSearchCandidate> _visibleRows() {
     final q = _text.text.trim();
     if (q.isEmpty) {
+      if (!_browseExpanded) return const [];
       return browseClients(
         candidates: widget.candidates,
         recentIds: widget.recentIds,
@@ -209,17 +210,14 @@ class _SearchableClientFieldState extends State<SearchableClientField> {
     final q = _text.text.trim();
     final searching = q.isNotEmpty;
     final meta = _searchMeta();
-    final rows =
-        searching
-            ? (meta?.items ?? const <ClientSearchCandidate>[])
-            : browseClients(
-              candidates: widget.candidates,
-              recentIds: widget.recentIds,
-              limit: widget.browseLimit,
-              excludeIds: widget.excludeIds,
-            );
-    final showBrowse =
-        !searching && (_focused || rows.isNotEmpty || widget.loading);
+    final browseRows = browseClients(
+      candidates: widget.candidates,
+      recentIds: widget.recentIds,
+      limit: widget.browseLimit,
+      excludeIds: widget.excludeIds,
+    );
+    final searchRows = meta?.items ?? const <ClientSearchCandidate>[];
+    final rows = searching ? searchRows : browseRows;
     final hasRecents =
         !searching &&
         widget.recentIds.any(
@@ -227,6 +225,12 @@ class _SearchableClientFieldState extends State<SearchableClientField> {
               widget.candidates.any((c) => c.id == id) &&
               !widget.excludeIds.contains(id),
         );
+    final browseLabel = hasRecents ? 'Recent & browse' : 'Browse clients';
+    final canBrowseIdle =
+        !searching &&
+        !widget.loading &&
+        widget.candidates.isNotEmpty &&
+        browseRows.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -266,6 +270,7 @@ class _SearchableClientFieldState extends State<SearchableClientField> {
                         onPressed: () {
                           _text.clear();
                           _setQuery('');
+                          setState(() => _browseExpanded = false);
                         },
                       ),
             ),
@@ -282,7 +287,10 @@ class _SearchableClientFieldState extends State<SearchableClientField> {
                       ? () {
                         _text.clear();
                         _setQuery('');
-                        setState(() => _editingSelection = false);
+                        setState(() {
+                          _editingSelection = false;
+                          _browseExpanded = false;
+                        });
                         widget.onClearSelection!();
                       }
                       : null,
@@ -296,7 +304,11 @@ class _SearchableClientFieldState extends State<SearchableClientField> {
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
-              onPressed: () => setState(() => _editingSelection = false),
+              onPressed:
+                  () => setState(() {
+                    _editingSelection = false;
+                    _browseExpanded = false;
+                  }),
               child: const Text('Cancel'),
             ),
           ),
@@ -325,46 +337,86 @@ class _SearchableClientFieldState extends State<SearchableClientField> {
               style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
             ),
           )
-        else if (showBrowse || searching) ...[
+        else if (searching) ...[
           Text(
-            searching
-                ? (meta != null && meta.isTruncated
-                    ? 'Showing ${rows.length} of ${meta.totalMatches} — type more to narrow'
-                    : '${rows.length} match${rows.length == 1 ? '' : 'es'}')
-                : (hasRecents ? 'Recent & browse' : 'Browse clients'),
+            meta != null && meta.isTruncated
+                ? 'Showing ${rows.length} of ${meta.totalMatches} — type more to narrow'
+                : '${rows.length} match${rows.length == 1 ? '' : 'es'}',
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
           const SizedBox(height: 6),
-          ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: widget.maxResultsHeight),
-            child: ListView.builder(
-              shrinkWrap: true,
-              physics: const ClampingScrollPhysics(),
-              itemCount: rows.length,
-              itemBuilder: (context, index) {
-                final client = rows[index];
-                return _ClientResultRow(
-                  key: ValueKey(client.id),
-                  client: client,
-                  query: q,
-                  photo:
-                      widget.showPhotos
-                          ? widget.photosByClient[client.id]
-                          : null,
-                  showPhoto: widget.showPhotos,
-                  onTap: () async {
-                    await widget.onSelected(client);
-                    if (!mounted) return;
-                    _text.clear();
-                    _setQuery('');
-                    setState(() => _editingSelection = false);
-                  },
-                );
-              },
+          _resultsList(rows, q),
+        ] else if (canBrowseIdle) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: InkWell(
+              key: const Key('client-browse-toggle'),
+              onTap: () => setState(() => _browseExpanded = !_browseExpanded),
+              borderRadius: BorderRadius.circular(4),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      browseLabel,
+                      style: const TextStyle(
+                        color: AppColors.brand,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      _browseExpanded
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                      size: 18,
+                      color: AppColors.brand,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
+          if (_browseExpanded) ...[
+            const SizedBox(height: 6),
+            _resultsList(rows, q),
+          ],
         ],
       ],
+    );
+  }
+
+  Widget _resultsList(List<ClientSearchCandidate> rows, String q) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: widget.maxResultsHeight),
+      child: ListView.builder(
+        shrinkWrap: true,
+        physics: const ClampingScrollPhysics(),
+        itemCount: rows.length,
+        itemBuilder: (context, index) {
+          final client = rows[index];
+          return _ClientResultRow(
+            key: ValueKey(client.id),
+            client: client,
+            query: q,
+            photo:
+                widget.showPhotos ? widget.photosByClient[client.id] : null,
+            showPhoto: widget.showPhotos,
+            onTap: () async {
+              await widget.onSelected(client);
+              if (!mounted) return;
+              _text.clear();
+              _setQuery('');
+              setState(() {
+                _editingSelection = false;
+                _browseExpanded = false;
+              });
+            },
+          );
+        },
+      ),
     );
   }
 }
