@@ -131,6 +131,12 @@ class HomeAlertsController extends GetxController {
     load();
   }
 
+  /// Shell tab re-enter (Home ← Settings): force refresh so ABN banner clears.
+  void onScreenReenter() {
+    // ignore: discarded_futures
+    load(force: true);
+  }
+
   bool get _isFresh =>
       _lastLoadedAt != null &&
       DateTime.now().difference(_lastLoadedAt!) < _cacheTtl;

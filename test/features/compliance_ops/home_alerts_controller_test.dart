@@ -473,5 +473,38 @@ void main() {
       expect(controller.shouldShowProviderAbnBanner, isFalse);
       verifyNever(() => payroll.getTenant(any()));
     });
+
+    test('onScreenReenter refreshes ABN so banner clears after Settings save',
+        () async {
+      when(() => session.isStaff).thenReturn(true);
+      when(() => session.isContractor).thenReturn(false);
+      when(() => session.tenantId).thenReturn(RxnString('tenant-1'));
+      when(() => payroll.getTenant('tenant-1')).thenAnswer(
+        (_) async => const TenantSettingsOut(
+          id: 'tenant-1',
+          providerAbn: null,
+        ),
+      );
+
+      final controller = HomeAlertsController(
+        repository: repository,
+        session: session,
+        payrollRepository: payroll,
+        showSnack: (_, __) {},
+      );
+      await controller.load(force: true);
+      expect(controller.shouldShowProviderAbnBanner, isTrue);
+
+      when(() => payroll.getTenant('tenant-1')).thenAnswer(
+        (_) async => const TenantSettingsOut(
+          id: 'tenant-1',
+          providerAbn: '53004085616',
+        ),
+      );
+      // Same path HomeAlertsBinding uses via putOrReenter → onScreenReenter.
+      await controller.load(force: true);
+
+      expect(controller.shouldShowProviderAbnBanner, isFalse);
+    });
   });
 }

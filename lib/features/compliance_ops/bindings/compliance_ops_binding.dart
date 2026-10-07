@@ -128,27 +128,26 @@ class HomeAlertsBinding extends Bindings {
     PayrollBinding.ensureShared();
     NotificationsFeedController.ensureRegistered();
     if (!Get.isRegistered<SessionService>()) return;
-    // Keep across shell Get.offNamed tab switches to avoid refetch storms.
-    if (!Get.isRegistered<HomeAlertsController>()) {
-      Get.put(
-        HomeAlertsController(
-          repository: Get.find<ComplianceOpsRepository>(),
-          session: Get.find<SessionService>(),
-          payrollRepository: Get.find<PayrollRepository>(),
-          clientsRepository: Get.find<ClientsRepository>(),
-          engagementsRepository: Get.find<EngagementsRepository>(),
-          jobsRepository: Get.find<JobsRepository>(),
-          visitsRepository: Get.find<VisitsRepository>(),
-          credentialsRepository: Get.find<CredentialsRepository>(),
-          billingRepository:
-              Get.isRegistered<BillingRepository>()
-                  ? Get.find<BillingRepository>()
-                  : null,
-          notificationsFeed: Get.find<NotificationsFeedController>(),
-        ),
-        permanent: true,
-      );
-    }
+    // Permanent across tab switches; re-enter forces refresh (ABN banner, etc.).
+    putOrReenter<HomeAlertsController>(
+      () => HomeAlertsController(
+        repository: Get.find<ComplianceOpsRepository>(),
+        session: Get.find<SessionService>(),
+        payrollRepository: Get.find<PayrollRepository>(),
+        clientsRepository: Get.find<ClientsRepository>(),
+        engagementsRepository: Get.find<EngagementsRepository>(),
+        jobsRepository: Get.find<JobsRepository>(),
+        visitsRepository: Get.find<VisitsRepository>(),
+        credentialsRepository: Get.find<CredentialsRepository>(),
+        billingRepository:
+            Get.isRegistered<BillingRepository>()
+                ? Get.find<BillingRepository>()
+                : null,
+        notificationsFeed: Get.find<NotificationsFeedController>(),
+      ),
+      permanent: true,
+      onReenter: (c) => c.onScreenReenter(),
+    );
   }
 
   /// Drop permanent home controller on logout / tenant switch.
