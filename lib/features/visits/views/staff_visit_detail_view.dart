@@ -6,6 +6,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../billing/data/models/billing_models.dart';
+import '../../../shared/widgets/app_time_picker.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
 import '../controllers/staff_visits_controller.dart';
@@ -396,7 +397,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
     );
     if (pickedDate == null || !context.mounted) return;
 
-    final pickedTime = await showTimePicker(
+    final pickedTime = await showAppTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: current.hour, minute: current.minute),
       helpText: 'Start time',

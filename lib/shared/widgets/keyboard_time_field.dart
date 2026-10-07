@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_time_picker.dart';
+
 /// Formats [time] as zero-padded `HH:mm`.
 String formatHhMm(TimeOfDay time) {
   String two(int n) => n.toString().padLeft(2, '0');
@@ -34,7 +36,7 @@ TimeOfDay? parseHhMm(String input) {
   return null;
 }
 
-/// Keyboard-first time entry with optional dial picker via trailing icon.
+/// Keyboard-first time entry with optional text-mode picker via trailing icon.
 class KeyboardTimeField extends StatefulWidget {
   const KeyboardTimeField({
     super.key,
@@ -100,8 +102,8 @@ class _KeyboardTimeFieldState extends State<KeyboardTimeField> {
     }
   }
 
-  Future<void> _openDialPicker() async {
-    final picked = await showTimePicker(
+  Future<void> _openPicker() async {
+    final picked = await showAppTimePicker(
       context: context,
       initialTime: widget.value,
     );
@@ -138,7 +140,7 @@ class _KeyboardTimeFieldState extends State<KeyboardTimeField> {
         suffixIcon: IconButton(
           icon: const Icon(Icons.access_time),
           tooltip: 'Pick time',
-          onPressed: widget.enabled ? _openDialPicker : null,
+          onPressed: widget.enabled ? _openPicker : null,
         ),
       ),
       keyboardType: TextInputType.datetime,

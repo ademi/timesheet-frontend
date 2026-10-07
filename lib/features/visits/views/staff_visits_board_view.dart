@@ -7,6 +7,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/equal_fill_row.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../core/time/tenant_civil_time.dart';
+import '../../../shared/widgets/app_time_picker.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
 import '../../rostering/domain/roster_composer_args.dart';
@@ -449,7 +450,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                       title: const Text('Start time'),
                       subtitle: Text(_hhmm(start)),
                       onTap: () async {
-                        final picked = await showTimePicker(
+                        final picked = await showAppTimePicker(
                           context: ctx,
                           initialTime: TimeOfDay.fromDateTime(start),
                         );
@@ -473,7 +474,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                       title: const Text('End time'),
                       subtitle: Text(_hhmm(end)),
                       onTap: () async {
-                        final picked = await showTimePicker(
+                        final picked = await showAppTimePicker(
                           context: ctx,
                           initialTime: TimeOfDay.fromDateTime(end),
                         );
@@ -583,7 +584,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                         );
                         if (date == null) return;
                         if (!ctx.mounted) return;
-                        final time = await showTimePicker(
+                        final time = await showAppTimePicker(
                           context: ctx,
                           initialTime: TimeOfDay.fromDateTime(start),
                         );
@@ -615,7 +616,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                         );
                         if (date == null) return;
                         if (!ctx.mounted) return;
-                        final time = await showTimePicker(
+                        final time = await showAppTimePicker(
                           context: ctx,
                           initialTime: TimeOfDay.fromDateTime(end),
                         );
