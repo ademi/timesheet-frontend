@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../credentials/widgets/credential_category_grouped_picker.dart';
 import '../controllers/workforce_controller.dart';
 
 class WorkforceInviteView extends StatefulWidget {
@@ -96,20 +97,11 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
                       child: Center(child: CircularProgressIndicator()),
                     )
                   else
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final cat in controller.inviteCategoryChoices)
-                          FilterChip(
-                            label: Text(cat.label),
-                            selected: controller.selectedCategories.contains(
-                              cat.code,
-                            ),
-                            onSelected:
-                                (_) => controller.toggleCategory(cat.code),
-                          ),
-                      ],
+                    CredentialCategoryGroupedPicker(
+                      choices: controller.inviteCategoryChoices,
+                      selected: controller.selectedCategories.toSet(),
+                      onToggle: controller.toggleCategory,
+                      enabled: !controller.isSaving.value,
                     ),
                   const SizedBox(height: 24),
                   ElevatedButton(

@@ -4,7 +4,7 @@ import 'package:rostiq/features/credentials/data/models/credential_models.dart';
 import 'package:rostiq/features/engagements/widgets/required_doc_categories_editor.dart';
 
 void main() {
-  testWidgets('tap chip calls onToggle with category code', (tester) async {
+  testWidgets('tap row calls onToggle with category code', (tester) async {
     String? toggled;
     await tester.pumpWidget(
       MaterialApp(
@@ -24,6 +24,7 @@ void main() {
       ),
     );
 
+    expect(find.text('Training & certifications'), findsOneWidget);
     await tester.tap(find.text('CPR'));
     await tester.pump();
 

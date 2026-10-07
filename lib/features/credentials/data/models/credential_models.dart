@@ -34,7 +34,7 @@ const credentialTypesAllowlist = <String>[
 /// Local fallback labels (offline / old API responses). Prefer catalog labels.
 /// Keep Title Case to match GET /v1/credential-categories.
 const credentialCategoryFallbackLabels = <String, String>{
-  'passport_id': 'Passport',
+  'passport_id': 'Passport/ID',
   'drivers_licence': 'Driver Licence',
   'ndis_worker_screening': 'NDIS Worker Screening Check',
   'police_check': 'National Police Check',
@@ -42,7 +42,7 @@ const credentialCategoryFallbackLabels = <String, String>{
   'first_aid': 'First Aid',
   'cpr': 'CPR',
   'infection_control': 'Infection Control',
-  'worker_orientation': 'Worker Orientation',
+  'worker_orientation': 'Worker Orientation Model',
   'ndis_induction': 'NDIS Induction',
   'effective_communication': 'Supporting Effective Communication',
   'abn': 'ABN',
@@ -95,10 +95,18 @@ void clearCredentialCategoryLabelCache() {
   _credentialCategoryHelpUrlCache.clear();
 }
 
+/// Product copy that always wins over catalog / fallback (invite UI, etc.).
+const credentialCategoryDisplayOverrides = <String, String>{
+  'passport_id': 'Passport/ID',
+  'worker_orientation': 'Worker Orientation Model',
+};
+
 /// Human-readable label for a credential wire code.
 ///
-/// Order: catalog cache → local fallback map → prettified code.
+/// Order: FE display override → catalog cache → local fallback map → humanize.
 String credentialTypeLabel(String type) {
+  final override = credentialCategoryDisplayOverrides[type];
+  if (override != null && override.isNotEmpty) return override;
   final cached = _credentialCategoryLabelCache[type];
   if (cached != null && cached.isNotEmpty) return cached;
   final fallback = credentialCategoryFallbackLabels[type];
@@ -119,25 +127,38 @@ class CredentialCategory {
     required this.code,
     required this.label,
     this.helpUrl,
+    this.group,
   });
 
   final String code;
   final String label;
   final String? helpUrl;
 
+  /// Optional section title from API (`group_label` / `group` / `section`).
+  final String? group;
+
   factory CredentialCategory.fromJson(Map<String, dynamic> json) {
     final code = json['code'] as String? ?? '';
     final label = json['label'] as String?;
     final helpUrl = json['help_url'] as String?;
+    final groupRaw =
+        (json['group_label'] ?? json['group'] ?? json['section'])?.toString();
+    final apiLabel =
+        (label != null && label.trim().isNotEmpty) ? label.trim() : null;
     return CredentialCategory(
       code: code,
+      // Prefer FE display overrides (e.g. Passport/ID) over catalog copy.
       label:
-          (label != null && label.trim().isNotEmpty)
-              ? label.trim()
-              : credentialTypeLabel(code),
+          credentialCategoryDisplayOverrides[code] ??
+          apiLabel ??
+          credentialTypeLabel(code),
       helpUrl:
           (helpUrl != null && helpUrl.trim().isNotEmpty)
               ? helpUrl.trim()
+              : null,
+      group:
+          (groupRaw != null && groupRaw.trim().isNotEmpty)
+              ? groupRaw.trim()
               : null,
     );
   }

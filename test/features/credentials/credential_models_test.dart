@@ -15,7 +15,8 @@ void main() {
   });
 
   test('credentialTypeLabel uses fallback map for known codes', () {
-    expect(credentialTypeLabel('passport_id'), 'Passport');
+    expect(credentialTypeLabel('passport_id'), 'Passport/ID');
+    expect(credentialTypeLabel('worker_orientation'), 'Worker Orientation Mode');
     expect(credentialTypeLabel('drivers_licence'), 'Driver Licence');
     expect(credentialTypeLabel('wwcc'), 'Working With Children Check');
     expect(
@@ -29,7 +30,7 @@ void main() {
       CredentialCategory(code: 'wwcc', label: 'WWCC (catalog)'),
     ]);
     expect(credentialTypeLabel('wwcc'), 'WWCC (catalog)');
-    expect(credentialTypeLabel('passport_id'), 'Passport');
+    expect(credentialTypeLabel('passport_id'), 'Passport/ID');
   });
 
   test('CredentialCategory.fromJson falls back when label missing', () {

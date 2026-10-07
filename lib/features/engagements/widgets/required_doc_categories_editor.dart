@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../credentials/data/models/credential_models.dart';
+import '../../credentials/widgets/credential_category_grouped_picker.dart';
 
 /// Chip picker + save for engagement required document categories.
 class RequiredDocCategoriesEditor extends StatelessWidget {
@@ -44,17 +45,11 @@ class RequiredDocCategoriesEditor extends StatelessWidget {
               child: Center(child: CircularProgressIndicator()),
             )
           else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final cat in choices)
-                  FilterChip(
-                    label: Text(cat.label),
-                    selected: selected.contains(cat.code),
-                    onSelected: isSaving ? null : (_) => onToggle(cat.code),
-                  ),
-              ],
+            CredentialCategoryGroupedPicker(
+              choices: choices,
+              selected: selected,
+              onToggle: onToggle,
+              enabled: !isSaving,
             ),
           const SizedBox(height: 12),
           SizedBox(
