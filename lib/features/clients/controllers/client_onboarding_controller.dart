@@ -331,6 +331,10 @@ class ClientOnboardingController extends GetxController
   ///
   /// Uses [AppNavigator.replace] under go_router so router state matches the
   /// URL (back/forward-safe). On GetX mobile, only updates [Get.parameters].
+  ///
+  /// GoRouter replace is deferred to the next frame: bindings call this from
+  /// route `builder`s, and a synchronous replace marks [Router] dirty during
+  /// build (and can fire `onExit` → delete this controller → "not found").
   void syncOnboardingRoute() {
     if (_suppressStepUrlSync) return;
     final id = client.value?.id;
@@ -342,11 +346,45 @@ class ClientOnboardingController extends GetxController
     if (id != null && id.isNotEmpty) {
       Get.parameters['id'] = id;
     }
-    if (AppNavigator.usesGoRouter) {
-      AppNavigator.replace(
-        AppNavigator.location(AppRoutes.staffClientOnboarding, query: params),
-      );
+    if (!AppNavigator.usesGoRouter) return;
+
+    final target = AppNavigator.location(
+      AppRoutes.staffClientOnboarding,
+      query: params,
+    );
+    if (_onboardingLocationsMatch(AppNavigator.currentLocation, target)) {
+      return;
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_suppressStepUrlSync) return;
+      if (!Get.isRegistered<ClientOnboardingController>()) return;
+      if (!identical(Get.find<ClientOnboardingController>(), this)) return;
+
+      final liveId = client.value?.id;
+      final liveParams = <String, String>{
+        'step': '${step.value}',
+        if (liveId != null && liveId.isNotEmpty) 'id': liveId,
+      };
+      final liveTarget = AppNavigator.location(
+        AppRoutes.staffClientOnboarding,
+        query: liveParams,
+      );
+      if (_onboardingLocationsMatch(AppNavigator.currentLocation, liveTarget)) {
+        return;
+      }
+      AppNavigator.replace(liveTarget);
+    });
+  }
+
+  /// Path + `id`/`step` query match (order-independent).
+  static bool _onboardingLocationsMatch(String current, String target) {
+    final a = Uri.tryParse(current);
+    final b = Uri.tryParse(target);
+    if (a == null || b == null) return current == target;
+    if (a.path != b.path) return false;
+    return a.queryParameters['step'] == b.queryParameters['step'] &&
+        a.queryParameters['id'] == b.queryParameters['id'];
   }
 
   /// Hydrate from route arguments and/or URL `id` / `step` (refresh-safe).

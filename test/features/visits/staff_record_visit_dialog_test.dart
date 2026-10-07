@@ -130,7 +130,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Reason is required'), findsNothing);
     expect(find.text('Times cannot be in the future'), findsNothing);
-    expect(find.text('Departure must be after arrival'), findsNothing);
+    expect(find.text('Shift end must be after shift start'), findsNothing);
     expect(captured?.reason, 'Paper timesheet');
     expect(find.text('open'), findsOneWidget);
   });

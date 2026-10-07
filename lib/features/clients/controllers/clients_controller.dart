@@ -299,10 +299,14 @@ class ClientsController extends GetxController
   /// Tier-2 shell re-enter: soft list refresh; hard-clear abandoned form drafts
   /// only on the clients list tab (detail/form routes share this controller).
   void onScreenReenter() {
-    errorMessage.value = null;
     final path =
         Uri.tryParse(AppNavigator.currentLocation)?.path ??
         AppNavigator.currentLocation;
+    // GoRouter rebuilds this binding while a pushed sibling (e.g. visit
+    // detail) sits on top — skip unless we are actually on a clients screen.
+    if (!_isClientsSurface(path)) return;
+
+    errorMessage.value = null;
     if (path == AppRoutes.staffClients) {
       nameCtrl.clear();
       emailCtrl.clear();
@@ -317,6 +321,10 @@ class ClientsController extends GetxController
       ensureDetailHydratedFromRoute();
     }
   }
+
+  static bool _isClientsSurface(String path) =>
+      path == AppRoutes.staffClients ||
+      path.startsWith('${AppRoutes.staffClients}/');
 
   bool _routeImpliesClientDetail() {
     if (selected.value != null) return false;
@@ -1996,12 +2004,13 @@ class ClientsController extends GetxController
   }
 
   void openVisitDetail(VisitOut visit) {
+    // Query id only — GoRouter drops complex `extra` maps without a codec
+    // (web serialization). Detail hydrates via routeParam('id') + refresh.
     AppNavigator.push(
       AppNavigator.location(
         AppRoutes.staffVisitDetail,
         query: {'id': visit.id},
       ),
-      extra: <String, dynamic>{'visit': visit, 'skipBoardLoad': true},
     );
   }
 

@@ -1,3 +1,4 @@
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 
 import '../../../app/routes/middlewares/auth_route_utils.dart';
@@ -40,9 +41,13 @@ class ClientOnboardingBinding extends Bindings {
         ),
       );
     }
-    // Fire-and-forget: hydrate from args or URL id/step (refresh-safe).
-    // ignore: discarded_futures
-    Get.find<ClientOnboardingController>().ensureHydratedFromRoute();
+    // Defer hydrate: ensureHydratedFromRoute → syncOnboardingRoute may
+    // AppNavigator.replace, which must not run inside GoRouter's builder.
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!Get.isRegistered<ClientOnboardingController>()) return;
+      // ignore: discarded_futures
+      Get.find<ClientOnboardingController>().ensureHydratedFromRoute();
+    });
   }
 
   /// Drop controller when leaving the onboarding route (GoRouter onExit).

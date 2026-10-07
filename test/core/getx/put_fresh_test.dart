@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:rostiq/core/getx/put_fresh.dart';
@@ -29,7 +30,11 @@ void main() {
     expect(reused.label, 'a');
   });
 
-  test('putOrReenter reuses instance and invokes onReenter', () {
+  testWidgets('putOrReenter reuses instance and defers onReenter', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const SizedBox());
+
     final first = putOrReenter(() => _ProbeController('a'));
     final second = putOrReenter(
       () => _ProbeController('b'),
@@ -38,7 +43,30 @@ void main() {
 
     expect(identical(first, second), isTrue);
     expect(second.label, 'a');
+    // Must not run during the GoRouter builder phase.
+    expect(second.reenterCount, 0);
+
+    tester.binding.scheduleFrame();
+    await tester.pump();
     expect(second.reenterCount, 1);
+  });
+
+  testWidgets('putOrReenter skips deferred onReenter if instance replaced', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const SizedBox());
+
+    putOrReenter(() => _ProbeController('a'));
+    putOrReenter(
+      () => _ProbeController('b'),
+      onReenter: (c) => c.reenterCount++,
+    );
+    putFresh(() => _ProbeController('c'));
+
+    tester.binding.scheduleFrame();
+    await tester.pump();
+    expect(Get.find<_ProbeController>().label, 'c');
+    expect(Get.find<_ProbeController>().reenterCount, 0);
   });
 
   test('putOrReenter permanent keeps instance across SmartManagement', () {

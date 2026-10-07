@@ -92,4 +92,16 @@ void main() {
     expect(Get.parameters['step'], '4');
     expect(Get.parameters['id'], _client.id);
   });
+
+  test('syncOnboardingRoute is a no-op when URL already matches', () {
+    Get.testMode = true;
+    // Without a bound GoRouter, usesGoRouter is false — params still update.
+    controller.client.value = _client;
+    controller.step.value = 0;
+    Get.parameters['step'] = '0';
+    Get.parameters['id'] = _client.id;
+    controller.syncOnboardingRoute();
+    expect(Get.parameters['step'], '0');
+    expect(Get.parameters['id'], _client.id);
+  });
 }

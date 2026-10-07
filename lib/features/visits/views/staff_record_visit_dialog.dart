@@ -36,8 +36,8 @@ bool visitMissingSupportItem(VisitOut visit) =>
 
 /// Staff "Record visit" dialog.
 ///
-/// Focus / a11y order (top → bottom): app bar title → arrival date/time →
-/// departure date/time → optional "Before you record" liveRegion warning →
+/// Focus / a11y order (top → bottom): app bar title → shift start date/time →
+/// shift end date/time → optional "Before you record" liveRegion warning →
 /// "Record visit" CTA button → Cancel. Semantics labels match visible copy so
 /// tests can use [find.bySemanticsLabel].
 Future<void> showStaffRecordVisitDialog({
@@ -111,7 +111,7 @@ class _StaffRecordVisitPageState extends State<_StaffRecordVisitPage> {
     final inAt = _combine(_arrivalDate, _arrivalTime);
     final outAt = _combine(_departureDate, _departureTime);
     if (!outAt.isAfter(inAt)) {
-      setState(() => _error = 'Departure must be after arrival');
+      setState(() => _error = 'Shift end must be after shift start');
       return;
     }
     final now = DateTime.now();
@@ -179,12 +179,12 @@ class _StaffRecordVisitPageState extends State<_StaffRecordVisitPage> {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'Arrival',
+                      'Shift start',
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
                     AppDateField(
-                      label: 'Arrival date',
+                      label: 'Shift start date',
                       value: _arrivalDate,
                       enabled: !_saving,
                       firstDate: DateTime(2020),
@@ -203,17 +203,17 @@ class _StaffRecordVisitPageState extends State<_StaffRecordVisitPage> {
                     KeyboardTimeField(
                       value: _arrivalTime,
                       enabled: !_saving,
-                      label: 'Arrival time',
+                      label: 'Shift start time',
                       onChanged: (t) => setState(() => _arrivalTime = t),
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'Departure',
+                      'Shift end',
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
                     AppDateField(
-                      label: 'Departure date',
+                      label: 'Shift end date',
                       value: _departureDate,
                       enabled: !_saving,
                       firstDate: DateTime(2020),
@@ -232,7 +232,7 @@ class _StaffRecordVisitPageState extends State<_StaffRecordVisitPage> {
                     KeyboardTimeField(
                       value: _departureTime,
                       enabled: !_saving,
-                      label: 'Departure time',
+                      label: 'Shift end time',
                       onChanged: (t) => setState(() => _departureTime = t),
                     ),
                     if (showWarn) ...[

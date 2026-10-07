@@ -174,12 +174,22 @@ class WorkforceController extends GetxController {
 
   /// Tier-2 shell re-enter: soft list refresh; keep status filter / selection.
   void onScreenReenter() {
+    final path =
+        Uri.tryParse(AppNavigator.currentLocation)?.path ??
+        AppNavigator.currentLocation;
+    // Same false-reenter path as clients: GoRouter rebuilds under a push.
+    if (!_isWorkforceSurface(path)) return;
+
     clearError();
     // ignore: discarded_futures
     load();
     // ignore: discarded_futures
     ensureDetailHydratedFromRoute();
   }
+
+  static bool _isWorkforceSurface(String path) =>
+      path == AppRoutes.staffWorkforce ||
+      path.startsWith('${AppRoutes.staffWorkforce}/');
 
   bool _routeImpliesDetail() {
     if (selected != null) return false;
@@ -392,12 +402,12 @@ class WorkforceController extends GetxController {
   }
 
   void openVisitDetail(VisitOut visit) {
+    // Query id only — GoRouter drops complex `extra` maps without a codec.
     AppNavigator.push(
       AppNavigator.location(
         AppRoutes.staffVisitDetail,
         query: {'id': visit.id},
       ),
-      extra: <String, dynamic>{'visit': visit, 'skipBoardLoad': true},
     );
   }
 
