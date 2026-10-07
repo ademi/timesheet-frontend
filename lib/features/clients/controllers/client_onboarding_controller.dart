@@ -812,10 +812,15 @@ class ClientOnboardingController extends GetxController
     planEndDate.value ??= DateTime(start.year + 1, start.month, start.day);
   }
 
-  @override
-  void onClose() {
-    _stepUrlWorker?.dispose();
-    _stepUrlWorker = null;
+  bool _textControllersDisposed = false;
+
+  /// Dispose text controllers after the current frame so Identity [TextField]s
+  /// can detach listeners during [didUpdateWidget] / unmount first.
+  /// Sync dispose during GoRouter onExit→onEnter races caused
+  /// "TextEditingController was used after being disposed".
+  void _disposeTextControllers() {
+    if (_textControllersDisposed) return;
+    _textControllersDisposed = true;
     fullName.dispose();
     email.dispose();
     phone.dispose();
@@ -860,6 +865,14 @@ class ClientOnboardingController extends GetxController
     supportCoordinatorEntry.dispose();
     clearSupportSpecialists();
     consentSignerNameCtrl.dispose();
+  }
+
+  @override
+  void onClose() {
+    _stepUrlWorker?.dispose();
+    _stepUrlWorker = null;
+    final disposeCtrls = _disposeTextControllers;
+    WidgetsBinding.instance.addPostFrameCallback((_) => disposeCtrls());
     super.onClose();
   }
 

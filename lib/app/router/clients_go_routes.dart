@@ -40,6 +40,8 @@ List<RouteBase> buildClientsGoRoutes() => [
     // Step URL sync uses replace on this same route — do not putFresh on enter.
     // Delete only when truly leaving so re-enter starts clean.
     onExit: () {
+      // Query-only step URL replace can fire onExit then re-enter. [release]
+      // is generation-gated and deferred so Identity TextFields stay valid.
       ClientOnboardingBinding.release();
       return true;
     },

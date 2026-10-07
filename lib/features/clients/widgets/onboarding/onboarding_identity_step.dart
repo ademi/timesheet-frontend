@@ -61,8 +61,12 @@ class OnboardingIdentityStep extends StatelessWidget {
     return Obx(() {
       final enabled = !controller.isSaving.value;
       final uploadEnabled = enabled && controller.canUploadDocs;
+      // Force new TextField Elements when the GetX controller instance changes
+      // so Flutter does not didUpdateWidget onto disposed controllers.
+      final fieldKey = ValueKey<int>(identityHashCode(controller));
 
       return Column(
+        key: fieldKey,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
@@ -86,6 +90,7 @@ class OnboardingIdentityStep extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           TextField(
+            key: ValueKey('fullName-$fieldKey'),
             controller: controller.fullName,
             decoration: const InputDecoration(
               labelText: 'Participant full name *',
@@ -94,6 +99,7 @@ class OnboardingIdentityStep extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
+            key: ValueKey('sex-$fieldKey'),
             value: controller.sexGender.value,
             decoration: const InputDecoration(
               labelText: 'Participant gender',
@@ -117,6 +123,7 @@ class OnboardingIdentityStep extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           AppDateField(
+            key: ValueKey('dob-$fieldKey'),
             label: 'Participant date of birth',
             value: controller.dob.value,
             enabled: enabled,
@@ -127,6 +134,7 @@ class OnboardingIdentityStep extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           TextField(
+            key: ValueKey('phone-$fieldKey'),
             controller: controller.phone,
             keyboardType: TextInputType.phone,
             decoration: const InputDecoration(
@@ -136,6 +144,7 @@ class OnboardingIdentityStep extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           TextField(
+            key: ValueKey('email-$fieldKey'),
             controller: controller.email,
             keyboardType: TextInputType.emailAddress,
             decoration: const InputDecoration(

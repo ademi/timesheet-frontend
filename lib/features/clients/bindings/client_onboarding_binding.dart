@@ -12,10 +12,16 @@ import '../data/repositories/clients_repository.dart';
 import 'clients_binding.dart';
 
 class ClientOnboardingBinding extends Bindings {
+  /// Bumped on every [dependencies] enter. Stale [release] callbacks no-op when
+  /// GoRouter fires onExit for query-only `?step=` replaces then re-enters.
+  static int _enterGeneration = 0;
+
   @override
   void dependencies() {
     ClientsBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
+
+    _enterGeneration++;
 
     // Do not putFresh on every enter: step changes call AppNavigator.replace
     // and re-run this binding. Wipe only when targeting a different client, or
@@ -54,12 +60,13 @@ class ClientOnboardingBinding extends Bindings {
 
   /// Drop controller when leaving onboarding.
   ///
-  /// GoRouter may call [onExit] for query-only [AppNavigator.replace]
-  /// (`?step=` sync). Deleting then would dispose [TextEditingController]s
-  /// while Identity fields are still mounted. Always defer and only delete
-  /// once the live location is no longer the onboarding route.
+  /// GoRouter may call onExit for query-only [AppNavigator.replace]
+  /// (`?step=` sync) and then immediately re-enter. Capture generation so a
+  /// stale exit does not dispose TextEditingControllers under live TextFields.
   static void release() {
+    final generationAtExit = _enterGeneration;
     SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (generationAtExit != _enterGeneration) return;
       if (_isOnOnboardingRoute()) return;
       if (Get.isRegistered<ClientOnboardingController>()) {
         Get.delete<ClientOnboardingController>(force: true);
@@ -69,6 +76,7 @@ class ClientOnboardingBinding extends Bindings {
 
   /// Immediate delete for tests / explicit teardown.
   static void releaseNow() {
+    _enterGeneration++;
     if (Get.isRegistered<ClientOnboardingController>()) {
       Get.delete<ClientOnboardingController>(force: true);
     }
