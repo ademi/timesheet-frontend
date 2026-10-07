@@ -7,6 +7,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/equal_fill_row.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../core/time/tenant_civil_time.dart';
+import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/app_time_picker.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../jobs/data/models/job_models.dart';
@@ -62,17 +63,9 @@ List<DropdownMenuItem<String>> _clientDropdownItems(
   ];
 }
 
-String _fmt(DateTime dt) {
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
-}
+String _fmt(DateTime dt) => formatVisitDateTime(dt);
 
-String _fmtDay(DateTime dt) {
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${l.year}-${two(l.month)}-${two(l.day)}';
-}
+String _fmtDay(DateTime dt) => formatVisitDate(dt);
 
 class StaffVisitsBoardView extends StatefulWidget {
   const StaffVisitsBoardView({super.key});

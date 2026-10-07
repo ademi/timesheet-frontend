@@ -32,8 +32,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Tue 18/8'), findsOneWidget);
-    expect(find.text('Wed 19/8'), findsOneWidget);
+    expect(find.text('2026/08/18 Tue'), findsOneWidget);
+    expect(find.text('2026/08/19 Wed'), findsOneWidget);
     expect(find.text('Morning support'), findsOneWidget);
     expect(find.text('Evening support'), findsOneWidget);
 

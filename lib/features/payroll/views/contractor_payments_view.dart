@@ -4,13 +4,10 @@ import 'package:get/get.dart';
 import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/visit_datetime_format.dart';
 import '../controllers/contractor_payments_controller.dart';
 
-String _fmt(DateTime dt) {
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
-}
+String _fmt(DateTime dt) => formatVisitDateTime(dt);
 
 class ContractorPaymentsView extends GetView<ContractorPaymentsController> {
   const ContractorPaymentsView({super.key});

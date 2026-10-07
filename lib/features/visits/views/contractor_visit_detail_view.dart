@@ -6,6 +6,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/external_url.dart';
+import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/contractor_visits_controller.dart';
 import '../controllers/visit_shift_brief_controller.dart';
@@ -14,11 +15,7 @@ import '../services/visit_location_service.dart';
 import '../widgets/shift_brief_panel.dart';
 import '../widgets/visit_schema_form.dart';
 
-String _fmt(DateTime dt) {
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
-}
+String _fmt(DateTime dt) => formatVisitDateTime(dt);
 
 String _statusLabel(String status) {
   switch (status) {

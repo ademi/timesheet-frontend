@@ -2,17 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/equal_fill_row.dart';
+import '../../../shared/utils/visit_datetime_format.dart';
 import '../../visits/data/models/visit_models.dart';
 
-String _fmtTime(DateTime dt) {
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
-}
-
-String _visitTimeRange(VisitOut v) {
-  return '${_fmtTime(v.scheduledStart)} – ${_fmtTime(v.scheduledEnd)}';
-}
+String _visitTimeRange(VisitOut v) =>
+    formatVisitDateTimeRange(v.scheduledStart, v.scheduledEnd);
 
 class ClientDetailVisitsSection extends StatelessWidget {
   const ClientDetailVisitsSection({

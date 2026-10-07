@@ -6,6 +6,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../billing/data/models/billing_models.dart';
+import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/app_time_picker.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/ndis_support_item_picker.dart';
@@ -14,17 +15,11 @@ import '../data/models/visit_models.dart';
 import '../../attendance/widgets/visit_attendance_review_banner.dart';
 import 'staff_record_visit_dialog.dart';
 
-String _fmt(DateTime dt) {
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
-}
+String _fmt(DateTime dt) => formatVisitDateTime(dt);
 
 String _fmtClock(DateTime? dt) {
   if (dt == null) return '—';
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(l.hour)}:${two(l.minute)}';
+  return formatVisitTime(dt);
 }
 
 class StaffVisitDetailView extends StatefulWidget {

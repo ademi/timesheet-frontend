@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/themes/app_colors.dart';
+import '../utils/visit_datetime_format.dart';
 
 class AgendaVisit {
   const AgendaVisit({
@@ -18,13 +19,7 @@ class AgendaVisit {
   final VoidCallback onOpen;
 }
 
-const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-String _fmtAgendaDay(DateTime day) {
-  final l = day.toLocal();
-  final wd = _weekdayShort[(l.weekday - 1) % 7];
-  return '$wd ${l.day}/${l.month}';
-}
+String _fmtAgendaDay(DateTime day) => formatVisitDate(day);
 
 String _localDayKey(DateTime dt) {
   final l = dt.toLocal();
@@ -32,11 +27,7 @@ String _localDayKey(DateTime dt) {
   return '${l.year}-${two(l.month)}-${two(l.day)}';
 }
 
-String _fmtTime(DateTime dt) {
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(l.hour)}:${two(l.minute)}';
-}
+String _fmtTime(DateTime dt) => formatVisitTime(dt);
 
 bool _isSameLocalDay(DateTime a, DateTime b) {
   final la = a.toLocal();

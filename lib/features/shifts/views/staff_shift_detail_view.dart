@@ -6,6 +6,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../../shifts/data/models/shift_models.dart';
@@ -17,11 +18,7 @@ import '../../shifts/widgets/shift_slot_pips.dart';
 import '../../sil/data/models/sil_models.dart';
 import '../../visits/controllers/staff_visits_controller.dart';
 
-String _fmt(DateTime dt) {
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
-}
+String _fmt(DateTime dt) => formatVisitDateTime(dt);
 
 String _travelPrimaryLabel(ShiftTravelOut travel) {
   if (travel.isLabour) {

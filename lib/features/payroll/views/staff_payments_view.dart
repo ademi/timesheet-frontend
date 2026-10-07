@@ -3,15 +3,12 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/staff_payments_controller.dart';
 
-String _fmtDateTime(DateTime dt) {
-  final local = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${local.year}-${two(local.month)}-${two(local.day)} ${two(local.hour)}:${two(local.minute)}';
-}
+String _fmtDateTime(DateTime dt) => formatVisitDateTime(dt);
 
 String _fmtHours(double hours) {
   final rounded = hours.toStringAsFixed(2);

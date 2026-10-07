@@ -3,21 +3,18 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../shifts/utils/overnight_format.dart';
 import '../../shifts/utils/participant_display.dart';
 import '../controllers/contractor_visits_controller.dart';
 
-String _fmt(DateTime dt) {
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
-}
+String _fmt(DateTime dt) => formatVisitDateTime(dt);
 
 String _visitSubtitle(DateTime start, DateTime end, String status, String kind) {
   final range = spansLocalMidnight(start, end)
-      ? formatOvernightRange(start, end)
+      ? '${formatVisitDate(start)} ${formatOvernightRange(start, end)}'
       : _fmt(start);
   final kindLabel = shiftKindLabel(kind);
   final kindBit = kindLabel != null ? ' · $kindLabel' : '';

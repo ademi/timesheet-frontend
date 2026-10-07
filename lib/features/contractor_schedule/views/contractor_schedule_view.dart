@@ -3,30 +3,18 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/app_switch_field.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/contractor_schedule_controller.dart';
 import '../data/models/schedule_models.dart';
 
-String _fmtDay(DateTime dt) {
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${l.year}-${two(l.month)}-${two(l.day)}';
-}
+String _fmtDay(DateTime dt) => formatVisitDate(dt);
 
-String _fmtTime(DateTime dt) {
-  final l = dt.toLocal();
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(l.hour)}:${two(l.minute)}';
-}
+String _fmtTime(DateTime dt) => formatVisitTime(dt);
 
-const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-String _fmtAgendaDay(DateTime day) {
-  final wd = _weekdayShort[(day.weekday - 1) % 7];
-  return '$wd ${day.day}/${day.month}';
-}
+String _fmtAgendaDay(DateTime day) => formatVisitDate(day);
 
 bool _isSameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
