@@ -398,6 +398,31 @@ void main() {
     expect(controller.statusFilter.value, 'published');
   });
 
+  test('cancelled status filter requests include_cancelled', () async {
+    when(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        jobId: any(named: 'jobId'),
+        participantId: any(named: 'participantId'),
+        includeCancelled: any(named: 'includeCancelled'),
+      ),
+    ).thenAnswer((_) async => []);
+
+    controller.setStatusFilter('cancelled');
+    await Future<void>.delayed(Duration.zero);
+
+    verify(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        jobId: any(named: 'jobId'),
+        participantId: any(named: 'participantId'),
+        includeCancelled: true,
+      ),
+    ).called(1);
+  });
+
   test('overlay failure sets soft banner and still loads shifts', () async {
     when(
       () => visits.fetchRosterOverlay(

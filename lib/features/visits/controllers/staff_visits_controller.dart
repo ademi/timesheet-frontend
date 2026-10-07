@@ -435,12 +435,16 @@ class StaffVisitsController extends GetxController {
       final to = _toUtc;
       // D20: isolate overlay failure from shifts — soft banner only.
       final clientFilter = clientIdFilter.value.trim();
+      final status = statusFilter.value.trim();
+      // Backend omits cancelled unless include_cancelled=true.
+      final includeCancelled = status.isEmpty || status == 'cancelled';
       final shiftsFuture = _shiftsRepository.listShifts(
         from: from,
         to: to,
         jobId:
             jobIdFilter.value.trim().isEmpty ? null : jobIdFilter.value.trim(),
         participantId: clientFilter.isEmpty ? null : clientFilter,
+        includeCancelled: includeCancelled,
       );
       overlayFuture = () async {
         try {
@@ -462,7 +466,6 @@ class StaffVisitsController extends GetxController {
         }
       }();
       final listRaw = await shiftsFuture;
-      final status = statusFilter.value.trim();
       final list =
           status.isEmpty
               ? listRaw

@@ -40,6 +40,7 @@ class RosterTile {
     required this.openSlots,
     required this.requiredSlots,
     this.visitStatus,
+    this.shiftStatus,
     this.assignmentContractorId,
     this.shiftKind = 'standard',
     this.isContinuation = false,
@@ -52,9 +53,13 @@ class RosterTile {
   final int openSlots;
   final int requiredSlots;
   final String? visitStatus;
+  /// draft | published | cancelled
+  final String? shiftStatus;
   final String? assignmentContractorId;
   final String shiftKind;
   final bool isContinuation;
+
+  bool get isCancelled => shiftStatus == 'cancelled';
 }
 
 class RosterCell {
@@ -175,7 +180,11 @@ RosterGrid buildRosterGrid({
   final unfilledTileCells = List<RosterCell>.from(unfilledCells);
 
   for (final shift in filteredShifts) {
-    if (shift.openSlots <= 0) continue;
+    // Open holes go on Unfilled. Cancelled with no assignment rows also land
+    // here so Cancelled filter still shows something visible.
+    final cancelledOrphan =
+        shift.status == 'cancelled' && shift.assignments.isEmpty;
+    if (shift.openSlots <= 0 && !cancelledOrphan) continue;
     final dayIndex = _dayIndex(dayStarts, shift.scheduledStart);
     if (dayIndex == null) continue;
 
@@ -187,6 +196,7 @@ RosterGrid buildRosterGrid({
       openSlots: shift.openSlots,
       requiredSlots: shift.requiredSlots,
       shiftKind: shift.shiftKind,
+      shiftStatus: shift.status,
     );
     final cell = unfilledTileCells[dayIndex];
     unfilledTileCells[dayIndex] = RosterCell(
@@ -207,6 +217,7 @@ RosterGrid buildRosterGrid({
           openSlots: shift.openSlots,
           requiredSlots: shift.requiredSlots,
           shiftKind: shift.shiftKind,
+          shiftStatus: shift.status,
           isContinuation: true,
         );
         final endCell = unfilledTileCells[endDayIndex];
@@ -260,6 +271,7 @@ RosterGrid buildRosterGrid({
               openSlots: shift.openSlots,
               requiredSlots: shift.requiredSlots,
               visitStatus: assignment.visitStatus,
+              shiftStatus: shift.status,
               assignmentContractorId: assignment.contractorId,
               shiftKind: shift.shiftKind,
               isContinuation: onEndContinuation,

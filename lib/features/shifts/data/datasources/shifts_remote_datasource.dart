@@ -19,6 +19,7 @@ class ShiftsRemoteDataSource {
     String? jobId,
     String? participantId,
     String? include,
+    bool includeCancelled = false,
     int limit = 200,
   }) async {
     try {
@@ -34,6 +35,7 @@ class ShiftsRemoteDataSource {
               (include != null && include.isNotEmpty)
                   ? include
                   : 'participants_summary',
+          if (includeCancelled) 'include_cancelled': true,
           'limit': limit,
         },
       );

@@ -37,6 +37,19 @@ String? visitStatusChipLabel(String? visitStatus) {
       return 'In';
     case 'completed':
       return 'Done';
+    case 'cancelled':
+      return 'Cancelled';
+    default:
+      return null;
+  }
+}
+
+String? shiftStatusChipLabel(String? shiftStatus) {
+  switch (shiftStatus) {
+    case 'cancelled':
+      return 'Cancelled';
+    case 'draft':
+      return 'Draft';
     default:
       return null;
   }
@@ -407,15 +420,25 @@ class _ShiftTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chip = visitStatusChipLabel(tile.visitStatus);
+    final cancelled = tile.isCancelled;
+    final chip =
+        cancelled
+            ? (shiftStatusChipLabel(tile.shiftStatus) ??
+                visitStatusChipLabel(tile.visitStatus))
+            : (visitStatusChipLabel(tile.visitStatus) ??
+                shiftStatusChipLabel(tile.shiftStatus));
     final filled = tile.requiredSlots - tile.openSlots;
+    final titleColor = cancelled ? AppColors.error : AppColors.textDark;
+    final mutedColor = cancelled ? AppColors.error : AppColors.textMuted;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Material(
         color:
-            emphasizeOpen && tile.openSlots > 0
-                ? AppColors.openSlotBackground
-                : AppColors.background,
+            cancelled
+                ? AppColors.errorBackground
+                : (emphasizeOpen && tile.openSlots > 0
+                    ? AppColors.openSlotBackground
+                    : AppColors.background),
         borderRadius: BorderRadius.circular(4),
         child: InkWell(
           onTap: onTap,
@@ -430,10 +453,10 @@ class _ShiftTile extends StatelessWidget {
                   tile.clientName.isEmpty ? '—' : tile.clientName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
+                    color: titleColor,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -445,7 +468,7 @@ class _ShiftTile extends StatelessWidget {
                   ),
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.textMuted,
+                    color: mutedColor,
                     fontStyle:
                         tile.isContinuation ? FontStyle.italic : FontStyle.normal,
                   ),
@@ -455,9 +478,9 @@ class _ShiftTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     shiftKindLabel(tile.shiftKind)!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
-                      color: AppColors.textMuted,
+                      color: mutedColor,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -469,7 +492,7 @@ class _ShiftTile extends StatelessWidget {
                 ),
                 if (chip != null) ...[
                   const SizedBox(height: 4),
-                  _ShiftStatusChip(label: chip),
+                  _ShiftStatusChip(label: chip, emphasizeError: cancelled),
                 ],
               ],
             ),
@@ -481,24 +504,29 @@ class _ShiftTile extends StatelessWidget {
 }
 
 class _ShiftStatusChip extends StatelessWidget {
-  const _ShiftStatusChip({required this.label});
+  const _ShiftStatusChip({required this.label, this.emphasizeError = false});
 
   final String label;
+  final bool emphasizeError;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
-        color: AppColors.slate200,
+        color: emphasizeError ? AppColors.errorBackground : AppColors.slate200,
         borderRadius: BorderRadius.circular(4),
+        border:
+            emphasizeError
+                ? Border.all(color: AppColors.error.withValues(alpha: 0.35))
+                : null,
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
-          color: AppColors.slate700,
+          color: emphasizeError ? AppColors.error : AppColors.slate700,
         ),
       ),
     );

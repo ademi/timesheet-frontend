@@ -15,6 +15,7 @@ class ShiftsRepository {
     String? jobId,
     String? participantId,
     String? include,
+    bool includeCancelled = false,
     int limit = 200,
   }) => _remote.listShifts(
     from: from,
@@ -22,6 +23,7 @@ class ShiftsRepository {
     jobId: jobId,
     participantId: participantId,
     include: include,
+    includeCancelled: includeCancelled,
     limit: limit,
   );
 

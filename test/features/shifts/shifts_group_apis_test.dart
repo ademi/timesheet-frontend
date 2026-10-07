@@ -225,6 +225,33 @@ void main() {
     ).called(1);
   });
 
+  test('listShifts sends include_cancelled when requested', () async {
+    when(
+      () => dio.get<List<dynamic>>(
+        ApiPaths.shifts,
+        queryParameters: any(named: 'queryParameters'),
+      ),
+    ).thenAnswer(
+      (_) async => Response<List<dynamic>>(
+        requestOptions: RequestOptions(path: ApiPaths.shifts),
+        data: [shiftJson],
+      ),
+    );
+
+    await dataSource.listShifts(includeCancelled: true);
+
+    verify(
+      () => dio.get<List<dynamic>>(
+        ApiPaths.shifts,
+        queryParameters: {
+          'include': 'participants_summary',
+          'include_cancelled': true,
+          'limit': 200,
+        },
+      ),
+    ).called(1);
+  });
+
   test('putParticipants puts replace body', () async {
     when(
       () => dio.put<Map<String, dynamic>>(
