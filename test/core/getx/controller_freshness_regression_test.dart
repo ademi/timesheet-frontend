@@ -182,13 +182,13 @@ void main() {
   });
 
   group('ClientOnboardingController', () {
-    test('release deletes controller on route exit', () {
+    test('releaseNow deletes controller immediately', () {
       Get.put(
         ClientOnboardingController(repository: clients, session: session),
       );
       expect(Get.isRegistered<ClientOnboardingController>(), isTrue);
 
-      ClientOnboardingBinding.release();
+      ClientOnboardingBinding.releaseNow();
       expect(Get.isRegistered<ClientOnboardingController>(), isFalse);
     });
 

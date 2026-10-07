@@ -1,6 +1,8 @@
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/services/session_service.dart';
 import '../../documents/data/document_pipeline.dart';
@@ -50,11 +52,32 @@ class ClientOnboardingBinding extends Bindings {
     });
   }
 
-  /// Drop controller when leaving the onboarding route (GoRouter onExit).
+  /// Drop controller when leaving onboarding.
+  ///
+  /// GoRouter may call [onExit] for query-only [AppNavigator.replace]
+  /// (`?step=` sync). Deleting then would dispose [TextEditingController]s
+  /// while Identity fields are still mounted. Always defer and only delete
+  /// once the live location is no longer the onboarding route.
   static void release() {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (_isOnOnboardingRoute()) return;
+      if (Get.isRegistered<ClientOnboardingController>()) {
+        Get.delete<ClientOnboardingController>(force: true);
+      }
+    });
+  }
+
+  /// Immediate delete for tests / explicit teardown.
+  static void releaseNow() {
     if (Get.isRegistered<ClientOnboardingController>()) {
       Get.delete<ClientOnboardingController>(force: true);
     }
+  }
+
+  static bool _isOnOnboardingRoute() {
+    final raw = AppNavigator.currentLocation;
+    final path = Uri.tryParse(raw)?.path ?? raw;
+    return path == AppRoutes.staffClientOnboarding;
   }
 
   static String? _incomingClientId() {
