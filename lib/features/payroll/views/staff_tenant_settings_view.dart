@@ -113,6 +113,9 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                     enabled: controller.canManage,
                     decoration: const InputDecoration(
                       labelText: 'Provider ABN (11 digits)',
+                      helperText:
+                          'Required before plan-managed claim exports. '
+                          '11 digits, ABR checksum.',
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,

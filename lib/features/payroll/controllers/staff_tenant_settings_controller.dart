@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/constants/app_permissions.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/utils/abn_utils.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../clients/data/models/client_profile_models.dart';
 import '../../clients/data/repositories/clients_repository.dart';
@@ -123,6 +124,14 @@ class StaffTenantSettingsController extends GetxController {
     }
     final id = _session.tenantId.value;
     if (id == null) return;
+    final abnErr = AbnUtils.formValidator(providerAbnCtrl.text);
+    if (abnErr != null) {
+      errorMessage.value = abnErr;
+      return;
+    }
+    final normalizedAbn = AbnUtils.normalizeOrNull(
+      providerAbnCtrl.text.trim().isEmpty ? null : providerAbnCtrl.text,
+    );
     isSaving.value = true;
     errorMessage.value = null;
     try {
@@ -135,10 +144,7 @@ class StaffTenantSettingsController extends GetxController {
                 ? null
                 : jurisdictionCtrl.text.trim(),
         geofenceOutsidePolicy: geofenceOutsidePolicy.value,
-        providerAbn:
-            providerAbnCtrl.text.trim().isEmpty
-                ? null
-                : providerAbnCtrl.text.trim(),
+        providerAbn: normalizedAbn,
         ndisProviderRegistrationStatus: ndisProviderRegistrationStatus.value,
         defaultProgressNoteTemplateId: defaultProgressNoteTemplateId.value,
         setDefaultProgressNoteTemplate: true,
