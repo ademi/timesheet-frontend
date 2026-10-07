@@ -6,6 +6,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../clients/data/models/client_models.dart';
 import '../../clients/data/repositories/clients_repository.dart';
@@ -26,7 +27,7 @@ String invoiceExportStatusLabel(String status) {
     case 'void':
       return 'Void';
     default:
-      return status;
+      return humanizeLabel(status);
   }
 }
 

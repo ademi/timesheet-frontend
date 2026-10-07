@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/app_switch_field.dart';
@@ -265,7 +266,7 @@ class _AgendaVisitTile extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text('$time · ${visit.status}'),
+        subtitle: Text('$time · ${humanizeLabel(visit.status)}'),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
       ),
@@ -456,7 +457,10 @@ class _LeaveTab extends StatelessWidget {
                     initialValue: controller.leaveType.value,
                     items: [
                       for (final t in leaveTypeOptions)
-                        DropdownMenuItem(value: t, child: Text(t)),
+                        DropdownMenuItem(
+                          value: t,
+                          child: Text(humanizeLabel(t)),
+                        ),
                     ],
                     onChanged: (v) {
                       if (v != null) controller.leaveType.value = v;

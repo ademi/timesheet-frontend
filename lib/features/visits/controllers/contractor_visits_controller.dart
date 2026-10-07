@@ -10,6 +10,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../shifts/data/models/shift_models.dart';
 import '../../shifts/data/repositories/shifts_repository.dart';
@@ -276,7 +277,7 @@ class ContractorVisitsController extends GetxController {
       if (item.kind == ClockOutboxKind.checkIn) {
         AppToast.success(
           'Checked in',
-          'Visit is now ${selected.value?.status ?? 'checked_in'}.',
+          'Visit is now ${humanizeLabel(selected.value?.status ?? 'checked_in')}.',
         );
       } else {
         AppToast.success('Completed', 'Visit marked completed.');
@@ -828,7 +829,7 @@ class ContractorVisitsController extends GetxController {
         await refreshSelected();
         AppToast.success(
           'Checked in',
-          'Visit is now ${selected.value?.status ?? 'checked_in'}.',
+          'Visit is now ${humanizeLabel(selected.value?.status ?? 'checked_in')}.',
         );
       }
       // else: leave Pending — no success toast without ACK

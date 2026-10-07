@@ -6,6 +6,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../billing/data/models/billing_models.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/app_time_picker.dart';
 import '../../../shared/widgets/async_action.dart';
@@ -81,7 +82,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Status: ${v.status} · payment: ${v.paymentStatus}',
+                          'Status: ${humanizeLabel(v.status)} · Payment: ${humanizeLabel(v.paymentStatus)}',
                         ),
                         Text('Start: ${_fmt(v.scheduledStart)}'),
                         Text('End: ${_fmt(v.scheduledEnd)}'),

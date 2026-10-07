@@ -1,3 +1,5 @@
+import '../../../../shared/utils/humanize_label.dart';
+
 /// Credential allowlist + DTOs (design §6.4).
 ///
 /// Wire codes are stable API values. Prefer [CredentialCategory.label] from
@@ -30,30 +32,31 @@ const credentialTypesAllowlist = <String>[
 ];
 
 /// Local fallback labels (offline / old API responses). Prefer catalog labels.
+/// Keep Title Case to match GET /v1/credential-categories.
 const credentialCategoryFallbackLabels = <String, String>{
   'passport_id': 'Passport',
-  'drivers_licence': 'Driver licence',
+  'drivers_licence': 'Driver Licence',
   'ndis_worker_screening': 'NDIS Worker Screening Check',
   'police_check': 'National Police Check',
-  'wwcc': 'Working with Children Check',
-  'first_aid': 'First aid',
+  'wwcc': 'Working With Children Check',
+  'first_aid': 'First Aid',
   'cpr': 'CPR',
-  'infection_control': 'Infection control',
-  'worker_orientation': 'Worker orientation',
-  'ndis_induction': 'NDIS induction',
-  'effective_communication': 'Supporting effective communication',
+  'infection_control': 'Infection Control',
+  'worker_orientation': 'Worker Orientation',
+  'ndis_induction': 'NDIS Induction',
+  'effective_communication': 'Supporting Effective Communication',
   'abn': 'ABN',
   'resume': 'Resume / CV',
   'cert_iii': 'Certificate III',
-  'nursing_bachelor': 'Bachelor of Nursing',
-  'nursing_diploma': 'Diploma of Nursing',
-  'other_health_qualification': 'Other health qualification',
-  'trade_certificate': 'Trade certificate',
-  'medication_admin': 'Medication administration',
-  'epilepsy_management': 'Epilepsy management',
-  'manual_handling': 'Manual handling',
-  'vehicle_registration': 'Vehicle registration',
-  'insurance': 'Car insurance',
+  'nursing_bachelor': 'Bachelor Of Nursing',
+  'nursing_diploma': 'Diploma Of Nursing',
+  'other_health_qualification': 'Other Health Qualification',
+  'trade_certificate': 'Trade Certificate',
+  'medication_admin': 'Medication Administration',
+  'epilepsy_management': 'Epilepsy Management',
+  'manual_handling': 'Manual Handling',
+  'vehicle_registration': 'Vehicle Registration',
+  'insurance': 'Car Insurance',
   'other': 'Other',
 };
 
@@ -100,7 +103,7 @@ String credentialTypeLabel(String type) {
   if (cached != null && cached.isNotEmpty) return cached;
   final fallback = credentialCategoryFallbackLabels[type];
   if (fallback != null && fallback.isNotEmpty) return fallback;
-  return type.replaceAll('_', ' ');
+  return humanizeLabel(type);
 }
 
 /// External help link for obtaining a credential, when provided by the catalog.
@@ -156,6 +159,7 @@ class CredentialOut {
     required this.evidencePresence,
     required this.createdAt,
     required this.updatedAt,
+    this.label,
     this.issuer,
     this.jurisdiction,
     this.identifierMasked,
@@ -168,6 +172,9 @@ class CredentialOut {
   final String id;
   final String contractorId;
   final String credentialType;
+
+  /// Optional display label from API (same catalog as credential-categories).
+  final String? label;
   final String? issuer;
   final String? jurisdiction;
   final String? identifierMasked;
@@ -181,16 +188,28 @@ class CredentialOut {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Prefer row [label] → catalog / local fallback → humanize.
+  String get displayLabel {
+    final fromRow = label?.trim();
+    if (fromRow != null && fromRow.isNotEmpty) return fromRow;
+    return credentialTypeLabel(credentialType);
+  }
+
   factory CredentialOut.fromJson(Map<String, dynamic> json) {
     DateTime? parseDate(Object? v) {
       if (v == null) return null;
       return DateTime.tryParse(v.toString());
     }
 
+    final rowLabel = json['label'] as String?;
     return CredentialOut(
       id: json['id'].toString(),
       contractorId: json['contractor_id'].toString(),
       credentialType: json['credential_type'] as String,
+      label:
+          (rowLabel != null && rowLabel.trim().isNotEmpty)
+              ? rowLabel.trim()
+              : null,
       issuer: json['issuer'] as String?,
       jurisdiction: json['jurisdiction'] as String?,
       identifierMasked: json['identifier_masked'] as String?,

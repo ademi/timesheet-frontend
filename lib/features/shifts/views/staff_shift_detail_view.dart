@@ -6,6 +6,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
@@ -137,7 +138,7 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                           },
                         ),
                         const SizedBox(height: 4),
-                        Text('Status: ${shift.status}'),
+                        Text('Status: ${humanizeLabel(shift.status)}'),
                         Text('Start: ${_fmt(shift.scheduledStart)}'),
                         Text('End: ${_fmt(shift.scheduledEnd)}'),
                         const SizedBox(height: 16),
@@ -229,8 +230,8 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                             contentPadding: EdgeInsets.zero,
                             title: Text(a.contractorName),
                             subtitle: Text(
-                              '${a.source} · ${a.status}'
-                              '${a.visitStatus != null ? ' · ${a.visitStatus}' : ''}',
+                              '${humanizeLabel(a.source)} · ${humanizeLabel(a.status)}'
+                              '${a.visitStatus != null ? ' · ${humanizeLabel(a.visitStatus!)}' : ''}',
                             ),
                             trailing:
                                 controller.canManage && a.status == 'active'

@@ -16,8 +16,8 @@ void main() {
 
   test('credentialTypeLabel uses fallback map for known codes', () {
     expect(credentialTypeLabel('passport_id'), 'Passport');
-    expect(credentialTypeLabel('drivers_licence'), 'Driver licence');
-    expect(credentialTypeLabel('wwcc'), 'Working with Children Check');
+    expect(credentialTypeLabel('drivers_licence'), 'Driver Licence');
+    expect(credentialTypeLabel('wwcc'), 'Working With Children Check');
     expect(
       credentialTypeLabel('ndis_worker_screening'),
       'NDIS Worker Screening Check',
@@ -63,6 +63,6 @@ void main() {
   });
 
   test('car insurance label uses fallback map', () {
-    expect(credentialTypeLabel('insurance'), 'Car insurance');
+    expect(credentialTypeLabel('insurance'), 'Car Insurance');
   });
 }

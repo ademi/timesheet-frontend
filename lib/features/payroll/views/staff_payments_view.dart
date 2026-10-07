@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
@@ -109,9 +110,9 @@ class _BatchesTab extends StatelessWidget {
                           : controller.batchStatusFilter.value,
                   items: const [
                     DropdownMenuItem(value: null, child: Text('All statuses')),
-                    DropdownMenuItem(value: 'draft', child: Text('draft')),
-                    DropdownMenuItem(value: 'posted', child: Text('posted')),
-                    DropdownMenuItem(value: 'void', child: Text('void')),
+                    DropdownMenuItem(value: 'draft', child: Text('Draft')),
+                    DropdownMenuItem(value: 'posted', child: Text('Posted')),
+                    DropdownMenuItem(value: 'void', child: Text('Void')),
                   ],
                   onChanged: controller.setBatchStatusFilter,
                   decoration: const InputDecoration(
@@ -128,7 +129,7 @@ class _BatchesTab extends StatelessWidget {
                     child: ListTile(
                       title: Text(b.periodLabel ?? b.id),
                       subtitle: Text(
-                        '${b.status} · ${b.totalAmount} ${b.currencyCode}',
+                        '${humanizeLabel(b.status)} · ${b.totalAmount} ${b.currencyCode}',
                       ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => controller.openBatch(b),
@@ -138,7 +139,7 @@ class _BatchesTab extends StatelessWidget {
                   const Divider(height: 32),
                   Text('Batch detail', style: Get.textTheme.titleMedium),
                   Text(
-                    '${selected.status} · ${selected.totalAmount} ${selected.currencyCode}',
+                    '${humanizeLabel(selected.status)} · ${selected.totalAmount} ${selected.currencyCode}',
                   ),
                   if (selected.periodLabel != null) Text(selected.periodLabel!),
                   const SizedBox(height: 8),
@@ -151,7 +152,9 @@ class _BatchesTab extends StatelessWidget {
                       subtitle:
                           line.bandBreakdown.isEmpty
                               ? null
-                              : Text('band_breakdown: ${line.bandBreakdown}'),
+                              : Text(
+                                'Band breakdown: ${line.bandBreakdown}',
+                              ),
                     ),
                   if (controller.canManage && selected.isDraft)
                     AsyncElevatedButton(

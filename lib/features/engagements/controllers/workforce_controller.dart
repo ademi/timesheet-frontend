@@ -722,7 +722,10 @@ class WorkforceController extends GetxController {
       } else {
         await load();
       }
-      AppToast.success('Updated', 'Engagement is now ${updated.status}.');
+      AppToast.success(
+        'Updated',
+        'Engagement is now ${engagementStatusLabel(updated.status)}.',
+      );
     } on AppFailure catch (e) {
       _setError(e.message);
       if (e.isEligibilityIncomplete) {

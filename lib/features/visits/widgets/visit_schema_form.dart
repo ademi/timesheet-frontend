@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/utils/select_option.dart';
 import '../../../shared/widgets/app_date_field.dart';
 import '../../../shared/widgets/app_file_field.dart';
 import '../../../shared/widgets/async_action.dart';
@@ -470,6 +471,10 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
 
     if (field.options.isNotEmpty &&
         (field.type == 'text' || field.type == 'textarea')) {
+      final entries =
+          field.optionEntries.isNotEmpty
+              ? field.optionEntries
+              : parseSelectOptionList(field.options);
       return DropdownButtonFormField<String>(
         value: _selectedOptions[field.id],
         decoration: InputDecoration(
@@ -478,8 +483,11 @@ class _VisitSchemaFormState extends State<VisitSchemaForm> {
           isDense: true,
         ),
         items: [
-          for (final opt in field.options)
-            DropdownMenuItem(value: opt, child: Text(opt)),
+          for (final opt in entries)
+            DropdownMenuItem(
+              value: opt.value,
+              child: Text(opt.label),
+            ),
         ],
         onChanged:
             widget.isSubmitted

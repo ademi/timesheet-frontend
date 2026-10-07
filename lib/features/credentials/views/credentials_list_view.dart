@@ -263,7 +263,7 @@ class _CredentialTile extends StatelessWidget {
             title: Row(
               children: [
                 Expanded(
-                  child: Text(credentialTypeLabel(credential.credentialType)),
+                  child: Text(credential.displayLabel),
                 ),
                 CredentialStatusChip(status: credential.status),
               ],

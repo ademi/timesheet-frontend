@@ -16,7 +16,7 @@ class CredentialsRepository {
 
   Future<List<CredentialOut>> listMine() async => sortedByName(
     await _remote.listMine(),
-    (c) => credentialTypeLabel(c.credentialType),
+    (c) => c.displayLabel,
   );
 
   Future<CredentialOut> create(CredentialCreateRequest body) =>
@@ -36,7 +36,7 @@ class CredentialsRepository {
       contractorId,
       engagementId: engagementId,
     ),
-    (c) => credentialTypeLabel(c.credentialType),
+    (c) => c.displayLabel,
   );
 
   Future<CredentialReviewOut> createReview({

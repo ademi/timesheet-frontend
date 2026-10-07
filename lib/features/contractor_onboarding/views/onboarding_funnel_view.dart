@@ -433,7 +433,7 @@ class _ConsentsStep extends GetView<OnboardingController> {
                             ),
                     secondary:
                         isLoading ? const ButtonLoadingIndicator() : null,
-                    title: Text(type),
+                    title: Text(credentialTypeLabel(type)),
                     subtitle: Text(
                       noticeByType[type] != null
                           ? 'Linked notice: ${noticeByType[type]!.noticeKey}'

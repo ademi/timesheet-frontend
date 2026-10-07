@@ -1,5 +1,7 @@
 /// Visits DTOs (design §6.8 / wiring guide §9).
 
+import 'package:rostiq/shared/utils/select_option.dart';
+
 /// Attached job form-catalog row (`GET /v1/jobs/{id}/form-catalog`).
 class JobFormCatalogItem {
   const JobFormCatalogItem({
@@ -121,6 +123,8 @@ class VisitFormRequirement {
   }
 }
 
+typedef VisitFormSelectOption = SelectOptionEntry;
+
 class VisitFormFieldSchema {
   const VisitFormFieldSchema({
     required this.id,
@@ -128,6 +132,7 @@ class VisitFormFieldSchema {
     required this.label,
     required this.required,
     this.options = const [],
+    this.optionEntries = const [],
     this.section,
     this.accept = const [],
   });
@@ -136,25 +141,23 @@ class VisitFormFieldSchema {
   final String type;
   final String label;
   final bool required;
+
+  /// Wire values for dropdowns (stable codes when API sends `{value, label}`).
   final List<String> options;
+  final List<VisitFormSelectOption> optionEntries;
   final String? section;
   final List<String> accept;
 
   factory VisitFormFieldSchema.fromJson(Map<String, dynamic> json) {
-    final optionsRaw = json['options'];
     final acceptRaw = json['accept'];
+    final entries = parseSelectOptionList(json['options']);
     return VisitFormFieldSchema(
       id: (json['id'] ?? json['key'] ?? '').toString(),
       type: json['type'] as String? ?? 'text',
       label: json['label'] as String? ?? '',
       required: json['required'] as bool? ?? false,
-      options:
-          optionsRaw is List
-              ? optionsRaw
-                  .map((e) => e.toString())
-                  .where((s) => s.isNotEmpty)
-                  .toList()
-              : const <String>[],
+      options: entries.map((e) => e.value).toList(growable: false),
+      optionEntries: entries,
       section: json['section']?.toString(),
       accept:
           acceptRaw is List

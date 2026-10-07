@@ -27,7 +27,7 @@ class _MockSessionService extends Mock implements SessionService {}
 
 class _MockVisitsRepository extends Mock implements VisitsRepository {}
 
-final _now = DateTime.utc(2026, 8, 18, 9);
+final _now = DateTime.now().toUtc();
 
 final _engagement = EngagementOut(
   id: 'eng-1',
@@ -145,7 +145,7 @@ void main() {
         const GetMaterialApp(home: WorkforceDetailView()),
       );
 
-      await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-3')));
+      await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-4')));
       await tester.pumpAndSettle();
 
       expect(find.text('Timetable'), findsOneWidget);
@@ -153,7 +153,7 @@ void main() {
       expect(find.text('Completed support session'), findsOneWidget);
       expect(find.text('No weekly availability set.'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-2')));
+      await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-3')));
       await tester.pumpAndSettle();
 
       expect(find.text('Future support session'), findsOneWidget);
@@ -190,7 +190,7 @@ void main() {
     Get.routing.args = _engagement;
     await tester.pumpWidget(const GetMaterialApp(home: WorkforceDetailView()));
 
-    await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-3')));
+    await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-4')));
     await tester.pumpAndSettle();
 
     expect(find.text('Missing contractors.read permission.'), findsOneWidget);

@@ -207,7 +207,7 @@ class _StaffCredentialCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      credentialTypeLabel(c.credentialType),
+                      c.displayLabel,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),

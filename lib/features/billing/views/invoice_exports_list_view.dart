@@ -7,6 +7,7 @@ import '../../../core/responsive/page_content.dart';
 import '../../../core/services/session_service.dart';
 import '../../../shared/data/recent_clients_prefs.dart';
 import '../../../shared/utils/client_search.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/searchable_client_field.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
@@ -772,7 +773,7 @@ class _PeTab extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${row.status} · ${row.daysOpen}d open · ${row.riskBand}'
+                              '${humanizeLabel(row.status)} · ${row.daysOpen}d open · ${humanizeLabel(row.riskBand)}'
                               '${row.amount != null ? ' · \$${row.amount!.toStringAsFixed(2)}' : ''}',
                               style: const TextStyle(
                                 color: AppColors.textMuted,
@@ -884,9 +885,9 @@ class _ArTab extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${row.arPaymentStatus} · ${row.daysOpen}d · ${row.riskBand}'
+                              '${humanizeLabel(row.arPaymentStatus)} · ${row.daysOpen}d · ${humanizeLabel(row.riskBand)}'
                               ' · \$${row.totalAmount.toStringAsFixed(2)}'
-                              '${row.managementType != null ? ' · ${row.managementType}' : ''}',
+                              '${row.managementType != null ? ' · ${humanizeLabel(row.managementType!)}' : ''}',
                               style: const TextStyle(
                                 color: AppColors.textMuted,
                                 fontSize: 13,
@@ -900,7 +901,7 @@ class _ArTab extends StatelessWidget {
                                 children: [
                                   for (final reason in _delayReasons)
                                     ChoiceChip(
-                                      label: Text(reason),
+                                      label: Text(humanizeLabel(reason)),
                                       selected: row.delayReason == reason,
                                       onSelected: (_) =>
                                           controller.setArDelayReason(

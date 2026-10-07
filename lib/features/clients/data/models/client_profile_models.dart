@@ -1,5 +1,10 @@
 // Client types, requirements, and profile DTOs (`/v1/clients/types`, `/profile`).
 
+import 'package:rostiq/shared/utils/select_option.dart';
+
+/// Select / multiselect option: persist [value], show [label].
+typedef SelectOption = SelectOptionEntry;
+
 class ClientTypeOut {
   const ClientTypeOut({
     required this.id,
@@ -111,19 +116,18 @@ class ClientTypeRequirement {
         .toList(growable: false);
   }
 
-  List<String> get selectOptions {
-    final raw = fieldSchemaJson['options'] ?? fieldSchemaJson['choices'];
-    if (raw is! List) return const [];
-    return raw
-        .map((e) {
-          if (e is Map) {
-            return (e['label'] ?? e['value'] ?? e['id'] ?? '').toString();
-          }
-          return e.toString();
-        })
-        .where((s) => s.isNotEmpty)
-        .toList(growable: false);
-  }
+  /// Wire values for selects (stable codes when API sends `{value, label}`).
+  List<String> get selectOptions =>
+      selectOptionEntries.map((e) => e.value).toList(growable: false);
+
+  /// Options with display labels for chips / dropdowns.
+  List<SelectOption> get selectOptionEntries =>
+      parseSelectOptionList(
+        fieldSchemaJson['options'] ?? fieldSchemaJson['choices'],
+      );
+
+  String labelForSelectValue(String value) =>
+      labelForStoredSelectValue(value, entries: selectOptionEntries);
 
   String? get placeholder => fieldSchemaJson['placeholder']?.toString();
 

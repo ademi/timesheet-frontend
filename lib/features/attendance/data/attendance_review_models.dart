@@ -1,5 +1,7 @@
 // DTOs + unified review row for staff Attendance review (exceptions + sync conflicts).
 
+import '../../../shared/utils/humanize_label.dart';
+
 enum AttendanceReviewKind { exception, syncConflict }
 
 enum AttendanceReviewFilter { all, gps, variance, sync }
@@ -22,15 +24,15 @@ String attendanceExceptionHeadline(String kind, String reasonCode) {
       break;
   }
   final cleaned = reasonCode.trim();
-  if (cleaned.isEmpty) return kind;
-  return cleaned.replaceAll('_', ' ');
+  if (cleaned.isEmpty) return humanizeLabel(kind);
+  return humanizeLabel(cleaned);
 }
 
 String attendanceExceptionDetail(String kind, String reasonCode) {
-  final parts = <String>[kind.replaceAll('_', ' ')];
+  final parts = <String>[humanizeLabel(kind)];
   final cleaned = reasonCode.trim();
   if (cleaned.isNotEmpty && cleaned != kind) {
-    parts.add(cleaned.replaceAll('_', ' '));
+    parts.add(humanizeLabel(cleaned));
   }
   return parts.join(' · ');
 }

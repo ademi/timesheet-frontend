@@ -13,6 +13,7 @@ import '../../../features/contractor_register/data/models/contractor_register_mo
 import '../../../features/contractor_register/models/contractor_qual_row.dart';
 import '../../../shared/models/profile_photo_models.dart';
 import '../../../shared/utils/abn_utils.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../documents/data/document_pipeline.dart';
 import '../../contractor_me/data/models/contractor_me_models.dart';
@@ -735,7 +736,7 @@ class ContractorProfileController extends GetxController {
       rightsNotesCtrl.clear();
       AppToast.success(
         'Request submitted',
-        '${created.requestType} · ${created.status}',
+        '${humanizeLabel(created.requestType)} · ${humanizeLabel(created.status)}',
       );
     } on AppFailure catch (e) {
       await BillingGate.showIfNeeded(e);

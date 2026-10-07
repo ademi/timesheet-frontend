@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
@@ -18,7 +19,7 @@ String _visitSubtitle(DateTime start, DateTime end, String status, String kind) 
       : _fmt(start);
   final kindLabel = shiftKindLabel(kind);
   final kindBit = kindLabel != null ? ' · $kindLabel' : '';
-  return '$range$kindBit · $status';
+  return '$range$kindBit · ${humanizeLabel(status)}';
 }
 
 class ContractorVisitsListView extends GetView<ContractorVisitsController> {

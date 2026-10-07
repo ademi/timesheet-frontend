@@ -7,6 +7,7 @@ import '../../../shared/utils/abn_utils.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/au_state_dropdown.dart';
 import '../../../shared/widgets/markdown_viewer.dart';
+import '../../credentials/data/models/credential_models.dart';
 import '../controllers/contractor_register_controller.dart';
 
 class RegisterStepIndicator extends StatelessWidget {
@@ -443,7 +444,10 @@ class _QualRow extends StatelessWidget {
               ),
               items: [
                 for (final t in ContractorRegisterController.qualTypeOptions)
-                  DropdownMenuItem(value: t, child: Text(t)),
+                  DropdownMenuItem(
+                    value: t,
+                    child: Text(credentialTypeLabel(t)),
+                  ),
               ],
               onChanged: (v) {
                 if (v != null) row.type = v;

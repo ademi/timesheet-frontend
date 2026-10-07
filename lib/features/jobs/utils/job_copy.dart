@@ -1,21 +1,23 @@
+import '../../../shared/utils/humanize_label.dart';
+
 String kindLabel(String kind) => switch (kind) {
   'standing' => 'Ongoing support',
   'ad_hoc' => 'One-off',
   'program' => 'Program',
-  _ => kind,
+  _ => humanizeLabel(kind),
 };
 
 String jobStatusLabel(String status) => switch (status) {
   'open' => 'Open',
   'closed' => 'Ended',
   'cancelled' => 'Cancelled',
-  _ => status,
+  _ => humanizeLabel(status),
 };
 
 String locationModeLabel(String mode) => switch (mode) {
   'site' => "Client's home",
   'branch' => 'Branch',
-  _ => mode,
+  _ => humanizeLabel(mode),
 };
 
 String defaultOngoingTitle(String clientName) {

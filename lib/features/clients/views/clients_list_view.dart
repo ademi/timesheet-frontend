@@ -6,6 +6,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/models/profile_photo_models.dart';
 import '../../../shared/utils/external_url.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/profile_photo_editor.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
@@ -260,7 +261,7 @@ class _ClientCard extends StatelessWidget {
                 Text(
                   archived
                       ? 'Archived${contact.isEmpty ? '' : ' · $contact'}'
-                      : client.status +
+                      : humanizeLabel(client.status) +
                           (contact.isEmpty ? '' : ' · $contact'),
                 ),
                 if (address.isNotEmpty) ...[

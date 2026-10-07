@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/themes/app_colors.dart';
+import '../utils/humanize_label.dart';
 
 /// Itemised eligibility reasons (design §5.4). No NDIS-certifying copy.
 class EligibilityIncompletePanel extends StatelessWidget {
@@ -46,7 +47,10 @@ class EligibilityIncompletePanel extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 4),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [const Text('• '), Expanded(child: Text(r))],
+                children: [
+                  const Text('• '),
+                  Expanded(child: Text(humanizeLabel(r))),
+                ],
               ),
             ),
         ],

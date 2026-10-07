@@ -5,6 +5,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/availability_rules_readout.dart';
 import '../../../shared/widgets/eligibility_incomplete_panel.dart';
@@ -215,7 +216,10 @@ class WorkforceDetailView extends GetView<WorkforceController> {
           const SizedBox(height: 8),
           if (screening is Map) ...[
             _row('NDIS screening number', _mapText(screening, 'number')),
-            _row('Clearance status', _mapText(screening, 'status')),
+            _row(
+              'Clearance status',
+              _mapText(screening, 'status', humanize: true),
+            ),
             _row('Issue date', _mapText(screening, 'issue_date')),
             _row('Expiry date', _mapText(screening, 'expiry_date')),
             _row('State/territory', _mapText(screening, 'state')),
@@ -234,7 +238,10 @@ class WorkforceDetailView extends GetView<WorkforceController> {
             for (var i = 0; i < qualifications.length; i++)
               if (qualifications[i] is Map) ...[
                 if (i > 0) const SizedBox(height: 8),
-                _row('Type', _mapText(qualifications[i] as Map, 'type')),
+                _row(
+                  'Type',
+                  _mapText(qualifications[i] as Map, 'type', humanize: true),
+                ),
                 _row(
                   'Issue date',
                   _mapText(qualifications[i] as Map, 'issue_date'),
@@ -311,82 +318,88 @@ class WorkforceDetailView extends GetView<WorkforceController> {
   String _orDash(String? value) =>
       value == null || value.trim().isEmpty ? '—' : value.trim();
 
-  String _mapText(Map map, String key) {
+  String _mapText(Map map, String key, {bool humanize = false}) {
     final value = map[key];
     if (value == null) return '—';
     final text = value.toString().trim();
-    return text.isEmpty ? '—' : text;
+    if (text.isEmpty) return '—';
+    return humanize ? humanizeLabel(text) : text;
   }
 
   Widget _scheduleContent() {
-    final availabilityErr = controller.scheduleError.value;
-    final visitsErr = controller.visitsError.value;
-    final loading =
-        controller.isLoadingVisits.value ||
-        controller.isLoadingAvailability.value;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Availability',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-        ),
-        const SizedBox(height: 8),
-        if (loading) const LinearProgressIndicator(minHeight: 2),
-        if (availabilityErr != null) ...[
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.errorBackground,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              availabilityErr,
-              style: const TextStyle(color: AppColors.error),
-            ),
+    return Obx(() {
+      final availabilityErr = controller.scheduleError.value;
+      final visitsErr = controller.visitsError.value;
+      final loading =
+          controller.isLoadingVisits.value ||
+          controller.isLoadingAvailability.value;
+      final visits = [
+        ...controller.upcomingVisits,
+        ...controller.pastVisits,
+      ];
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Availability',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
           ),
           const SizedBox(height: 8),
-        ],
-        AvailabilityRulesReadout(rules: controller.detailAvailability.toList()),
-        const SizedBox(height: 24),
-        const Text(
-          'Timetable',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-        ),
-        const SizedBox(height: 8),
-        if (visitsErr != null) ...[
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.errorBackground,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              visitsErr,
-              style: const TextStyle(color: AppColors.error),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-        VisitDayAgenda(
-          visits: [
-            for (final v in [
-              ...controller.upcomingVisits,
-              ...controller.pastVisits,
-            ])
-              AgendaVisit(
-                start: v.scheduledStart,
-                end: v.scheduledEnd,
-                title: v.jobTitle ?? 'Visit',
-                status: v.status,
-                onOpen: () => controller.openVisitDetail(v),
+          if (loading) const LinearProgressIndicator(minHeight: 2),
+          if (availabilityErr != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.errorBackground,
+                borderRadius: BorderRadius.circular(8),
               ),
+              child: Text(
+                availabilityErr,
+                style: const TextStyle(color: AppColors.error),
+              ),
+            ),
+            const SizedBox(height: 8),
           ],
-        ),
-      ],
-    );
+          AvailabilityRulesReadout(
+            rules: controller.detailAvailability.toList(),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Timetable',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          if (visitsErr != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.errorBackground,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                visitsErr,
+                style: const TextStyle(color: AppColors.error),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          VisitDayAgenda(
+            visits: [
+              for (final v in visits)
+                AgendaVisit(
+                  start: v.scheduledStart,
+                  end: v.scheduledEnd,
+                  title: v.jobTitle ?? 'Visit',
+                  status: v.status,
+                  onOpen: () => controller.openVisitDetail(v),
+                ),
+            ],
+          ),
+        ],
+      );
+    });
   }
 
   Widget _credentialsContent(EngagementOut current) {

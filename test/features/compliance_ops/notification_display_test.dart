@@ -30,7 +30,7 @@ void main() {
     });
 
     test('unknown type title-cases', () {
-      expect(notificationTitle('foo.bar_baz', {}), 'Foo bar baz');
+      expect(notificationTitle('foo.bar_baz', {}), 'Foo Bar Baz');
     });
   });
 

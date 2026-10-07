@@ -7,6 +7,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../controllers/sil_houses_controller.dart';
 import '../data/models/sil_models.dart';
 
@@ -203,7 +204,9 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(m.clientName ?? m.clientId),
                       subtitle: Text(
-                        m.isPresent ? 'Present' : m.occupancyStatus,
+                        m.isPresent
+                            ? 'Present'
+                            : humanizeLabel(m.occupancyStatus),
                       ),
                       trailing: DropdownButton<String>(
                         value: m.occupancyStatus,

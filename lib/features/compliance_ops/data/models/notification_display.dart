@@ -1,3 +1,5 @@
+import '../../../../shared/utils/humanize_label.dart';
+import '../../../credentials/data/models/credential_models.dart';
 import 'compliance_ops_models.dart';
 
 const _knownTitles = <String, String>{
@@ -27,21 +29,20 @@ const _monthLabels = <String>[
 
 String notificationTitle(String eventType, Map<String, dynamic> payload) {
   final base = _knownTitles[eventType] ?? _fallbackTitle(eventType);
+  final credentialType = payload['credential_type'];
   final detail =
       payload['job_title'] ??
       payload['client_name'] ??
-      payload['credential_type'];
+      (credentialType != null
+          ? credentialTypeLabel(credentialType.toString())
+          : null);
   if (detail != null && detail.toString().trim().isNotEmpty) {
     return '$base · $detail';
   }
   return base;
 }
 
-String _fallbackTitle(String eventType) {
-  final normalized = eventType.replaceAll('.', ' ').replaceAll('_', ' ');
-  if (normalized.isEmpty) return eventType;
-  return normalized[0].toUpperCase() + normalized.substring(1);
-}
+String _fallbackTitle(String eventType) => humanizeLabel(eventType);
 
 String formatNotificationTime(DateTime createdAt) {
   final local = createdAt.toLocal();

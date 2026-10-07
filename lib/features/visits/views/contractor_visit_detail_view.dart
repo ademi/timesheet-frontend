@@ -6,6 +6,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/external_url.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/contractor_visits_controller.dart';
@@ -28,7 +29,7 @@ String _statusLabel(String status) {
     case 'cancelled':
       return 'Cancelled';
     default:
-      return status;
+      return humanizeLabel(status);
   }
 }
 

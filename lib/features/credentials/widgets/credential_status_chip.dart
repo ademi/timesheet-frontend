@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/utils/humanize_label.dart';
 
 /// Human-readable label for [CredentialOut.status] and review decisions.
 String credentialStatusLabel(String status) {
@@ -13,7 +14,7 @@ String credentialStatusLabel(String status) {
     'rejected' => 'Rejected',
     'pending' => 'Pending review',
     're_review_required' => 'Re-review required',
-    _ => status.replaceAll('_', ' '),
+    _ => humanizeLabel(status),
   };
 }
 

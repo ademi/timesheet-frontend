@@ -5,6 +5,7 @@ import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/staff_tenant_settings_controller.dart';
@@ -65,7 +66,7 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Subscription: ${sub.status}'
+                              'Subscription: ${humanizeLabel(sub.status)}'
                               '${sub.planName != null ? ' · ${sub.planName}' : ''}',
                             ),
                           ),

@@ -67,7 +67,7 @@ class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
               controller.items.isEmpty
                   ? 'No engagements yet. Ask your provider to invite you.'
                   : 'No invited engagements waiting for accept. '
-                      'Current: ${controller.items.map((e) => e.status).join(", ")}.',
+                      'Current: ${controller.items.map((e) => e.statusLabel).join(", ")}.',
               style: const TextStyle(color: AppColors.textMuted),
             )
           else
@@ -94,7 +94,7 @@ class EngagementAcceptPanel extends GetView<ContractorEngagementsController> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Status: ${e.status}',
+                              'Status: ${e.statusLabel}',
                               style: const TextStyle(
                                 color: AppColors.textMuted,
                               ),

@@ -1,4 +1,5 @@
 import '../../../credentials/data/models/credential_models.dart';
+import '../../../../shared/utils/humanize_label.dart';
 
 /// Engagement statuses returned by the API (exact strings).
 const engagementStatuses = <String>[
@@ -20,7 +21,7 @@ String engagementStatusLabel(String status) => switch (status) {
   'active' => 'Active',
   'suspended' => 'Suspended',
   'ended' => 'Ended',
-  _ => status.replaceAll('_', ' '),
+  _ => humanizeLabel(status),
 };
 
 class RequiredDocCategory {

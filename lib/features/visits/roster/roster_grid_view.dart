@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/themes/app_colors.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../shifts/utils/overnight_format.dart';
 import '../../shifts/widgets/shift_slot_pips.dart';
 import 'roster_grid_model.dart';
@@ -31,6 +32,9 @@ String formatRosterTileTime(
 
 String? visitStatusChipLabel(String? visitStatus) {
   switch (visitStatus) {
+    case null:
+    case '':
+      return null;
     case 'scheduled':
       return 'Live';
     case 'checked_in':
@@ -40,18 +44,21 @@ String? visitStatusChipLabel(String? visitStatus) {
     case 'cancelled':
       return 'Cancelled';
     default:
-      return null;
+      return humanizeLabel(visitStatus);
   }
 }
 
 String? shiftStatusChipLabel(String? shiftStatus) {
   switch (shiftStatus) {
+    case null:
+    case '':
+      return null;
     case 'cancelled':
       return 'Cancelled';
     case 'draft':
       return 'Draft';
     default:
-      return null;
+      return humanizeLabel(shiftStatus);
   }
 }
 

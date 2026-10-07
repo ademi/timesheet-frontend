@@ -39,7 +39,7 @@ class CredentialDetailView extends GetView<CredentialsController> {
           leading: const AppBackButton(
             fallbackRoute: AppRoutes.contractorCredentials,
           ),
-          title: Text(credentialTypeLabel(credential.credentialType)),
+          title: Text(credential.displayLabel),
         ),
         body: ListView(
           padding: const EdgeInsets.all(16),

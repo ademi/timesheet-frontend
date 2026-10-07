@@ -5,9 +5,11 @@ import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../subscription/billing_gate.dart';
 import '../../credentials/data/models/credential_models.dart';
+import '../../credentials/widgets/credential_status_chip.dart';
 import '../../engagements/data/models/engagement_models.dart';
 import '../controllers/staff_compliance_controller.dart';
 import '../data/models/notification_display.dart';
@@ -122,7 +124,9 @@ class _RightsTab extends StatelessWidget {
                   Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      title: Text('${r.requestType} · ${r.status}'),
+                      title: Text(
+                        '${humanizeLabel(r.requestType)} · ${humanizeLabel(r.status)}',
+                      ),
                       subtitle: Text(
                         '${r.createdAt.toLocal()}'
                         '${r.notes != null ? '\n${r.notes}' : ''}',
@@ -260,7 +264,7 @@ class _AccessTab extends StatelessWidget {
                           (c) => DropdownMenuItem(
                             value: c.id,
                             child: Text(
-                              '${credentialTypeLabel(c.credentialType)} · ${c.status}',
+                              '${c.displayLabel} · ${credentialStatusLabel(c.status)}',
                             ),
                           ),
                         )
@@ -284,7 +288,11 @@ class _AccessTab extends StatelessWidget {
                     Card(
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
-                        title: Text(e.action ?? 'event'),
+                        title: Text(
+                          e.action != null
+                              ? humanizeLabel(e.action!)
+                              : 'Event',
+                        ),
                         subtitle: Text(
                           '${e.createdAt.toLocal()}'
                           '${e.actorLabel != null ? ' · ${e.actorLabel}' : ''}'
@@ -354,7 +362,7 @@ class _IncidentsTab extends StatelessWidget {
                     child: ListTile(
                       title: Text(i.title),
                       subtitle: Text(
-                        '${i.status}'
+                        '${humanizeLabel(i.status)}'
                         '${i.assessmentClockLabel != null ? '\n${i.assessmentClockLabel}' : ''}',
                       ),
                       isThreeLine: i.assessmentClockLabel != null,

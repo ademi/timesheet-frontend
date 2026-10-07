@@ -27,7 +27,7 @@ class _MockSessionService extends Mock implements SessionService {}
 
 class _MockVisitsRepository extends Mock implements VisitsRepository {}
 
-final _now = DateTime.utc(2026, 8, 18, 9);
+final _now = DateTime.now().toUtc();
 
 final _engagement = EngagementOut(
   id: 'eng-1',
@@ -134,7 +134,7 @@ void main() {
     Get.routing.args = _engagement;
     await tester.pumpWidget(const GetMaterialApp(home: WorkforceDetailView()));
 
-    await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-2')));
+    await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-3')));
     await tester.pump();
     await tester.pumpAndSettle();
 
@@ -170,7 +170,7 @@ void main() {
     Get.routing.args = _engagement;
     await tester.pumpWidget(const GetMaterialApp(home: WorkforceDetailView()));
 
-    await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-2')));
+    await tester.tap(find.byKey(const ValueKey('contractor-detail-tab-3')));
     await tester.pumpAndSettle();
 
     expect(find.text('Visits require visits.read'), findsOneWidget);

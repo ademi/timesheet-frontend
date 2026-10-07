@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../app/themes/app_colors.dart';
 
-String supportPlanFieldLabel(String key) => key.replaceAll('_', ' ');
+import '../../../shared/utils/humanize_label.dart';
+
+String supportPlanFieldLabel(String key) => humanizeLabel(key);
 
 Widget supportPlanField(
   TextEditingController ctrl,

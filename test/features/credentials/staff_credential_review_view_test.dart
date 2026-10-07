@@ -134,7 +134,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('First aid'), findsOneWidget);
+    expect(find.text('First Aid'), findsOneWidget);
     expect(find.text('Save certificates'), findsNothing);
   });
 

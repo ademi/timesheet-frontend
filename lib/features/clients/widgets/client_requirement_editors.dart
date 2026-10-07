@@ -167,7 +167,7 @@ class _FieldInput extends StatelessWidget {
           );
         });
       case 'multiselect':
-        final options = draft.requirement.selectOptions;
+        final options = draft.requirement.selectOptionEntries;
         return Obx(
           () => Wrap(
             spacing: 8,
@@ -175,13 +175,13 @@ class _FieldInput extends StatelessWidget {
             children: [
               for (final opt in options)
                 FilterChip(
-                  label: Text(opt),
-                  selected: draft.multiSelect.contains(opt),
+                  label: Text(opt.label),
+                  selected: draft.multiSelect.contains(opt.value),
                   onSelected: (selected) {
                     if (selected) {
-                      draft.multiSelect.add(opt);
+                      draft.multiSelect.add(opt.value);
                     } else {
-                      draft.multiSelect.remove(opt);
+                      draft.multiSelect.remove(opt.value);
                     }
                   },
                 ),
@@ -593,6 +593,8 @@ class _SelectRequirementFieldState extends State<_SelectRequirementField> {
     _otherCtrl.addListener(_syncOtherToDraft);
   }
 
+  List<String> get _optionValues => widget.draft.requirement.selectOptions;
+
   void _syncOtherToDraft() {
     if (_dropdownValue == _SelectRequirementField.otherKey) {
       widget.draft.textCtrl.text = _otherCtrl.text;
@@ -608,7 +610,7 @@ class _SelectRequirementFieldState extends State<_SelectRequirementField> {
 
   String? get _dropdownValue {
     final stored = widget.draft.textCtrl.text.trim();
-    final options = widget.draft.requirement.selectOptions;
+    final options = _optionValues;
     if (stored.isEmpty) return null;
     if (options.contains(stored)) return stored;
     return _SelectRequirementField.otherKey;
@@ -616,7 +618,8 @@ class _SelectRequirementFieldState extends State<_SelectRequirementField> {
 
   @override
   Widget build(BuildContext context) {
-    final options = widget.draft.requirement.selectOptions;
+    final options = widget.draft.requirement.selectOptionEntries;
+    final optionValues = _optionValues;
     final dropdownValue = _dropdownValue;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -625,8 +628,11 @@ class _SelectRequirementFieldState extends State<_SelectRequirementField> {
           value: dropdownValue,
           items: [
             for (final opt in options)
-              DropdownMenuItem<String?>(value: opt, child: Text(opt)),
-            if (!options.contains(_SelectRequirementField.otherKey))
+              DropdownMenuItem<String?>(
+                value: opt.value,
+                child: Text(opt.label),
+              ),
+            if (!optionValues.contains(_SelectRequirementField.otherKey))
               const DropdownMenuItem<String?>(
                 value: _SelectRequirementField.otherKey,
                 child: Text(_SelectRequirementField.otherKey),

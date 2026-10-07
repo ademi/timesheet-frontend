@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../app/controllers/auth_controller.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/utils/visit_datetime_format.dart';
 import '../controllers/contractor_payments_controller.dart';
 
@@ -100,8 +101,8 @@ class ContractorPaymentsView extends GetView<ContractorPaymentsController> {
                                           v.jobTitle ?? v.tenantName ?? 'Visit',
                                         ),
                                         subtitle: Text(
-                                          '${_fmt(v.scheduledStart)} · ${v.status} · '
-                                          '${v.paymentStatus}',
+                                          '${_fmt(v.scheduledStart)} · ${humanizeLabel(v.status)} · '
+                                          '${humanizeLabel(v.paymentStatus)}',
                                         ),
                                       ),
                                     ),

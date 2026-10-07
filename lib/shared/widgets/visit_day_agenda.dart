@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/themes/app_colors.dart';
+import '../utils/humanize_label.dart';
 import '../utils/visit_datetime_format.dart';
 
 class AgendaVisit {
@@ -80,7 +81,7 @@ class VisitDayAgenda extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Text(
-                  '${_fmtTime(visit.start)} – ${_fmtTime(visit.end)} · ${visit.status}',
+                  '${_fmtTime(visit.start)} – ${_fmtTime(visit.end)} · ${humanizeLabel(visit.status)}',
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: visit.onOpen,

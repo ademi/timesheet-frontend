@@ -6,6 +6,7 @@ import '../../../app/themes/app_colors.dart';
 import '../../../shared/utils/abn_utils.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/au_state_dropdown.dart';
+import '../../credentials/data/models/credential_models.dart';
 import '../controllers/contractor_profile_controller.dart';
 
 class ContractorProfileSections extends StatelessWidget {
@@ -289,7 +290,10 @@ class ContractorProfileSections extends StatelessWidget {
               ),
               items: [
                 for (final t in ContractorProfileController.qualTypeOptions)
-                  DropdownMenuItem(value: t, child: Text(t)),
+                  DropdownMenuItem(
+                    value: t,
+                    child: Text(credentialTypeLabel(t)),
+                  ),
               ],
               onChanged: (v) {
                 if (v != null) row.type = v;
