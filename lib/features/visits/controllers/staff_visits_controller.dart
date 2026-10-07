@@ -95,6 +95,11 @@ class StaffVisitsController extends GetxController {
   final participantNdisNumber = RxnString();
   final isLoadingParticipantNdis = false.obs;
 
+  /// Job / plan NDIS item for [selectedShift] (read-only on shift detail).
+  final shiftSupportItemCode = RxnString();
+  final shiftSupportItemName = RxnString();
+  final isLoadingShiftSupportItem = false.obs;
+
   /// Board range: aligned to tenant civil week when timezone is available.
   final rangeStart = DateTime.now().obs;
   final tenantTimezone = ''.obs;
@@ -594,11 +599,98 @@ class StaffVisitsController extends GetxController {
           shifts[idx] = selectedShift.value!;
         }
       }
+      await resolveSelectedShiftSupportItem();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } finally {
       isRefreshing.value = false;
       if (includeTravel) travelLoading.value = false;
+    }
+  }
+
+  JobOut? jobForId(String jobId) {
+    for (final job in jobs) {
+      if (job.id == jobId) return job;
+    }
+    return null;
+  }
+
+  /// Resolves the standing / planned NDIS support item for [selectedShift].
+  ///
+  /// Prefer job code+name; then board visit rows for this shift; then unique
+  /// segment-template / suggested codes (code only).
+  Future<void> resolveSelectedShiftSupportItem() async {
+    final shift = selectedShift.value;
+    if (shift == null) {
+      shiftSupportItemCode.value = null;
+      shiftSupportItemName.value = null;
+      return;
+    }
+
+    isLoadingShiftSupportItem.value = true;
+    try {
+      JobOut? job = jobForId(shift.jobId);
+      if (job == null) {
+        try {
+          job = await _jobsRepository.getJob(shift.jobId);
+          final existing = jobs.indexWhere((j) => j.id == job!.id);
+          if (existing >= 0) {
+            jobs[existing] = job;
+          } else {
+            jobs.add(job);
+          }
+        } on AppFailure {
+          // Fall through to shift-local codes.
+        }
+      }
+
+      final jobCode = job?.supportItemCode?.trim();
+      if (jobCode != null && jobCode.isNotEmpty) {
+        shiftSupportItemCode.value = jobCode;
+        shiftSupportItemName.value = job?.supportItemName?.trim();
+        return;
+      }
+
+      for (final visit in boardVisits) {
+        if (visit.shiftId != shift.id) continue;
+        final code = visit.supportItemCode?.trim();
+        if (code == null || code.isEmpty) continue;
+        shiftSupportItemCode.value = code;
+        shiftSupportItemName.value = visit.supportItemName?.trim();
+        return;
+      }
+
+      final templateCodes = <String>{
+        for (final row in shift.segmentTemplate)
+          if (row.anchorSupportItemCode.trim().isNotEmpty)
+            row.anchorSupportItemCode.trim(),
+      };
+      if (templateCodes.length == 1) {
+        shiftSupportItemCode.value = templateCodes.first;
+        shiftSupportItemName.value = null;
+        return;
+      }
+
+      for (final code in shift.suggestedSupportItemCodes) {
+        final trimmed = code.trim();
+        if (trimmed.isEmpty) continue;
+        shiftSupportItemCode.value = trimmed;
+        shiftSupportItemName.value = null;
+        return;
+      }
+
+      for (final p in shift.participants) {
+        final code = p.rateSnapshot?.supportItemCode?.trim();
+        if (code == null || code.isEmpty) continue;
+        shiftSupportItemCode.value = code;
+        shiftSupportItemName.value = null;
+        return;
+      }
+
+      shiftSupportItemCode.value = null;
+      shiftSupportItemName.value = null;
+    } finally {
+      isLoadingShiftSupportItem.value = false;
     }
   }
 

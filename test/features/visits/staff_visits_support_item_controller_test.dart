@@ -7,8 +7,10 @@ import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
 import 'package:rostiq/features/billing/data/models/billing_models.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
+import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
 import 'package:rostiq/features/payroll/data/repositories/payroll_repository.dart';
+import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/data/repositories/shifts_repository.dart';
 import 'package:rostiq/features/visits/controllers/staff_visits_controller.dart';
 import 'package:rostiq/features/visits/data/models/visit_models.dart';
@@ -421,5 +423,83 @@ void main() {
         body: any(named: 'body'),
       ),
     );
+  });
+
+  test('resolveSelectedShiftSupportItem uses job NDIS code and name', () async {
+    controller.selectedShift.value = ShiftOut(
+      id: 'shift-1',
+      tenantId: 'tenant-1',
+      jobId: 'job-1',
+      jobTitle: 'Support',
+      scheduledStart: _now,
+      scheduledEnd: _now.add(const Duration(hours: 2)),
+      requiredSlots: 1,
+      openSlots: 0,
+      status: 'published',
+      createdAt: _now,
+      updatedAt: _now,
+    );
+    controller.jobs.assignAll([
+      JobOut(
+        id: 'job-1',
+        tenantId: 'tenant-1',
+        kind: 'standing',
+        status: 'open',
+        title: 'Support',
+        supportItemCode: '01_002_0107_1_1',
+        supportItemName:
+            'Assistance With Self-Care Activities - Standard - Weekday Night',
+        geofenceRadiusM: 100,
+        geofenceMode: 'informational',
+        createdAt: _now,
+        updatedAt: _now,
+      ),
+    ]);
+
+    await controller.resolveSelectedShiftSupportItem();
+
+    expect(controller.shiftSupportItemCode.value, '01_002_0107_1_1');
+    expect(
+      controller.shiftSupportItemName.value,
+      'Assistance With Self-Care Activities - Standard - Weekday Night',
+    );
+    verifyNever(() => jobs.getJob(any()));
+  });
+
+  test('resolveSelectedShiftSupportItem falls back to getJob', () async {
+    controller.selectedShift.value = ShiftOut(
+      id: 'shift-1',
+      tenantId: 'tenant-1',
+      jobId: 'job-2',
+      jobTitle: 'Support',
+      scheduledStart: _now,
+      scheduledEnd: _now.add(const Duration(hours: 2)),
+      requiredSlots: 1,
+      openSlots: 0,
+      status: 'published',
+      createdAt: _now,
+      updatedAt: _now,
+    );
+    when(() => jobs.getJob('job-2')).thenAnswer(
+      (_) async => JobOut(
+        id: 'job-2',
+        tenantId: 'tenant-1',
+        kind: 'standing',
+        status: 'open',
+        title: 'Support',
+        supportItemCode: '01_011_0107_1_1',
+        supportItemName: 'Self care',
+        geofenceRadiusM: 100,
+        geofenceMode: 'informational',
+        createdAt: _now,
+        updatedAt: _now,
+      ),
+    );
+
+    await controller.resolveSelectedShiftSupportItem();
+
+    expect(controller.shiftSupportItemCode.value, '01_011_0107_1_1');
+    expect(controller.shiftSupportItemName.value, 'Self care');
+    verify(() => jobs.getJob('job-2')).called(1);
   });
 }

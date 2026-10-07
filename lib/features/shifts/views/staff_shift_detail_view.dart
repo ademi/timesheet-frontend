@@ -140,6 +140,18 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                         Text('Status: ${shift.status}'),
                         Text('Start: ${_fmt(shift.scheduledStart)}'),
                         Text('End: ${_fmt(shift.scheduledEnd)}'),
+                        const SizedBox(height: 16),
+                        Text(
+                          'NDIS support item',
+                          style: Get.textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        _ShiftNdisSupportItemBlock(
+                          code: controller.shiftSupportItemCode.value,
+                          name: controller.shiftSupportItemName.value,
+                          loading: controller.isLoadingShiftSupportItem.value,
+                          segmentTemplate: shift.segmentTemplate,
+                        ),
                         const SizedBox(height: 8),
                         Text(
                           'Staff:participant ${staffParticipantLabel(shift.workerCount, n)}',
@@ -906,6 +918,91 @@ class _AllocationHistorySection extends StatelessWidget {
         ],
       );
     });
+  }
+}
+
+class _ShiftNdisSupportItemBlock extends StatelessWidget {
+  const _ShiftNdisSupportItemBlock({
+    required this.code,
+    required this.name,
+    required this.loading,
+    required this.segmentTemplate,
+  });
+
+  final String? code;
+  final String? name;
+  final bool loading;
+  final List<SegmentTemplateItem> segmentTemplate;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading && (code == null || code!.isEmpty)) {
+      return const Text(
+        'Loading NDIS item…',
+        style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+      );
+    }
+
+    final trimmedCode = code?.trim();
+    final trimmedName = name?.trim();
+    final hasPrimary =
+        (trimmedCode != null && trimmedCode.isNotEmpty) ||
+        (trimmedName != null && trimmedName.isNotEmpty);
+
+    final uniqueSegmentCodes = <String>{
+      for (final row in segmentTemplate)
+        if (row.anchorSupportItemCode.trim().isNotEmpty)
+          row.anchorSupportItemCode.trim(),
+    };
+    final showSegments =
+        uniqueSegmentCodes.length > 1 ||
+        (uniqueSegmentCodes.length == 1 &&
+            trimmedCode != null &&
+            uniqueSegmentCodes.first != trimmedCode);
+
+    if (!hasPrimary && !showSegments) {
+      return const Text(
+        'None set on this support / shift.',
+        style: TextStyle(color: AppColors.textMuted),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasPrimary) ...[
+          if (trimmedName != null && trimmedName.isNotEmpty)
+            Text(trimmedName, style: const TextStyle(fontWeight: FontWeight.w500)),
+          if (trimmedCode != null && trimmedCode.isNotEmpty)
+            Text(
+              trimmedCode,
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+        ],
+        if (showSegments) ...[
+          if (hasPrimary) const SizedBox(height: 8),
+          const Text(
+            'Planned segments',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          for (final row in segmentTemplate)
+            if (row.anchorSupportItemCode.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(
+                  '${row.anchorSupportItemCode.trim()}'
+                  ' · ${row.kind}'
+                  ' · ${row.offsetStartMinutes}–${row.offsetEndMinutes} min',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
+        ],
+      ],
+    );
   }
 }
 
