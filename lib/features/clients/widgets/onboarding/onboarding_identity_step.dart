@@ -15,12 +15,7 @@ class OnboardingIdentityStep extends StatelessWidget {
 
   static const otherPresetKey = 'Other';
 
-  static const sexOptions = [
-    'Male',
-    'Female',
-    'Non-binary',
-    'Prefer not to say',
-  ];
+  static const sexOptions = ['Male', 'Female'];
   static const atsiOptions = [
     'Aboriginal and/or Torres Strait Islander',
     'No',
@@ -49,22 +44,16 @@ class OnboardingIdentityStep extends StatelessWidget {
     return (preset: otherPresetKey, otherText: v);
   }
 
-  /// Maps stored sex/gender to UI preset + free-text companion (CR5).
+  /// Maps stored sex/gender to Male/Female preset (unknown values clear).
   static ({String? preset, String otherText}) hydrateSexGender(String? stored) {
     final v = stored?.trim();
     if (v == null || v.isEmpty) {
       return (preset: null, otherText: '');
     }
-    if (v.toLowerCase() == 'other') {
-      return (preset: otherPresetKey, otherText: '');
-    }
-    if (sexOptions.contains(v) && v != otherPresetKey) {
+    if (sexOptions.contains(v)) {
       return (preset: v, otherText: '');
     }
-    if (v == otherPresetKey) {
-      return (preset: otherPresetKey, otherText: '');
-    }
-    return (preset: otherPresetKey, otherText: v);
+    return (preset: null, otherText: '');
   }
 
   @override
@@ -117,29 +106,18 @@ class OnboardingIdentityStep extends StatelessWidget {
               ),
               for (final o in sexOptions)
                 DropdownMenuItem(value: o, child: Text(o)),
-              const DropdownMenuItem(
-                value: otherPresetKey,
-                child: Text(otherPresetKey),
-              ),
             ],
             onChanged:
                 enabled
                     ? (v) {
                       controller.sexGender.value = v;
-                      if (v != otherPresetKey) {
-                        controller.sexGenderOtherCtrl.clear();
-                      }
+                      controller.sexGenderOtherCtrl.clear();
                     }
                     : null,
           ),
-          OtherTextField(
-            isOther: controller.sexGender.value == otherPresetKey,
-            controller: controller.sexGenderOtherCtrl,
-            label: 'Participant gender (other)',
-          ),
           const SizedBox(height: 12),
           AppDateField(
-            label: 'Participant date of birth *',
+            label: 'Participant date of birth',
             value: controller.dob.value,
             enabled: enabled,
             firstDate: DateTime(1900),
@@ -152,7 +130,7 @@ class OnboardingIdentityStep extends StatelessWidget {
             controller: controller.phone,
             keyboardType: TextInputType.phone,
             decoration: const InputDecoration(
-              labelText: 'Participant phone number *',
+              labelText: 'Participant phone number',
               border: OutlineInputBorder(),
             ),
           ),
@@ -161,7 +139,7 @@ class OnboardingIdentityStep extends StatelessWidget {
             controller: controller.email,
             keyboardType: TextInputType.emailAddress,
             decoration: const InputDecoration(
-              labelText: 'Participant email *',
+              labelText: 'Participant email',
               border: OutlineInputBorder(),
             ),
           ),

@@ -54,7 +54,7 @@ void main() {
     expect(c.referralOtherCtrl.text, 'Community Centre');
   });
 
-  testWidgets('hydrated unknown sex builds without dropdown crash', (
+  testWidgets('hydrated unknown sex clears without dropdown crash', (
     tester,
   ) async {
     final hydrated = OnboardingIdentityStep.hydrateSexGender('Agender');
@@ -72,7 +72,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Participant gender (other)'), findsOneWidget);
-    expect(c.sexGenderOtherCtrl.text, 'Agender');
+    expect(tester.takeException(), isNull);
+    expect(find.text('Participant gender (other)'), findsNothing);
+    expect(find.text('Male'), findsNothing);
+    expect(c.sexGender.value, isNull);
   });
 }

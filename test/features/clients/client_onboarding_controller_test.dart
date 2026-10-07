@@ -133,31 +133,21 @@ void main() {
     c.dispose();
   });
 
-  test('cannot leave Identity without dob', () async {
-    c.fullName.text = 'Sam';
-    c.email.text = 'sam@example.com';
-    c.phone.text = '+61411111111';
+  test('cannot leave Identity without participant name', () async {
     expect(await c.submitIdentity(), isFalse);
-    expect(c.errorMessage.value, contains('date of birth'));
+    expect(c.errorMessage.value, contains('full name'));
     expect(c.step.value, 0);
   });
 
-  test('cannot leave Identity without email', () async {
-    c.fullName.text = 'Sam';
-    c.phone.text = '+61411111111';
-    c.dob.value = DateTime(1990, 1, 1);
-    expect(await c.submitIdentity(), isFalse);
-    expect(c.errorMessage.value, contains('email'));
-    expect(c.step.value, 0);
-  });
+  test('can leave Identity with only participant name', () async {
+    when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
+    when(
+      () => mock.upsertProfileFact(any(), any(), any()),
+    ).thenAnswer((_) async {});
 
-  test('cannot leave Identity without phone', () async {
     c.fullName.text = 'Sam';
-    c.email.text = 'sam@example.com';
-    c.dob.value = DateTime(1990, 1, 1);
-    expect(await c.submitIdentity(), isFalse);
-    expect(c.errorMessage.value, contains('phone'));
-    expect(c.step.value, 0);
+    expect(await c.submitIdentity(), isTrue);
+    expect(c.step.value, 1);
   });
 
   test('submitIdentity sets onboarding_incomplete and advances', () async {
@@ -1304,31 +1294,19 @@ void main() {
     });
   });
 
-  group('sex Other (CR5)', () {
-    test('hydrateSexGender maps custom text to Other preset', () {
+  group('sex Male/Female', () {
+    test('hydrateSexGender clears unknown values', () {
       final hydrated = OnboardingIdentityStep.hydrateSexGender('Agender');
-      expect(hydrated.preset, OnboardingIdentityStep.otherPresetKey);
-      expect(hydrated.otherText, 'Agender');
-    });
-
-    test('hydrateSexGender keeps known presets', () {
-      final hydrated = OnboardingIdentityStep.hydrateSexGender('Non-binary');
-      expect(hydrated.preset, 'Non-binary');
+      expect(hydrated.preset, isNull);
       expect(hydrated.otherText, isEmpty);
     });
 
-    test('submitIdentity rejects sex Other without free-text', () async {
-      when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
-
-      _fillValidIdentity(c);
-      c.sexGender.value = OnboardingIdentityStep.otherPresetKey;
-
-      expect(await c.submitIdentity(), isFalse);
-      expect(c.errorMessage.value, contains('sex'));
-      verifyNever(() => mock.upsertProfileFact(any(), any(), any()));
+    test('hydrateSexGender keeps Male and Female', () {
+      expect(OnboardingIdentityStep.hydrateSexGender('Male').preset, 'Male');
+      expect(OnboardingIdentityStep.hydrateSexGender('Female').preset, 'Female');
     });
 
-    test('submitIdentity saves typed sex string for Other', () async {
+    test('submitIdentity saves Male gender', () async {
       ProfileFactUpsert? captured;
       when(() => mock.createClient(any())).thenAnswer((_) async => _fakeClient);
       when(() => mock.upsertProfileFact(any(), any(), any())).thenAnswer((
@@ -1341,12 +1319,10 @@ void main() {
       });
 
       _fillValidIdentity(c);
-      c.sexGender.value = OnboardingIdentityStep.otherPresetKey;
-      c.sexGenderOtherCtrl.text = 'Agender';
+      c.sexGender.value = 'Male';
 
       expect(await c.submitIdentity(), isTrue);
-      expect(captured?.valueJson, 'Agender');
-      expect(captured?.valueJson, isNot('Other'));
+      expect(captured?.valueJson, 'Male');
     });
   });
 
@@ -1419,7 +1395,7 @@ void main() {
   });
 
   test(
-    'hydrateIdentityFromFacts maps unknown referral and sex to Other + text',
+    'hydrateIdentityFromFacts maps unknown referral to Other; clears unknown sex',
     () {
       c.hydrateIdentityFromFacts([
         const ClientProfileFactOut(
@@ -1434,8 +1410,8 @@ void main() {
 
       expect(c.referralSource.value, OnboardingIdentityStep.otherPresetKey);
       expect(c.referralOtherCtrl.text, 'Community Centre');
-      expect(c.sexGender.value, OnboardingIdentityStep.otherPresetKey);
-      expect(c.sexGenderOtherCtrl.text, 'Agender');
+      expect(c.sexGender.value, isNull);
+      expect(c.sexGenderOtherCtrl.text, isEmpty);
     },
   );
 

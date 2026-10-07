@@ -210,13 +210,10 @@ class ClientOnboardingController extends GetxController
   }
 
   String? get resolvedSexGender {
-    final preset = sexGender.value;
+    final preset = sexGender.value?.trim();
     if (preset == null || preset.isEmpty) return null;
-    if (preset == OnboardingIdentityStep.otherPresetKey) {
-      final other = sexGenderOtherCtrl.text.trim();
-      return other.isEmpty ? null : other;
-    }
-    return preset;
+    if (OnboardingIdentityStep.sexOptions.contains(preset)) return preset;
+    return null;
   }
 
   // ── Representative ────────────────────────────────────────────────────
@@ -911,33 +908,16 @@ class ClientOnboardingController extends GetxController
       errorMessage.value = 'Participant full name is required.';
       return false;
     }
-    if (em.isEmpty) {
-      errorMessage.value = 'Participant email is required.';
-      return false;
-    }
-    if (ph.isEmpty) {
-      errorMessage.value = 'Participant phone number is required.';
-      return false;
-    }
-    if (dob.value == null) {
-      errorMessage.value = 'Participant date of birth is required.';
-      return false;
-    }
     if (referralSource.value == OnboardingIdentityStep.otherPresetKey &&
         (resolvedReferralSource == null || resolvedReferralSource!.isEmpty)) {
       errorMessage.value = 'Specify the referral source.';
-      return false;
-    }
-    if (sexGender.value == OnboardingIdentityStep.otherPresetKey &&
-        (resolvedSexGender == null || resolvedSexGender!.isEmpty)) {
-      errorMessage.value = 'Specify sex / gender.';
       return false;
     }
 
     isSaving.value = true;
     try {
       final patientTypeId = await _resolvePatientTypeId();
-      final dobStr = _formatDate(dob.value!);
+      final dobStr = dob.value != null ? _formatDate(dob.value!) : null;
 
       if (client.value == null) {
         final created = await _repository.createClient(
