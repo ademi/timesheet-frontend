@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rostiq/app/data/models/auth/engagement_summary_model.dart';
+import 'package:rostiq/core/errors/app_failure.dart';
 import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/clients/data/models/client_models.dart';
 import 'package:rostiq/features/clients/data/repositories/clients_repository.dart';
@@ -13,6 +14,8 @@ import 'package:rostiq/features/engagements/data/models/engagement_models.dart';
 import 'package:rostiq/features/engagements/data/repositories/engagements_repository.dart';
 import 'package:rostiq/features/jobs/data/models/job_models.dart';
 import 'package:rostiq/features/jobs/data/repositories/jobs_repository.dart';
+import 'package:rostiq/features/payroll/data/models/payroll_models.dart';
+import 'package:rostiq/features/payroll/data/repositories/payroll_repository.dart';
 import 'package:rostiq/features/visits/data/models/visit_models.dart';
 import 'package:rostiq/features/visits/data/repositories/visits_repository.dart';
 
@@ -30,9 +33,12 @@ class _MockJobsRepository extends Mock implements JobsRepository {}
 
 class _MockVisitsRepository extends Mock implements VisitsRepository {}
 
+class _MockPayrollRepository extends Mock implements PayrollRepository {}
+
 void main() {
   late _MockComplianceOpsRepository repository;
   late _MockSessionService session;
+  late _MockPayrollRepository payroll;
   late RxList<EngagementSummaryModel> engagements;
 
   setUpAll(() {
@@ -43,12 +49,14 @@ void main() {
     Get.testMode = true;
     repository = _MockComplianceOpsRepository();
     session = _MockSessionService();
+    payroll = _MockPayrollRepository();
     engagements = <EngagementSummaryModel>[].obs;
     when(() => session.isStaff).thenReturn(false);
     when(() => session.isContractor).thenReturn(true);
     when(() => session.needsDocsAttention).thenReturn(false);
     when(() => session.hasPermission(any())).thenReturn(false);
     when(() => session.engagements).thenReturn(engagements);
+    when(() => session.tenantId).thenReturn(RxnString());
     when(
       () => repository.listNotificationEvents(limit: any(named: 'limit')),
     ).thenAnswer((_) async => []);
@@ -85,6 +93,7 @@ void main() {
     final controller = HomeAlertsController(
       repository: repository,
       session: session,
+      payrollRepository: payroll,
       showSnack: (_, __) {},
     );
     await controller.load();
@@ -103,6 +112,7 @@ void main() {
     final controller = HomeAlertsController(
       repository: repository,
       session: session,
+      payrollRepository: payroll,
       showSnack: (_, __) {},
     );
     await controller.load();
@@ -121,6 +131,7 @@ void main() {
     final controller = HomeAlertsController(
       repository: repository,
       session: session,
+      payrollRepository: payroll,
       showSnack: (_, __) {},
     );
     await controller.load();
@@ -267,6 +278,7 @@ void main() {
     final controller = HomeAlertsController(
       repository: repository,
       session: session,
+      payrollRepository: payroll,
       clientsRepository: clients,
       engagementsRepository: workforce,
       jobsRepository: jobs,
@@ -297,6 +309,7 @@ void main() {
     final controller = HomeAlertsController(
       repository: repository,
       session: session,
+      payrollRepository: payroll,
       notificationsFeed: feed,
       showSnack: (_, __) {},
     );
@@ -330,6 +343,7 @@ void main() {
       final controller = HomeAlertsController(
         repository: repository,
         session: session,
+        payrollRepository: payroll,
         showSnack: (title, message) => snacks.add('$title|$message'),
       );
       await controller.load();
@@ -362,9 +376,102 @@ void main() {
     final controller = HomeAlertsController(
       repository: repository,
       session: session,
+      payrollRepository: payroll,
       showSnack: (_, __) {},
     );
 
     expect(controller.tenantLabelFor(pendingRequest()), 'Acme Care');
+  });
+
+  group('shouldShowProviderAbnBanner', () {
+    test('staff with empty provider ABN shows banner', () async {
+      when(() => session.isStaff).thenReturn(true);
+      when(() => session.isContractor).thenReturn(false);
+      when(() => session.tenantId).thenReturn(RxnString('tenant-1'));
+      when(() => payroll.getTenant('tenant-1')).thenAnswer(
+        (_) async => const TenantSettingsOut(
+          id: 'tenant-1',
+          providerAbn: null,
+        ),
+      );
+
+      final controller = HomeAlertsController(
+        repository: repository,
+        session: session,
+        payrollRepository: payroll,
+        showSnack: (_, __) {},
+      );
+      await controller.load(force: true);
+
+      expect(controller.shouldShowProviderAbnBanner, isTrue);
+    });
+
+    test('staff with filled provider ABN hides banner', () async {
+      when(() => session.isStaff).thenReturn(true);
+      when(() => session.isContractor).thenReturn(false);
+      when(() => session.tenantId).thenReturn(RxnString('tenant-1'));
+      when(() => payroll.getTenant('tenant-1')).thenAnswer(
+        (_) async => const TenantSettingsOut(
+          id: 'tenant-1',
+          providerAbn: '53004085616',
+        ),
+      );
+
+      final controller = HomeAlertsController(
+        repository: repository,
+        session: session,
+        payrollRepository: payroll,
+        showSnack: (_, __) {},
+      );
+      await controller.load(force: true);
+
+      expect(controller.shouldShowProviderAbnBanner, isFalse);
+    });
+
+    test('staff getTenant AppFailure hides banner', () async {
+      when(() => session.isStaff).thenReturn(true);
+      when(() => session.isContractor).thenReturn(false);
+      when(() => session.tenantId).thenReturn(RxnString('tenant-1'));
+      when(() => payroll.getTenant('tenant-1')).thenThrow(
+        const AppFailure(
+          code: 'network_error',
+          message: 'offline',
+          presentation: AppFailurePresentation.toast,
+        ),
+      );
+
+      final controller = HomeAlertsController(
+        repository: repository,
+        session: session,
+        payrollRepository: payroll,
+        showSnack: (_, __) {},
+      );
+      await controller.load(force: true);
+
+      expect(controller.shouldShowProviderAbnBanner, isFalse);
+    });
+
+    test('contractor never shows provider ABN banner', () async {
+      when(() => session.isStaff).thenReturn(false);
+      when(() => session.isContractor).thenReturn(true);
+      when(() => session.tenantId).thenReturn(RxnString('tenant-1'));
+      when(() => payroll.getTenant('tenant-1')).thenAnswer(
+        (_) async => const TenantSettingsOut(
+          id: 'tenant-1',
+          providerAbn: null,
+        ),
+      );
+
+      final controller = HomeAlertsController(
+        repository: repository,
+        session: session,
+        payrollRepository: payroll,
+        showSnack: (_, __) {},
+      );
+      await controller.load(force: true);
+
+      expect(controller.shouldShowProviderAbnBanner, isFalse);
+      verifyNever(() => payroll.getTenant(any()));
+    });
   });
 }

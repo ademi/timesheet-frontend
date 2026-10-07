@@ -22,6 +22,7 @@ import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
+import '../../payroll/data/repositories/payroll_repository.dart';
 import '../controllers/notifications_feed_controller.dart';
 import '../data/models/compliance_ops_models.dart';
 import '../data/models/contractor_home_stats.dart';
@@ -34,6 +35,7 @@ class HomeAlertsController extends GetxController {
   HomeAlertsController({
     required ComplianceOpsRepository repository,
     required SessionService session,
+    required PayrollRepository payrollRepository,
     ClientsRepository? clientsRepository,
     EngagementsRepository? engagementsRepository,
     JobsRepository? jobsRepository,
@@ -44,6 +46,7 @@ class HomeAlertsController extends GetxController {
     void Function(String title, String message)? showSnack,
   }) : _repository = repository,
        _session = session,
+       _payrollRepository = payrollRepository,
        _clientsRepository = clientsRepository,
        _engagementsRepository = engagementsRepository,
        _jobsRepository = jobsRepository,
@@ -55,6 +58,7 @@ class HomeAlertsController extends GetxController {
 
   final ComplianceOpsRepository _repository;
   final SessionService _session;
+  final PayrollRepository _payrollRepository;
   final ClientsRepository? _clientsRepository;
   final EngagementsRepository? _engagementsRepository;
   final JobsRepository? _jobsRepository;
@@ -77,6 +81,8 @@ class HomeAlertsController extends GetxController {
   final stats = Rxn<StaffHomeStats>();
   final contractorStats = Rxn<ContractorHomeStats>();
   final burnAlerts = <BurnEnvelopeAlertOut>[].obs;
+  final staffProviderAbn = RxnString();
+  bool _staffTenantLoaded = false;
 
   bool get hasBurnAlerts => burnAlerts.isNotEmpty;
   int get burnAlertCount => burnAlerts.length;
@@ -89,6 +95,10 @@ class HomeAlertsController extends GetxController {
       !isStaff && _session.needsApprovalWait;
   bool get shouldShowProfileBanner =>
       !isStaff && _session.needsProfileCompletion.value;
+  bool get shouldShowProviderAbnBanner =>
+      isStaff &&
+      _staffTenantLoaded &&
+      (staffProviderAbn.value == null || staffProviderAbn.value!.trim().isEmpty);
   bool get canViewBilling =>
       isStaff &&
       (_session.hasPermission(AppPermissions.subscriptionView) ||
@@ -162,6 +172,18 @@ class HomeAlertsController extends GetxController {
       }
     } else {
       pendingSharingRequests.clear();
+    }
+    if (isStaff) {
+      final tid = _session.tenantId.value;
+      if (tid != null) {
+        try {
+          final t = await _payrollRepository.getTenant(tid);
+          staffProviderAbn.value = t.providerAbn;
+          _staffTenantLoaded = true;
+        } on AppFailure {
+          _staffTenantLoaded = false; // hide banner on transient errors
+        }
+      }
     }
     if (canViewBilling) {
       try {
@@ -638,6 +660,25 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (controller.shouldShowProviderAbnBanner) ...[
+                      MaterialBanner(
+                        content: const Text(
+                          'Add your provider ABN in Settings before plan-managed invoice exports.',
+                        ),
+                        leading: const Icon(Icons.business_outlined),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.08,
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed:
+                                () => AppNavigator.push(AppRoutes.staffSettings),
+                            child: const Text('Open Settings'),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                     ],

@@ -7,27 +7,33 @@ import 'package:rostiq/core/services/session_service.dart';
 import 'package:rostiq/features/compliance_ops/controllers/notifications_feed_controller.dart';
 import 'package:rostiq/features/compliance_ops/data/repositories/compliance_ops_repository.dart';
 import 'package:rostiq/features/compliance_ops/views/home_alerts_view.dart';
+import 'package:rostiq/features/payroll/data/repositories/payroll_repository.dart';
 
 class _MockComplianceOpsRepository extends Mock
     implements ComplianceOpsRepository {}
 
 class _MockSessionService extends Mock implements SessionService {}
 
+class _MockPayrollRepository extends Mock implements PayrollRepository {}
+
 void main() {
   late _MockComplianceOpsRepository repository;
   late _MockSessionService session;
+  late _MockPayrollRepository payroll;
   late RxList<EngagementSummaryModel> engagements;
 
   setUp(() {
     Get.testMode = true;
     repository = _MockComplianceOpsRepository();
     session = _MockSessionService();
+    payroll = _MockPayrollRepository();
     engagements = <EngagementSummaryModel>[].obs;
     when(() => session.isStaff).thenReturn(false);
     when(() => session.isContractor).thenReturn(true);
     when(() => session.needsDocsAttention).thenReturn(false);
     when(() => session.hasPermission(any())).thenReturn(false);
     when(() => session.engagements).thenReturn(engagements);
+    when(() => session.tenantId).thenReturn(RxnString());
     when(
       () => repository.listNotificationEvents(limit: any(named: 'limit')),
     ).thenAnswer((_) async => []);
@@ -44,6 +50,7 @@ void main() {
       HomeAlertsController(
         repository: repository,
         session: session,
+        payrollRepository: payroll,
         showSnack: (_, __) {},
       ),
     );

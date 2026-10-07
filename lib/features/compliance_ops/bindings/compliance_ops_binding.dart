@@ -17,6 +17,8 @@ import '../../engagements/bindings/engagements_binding.dart';
 import '../../engagements/data/repositories/engagements_repository.dart';
 import '../../jobs/bindings/jobs_binding.dart';
 import '../../jobs/data/repositories/jobs_repository.dart';
+import '../../payroll/bindings/payroll_binding.dart';
+import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../controllers/contractor_profile_controller.dart';
@@ -123,6 +125,7 @@ class HomeAlertsBinding extends Bindings {
     VisitsBinding.ensureShared();
     CredentialsBinding.ensureDependencies();
     BillingBinding.ensureShared();
+    PayrollBinding.ensureShared();
     NotificationsFeedController.ensureRegistered();
     if (!Get.isRegistered<SessionService>()) return;
     // Keep across shell Get.offNamed tab switches to avoid refetch storms.
@@ -131,6 +134,7 @@ class HomeAlertsBinding extends Bindings {
         HomeAlertsController(
           repository: Get.find<ComplianceOpsRepository>(),
           session: Get.find<SessionService>(),
+          payrollRepository: Get.find<PayrollRepository>(),
           clientsRepository: Get.find<ClientsRepository>(),
           engagementsRepository: Get.find<EngagementsRepository>(),
           jobsRepository: Get.find<JobsRepository>(),
