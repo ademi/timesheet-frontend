@@ -125,6 +125,15 @@ class ContractorRegisterController extends GetxController {
     if (baseUri != null) {
       final queryToken = baseUri.queryParameters['invite']?.trim();
       if (queryToken != null && queryToken.isNotEmpty) return queryToken;
+      // Deep-link fallback when GoRouter → Get.parameters sync did not run yet
+      // (e.g. cold open of `/contractor/register/{token}` on web).
+      final segments = baseUri.pathSegments;
+      if (segments.length >= 3 &&
+          segments[0] == 'contractor' &&
+          segments[1] == 'register') {
+        final fromPath = segments[2].trim();
+        if (fromPath.isNotEmpty) return fromPath;
+      }
     }
     return null;
   }

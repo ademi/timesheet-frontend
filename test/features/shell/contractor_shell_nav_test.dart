@@ -5,6 +5,18 @@ import 'package:rostiq/app/routes/app_routes.dart';
 import 'package:rostiq/features/shell/contractor_shell.dart';
 
 void main() {
+  group('isContractorShellRoute', () {
+    test('excludes public register and emailed invite token path', () {
+      expect(isContractorShellRoute(AppRoutes.contractorRegister), isFalse);
+      expect(
+        isContractorShellRoute('${AppRoutes.contractorRegister}/invite-tok'),
+        isFalse,
+      );
+      expect(isContractorShellRoute(AppRoutes.contractorHome), isTrue);
+      expect(isContractorShellRoute(AppRoutes.contractorOnboarding), isFalse);
+    });
+  });
+
   group('ContractorShellNav.selectedIndex', () {
     test('maps each primary contractor route to its tab', () {
       expect(ContractorShellNav.selectedIndex(AppRoutes.contractorHome), 0);

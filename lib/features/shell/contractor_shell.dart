@@ -91,6 +91,10 @@ Widget contractorShellPage(Widget child) => ContractorShell(child: child);
 bool isContractorShellRoute(String? route) {
   if (route == null) return false;
   if (route.startsWith(AppRoutes.contractorOnboarding)) return false;
-  if (route == AppRoutes.contractorRegister) return false;
+  // Public self-register (+ emailed `/contractor/register/{token}`) is not shell.
+  if (route == AppRoutes.contractorRegister ||
+      route.startsWith('${AppRoutes.contractorRegister}/')) {
+    return false;
+  }
   return route.startsWith('/contractor');
 }

@@ -24,6 +24,7 @@ import 'clients_go_routes.dart';
 import 'contractor_onboarding_go_routes.dart';
 import 'credentials_go_routes.dart';
 import 'engagements_go_routes.dart';
+import 'go_router_params.dart';
 import 'go_router_redirect.dart';
 import 'jobs_go_routes.dart';
 import 'shell_go_routes.dart';
@@ -79,6 +80,7 @@ GoRouter createAppGoRouter({String? initialLocation}) {
       GoRoute(
         path: AppRoutes.contractorRegister,
         builder: (context, state) {
+          syncGetxFromGoRouterState(state);
           ContractorRegisterBinding().dependencies();
           return const ContractorRegisterView();
         },
@@ -86,6 +88,9 @@ GoRouter createAppGoRouter({String? initialLocation}) {
       GoRoute(
         path: AppRoutes.contractorRegisterWithToken,
         builder: (context, state) {
+          // Path `:token` must land in Get.parameters before binding/onInit
+          // so invite hydrate can call GET /public/contractor-invites/{token}.
+          syncGetxFromGoRouterState(state);
           ContractorRegisterBinding().dependencies();
           return const ContractorRegisterView();
         },

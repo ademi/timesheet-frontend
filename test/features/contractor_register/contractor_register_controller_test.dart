@@ -42,6 +42,18 @@ void main() {
       );
     });
 
+    test('falls back to Uri.base path token on web deep link', () {
+      expect(
+        ContractorRegisterController.resolveInviteToken(
+          parameters: const {},
+          baseUri: Uri.parse(
+            'http://localhost:5173/contractor/register/NfbL--92RGctMTm7',
+          ),
+        ),
+        'NfbL--92RGctMTm7',
+      );
+    });
+
     test('returns null when no token is available', () {
       expect(
         ContractorRegisterController.resolveInviteToken(parameters: const {}),
