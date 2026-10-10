@@ -2,12 +2,17 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../app/data/models/document/document_models.dart';
 import '../../../shared/utils/download_bytes.dart';
+import '../../../shared/utils/open_bytes.dart';
 import 'document_pipeline.dart';
 
+/// Opens credential evidence for View (inline) vs Download (save locally).
+///
+/// View always uses authenticated `/content` bytes so signed URLs with
+/// `Content-Disposition: attachment` cannot force a download. Download uses
+/// the same bytes with an explicit save-to-disk path.
 class EvidenceDocumentOpener {
   EvidenceDocumentOpener({required DocumentPipeline documentPipeline})
     : _pipeline = documentPipeline;
@@ -15,32 +20,27 @@ class EvidenceDocumentOpener {
   final DocumentPipeline _pipeline;
 
   Future<void> open(DocumentOut document, {bool download = false}) async {
-    if (download) {
-      try {
-        final bytes = Uint8List.fromList(
-          await _pipeline.fetchContentBytes(document.id),
-        );
-        await _download(document, bytes);
-        return;
-      } catch (_) {
-        // Fall back to signed URL / proxy when /content is unavailable.
-      }
-    }
-
-    final result = await _pipeline.openDocument(document.id);
-    if (!result.usedProxy) return;
-
-    final bytes = Uint8List.fromList(result.bytes!);
+    final bytes = Uint8List.fromList(
+      await _pipeline.fetchContentBytes(document.id),
+    );
     if (download) {
       await _download(document, bytes);
       return;
     }
+    await _view(document, bytes);
+  }
+
+  Future<void> _view(DocumentOut document, Uint8List bytes) async {
     if (document.contentType.startsWith('image/')) {
       await _showImagePreview(document, bytes);
       return;
     }
-    // Non-image proxy view fallback (mobile): share sheet to open externally.
-    await _share(document, bytes);
+    if (Get.testMode) return;
+    await openBytesInViewer(
+      bytes: bytes,
+      filename: document.filename,
+      mimeType: document.contentType,
+    );
   }
 
   Future<void> _showImagePreview(DocumentOut document, Uint8List bytes) {
@@ -96,22 +96,6 @@ class EvidenceDocumentOpener {
       bytes: bytes,
       filename: document.filename,
       mimeType: document.contentType,
-    );
-  }
-
-  Future<void> _share(DocumentOut document, Uint8List bytes) {
-    return SharePlus.instance.share(
-      ShareParams(
-        title: document.filename,
-        files: [
-          XFile.fromData(
-            bytes,
-            mimeType: document.contentType,
-            name: document.filename,
-          ),
-        ],
-        fileNameOverrides: [document.filename],
-      ),
     );
   }
 }

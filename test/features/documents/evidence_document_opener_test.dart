@@ -42,4 +42,25 @@ void main() {
     verify(() => pipeline.fetchContentBytes('doc-1')).called(1);
     verifyNever(() => pipeline.openDocument(any()));
   });
+
+  test('view uses content bytes and does not open signed URL', () async {
+    when(() => pipeline.fetchContentBytes('doc-2')).thenAnswer(
+      (_) async => Uint8List.fromList([9, 8, 7]),
+    );
+
+    await opener.open(
+      const DocumentOut(
+        id: 'doc-2',
+        ownerType: 'contractor',
+        ownerId: 'c1',
+        filename: 'vehicle_registration.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 3,
+        scanStatus: 'clean',
+      ),
+    );
+
+    verify(() => pipeline.fetchContentBytes('doc-2')).called(1);
+    verifyNever(() => pipeline.openDocument(any()));
+  });
 }

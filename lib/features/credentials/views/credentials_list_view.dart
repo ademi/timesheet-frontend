@@ -310,6 +310,13 @@ class _CredentialTile extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (_reviewReasonText(credential) != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Reason: ${_reviewReasonText(credential)}',
+                    style: const TextStyle(color: AppColors.textMuted),
+                  ),
+                ],
                 if (credential.identifierMasked != null) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -349,5 +356,14 @@ class _CredentialTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String? _reviewReasonText(CredentialOut credential) {
+    final decision = credential.reviewDecision;
+    if (decision != 'rejected' && decision != 're_review_required') {
+      return null;
+    }
+    final label = credentialReviewReasonLabel(credential.reviewReasonCode);
+    return label.isEmpty ? null : label;
   }
 }

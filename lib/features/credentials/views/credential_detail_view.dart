@@ -91,6 +91,11 @@ class CredentialDetailView extends GetView<CredentialsController> {
                       reviewDecision: credential.reviewDecision,
                     ),
                   ),
+                  if (_shouldShowReviewReason(credential))
+                    _row(
+                      'Review reason',
+                      credentialReviewReasonLabel(credential.reviewReasonCode),
+                    ),
                   if (credential.issuer != null)
                     _row('Issuer', credential.issuer!),
                   if (credential.jurisdiction != null)
@@ -183,6 +188,14 @@ class CredentialDetailView extends GetView<CredentialsController> {
         ),
       );
     });
+  }
+
+  bool _shouldShowReviewReason(CredentialOut credential) {
+    final decision = credential.reviewDecision;
+    if (decision != 'rejected' && decision != 're_review_required') {
+      return false;
+    }
+    return credentialReviewReasonLabel(credential.reviewReasonCode).isNotEmpty;
   }
 
   Widget _statusRow(String status) {

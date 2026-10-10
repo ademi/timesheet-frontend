@@ -189,6 +189,7 @@ class CredentialOut {
     this.effectiveOn,
     this.expiresOn,
     this.reviewDecision,
+    this.reviewReasonCode,
   });
 
   final String id;
@@ -214,6 +215,9 @@ class CredentialOut {
   /// Values: accepted | rejected | re_review_required | null.
   final String? reviewDecision;
 
+  /// Reason from provider review (reject / re_review), when present.
+  final String? reviewReasonCode;
+
   /// Prefer row [label] → catalog / local fallback → humanize.
   String get displayLabel {
     final fromRow = label?.trim();
@@ -231,6 +235,9 @@ class CredentialOut {
     final reviewRaw = json['review_decision'];
     final reviewDecision =
         reviewRaw == null ? null : reviewRaw.toString().trim();
+    final reasonRaw = json['review_reason_code'];
+    final reviewReasonCode =
+        reasonRaw == null ? null : reasonRaw.toString().trim();
     return CredentialOut(
       id: json['id'].toString(),
       contractorId: json['contractor_id'].toString(),
@@ -255,8 +262,26 @@ class CredentialOut {
           (reviewDecision != null && reviewDecision.isNotEmpty)
               ? reviewDecision
               : null,
+      reviewReasonCode:
+          (reviewReasonCode != null && reviewReasonCode.isNotEmpty)
+              ? reviewReasonCode
+              : null,
     );
   }
+}
+
+/// Human label for provider review reason codes (WF-4).
+String credentialReviewReasonLabel(String? reasonCode) {
+  if (reasonCode == null || reasonCode.trim().isEmpty) return '';
+  return switch (reasonCode.trim()) {
+    'incomplete_evidence' => 'Incomplete evidence',
+    'expired_document' => 'Expired document',
+    'unreadable_scan' => 'Unreadable scan',
+    'wrong_document_type' => 'Wrong document type',
+    'name_mismatch' => 'Name mismatch',
+    'other' => 'Other',
+    final code => humanizeLabel(code),
+  };
 }
 
 class CredentialCreateRequest {
