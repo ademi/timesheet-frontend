@@ -20,6 +20,9 @@ class ClientsBinding extends Bindings {
   void dependencies() {
     ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
+    // Tier-2: shell list rebuilds under pushed siblings (onboarding/detail).
+    // [ClientsController.onScreenReenter] only soft-reloads on the directory
+    // path — not `/staff/clients/onboarding` etc. — to avoid list+avatar storms.
     putOrReenter(
       () => ClientsController(
         repository: Get.find<ClientsRepository>(),

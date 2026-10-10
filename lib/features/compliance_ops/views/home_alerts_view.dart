@@ -810,19 +810,10 @@ class _StaffDashboardGrid extends StatelessWidget {
       tiles.add(
         _StatTile(
           icon: Icons.event_available_outlined,
-          label: 'Visits today',
+          label: 'Roster',
           value: '${stats.visitsToday}',
           detail:
-              '${stats.visitsScheduledToday} scheduled · ${stats.visitsCompletedToday} done',
-          onTap: () => controller.openRoute(AppRoutes.staffVisits),
-        ),
-      );
-      tiles.add(
-        _StatTile(
-          icon: Icons.calendar_view_week_outlined,
-          label: 'Visits (7 days)',
-          value: '${stats.visitsThisWeek}',
-          detail: 'From today',
+              'visits: ${stats.visitsToday} today · ${stats.visitsThisWeek} within 7 days',
           onTap: () => controller.openRoute(AppRoutes.staffVisits),
         ),
       );

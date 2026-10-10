@@ -19,7 +19,7 @@ abstract final class StaffShellNav {
   static const showComplianceNav = false;
 
   /// SIL houses stays in routes for later; hide it from the staff menu for now.
-  static const showSilHousesNav = false;
+  static const showSilHousesNav = true;
 
   static const _all = <_StaffDest>[
     _StaffDest(

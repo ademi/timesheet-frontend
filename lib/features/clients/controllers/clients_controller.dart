@@ -95,6 +95,21 @@ class ClientsController extends GetxController
   final isDetailPhotoLoading = false.obs;
   final photosByClient = <String, ProfilePhotoOut>{}.obs;
 
+  /// Soft list re-enter TTL. GoRouter rebuilds the tab builder on browser
+  /// focus/visibility as well as real tab switches — keep this long enough
+  /// that alt-tab / switching Chrome windows does not refetch.
+  static const softLoadTtl = Duration(seconds: 45);
+
+  /// Coalesce stacked post-frame [onScreenReenter] callbacks from one focus.
+  static const softReenterDebounce = Duration(milliseconds: 400);
+  Future<void>? _loadInFlight;
+  DateTime? _lastLoadedAt;
+  DateTime? _lastSoftReenterAt;
+
+  /// Avoid re-fetching avatars we already tried (incl. failures → null).
+  final _photoFetchAttempted = <String>{};
+  final _photoFetchInFlight = <String>{};
+
   // Client types / dynamic requirements
   final clientTypes = <ClientTypeOut>[].obs;
   final selectedClientTypeId = RxnString();
@@ -296,35 +311,62 @@ class ClientsController extends GetxController
     });
   }
 
-  /// Tier-2 shell re-enter: soft list refresh; hard-clear abandoned form drafts
-  /// only on the clients list tab (detail/form routes share this controller).
+  /// Tier-2 shell re-enter: soft list refresh only on the directory tab.
+  ///
+  /// GoRouter rebuilds shell tabs under pushed siblings (onboarding, detail,
+  /// visit detail, …) and again when the browser window regains focus.
+  /// A broad `/staff/clients/*` match used to treat those as list re-enter →
+  /// [load] stampedes. Soft reload is TTL + debounce gated.
   void onScreenReenter() {
-    final path =
-        Uri.tryParse(AppNavigator.currentLocation)?.path ??
-        AppNavigator.currentLocation;
-    // GoRouter rebuilds this binding while a pushed sibling (e.g. visit
-    // detail) sits on top — skip unless we are actually on a clients screen.
-    if (!_isClientsSurface(path)) return;
+    final path = locationPath(AppNavigator.currentLocation);
 
-    errorMessage.value = null;
-    if (path == AppRoutes.staffClients) {
+    // Directory tab only: soft list refresh + clear abandoned create drafts.
+    if (isClientsListSurface(path)) {
+      errorMessage.value = null;
       nameCtrl.clear();
       emailCtrl.clear();
       phoneCtrl.clear();
       notesCtrl.clear();
       _resetFormPhoto();
-    }
-    // ignore: discarded_futures
-    load();
-    if (_routeImpliesClientDetail() || routeParam('id') != null) {
+
+      final now = DateTime.now();
+      if (_lastSoftReenterAt != null &&
+          now.difference(_lastSoftReenterAt!) < softReenterDebounce) {
+        return;
+      }
+      _lastSoftReenterAt = now;
       // ignore: discarded_futures
-      ensureDetailHydratedFromRoute();
+      load(soft: true);
+      return;
+    }
+
+    // Detail/form still share this controller — hydrate only, no list reload.
+    if (_isClientsSharedSurface(path)) {
+      if (_routeImpliesClientDetail() || routeParam('id') != null) {
+        // ignore: discarded_futures
+        ensureDetailHydratedFromRoute();
+      }
     }
   }
 
-  static bool _isClientsSurface(String path) =>
-      path == AppRoutes.staffClients ||
-      path.startsWith('${AppRoutes.staffClients}/');
+  /// True only for the clients directory (`/staff/clients`), not onboarding /
+  /// detail / form / site / contact / support-plan, etc.
+  @visibleForTesting
+  static bool isClientsListSurface(String path) {
+    final p = locationPath(path);
+    if (p.length > 1 && p.endsWith('/')) {
+      return p.substring(0, p.length - 1) == AppRoutes.staffClients;
+    }
+    return p == AppRoutes.staffClients;
+  }
+
+  static bool _isClientsSharedSurface(String path) {
+    final p = locationPath(path);
+    return p == AppRoutes.staffClientDetail ||
+        p == AppRoutes.staffClientForm ||
+        p == AppRoutes.staffClientSiteForm ||
+        p == AppRoutes.staffClientContactForm;
+  }
 
   bool _routeImpliesClientDetail() {
     if (selected.value != null) return false;
@@ -361,11 +403,34 @@ class ClientsController extends GetxController
     super.onClose();
   }
 
-  Future<void> load() async {
+  /// Reloads the clients directory.
+  ///
+  /// [soft] (shell re-enter): coalesce in-flight calls, skip if freshly loaded,
+  /// and keep the avatar cache (fetch only missing ids). Hard loads still prune
+  /// stale ids rather than wiping the cache (avoids avatar stampedes).
+  Future<void> load({bool soft = false}) {
     if (!canRead) {
       errorMessage.value = 'Missing clients.read permission.';
-      return;
+      return Future<void>.value();
     }
+    if (_loadInFlight != null) return _loadInFlight!;
+    if (soft &&
+        _lastLoadedAt != null &&
+        DateTime.now().difference(_lastLoadedAt!) < softLoadTtl) {
+      return Future<void>.value();
+    }
+
+    late final Future<void> future;
+    future = _loadBody().whenComplete(() {
+      if (identical(_loadInFlight, future)) {
+        _loadInFlight = null;
+      }
+    });
+    _loadInFlight = future;
+    return future;
+  }
+
+  Future<void> _loadBody() async {
     isLoading.value = true;
     errorMessage.value = null;
     try {
@@ -376,8 +441,12 @@ class ClientsController extends GetxController
             ? await _repository.listClients(includeArchived: true)
             : await _repository.listClients(),
       );
-      photosByClient.clear();
+      final ids = items.map((c) => c.id).where((id) => id.isNotEmpty).toSet();
+      photosByClient.removeWhere((id, _) => !ids.contains(id));
+      _photoFetchAttempted.removeWhere((id) => !ids.contains(id));
+      // ignore: discarded_futures
       _ensureListPhotosLoaded();
+      _lastLoadedAt = DateTime.now();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (e) {
@@ -491,24 +560,38 @@ class ClientsController extends GetxController
   Future<void> _ensureListPhotosLoaded() async {
     if (!canRead) return;
     final ids = items.map((c) => c.id).where((id) => id.isNotEmpty).toSet();
-    final pending = ids.where((id) => !photosByClient.containsKey(id)).toList();
+    final pending =
+        ids
+            .where(
+              (id) =>
+                  !photosByClient.containsKey(id) &&
+                  !_photoFetchAttempted.contains(id) &&
+                  !_photoFetchInFlight.contains(id),
+            )
+            .toList();
     if (pending.isEmpty) return;
-    final results = await Future.wait(
-      pending.map((id) async {
-        try {
-          return MapEntry(id, await _repository.getClientProfilePhoto(id));
-        } on AppFailure {
-          return MapEntry(id, null);
-        } catch (_) {
-          return MapEntry(id, null);
+    _photoFetchInFlight.addAll(pending);
+    try {
+      final results = await Future.wait(
+        pending.map((id) async {
+          try {
+            return MapEntry(id, await _repository.getClientProfilePhoto(id));
+          } on AppFailure {
+            return MapEntry(id, null);
+          } catch (_) {
+            return MapEntry(id, null);
+          }
+        }),
+      );
+      for (final entry in results) {
+        _photoFetchAttempted.add(entry.key);
+        final photo = entry.value;
+        if (photo != null) {
+          photosByClient[entry.key] = photo;
         }
-      }),
-    );
-    for (final entry in results) {
-      final photo = entry.value;
-      if (photo != null) {
-        photosByClient[entry.key] = photo;
       }
+    } finally {
+      _photoFetchInFlight.removeAll(pending);
     }
   }
 
