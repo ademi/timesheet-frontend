@@ -182,5 +182,11 @@ String? routeParam(String key) {
   return null;
 }
 
-/// Navigation arguments: GoRouter `extra` on web, [Get.arguments] on mobile.
-Object? routeArguments() => AppNavigator.arguments ?? Get.arguments;
+/// Navigation arguments: [Get.arguments] (synced from GoRouterState in builders)
+/// first, then live [AppNavigator.arguments] / raw Get args.
+///
+/// Preferring [Get.arguments] matters on web: during a GoRoute `builder`,
+/// [AppNavigator.arguments] can still reflect the previous page while
+/// [syncGetxFromGoRouterState] has already set [Get.routing.args] from
+/// `state.extra`.
+Object? routeArguments() => Get.arguments ?? AppNavigator.arguments;

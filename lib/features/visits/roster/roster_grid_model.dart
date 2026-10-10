@@ -1,3 +1,4 @@
+import 'package:rostiq/core/time/tenant_civil_time.dart';
 import 'package:rostiq/features/shifts/data/models/shift_models.dart';
 import 'package:rostiq/features/shifts/utils/overnight_format.dart';
 import 'package:rostiq/features/shifts/utils/participant_display.dart';
@@ -95,26 +96,39 @@ class RosterGrid {
   final List<RosterRow> rows;
 }
 
-DateTime _startOfDay(DateTime value) {
-  final local = value.toLocal();
-  return DateTime(local.year, local.month, local.day);
+DateTime _startOfDay(DateTime value, {String? tenantTimezone}) {
+  // Board columns are tenant civil days; fall back to device local when unset.
+  final civil = tenantCivilFromUtc(value.toUtc(), tenantTimezone);
+  return DateTime(civil.year, civil.month, civil.day);
 }
+
+/// Floating civil calendar date (no timezone shift) for [rangeStart] columns.
+DateTime _civilDateOnly(DateTime value) =>
+    DateTime(value.year, value.month, value.day);
 
 int _dowFromDate(DateTime day) => day.weekday - 1;
 
-int? _dayIndex(List<DateTime> dayStarts, DateTime instant) {
-  final day = _startOfDay(instant);
+int? _dayIndex(
+  List<DateTime> dayStarts,
+  DateTime instant, {
+  String? tenantTimezone,
+}) {
+  final day = _startOfDay(instant, tenantTimezone: tenantTimezone);
   for (var i = 0; i < dayStarts.length; i++) {
-    if (_startOfDay(dayStarts[i]) == day) return i;
+    if (dayStarts[i] == day) return i;
   }
   return null;
 }
 
-bool _isOnLeave(DateTime day, List<LeaveIntervalOut> leave) {
-  final target = _startOfDay(day);
+bool _isOnLeave(
+  DateTime day,
+  List<LeaveIntervalOut> leave, {
+  String? tenantTimezone,
+}) {
+  final target = _civilDateOnly(day);
   for (final interval in leave) {
-    final start = _startOfDay(interval.startDate);
-    final end = _startOfDay(interval.endDate);
+    final start = _startOfDay(interval.startDate, tenantTimezone: tenantTimezone);
+    final end = _startOfDay(interval.endDate, tenantTimezone: tenantTimezone);
     if (!target.isBefore(start) && !target.isAfter(end)) return true;
   }
   return false;
@@ -160,10 +174,12 @@ RosterGrid buildRosterGrid({
   required List<RosterPerson> people,
   required RosterOverlayOut overlay,
   String? clientIdFilter,
+  String? tenantTimezone,
 }) {
+  final origin = _civilDateOnly(rangeStart);
   final dayStarts = List.generate(
     dayCount,
-    (i) => _startOfDay(rangeStart.add(Duration(days: i))),
+    (i) => origin.add(Duration(days: i)),
     growable: false,
   );
 
@@ -185,7 +201,11 @@ RosterGrid buildRosterGrid({
     final cancelledOrphan =
         shift.status == 'cancelled' && shift.assignments.isEmpty;
     if (shift.openSlots <= 0 && !cancelledOrphan) continue;
-    final dayIndex = _dayIndex(dayStarts, shift.scheduledStart);
+    final dayIndex = _dayIndex(
+      dayStarts,
+      shift.scheduledStart,
+      tenantTimezone: tenantTimezone,
+    );
     if (dayIndex == null) continue;
 
     final tile = RosterTile(
@@ -207,7 +227,11 @@ RosterGrid buildRosterGrid({
 
     // Muted continuation chip on the end calendar day (same shift, not a split).
     if (spansLocalMidnight(shift.scheduledStart, shift.scheduledEnd)) {
-      final endDayIndex = _dayIndex(dayStarts, shift.scheduledEnd);
+      final endDayIndex = _dayIndex(
+        dayStarts,
+        shift.scheduledEnd,
+        tenantTimezone: tenantTimezone,
+      );
       if (endDayIndex != null && endDayIndex != dayIndex) {
         final cont = RosterTile(
           shiftId: shift.id,
@@ -243,7 +267,12 @@ RosterGrid buildRosterGrid({
     for (var dayIndex = 0; dayIndex < dayCount; dayIndex++) {
       final day = dayStarts[dayIndex];
       final onLeave =
-          contractorOverlay != null && _isOnLeave(day, contractorOverlay.leave);
+          contractorOverlay != null &&
+          _isOnLeave(
+            day,
+            contractorOverlay.leave,
+            tenantTimezone: tenantTimezone,
+          );
       final availabilityHint =
           contractorOverlay == null || onLeave
               ? null
@@ -251,8 +280,16 @@ RosterGrid buildRosterGrid({
 
       final tiles = <RosterTile>[];
       for (final shift in filteredShifts) {
-        final shiftDayIndex = _dayIndex(dayStarts, shift.scheduledStart);
-        final endDayIndex = _dayIndex(dayStarts, shift.scheduledEnd);
+        final shiftDayIndex = _dayIndex(
+          dayStarts,
+          shift.scheduledStart,
+          tenantTimezone: tenantTimezone,
+        );
+        final endDayIndex = _dayIndex(
+          dayStarts,
+          shift.scheduledEnd,
+          tenantTimezone: tenantTimezone,
+        );
         final onStartDay = shiftDayIndex == dayIndex;
         final onEndContinuation =
             spansLocalMidnight(shift.scheduledStart, shift.scheduledEnd) &&

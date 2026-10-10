@@ -475,6 +475,14 @@ class AppFailure implements Exception {
         return 'Screening or credentials block this roster action — review the listed items or provide an audited override reason.';
       case 'assign_gate_blocked':
         return 'Care competency or housemate compatibility blocks this assign — review the listed items or provide an audited override reason.';
+      case 'compat_subject_required':
+        return 'Compatibility rules need a housemate. Link a member first, then choose who the rule is against.';
+      case 'job_not_linked':
+        return 'No job is linked to this SIL house. Retry Draft fill shift to auto-create one, or link a job under Jobs.';
+      case 'sil_member_required':
+        return 'Link at least one house member before drafting a fill shift.';
+      case 'job_location_required':
+        return 'Add a client site or branch with a map location, then retry Draft fill shift.';
       case 'budget_burn_blocked':
         return 'Publishing would exceed plan budget thresholds — review burn warnings or provide an audited override reason.';
       case 'budget_override_forbidden':

@@ -8,6 +8,8 @@ import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/humanize_label.dart';
+import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/searchable_client_field.dart';
 import '../controllers/sil_houses_controller.dart';
 import '../data/models/sil_models.dart';
 
@@ -161,6 +163,16 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                       icon: const Icon(Icons.add_circle_outline),
                       label: const Text('Draft fill shift'),
                     ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Creates an unpublished shift tomorrow morning (tenant '
+                      'time), then opens it. On Roster: Status = Unpublished, '
+                      'check Unfilled — use › if it sits in the next week.',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 12),
                   _CapacityCostEditor(
@@ -173,12 +185,17 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                           fixedWeeklyCost: fixedWeeklyCost,
                         ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Funded roster of care (by local time-of-day)',
-                    style: TextStyle(color: AppColors.textMuted),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Funded roster of care',
+                    style: Get.textTheme.titleMedium,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'By local time-of-day',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
+                  const SizedBox(height: 16),
                   for (final band in _bands) ...[
                     _RocBandEditor(
                       band: band,
@@ -192,11 +209,33 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                     ),
                   ],
                   const SizedBox(height: 24),
-                  Text('Members', style: Get.textTheme.titleMedium),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Members',
+                          style: Get.textTheme.titleMedium,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed:
+                            controller.isSaving.value
+                                ? null
+                                : () => _promptLinkMember(context),
+                        icon: const Icon(Icons.person_add_alt_1_outlined),
+                        label: const Text('Add member'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Link clients to this house, then set occupancy.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
                   const SizedBox(height: 8),
                   if (b.members.isEmpty)
                     const Text(
-                      'No members yet. Link clients from the API or a later picker.',
+                      'No members yet. Use Add member to link a client.',
                       style: TextStyle(color: AppColors.textMuted),
                     ),
                   for (final m in b.members)
@@ -204,9 +243,13 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(m.clientName ?? m.clientId),
                       subtitle: Text(
-                        m.isPresent
-                            ? 'Present'
-                            : humanizeLabel(m.occupancyStatus),
+                        [
+                          m.isPresent
+                              ? 'Present'
+                              : humanizeLabel(m.occupancyStatus),
+                          if (m.bedLabel != null && m.bedLabel!.isNotEmpty)
+                            m.bedLabel,
+                        ].join(' · '),
                       ),
                       trailing: DropdownButton<String>(
                         value: m.occupancyStatus,
@@ -253,6 +296,11 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                         onPressed:
                             controller.isSaving.value
                                 ? null
+                                : b.members.isEmpty
+                                ? () => AppToast.error(
+                                  'Add a member first',
+                                  'Compatibility rules need a housemate subject.',
+                                )
                                 : () => _promptCompatRule(context, b.members),
                         icon: const Icon(Icons.add),
                         label: const Text('Add'),
@@ -260,9 +308,14 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Soft warn or hard-block assign when a housemate is present.',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  Text(
+                    b.members.isEmpty
+                        ? 'Add members before creating compatibility rules.'
+                        : 'Soft warn or hard-block assign when a housemate is present.',
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                    ),
                   ),
                   if (controller.compatRules.isEmpty)
                     const Padding(
@@ -294,6 +347,130 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
           ],
         );
       }),
+    );
+  }
+
+  Future<void> _promptLinkMember(BuildContext context) async {
+    if (controller.clientCandidates.isEmpty &&
+        !controller.isLoadingClients.value) {
+      await controller.loadClientCandidates();
+    }
+    final bedCtrl = TextEditingController();
+    var occupancy = 'present';
+    String? selectedClientId;
+    String? selectedClientLabel;
+
+    final ok = await Get.dialog<bool>(
+      StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Add house member'),
+            content: SizedBox(
+              width: 420,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Obx(
+                      () => SearchableClientField(
+                        candidates: SearchableClientField.candidatesFromClients(
+                          controller.clientCandidates,
+                        ),
+                        excludeIds: controller.linkedClientIds,
+                        loading: controller.isLoadingClients.value,
+                        enabled: !controller.isSaving.value,
+                        labelText: 'Client',
+                        hintText: 'Search clients to link',
+                        selectedId: selectedClientId,
+                        selectedLabel: selectedClientLabel,
+                        compactSelected: true,
+                        showPhotos: false,
+                        onSelected: (c) async {
+                          setState(() {
+                            selectedClientId = c.id;
+                            selectedClientLabel = c.fullName;
+                          });
+                        },
+                        allowClearSelection: selectedClientId != null,
+                        onClearSelection: () {
+                          setState(() {
+                            selectedClientId = null;
+                            selectedClientLabel = null;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: occupancy,
+                      decoration: const InputDecoration(
+                        labelText: 'Occupancy',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'present',
+                          child: Text('Present'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'vacant',
+                          child: Text('Vacant'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'hospital',
+                          child: Text('Hospital'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'other_absent',
+                          child: Text('Other absent'),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        if (v == null) return;
+                        setState(() => occupancy = v);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: bedCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Bed label (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(result: false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (selectedClientId == null) {
+                    AppToast.error(
+                      'Select a client',
+                      'Choose who to link to this house.',
+                    );
+                    return;
+                  }
+                  Get.back(result: true);
+                },
+                child: const Text('Link'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (ok != true || selectedClientId == null) return;
+    await controller.linkMember(
+      clientId: selectedClientId!,
+      occupancyStatus: occupancy,
+      bedLabel: bedCtrl.text,
     );
   }
 
@@ -344,24 +521,22 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                       setState(() => severity = v);
                     },
                   ),
-                  if (members.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: againstClientId,
-                      decoration: const InputDecoration(
-                        labelText: 'Against housemate',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: [
-                        for (final m in members)
-                          DropdownMenuItem(
-                            value: m.clientId,
-                            child: Text(m.clientName ?? m.clientId),
-                          ),
-                      ],
-                      onChanged: (v) => setState(() => againstClientId = v),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: againstClientId,
+                    decoration: const InputDecoration(
+                      labelText: 'Against housemate',
+                      border: OutlineInputBorder(),
                     ),
-                  ],
+                    items: [
+                      for (final m in members)
+                        DropdownMenuItem(
+                          value: m.clientId,
+                          child: Text(m.clientName ?? m.clientId),
+                        ),
+                    ],
+                    onChanged: (v) => setState(() => againstClientId = v),
+                  ),
                 ],
               ),
             ),
@@ -371,7 +546,16 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                 child: const Text('Cancel'),
               ),
               ElevatedButton(
-                onPressed: () => Get.back(result: true),
+                onPressed: () {
+                  if (againstClientId == null || againstClientId!.isEmpty) {
+                    AppToast.error(
+                      'Pick a housemate',
+                      'Compatibility rules need a subject member.',
+                    );
+                    return;
+                  }
+                  Get.back(result: true);
+                },
                 child: const Text('Save'),
               ),
             ],
@@ -439,52 +623,67 @@ class _RocBandEditorState extends State<_RocBandEditor> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: widget.band,
-          border: const OutlineInputBorder(),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _workers,
-                enabled: widget.enabled,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: 'Workers',
-                  border: InputBorder.none,
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            humanizeLabel(widget.band),
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _workers,
+                  enabled: widget.enabled,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    labelText: 'Workers',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
                 ),
               ),
-            ),
-            const Text(':'),
-            Expanded(
-              child: TextField(
-                controller: _participants,
-                enabled: widget.enabled,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: 'Participants',
-                  border: InputBorder.none,
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _participants,
+                  enabled: widget.enabled,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    labelText: 'Participants',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
                 ),
               ),
-            ),
-            TextButton(
-              onPressed:
-                  widget.enabled
-                      ? () async {
-                        final w = int.tryParse(_workers.text) ?? 1;
-                        final p = int.tryParse(_participants.text) ?? 1;
-                        await widget.onSave(w, p);
-                      }
-                      : null,
-              child: const Text('Save'),
-            ),
-          ],
-        ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: TextButton(
+                  onPressed:
+                      widget.enabled
+                          ? () async {
+                            final w = int.tryParse(_workers.text) ?? 1;
+                            final p = int.tryParse(_participants.text) ?? 1;
+                            await widget.onSave(w, p);
+                          }
+                          : null,
+                  child: const Text('Save'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

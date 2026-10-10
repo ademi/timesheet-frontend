@@ -1,7 +1,14 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/services/session_service.dart';
+import '../../../core/time/tenant_civil_time.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../clients/data/models/client_models.dart';
+import '../../clients/data/repositories/clients_repository.dart';
+import '../../visits/controllers/staff_visits_controller.dart';
 import '../data/models/sil_models.dart';
 import '../data/repositories/sil_repository.dart';
 
@@ -62,22 +69,55 @@ class SilHousesController extends GetxController {
 }
 
 class SilHouseDetailController extends GetxController {
-  SilHouseDetailController(this._repo, {required this.houseId});
+  SilHouseDetailController(
+    this._repo, {
+    required this.houseId,
+    required ClientsRepository clientsRepository,
+  }) : _clients = clientsRepository;
 
   final SilRepository _repo;
+  final ClientsRepository _clients;
   final String houseId;
 
   final bundle = Rxn<SilHouseBundleOut>();
   final overlay = Rxn<SilVacancyOverlayOut>();
   final compatRules = <SilCompatRuleOut>[].obs;
+  final clientCandidates = <ClientOut>[].obs;
   final isLoading = false.obs;
   final isSaving = false.obs;
+  final isLoadingClients = false.obs;
   final errorMessage = RxnString();
+
+  Set<String> get linkedClientIds => {
+    for (final m in bundle.value?.members ?? const <SilHouseMemberOut>[])
+      m.clientId,
+  };
 
   @override
   void onInit() {
     super.onInit();
     refresh();
+    // ignore: discarded_futures
+    loadClientCandidates();
+  }
+
+  Future<void> loadClientCandidates() async {
+    isLoadingClients.value = true;
+    try {
+      final listed = await _clients.listClients();
+      clientCandidates.assignAll([
+        for (final c in listed)
+          if (c.status != 'archived') c,
+      ]);
+    } on AppFailure catch (e) {
+      if (!Get.testMode) {
+        AppToast.error('Could not load clients', e.message);
+      }
+    } catch (_) {
+      // Picker can still open empty; member link will fail clearly.
+    } finally {
+      isLoadingClients.value = false;
+    }
   }
 
   Future<void> refresh() async {
@@ -101,6 +141,37 @@ class SilHouseDetailController extends GetxController {
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<bool> linkMember({
+    required String clientId,
+    String occupancyStatus = 'present',
+    String? bedLabel,
+  }) async {
+    final trimmedBed = bedLabel?.trim();
+    isSaving.value = true;
+    try {
+      await _repo.upsertMember(
+        houseId,
+        SilHouseMemberUpsertRequest(
+          clientId: clientId,
+          occupancyStatus: occupancyStatus,
+          bedLabel:
+              trimmedBed == null || trimmedBed.isEmpty ? null : trimmedBed,
+        ),
+      );
+      await refresh();
+      if (!Get.testMode) {
+        AppToast.success('Member linked', 'Client added to this house');
+      }
+      return true;
+    } on AppFailure catch (e) {
+      errorMessage.value = e.message;
+      if (!Get.testMode) AppToast.error('Could not link member', e.message);
+      return false;
+    } finally {
+      isSaving.value = false;
     }
   }
 
@@ -129,20 +200,68 @@ class SilHouseDetailController extends GetxController {
     }
   }
 
+  /// Tomorrow 09:00–11:00 in the tenant timezone (falls back to device local).
+  ///
+  /// Avoids `utcNow + 1 day`, which can land after the roster week’s Sunday
+  /// for tenants east of UTC and make the draft look “missing”.
+  (DateTime start, DateTime end) _draftFillScheduleUtc() {
+    final tz =
+        Get.isRegistered<SessionService>()
+            ? Get.find<SessionService>().tenantTimezone.value?.trim()
+            : null;
+    final civilNow = tenantCivilFromUtc(DateTime.now().toUtc(), tz);
+    final tomorrow = DateTime(
+      civilNow.year,
+      civilNow.month,
+      civilNow.day,
+    ).add(const Duration(days: 1));
+    final startCivil = DateTime(
+      tomorrow.year,
+      tomorrow.month,
+      tomorrow.day,
+      9,
+    );
+    final endCivil = startCivil.add(const Duration(hours: 2));
+    return (
+      tenantCivilInstantUtc(startCivil, tz),
+      tenantCivilInstantUtc(endCivil, tz),
+    );
+  }
+
   Future<String?> draftFillShift() async {
+    if ((bundle.value?.members ?? const []).isEmpty) {
+      if (!Get.testMode) {
+        AppToast.error(
+          'Add a member first',
+          'Draft fill shift needs a linked housemate to create the job.',
+        );
+      }
+      return null;
+    }
     isSaving.value = true;
     try {
-      final start = DateTime.now().toUtc().add(const Duration(days: 1));
+      final (start, end) = _draftFillScheduleUtc();
       final out = await _repo.fillVacancy(
         houseId,
         SilFillVacancyRequest(
           scheduledStart: start,
-          scheduledEnd: start.add(const Duration(hours: 2)),
+          scheduledEnd: end,
         ),
       );
       await refresh();
+      // Roster defaults to Live; draft fills are unpublished — surface them.
+      if (Get.isRegistered<StaffVisitsController>()) {
+        Get.find<StaffVisitsController>().revealDraftOnBoard(start);
+      }
       if (!Get.testMode) {
-        AppToast.success('Draft shift created', out.shiftId);
+        AppToast.success('Draft shift created', 'Opening shift detail…');
+        AppNavigator.push(
+          AppNavigator.location(
+            AppRoutes.staffShiftDetail,
+            query: {'id': out.shiftId},
+          ),
+          extra: {'id': out.shiftId},
+        );
       }
       return out.shiftId;
     } on AppFailure catch (e) {
@@ -210,12 +329,22 @@ class SilHouseDetailController extends GetxController {
   }) async {
     final trimmed = reason.trim();
     if (trimmed.isEmpty) return;
+    final subjectId = againstClientId?.trim();
+    if (subjectId == null || subjectId.isEmpty) {
+      if (!Get.testMode) {
+        AppToast.error(
+          'Compat rule needs a housemate',
+          'Link a member first, then choose who the rule is against.',
+        );
+      }
+      return;
+    }
     isSaving.value = true;
     try {
       await _repo.createCompatRule(
         houseId,
         SilCompatRuleCreateRequest(
-          againstClientId: againstClientId,
+          againstClientId: subjectId,
           severity: severity,
           reason: trimmed,
         ),

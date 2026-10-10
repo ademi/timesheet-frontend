@@ -116,6 +116,15 @@ class StaffVisitsController extends GetxController {
   bool _horizonInFlight = false;
   DateTime? _horizonLastAttempt;
 
+  /// Bumped on every [load] / week change so a slower older fetch cannot overwrite.
+  int _boardLoadEpoch = 0;
+
+  /// First successful week alignment for this controller instance (survives tab remounts).
+  bool _boardRangeAligned = false;
+
+  /// True after the user moves the week with ‹ › — blocks late align from [ensureBoardLoaded].
+  bool _userMovedRange = false;
+
   @visibleForTesting
   int horizonSnackCount = 0;
 
@@ -256,6 +265,7 @@ class StaffVisitsController extends GetxController {
       overlay: overlay.value ?? const RosterOverlayOut(contractors: []),
       clientIdFilter:
           clientIdFilter.value.isEmpty ? null : clientIdFilter.value,
+      tenantTimezone: _effectiveTenantTimezone,
     );
   }
 
@@ -290,6 +300,8 @@ class StaffVisitsController extends GetxController {
   /// Tier-2 shell re-enter: soft board refresh; keep date/filters/selection.
   void onScreenReenter() {
     errorMessage.value = null;
+    // Avoid stacking a refresh on top of an in-flight week-arrow load.
+    if (isLoading.value) return;
     // ignore: discarded_futures
     load();
   }
@@ -370,13 +382,31 @@ class StaffVisitsController extends GetxController {
 
   /// Only entry point for roster board list fetch.
   Future<void> ensureBoardLoaded() async {
+    // Align synchronously before any await so ‹ › during timezone/jobs fetch
+    // is not wiped by a late alignRangeToTenantWeek.
+    if (!_boardRangeAligned && !_userMovedRange) {
+      alignRangeToTenantWeek(DateTime.now().toUtc());
+      _boardRangeAligned = true;
+    }
+    final epochAtStart = _boardLoadEpoch;
     await loadTenantTimezone();
-    alignRangeToTenantWeek(DateTime.now().toUtc());
+    // Timezone may refine Monday once; never override a user week move.
+    if (!_userMovedRange) {
+      alignRangeToTenantWeek(DateTime.now().toUtc());
+      _boardRangeAligned = true;
+    }
     await loadJobs();
     await loadEngagements();
+    // Week arrows already issued a newer load — do not stomp it.
+    if (_userMovedRange && _boardLoadEpoch != epochAtStart) {
+      return;
+    }
     await load();
     if (skipHorizonOnce) {
       skipHorizonOnce = false;
+      return;
+    }
+    if (_userMovedRange && _boardLoadEpoch != epochAtStart) {
       return;
     }
     unawaited(_fillHorizon());
@@ -425,24 +455,27 @@ class StaffVisitsController extends GetxController {
       errorMessage.value = 'Missing shifts.read permission.';
       return;
     }
+    final epoch = ++_boardLoadEpoch;
+    final from = _fromUtc;
+    final to = _toUtc;
+    final clientFilter = clientIdFilter.value.trim();
+    final status = statusFilter.value.trim();
+    final jobId =
+        jobIdFilter.value.trim().isEmpty ? null : jobIdFilter.value.trim();
+    // Backend omits cancelled unless include_cancelled=true.
+    final includeCancelled = status.isEmpty || status == 'cancelled';
+
     isLoading.value = true;
     errorMessage.value = null;
     overlayWarning.value = null;
     Future<RosterOverlayOut?>? overlayFuture;
     Future<List<VisitOut>>? visitsFuture;
     try {
-      final from = _fromUtc;
-      final to = _toUtc;
       // D20: isolate overlay failure from shifts — soft banner only.
-      final clientFilter = clientIdFilter.value.trim();
-      final status = statusFilter.value.trim();
-      // Backend omits cancelled unless include_cancelled=true.
-      final includeCancelled = status.isEmpty || status == 'cancelled';
       final shiftsFuture = _shiftsRepository.listShifts(
         from: from,
         to: to,
-        jobId:
-            jobIdFilter.value.trim().isEmpty ? null : jobIdFilter.value.trim(),
+        jobId: jobId,
         participantId: clientFilter.isEmpty ? null : clientFilter,
         includeCancelled: includeCancelled,
       );
@@ -450,7 +483,9 @@ class StaffVisitsController extends GetxController {
         try {
           return await _repository.fetchRosterOverlay(from: from, to: to);
         } catch (_) {
-          overlayWarning.value = 'Leave/availability unavailable';
+          if (epoch == _boardLoadEpoch) {
+            overlayWarning.value = 'Leave/availability unavailable';
+          }
           return null;
         }
       }();
@@ -466,6 +501,7 @@ class StaffVisitsController extends GetxController {
         }
       }();
       final listRaw = await shiftsFuture;
+      if (epoch != _boardLoadEpoch) return;
       final list =
           status.isEmpty
               ? listRaw
@@ -475,21 +511,29 @@ class StaffVisitsController extends GetxController {
       list.sort((a, b) => a.scheduledStart.compareTo(b.scheduledStart));
       shifts.assignAll(list);
     } on AppFailure catch (e) {
+      if (epoch != _boardLoadEpoch) return;
       errorMessage.value = e.message;
       boardVisits.clear();
     } catch (e) {
+      if (epoch != _boardLoadEpoch) return;
       errorMessage.value = e.toString();
       boardVisits.clear();
     } finally {
       // Paint shifts before waiting on overlay (D20 / paint-first).
-      isLoading.value = false;
+      if (epoch == _boardLoadEpoch) {
+        isLoading.value = false;
+      }
     }
     if (overlayFuture != null) {
-      overlay.value =
+      final nextOverlay =
           await overlayFuture ?? const RosterOverlayOut(contractors: []);
+      if (epoch != _boardLoadEpoch) return;
+      overlay.value = nextOverlay;
     }
     if (visitsFuture != null) {
-      boardVisits.assignAll(await visitsFuture);
+      final nextVisits = await visitsFuture;
+      if (epoch != _boardLoadEpoch) return;
+      boardVisits.assignAll(nextVisits);
     }
   }
 
@@ -526,29 +570,45 @@ class StaffVisitsController extends GetxController {
 
   void setClientFilter(String? clientId) {
     clientIdFilter.value = clientId ?? '';
-    // Always drop support selection on client change — a previous client's
-    // jobId must not pin the shift query when switching between clients
-    // that both show the support sub-filter (D3).
+    // Drop support selection on client change — a previous client's jobId must
+    // not pin the shift query when switching between clients (D3).
     if (jobIdFilter.value.isNotEmpty) {
       jobIdFilter.value = '';
-      load();
     }
+    load();
   }
 
-  /// Whether the per-support sub-filter should show for the current client (D3).
+  /// Whether the Support/job filter should show for the current selection.
   bool get showSupportFilter => shouldShowSupportFilter(
     jobs,
     clientId: clientIdFilter.value.isEmpty ? null : clientIdFilter.value,
   );
 
-  /// Open supports for the currently selected client (empty when none selected).
-  List<JobOut> get supportsForSelectedClient =>
-      clientIdFilter.value.isEmpty
-          ? const <JobOut>[]
-          : jobsForClientFilter(jobs, clientId: clientIdFilter.value);
+  /// Open supports for the Support filter (scoped to client when selected).
+  List<JobOut> get supportsForSelectedClient => jobsForSupportFilter(
+    jobs,
+    clientId: clientIdFilter.value.isEmpty ? null : clientIdFilter.value,
+  );
 
   void shiftRange(int days) {
+    _userMovedRange = true;
+    // Invalidate in-flight fetches immediately so they cannot paint the wrong week.
+    _boardLoadEpoch++;
+    shifts.clear();
     rangeStart.value = rangeStart.value.add(Duration(days: days));
+    unawaited(load());
+  }
+
+  /// Show unpublished drafts and jump the board to the week of [scheduledStartUtc].
+  ///
+  /// Draft SIL fills are status=draft; the board defaults to Live (published).
+  void revealDraftOnBoard(DateTime scheduledStartUtc) {
+    statusFilter.value = 'draft';
+    _userMovedRange = true;
+    alignRangeToTenantWeek(scheduledStartUtc.toUtc());
+    _boardRangeAligned = true;
+    _boardLoadEpoch++;
+    shifts.clear();
     unawaited(load());
   }
 

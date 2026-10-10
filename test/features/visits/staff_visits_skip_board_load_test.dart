@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
@@ -198,6 +200,112 @@ void main() {
         participantId: any(named: 'participantId'),
       ),
     ).called(1);
+  });
+
+  test('stale load does not overwrite newer week after shiftRange', () async {
+    final t = DateTime.utc(2026, 10, 11, 9);
+    final kept = ShiftOut(
+      id: 'shift-oct11',
+      tenantId: 't',
+      jobId: 'j',
+      jobTitle: 'SIL',
+      scheduledStart: t,
+      scheduledEnd: t.add(const Duration(hours: 2)),
+      requiredSlots: 1,
+      openSlots: 1,
+      status: 'published',
+      createdAt: t,
+      updatedAt: t,
+    );
+    final first = Completer<List<ShiftOut>>();
+    final second = Completer<List<ShiftOut>>();
+    var call = 0;
+    when(
+      () => shifts.listShifts(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        jobId: any(named: 'jobId'),
+        participantId: any(named: 'participantId'),
+      ),
+    ).thenAnswer((_) {
+      call += 1;
+      return call == 1 ? first.future : second.future;
+    });
+    when(
+      () => visits.listVisits(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        includeNested: any(named: 'includeNested'),
+      ),
+    ).thenAnswer((_) async => const <VisitOut>[]);
+
+    final c = _controller(
+      visits: visits,
+      shifts: shifts,
+      jobs: jobs,
+      engagements: engagements,
+      clients: clients,
+      session: session,
+    );
+    Get.put(c);
+
+    final older = c.load();
+    c.shiftRange(7);
+    // Newer week resolves first with the Oct 11 shift.
+    second.complete([kept]);
+    await Future<void>.delayed(Duration.zero);
+    expect(c.shifts.map((s) => s.id), ['shift-oct11']);
+
+    // Slower older week must not clear the board.
+    first.complete(const <ShiftOut>[]);
+    await older;
+    expect(c.shifts.map((s) => s.id), ['shift-oct11']);
+  });
+
+  test('second ensureBoardLoaded keeps navigated week', () async {
+    final c = _controller(
+      visits: visits,
+      shifts: shifts,
+      jobs: jobs,
+      engagements: engagements,
+      clients: clients,
+      session: session,
+    );
+    Get.put(c);
+    await c.ensureBoardLoaded();
+    final afterNav = c.rangeStart.value.add(const Duration(days: 7));
+    c.shiftRange(7);
+    await Future<void>.delayed(Duration.zero);
+    expect(c.rangeStart.value, afterNav);
+
+    await c.ensureBoardLoaded();
+    expect(c.rangeStart.value, afterNav);
+  });
+
+  test('revealDraftOnBoard sets Unpublished and aligns week', () async {
+    when(
+      () => visits.listVisits(
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+        includeNested: any(named: 'includeNested'),
+      ),
+    ).thenAnswer((_) async => const <VisitOut>[]);
+    final c = _controller(
+      visits: visits,
+      shifts: shifts,
+      jobs: jobs,
+      engagements: engagements,
+      clients: clients,
+      session: session,
+    );
+    Get.put(c);
+    // Sun 11 Oct 2026 09:00 UTC → week Monday 5 Oct
+    c.revealDraftOnBoard(DateTime.utc(2026, 10, 11, 9));
+    await Future<void>.delayed(Duration.zero);
+    expect(c.statusFilter.value, 'draft');
+    expect(c.rangeStart.value.weekday, DateTime.monday);
+    expect(c.rangeStart.value.day, 5);
+    expect(c.rangeStart.value.month, 10);
   });
 
   test('applyRouteArgs sets job filter and pending create from map', () {

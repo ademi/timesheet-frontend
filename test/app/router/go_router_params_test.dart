@@ -33,4 +33,30 @@ void main() {
     expect(Get.parameters.containsKey('id'), isFalse);
     expect(Get.parameters['clientId'], 'c-new');
   });
+
+  testWidgets('syncGetxFromGoRouterState mirrors extra ids into Get.parameters', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (_, __) => const SizedBox()),
+        GoRoute(
+          path: '/sil-detail',
+          builder: (context, state) {
+            syncGetxFromGoRouterState(state);
+            return const SizedBox();
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    // ignore: unawaited_futures
+    router.push('/sil-detail', extra: {'house_id': 'house-99'});
+    await tester.pump();
+
+    expect(Get.parameters['house_id'], 'house-99');
+    expect(Get.arguments, isA<Map>());
+    expect((Get.arguments as Map)['house_id'], 'house-99');
+  });
 }

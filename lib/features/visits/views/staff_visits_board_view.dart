@@ -216,8 +216,22 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                         ),
                       ],
                     ),
-                    // Support sub-filter only when the selected client has >1 open
-                    // support (D3). Client dropdown stays primary otherwise.
+                    if (controller.statusFilter.value == 'published')
+                      const Padding(
+                        padding: EdgeInsets.only(top: 6),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Live hides unpublished drafts. Choose Unpublished to see SIL draft fills.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    // Support filter: all-clients lists every open job; a single
+                    // client only shows it when that client has >1 support (D3).
                     if (controller.showSupportFilter) ...[
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(

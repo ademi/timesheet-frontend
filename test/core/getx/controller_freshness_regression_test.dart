@@ -166,14 +166,32 @@ void main() {
 
   group('SilHouseDetailController', () {
     test('putFresh replaces prior houseId (sticky lazyPut regression)', () async {
+      when(() => sil.getHouse(any())).thenAnswer(
+        (_) async => _bundle('house-a'),
+      );
+      when(() => sil.getOverlay(any())).thenThrow(Exception('none'));
+      when(() => sil.listCompatRules(any())).thenAnswer((_) async => []);
+      when(() => clients.listClients()).thenAnswer((_) async => []);
+
       final first = putFresh(
-        () => SilHouseDetailController(sil, houseId: 'house-a'),
+        () => SilHouseDetailController(
+          sil,
+          houseId: 'house-a',
+          clientsRepository: clients,
+        ),
       );
       await Future<void>.delayed(Duration.zero);
       expect(first.houseId, 'house-a');
 
+      when(() => sil.getHouse(any())).thenAnswer(
+        (_) async => _bundle('house-b'),
+      );
       final second = putFresh(
-        () => SilHouseDetailController(sil, houseId: 'house-b'),
+        () => SilHouseDetailController(
+          sil,
+          houseId: 'house-b',
+          clientsRepository: clients,
+        ),
       );
       await Future<void>.delayed(Duration.zero);
       expect(identical(first, second), isFalse);

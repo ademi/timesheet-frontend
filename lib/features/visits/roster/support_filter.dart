@@ -13,10 +13,29 @@ List<JobOut> jobsForClientFilter(
   (j) => j.title,
 );
 
-/// Whether to surface the support/job sub-filter for the selected client.
+/// Open jobs available in the Support filter for the current client selection.
 ///
-/// Hidden unless a client is selected and that client has >1 open support (D3).
+/// - Client selected → that client's open supports
+/// - All clients → every open support (so SIL fill / job titles stay findable)
+List<JobOut> jobsForSupportFilter(
+  List<JobOut> jobs, {
+  required String? clientId,
+}) {
+  if (clientId == null || clientId.isEmpty) {
+    return sortedByName(
+      jobs.where((j) => j.status == 'open'),
+      (j) => j.title,
+    );
+  }
+  return jobsForClientFilter(jobs, clientId: clientId);
+}
+
+/// Whether to surface the Support/job filter.
+///
+/// - All clients: show when any open job exists
+/// - One client: show only when that client has >1 open support (D3)
 bool shouldShowSupportFilter(List<JobOut> jobs, {required String? clientId}) {
-  if (clientId == null || clientId.isEmpty) return false;
-  return jobsForClientFilter(jobs, clientId: clientId).length > 1;
+  final options = jobsForSupportFilter(jobs, clientId: clientId);
+  if (clientId == null || clientId.isEmpty) return options.isNotEmpty;
+  return options.length > 1;
 }

@@ -79,10 +79,18 @@ void main() {
       expect(result.map((j) => j.id), ['j1']);
     });
 
-    test('shouldShowSupportFilter false when clientId null or empty', () {
-      final jobs = [_job(id: 'j1'), _job(id: 'j2')];
-      expect(shouldShowSupportFilter(jobs, clientId: null), isFalse);
-      expect(shouldShowSupportFilter(jobs, clientId: ''), isFalse);
+    test('shouldShowSupportFilter true for all-clients when open jobs exist', () {
+      final jobs = [_job(id: 'j1'), _job(id: 'j2', clientId: 'c2')];
+      expect(shouldShowSupportFilter(jobs, clientId: null), isTrue);
+      expect(shouldShowSupportFilter(jobs, clientId: ''), isTrue);
+      expect(
+        jobsForSupportFilter(jobs, clientId: null).map((j) => j.id).toList(),
+        ['j1', 'j2'],
+      );
+    });
+
+    test('shouldShowSupportFilter false for all-clients when no open jobs', () {
+      expect(shouldShowSupportFilter(const [], clientId: null), isFalse);
     });
   });
 
