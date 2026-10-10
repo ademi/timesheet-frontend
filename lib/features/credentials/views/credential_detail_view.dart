@@ -5,10 +5,12 @@ import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
-import '../widgets/evidence_document_actions.dart';
+import '../widgets/credential_provenance_chip.dart';
 import '../widgets/credential_status_chip.dart';
+import '../widgets/evidence_document_actions.dart';
 
 class CredentialDetailView extends GetView<CredentialsController> {
   const CredentialDetailView({super.key});
@@ -33,6 +35,8 @@ class CredentialDetailView extends GetView<CredentialsController> {
       }
 
       final err = controller.errorMessage.value;
+      final busy =
+          controller.isUploadingEvidence.value || controller.isSaving.value;
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
@@ -64,12 +68,12 @@ class CredentialDetailView extends GetView<CredentialsController> {
                     const SizedBox(height: 12),
                   ],
                   _statusRow(credential.status),
-                  _row('Evidence', credential.evidencePresence),
+                  _row('Evidence', humanizeLabel(credential.evidencePresence)),
                   if (controller.evidenceFor(credential).isNotEmpty) ...[
                     const SizedBox(height: 8),
                     EvidenceDocumentActions(
                       documents: controller.evidenceFor(credential),
-                      isBusy: controller.isSaving.value,
+                      isBusy: busy,
                       onView:
                           (document) =>
                               controller.openEvidenceDocument(document),
@@ -79,8 +83,9 @@ class CredentialDetailView extends GetView<CredentialsController> {
                             download: true,
                           ),
                     ),
+                    const SizedBox(height: 16),
                   ],
-                  _row('Provenance', credential.provenanceState),
+                  _provenanceRow(credential.provenanceState),
                   if (credential.issuer != null)
                     _row('Issuer', credential.issuer!),
                   if (credential.jurisdiction != null)
@@ -114,19 +119,29 @@ class CredentialDetailView extends GetView<CredentialsController> {
                         ),
                       ),
                     ),
+                  if (controller.requiresNewReviewCycle(credential)) ...[
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Updating evidence creates a new submission for admin '
+                      'review (Accept / Reject).',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   if (controller.canManage) ...[
                     ElevatedButton.icon(
                       onPressed:
-                          controller.isUploadingEvidence.value ||
-                                  controller.isSaving.value
+                          busy
                               ? null
-                              : () => controller.attachEvidence(credential),
+                              : () => controller.updateEvidence(credential),
                       icon: const Icon(Icons.upload_file),
                       label: Text(
                         controller.isUploadingEvidence.value
                             ? 'Uploading…'
-                            : 'Attach evidence',
+                            : 'Update',
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.cta,
@@ -142,14 +157,6 @@ class CredentialDetailView extends GetView<CredentialsController> {
                         color: AppColors.primary,
                       ),
                     ],
-                    const SizedBox(height: 8),
-                    OutlinedButton(
-                      onPressed:
-                          controller.isSaving.value
-                              ? null
-                              : () => controller.supersede(credential),
-                      child: const Text('Supersede with new record'),
-                    ),
                   ],
                   if (controller.lastScanStatus.value != null) ...[
                     const SizedBox(height: 16),
@@ -177,27 +184,38 @@ class CredentialDetailView extends GetView<CredentialsController> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(
             width: 110,
             child: Text('Status', style: TextStyle(color: AppColors.textMuted)),
           ),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CredentialStatusChip(status: status),
-                const SizedBox(height: 4),
-                Text(
-                  status,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: CredentialStatusChip(status: status),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _provenanceRow(String provenance) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(
+            width: 110,
+            child: Text(
+              'Review',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
+          ),
+          Expanded(
+            child: CredentialProvenanceChip(provenance: provenance),
           ),
         ],
       ),

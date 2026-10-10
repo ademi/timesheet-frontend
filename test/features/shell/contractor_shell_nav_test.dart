@@ -39,6 +39,12 @@ void main() {
         3,
       );
       expect(
+        ContractorShellNav.selectedIndex(
+          AppRoutes.contractorCredentialCreateMissing,
+        ),
+        3,
+      );
+      expect(
         ContractorShellNav.selectedIndex(AppRoutes.contractorCredentialDetail),
         3,
       );

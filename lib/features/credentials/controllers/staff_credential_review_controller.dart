@@ -162,6 +162,16 @@ class StaffCredentialReviewController extends GetxController {
   void _seedDecisionsFromStatus(List<CredentialOut> list) {
     final updated = Map<String, String>.from(reviewDecisionsByCredentialId);
     for (final credential in list) {
+      // Fresh contractor submissions must stay reviewable even if an older
+      // status field is stale after an evidence update / supersede.
+      final awaitingContractorResubmit =
+          credential.provenanceState == 'contractor_asserted' ||
+          credential.provenanceState == 'self_reported' ||
+          credential.provenanceState == 'self_attested';
+      if (awaitingContractorResubmit) {
+        updated.remove(credential.id);
+        continue;
+      }
       if (_reviewStatuses.contains(credential.status)) {
         updated[credential.id] = credential.status;
       }
@@ -328,14 +338,17 @@ class StaffCredentialReviewController extends GetxController {
         contractorId,
         engagementId: engagementId,
       );
-      items.assignAll(list);
-      _seedDecisionsFromStatus(list);
+      // Hide superseded rows so admin reviews the current submission only.
+      final current =
+          list.where((c) => c.status != 'superseded').toList(growable: false);
+      items.assignAll(current);
+      _seedDecisionsFromStatus(current);
       try {
         final documents = await _pipeline.listEvidenceForContractor(
           contractorId,
         );
         evidenceByCredentialId.value = {
-          for (final credential in list)
+          for (final credential in current)
             credential.id: documentsForCredential(
               documents: documents,
               credentialId: credential.id,

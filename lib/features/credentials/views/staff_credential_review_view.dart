@@ -8,8 +8,10 @@ import '../../../shared/widgets/eligibility_incomplete_panel.dart';
 import '../../engagements/widgets/required_doc_categories_editor.dart';
 import '../controllers/staff_credential_review_controller.dart';
 import '../data/models/credential_models.dart';
-import '../widgets/evidence_document_actions.dart';
+import '../../../shared/utils/humanize_label.dart';
+import '../widgets/credential_provenance_chip.dart';
 import '../widgets/credential_status_chip.dart';
+import '../widgets/evidence_document_actions.dart';
 
 Color _reviewDecisionColor(String decision) {
   return switch (decision) {
@@ -231,12 +233,27 @@ class _StaffCredentialCard extends StatelessWidget {
               ],
               const SizedBox(height: 4),
               Text(
-                'Evidence: ${c.evidencePresence} · '
-                'Provenance: ${c.provenanceState}',
+                'Evidence: ${humanizeLabel(c.evidencePresence)}',
                 style: const TextStyle(
                   fontSize: 13,
                   color: AppColors.textMuted,
                 ),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  const Text(
+                    'Review:',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                  CredentialProvenanceChip(provenance: c.provenanceState),
+                ],
               ),
               const SizedBox(height: 8),
               EvidenceDocumentActions(

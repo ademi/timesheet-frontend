@@ -7,10 +7,12 @@ import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../core/services/session_service.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
+import '../../../shared/utils/humanize_label.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
-import '../widgets/evidence_document_actions.dart';
+import '../widgets/credential_provenance_chip.dart';
 import '../widgets/credential_status_chip.dart';
+import '../widgets/evidence_document_actions.dart';
 import '../../engagements/bindings/engagements_binding.dart';
 import '../../engagements/controllers/contractor_engagements_controller.dart';
 import '../../engagements/widgets/engagement_docs_checklist.dart';
@@ -100,10 +102,20 @@ class CredentialsListView extends GetView<CredentialsController> {
                         onAddMissing:
                             controller.canManage
                                 ? (categories) {
-                                  controller.selectedType.value =
-                                      categories.first;
+                                  // Seed before push so create-missing survives
+                                  // shell-tab re-enter races during navigation.
+                                  controller.beginMissingCreate(categories);
+                                  final types = categories
+                                      .map((c) => c.trim())
+                                      .where((c) => c.isNotEmpty)
+                                      .toList(growable: false);
                                   AppNavigator.push(
-                                    AppRoutes.contractorCredentialCreate,
+                                    AppNavigator.location(
+                                      AppRoutes
+                                          .contractorCredentialCreateMissing,
+                                      query: {'types': types.join(',')},
+                                    ),
+                                    extra: types,
                                   );
                                 }
                                 : null,
@@ -114,10 +126,12 @@ class CredentialsListView extends GetView<CredentialsController> {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: ElevatedButton.icon(
-                        onPressed:
-                            () => AppNavigator.push(
-                              AppRoutes.contractorCredentialCreate,
-                            ),
+                        onPressed: () {
+                          controller.clearMissingCreate();
+                          AppNavigator.push(
+                            AppRoutes.contractorCredentialCreate,
+                          );
+                        },
                         icon: const Icon(Icons.add),
                         label: const Text('Add credential'),
                         style: ElevatedButton.styleFrom(
@@ -255,9 +269,11 @@ class _CredentialTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = Get.find<CredentialsController>();
+    final hasEvidence = c.evidenceFor(credential).isNotEmpty;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ListTile(
             title: Row(
@@ -268,49 +284,59 @@ class _CredentialTile extends StatelessWidget {
                 CredentialStatusChip(status: credential.status),
               ],
             ),
-            subtitle: Text(
-              'Evidence: ${credential.evidencePresence} · '
-              'Provenance: ${credential.provenanceState}'
-              '${credential.identifierMasked != null ? '\nID: ${credential.identifierMasked}' : ''}',
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 6),
+                Text(
+                  'Evidence: ${humanizeLabel(credential.evidencePresence)}',
+                  style: const TextStyle(color: AppColors.textMuted),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    const Text(
+                      'Review:',
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
+                    CredentialProvenanceChip(
+                      provenance: credential.provenanceState,
+                    ),
+                  ],
+                ),
+                if (credential.identifierMasked != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'ID: ${credential.identifierMasked}',
+                    style: const TextStyle(color: AppColors.textMuted),
+                  ),
+                ],
+              ],
             ),
             isThreeLine: true,
             trailing: PopupMenuButton<String>(
-              onSelected: (value) async {
-                switch (value) {
-                  case 'detail':
-                    c.openDetail(credential);
-                  case 'upload':
-                    await c.attachEvidence(credential);
-                  case 'supersede':
-                    await c.supersede(credential);
-                }
+              onSelected: (value) {
+                if (value == 'detail') c.openDetail(credential);
               },
               itemBuilder:
-                  (_) => [
-                    const PopupMenuItem(
+                  (_) => const [
+                    PopupMenuItem(
                       value: 'detail',
                       child: Text('Details'),
                     ),
-                    if (c.canManage)
-                      const PopupMenuItem(
-                        value: 'upload',
-                        child: Text('Attach evidence'),
-                      ),
-                    if (c.canManage)
-                      const PopupMenuItem(
-                        value: 'supersede',
-                        child: Text('Supersede'),
-                      ),
                   ],
             ),
             onTap: () => c.openDetail(credential),
           ),
-          if (c.evidenceFor(credential).isNotEmpty)
+          if (hasEvidence)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: EvidenceDocumentActions(
                 documents: c.evidenceFor(credential),
-                isBusy: c.isSaving.value,
+                isBusy: c.isSaving.value || c.isUploadingEvidence.value,
                 onView: (document) => c.openEvidenceDocument(document),
                 onDownload:
                     (document) =>

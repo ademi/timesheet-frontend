@@ -82,6 +82,7 @@ void main() {
       final paths = <String>{};
       _collectPaths(buildCredentialsGoRoutes(), paths);
       expect(paths, contains(AppRoutes.contractorCredentialCreate));
+      expect(paths, contains(AppRoutes.contractorCredentialCreateMissing));
       expect(paths, contains(AppRoutes.contractorCredentialDetail));
       expect(paths, contains(AppRoutes.staffCredentialReview));
     });

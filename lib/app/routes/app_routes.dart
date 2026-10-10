@@ -96,6 +96,8 @@ abstract class AppRoutes {
   static const contractorSchedule = '/contractor/schedule';
   static const contractorCredentials = '/contractor/credentials';
   static const contractorCredentialCreate = '/contractor/credentials/create';
+  static const contractorCredentialCreateMissing =
+      '/contractor/credentials/create-missing';
   static const contractorCredentialDetail = '/contractor/credentials/detail';
   static const contractorProfile = '/contractor/profile';
   static const contractorCompleteAccount = '/contractor/complete-account';

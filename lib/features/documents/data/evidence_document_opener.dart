@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../app/data/models/document/document_models.dart';
+import '../../../shared/utils/download_bytes.dart';
 import 'document_pipeline.dart';
 
 class EvidenceDocumentOpener {
@@ -19,10 +20,10 @@ class EvidenceDocumentOpener {
         final bytes = Uint8List.fromList(
           await _pipeline.fetchContentBytes(document.id),
         );
-        await _share(document, bytes);
+        await _download(document, bytes);
         return;
       } catch (_) {
-        // Fall back to signed URL when /content is unavailable.
+        // Fall back to signed URL / proxy when /content is unavailable.
       }
     }
 
@@ -30,10 +31,15 @@ class EvidenceDocumentOpener {
     if (!result.usedProxy) return;
 
     final bytes = Uint8List.fromList(result.bytes!);
-    if (!download && document.contentType.startsWith('image/')) {
+    if (download) {
+      await _download(document, bytes);
+      return;
+    }
+    if (document.contentType.startsWith('image/')) {
       await _showImagePreview(document, bytes);
       return;
     }
+    // Non-image proxy view fallback (mobile): share sheet to open externally.
     await _share(document, bytes);
   }
 
@@ -71,7 +77,7 @@ class EvidenceDocumentOpener {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
-                  onPressed: () => _share(document, bytes),
+                  onPressed: () => _download(document, bytes),
                   icon: const Icon(Icons.download),
                   label: const Text('Download'),
                 ),
@@ -81,6 +87,15 @@ class EvidenceDocumentOpener {
         ),
       ),
       barrierDismissible: true,
+    );
+  }
+
+  Future<void> _download(DocumentOut document, Uint8List bytes) async {
+    if (Get.testMode) return;
+    await downloadBytesAsFile(
+      bytes: bytes,
+      filename: document.filename,
+      mimeType: document.contentType,
     );
   }
 

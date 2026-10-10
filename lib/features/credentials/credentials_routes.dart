@@ -9,6 +9,7 @@ import '../shell/contractor_shell.dart';
 import 'bindings/credentials_binding.dart';
 import 'views/credential_create_view.dart';
 import 'views/credential_detail_view.dart';
+import 'views/credential_missing_create_view.dart';
 import 'views/credentials_list_view.dart';
 import 'views/staff_credential_review_view.dart';
 
@@ -28,6 +29,13 @@ abstract final class CredentialsPages {
       middlewares: [AuthGuard(), ActorGuard()],
       binding: CredentialsBinding(),
       page: () => const CredentialCreateView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.contractorCredentialCreateMissing,
+      middlewares: [AuthGuard(), ActorGuard()],
+      binding: CredentialsBinding(),
+      page: () => const CredentialMissingCreateView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

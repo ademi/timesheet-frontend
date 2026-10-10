@@ -203,10 +203,13 @@ void main() {
         controller.reviewDecisionsByCredentialId['cred-accepted'],
         'accepted',
       );
+      // Awaiting contractor/asserted submissions stay reviewable (no locked
+      // decision), including after an evidence update / resubmit.
       expect(
-        controller.reviewDecisionsByCredentialId['cred-pending'],
-        'pending',
+        controller.reviewDecisionsByCredentialId.containsKey('cred-pending'),
+        isFalse,
       );
+      expect(controller.reviewActionsFor('cred-pending').acceptEnabled, isTrue);
     },
   );
 
