@@ -164,23 +164,35 @@ void main() {
   });
 
   test(
-    'load seeds reviewDecisionsByCredentialId from credential status',
+    'load seeds reviewDecisionsByCredentialId from review_decision',
     () async {
       final accepted = CredentialOut(
         id: 'cred-accepted',
         contractorId: 'contractor-1',
         credentialType: 'first_aid',
-        status: 'accepted',
+        status: 'active',
         provenanceState: 'reviewer_sighted',
         evidencePresence: 'present',
         createdAt: DateTime(2026),
         updatedAt: DateTime(2026),
+        reviewDecision: 'accepted',
+      );
+      final rejected = CredentialOut(
+        id: 'cred-rejected',
+        contractorId: 'contractor-1',
+        credentialType: 'wwcc',
+        status: 'active',
+        provenanceState: 'contractor_asserted',
+        evidencePresence: 'present',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+        reviewDecision: 'rejected',
       );
       final pending = CredentialOut(
         id: 'cred-pending',
         contractorId: 'contractor-1',
         credentialType: 'insurance',
-        status: 'pending',
+        status: 'active',
         provenanceState: 'contractor_asserted',
         evidencePresence: 'present',
         createdAt: DateTime(2026),
@@ -191,7 +203,7 @@ void main() {
           'contractor-1',
           engagementId: 'engagement-1',
         ),
-      ).thenAnswer((_) async => [accepted, pending]);
+      ).thenAnswer((_) async => [accepted, rejected, pending]);
       when(
         () => pipeline.listEvidenceForContractor('contractor-1'),
       ).thenAnswer((_) async => const []);
@@ -203,8 +215,14 @@ void main() {
         controller.reviewDecisionsByCredentialId['cred-accepted'],
         'accepted',
       );
-      // Awaiting contractor/asserted submissions stay reviewable (no locked
-      // decision), including after an evidence update / resubmit.
+      expect(controller.reviewActionsFor('cred-accepted').acceptEnabled, isFalse);
+      expect(controller.reviewActionsFor('cred-accepted').reReviewEnabled, isTrue);
+      expect(
+        controller.reviewDecisionsByCredentialId['cred-rejected'],
+        'rejected',
+      );
+      expect(controller.reviewActionsFor('cred-rejected').acceptEnabled, isFalse);
+      // No review yet → Accept/Reject enabled.
       expect(
         controller.reviewDecisionsByCredentialId.containsKey('cred-pending'),
         isFalse,

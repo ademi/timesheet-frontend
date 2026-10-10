@@ -642,6 +642,13 @@ class CredentialsController extends GetxController {
     if (provenance == 'reviewer_sighted' || provenance == 'verified') {
       return true;
     }
+    final decision = credential.reviewDecision;
+    if (decision == 'accepted' ||
+        decision == 'rejected' ||
+        decision == 're_review_required') {
+      return true;
+    }
+    // Legacy FE shapes (status was never a review decision on BE).
     final status = credential.status;
     return status == 'accepted' || status == 'rejected';
   }

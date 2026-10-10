@@ -2,6 +2,23 @@ import 'package:flutter/material.dart';
 
 import '../../../app/themes/app_colors.dart';
 import '../../../shared/utils/humanize_label.dart';
+import '../data/models/credential_models.dart';
+
+/// Wire key for the Review chip from provenance + optional engagement decision.
+///
+/// Reject / re_review leave BE provenance as contractor_asserted; staff and
+/// contractor lists may include [CredentialOut.reviewDecision] for display.
+String credentialReviewDisplayKey({
+  required String provenanceState,
+  String? reviewDecision,
+}) {
+  return switch (reviewDecision) {
+    'rejected' => 'reviewer_rejected',
+    're_review_required' => 'contractor_asserted',
+    'accepted' => 'reviewer_sighted',
+    _ => provenanceState,
+  };
+}
 
 /// Human-readable label for [CredentialOut.provenanceState].
 String credentialProvenanceLabel(String provenance) {

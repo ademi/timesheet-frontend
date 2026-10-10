@@ -188,6 +188,7 @@ class CredentialOut {
     this.completedOn,
     this.effectiveOn,
     this.expiresOn,
+    this.reviewDecision,
   });
 
   final String id;
@@ -209,6 +210,10 @@ class CredentialOut {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Engagement-scoped review decision from staff list (`engagement_id` query).
+  /// Values: accepted | rejected | re_review_required | null.
+  final String? reviewDecision;
+
   /// Prefer row [label] → catalog / local fallback → humanize.
   String get displayLabel {
     final fromRow = label?.trim();
@@ -223,6 +228,9 @@ class CredentialOut {
     }
 
     final rowLabel = json['label'] as String?;
+    final reviewRaw = json['review_decision'];
+    final reviewDecision =
+        reviewRaw == null ? null : reviewRaw.toString().trim();
     return CredentialOut(
       id: json['id'].toString(),
       contractorId: json['contractor_id'].toString(),
@@ -243,6 +251,10 @@ class CredentialOut {
       evidencePresence: json['evidence_presence'] as String? ?? 'absent',
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      reviewDecision:
+          (reviewDecision != null && reviewDecision.isNotEmpty)
+              ? reviewDecision
+              : null,
     );
   }
 }

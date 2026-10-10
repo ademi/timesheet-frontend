@@ -252,7 +252,12 @@ class _StaffCredentialCard extends StatelessWidget {
                       color: AppColors.textMuted,
                     ),
                   ),
-                  CredentialProvenanceChip(provenance: c.provenanceState),
+                  CredentialProvenanceChip(
+                    provenance: credentialReviewDisplayKey(
+                      provenanceState: c.provenanceState,
+                      reviewDecision: c.reviewDecision,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),

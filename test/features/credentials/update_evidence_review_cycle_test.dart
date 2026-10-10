@@ -27,6 +27,7 @@ CredentialOut _credential({
   required String id,
   String status = 'active',
   String provenance = 'contractor_asserted',
+  String? reviewDecision,
 }) {
   final now = DateTime.utc(2026, 1, 1);
   return CredentialOut(
@@ -38,6 +39,7 @@ CredentialOut _credential({
     evidencePresence: 'present',
     createdAt: now,
     updatedAt: now,
+    reviewDecision: reviewDecision,
   );
 }
 
@@ -83,7 +85,7 @@ void main() {
     );
     expect(
       controller.requiresNewReviewCycle(
-        _credential(id: '2', status: 'accepted'),
+        _credential(id: '2', reviewDecision: 'rejected'),
       ),
       isTrue,
     );
@@ -112,9 +114,10 @@ void main() {
       ).thenAnswer(
         (_) async => [
           _credential(id: 'old', status: 'superseded'),
+          // Post-supersede: active + asserted + no review_decision.
           _credential(
             id: 'new',
-            status: 'accepted',
+            status: 'active',
             provenance: 'contractor_asserted',
           ),
         ],
@@ -132,6 +135,7 @@ void main() {
         engagementId: 'engagement-1',
         showSnack: (_, __) {},
       );
+      // Stale in-memory decision must be replaced by list seed.
       review.reviewDecisionsByCredentialId['new'] = 'accepted';
 
       await review.load();
@@ -140,6 +144,53 @@ void main() {
       expect(review.reviewDecisionFor('new'), isNull);
       expect(review.reviewActionsFor('new').acceptEnabled, isTrue);
       expect(review.reviewActionsFor('new').rejectEnabled, isTrue);
+    },
+  );
+
+  test(
+    'staff load locks Accept/Reject when review_decision is accepted',
+    () async {
+      final credentials = _MockCredentialsRepository();
+      final engagements = _MockEngagementsRepository();
+      final pipeline = _MockDocumentPipeline();
+      final session = _MockSessionService();
+      when(() => session.hasPermission(any())).thenReturn(true);
+
+      when(
+        () => credentials.listForTenantContractor(
+          'contractor-1',
+          engagementId: 'engagement-1',
+        ),
+      ).thenAnswer(
+        (_) async => [
+          _credential(
+            id: 'sighted',
+            status: 'active',
+            provenance: 'reviewer_sighted',
+            reviewDecision: 'accepted',
+          ),
+        ],
+      );
+      when(
+        () => pipeline.listEvidenceForContractor('contractor-1'),
+      ).thenAnswer((_) async => []);
+
+      final review = StaffCredentialReviewController(
+        repository: credentials,
+        engagementsRepository: engagements,
+        session: session,
+        documentPipeline: pipeline,
+        contractorId: 'contractor-1',
+        engagementId: 'engagement-1',
+        showSnack: (_, __) {},
+      );
+
+      await review.load();
+
+      expect(review.reviewDecisionFor('sighted'), 'accepted');
+      expect(review.reviewActionsFor('sighted').acceptEnabled, isFalse);
+      expect(review.reviewActionsFor('sighted').rejectEnabled, isFalse);
+      expect(review.reviewActionsFor('sighted').reReviewEnabled, isTrue);
     },
   );
 }

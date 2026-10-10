@@ -14,6 +14,37 @@ void main() {
     expect(credentialProvenanceLabel('self_reported'), 'Self reported');
   });
 
+  test('credentialReviewDisplayKey prefers engagement review_decision', () {
+    expect(
+      credentialReviewDisplayKey(
+        provenanceState: 'contractor_asserted',
+        reviewDecision: 'rejected',
+      ),
+      'reviewer_rejected',
+    );
+    expect(
+      credentialReviewDisplayKey(
+        provenanceState: 'contractor_asserted',
+        reviewDecision: 're_review_required',
+      ),
+      'contractor_asserted',
+    );
+    expect(
+      credentialReviewDisplayKey(
+        provenanceState: 'reviewer_sighted',
+        reviewDecision: 'accepted',
+      ),
+      'reviewer_sighted',
+    );
+    expect(
+      credentialReviewDisplayKey(
+        provenanceState: 'contractor_asserted',
+        reviewDecision: null,
+      ),
+      'contractor_asserted',
+    );
+  });
+
   test('credentialProvenanceColor uses green for accepted review', () {
     expect(
       credentialProvenanceColor('reviewer_sighted'),

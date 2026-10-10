@@ -152,28 +152,25 @@ class StaffCredentialReviewController extends GetxController {
     return openingEvidenceCredentialId.value == credentialId;
   }
 
-  static const _reviewStatuses = {
+  static const _reviewDecisions = {
     'accepted',
     'rejected',
     're_review_required',
     'pending',
   };
 
-  void _seedDecisionsFromStatus(List<CredentialOut> list) {
-    final updated = Map<String, String>.from(reviewDecisionsByCredentialId);
+  /// Seed Accept/Reject/Re-review from engagement [CredentialOut.reviewDecision].
+  ///
+  /// Lifecycle [CredentialOut.status] is never accepted/rejected (BE: active|
+  /// superseded|withdrawn). Do not clear on contractor_asserted — reject and
+  /// re_review_required leave provenance asserted. After supersede the new id
+  /// has null review_decision, so Accept/Reject re-enable automatically.
+  void _seedDecisionsFromReview(List<CredentialOut> list) {
+    final updated = <String, String>{};
     for (final credential in list) {
-      // Fresh contractor submissions must stay reviewable even if an older
-      // status field is stale after an evidence update / supersede.
-      final awaitingContractorResubmit =
-          credential.provenanceState == 'contractor_asserted' ||
-          credential.provenanceState == 'self_reported' ||
-          credential.provenanceState == 'self_attested';
-      if (awaitingContractorResubmit) {
-        updated.remove(credential.id);
-        continue;
-      }
-      if (_reviewStatuses.contains(credential.status)) {
-        updated[credential.id] = credential.status;
+      final decision = credential.reviewDecision;
+      if (decision != null && _reviewDecisions.contains(decision)) {
+        updated[credential.id] = decision;
       }
     }
     reviewDecisionsByCredentialId.value = updated;
@@ -342,7 +339,7 @@ class StaffCredentialReviewController extends GetxController {
       final current =
           list.where((c) => c.status != 'superseded').toList(growable: false);
       items.assignAll(current);
-      _seedDecisionsFromStatus(current);
+      _seedDecisionsFromReview(current);
       try {
         final documents = await _pipeline.listEvidenceForContractor(
           contractorId,

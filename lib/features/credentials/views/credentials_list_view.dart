@@ -303,7 +303,10 @@ class _CredentialTile extends StatelessWidget {
                       style: TextStyle(color: AppColors.textMuted),
                     ),
                     CredentialProvenanceChip(
-                      provenance: credential.provenanceState,
+                      provenance: credentialReviewDisplayKey(
+                        provenanceState: credential.provenanceState,
+                        reviewDecision: credential.reviewDecision,
+                      ),
                     ),
                   ],
                 ),

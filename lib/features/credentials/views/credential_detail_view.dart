@@ -85,7 +85,12 @@ class CredentialDetailView extends GetView<CredentialsController> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  _provenanceRow(credential.provenanceState),
+                  _provenanceRow(
+                    credentialReviewDisplayKey(
+                      provenanceState: credential.provenanceState,
+                      reviewDecision: credential.reviewDecision,
+                    ),
+                  ),
                   if (credential.issuer != null)
                     _row('Issuer', credential.issuer!),
                   if (credential.jurisdiction != null)
