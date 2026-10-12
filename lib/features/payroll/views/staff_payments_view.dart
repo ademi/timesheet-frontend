@@ -146,15 +146,14 @@ class _BatchesTab extends StatelessWidget {
                   for (final line in selected.lines)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        'Visit ${line.visitId} · ${line.hours}h × ${line.rate} = ${line.amount}',
+                      title: Text(line.displayLabel),
+                      subtitle: Text(
+                        [
+                          '${_fmtHours(line.hours)}h × ${line.rate} = ${line.amount}',
+                          if (line.bandBreakdown.isNotEmpty)
+                            'Band breakdown: ${line.bandBreakdown}',
+                        ].join('\n'),
                       ),
-                      subtitle:
-                          line.bandBreakdown.isEmpty
-                              ? null
-                              : Text(
-                                'Band breakdown: ${line.bandBreakdown}',
-                              ),
                     ),
                   if (controller.canManage && selected.isDraft)
                     AsyncElevatedButton(

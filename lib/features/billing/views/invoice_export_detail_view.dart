@@ -65,7 +65,7 @@ class InvoiceExportDetailView extends GetView<InvoiceExportDetailController> {
                       runSpacing: 8,
                       children: [
                         AsyncElevatedButton(
-                          onPressed: controller.downloadCsv,
+                          onPressed: () => controller.downloadCsv(),
                           isLoading: controller.isDownloadingCsv.value,
                           child: const Text('Download CSV'),
                         ),

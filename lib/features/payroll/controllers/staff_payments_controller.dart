@@ -246,6 +246,7 @@ class StaffPaymentsController extends GetxController {
 
   Future<void> setBatchStatusFilter(String? status) async {
     batchStatusFilter.value = status ?? '';
+    selectedBatch.value = null;
     isLoading.value = true;
     errorMessage.value = null;
     try {
@@ -289,10 +290,10 @@ class StaffPaymentsController extends GetxController {
         ),
         idempotencyKey: key,
       );
-      selectedBatch.value = created;
       selectedContractorIds.clear();
       await _loadBatches();
       await _loadUnpaidVisits();
+      await _selectAndEnrichBatch(created);
       AppToast.success(
         'Batch created',
         'Draft ${created.id} · ${created.totalAmount} ${created.currencyCode}',
@@ -310,7 +311,7 @@ class StaffPaymentsController extends GetxController {
     errorMessage.value = null;
     try {
       final updated = await _payroll.postBatch(batch.id);
-      selectedBatch.value = updated;
+      await _selectAndEnrichBatch(updated);
       await _loadBatches();
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
@@ -325,7 +326,7 @@ class StaffPaymentsController extends GetxController {
     errorMessage.value = null;
     try {
       final updated = await _payroll.voidBatch(batch.id);
-      selectedBatch.value = updated;
+      await _selectAndEnrichBatch(updated);
       await _loadBatches();
       await _loadUnpaidVisits();
     } on AppFailure catch (e) {
@@ -335,7 +336,43 @@ class StaffPaymentsController extends GetxController {
     }
   }
 
-  void openBatch(PaymentBatchOut batch) {
+  Future<void> openBatch(PaymentBatchOut batch) async {
+    await _selectAndEnrichBatch(batch);
+  }
+
+  Future<void> _selectAndEnrichBatch(PaymentBatchOut batch) async {
     selectedBatch.value = batch;
+    final enriched = await _enrichBatchLines(batch);
+    if (selectedBatch.value?.id != batch.id) return;
+    selectedBatch.value = enriched;
+  }
+
+  /// Resolve contractor names for batch lines.
+  ///
+  /// Uses names from the batch payload when present; otherwise loads visit
+  /// details so staff are not shown raw visit UUIDs.
+  Future<PaymentBatchOut> _enrichBatchLines(PaymentBatchOut batch) async {
+    if (batch.lines.isEmpty) return batch;
+    if (batch.lines.every(_lineHasContractorName)) return batch;
+
+    final enrichedLines = await Future.wait(
+      batch.lines.map((line) async {
+        if (_lineHasContractorName(line)) return line;
+        try {
+          final visit = await _visits.getVisit(line.visitId);
+          return line.copyWith(
+            contractorName: line.contractorName ?? visit.contractorName,
+          );
+        } catch (_) {
+          return line;
+        }
+      }),
+    );
+
+    return batch.copyWith(lines: enrichedLines);
+  }
+
+  bool _lineHasContractorName(PaymentBatchLineOut line) {
+    return line.contractorName?.trim().isNotEmpty == true;
   }
 }

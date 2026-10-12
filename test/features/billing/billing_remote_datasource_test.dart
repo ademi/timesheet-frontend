@@ -87,12 +87,12 @@ void main() {
 
   test('downloadInvoiceExportCsv uses plain response type', () async {
     when(
-      () => dio.get<String>(
+      () => dio.get<dynamic>(
         ApiPaths.invoiceExportCsv(exportId),
         options: any(named: 'options'),
       ),
     ).thenAnswer(
-      (_) async => Response<String>(
+      (_) async => Response<dynamic>(
         requestOptions: RequestOptions(
           path: ApiPaths.invoiceExportCsv(exportId),
         ),
@@ -104,7 +104,7 @@ void main() {
 
     expect(csv, contains('participant_ndis_number'));
     verify(
-      () => dio.get<String>(
+      () => dio.get<dynamic>(
         ApiPaths.invoiceExportCsv(exportId),
         options: any(
           named: 'options',

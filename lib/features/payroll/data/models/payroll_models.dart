@@ -145,6 +145,9 @@ class PaymentBatchLineOut {
     required this.rate,
     required this.amount,
     this.bandBreakdown = const {},
+    this.contractorName,
+    this.clientName,
+    this.locationLabel,
   });
 
   final String visitId;
@@ -153,6 +156,42 @@ class PaymentBatchLineOut {
   final double rate;
   final double amount;
   final Map<String, dynamic> bandBreakdown;
+  final String? contractorName;
+  final String? clientName;
+  final String? locationLabel;
+
+  /// Human-readable line title — contractor name when known.
+  String get displayLabel {
+    final name = contractorName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    final short =
+        visitId.length <= 8 ? visitId : visitId.substring(0, 8);
+    return 'Visit $short…';
+  }
+
+  PaymentBatchLineOut copyWith({
+    String? visitId,
+    String? contractorId,
+    double? hours,
+    double? rate,
+    double? amount,
+    Map<String, dynamic>? bandBreakdown,
+    String? contractorName,
+    String? clientName,
+    String? locationLabel,
+  }) {
+    return PaymentBatchLineOut(
+      visitId: visitId ?? this.visitId,
+      contractorId: contractorId ?? this.contractorId,
+      hours: hours ?? this.hours,
+      rate: rate ?? this.rate,
+      amount: amount ?? this.amount,
+      bandBreakdown: bandBreakdown ?? this.bandBreakdown,
+      contractorName: contractorName ?? this.contractorName,
+      clientName: clientName ?? this.clientName,
+      locationLabel: locationLabel ?? this.locationLabel,
+    );
+  }
 
   factory PaymentBatchLineOut.fromJson(Map<String, dynamic> json) {
     final breakdown = json['band_breakdown'];
@@ -164,6 +203,11 @@ class PaymentBatchLineOut {
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
       bandBreakdown:
           breakdown is Map ? Map<String, dynamic>.from(breakdown) : const {},
+      contractorName: json['contractor_name'] as String?,
+      clientName: json['client_name'] as String?,
+      locationLabel:
+          (json['location_label'] as String?) ??
+          (json['location_name'] as String?),
     );
   }
 }
@@ -196,6 +240,32 @@ class PaymentBatchOut {
   bool get isDraft => status == 'draft';
   bool get isPosted => status == 'posted';
   bool get isVoid => status == 'void' || status == 'voided';
+
+  PaymentBatchOut copyWith({
+    String? id,
+    String? tenantId,
+    String? status,
+    String? periodLabel,
+    String? currencyCode,
+    double? totalAmount,
+    DateTime? postedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    List<PaymentBatchLineOut>? lines,
+  }) {
+    return PaymentBatchOut(
+      id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
+      status: status ?? this.status,
+      periodLabel: periodLabel ?? this.periodLabel,
+      currencyCode: currencyCode ?? this.currencyCode,
+      totalAmount: totalAmount ?? this.totalAmount,
+      postedAt: postedAt ?? this.postedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      lines: lines ?? this.lines,
+    );
+  }
 
   factory PaymentBatchOut.fromJson(Map<String, dynamic> json) {
     final linesRaw = json['lines'];

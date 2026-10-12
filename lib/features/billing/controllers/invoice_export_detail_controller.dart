@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/middlewares/auth_route_utils.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../core/services/session_service.dart';
@@ -42,7 +43,8 @@ class InvoiceExportDetailController extends GetxController {
   bool get canManage => _session.canManageBilling;
 
   String? get exportId =>
-      Get.parameters['id'] ??
+      selected.value?.id ??
+      routeParam('id') ??
       (Get.arguments is String ? Get.arguments as String : null) ??
       (Get.arguments is InvoiceExportOut
           ? (Get.arguments as InvoiceExportOut).id
@@ -86,23 +88,42 @@ class InvoiceExportDetailController extends GetxController {
 
   Future<void> downloadCsv() async {
     final id = exportId;
-    if (id == null || id.isEmpty || !canView) return;
+    if (!canView) {
+      errorMessage.value = 'Missing billing.view permission.';
+      return;
+    }
+    if (id == null || id.isEmpty) {
+      errorMessage.value = 'Export not found.';
+      if (!Get.testMode) {
+        AppToast.error('CSV download failed', 'Export not found.');
+      }
+      return;
+    }
 
     isDownloadingCsv.value = true;
     errorMessage.value = null;
     try {
       final csv = await _repository.downloadInvoiceExportCsv(id);
       if (!Get.testMode) {
-        await downloadBytesAsFile(
+        final saved = await downloadBytesAsFile(
           bytes: Uint8List.fromList(utf8.encode(csv)),
           filename: invoiceExportCsvFilename(id),
-          mimeType: 'text/csv',
+          mimeType: 'text/csv;charset=utf-8',
         );
+        if (saved) {
+          AppToast.success('Download started', invoiceExportCsvFilename(id));
+        }
       }
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
+      if (!Get.testMode) {
+        AppToast.error('CSV download failed', e.message);
+      }
     } catch (e) {
       errorMessage.value = e.toString();
+      if (!Get.testMode) {
+        AppToast.error('CSV download failed', e.toString());
+      }
     } finally {
       isDownloadingCsv.value = false;
     }

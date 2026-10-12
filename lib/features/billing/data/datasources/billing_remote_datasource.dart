@@ -53,12 +53,15 @@ class BillingRemoteDataSource {
 
   Future<String> downloadInvoiceExportCsv(String exportId) async {
     try {
-      final response = await _dio.get<String>(
+      final response = await _dio.get<dynamic>(
         ApiPaths.invoiceExportCsv(exportId),
-        options: Options(responseType: ResponseType.plain),
+        options: Options(
+          responseType: ResponseType.plain,
+          headers: {Headers.acceptHeader: 'text/csv,text/plain,*/*'},
+        ),
       );
-      final csv = response.data;
-      if (csv == null || csv.isEmpty) {
+      final csv = _decodeCsvPayload(response.data);
+      if (csv.isEmpty) {
         throw AppFailure(
           code: 'unknown',
           message: 'Empty CSV export response',
@@ -69,6 +72,15 @@ class BillingRemoteDataSource {
     } on DioException catch (e) {
       throw AppFailure.fromDio(e);
     }
+  }
+
+  String _decodeCsvPayload(dynamic data) {
+    if (data == null) return '';
+    if (data is String) return data;
+    if (data is List<int>) {
+      return String.fromCharCodes(data);
+    }
+    return data.toString();
   }
 
   Future<InvoiceExportOut> voidInvoiceExport(String exportId) async {
