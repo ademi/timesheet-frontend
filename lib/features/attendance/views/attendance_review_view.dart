@@ -312,10 +312,18 @@ class _ReviewTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isGps = item.kind == AttendanceReviewKind.exception;
+    final ctx = item.visitContext;
+    final muted = const TextStyle(fontSize: 12, color: AppColors.textMuted);
     final visitRef = attendanceVisitSubtitleRef(item.visitId);
-    final subtitle = visitRef.isEmpty
-        ? item.detail
-        : '${item.detail} · $visitRef';
+    final metaParts = <String>[
+      if (item.detail.trim().isNotEmpty) item.detail.trim(),
+      if (visitRef.isNotEmpty) visitRef,
+    ];
+    final distanceLabel = item.geofence?.distanceLabel;
+    final contractor = ctx?.contractorName?.trim();
+    final client = ctx?.clientName?.trim();
+    final location = ctx?.locationLabel?.trim();
+    final stop = item.geofence?.nearestStopLabel?.trim();
     return Material(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(8),
@@ -334,21 +342,37 @@ class _ReviewTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(item.headline, style: Get.textTheme.titleSmall),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textMuted,
+                      if (contractor != null && contractor.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(contractor, style: Get.textTheme.bodyMedium),
+                      ],
+                      if (client != null && client.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text('Client: $client', style: muted),
+                      ],
+                      if (location != null && location.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(location, style: muted),
+                      ],
+                      if (distanceLabel != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          stop != null &&
+                                  stop.isNotEmpty &&
+                                  stop.toLowerCase() != 'visit'
+                              ? '$distanceLabel · nearest: $stop'
+                              : distanceLabel,
+                          style: muted.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textDark,
+                          ),
                         ),
-                      ),
-                      Text(
-                        item.sortAt.toLocal().toString(),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
+                      ],
+                      if (metaParts.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(metaParts.join(' · '), style: muted),
+                      ],
+                      Text(item.sortAt.toLocal().toString(), style: muted),
                     ],
                   ),
                 ),

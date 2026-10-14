@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'app/bindings/initial_binding.dart';
 import 'app/router/app_go_router.dart';
 import 'app/routes/app_pages.dart';
+import 'app/services/push_notification_service.dart';
 import 'app/themes/app_colors.dart';
 import 'core/services/session_service.dart';
 import 'core/services/token_refresh_service.dart';
@@ -19,6 +21,14 @@ import 'core/time/tenant_civil_time.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   ensureTimezoneDatabaseInitialized();
+  // Firebase must be ready before any FCM background isolate runs. Register
+  // the handler before runApp; skip quietly when this platform has no config.
+  if (!kIsWeb) {
+    final firebaseReady = await ensureFirebaseInitialized();
+    if (firebaseReady) {
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    }
+  }
   // Web-only: use clean path URLs (no `#`) so browser history, refresh, and the
   // back/forward buttons reconcile with routing predictably.
   if (kIsWeb) {
