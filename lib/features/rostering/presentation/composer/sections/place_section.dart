@@ -76,6 +76,8 @@ class ComposerPlaceSection extends GetView<RosterComposerController> {
             const SizedBox(height: 8),
             const _OtherPlaceFields(),
           ],
+          const SizedBox(height: 20),
+          const _GeofenceFields(),
           const SizedBox(height: 28),
           const ComposerTravelSection(),
         ],
@@ -296,6 +298,68 @@ class _OtherPlaceFieldsState extends State<_OtherPlaceFields> {
               style: const TextStyle(color: AppColors.error, fontSize: 12),
             ),
           ],
+        ],
+      );
+    });
+  }
+}
+
+/// Per-booking geofence override (does not mutate the shared job).
+class _GeofenceFields extends GetView<RosterComposerController> {
+  const _GeofenceFields();
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final mode = controller.draft.value.geofenceMode;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Geofence', style: Get.textTheme.titleSmall),
+          const SizedBox(height: 4),
+          const Text(
+            'Optional for this booking only. Leave as job default to inherit '
+            'the job setting.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            key: const Key('composer-geofence-mode'),
+            value: mode,
+            items: const [
+              DropdownMenuItem<String?>(
+                value: null,
+                child: Text('Job default'),
+              ),
+              DropdownMenuItem<String?>(
+                value: 'informational',
+                child: Text('Informational (record only)'),
+              ),
+              DropdownMenuItem<String?>(
+                value: 'enforce',
+                child: Text('Enforce (require location)'),
+              ),
+            ],
+            onChanged: controller.setGeofenceMode,
+            decoration: const InputDecoration(
+              labelText: 'Geofence mode',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('composer-geofence-radius'),
+            controller: controller.geofenceRadiusCtrl,
+            keyboardType: TextInputType.number,
+            onChanged: controller.setGeofenceRadiusFromText,
+            decoration: const InputDecoration(
+              labelText: 'Geofence radius (m, optional)',
+              hintText: 'Uses place / job radius if empty',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
         ],
       );
     });

@@ -347,6 +347,82 @@ void main() {
     expect(c.assignments.map((a) => a.contractorId), ['w1']);
   });
 
+  test('saveDraft sends per-booking geofence on create', () async {
+    when(() => jobs.createJob(any())).thenAnswer(
+      (_) async => JobOut(
+        id: 'program-1',
+        tenantId: 't1',
+        kind: 'program',
+        status: 'open',
+        title: 'Group session',
+        branchId: 'b1',
+        geofenceRadiusM: 100,
+        geofenceMode: 'informational',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+      ),
+    );
+    when(() => shifts.createShift(any())).thenAnswer(
+      (_) async => _shift('new-1'),
+    );
+    when(
+      () => shifts.fetchPlaceOptions(participantIds: any(named: 'participantIds')),
+    ).thenAnswer(
+      (_) async => const PlaceOptionsOut(
+        branches: [PlaceBranchOption(id: 'b1', name: 'Centre')],
+      ),
+    );
+
+    final c = build(
+      const RosterComposerArgs(preset: ComposerPreset.group, participantId: 'c1'),
+    );
+    await c.retryHydrate();
+    await c.loadPlaceOptions();
+    c.setPlace(const ShiftPlaceIn.branch('b1'));
+    c.draft.value = c.draft.value.copyWith(participantIds: ['c1']);
+    c.setGeofenceMode('enforce');
+    c.geofenceRadiusCtrl.text = '120';
+
+    final ok = await c.saveDraft();
+    expect(ok, isTrue);
+
+    final body =
+        verify(() => shifts.createShift(captureAny())).captured.single
+            as ShiftCreateRequest;
+    expect(body.geofenceMode, 'enforce');
+    expect(body.geofenceRadiusM, 120);
+  });
+
+  test('hydrate reloads geofence mode and radius from ShiftOut', () async {
+    when(() => shifts.getComposer('geo-1')).thenAnswer(
+      (_) async => ComposerShiftOut(
+        shift: ShiftOut(
+          id: 'geo-1',
+          tenantId: 't1',
+          jobId: 'job-1',
+          jobTitle: 'Support',
+          scheduledStart: DateTime.utc(2026, 10, 4, 9),
+          scheduledEnd: DateTime.utc(2026, 10, 4, 12),
+          requiredSlots: 1,
+          openSlots: 1,
+          status: 'draft',
+          placeBranchId: 'b1',
+          geofenceMode: 'enforce',
+          geofenceRadiusM: 90,
+          createdAt: DateTime.utc(2026, 10, 4),
+          updatedAt: DateTime.utc(2026, 10, 4),
+        ),
+      ),
+    );
+
+    final c = build(const RosterComposerArgs(shiftId: 'geo-1'));
+    await c.retryHydrate();
+
+    expect(c.draft.value.geofenceMode, 'enforce');
+    expect(c.draft.value.geofenceRadiusM, 90);
+    expect(c.geofenceRadiusCtrl.text, '90');
+  });
+
   test('group create uses program job, not ensureOngoingSupport host', () async {
     when(() => jobs.createJob(any())).thenAnswer(
       (_) async => JobOut(

@@ -67,6 +67,22 @@ void main() {
       expect(cleared.jobId, isNull);
       expect(cleared.preset, ComposerPreset.group);
     });
+
+    test('copyWith can set and clear per-booking geofence', () {
+      final draft = OccurrenceDraft.oneSession(clientId: 'c1').copyWith(
+        geofenceMode: 'enforce',
+        geofenceRadiusM: 100,
+      );
+      expect(draft.geofenceMode, 'enforce');
+      expect(draft.geofenceRadiusM, 100);
+
+      final cleared = draft.copyWith(
+        clearGeofenceMode: true,
+        clearGeofenceRadiusM: true,
+      );
+      expect(cleared.geofenceMode, isNull);
+      expect(cleared.geofenceRadiusM, isNull);
+    });
   });
 
   group('ComposerValidation', () {

@@ -353,6 +353,8 @@ class ShiftOut {
     this.placeLabel,
     this.placeLatitude,
     this.placeLongitude,
+    this.geofenceMode,
+    this.geofenceRadiusM,
     this.rocBlockId,
     this.taskTemplate = const [],
     this.segmentTemplate = const [],
@@ -391,6 +393,9 @@ class ShiftOut {
   final String? placeLabel;
   final double? placeLatitude;
   final double? placeLongitude;
+  /// Per-booking override (`informational` | `enforce`); omit inherits job.
+  final String? geofenceMode;
+  final int? geofenceRadiusM;
   final String? rocBlockId;
   final List<TaskTemplateItem> taskTemplate;
   final List<SegmentTemplateItem> segmentTemplate;
@@ -435,6 +440,8 @@ class ShiftOut {
       placeLabel: placeLabel,
       placeLatitude: placeLatitude,
       placeLongitude: placeLongitude,
+      geofenceMode: geofenceMode,
+      geofenceRadiusM: geofenceRadiusM,
       rocBlockId: rocBlockId,
       taskTemplate: taskTemplate,
       segmentTemplate: segmentTemplate,
@@ -483,6 +490,8 @@ class ShiftOut {
       placeLabel: json['place_label'] as String?,
       placeLatitude: (json['place_latitude'] as num?)?.toDouble(),
       placeLongitude: (json['place_longitude'] as num?)?.toDouble(),
+      geofenceMode: json['geofence_mode'] as String?,
+      geofenceRadiusM: (json['geofence_radius_m'] as num?)?.toInt(),
       rocBlockId: json['roc_block_id']?.toString(),
       taskTemplate: (json['task_template'] as List? ?? const [])
           .whereType<Map>()
@@ -775,6 +784,8 @@ class ShiftPatchRequest {
     this.segmentTemplate,
     this.shiftKind,
     this.sleepSegments,
+    this.geofenceMode,
+    this.geofenceRadiusM,
   });
 
   final ShiftPlaceIn? place;
@@ -786,6 +797,8 @@ class ShiftPatchRequest {
   final List<SegmentTemplateItem>? segmentTemplate;
   final String? shiftKind;
   final Map<String, dynamic>? sleepSegments;
+  final String? geofenceMode;
+  final int? geofenceRadiusM;
 
   Map<String, dynamic> toJson() => {
     if (place != null) 'place': place!.toJson(),
@@ -801,6 +814,9 @@ class ShiftPatchRequest {
       'segment_template': [for (final s in segmentTemplate!) s.toJson()],
     if (shiftKind != null && shiftKind!.isNotEmpty) 'shift_kind': shiftKind,
     if (sleepSegments != null) 'sleep_segments': sleepSegments,
+    if (geofenceMode != null && geofenceMode!.trim().isNotEmpty)
+      'geofence_mode': geofenceMode!.trim(),
+    if (geofenceRadiusM != null) 'geofence_radius_m': geofenceRadiusM,
   };
 }
 
@@ -822,6 +838,8 @@ class ShiftCreateRequest {
     this.participants = const [],
     this.overrideReason,
     this.budgetOverrideReason,
+    this.geofenceMode,
+    this.geofenceRadiusM,
   });
 
   final String jobId;
@@ -840,6 +858,8 @@ class ShiftCreateRequest {
   final List<ShiftParticipantCreateItem> participants;
   final String? overrideReason;
   final String? budgetOverrideReason;
+  final String? geofenceMode;
+  final int? geofenceRadiusM;
 
   Map<String, dynamic> toJson() => {
     'job_id': jobId,
@@ -866,5 +886,8 @@ class ShiftCreateRequest {
     if (budgetOverrideReason != null &&
         budgetOverrideReason!.trim().isNotEmpty)
       'budget_override_reason': budgetOverrideReason!.trim(),
+    if (geofenceMode != null && geofenceMode!.trim().isNotEmpty)
+      'geofence_mode': geofenceMode!.trim(),
+    if (geofenceRadiusM != null) 'geofence_radius_m': geofenceRadiusM,
   };
 }

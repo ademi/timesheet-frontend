@@ -17,6 +17,8 @@ class OccurrenceDraft {
     this.scheduledStart,
     this.scheduledEnd,
     this.place,
+    this.geofenceMode,
+    this.geofenceRadiusM,
     this.participantIds = const [],
     this.equalSplit = true,
     this.allocationStrategy = 'percentage',
@@ -33,6 +35,8 @@ class OccurrenceDraft {
   factory OccurrenceDraft.oneSession({
     String? clientId,
     DraftPlace? place,
+    String? geofenceMode,
+    int? geofenceRadiusM,
     DateTime? scheduledStart,
     DateTime? scheduledEnd,
     String? supportItemCode,
@@ -44,6 +48,8 @@ class OccurrenceDraft {
       clientId: clientId,
       participantIds: clientId != null ? [clientId] : const [],
       place: place,
+      geofenceMode: geofenceMode,
+      geofenceRadiusM: geofenceRadiusM,
       scheduledStart: scheduledStart,
       scheduledEnd: scheduledEnd,
       supportItemCode: supportItemCode,
@@ -59,6 +65,8 @@ class OccurrenceDraft {
     String? jobId,
     List<String> participantIds = const [],
     DraftPlace? place,
+    String? geofenceMode,
+    int? geofenceRadiusM,
     DateTime? scheduledStart,
     DateTime? scheduledEnd,
     String? supportItemCode,
@@ -73,6 +81,8 @@ class OccurrenceDraft {
       jobId: jobId,
       participantIds: participantIds,
       place: place,
+      geofenceMode: geofenceMode,
+      geofenceRadiusM: geofenceRadiusM,
       scheduledStart: scheduledStart,
       scheduledEnd: scheduledEnd,
       supportItemCode: supportItemCode,
@@ -91,6 +101,9 @@ class OccurrenceDraft {
   final DateTime? scheduledStart;
   final DateTime? scheduledEnd;
   final DraftPlace? place;
+  /// `informational` | `enforce`; null omits and inherits job default.
+  final String? geofenceMode;
+  final int? geofenceRadiusM;
   final List<String> participantIds;
   final bool equalSplit;
   final String allocationStrategy;
@@ -123,6 +136,8 @@ class OccurrenceDraft {
     DateTime? scheduledStart,
     DateTime? scheduledEnd,
     DraftPlace? place,
+    String? geofenceMode,
+    int? geofenceRadiusM,
     List<String>? participantIds,
     bool? equalSplit,
     String? allocationStrategy,
@@ -137,6 +152,8 @@ class OccurrenceDraft {
     bool clearPlace = false,
     bool clearSupportItemCode = false,
     bool clearJobId = false,
+    bool clearGeofenceMode = false,
+    bool clearGeofenceRadiusM = false,
   }) {
     return OccurrenceDraft(
       preset: preset ?? this.preset,
@@ -146,6 +163,12 @@ class OccurrenceDraft {
       scheduledStart: scheduledStart ?? this.scheduledStart,
       scheduledEnd: scheduledEnd ?? this.scheduledEnd,
       place: clearPlace ? null : (place ?? this.place),
+      geofenceMode:
+          clearGeofenceMode ? null : (geofenceMode ?? this.geofenceMode),
+      geofenceRadiusM:
+          clearGeofenceRadiusM
+              ? null
+              : (geofenceRadiusM ?? this.geofenceRadiusM),
       participantIds: participantIds ?? this.participantIds,
       equalSplit: equalSplit ?? this.equalSplit,
       allocationStrategy: allocationStrategy ?? this.allocationStrategy,

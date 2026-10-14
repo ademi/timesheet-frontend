@@ -124,6 +124,8 @@ class RosterComposerController extends GetxController {
   final otherAddressConfirmed = false.obs;
   final otherIsGeocoding = false.obs;
   final otherGeocodeError = RxnString();
+  /// Optional per-booking radius; empty omits and inherits place/site/job.
+  final geofenceRadiusCtrl = TextEditingController();
 
   /// Shift participant rows (needed for travel share + segment participant ids).
   final shiftParticipants = <ShiftParticipantOut>[].obs;
@@ -504,6 +506,7 @@ class RosterComposerController extends GetxController {
     otherPostalCtrl.dispose();
     otherLatCtrl.dispose();
     otherLngCtrl.dispose();
+    geofenceRadiusCtrl.dispose();
     super.onClose();
   }
 
@@ -604,6 +607,7 @@ class RosterComposerController extends GetxController {
       preset: _inferPreset(composer.shift),
       repeatEnabled: repeatEnabled,
     );
+    _syncGeofenceRadiusCtrl(composer.shift.geofenceRadiusM);
     shiftParticipants.assignAll(composer.shift.participants);
     assignments.assignAll(composer.shift.assignments);
     // Seed Forms from hydrate — do not call preview until user edits.
@@ -758,6 +762,7 @@ class RosterComposerController extends GetxController {
     required ComposerPreset preset,
     bool repeatEnabled = false,
   }) {
+    final mode = shift.geofenceMode?.trim();
     return OccurrenceDraft(
       preset: preset,
       shiftId: shift.id,
@@ -766,6 +771,9 @@ class RosterComposerController extends GetxController {
       scheduledStart: shift.scheduledStart.toLocal(),
       scheduledEnd: shift.scheduledEnd.toLocal(),
       place: _placeFromShift(shift),
+      geofenceMode:
+          (mode == 'informational' || mode == 'enforce') ? mode : null,
+      geofenceRadiusM: shift.geofenceRadiusM,
       participantIds: [
         for (final p in shift.participants) p.participantId,
       ],
@@ -1224,6 +1232,35 @@ class RosterComposerController extends GetxController {
     }
   }
 
+  /// Per-booking geofence; `null` / empty omits and inherits the job default.
+  void setGeofenceMode(String? mode) {
+    final cleaned = mode?.trim();
+    if (cleaned == null || cleaned.isEmpty) {
+      draft.value = draft.value.copyWith(clearGeofenceMode: true);
+      return;
+    }
+    draft.value = draft.value.copyWith(geofenceMode: cleaned);
+  }
+
+  void setGeofenceRadiusFromText(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      draft.value = draft.value.copyWith(clearGeofenceRadiusM: true);
+      return;
+    }
+    final parsed = int.tryParse(trimmed);
+    if (parsed == null || parsed <= 0) {
+      draft.value = draft.value.copyWith(clearGeofenceRadiusM: true);
+      return;
+    }
+    draft.value = draft.value.copyWith(geofenceRadiusM: parsed);
+  }
+
+  void _syncGeofenceRadiusCtrl([int? radiusM]) {
+    final value = radiusM ?? draft.value.geofenceRadiusM;
+    geofenceRadiusCtrl.text = value == null ? '' : '$value';
+  }
+
   void setSupportItemCode(String? code) {
     draft.value =
         (code == null || code.isEmpty)
@@ -1475,6 +1512,8 @@ class RosterComposerController extends GetxController {
         scheduledStart: draft.value.scheduledStart,
         scheduledEnd: draft.value.scheduledEnd,
         place: draft.value.place,
+        geofenceMode: draft.value.geofenceMode,
+        geofenceRadiusM: draft.value.geofenceRadiusM,
         supportItemCode: draft.value.supportItemCode,
         taskTemplate: draft.value.taskTemplate,
         segmentTemplate: draft.value.segmentTemplate,
@@ -2400,6 +2439,7 @@ class RosterComposerController extends GetxController {
     saveErrorDetail.value = null;
     _retryHandler = null;
     _syncParticipantsFromClientId();
+    setGeofenceRadiusFromText(geofenceRadiusCtrl.text);
 
     final errors = ComposerValidation.validate(draft.value);
     if (errors.isNotEmpty) {
@@ -2455,6 +2495,8 @@ class RosterComposerController extends GetxController {
             supportItemCode: draft.value.supportItemCode,
             equalSplit: _useEqualSplitOnSave,
             participants: _participantCreateItems(),
+            geofenceMode: draft.value.geofenceMode,
+            geofenceRadiusM: draft.value.geofenceRadiusM,
           ),
         );
         draft.value = draft.value.copyWith(
@@ -2474,6 +2516,8 @@ class RosterComposerController extends GetxController {
             workerCount: draft.value.workerCount,
             taskTemplate: draft.value.taskTemplate,
             segmentTemplate: draft.value.segmentTemplate,
+            geofenceMode: draft.value.geofenceMode,
+            geofenceRadiusM: draft.value.geofenceRadiusM,
           ),
         );
         persisted = await _facade.putParticipants(

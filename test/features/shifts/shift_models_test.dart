@@ -315,6 +315,68 @@ void main() {
     });
   });
 
+  test('ShiftCreateRequest.toJson includes per-booking geofence', () {
+    final json =
+        ShiftCreateRequest(
+          jobId: 'job-1',
+          scheduledStart: DateTime.utc(2026, 10, 14, 9),
+          scheduledEnd: DateTime.utc(2026, 10, 14, 11),
+          place: const ShiftPlaceIn.clientSite('site-1'),
+          geofenceMode: 'enforce',
+          geofenceRadiusM: 100,
+        ).toJson();
+
+    expect(json['place'], {'client_site_id': 'site-1'});
+    expect(json['geofence_mode'], 'enforce');
+    expect(json['geofence_radius_m'], 100);
+  });
+
+  test('ShiftCreateRequest.toJson omits geofence when unset', () {
+    final json =
+        ShiftCreateRequest(
+          jobId: 'job-1',
+          scheduledStart: DateTime.utc(2026, 10, 14, 9),
+          scheduledEnd: DateTime.utc(2026, 10, 14, 11),
+        ).toJson();
+
+    expect(json.containsKey('geofence_mode'), isFalse);
+    expect(json.containsKey('geofence_radius_m'), isFalse);
+  });
+
+  test('ShiftPatchRequest.toJson includes per-booking geofence', () {
+    expect(
+      const ShiftPatchRequest(
+        geofenceMode: 'informational',
+        geofenceRadiusM: 150,
+      ).toJson(),
+      {
+        'geofence_mode': 'informational',
+        'geofence_radius_m': 150,
+      },
+    );
+  });
+
+  test('ShiftOut.fromJson reads geofence_mode and geofence_radius_m', () {
+    final shift = ShiftOut.fromJson({
+      'id': 's1',
+      'tenant_id': 't1',
+      'job_id': 'j1',
+      'job_title': 'Visit',
+      'scheduled_start': '2026-10-14T09:00:00Z',
+      'scheduled_end': '2026-10-14T11:00:00Z',
+      'required_slots': 1,
+      'open_slots': 0,
+      'status': 'draft',
+      'created_at': '2026-10-14T08:00:00Z',
+      'updated_at': '2026-10-14T08:00:00Z',
+      'geofence_mode': 'enforce',
+      'geofence_radius_m': 100,
+    });
+
+    expect(shift.geofenceMode, 'enforce');
+    expect(shift.geofenceRadiusM, 100);
+  });
+
   test('ShiftPatchRequest.toJson includes draft plan fields', () {
     final start = DateTime.utc(2026, 10, 4, 9);
     final end = DateTime.utc(2026, 10, 4, 12);
