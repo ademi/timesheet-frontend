@@ -53,6 +53,12 @@ class StaffCredentialReviewView
                     ),
                     const SizedBox(height: 16),
                   ],
+                  if (controller.documentPack.value != null ||
+                      controller.onboardingFlags.isNotEmpty ||
+                      controller.photoIdPointsTotal.value != null) ...[
+                    _ReviewPackContextBanner(controller: controller),
+                    const SizedBox(height: 16),
+                  ],
                   const Text(
                     'Review each credential, then view or download its evidence '
                     'file before you accept or reject it.',
@@ -128,6 +134,73 @@ class StaffCredentialReviewView
           ],
         );
       }),
+    );
+  }
+}
+
+class _ReviewPackContextBanner extends StatelessWidget {
+  const _ReviewPackContextBanner({required this.controller});
+
+  final StaffCredentialReviewController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final pack = controller.documentPack.value;
+    final points = controller.photoIdPointsTotal.value;
+    final flags = controller.onboardingFlags.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    String flagLabel(String key) => switch (key) {
+      'wwcc_applicable' => 'WWCC applicable',
+      'qualifications_applicable' => 'Qualifications',
+      'drives_participants' => 'Drives participants',
+      'uses_own_vehicle' => 'Own vehicle',
+      _ => humanizeLabel(key),
+    };
+
+    String flagValue(bool? v) => switch (v) {
+      true => 'Yes',
+      false => 'No',
+      null => 'Unanswered',
+    };
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Pack context',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+          if (pack != null) ...[
+            const SizedBox(height: 4),
+            Text('Document pack: $pack'),
+          ],
+          if (points != null) ...[
+            const SizedBox(height: 4),
+            Text('Photo ID points: $points / 100'),
+          ],
+          if (flags.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Onboarding flags',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+            for (final e in flags)
+              Text(
+                '• ${flagLabel(e.key)}: ${flagValue(e.value)}',
+                style: const TextStyle(fontSize: 13),
+              ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -103,6 +103,11 @@ class StaffCredentialReviewController extends GetxController {
   final isLoadingCatalog = false.obs;
   final isSavingRequiredDocs = false.obs;
 
+  /// Pack / flags snapshot from credentials-review-context (audit).
+  final documentPack = RxnString();
+  final photoIdPointsTotal = RxnInt();
+  final onboardingFlags = <String, bool?>{}.obs;
+
   bool _canEditRequiredDocs = false;
   bool _isEnded = false;
 
@@ -331,10 +336,28 @@ class StaffCredentialReviewController extends GetxController {
     needsShareRequest.value = false;
     eligibilityReasons.clear();
     try {
-      final list = await _repository.listForTenantContractor(
-        contractorId,
-        engagementId: engagementId,
-      );
+      List<CredentialOut> list;
+      try {
+        final context = await _repository.getReviewContext(
+          contractorId,
+          engagementId: engagementId,
+        );
+        list = context.credentials;
+        documentPack.value = context.documentPack;
+        photoIdPointsTotal.value = context.photoIdPointsTotal;
+        onboardingFlags
+          ..clear()
+          ..addAll(context.onboardingFlags);
+      } catch (_) {
+        // Fallback when review-context is unavailable / unimplemented.
+        list = await _repository.listForTenantContractor(
+          contractorId,
+          engagementId: engagementId,
+        );
+        documentPack.value = null;
+        photoIdPointsTotal.value = null;
+        onboardingFlags.clear();
+      }
       // Hide superseded rows so admin reviews the current submission only.
       final current =
           list.where((c) => c.status != 'superseded').toList(growable: false);

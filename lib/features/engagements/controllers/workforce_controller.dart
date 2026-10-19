@@ -15,6 +15,7 @@ import '../../../shared/utils/name_sort.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
+import '../../credentials/utils/support_worker_pack.dart';
 import '../../visits/data/models/roster_overlay_models.dart';
 import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
@@ -427,7 +428,25 @@ class WorkforceController extends GetxController {
     }
   }
 
+  /// Support Worker pack always-required codes (locked on invite UI).
+  Set<String> get invitePackDefaultCategories =>
+      Set<String>.from(SupportWorkerPack.alwaysRequired);
+
+  /// Seed invite multi-select with the global Support Worker always-required set.
+  void seedInvitePackDefaults() {
+    selectedCategories
+      ..clear()
+      ..addAll(SupportWorkerPack.alwaysRequired);
+  }
+
   void toggleCategory(String category) {
+    // Pack defaults stay selected; staff may only add extras.
+    if (SupportWorkerPack.alwaysRequired.contains(category)) {
+      if (!selectedCategories.contains(category)) {
+        selectedCategories.add(category);
+      }
+      return;
+    }
     if (selectedCategories.contains(category)) {
       selectedCategories.remove(category);
     } else {
@@ -509,7 +528,11 @@ class WorkforceController extends GetxController {
       _setError(EmailUtils.formatHint);
       return;
     }
-    if (selectedCategories.isEmpty) {
+    // Always union pack defaults ∪ staff extras (never drop pack always).
+    final categories =
+        {...SupportWorkerPack.alwaysRequired, ...selectedCategories}.toList()
+          ..sort();
+    if (categories.isEmpty) {
       _setError('Select at least one required document.');
       return;
     }
@@ -532,13 +555,13 @@ class WorkforceController extends GetxController {
         EngagementInviteRequest(
           email: email.isEmpty ? null : email,
           phone: phone.isEmpty ? null : phone,
-          requiredCategories: selectedCategories.toList(),
+          requiredCategories: categories,
           sendEmail: true,
         ),
       );
       emailCtrl.clear();
       phoneCtrl.clear();
-      selectedCategories.clear();
+      seedInvitePackDefaults();
       // Prefer AppNavigator: Get.back() needs Get.key attached to a Navigator,
       // which GetMaterialApp.router does not set unless GoRouter uses Get.key.
       AppNavigator.pop();

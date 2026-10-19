@@ -57,6 +57,8 @@ abstract final class ApiPaths {
       '$tenantContractorInvites/$inviteId';
   static String tenantContractorCredentials(String contractorId) =>
       '$_v1/tenants/current/contractors/$contractorId/credentials';
+  static String tenantContractorCredentialsReviewContext(String contractorId) =>
+      '$_v1/tenants/current/contractors/$contractorId/credentials-review-context';
   static String tenantContractor(String contractorId) =>
       '$_v1/tenants/current/contractors/$contractorId';
   static const tenantContractors = '$_v1/tenants/current/contractors';

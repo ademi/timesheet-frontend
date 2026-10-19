@@ -21,6 +21,7 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
     super.initState();
     controller = Get.find<WorkforceController>();
     controller.clearError();
+    controller.seedInvitePackDefaults();
     controller.loadCredentialCategories();
   }
 
@@ -40,9 +41,17 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    'Invite by email and/or phone. Select at least one required '
-                    'document type. An invitation email is sent automatically.',
+                    'Invite by email and/or phone. The NDIS Support Worker '
+                    'document pack is selected by default — add extras if needed. '
+                    'An invitation email is sent automatically.',
                     style: TextStyle(color: AppColors.textMuted),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Conditional documents (WWCC, qualifications, driving, '
+                    'vehicle) are answered by the contractor on Profile after '
+                    'login — you do not set those here.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
                   ),
                   if (err != null) ...[
                     const SizedBox(height: 12),
@@ -102,6 +111,7 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
                       selected: controller.selectedCategories.toSet(),
                       onToggle: controller.toggleCategory,
                       enabled: !controller.isSaving.value,
+                      lockedCodes: controller.invitePackDefaultCategories,
                     ),
                   const SizedBox(height: 24),
                   ElevatedButton(

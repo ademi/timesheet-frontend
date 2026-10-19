@@ -110,4 +110,25 @@ void main() {
     );
     expect(request.toJson()['id_points'], 70);
   });
+
+  test('custom staff extras still appear in checklist always section', () {
+    final sections = buildPackChecklistSections(
+      engagement: eng(
+        requiredResolved: [
+          ...SupportWorkerPack.alwaysRequired,
+          'medication_admin',
+        ],
+        apiMissing: const ['medication_admin'],
+        flags: const {
+          'wwcc_applicable': false,
+          'qualifications_applicable': false,
+          'drives_participants': false,
+          'uses_own_vehicle': false,
+        },
+      ),
+      credentials: const [],
+    );
+    expect(sections.always, contains('medication_admin'));
+    expect(sections.missingForCreate, contains('medication_admin'));
+  });
 }

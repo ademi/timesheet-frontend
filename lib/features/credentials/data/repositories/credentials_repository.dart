@@ -39,6 +39,23 @@ class CredentialsRepository {
     (c) => c.displayLabel,
   );
 
+  Future<CredentialReviewContextOut> getReviewContext(
+    String contractorId, {
+    required String engagementId,
+  }) async {
+    final context = await _remote.getReviewContext(
+      contractorId,
+      engagementId: engagementId,
+    );
+    return CredentialReviewContextOut(
+      credentials: sortedByName(context.credentials, (c) => c.displayLabel),
+      documentPack: context.documentPack,
+      engagementId: context.engagementId,
+      photoIdPointsTotal: context.photoIdPointsTotal,
+      onboardingFlags: context.onboardingFlags,
+    );
+  }
+
   Future<CredentialReviewOut> createReview({
     required String engagementId,
     required CredentialReviewCreateRequest body,

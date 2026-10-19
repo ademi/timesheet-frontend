@@ -422,6 +422,57 @@ class CredentialSupersedeRequest {
   };
 }
 
+/// Staff audit context from `GET …/credentials-review-context`.
+class CredentialReviewContextOut {
+  const CredentialReviewContextOut({
+    required this.credentials,
+    this.documentPack,
+    this.engagementId,
+    this.photoIdPointsTotal,
+    this.onboardingFlags = const {},
+  });
+
+  final List<CredentialOut> credentials;
+  final String? documentPack;
+  final String? engagementId;
+  final int? photoIdPointsTotal;
+  final Map<String, bool?> onboardingFlags;
+
+  factory CredentialReviewContextOut.fromJson(Map<String, dynamic> json) {
+    final creds = json['credentials'];
+    final flagsRaw = json['onboarding_flags'];
+    final pointsRaw = json['photo_id_points_total'];
+    final flags = <String, bool?>{};
+    if (flagsRaw is Map) {
+      for (final entry in flagsRaw.entries) {
+        final v = entry.value;
+        if (v == null) {
+          flags[entry.key.toString()] = null;
+        } else if (v is bool) {
+          flags[entry.key.toString()] = v;
+        }
+      }
+    }
+    return CredentialReviewContextOut(
+      credentials:
+          creds is List
+              ? creds
+                  .whereType<Map>()
+                  .map(
+                    (e) =>
+                        CredentialOut.fromJson(Map<String, dynamic>.from(e)),
+                  )
+                  .toList(growable: false)
+              : const [],
+      documentPack: json['document_pack'] as String?,
+      engagementId: json['engagement_id']?.toString(),
+      photoIdPointsTotal:
+          pointsRaw is num ? pointsRaw.toInt() : int.tryParse('$pointsRaw'),
+      onboardingFlags: flags,
+    );
+  }
+}
+
 class CredentialReviewCreateRequest {
   const CredentialReviewCreateRequest({
     required this.credentialId,

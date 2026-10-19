@@ -115,6 +115,30 @@ class CredentialsRemoteDataSource {
     }
   }
 
+  /// Pack + flags + credentials for staff review audit UI.
+  Future<CredentialReviewContextOut> getReviewContext(
+    String contractorId, {
+    required String engagementId,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.tenantContractorCredentialsReviewContext(contractorId),
+        queryParameters: {'engagement_id': engagementId},
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'unknown',
+          message: 'Empty credentials review context response',
+          presentation: AppFailurePresentation.toast,
+        );
+      }
+      return CredentialReviewContextOut.fromJson(data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<CredentialReviewOut> createReview({
     required String engagementId,
     required CredentialReviewCreateRequest body,

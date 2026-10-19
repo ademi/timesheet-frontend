@@ -12,12 +12,16 @@ class CredentialCategoryGroupedPicker extends StatelessWidget {
     required this.selected,
     required this.onToggle,
     this.enabled = true,
+    this.lockedCodes = const {},
   });
 
   final List<CredentialCategory> choices;
   final Set<String> selected;
   final ValueChanged<String> onToggle;
   final bool enabled;
+
+  /// Codes that stay selected and cannot be toggled off (e.g. pack defaults).
+  final Set<String> lockedCodes;
 
   @override
   Widget build(BuildContext context) {
@@ -48,10 +52,16 @@ class CredentialCategoryGroupedPicker extends StatelessWidget {
               dense: true,
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
-              title: Text(credentialTypeLabel(cat.code)),
+              title: Text(
+                lockedCodes.contains(cat.code)
+                    ? '${credentialTypeLabel(cat.code)} (pack default)'
+                    : credentialTypeLabel(cat.code),
+              ),
               value: selected.contains(cat.code),
               onChanged:
-                  enabled ? (_) => onToggle(cat.code) : null,
+                  !enabled || lockedCodes.contains(cat.code)
+                      ? null
+                      : (_) => onToggle(cat.code),
             ),
         ],
       ],
