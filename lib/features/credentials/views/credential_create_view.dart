@@ -9,6 +9,8 @@ import '../../../shared/utils/external_url.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
+import '../utils/support_worker_pack.dart';
+import '../widgets/photo_id_points_picker.dart';
 
 class CredentialCreateView extends GetView<CredentialsController> {
   const CredentialCreateView({super.key});
@@ -27,6 +29,7 @@ class CredentialCreateView extends GetView<CredentialsController> {
         final type = controller.selectedType.value;
         final sensitive = isSensitiveCredentialType(type);
         final govId = isGovernmentIdCredentialType(type);
+        final photoId = SupportWorkerPack.isPhotoIdType(type);
         // Depend on catalog load so help links appear without changing type.
         final _ = controller.catalogRevision.value;
         final helpUrl = credentialTypeHelpUrl(type);
@@ -77,6 +80,10 @@ class CredentialCreateView extends GetView<CredentialsController> {
                               controller.sensitiveConsentConfirmed.value =
                                   false;
                               controller.governmentIdAcknowledged.value = false;
+                              if (SupportWorkerPack.isPhotoIdType(v)) {
+                                controller.idPoints.value =
+                                    v == 'passport_id' ? 100 : 40;
+                              }
                             },
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
@@ -120,6 +127,10 @@ class CredentialCreateView extends GetView<CredentialsController> {
                       border: const OutlineInputBorder(),
                     ),
                   ),
+                  if (photoId) ...[
+                    const SizedBox(height: 16),
+                    PhotoIdPointsPicker(points: controller.idPoints),
+                  ],
                   const SizedBox(height: 16),
                   const Text(
                     'Evidence',

@@ -85,4 +85,49 @@ void main() {
     expect(missing, {'wwcc', 'police_check'});
     expect(missing, isNot(contains('visa')));
   });
+
+  test('prefers API missing list when present', () {
+    final e = EngagementOut(
+      id: 'eng-1',
+      tenantId: 'tenant-1',
+      contractorId: 'contractor-1',
+      status: 'pending_docs',
+      createdAt: now,
+      updatedAt: now,
+      requiredResolved: const ['wwcc', 'police_check', 'passport_id'],
+      apiMissing: const ['passport_id'],
+    );
+    expect(missingCategories(e, const []), {'passport_id'});
+  });
+
+  test('passport_id stays missing until points reach 100', () {
+    final e = EngagementOut(
+      id: 'eng-1',
+      tenantId: 'tenant-1',
+      contractorId: 'contractor-1',
+      status: 'pending_docs',
+      createdAt: now,
+      updatedAt: now,
+      requiredResolved: const ['passport_id'],
+    );
+    expect(
+      missingCategories(e, [
+        credential(type: 'passport_id', evidencePresence: 'present'),
+      ]),
+      isEmpty,
+    );
+
+    final lowPoints = CredentialOut(
+      id: 'cred-passport_id',
+      contractorId: 'contractor-1',
+      credentialType: 'passport_id',
+      status: 'active',
+      provenanceState: 'self_reported',
+      evidencePresence: 'present',
+      idPoints: 70,
+      createdAt: now,
+      updatedAt: now,
+    );
+    expect(missingCategories(e, [lowPoints]), {'passport_id'});
+  });
 }

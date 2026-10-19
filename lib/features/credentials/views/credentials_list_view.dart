@@ -57,7 +57,10 @@ class CredentialsListView extends GetView<CredentialsController> {
           (hasRequestedDocs || controller.items.isNotEmpty);
 
       return RefreshIndicator(
-        onRefresh: controller.load,
+        onRefresh: () async {
+          await controller.load();
+          await engagements?.load();
+        },
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [

@@ -66,6 +66,7 @@ const credentialCategoryFallbackLabels = <String, String>{
   'manual_handling': 'Manual Handling',
   'vehicle_registration': 'Vehicle Registration',
   'insurance': 'Car Insurance',
+  'relevant_qualification': 'Relevant qualification',
   'other': 'Other',
 };
 
@@ -199,6 +200,7 @@ class CredentialOut {
     this.completedOn,
     this.effectiveOn,
     this.expiresOn,
+    this.idPoints,
     this.reviewDecision,
     this.reviewReasonCode,
   });
@@ -216,6 +218,9 @@ class CredentialOut {
   final DateTime? completedOn;
   final DateTime? effectiveOn;
   final DateTime? expiresOn;
+
+  /// Photo ID points (0–100) when this row contributes to 100-point ID.
+  final int? idPoints;
   final String status;
   final String provenanceState;
   final String evidencePresence;
@@ -264,6 +269,12 @@ class CredentialOut {
       completedOn: parseDate(json['completed_on']),
       effectiveOn: parseDate(json['effective_on']),
       expiresOn: parseDate(json['expires_on']),
+      idPoints: () {
+        final raw = json['id_points'];
+        if (raw == null) return null;
+        if (raw is num) return raw.toInt();
+        return int.tryParse('$raw');
+      }(),
       status: json['status'] as String? ?? 'unknown',
       provenanceState: json['provenance_state'] as String? ?? '',
       evidencePresence: json['evidence_presence'] as String? ?? 'absent',
@@ -307,6 +318,7 @@ class CredentialCreateRequest {
     this.completedOn,
     this.effectiveOn,
     this.expiresOn,
+    this.idPoints,
   });
 
   final String credentialType;
@@ -320,6 +332,9 @@ class CredentialCreateRequest {
   final DateTime? effectiveOn;
   final DateTime? expiresOn;
 
+  /// Photo ID points 0–100 (passport defaults to 100 on BE when omitted).
+  final int? idPoints;
+
   Map<String, dynamic> toJson() => {
     'credential_type': credentialType,
     'notice_event_id': noticeEventId,
@@ -332,6 +347,7 @@ class CredentialCreateRequest {
     if (completedOn != null) 'completed_on': _dateOnly(completedOn!),
     if (effectiveOn != null) 'effective_on': _dateOnly(effectiveOn!),
     if (expiresOn != null) 'expires_on': _dateOnly(expiresOn!),
+    if (idPoints != null) 'id_points': idPoints,
   };
 
   static String _dateOnly(DateTime d) =>

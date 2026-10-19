@@ -41,6 +41,28 @@ void main() {
     expect(response.registrationInvite, isNull);
   });
 
+  test('EngagementOut parses pack docs-status fields', () {
+    final engagement = EngagementOut.fromJson({
+      'id': 'engagement-1',
+      'tenant_id': 'tenant-1',
+      'contractor_id': 'contractor-1',
+      'status': 'pending_docs',
+      'created_at': '2026-07-30T00:00:00Z',
+      'updated_at': '2026-07-30T00:00:00Z',
+      'document_pack': 'support_worker_v1',
+      'required_resolved': ['resume', 'passport_id', 'wwcc'],
+      'missing': ['passport_id'],
+      'photo_id_points_total': 70,
+      'onboarding_flags': {'wwcc_applicable': true},
+    });
+
+    expect(engagement.documentPack, 'support_worker_v1');
+    expect(engagement.requiredResolved, ['resume', 'passport_id', 'wwcc']);
+    expect(engagement.apiMissing, ['passport_id']);
+    expect(engagement.photoIdPointsTotal, 70);
+    expect(engagement.onboardingFlags['wwcc_applicable'], isTrue);
+  });
+
   test('RequiredDocCategory parses label and falls back when missing', () {
     final withLabel = RequiredDocCategory.fromJson({
       'category': 'passport_id',
@@ -58,7 +80,7 @@ void main() {
     });
     expect(withoutLabel.category, 'wwcc');
     expect(withoutLabel.isRequired, isFalse);
-    expect(withoutLabel.displayLabel, 'Working with Children Check');
+    expect(withoutLabel.displayLabel, 'Working With Children Check');
   });
 
   test('invite preview existing_account is not blocking', () {

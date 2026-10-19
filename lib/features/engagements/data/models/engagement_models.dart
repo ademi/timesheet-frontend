@@ -73,6 +73,11 @@ class EngagementOut {
     this.invitedByUserId,
     this.approvedByUserId,
     this.requiredDocCategories = const [],
+    this.documentPack,
+    this.requiredResolved = const [],
+    this.apiMissing,
+    this.photoIdPointsTotal,
+    this.onboardingFlags = const {},
   });
 
   final String id;
@@ -89,6 +94,30 @@ class EngagementOut {
   final List<RequiredDocCategory> requiredDocCategories;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// Pack id when present (e.g. `support_worker_v1`).
+  final String? documentPack;
+
+  /// Categories currently required after pack + flags + staff extras.
+  final List<String> requiredResolved;
+
+  /// API `missing` list when present (null = not provided; use local compute).
+  final List<String>? apiMissing;
+
+  /// Sum of Photo ID points when Photo ID is required.
+  final int? photoIdPointsTotal;
+
+  /// Snapshot of contractor onboarding flags for this engagement.
+  final Map<String, bool?> onboardingFlags;
+
+  /// Prefer API [requiredResolved]; else required doc category codes.
+  List<String> get resolvedRequiredCategories {
+    if (requiredResolved.isNotEmpty) return requiredResolved;
+    return requiredDocCategories
+        .where((c) => c.isRequired)
+        .map((c) => c.category)
+        .toList(growable: false);
+  }
 
   bool get isInvited => status == 'invited';
   bool get isPendingDocs => status == 'pending_docs';
@@ -119,6 +148,12 @@ class EngagementOut {
     }
 
     final cats = json['required_doc_categories'];
+    final resolved = json['required_resolved'];
+    final missingRaw = json['missing'];
+    final flagsRaw =
+        json['onboarding_flags'] ?? json['contractor_onboarding_flags'];
+    final pointsRaw = json['photo_id_points_total'];
+
     return EngagementOut(
       id: json['id'].toString(),
       tenantId: json['tenant_id'].toString(),
@@ -142,10 +177,37 @@ class EngagementOut {
                   )
                   .toList(growable: false)
               : const [],
+      documentPack: json['document_pack'] as String?,
+      requiredResolved:
+          resolved is List
+              ? resolved.map((e) => e.toString()).toList(growable: false)
+              : const [],
+      apiMissing:
+          missingRaw is List
+              ? missingRaw.map((e) => e.toString()).toList(growable: false)
+              : null,
+      photoIdPointsTotal:
+          pointsRaw is num ? pointsRaw.toInt() : int.tryParse('$pointsRaw'),
+      onboardingFlags: _parseOnboardingFlags(flagsRaw),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
+}
+
+Map<String, bool?> _parseOnboardingFlags(Object? raw) {
+  if (raw is! Map) return const {};
+  final out = <String, bool?>{};
+  for (final entry in raw.entries) {
+    final key = entry.key.toString();
+    final v = entry.value;
+    if (v == null) {
+      out[key] = null;
+    } else if (v is bool) {
+      out[key] = v;
+    }
+  }
+  return out;
 }
 
 class ContractorRegistrationInviteOut {

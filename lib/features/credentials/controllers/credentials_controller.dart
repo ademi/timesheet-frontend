@@ -18,9 +18,11 @@ import '../../contractor_onboarding/data/models/compliance_models.dart'
 import '../../contractor_onboarding/data/repositories/compliance_repository.dart';
 import '../../documents/data/evidence_document_opener.dart';
 import '../../documents/data/document_pipeline.dart';
+import '../../engagements/controllers/contractor_engagements_controller.dart';
 import '../data/evidence_documents.dart';
 import '../data/models/credential_models.dart';
 import '../data/repositories/credentials_repository.dart';
+import '../utils/support_worker_pack.dart';
 import 'credential_create_draft.dart';
 
 /// Contractor credentials list / create / evidence upload (S3).
@@ -63,6 +65,9 @@ class CredentialsController extends GetxController {
   final identifierCtrl = TextEditingController();
   final sensitiveConsentConfirmed = false.obs;
   final governmentIdAcknowledged = false.obs;
+
+  /// Photo ID points for single-create (0–100). Default 100 for passport.
+  final idPoints = 100.obs;
 
   /// Missing-credentials multi-section create (one draft per category).
   final missingCreateTypes = <String>[].obs;
@@ -161,11 +166,15 @@ class CredentialsController extends GetxController {
   }
 
   /// Starts (or replaces) the multi-section missing-credentials create flow.
+  ///
+  /// Seeds from API resolved/missing codes (not a hard-coded FE list). Maps
+  /// `relevant_qualification` → a concrete qual type for create.
   void beginMissingCreate(List<String> categories) {
     final unique = <String>[];
     for (final code in categories) {
-      final trimmed = code.trim();
+      final trimmed = SupportWorkerPack.resolveCreateType(code.trim());
       if (trimmed.isEmpty || unique.contains(trimmed)) continue;
+      // Allow unknown_type through for tests / forward-compat; create validates.
       unique.add(trimmed);
     }
     pendingMissingCreateTypes = List<String>.from(unique);
@@ -283,6 +292,18 @@ class CredentialsController extends GetxController {
     }
   }
 
+  /// Reload engagements so pending_docs → awaiting_approval sync shows on Home.
+  Future<void> _refreshEngagementsAfterCredentialChange() async {
+    try {
+      if (Get.isRegistered<ContractorEngagementsController>()) {
+        await Get.find<ContractorEngagementsController>().load();
+      }
+      await _session.hydrateFromMeContext();
+    } catch (_) {
+      // Non-blocking: credentials list still useful without engagement refresh.
+    }
+  }
+
   @override
   void onClose() {
     issuerCtrl.dispose();
@@ -384,6 +405,10 @@ class CredentialsController extends GetxController {
       identifier: identifierCtrl.text,
       sensitiveConsentConfirmed: sensitiveConsentConfirmed.value,
       governmentIdAcknowledged: governmentIdAcknowledged.value,
+      idPoints:
+          SupportWorkerPack.isPhotoIdType(selectedType.value)
+              ? idPoints.value
+              : null,
       evidence: selectedEvidence.toList(),
       setSaving: (v) => isSaving.value = v,
       setError: (v) => errorMessage.value = v,
@@ -405,6 +430,10 @@ class CredentialsController extends GetxController {
       identifier: draft.identifierCtrl.text,
       sensitiveConsentConfirmed: draft.sensitiveConsentConfirmed.value,
       governmentIdAcknowledged: draft.governmentIdAcknowledged.value,
+      idPoints:
+          SupportWorkerPack.isPhotoIdType(draft.credentialType)
+              ? draft.idPoints.value
+              : null,
       evidence: draft.selectedEvidence.toList(),
       setSaving: (v) => draft.isSaving.value = v,
       setError: (v) => draft.errorMessage.value = v,
@@ -434,6 +463,7 @@ class CredentialsController extends GetxController {
     required void Function(bool) setSaving,
     required void Function(String?) setError,
     required VoidCallback onSuccessClearEvidence,
+    int? idPoints,
   }) async {
     if (!canManage) {
       setError('Missing credentials.manage permission.');
@@ -477,6 +507,8 @@ class CredentialsController extends GetxController {
         this.sensitiveConsentConfirmed.value = previousConsent;
       }
       final noticeEventId = await ensurePresentedEvent(type);
+      final points =
+          idPoints == null ? null : idPoints.clamp(0, 100).toInt();
       final created = await _repository.create(
         CredentialCreateRequest(
           credentialType: type,
@@ -485,9 +517,11 @@ class CredentialsController extends GetxController {
           jurisdiction: 'AU',
           issuer: issuer.trim().isEmpty ? null : issuer.trim(),
           identifier: identifier.trim().isEmpty ? null : identifier.trim(),
+          idPoints: points,
         ),
       );
       await load();
+      await _refreshEngagementsAfterCredentialChange();
       onSuccessClearEvidence();
       return created;
     } on AppFailure catch (e) {

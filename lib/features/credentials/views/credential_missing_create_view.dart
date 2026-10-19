@@ -10,6 +10,8 @@ import '../../../shared/widgets/app_toast.dart';
 import '../controllers/credential_create_draft.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
+import '../utils/support_worker_pack.dart';
+import '../widgets/photo_id_points_picker.dart';
 
 /// Multi-section create flow: one form section per missing credential type.
 class CredentialMissingCreateView extends StatefulWidget {
@@ -108,6 +110,7 @@ class _MissingCredentialSection extends StatelessWidget {
 
     final sensitive = isSensitiveCredentialType(type);
     final govId = isGovernmentIdCredentialType(type);
+    final photoId = SupportWorkerPack.isPhotoIdType(type);
     final helpUrl = credentialTypeHelpUrl(type);
 
     return Obx(() {
@@ -179,6 +182,10 @@ class _MissingCredentialSection extends StatelessWidget {
                   border: const OutlineInputBorder(),
                 ),
               ),
+              if (photoId) ...[
+                const SizedBox(height: 16),
+                PhotoIdPointsPicker(points: sectionDraft.idPoints),
+              ],
               const SizedBox(height: 16),
               const Text(
                 'Evidence',

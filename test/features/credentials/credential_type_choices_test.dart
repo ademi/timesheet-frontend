@@ -77,17 +77,20 @@ void main() {
       'ndis_worker_screening',
       'first_aid',
       ' unknown_type ',
+      'relevant_qualification',
     ]);
 
     expect(controller.missingCreateTypes, [
       'first_aid',
       'ndis_worker_screening',
       'unknown_type',
+      'cert_iii',
     ]);
     expect(controller.missingDrafts.keys, [
       'first_aid',
       'ndis_worker_screening',
       'unknown_type',
+      'cert_iii',
     ]);
     expect(
       controller.missingDrafts['first_aid']!.credentialType,
@@ -95,7 +98,7 @@ void main() {
     );
     expect(
       CredentialsController.pendingMissingCreateTypes,
-      ['first_aid', 'ndis_worker_screening', 'unknown_type'],
+      ['first_aid', 'ndis_worker_screening', 'unknown_type', 'cert_iii'],
     );
   });
 

@@ -12,6 +12,9 @@ class CredentialCreateDraft {
   final identifierCtrl = TextEditingController();
   final sensitiveConsentConfirmed = false.obs;
   final governmentIdAcknowledged = false.obs;
+
+  /// Photo ID points (0–100). Default 100 for passport_id.
+  final idPoints = 100.obs;
   final selectedEvidence = <DocumentOut>[].obs;
   final isSaving = false.obs;
   final isUploadingEvidence = false.obs;
