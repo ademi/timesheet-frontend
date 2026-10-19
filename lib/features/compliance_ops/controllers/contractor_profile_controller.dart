@@ -111,6 +111,12 @@ class ContractorProfileController extends GetxController {
   final geocodeFormattedAddress = RxnString();
   final addressConfirmed = false.obs;
 
+  /// Profile onboarding flags (null = unanswered).
+  final wwccApplicable = RxnBool();
+  final qualificationsApplicable = RxnBool();
+  final drivesParticipants = RxnBool();
+  final usesOwnVehicle = RxnBool();
+
   bool get canConsent =>
       _session.hasPermission(AppPermissions.complianceConsentManage);
 
@@ -122,6 +128,22 @@ class ContractorProfileController extends GetxController {
   bool get canEditProfile => _meRepository != null;
 
   bool get needsAbnBanner => _session.needsProfileCompletion.value;
+
+  /// Yes/no payload for `PATCH /v1/contractor-me` `onboarding_flags`.
+  @visibleForTesting
+  Map<String, bool?> buildOnboardingFlagsPayload() => {
+    OnboardingFlagKeys.wwccApplicable: wwccApplicable.value,
+    OnboardingFlagKeys.qualificationsApplicable:
+        qualificationsApplicable.value,
+    OnboardingFlagKeys.drivesParticipants: drivesParticipants.value,
+    OnboardingFlagKeys.usesOwnVehicle: usesOwnVehicle.value,
+  };
+
+  /// Mark Screening / Qualifications / Checks as touched on profile save.
+  @visibleForTesting
+  Map<String, bool> buildProfileSectionsTouchedPayload() => {
+    for (final key in ProfileSectionKeys.all) key: true,
+  };
 
   @override
   void onInit() {
@@ -193,7 +215,7 @@ class ContractorProfileController extends GetxController {
       final me = await meRepo.getMe();
       profile.value = me;
       _bindFromProfile(me);
-      _session.needsProfileCompletion.value = !me.isProfileComplete;
+      _session.needsProfileCompletion.value = !me.isOnboardingComplete;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (_) {
@@ -321,6 +343,15 @@ class ContractorProfileController extends GetxController {
       vehicleStateCtrl.clear();
       vehicleExpiryCtrl.clear();
     }
+
+    wwccApplicable.value =
+        me.onboardingFlags[OnboardingFlagKeys.wwccApplicable];
+    qualificationsApplicable.value =
+        me.onboardingFlags[OnboardingFlagKeys.qualificationsApplicable];
+    drivesParticipants.value =
+        me.onboardingFlags[OnboardingFlagKeys.drivesParticipants];
+    usesOwnVehicle.value =
+        me.onboardingFlags[OnboardingFlagKeys.usesOwnVehicle];
   }
 
   void invalidateAddressConfirm() {
@@ -541,7 +572,7 @@ class ContractorProfileController extends GetxController {
     isSaving.value = true;
     errorMessage.value = null;
     try {
-      if (editingProfile && meRepo != null) {
+      if (editingProfile) {
         String? abn;
         try {
           abn = AbnUtils.normalizeOrNull(abnCtrl.text);
@@ -550,7 +581,7 @@ class ContractorProfileController extends GetxController {
           return;
         }
 
-        var me = await meRepo.patchMe(
+        var me = await meRepo!.patchMe(
           fullName: _optionalText(fullNameCtrl.text),
           phone: _optionalText(phoneCtrl.text),
           dob: _optionalText(dobCtrl.text),
@@ -562,6 +593,8 @@ class ContractorProfileController extends GetxController {
           postcode: _optionalText(postcodeCtrl.text),
           country: _optionalText(countryCtrl.text),
           metadata: _metadataPayload(profile.value),
+          onboardingFlags: buildOnboardingFlagsPayload(),
+          profileSectionsTouched: buildProfileSectionsTouchedPayload(),
         );
 
         final name = accountNameCtrl.text.trim();
@@ -587,7 +620,7 @@ class ContractorProfileController extends GetxController {
 
         profile.value = me;
         _bindFromProfile(me);
-        _session.needsProfileCompletion.value = !me.isProfileComplete;
+        _session.needsProfileCompletion.value = !me.isOnboardingComplete;
       }
 
       if (savingPhoto) {

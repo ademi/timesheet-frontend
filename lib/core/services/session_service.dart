@@ -59,7 +59,8 @@ class SessionService extends GetxController {
   final needsPlatformCompliance = false.obs;
   final needsEngagementWork = false.obs;
 
-  /// True when contractor ABN is missing (Complete your account).
+  /// True when contractor profile onboarding is incomplete (Home banner).
+  /// Uses `profile_onboarding_complete` from `GET /v1/contractor-me`, not ABN-only.
   final needsProfileCompletion = false.obs;
   Future<void>? _hydratingMeContext;
   int _meContextGeneration = 0;
@@ -272,7 +273,7 @@ class SessionService extends GetxController {
         plainDio: Get.find<ApiClient>().plainDio,
       );
       final me = await remote.getMe();
-      needsProfileCompletion.value = !me.isProfileComplete;
+      needsProfileCompletion.value = !me.isOnboardingComplete;
     } catch (_) {
       // Non-blocking: home banner / complete-account can retry.
     }
@@ -369,9 +370,7 @@ class SessionService extends GetxController {
           needsInviteAccept: needsInviteAccept,
         );
       }
-      if (needsProfileCompletion.value) {
-        return AppRoutes.contractorProfile;
-      }
+      // Profile incompleteness is reminded on Home (not a forced redirect).
       if (engagements.length > 1 && claims?.tenantId == null) {
         return AppRoutes.contractorProfile;
       }

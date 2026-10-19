@@ -61,7 +61,9 @@ class ContractorProfileOpsView extends GetView<ContractorProfileController> {
                   if (controller.needsAbnBanner) ...[
                     MaterialBanner(
                       content: const Text(
-                        'Add your ABN below so providers can verify and pay you.',
+                        'Complete Screening, Qualifications, Checks, answer the '
+                        'document questions, and add your ABN. Upload evidence '
+                        'under Credentials.',
                       ),
                       leading: const Icon(Icons.badge_outlined),
                       backgroundColor: AppColors.primary.withValues(

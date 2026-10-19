@@ -54,6 +54,9 @@ void main() {
     when(() => session.isStaff).thenReturn(false);
     when(() => session.isContractor).thenReturn(true);
     when(() => session.needsDocsAttention).thenReturn(false);
+    when(() => session.needsApprovalWait).thenReturn(false);
+    when(() => session.needsProfileCompletion).thenReturn(false.obs);
+    when(() => session.needsPlatformCompliance).thenReturn(false.obs);
     when(() => session.hasPermission(any())).thenReturn(false);
     when(() => session.engagements).thenReturn(engagements);
     when(() => session.tenantId).thenReturn(RxnString());

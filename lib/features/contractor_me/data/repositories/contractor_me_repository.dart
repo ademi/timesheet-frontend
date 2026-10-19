@@ -22,6 +22,8 @@ class ContractorMeRepository {
     String? postcode,
     String? country,
     Map<String, dynamic>? metadata,
+    Map<String, bool?>? onboardingFlags,
+    Map<String, bool>? profileSectionsTouched,
   }) => _remote.patchMe(
     fullName: fullName,
     phone: phone,
@@ -34,6 +36,8 @@ class ContractorMeRepository {
     postcode: postcode,
     country: country,
     metadata: metadata,
+    onboardingFlags: onboardingFlags,
+    profileSectionsTouched: profileSectionsTouched,
   );
 
   Future<GeocodeResponse> geocode(GeocodeRequest body) => _remote.geocode(body);

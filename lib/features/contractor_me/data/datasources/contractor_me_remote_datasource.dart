@@ -46,6 +46,8 @@ class ContractorMeRemoteDataSource {
     String? postcode,
     String? country,
     Map<String, dynamic>? metadata,
+    Map<String, bool?>? onboardingFlags,
+    Map<String, bool>? profileSectionsTouched,
   }) async {
     try {
       final body = <String, dynamic>{
@@ -60,6 +62,9 @@ class ContractorMeRemoteDataSource {
         if (postcode != null) 'postcode': postcode,
         if (country != null) 'country': country,
         if (metadata != null) 'metadata': metadata,
+        if (onboardingFlags != null) 'onboarding_flags': onboardingFlags,
+        if (profileSectionsTouched != null)
+          'profile_sections_touched': profileSectionsTouched,
       };
       final response = await _dio.patch<Map<String, dynamic>>(
         ApiPaths.contractorMe,

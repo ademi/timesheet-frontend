@@ -130,6 +130,12 @@ class ContractorProfileSections extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _sectionTitle('Screening'),
+          const Text(
+            'These details help staff verify your documents — you still must '
+            'upload evidence under Credentials.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+          const SizedBox(height: 12),
           _field(
             controller: controller.screeningNumberCtrl,
             label: 'NDIS screening number',
@@ -180,6 +186,12 @@ class ContractorProfileSections extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _sectionTitle('Qualifications'),
+          const Text(
+            'Declare qualifications here. Certificate files are uploaded under '
+            'Credentials.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+          const SizedBox(height: 12),
           Obx(() {
             return Column(
               children: [
@@ -196,6 +208,34 @@ class ContractorProfileSections extends StatelessWidget {
               ],
             );
           }),
+          const SizedBox(height: 20),
+          _sectionTitle('Document requirements'),
+          const Text(
+            'Answer these so we know which documents you must upload under '
+            'Credentials. Metadata below helps verification — uploads are still '
+            'required.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+          const SizedBox(height: 12),
+          _YesNoFlag(
+            label: 'WWCC applicable (works with children)?',
+            value: controller.wwccApplicable,
+          ),
+          const SizedBox(height: 12),
+          _YesNoFlag(
+            label: 'Have relevant qualifications to declare?',
+            value: controller.qualificationsApplicable,
+          ),
+          const SizedBox(height: 12),
+          _YesNoFlag(
+            label: 'Will drive participants?',
+            value: controller.drivesParticipants,
+          ),
+          const SizedBox(height: 12),
+          _YesNoFlag(
+            label: 'Will use own vehicle for work?',
+            value: controller.usesOwnVehicle,
+          ),
           const SizedBox(height: 20),
           _sectionTitle('Checks'),
           _field(
@@ -338,6 +378,39 @@ class ContractorProfileSections extends StatelessWidget {
         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
       ),
     );
+  }
+}
+
+class _YesNoFlag extends StatelessWidget {
+  const _YesNoFlag({required this.label, required this.value});
+
+  final String label;
+  final RxnBool value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final current = value.value;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 14)),
+          const SizedBox(height: 8),
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment<bool>(value: true, label: Text('Yes')),
+              ButtonSegment<bool>(value: false, label: Text('No')),
+            ],
+            emptySelectionAllowed: true,
+            showSelectedIcon: false,
+            selected: current == null ? <bool>{} : {current},
+            onSelectionChanged: (selection) {
+              value.value = selection.isEmpty ? null : selection.first;
+            },
+          ),
+        ],
+      );
+    });
   }
 }
 

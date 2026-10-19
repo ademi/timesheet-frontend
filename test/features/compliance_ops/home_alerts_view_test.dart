@@ -31,6 +31,9 @@ void main() {
     when(() => session.isStaff).thenReturn(false);
     when(() => session.isContractor).thenReturn(true);
     when(() => session.needsDocsAttention).thenReturn(false);
+    when(() => session.needsApprovalWait).thenReturn(false);
+    when(() => session.needsProfileCompletion).thenReturn(false.obs);
+    when(() => session.needsPlatformCompliance).thenReturn(false.obs);
     when(() => session.hasPermission(any())).thenReturn(false);
     when(() => session.engagements).thenReturn(engagements);
     when(() => session.tenantId).thenReturn(RxnString());
@@ -110,5 +113,37 @@ void main() {
       findsNothing,
     );
     expect(find.byTooltip('Notifications'), findsOneWidget);
+  });
+
+  testWidgets('shows Complete your profile banner when onboarding incomplete', (
+    tester,
+  ) async {
+    when(() => session.needsProfileCompletion).thenReturn(true.obs);
+
+    await pumpHome(tester);
+
+    expect(find.textContaining('Complete your profile'), findsOneWidget);
+    expect(find.text('Complete profile'), findsOneWidget);
+  });
+
+  testWidgets('hides profile banner when profile_onboarding_complete', (
+    tester,
+  ) async {
+    when(() => session.needsProfileCompletion).thenReturn(false.obs);
+
+    await pumpHome(tester);
+
+    expect(find.textContaining('Complete your profile'), findsNothing);
+    expect(find.text('Complete profile'), findsNothing);
+  });
+
+  testWidgets('shows Finish legal banner when platform compliance needed', (
+    tester,
+  ) async {
+    when(() => session.needsPlatformCompliance).thenReturn(true.obs);
+
+    await pumpHome(tester);
+
+    expect(find.textContaining('Finish legal'), findsWidgets);
   });
 }

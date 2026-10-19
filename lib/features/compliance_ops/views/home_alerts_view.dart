@@ -95,6 +95,8 @@ class HomeAlertsController extends GetxController {
       !isStaff && _session.needsApprovalWait;
   bool get shouldShowProfileBanner =>
       !isStaff && _session.needsProfileCompletion.value;
+  bool get shouldShowLegalBanner =>
+      !isStaff && _session.needsPlatformCompliance.value;
   bool get shouldShowProviderAbnBanner =>
       isStaff &&
       _staffTenantLoaded &&
@@ -528,11 +530,33 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (controller.shouldShowLegalBanner) ...[
+                      MaterialBanner(
+                        content: const Text(
+                          'Finish legal — accept terms, notices, and consents to '
+                          'continue onboarding.',
+                        ),
+                        leading: const Icon(Icons.gavel_outlined),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.08,
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed:
+                                () => AppNavigator.push(
+                                  AppRoutes.contractorOnboardingLegal,
+                                ),
+                            child: const Text('Finish legal'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     if (controller.shouldShowProfileBanner) ...[
                       MaterialBanner(
                         content: const Text(
-                          'Complete your account — add your ABN so providers can '
-                          'verify and pay you.',
+                          'Complete your profile — Screening, Qualifications, '
+                          'Checks, document questions, and ABN.',
                         ),
                         leading: const Icon(Icons.badge_outlined),
                         backgroundColor: AppColors.primary.withValues(
