@@ -75,4 +75,14 @@ void main() {
 
     expect(missingCategories(e, const []), {'wwcc'});
   });
+
+  test('optional visa is never treated as missing-required', () {
+    final missing = missingCategories(
+      engagement(['wwcc', 'visa', 'police_check']),
+      const [],
+    );
+
+    expect(missing, {'wwcc', 'police_check'});
+    expect(missing, isNot(contains('visa')));
+  });
 }

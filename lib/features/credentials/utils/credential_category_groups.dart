@@ -25,6 +25,7 @@ const credentialCategoryGroupOrder = <String>[
 const credentialCategoryGroupByCode = <String, String>{
   'passport_id': 'Identity',
   'drivers_licence': 'Identity',
+  'visa': 'Identity',
   'ndis_worker_screening': 'Screening & checks',
   'police_check': 'Screening & checks',
   'wwcc': 'Screening & checks',

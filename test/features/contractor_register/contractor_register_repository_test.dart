@@ -19,8 +19,6 @@ void main() {
       const ContractorRegisterRequest(
         email: 'a@b.com',
         password: 'Password1',
-        termsVersion: 'v0.1-placeholder',
-        privacyVersion: 'v0.1-placeholder',
       ),
     );
   });
@@ -30,8 +28,6 @@ void main() {
       fullName: 'Ada Contractor',
       email: 'ada@example.com',
       password: 'Password1',
-      termsVersion: 'v0.1-placeholder',
-      privacyVersion: 'v0.1-placeholder',
     );
     when(() => remote.register(any())).thenAnswer(
       (_) async => const ContractorRegisterResponse(
@@ -47,8 +43,8 @@ void main() {
     verify(() => remote.register(any())).called(1);
   });
 
-  test('request json includes optional fields only when set', () {
-    const withOptional = ContractorRegisterRequest(
+  test('request json is identity-only by default', () {
+    const request = ContractorRegisterRequest(
       fullName: 'Ada',
       email: 'a@b.com',
       password: 'Password1',
@@ -59,23 +55,20 @@ void main() {
       state: 'NSW',
       postcode: '2000',
       country: 'AU',
-      compliance: {
-        'screening': {'number': 'SCR-1'},
-      },
       metadata: {
         'location': {'latitude': -33.87, 'longitude': 151.21},
       },
-      termsVersion: 'v0.1-placeholder',
-      privacyVersion: 'v0.1-placeholder',
     );
-    final json = withOptional.toJson();
+    final json = request.toJson();
     expect(json['full_name'], 'Ada');
     expect(json['address_line1'], '1 Example St');
     expect(json['suburb'], 'Sydney');
-    expect(json['compliance'], isNotNull);
-    expect(json['metadata'], isNotNull);
     expect(json['phone'], '+61400000000');
     expect(json['dob'], '1990-01-02');
+    expect(json['metadata'], isNotNull);
+    expect(json.containsKey('compliance'), isFalse);
+    expect(json.containsKey('terms_version'), isFalse);
+    expect(json.containsKey('privacy_version'), isFalse);
     expect(json.containsKey('access_token'), isFalse);
   });
 
@@ -83,8 +76,6 @@ void main() {
     const request = ContractorRegisterRequest(
       email: 'a@b.com',
       password: 'Password1',
-      termsVersion: 'v0.1-placeholder',
-      privacyVersion: 'v0.1-placeholder',
     );
     expect(request.toJson().containsKey('full_name'), isFalse);
   });
@@ -93,12 +84,22 @@ void main() {
     const request = ContractorRegisterRequest(
       email: 'ada@example.com',
       password: 'Password1',
-      termsVersion: 'v0.1-placeholder',
-      privacyVersion: 'v0.1-placeholder',
       inviteToken: 'registration-invite-token',
     );
 
     expect(request.toJson()['invite_token'], 'registration-invite-token');
+  });
+
+  test('legacy terms/privacy only appear when explicitly set', () {
+    const request = ContractorRegisterRequest(
+      email: 'a@b.com',
+      password: 'Password1',
+      termsVersion: 'v0.1-placeholder',
+      privacyVersion: 'v0.1-placeholder',
+    );
+    final json = request.toJson();
+    expect(json['terms_version'], 'v0.1-placeholder');
+    expect(json['privacy_version'], 'v0.1-placeholder');
   });
 
   test('repository surfaces AppFailure', () async {
@@ -114,8 +115,6 @@ void main() {
         const ContractorRegisterRequest(
           email: 'a@b.com',
           password: 'Password1',
-          termsVersion: 'v',
-          privacyVersion: 'v',
         ),
       ),
       throwsA(isA<AppFailure>()),

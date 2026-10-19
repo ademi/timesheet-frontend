@@ -6,7 +6,8 @@ void main() {
   test('groups known codes into sections and sorts labels', () {
     final groups = groupCredentialCategories(const [
       CredentialCategory(code: 'cpr', label: 'CPR'),
-      CredentialCategory(code: 'passport_id', label: 'Passport'),
+      CredentialCategory(code: 'passport_id', label: 'Photo ID'),
+      CredentialCategory(code: 'visa', label: 'Visa / Right to Work'),
       CredentialCategory(code: 'insurance', label: 'Car Insurance'),
       CredentialCategory(code: 'first_aid', label: 'First Aid'),
       CredentialCategory(code: 'cert_iii', label: 'Certificate III'),
@@ -18,11 +19,18 @@ void main() {
       'Qualifications',
       'Vehicle & insurance',
     ]);
-    expect(groups[0].items.map((e) => e.code).toList(), ['passport_id']);
+    expect(groups[0].items.map((e) => e.code).toList(), [
+      'passport_id',
+      'visa',
+    ]);
     expect(groups[1].items.map((e) => e.label).toList(), [
       'CPR',
       'First Aid',
     ]);
+  });
+
+  test('visa is grouped under Identity', () {
+    expect(credentialCategoryGroupByCode['visa'], 'Identity');
   });
 
   test('prefers API group label when present', () {

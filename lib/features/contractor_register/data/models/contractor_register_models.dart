@@ -1,10 +1,11 @@
 /// Request body for `POST /v1/contractors/register`.
+///
+/// Identity-only for new clients: terms/privacy/compliance are optional and
+/// omitted so legal acceptance happens post-login in the onboarding funnel.
 class ContractorRegisterRequest {
   const ContractorRegisterRequest({
     required this.email,
     required this.password,
-    required this.termsVersion,
-    required this.privacyVersion,
     this.fullName,
     this.phone,
     this.dob,
@@ -19,6 +20,8 @@ class ContractorRegisterRequest {
     this.metadata,
     this.paymentDetails,
     this.inviteToken,
+    this.termsVersion,
+    this.privacyVersion,
   });
 
   final String? fullName;
@@ -39,8 +42,10 @@ class ContractorRegisterRequest {
   final Map<String, dynamic>? metadata;
   final ContractorRegisterPaymentDetails? paymentDetails;
   final String? inviteToken;
-  final String termsVersion;
-  final String privacyVersion;
+
+  /// Legacy optional; new clients omit so platform compliance stays incomplete.
+  final String? termsVersion;
+  final String? privacyVersion;
 
   Map<String, dynamic> toJson() => {
     if (fullName != null && fullName!.trim().isNotEmpty)
@@ -65,8 +70,10 @@ class ContractorRegisterRequest {
     if (paymentDetails != null) 'payment_details': paymentDetails!.toJson(),
     if (inviteToken != null && inviteToken!.trim().isNotEmpty)
       'invite_token': inviteToken!.trim(),
-    'terms_version': termsVersion,
-    'privacy_version': privacyVersion,
+    if (termsVersion != null && termsVersion!.isNotEmpty)
+      'terms_version': termsVersion,
+    if (privacyVersion != null && privacyVersion!.isNotEmpty)
+      'privacy_version': privacyVersion,
   };
 }
 

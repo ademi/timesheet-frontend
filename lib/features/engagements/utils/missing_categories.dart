@@ -8,6 +8,9 @@ bool credentialHasPresentEvidence(CredentialOut credential) =>
     !_evidenceNotPresent.contains(credential.evidencePresence);
 
 /// Required doc categories on [engagement] without a matching credential with evidence.
+///
+/// Optional catalog types (e.g. [optionalCredentialTypes] / `visa`) never count
+/// as missing even if present on the engagement required list.
 Set<String> missingCategories(
   EngagementOut engagement,
   List<CredentialOut> credentials,
@@ -16,6 +19,7 @@ Set<String> missingCategories(
       engagement.requiredDocCategories
           .where((c) => c.isRequired)
           .map((c) => c.category)
+          .where((c) => !isOptionalCredentialType(c))
           .toSet();
   final have =
       credentials

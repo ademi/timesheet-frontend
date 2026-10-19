@@ -8,6 +8,7 @@ import '../../../../shared/utils/humanize_label.dart';
 const credentialTypesAllowlist = <String>[
   'passport_id',
   'drivers_licence',
+  'visa',
   'ndis_worker_screening',
   'police_check',
   'wwcc',
@@ -31,18 +32,26 @@ const credentialTypesAllowlist = <String>[
   'other',
 ];
 
+/// Optional pack types — uploadable but never missing-required when absent.
+const optionalCredentialTypes = <String>{'visa'};
+
+bool isOptionalCredentialType(String type) =>
+    optionalCredentialTypes.contains(type);
+
 /// Local fallback labels (offline / old API responses). Prefer catalog labels.
 /// Keep Title Case to match GET /v1/credential-categories.
 const credentialCategoryFallbackLabels = <String, String>{
-  'passport_id': 'Passport/ID',
+  'passport_id': 'Photo ID / 100 Points of ID',
   'drivers_licence': 'Driver Licence',
+  'visa': 'Visa / Right to Work',
   'ndis_worker_screening': 'NDIS Worker Screening Check',
   'police_check': 'National Police Check',
   'wwcc': 'Working With Children Check',
   'first_aid': 'First Aid',
   'cpr': 'CPR',
   'infection_control': 'Infection Control',
-  'worker_orientation': 'Worker Orientation Model',
+  'worker_orientation':
+      'NDIS Worker Orientation Module – Quality, Safety and You',
   'ndis_induction': 'NDIS Induction',
   'effective_communication': 'Supporting Effective Communication',
   'abn': 'ABN',
@@ -97,8 +106,10 @@ void clearCredentialCategoryLabelCache() {
 
 /// Product copy that always wins over catalog / fallback (invite UI, etc.).
 const credentialCategoryDisplayOverrides = <String, String>{
-  'passport_id': 'Passport/ID',
-  'worker_orientation': 'Worker Orientation Model',
+  'passport_id': 'Photo ID / 100 Points of ID',
+  'worker_orientation':
+      'NDIS Worker Orientation Module – Quality, Safety and You',
+  'visa': 'Visa / Right to Work',
 };
 
 /// Human-readable label for a credential wire code.
@@ -147,7 +158,7 @@ class CredentialCategory {
         (label != null && label.trim().isNotEmpty) ? label.trim() : null;
     return CredentialCategory(
       code: code,
-      // Prefer FE display overrides (e.g. Passport/ID) over catalog copy.
+      // Prefer FE display overrides (e.g. Photo ID) over catalog copy.
       label:
           credentialCategoryDisplayOverrides[code] ??
           apiLabel ??

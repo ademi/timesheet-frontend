@@ -16,14 +16,7 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Obx(() {
-          final i = controller.step.value;
-          final label =
-              i >= 0 && i < ContractorRegisterController.stepLabels.length
-                  ? ContractorRegisterController.stepLabels[i]
-                  : 'Register';
-          return Text(label);
-        }),
+        title: const Text('Register'),
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.textDark,
         elevation: 0,
@@ -32,10 +25,6 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
         final err = controller.errorMessage.value;
         return Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: RegisterStepIndicator(step: controller.step.value),
-            ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(16),
@@ -45,34 +34,24 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        if (controller.step.value == 0) ...[
-                          const Text(
-                            'Create your contractor profile',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        const Text(
+                          'Create your contractor profile',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'After registering you will sign in and complete '
-                            'any remaining onboarding steps.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textMuted,
-                            ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'After registering you will sign in and complete '
+                          'profile, legal, and documents.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textMuted,
                           ),
-                          const SizedBox(height: 16),
-                        ],
-                        switch (controller.step.value) {
-                          0 => RegisterIdentityStep(controller: controller),
-                          1 => RegisterScreeningStep(controller: controller),
-                          2 => RegisterQualificationsStep(
-                            controller: controller,
-                          ),
-                          3 => RegisterChecksStep(controller: controller),
-                          _ => RegisterLegalStep(controller: controller),
-                        },
+                        ),
+                        const SizedBox(height: 16),
+                        RegisterIdentityStep(controller: controller),
                       ],
                     ),
                   ),
@@ -95,39 +74,20 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (controller.step.value == 0)
-                        TextButton(
-                          onPressed: controller.goToLogin,
-                          child: const Text('Already have an account? Sign in'),
+                      TextButton(
+                        onPressed: controller.goToLogin,
+                        child: const Text('Already have an account? Sign in'),
+                      ),
+                      AsyncElevatedButton(
+                        onPressed: controller.submit,
+                        isLoading:
+                            controller.isLoading.value ||
+                            controller.isInviteLoading.value,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.cta,
+                          foregroundColor: AppColors.onPrimary,
                         ),
-                      Row(
-                        children: [
-                          if (controller.step.value > 0)
-                            OutlinedButton(
-                              onPressed:
-                                  controller.isLoading.value
-                                      ? null
-                                      : controller.previousStep,
-                              child: const Text('Back'),
-                            ),
-                          const Spacer(),
-                          AsyncElevatedButton(
-                            onPressed: controller.nextStep,
-                            isLoading:
-                                controller.isLoading.value ||
-                                controller.isInviteLoading.value,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.cta,
-                              foregroundColor: AppColors.onPrimary,
-                            ),
-                            child: Text(
-                              controller.step.value ==
-                                      ContractorRegisterController.maxStep
-                                  ? 'Create account'
-                                  : 'Next',
-                            ),
-                          ),
-                        ],
+                        child: const Text('Create account'),
                       ),
                     ],
                   ),

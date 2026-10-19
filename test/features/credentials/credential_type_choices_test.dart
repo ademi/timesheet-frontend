@@ -67,6 +67,10 @@ void main() {
     expect(otherHealthIndex, lessThan(otherIndex));
   });
 
+  test('credentialTypeChoices includes optional visa', () {
+    expect(controller.credentialTypeChoices, contains('visa'));
+  });
+
   test('beginMissingCreate builds one draft per missing category', () {
     controller.beginMissingCreate([
       'first_aid',

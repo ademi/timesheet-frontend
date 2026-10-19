@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../app/utils/email_utils.dart';
@@ -8,28 +7,17 @@ import '../../../app/utils/email_utils.dart';
 import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/constants/australian_states.dart';
-import '../../../core/constants/feature_flags.dart';
 import '../../../core/errors/app_failure.dart';
 import '../../../features/clients/data/models/client_models.dart'
     as client_models;
 import '../../../features/clients/utils/site_geocode_apply.dart';
-import '../../../features/contractor_onboarding/data/onboarding_progress_store.dart';
 import '../../../shared/utils/abn_utils.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../models/contractor_qual_row.dart';
 import '../data/models/contractor_register_models.dart';
 import '../data/repositories/contractor_register_repository.dart';
 
-/// Exact `doc_key` values validated by the backend on register.
-abstract final class LegalDocKeys {
-  static const platformTerms = 'platform_terms';
-  static const privacyPolicy = 'privacy_policy';
-}
-
-class RegisterQualRow extends ContractorQualRow {
-  RegisterQualRow({super.type});
-}
-
+/// Slim public register: Identity only. Screening / Qualifications / Checks /
+/// Legal live post-login (Profile + onboarding funnel).
 class ContractorRegisterController extends GetxController {
   ContractorRegisterController({
     required ContractorRegisterRepository repository,
@@ -37,27 +25,9 @@ class ContractorRegisterController extends GetxController {
 
   final ContractorRegisterRepository _repository;
 
-  static const stepLabels = [
-    'Identity',
-    'Screening',
-    'Qualifications',
-    'Checks',
-    'Legal',
-  ];
-  static const maxStep = 4;
+  /// Identity-only register (former multi-step wizard removed).
+  static const stepLabels = ['Identity'];
 
-  static const qualTypeOptions = <String>[
-    'cert_iii',
-    'first_aid',
-    'cpr',
-    'medication_admin',
-    'epilepsy_management',
-    'manual_handling',
-    'nursing_bachelor',
-    'other_health_qualification',
-  ];
-
-  final step = 0.obs;
   final identityFormKey = GlobalKey<FormState>();
 
   final fullNameController = TextEditingController();
@@ -76,34 +46,10 @@ class ContractorRegisterController extends GetxController {
   final latController = TextEditingController();
   final lngController = TextEditingController();
 
-  final screeningNumberCtrl = TextEditingController();
-  final screeningIssueCtrl = TextEditingController();
-  final screeningExpiryCtrl = TextEditingController();
-  final screeningStateCtrl = TextEditingController();
-  final screeningStatus = RxnString();
-
-  final wwccNumberCtrl = TextEditingController();
-  final wwccStateCtrl = TextEditingController();
-  final wwccExpiryCtrl = TextEditingController();
-  final policeIssueCtrl = TextEditingController();
-  final licenceNumberCtrl = TextEditingController();
-  final licenceStateCtrl = TextEditingController();
-  final licenceExpiryCtrl = TextEditingController();
-  final vehiclePlateCtrl = TextEditingController();
-  final vehicleStateCtrl = TextEditingController();
-  final vehicleExpiryCtrl = TextEditingController();
-
-  final qualifications = <RegisterQualRow>[].obs;
-
   final isLoading = false.obs;
   final isInviteLoading = false.obs;
   final isGeocoding = false.obs;
   final isPasswordVisible = false.obs;
-  final acceptedTerms = false.obs;
-  final acceptedPrivacy = false.obs;
-  final termsMarkdown = ''.obs;
-  final privacyMarkdown = ''.obs;
-  final legalLoadError = RxnString();
   final invite = Rxn<ContractorInvitePublicOut>();
   final inviteLoadError = RxnString();
   final errorMessage = RxnString();
@@ -111,6 +57,10 @@ class ContractorRegisterController extends GetxController {
   final addressConfirmed = false.obs;
 
   String? _inviteToken;
+
+  /// Last register request built for submit (exposed for tests).
+  @visibleForTesting
+  ContractorRegisterRequest? lastRegisterRequest;
 
   /// Resolves invite token from path param, legacy query param, or web URI.
   @visibleForTesting
@@ -141,15 +91,10 @@ class ContractorRegisterController extends GetxController {
   @visibleForTesting
   String? get inviteTokenForTest => _inviteToken;
 
-  String get termsVersion => AppEnv.termsVersion;
-  String get privacyVersion => AppEnv.privacyVersion;
-
   @override
   void onInit() {
     super.onInit();
     stateController.text = kDefaultAustralianState;
-    qualifications.add(RegisterQualRow());
-    _loadBundledLegal();
     _loadInviteFromRoute();
   }
 
@@ -176,41 +121,7 @@ class ContractorRegisterController extends GetxController {
     }
   }
 
-  Future<void> _loadBundledLegal() async {
-    try {
-      termsMarkdown.value = await rootBundle.loadString(
-        'assets/legal/platform_terms.md',
-      );
-      privacyMarkdown.value = await rootBundle.loadString(
-        'assets/legal/privacy_policy.md',
-      );
-      legalLoadError.value = null;
-    } catch (e) {
-      legalLoadError.value = 'Could not load legal documents.';
-    }
-  }
-
   void togglePasswordVisibility() => isPasswordVisible.toggle();
-
-  void previousStep() {
-    if (step.value > 0) step.value--;
-  }
-
-  Future<void> nextStep() async {
-    errorMessage.value = null;
-    if (step.value == 0) {
-      if (!_validateIdentityForm()) return;
-    }
-    if (step.value < maxStep) {
-      step.value++;
-      return;
-    }
-    await submit();
-  }
-
-  /// Identity [Form] is only mounted on step 0 — use manual checks on submit.
-  bool _validateIdentityForm() =>
-      identityFormKey.currentState?.validate() ?? false;
 
   String? _identityValidationError() {
     final email = emailController.text.trim();
@@ -327,14 +238,6 @@ class ContractorRegisterController extends GetxController {
     errorMessage.value = null;
   }
 
-  void addQualification() => qualifications.add(RegisterQualRow());
-
-  void removeQualification(int index) {
-    if (qualifications.length <= 1) return;
-    qualifications[index].dispose();
-    qualifications.removeAt(index);
-  }
-
   Future<void> pickDob(BuildContext context) async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -350,25 +253,6 @@ class ContractorRegisterController extends GetxController {
         '${picked.day.toString().padLeft(2, '0')}';
   }
 
-  Future<void> pickDate(
-    BuildContext context,
-    TextEditingController controller, {
-    DateTime? initial,
-  }) async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initial ?? now,
-      firstDate: DateTime(now.year - 50),
-      lastDate: DateTime(now.year + 20),
-    );
-    if (picked == null) return;
-    controller.text =
-        '${picked.year.toString().padLeft(4, '0')}-'
-        '${picked.month.toString().padLeft(2, '0')}-'
-        '${picked.day.toString().padLeft(2, '0')}';
-  }
-
   Map<String, dynamic>? _metadataPayload() {
     final lat = double.tryParse(latController.text.trim());
     final lng = double.tryParse(lngController.text.trim());
@@ -378,123 +262,53 @@ class ContractorRegisterController extends GetxController {
     };
   }
 
-  Map<String, dynamic>? _compliancePayload() {
-    final screening = <String, dynamic>{
-      if (screeningNumberCtrl.text.trim().isNotEmpty)
-        'number': screeningNumberCtrl.text.trim(),
-      if (screeningStatus.value != null) 'status': screeningStatus.value,
-      if (screeningIssueCtrl.text.trim().isNotEmpty)
-        'issue_date': screeningIssueCtrl.text.trim(),
-      if (screeningExpiryCtrl.text.trim().isNotEmpty)
-        'expiry_date': screeningExpiryCtrl.text.trim(),
-      if (screeningStateCtrl.text.trim().isNotEmpty)
-        'state': screeningStateCtrl.text.trim(),
-    };
-    final quals = <Map<String, dynamic>>[];
-    for (final row in qualifications) {
-      final item = <String, dynamic>{'type': row.type};
-      if (row.issueDateCtrl.text.trim().isNotEmpty) {
-        item['issue_date'] = row.issueDateCtrl.text.trim();
-      }
-      if (row.expiryDateCtrl.text.trim().isNotEmpty) {
-        item['expiry_date'] = row.expiryDateCtrl.text.trim();
-      }
-      if (item.length > 1) quals.add(item);
+  /// Builds the Identity-only register request (no compliance / terms / privacy).
+  @visibleForTesting
+  ContractorRegisterRequest buildRegisterRequest() {
+    String? abn;
+    try {
+      abn = AbnUtils.normalizeOrNull(abnController.text);
+    } on FormatException {
+      rethrow;
     }
-    final checks = <String, dynamic>{};
-    final wwcc = <String, dynamic>{
-      if (wwccNumberCtrl.text.trim().isNotEmpty)
-        'number': wwccNumberCtrl.text.trim(),
-      if (wwccStateCtrl.text.trim().isNotEmpty)
-        'state': wwccStateCtrl.text.trim(),
-      if (wwccExpiryCtrl.text.trim().isNotEmpty)
-        'expiry_date': wwccExpiryCtrl.text.trim(),
-    };
-    if (wwcc.isNotEmpty) checks['wwcc'] = wwcc;
-    if (policeIssueCtrl.text.trim().isNotEmpty) {
-      checks['police_check'] = {'issue_date': policeIssueCtrl.text.trim()};
-    }
-    final licence = <String, dynamic>{
-      if (licenceNumberCtrl.text.trim().isNotEmpty)
-        'number': licenceNumberCtrl.text.trim(),
-      if (licenceStateCtrl.text.trim().isNotEmpty)
-        'state': licenceStateCtrl.text.trim(),
-      if (licenceExpiryCtrl.text.trim().isNotEmpty)
-        'expiry_date': licenceExpiryCtrl.text.trim(),
-    };
-    if (licence.isNotEmpty) checks['drivers_licence'] = licence;
-    final vehicle = <String, dynamic>{
-      if (vehiclePlateCtrl.text.trim().isNotEmpty)
-        'plate': vehiclePlateCtrl.text.trim(),
-      if (vehicleStateCtrl.text.trim().isNotEmpty)
-        'state': vehicleStateCtrl.text.trim(),
-      if (vehicleExpiryCtrl.text.trim().isNotEmpty)
-        'expiry_date': vehicleExpiryCtrl.text.trim(),
-    };
-    if (vehicle.isNotEmpty) checks['vehicle_registration'] = vehicle;
-
-    final payload = <String, dynamic>{};
-    if (screening.isNotEmpty) payload['screening'] = screening;
-    if (quals.isNotEmpty) payload['qualifications'] = quals;
-    if (checks.isNotEmpty) payload['checks'] = checks;
-    return payload.isEmpty ? null : payload;
+    final phone = phoneController.text.trim();
+    final dob = dobController.text.trim();
+    return ContractorRegisterRequest(
+      fullName: fullNameController.text.trim(),
+      email: emailController.text.trim(),
+      password: passwordController.text,
+      phone: phone.isEmpty ? null : phone,
+      dob: dob.isEmpty ? null : dob,
+      abn: abn,
+      addressLine1: addressLine1Controller.text.trim(),
+      addressLine2: addressLine2Controller.text.trim(),
+      suburb: suburbController.text.trim(),
+      state: stateController.text.trim(),
+      postcode: postcodeController.text.trim(),
+      country: countryController.text.trim(),
+      metadata: _metadataPayload(),
+      inviteToken: _inviteToken,
+    );
   }
 
   Future<void> submit() async {
     if (isInviteLoading.value) return;
-    if (!_ensureIdentityValidForSubmit()) {
-      step.value = 0;
-      return;
-    }
-    if (!acceptedTerms.value || !acceptedPrivacy.value) {
-      _showError(
-        'Accept Platform Terms and Privacy Policy separately to continue.',
-      );
-      return;
-    }
-    if (legalLoadError.value != null) {
-      _showError(legalLoadError.value!);
-      return;
-    }
+    if (!_ensureIdentityValidForSubmit()) return;
 
     isLoading.value = true;
     errorMessage.value = null;
     try {
-      final phone = phoneController.text.trim();
-      final dob = dobController.text.trim();
-      String? abn;
+      final ContractorRegisterRequest request;
       try {
-        abn = AbnUtils.normalizeOrNull(abnController.text);
+        request = buildRegisterRequest();
       } on FormatException catch (e) {
-        step.value = 0;
         _showError(e.message);
         return;
       }
+      lastRegisterRequest = request;
 
-      final response = await _repository.register(
-        ContractorRegisterRequest(
-          fullName: fullNameController.text.trim(),
-          email: emailController.text.trim(),
-          password: passwordController.text,
-          phone: phone.isEmpty ? null : phone,
-          dob: dob.isEmpty ? null : dob,
-          abn: abn,
-          addressLine1: addressLine1Controller.text.trim(),
-          addressLine2: addressLine2Controller.text.trim(),
-          suburb: suburbController.text.trim(),
-          state: stateController.text.trim(),
-          postcode: postcodeController.text.trim(),
-          country: countryController.text.trim(),
-          compliance: _compliancePayload(),
-          metadata: _metadataPayload(),
-          inviteToken: _inviteToken,
-          termsVersion: termsVersion,
-          privacyVersion: privacyVersion,
-        ),
-      );
-      await OnboardingProgressStore().markPlatformComplete(
-        response.contractorId,
-      );
+      await _repository.register(request);
+      // Do NOT mark platform complete — first login must hit legal/notices/consents.
       AppToast.success(
         'Account created',
         'Sign in with your new contractor account.',
@@ -536,23 +350,6 @@ class ContractorRegisterController extends GetxController {
     countryController.dispose();
     latController.dispose();
     lngController.dispose();
-    screeningNumberCtrl.dispose();
-    screeningIssueCtrl.dispose();
-    screeningExpiryCtrl.dispose();
-    screeningStateCtrl.dispose();
-    wwccNumberCtrl.dispose();
-    wwccStateCtrl.dispose();
-    wwccExpiryCtrl.dispose();
-    policeIssueCtrl.dispose();
-    licenceNumberCtrl.dispose();
-    licenceStateCtrl.dispose();
-    licenceExpiryCtrl.dispose();
-    vehiclePlateCtrl.dispose();
-    vehicleStateCtrl.dispose();
-    vehicleExpiryCtrl.dispose();
-    for (final q in qualifications) {
-      q.dispose();
-    }
     super.onClose();
   }
 }
