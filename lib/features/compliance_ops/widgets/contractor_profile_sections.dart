@@ -9,309 +9,440 @@ import '../../../shared/widgets/au_state_dropdown.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../controllers/contractor_profile_controller.dart';
 
+/// Form shell + step body for the contractor profile wizard.
 class ContractorProfileSections extends StatelessWidget {
-  const ContractorProfileSections({super.key, required this.controller});
+  const ContractorProfileSections({
+    super.key,
+    required this.controller,
+    required this.step,
+    this.photoSlot,
+    this.paymentHint,
+  });
+
+  final ContractorProfileController controller;
+  final int step;
+
+  /// Identity-step photo editor (built by the parent so Obx can own photo Rx).
+  final Widget? photoSlot;
+  final Widget? paymentHint;
+
+  @override
+  Widget build(BuildContext context) {
+    final safeStep = step.clamp(0, ContractorProfileController.maxStep);
+    return Form(
+      key: controller.profileFormKey,
+      child: switch (safeStep) {
+        0 => _IdentityStep(controller: controller, photoSlot: photoSlot),
+        1 => _AddressStep(controller: controller),
+        2 => _BusinessStep(controller: controller, paymentHint: paymentHint),
+        3 => _ScreeningStep(controller: controller),
+        4 => _QualificationsStep(controller: controller),
+        5 => _RequirementsStep(controller: controller),
+        _ => _ChecksStep(controller: controller),
+      },
+    );
+  }
+}
+
+class _IdentityStep extends StatelessWidget {
+  const _IdentityStep({required this.controller, this.photoSlot});
+
+  final ContractorProfileController controller;
+  final Widget? photoSlot;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (photoSlot != null) ...[
+          photoSlot!,
+          const SizedBox(height: 20),
+        ],
+        _sectionTitle('Identity & contact'),
+        _field(
+          controller: controller.fullNameCtrl,
+          label: 'Full name',
+          icon: Icons.badge_outlined,
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.phoneCtrl,
+          label: 'Phone',
+          icon: Icons.phone_outlined,
+          keyboardType: TextInputType.phone,
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.dobCtrl,
+          label: 'Date of birth',
+          icon: Icons.cake_outlined,
+          readOnly: true,
+          onTap: () => controller.pickDob(context),
+        ),
+      ],
+    );
+  }
+}
+
+class _AddressStep extends StatelessWidget {
+  const _AddressStep({required this.controller});
 
   final ContractorProfileController controller;
 
   @override
   Widget build(BuildContext context) {
-    return Form(
-      key: controller.profileFormKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _sectionTitle('Identity & contact'),
-          _field(
-            controller: controller.fullNameCtrl,
-            label: 'Full name',
-            icon: Icons.badge_outlined,
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.phoneCtrl,
-            label: 'Phone',
-            icon: Icons.phone_outlined,
-            keyboardType: TextInputType.phone,
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.dobCtrl,
-            label: 'Date of birth',
-            icon: Icons.cake_outlined,
-            readOnly: true,
-            onTap: () => controller.pickDob(context),
-          ),
-          const SizedBox(height: 20),
-          _sectionTitle('Address'),
-          _field(
-            controller: controller.addressLine1Ctrl,
-            label: 'Address line 1',
-            icon: Icons.home_outlined,
-            onChanged: (_) => controller.invalidateAddressConfirm(),
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.addressLine2Ctrl,
-            label: 'Address line 2',
-            icon: Icons.home_outlined,
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.suburbCtrl,
-            label: 'Suburb / city',
-            icon: Icons.location_city_outlined,
-            onChanged: (_) => controller.invalidateAddressConfirm(),
-          ),
-          const SizedBox(height: 12),
-          AuStateDropdown(
-            value: controller.stateCtrl.text,
-            profileStyle: true,
-            onChanged: (selected) {
-              controller.stateCtrl.text = selected;
-              controller.invalidateAddressConfirm();
-            },
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.postcodeCtrl,
-            label: 'Postcode',
-            icon: Icons.markunread_mailbox_outlined,
-            keyboardType: TextInputType.number,
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.countryCtrl,
-            label: 'Country',
-            icon: Icons.public_outlined,
-          ),
-          const SizedBox(height: 12),
-          _AddressGeocodePanel(controller: controller),
-          const SizedBox(height: 20),
-          _sectionTitle('Business & payment'),
-          _field(
-            controller: controller.abnCtrl,
-            label: 'ABN',
-            icon: Icons.apartment_outlined,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(11),
-            ],
-            validator: (v) => AbnUtils.formValidator(v),
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.accountNameCtrl,
-            label: 'Account name (optional)',
-            icon: Icons.person_outline,
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.bsbCtrl,
-            label: 'BSB (optional)',
-            icon: Icons.account_balance_outlined,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(6),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.accountNumberCtrl,
-            label: 'Account number (optional)',
-            icon: Icons.pin_outlined,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(10),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _sectionTitle('Screening'),
-          const Text(
-            'These details help staff verify your documents — you still must '
-            'upload evidence under Credentials.',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.screeningNumberCtrl,
-            label: 'NDIS screening number',
-            icon: Icons.verified_user_outlined,
-          ),
-          const SizedBox(height: 12),
-          Obx(
-            () => DropdownButtonFormField<String>(
-              value: controller.screeningStatus.value,
-              decoration: const InputDecoration(
-                labelText: 'Clearance status',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'cleared', child: Text('Cleared')),
-                DropdownMenuItem(value: 'excluded', child: Text('Excluded')),
-                DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                DropdownMenuItem(value: 'other', child: Text('Other')),
-              ],
-              onChanged: (v) => controller.screeningStatus.value = v,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _dateField(
-            context: context,
-            controller: controller.screeningIssueCtrl,
-            label: 'Issue date',
-            onPick:
-                () =>
-                    controller.pickDate(context, controller.screeningIssueCtrl),
-          ),
-          const SizedBox(height: 12),
-          _dateField(
-            context: context,
-            controller: controller.screeningExpiryCtrl,
-            label: 'Expiry date',
-            onPick:
-                () => controller.pickDate(
-                  context,
-                  controller.screeningExpiryCtrl,
-                ),
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.screeningStateCtrl,
-            label: 'State/territory',
-            icon: Icons.map_outlined,
-          ),
-          const SizedBox(height: 20),
-          _sectionTitle('Qualifications'),
-          const Text(
-            'Declare qualifications here. Certificate files are uploaded under '
-            'Credentials.',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-          ),
-          const SizedBox(height: 12),
-          Obx(() {
-            return Column(
-              children: [
-                for (var i = 0; i < controller.qualifications.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 12),
-                  _qualCard(context, i),
-                ],
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: controller.addQualification,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add qualification'),
-                ),
-              ],
-            );
-          }),
-          const SizedBox(height: 20),
-          _sectionTitle('Document requirements'),
-          const Text(
-            'Answer these so we know which documents you must upload under '
-            'Credentials. Metadata below helps verification — uploads are still '
-            'required.',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-          ),
-          const SizedBox(height: 12),
-          _YesNoFlag(
-            label: 'WWCC applicable (works with children)?',
-            value: controller.wwccApplicable,
-          ),
-          const SizedBox(height: 12),
-          _YesNoFlag(
-            label: 'Have relevant qualifications to declare?',
-            value: controller.qualificationsApplicable,
-          ),
-          const SizedBox(height: 12),
-          _YesNoFlag(
-            label: 'Will drive participants?',
-            value: controller.drivesParticipants,
-          ),
-          const SizedBox(height: 12),
-          _YesNoFlag(
-            label: 'Will use own vehicle for work?',
-            value: controller.usesOwnVehicle,
-          ),
-          const SizedBox(height: 20),
-          _sectionTitle('Checks'),
-          _field(
-            controller: controller.wwccNumberCtrl,
-            label: 'WWCC number',
-            icon: Icons.child_care_outlined,
-          ),
-          const SizedBox(height: 12),
-          OptionalAuStateDropdown(
-            controller: controller.wwccStateCtrl,
-            label: 'WWCC state',
-          ),
-          const SizedBox(height: 12),
-          _dateField(
-            context: context,
-            controller: controller.wwccExpiryCtrl,
-            label: 'WWCC expiry',
-            onPick:
-                () => controller.pickDate(context, controller.wwccExpiryCtrl),
-          ),
-          const SizedBox(height: 16),
-          _dateField(
-            context: context,
-            controller: controller.policeIssueCtrl,
-            label: 'Police check issue date',
-            onPick:
-                () => controller.pickDate(context, controller.policeIssueCtrl),
-          ),
-          const SizedBox(height: 16),
-          _field(
-            controller: controller.licenceNumberCtrl,
-            label: 'Driver licence number',
-            icon: Icons.directions_car_outlined,
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.licenceStateCtrl,
-            label: 'Licence state',
-            icon: Icons.map_outlined,
-          ),
-          const SizedBox(height: 12),
-          _dateField(
-            context: context,
-            controller: controller.licenceExpiryCtrl,
-            label: 'Licence expiry',
-            onPick:
-                () =>
-                    controller.pickDate(context, controller.licenceExpiryCtrl),
-          ),
-          const SizedBox(height: 16),
-          _field(
-            controller: controller.vehiclePlateCtrl,
-            label: 'Vehicle plate',
-            icon: Icons.local_shipping_outlined,
-          ),
-          const SizedBox(height: 12),
-          _field(
-            controller: controller.vehicleStateCtrl,
-            label: 'Vehicle state',
-            icon: Icons.map_outlined,
-          ),
-          const SizedBox(height: 12),
-          _dateField(
-            context: context,
-            controller: controller.vehicleExpiryCtrl,
-            label: 'Registration expiry',
-            onPick:
-                () =>
-                    controller.pickDate(context, controller.vehicleExpiryCtrl),
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sectionTitle('Address'),
+        _field(
+          controller: controller.addressLine1Ctrl,
+          label: 'Address line 1',
+          icon: Icons.home_outlined,
+          onChanged: (_) => controller.invalidateAddressConfirm(),
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.addressLine2Ctrl,
+          label: 'Address line 2',
+          icon: Icons.home_outlined,
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.suburbCtrl,
+          label: 'Suburb / city',
+          icon: Icons.location_city_outlined,
+          onChanged: (_) => controller.invalidateAddressConfirm(),
+        ),
+        const SizedBox(height: 12),
+        AuStateDropdown(
+          value: controller.stateCtrl.text,
+          profileStyle: true,
+          onChanged: (selected) {
+            controller.stateCtrl.text = selected;
+            controller.invalidateAddressConfirm();
+          },
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.postcodeCtrl,
+          label: 'Postcode',
+          icon: Icons.markunread_mailbox_outlined,
+          keyboardType: TextInputType.number,
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.countryCtrl,
+          label: 'Country',
+          icon: Icons.public_outlined,
+        ),
+        const SizedBox(height: 12),
+        _AddressGeocodePanel(controller: controller),
+      ],
     );
   }
+}
 
-  Widget _qualCard(BuildContext context, int index) {
+class _BusinessStep extends StatelessWidget {
+  const _BusinessStep({required this.controller, this.paymentHint});
+
+  final ContractorProfileController controller;
+  final Widget? paymentHint;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sectionTitle('Business & payment'),
+        _field(
+          controller: controller.abnCtrl,
+          label: 'ABN',
+          icon: Icons.apartment_outlined,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(11),
+          ],
+          validator: (v) => AbnUtils.formValidator(v),
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.accountNameCtrl,
+          label: 'Account name (optional)',
+          icon: Icons.person_outline,
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.bsbCtrl,
+          label: 'BSB (optional)',
+          icon: Icons.account_balance_outlined,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(6),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.accountNumberCtrl,
+          label: 'Account number (optional)',
+          icon: Icons.pin_outlined,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
+          ],
+        ),
+        if (paymentHint != null) ...[
+          const SizedBox(height: 8),
+          paymentHint!,
+        ],
+      ],
+    );
+  }
+}
+
+class _ScreeningStep extends StatelessWidget {
+  const _ScreeningStep({required this.controller});
+
+  final ContractorProfileController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sectionTitle('Screening'),
+        const Text(
+          'These details help staff verify your documents — you still must '
+          'upload evidence under Credentials.',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.screeningNumberCtrl,
+          label: 'NDIS screening number',
+          icon: Icons.verified_user_outlined,
+        ),
+        const SizedBox(height: 12),
+        Obx(
+          () => DropdownButtonFormField<String>(
+            value: controller.screeningStatus.value,
+            decoration: const InputDecoration(
+              labelText: 'Clearance status',
+              border: OutlineInputBorder(),
+            ),
+            items: const [
+              DropdownMenuItem(value: 'cleared', child: Text('Cleared')),
+              DropdownMenuItem(value: 'excluded', child: Text('Excluded')),
+              DropdownMenuItem(value: 'pending', child: Text('Pending')),
+              DropdownMenuItem(value: 'other', child: Text('Other')),
+            ],
+            onChanged: (v) => controller.screeningStatus.value = v,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _dateField(
+          context: context,
+          controller: controller.screeningIssueCtrl,
+          label: 'Issue date',
+          onPick:
+              () => controller.pickDate(context, controller.screeningIssueCtrl),
+        ),
+        const SizedBox(height: 12),
+        _dateField(
+          context: context,
+          controller: controller.screeningExpiryCtrl,
+          label: 'Expiry date',
+          onPick:
+              () =>
+                  controller.pickDate(context, controller.screeningExpiryCtrl),
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.screeningStateCtrl,
+          label: 'State/territory',
+          icon: Icons.map_outlined,
+        ),
+      ],
+    );
+  }
+}
+
+class _QualificationsStep extends StatelessWidget {
+  const _QualificationsStep({required this.controller});
+
+  final ContractorProfileController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sectionTitle('Qualifications'),
+        const Text(
+          'Declare qualifications here. Certificate files are uploaded under '
+          'Credentials.',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+        ),
+        const SizedBox(height: 12),
+        Obx(() {
+          return Column(
+            children: [
+              for (var i = 0; i < controller.qualifications.length; i++) ...[
+                if (i > 0) const SizedBox(height: 12),
+                _QualCard(controller: controller, index: i),
+              ],
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: controller.addQualification,
+                icon: const Icon(Icons.add),
+                label: const Text('Add qualification'),
+              ),
+            ],
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _RequirementsStep extends StatelessWidget {
+  const _RequirementsStep({required this.controller});
+
+  final ContractorProfileController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sectionTitle('Document requirements'),
+        const Text(
+          'Answer these so we know which documents you must upload under '
+          'Credentials. Metadata below helps verification — uploads are still '
+          'required.',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+        ),
+        const SizedBox(height: 12),
+        _YesNoFlag(
+          label: 'WWCC applicable (works with children)?',
+          value: controller.wwccApplicable,
+        ),
+        const SizedBox(height: 12),
+        _YesNoFlag(
+          label: 'Have relevant qualifications to declare?',
+          value: controller.qualificationsApplicable,
+        ),
+        const SizedBox(height: 12),
+        _YesNoFlag(
+          label: 'Will drive participants?',
+          value: controller.drivesParticipants,
+        ),
+        const SizedBox(height: 12),
+        _YesNoFlag(
+          label: 'Will use own vehicle for work?',
+          value: controller.usesOwnVehicle,
+        ),
+      ],
+    );
+  }
+}
+
+class _ChecksStep extends StatelessWidget {
+  const _ChecksStep({required this.controller});
+
+  final ContractorProfileController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _sectionTitle('Checks'),
+        _field(
+          controller: controller.wwccNumberCtrl,
+          label: 'WWCC number',
+          icon: Icons.child_care_outlined,
+        ),
+        const SizedBox(height: 12),
+        OptionalAuStateDropdown(
+          controller: controller.wwccStateCtrl,
+          label: 'WWCC state',
+        ),
+        const SizedBox(height: 12),
+        _dateField(
+          context: context,
+          controller: controller.wwccExpiryCtrl,
+          label: 'WWCC expiry',
+          onPick:
+              () => controller.pickDate(context, controller.wwccExpiryCtrl),
+        ),
+        const SizedBox(height: 16),
+        _dateField(
+          context: context,
+          controller: controller.policeIssueCtrl,
+          label: 'Police check issue date',
+          onPick:
+              () => controller.pickDate(context, controller.policeIssueCtrl),
+        ),
+        const SizedBox(height: 16),
+        _field(
+          controller: controller.licenceNumberCtrl,
+          label: 'Driver licence number',
+          icon: Icons.directions_car_outlined,
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.licenceStateCtrl,
+          label: 'Licence state',
+          icon: Icons.map_outlined,
+        ),
+        const SizedBox(height: 12),
+        _dateField(
+          context: context,
+          controller: controller.licenceExpiryCtrl,
+          label: 'Licence expiry',
+          onPick:
+              () =>
+                  controller.pickDate(context, controller.licenceExpiryCtrl),
+        ),
+        const SizedBox(height: 16),
+        _field(
+          controller: controller.vehiclePlateCtrl,
+          label: 'Vehicle plate',
+          icon: Icons.local_shipping_outlined,
+        ),
+        const SizedBox(height: 12),
+        _field(
+          controller: controller.vehicleStateCtrl,
+          label: 'Vehicle state',
+          icon: Icons.map_outlined,
+        ),
+        const SizedBox(height: 12),
+        _dateField(
+          context: context,
+          controller: controller.vehicleExpiryCtrl,
+          label: 'Registration expiry',
+          onPick:
+              () =>
+                  controller.pickDate(context, controller.vehicleExpiryCtrl),
+        ),
+      ],
+    );
+  }
+}
+
+class _QualCard extends StatelessWidget {
+  const _QualCard({required this.controller, required this.index});
+
+  final ContractorProfileController controller;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
     final row = controller.qualifications[index];
     return Card(
       child: Padding(
@@ -369,16 +500,16 @@ class ContractorProfileSections extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-      ),
-    );
-  }
+Widget _sectionTitle(String title) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      title,
+      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+    ),
+  );
 }
 
 class _YesNoFlag extends StatelessWidget {

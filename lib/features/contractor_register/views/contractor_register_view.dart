@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
+import '../../../app/views/widgets/app_back_button.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../../shared/widgets/floating_error_notice.dart';
@@ -13,13 +15,29 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
 
   @override
   Widget build(BuildContext context) {
+    // Theme AppBar uses light text for teal chrome — override fully so the
+    // light register surface keeps readable title + back control.
+    final titleStyle = Theme.of(context).appBarTheme.titleTextStyle?.copyWith(
+          color: AppColors.textDark,
+        ) ??
+        const TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textDark,
+        );
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const AppBackButton(fallbackRoute: AppRoutes.login),
         title: const Text('Register'),
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.textDark,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.textDark),
+        actionsIconTheme: const IconThemeData(color: AppColors.textDark),
+        titleTextStyle: titleStyle,
       ),
       body: Obx(() {
         final err = controller.errorMessage.value;

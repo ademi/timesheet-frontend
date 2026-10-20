@@ -49,6 +49,22 @@ class ContractorProfileController extends GetxController {
     'other_health_qualification',
   ];
 
+  /// Horizontal profile wizard steps (Identity → Checks).
+  static const stepLabels = <String>[
+    'Identity',
+    'Address',
+    'Business',
+    'Screening',
+    'Qualifications',
+    'Requirements',
+    'Checks',
+  ];
+
+  static const maxStep = 6; // stepLabels.length - 1
+  static const businessStepIndex = 2;
+
+  final step = 0.obs;
+
   final isSaving = false.obs;
   final isLoading = false.obs;
   final isPhotoLoading = false.obs;
@@ -162,10 +178,24 @@ class ContractorProfileController extends GetxController {
     photoCleared.value = false;
     localPhotoBytes.value = null;
     rightsNotesCtrl.clear();
+    step.value = 0;
     // ignore: discarded_futures
     loadProfile();
     // ignore: discarded_futures
     loadProfilePhoto();
+  }
+
+  void goToStep(int index) {
+    if (index < 0 || index > maxStep) return;
+    step.value = index;
+  }
+
+  void nextStep() {
+    if (step.value < maxStep) step.value = step.value + 1;
+  }
+
+  void previousStep() {
+    if (step.value > 0) step.value = step.value - 1;
   }
 
   @override
@@ -564,9 +594,17 @@ class ContractorProfileController extends GetxController {
     final editingProfile = meRepo != null && canEditProfile;
     final savingPhoto = hasPendingPhotoChanges;
     if (!editingProfile && !savingPhoto) return;
-    if (editingProfile &&
-        !(profileFormKey.currentState?.validate() ?? false)) {
-      return;
+    if (editingProfile) {
+      // ABN field may be off-step; validate explicitly and jump to Business.
+      final abnErr = AbnUtils.formValidator(abnCtrl.text);
+      if (abnErr != null) {
+        step.value = businessStepIndex;
+        errorMessage.value = abnErr;
+        return;
+      }
+      if (!(profileFormKey.currentState?.validate() ?? false)) {
+        return;
+      }
     }
 
     isSaving.value = true;
