@@ -276,45 +276,62 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                     for (final m in controller.members)
                       ListTile(
                         contentPadding: EdgeInsets.zero,
+                        onTap:
+                            controller.canManageStaff
+                                ? () => AppNavigator.push(
+                                  AppNavigator.location(
+                                    AppRoutes.staffDetail,
+                                    query: {'id': m.id},
+                                  ),
+                                  extra: m,
+                                )
+                                : null,
                         title: Text(m.fullName ?? m.email),
                         subtitle: Text(m.email),
-                        trailing: Wrap(
-                          spacing: 6,
-                          crossAxisAlignment: WrapCrossAlignment.center,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Chip(
-                              label: Text(
-                                staffPresetDisplayName(
-                                  m.roleKey ?? '',
-                                  fallback: m.roleLabel,
+                            Wrap(
+                              spacing: 6,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Chip(
+                                  label: Text(
+                                    staffPresetDisplayName(
+                                      m.roleKey ?? '',
+                                      fallback: m.roleLabel,
+                                    ),
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  padding: EdgeInsets.zero,
                                 ),
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              padding: EdgeInsets.zero,
-                            ),
-                            Chip(
-                              label: Text(
-                                m.isActive ? 'Active' : 'Inactive',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color:
+                                Chip(
+                                  label: Text(
+                                    m.isActive ? 'Active' : 'Inactive',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          m.isActive
+                                              ? AppColors.success
+                                              : AppColors.textMuted,
+                                    ),
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  padding: EdgeInsets.zero,
+                                  backgroundColor:
                                       m.isActive
-                                          ? AppColors.success
-                                          : AppColors.textMuted,
+                                          ? AppColors.successBackground
+                                          : AppColors.slate200,
                                 ),
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              padding: EdgeInsets.zero,
-                              backgroundColor:
-                                  m.isActive
-                                      ? AppColors.successBackground
-                                      : AppColors.slate200,
+                              ],
                             ),
+                            if (controller.canManageStaff)
+                              const Icon(Icons.chevron_right),
                           ],
                         ),
                       ),

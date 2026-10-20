@@ -52,6 +52,11 @@ class ComplianceOpsRepository {
   Future<TenantMemberOut> createTenantMember(TenantMemberCreateBody body) =>
       _remote.createTenantMember(body);
 
+  Future<TenantMemberOut> patchTenantMember(
+    String id,
+    TenantMemberPatchBody body,
+  ) => _remote.patchTenantMember(id, body);
+
   Future<void> withdrawConsent({
     required String credentialType,
     String? notes,

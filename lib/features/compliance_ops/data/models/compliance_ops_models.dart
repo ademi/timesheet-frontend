@@ -280,6 +280,26 @@ class TenantMemberOut {
     return 'Staff';
   }
 
+  TenantMemberOut copyWith({
+    String? id,
+    String? email,
+    String? fullName,
+    String? phone,
+    String? role,
+    String? roleKey,
+    bool? isActive,
+  }) {
+    return TenantMemberOut(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      fullName: fullName ?? this.fullName,
+      phone: phone ?? this.phone,
+      role: role ?? this.role,
+      roleKey: roleKey ?? this.roleKey,
+      isActive: isActive ?? this.isActive,
+    );
+  }
+
   factory TenantMemberOut.fromJson(Map<String, dynamic> json) {
     final roleKey =
         json['role_key'] as String? ??
@@ -352,6 +372,30 @@ class TenantMemberCreateBody {
     if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
     if (presetKey != null && presetKey!.isNotEmpty) 'preset_key': presetKey,
     if (roleId != null && roleId!.isNotEmpty) 'role_id': roleId,
+  };
+}
+
+class TenantMemberPatchBody {
+  const TenantMemberPatchBody({
+    this.fullName,
+    this.phone,
+    this.presetKey,
+    this.roleId,
+    this.isActive,
+  });
+
+  final String? fullName;
+  final String? phone;
+  final String? presetKey;
+  final String? roleId;
+  final bool? isActive;
+
+  Map<String, dynamic> toJson() => {
+    if (fullName != null) 'full_name': fullName,
+    if (phone != null) 'phone': phone,
+    if (presetKey != null && presetKey!.isNotEmpty) 'preset_key': presetKey,
+    if (roleId != null && roleId!.isNotEmpty) 'role_id': roleId,
+    if (isActive != null) 'is_active': isActive,
   };
 }
 

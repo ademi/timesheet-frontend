@@ -83,6 +83,7 @@ abstract class AppRoutes {
   static const staffCompliance = '/staff/compliance';
   static const staffSettings = '/staff/settings';
   static const staffAdd = '/staff/settings/add-staff';
+  static const staffDetail = '/staff/settings/staff-detail';
   static const staffCredentialReview = '/staff/credentials-review';
 
   // ContractorShell + public / onboarding

@@ -199,6 +199,25 @@ class ComplianceOpsRemoteDataSource {
     }
   }
 
+  Future<TenantMemberOut> patchTenantMember(
+    String id,
+    TenantMemberPatchBody body,
+  ) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiPaths.tenantMember(id),
+        data: body.toJson(),
+      );
+      return _require(
+        response.data,
+        TenantMemberOut.fromJson,
+        'patch tenant member',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<void> withdrawConsent({
     required String credentialType,
     String? notes,

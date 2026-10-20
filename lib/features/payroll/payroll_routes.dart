@@ -10,6 +10,7 @@ import '../shell/staff_shell.dart';
 import 'bindings/payroll_binding.dart';
 import 'views/contractor_payments_view.dart';
 import 'views/staff_add_view.dart';
+import 'views/staff_detail_view.dart';
 import 'views/staff_payments_view.dart';
 import 'views/staff_tenant_settings_view.dart';
 
@@ -50,6 +51,17 @@ abstract final class PayrollPages {
       ],
       binding: StaffAddBinding(),
       page: () => const StaffAddView(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.staffDetail,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(anyOf: [AppPermissions.tenantMembersManage]),
+      ],
+      binding: StaffDetailBinding(),
+      page: () => const StaffDetailView(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
