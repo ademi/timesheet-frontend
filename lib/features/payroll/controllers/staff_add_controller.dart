@@ -11,7 +11,7 @@ import '../../compliance_ops/data/repositories/compliance_ops_repository.dart';
 import '../data/staff_preset_catalog.dart';
 import 'staff_tenant_settings_controller.dart';
 
-/// P0 Add Staff: Admin / Supervisor presets only; prefer `preset_key`.
+/// Add Staff: all system presets via `preset_key`; Admin requires `rbac.manage`.
 class StaffAddController extends GetxController {
   StaffAddController({
     required ComplianceOpsRepository complianceOps,
@@ -31,7 +31,7 @@ class StaffAddController extends GetxController {
   final isSaving = false.obs;
   final errorMessage = RxnString();
   final roles = <AssignableStaffRoleOut>[].obs;
-  final selectedPresetKey = 'supervisor'.obs;
+  final selectedPresetKey = kStaffPresetDefaultKey.obs;
 
   bool get canManageStaff =>
       _session.hasPermission(AppPermissions.tenantMembersManage);
@@ -41,10 +41,13 @@ class StaffAddController extends GetxController {
 
   List<AssignableStaffRoleOut> get pickerRoles {
     final filtered =
-        roles.where((r) => kStaffPresetKeysP0.contains(r.key)).toList();
-    if (!canAssignAdmin) {
-      return filtered.where((r) => r.key != 'admin').toList();
-    }
+        roles
+            .where((r) => kStaffPresetKeysAll.contains(r.key))
+            .where((r) => canAssignAdmin || r.key != 'admin')
+            .toList();
+    filtered.sort(
+      (a, b) => staffPresetPickerCompare(a.key, b.key),
+    );
     return filtered;
   }
 
@@ -71,18 +74,15 @@ class StaffAddController extends GetxController {
       roles.assignAll(list);
       _ensureValidSelection();
     } on AppFailure catch (e) {
-      // Fallback: catalog-only Admin/Supervisor so the form still works.
+      // Fallback: full catalog so the form still works offline from BE list.
       roles.assignAll([
-        const AssignableStaffRoleOut(
-          id: 'admin',
-          key: 'admin',
-          displayName: 'Admin',
-        ),
-        const AssignableStaffRoleOut(
-          id: 'supervisor',
-          key: 'supervisor',
-          displayName: 'Supervisor / Coordinator',
-        ),
+        for (final key in kStaffPresetPickerOrder)
+          if (kStaffPresetCatalog.containsKey(key))
+            AssignableStaffRoleOut(
+              id: key,
+              key: key,
+              displayName: kStaffPresetCatalog[key]!.displayName,
+            ),
       ]);
       _ensureValidSelection();
       if (e.statusCode == 403 || e.code == 'forbidden') {
@@ -96,8 +96,10 @@ class StaffAddController extends GetxController {
   void _ensureValidSelection() {
     final keys = pickerRoles.map((r) => r.key).toSet();
     if (keys.contains(selectedPresetKey.value)) return;
-    if (keys.contains('supervisor')) {
-      selectedPresetKey.value = 'supervisor';
+    if (keys.contains(kStaffPresetDefaultKey)) {
+      selectedPresetKey.value = kStaffPresetDefaultKey;
+    } else if (keys.contains('auditor')) {
+      selectedPresetKey.value = 'auditor';
     } else if (keys.isNotEmpty) {
       selectedPresetKey.value = keys.first;
     }

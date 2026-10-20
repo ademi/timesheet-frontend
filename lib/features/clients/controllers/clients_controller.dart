@@ -289,7 +289,8 @@ class ClientsController extends GetxController
       _session.hasPermission(AppPermissions.visitsManage) ||
       _session.hasPermission(AppPermissions.jobsManage);
   bool get canManageSupport =>
-      _session.hasPermission(AppPermissions.jobsManage);
+      _session.hasPermission(AppPermissions.jobsManage) ||
+      _session.hasPermission(AppPermissions.shiftsManage);
   bool get hasOngoing => standingJob.value != null;
 
   @override
@@ -463,6 +464,13 @@ class ClientsController extends GetxController
   }
 
   Future<void> openCreate() async {
+    if (!canManage) {
+      AppToast.error(
+        'Permission required',
+        'You don’t have access to create clients.',
+      );
+      return;
+    }
     selected.value = null;
     _overviewHydratedForId = null;
     editing = null;
@@ -483,6 +491,13 @@ class ClientsController extends GetxController
   }
 
   Future<void> openResumeOnboarding(ClientOut c) async {
+    if (!canManage) {
+      AppToast.error(
+        'Permission required',
+        'You don’t have access to edit clients.',
+      );
+      return;
+    }
     AppNavigator.push(
       AppNavigator.location(
         AppRoutes.staffClientOnboarding,
@@ -1981,6 +1996,13 @@ class ClientsController extends GetxController
   }
 
   void startOngoingSupport() {
+    if (!canManageSupport) {
+      AppToast.error(
+        'Permission required',
+        'You don’t have access to manage roster for this client.',
+      );
+      return;
+    }
     final client = selected.value;
     if (client == null) return;
     AppNavigator.push(
@@ -2030,6 +2052,13 @@ class ClientsController extends GetxController
 
   /// Client-first book-one: open the unified rostering composer in one-session mode.
   void bookOneSession() {
+    if (!canManageSupport) {
+      AppToast.error(
+        'Permission required',
+        'You don’t have access to book sessions.',
+      );
+      return;
+    }
     final client = selected.value;
     if (client == null) return;
     AppNavigator.push(

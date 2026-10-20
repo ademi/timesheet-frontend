@@ -185,21 +185,22 @@ class _JobDetailViewState extends State<JobDetailView> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: ElevatedButton.icon(
-                      onPressed:
-                          controller.isSaving.value
-                              ? null
-                              : controller.openManageTemplatesAndRefresh,
-                      icon: const Icon(Icons.description_outlined),
-                      label: const Text('Manage templates'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.cta,
-                        foregroundColor: AppColors.onPrimary,
+                  if (controller.canManage)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: ElevatedButton.icon(
+                        onPressed:
+                            controller.isSaving.value
+                                ? null
+                                : controller.openManageTemplatesAndRefresh,
+                        icon: const Icon(Icons.description_outlined),
+                        label: const Text('Manage templates'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.cta,
+                          foregroundColor: AppColors.onPrimary,
+                        ),
                       ),
                     ),
-                  ),
                   const Divider(height: 32),
                   Text('Patterns', style: Get.textTheme.titleMedium),
                   if (!job.isStanding)

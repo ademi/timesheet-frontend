@@ -32,7 +32,12 @@ abstract final class StaffShellNav {
       icon: Icons.event_available_outlined,
       label: 'Roster',
       route: AppRoutes.staffVisits,
-      anyOf: [AppPermissions.visitsRead, AppPermissions.shiftsRead],
+      anyOf: [
+        AppPermissions.visitsRead,
+        AppPermissions.visitsManage,
+        AppPermissions.shiftsRead,
+        AppPermissions.shiftsManage,
+      ],
     ),
     _StaffDest(
       icon: Icons.people_outline,
@@ -64,7 +69,7 @@ abstract final class StaffShellNav {
       icon: Icons.payments_outlined,
       label: 'Payments',
       route: AppRoutes.staffPayments,
-      anyOf: [AppPermissions.paymentsView],
+      anyOf: [AppPermissions.paymentsView, AppPermissions.paymentsManage],
     ),
     _StaffDest(
       icon: Icons.receipt_long_outlined,

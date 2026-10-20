@@ -698,6 +698,22 @@ class WorkforceController extends GetxController {
   }
 
   Future<void> runAction(String action, EngagementOut engagement) async {
+    final needsApprove =
+        action == 'approve' || action == 'approve_and_activate';
+    final needsManage = action == 'activate' ||
+        action == 'suspend' ||
+        action == 'resume' ||
+        action == 'end' ||
+        action == 'withdraw';
+    if (needsApprove && !canApprove) {
+      _setError('You don’t have access to approve contractors.');
+      return;
+    }
+    if (needsManage && !canManage) {
+      _setError('You don’t have access to manage this engagement.');
+      return;
+    }
+
     if (action == 'end' || action == 'withdraw') {
       final isWithdraw = action == 'withdraw' || engagement.isInvited;
       final confirmed = await Get.dialog<bool>(
@@ -750,7 +766,11 @@ class WorkforceController extends GetxController {
         'Engagement is now ${engagementStatusLabel(updated.status)}.',
       );
     } on AppFailure catch (e) {
-      _setError(e.message);
+      _setError(
+        e.isAccessDenied
+            ? 'You don’t have access to this action.'
+            : e.message,
+      );
       if (e.isEligibilityIncomplete) {
         eligibilityReasons.assignAll(e.eligibilityReasons);
       }

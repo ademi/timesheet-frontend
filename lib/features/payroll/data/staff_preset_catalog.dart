@@ -17,10 +17,10 @@ class StaffPresetInfo {
   final String cannot;
 }
 
-/// Keys used in P0 Add Staff picker (Admin / Supervisor only).
-const kStaffPresetKeysP0 = {'admin', 'supervisor'};
+/// Default create preset when FE omits / initial selection (BE default too).
+const kStaffPresetDefaultKey = 'office';
 
-/// All system-global assignable preset keys (P1+).
+/// System-global assignable preset keys (picker allowlist).
 const kStaffPresetKeysAll = {
   'admin',
   'supervisor',
@@ -29,6 +29,16 @@ const kStaffPresetKeysAll = {
   'finance',
   'auditor',
 };
+
+/// Display order in the Add Staff picker (least-privilege-friendly mid list).
+const kStaffPresetPickerOrder = <String>[
+  'office',
+  'supervisor',
+  'roster',
+  'finance',
+  'auditor',
+  'admin',
+];
 
 const kStaffPresetCatalog = <String, StaffPresetInfo>{
   'admin': StaffPresetInfo(
@@ -100,4 +110,14 @@ String staffPresetDisplayName(String key, {String? fallback}) {
   final f = fallback?.trim();
   if (f != null && f.isNotEmpty) return f;
   return key;
+}
+
+/// Stable picker order; unknown keys sort last by display name.
+int staffPresetPickerCompare(String a, String b) {
+  final ia = kStaffPresetPickerOrder.indexOf(a);
+  final ib = kStaffPresetPickerOrder.indexOf(b);
+  if (ia >= 0 && ib >= 0) return ia.compareTo(ib);
+  if (ia >= 0) return -1;
+  if (ib >= 0) return 1;
+  return staffPresetDisplayName(a).compareTo(staffPresetDisplayName(b));
 }

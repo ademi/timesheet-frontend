@@ -47,6 +47,12 @@ class AppFailure implements Exception {
 
   bool get isSharingGrantRequired => code == 'sharing_grant_required';
 
+  /// 403 / missing permission — use for friendly “you don’t have access” UX.
+  bool get isAccessDenied =>
+      statusCode == 403 ||
+      code == 'forbidden' ||
+      code == 'missing_permission';
+
   @override
   String toString() => message;
 
@@ -453,7 +459,7 @@ class AppFailure implements Exception {
       case 'missing_permission':
         return 'You don’t have permission for this action.';
       case 'forbidden':
-        return 'You don’t have access to this file.';
+        return 'You don’t have access to this action.';
       case 'subscription_expired':
       case 'require_active_subscription':
       case 'billing_gate':

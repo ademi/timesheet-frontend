@@ -30,7 +30,8 @@ class StaffAddView extends GetView<StaffAddController> {
                   children: [
                     const Text(
                       'Invite a staff member by email. They receive a magic '
-                      'link and set their own password.',
+                      'link and set their own password. Default job title is '
+                      'Office / Intake (least privilege).',
                       style: TextStyle(color: AppColors.textMuted),
                     ),
                     if (err != null) ...[

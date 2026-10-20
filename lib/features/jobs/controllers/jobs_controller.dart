@@ -241,6 +241,10 @@ class JobsController extends GetxController with PendingActionMixin {
 
   /// Job-scoped screen: attach catalog templates + create/edit/delete.
   Future<void> openManageTemplatesAndRefresh() async {
+    if (!canManage) {
+      errorMessage.value = 'You don’t have access to manage templates.';
+      return;
+    }
     errorMessage.value = null;
     final job = selected.value;
     await AppNavigator.push(

@@ -3053,6 +3053,9 @@ class RosterComposerController extends GetxController {
   }
 
   String _mapPublishError(AppFailure e) {
+    if (e.isAccessDenied) {
+      return 'You don’t have access to publish shifts.';
+    }
     switch (e.code) {
       case 'support_item_required':
         return ComposerValidation.supportAnchorRequired;
