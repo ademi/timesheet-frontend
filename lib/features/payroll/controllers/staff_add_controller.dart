@@ -9,7 +9,7 @@ import '../../../shared/widgets/app_toast.dart';
 import '../../compliance_ops/data/models/compliance_ops_models.dart';
 import '../../compliance_ops/data/repositories/compliance_ops_repository.dart';
 import '../data/staff_preset_catalog.dart';
-import 'staff_tenant_settings_controller.dart';
+import 'staff_list_controller.dart';
 
 /// Add Staff: all system presets via `preset_key`; Admin requires `rbac.manage`.
 class StaffAddController extends GetxController {
@@ -150,9 +150,9 @@ class StaffAddController extends GetxController {
         'Staff invite sent to $email. They will open the link and set '
             'their own password.',
       );
-      if (Get.isRegistered<StaffTenantSettingsController>()) {
+      if (Get.isRegistered<StaffListController>()) {
         // ignore: discarded_futures
-        Get.find<StaffTenantSettingsController>().load();
+        Get.find<StaffListController>().load();
       }
       AppNavigator.pop();
     } on AppFailure catch (e) {

@@ -9,7 +9,7 @@ import '../../../shared/widgets/app_toast.dart';
 import '../../compliance_ops/data/models/compliance_ops_models.dart';
 import '../../compliance_ops/data/repositories/compliance_ops_repository.dart';
 import '../data/staff_preset_catalog.dart';
-import 'staff_tenant_settings_controller.dart';
+import 'staff_list_controller.dart';
 
 /// Edit staff preset / active flag via `PATCH /v1/tenant-members/{id}`.
 class StaffDetailController extends GetxController {
@@ -44,7 +44,26 @@ class StaffDetailController extends GetxController {
     return id == mine;
   }
 
-  bool get canEditRoleAndStatus => canManageStaff && !isSelf;
+  /// Owner / platform admin — not editable via staff presets (admin cannot demote).
+  bool get isProtectedTarget {
+    final m = member.value;
+    if (m == null) return false;
+    return isPrivilegedSystemRole(m.roleKey) ||
+        isPrivilegedSystemRole(m.role);
+  }
+
+  String get protectedRoleLabel {
+    final m = member.value;
+    if (m == null) return 'Owner';
+    return staffPresetDisplayName(
+      m.roleKey ?? '',
+      fallback: m.roleLabel,
+    );
+  }
+
+  /// Admins must not change Owner accounts; nobody demotes owner via this UI.
+  bool get canEditRoleAndStatus =>
+      canManageStaff && !isSelf && !isProtectedTarget;
 
   List<AssignableStaffRoleOut> get pickerRoles {
     final filtered =
@@ -52,6 +71,22 @@ class StaffDetailController extends GetxController {
             .where((r) => kStaffPresetKeysAll.contains(r.key))
             .where((r) => canAssignAdmin || r.key != 'admin')
             .toList();
+    // Always show the member's current preset, even if the actor cannot assign it
+    // (e.g. viewing Admin without rbac.manage).
+    final current = selectedPresetKey.value;
+    if (current.isNotEmpty &&
+        kStaffPresetKeysAll.contains(current) &&
+        !filtered.any((r) => r.key == current)) {
+      final fromRoles = roles.where((r) => r.key == current).firstOrNull;
+      filtered.add(
+        fromRoles ??
+            AssignableStaffRoleOut(
+              id: current,
+              key: current,
+              displayName: staffPresetDisplayName(current),
+            ),
+      );
+    }
     filtered.sort((a, b) => staffPresetPickerCompare(a.key, b.key));
     return filtered;
   }
@@ -107,9 +142,15 @@ class StaffDetailController extends GetxController {
 
   void _applyMember(TenantMemberOut m) {
     member.value = m;
-    final key = (m.roleKey ?? '').trim().toLowerCase();
-    selectedPresetKey.value =
-        kStaffPresetKeysAll.contains(key) ? key : kStaffPresetDefaultKey;
+    if (isPrivilegedSystemRole(m.roleKey) || isPrivilegedSystemRole(m.role)) {
+      // Do not map Owner → Office; keep empty so the picker is not shown as selected.
+      selectedPresetKey.value = '';
+    } else {
+      selectedPresetKey.value =
+          normalizeStaffPresetKey(m.roleKey) ??
+          normalizeStaffPresetKey(m.role) ??
+          kStaffPresetDefaultKey;
+    }
     isActive.value = m.isActive;
   }
 
@@ -137,7 +178,10 @@ class StaffDetailController extends GetxController {
 
   void _ensureValidSelection() {
     final keys = pickerRoles.map((r) => r.key).toSet();
+    // Keep the member's real preset even if not in the picker (e.g. Admin
+    // without rbac.manage) — do not silently fall back to Office.
     if (keys.contains(selectedPresetKey.value)) return;
+    if (kStaffPresetKeysAll.contains(selectedPresetKey.value)) return;
     if (keys.contains(kStaffPresetDefaultKey)) {
       selectedPresetKey.value = kStaffPresetDefaultKey;
     } else if (keys.isNotEmpty) {
@@ -164,6 +208,11 @@ class StaffDetailController extends GetxController {
     }
     if (isSelf) {
       errorMessage.value = 'You can’t change your own role or status.';
+      return;
+    }
+    if (isProtectedTarget) {
+      errorMessage.value =
+          'The Owner account can’t be changed from Staff management.';
       return;
     }
     if (!hasUnsavedChanges) {
@@ -222,9 +271,9 @@ class StaffDetailController extends GetxController {
           (member.value!.roleKey ?? key).trim().toLowerCase();
       isActive.value = member.value!.isActive;
       AppToast.success('Saved', 'Staff member updated.');
-      if (Get.isRegistered<StaffTenantSettingsController>()) {
+      if (Get.isRegistered<StaffListController>()) {
         // ignore: discarded_futures
-        Get.find<StaffTenantSettingsController>().load();
+        Get.find<StaffListController>().load();
       }
     } on AppFailure catch (e) {
       errorMessage.value = _friendlyPatchError(e);

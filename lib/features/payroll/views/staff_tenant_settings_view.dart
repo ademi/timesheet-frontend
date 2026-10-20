@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/async_action.dart';
-import '../../../shared/widgets/permission_gate.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/staff_tenant_settings_controller.dart';
-import '../data/staff_preset_catalog.dart';
 
 class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
   const StaffTenantSettingsView({super.key});
@@ -241,101 +238,6 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                       ),
                       child: const Text('Save'),
                     ),
-                  if (controller.canViewMembers) ...[
-                    const Divider(height: 32),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Staff',
-                            style: Get.textTheme.titleMedium,
-                          ),
-                        ),
-                        PermissionGate(
-                          permission: AppPermissions.tenantMembersManage,
-                          child: TextButton.icon(
-                            onPressed:
-                                () => AppNavigator.push(AppRoutes.staffAdd),
-                            icon: const Icon(Icons.person_add_alt_1, size: 18),
-                            label: const Text('Add staff'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'People with access to this organisation.',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    if (controller.members.isEmpty)
-                      const Text('No staff loaded.'),
-                    for (final m in controller.members)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        onTap:
-                            controller.canManageStaff
-                                ? () => AppNavigator.push(
-                                  AppNavigator.location(
-                                    AppRoutes.staffDetail,
-                                    query: {'id': m.id},
-                                  ),
-                                  extra: m,
-                                )
-                                : null,
-                        title: Text(m.fullName ?? m.email),
-                        subtitle: Text(m.email),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Wrap(
-                              spacing: 6,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Chip(
-                                  label: Text(
-                                    staffPresetDisplayName(
-                                      m.roleKey ?? '',
-                                      fallback: m.roleLabel,
-                                    ),
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                  visualDensity: VisualDensity.compact,
-                                  materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                  padding: EdgeInsets.zero,
-                                ),
-                                Chip(
-                                  label: Text(
-                                    m.isActive ? 'Active' : 'Inactive',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color:
-                                          m.isActive
-                                              ? AppColors.success
-                                              : AppColors.textMuted,
-                                    ),
-                                  ),
-                                  visualDensity: VisualDensity.compact,
-                                  materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                  padding: EdgeInsets.zero,
-                                  backgroundColor:
-                                      m.isActive
-                                          ? AppColors.successBackground
-                                          : AppColors.slate200,
-                                ),
-                              ],
-                            ),
-                            if (controller.canManageStaff)
-                              const Icon(Icons.chevron_right),
-                          ],
-                        ),
-                      ),
-                  ],
                 ],
               ),
             ),

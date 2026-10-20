@@ -143,12 +143,24 @@ class AppFailure implements Exception {
     if (data is Map) {
       final map = Map<String, dynamic>.from(data);
       final detail = map['detail'];
-      // FastAPI validation list → first message
+      // FastAPI validation list → first message (include field name when present)
       if (detail is List && detail.isNotEmpty) {
         final first = detail.first;
         if (first is Map) {
+          final msg = first['msg']?.toString() ?? 'Validation failed';
+          final loc = first['loc'];
+          String? field;
+          if (loc is List && loc.isNotEmpty) {
+            final last = loc.last?.toString();
+            if (last != null &&
+                last.isNotEmpty &&
+                last != 'body' &&
+                last != 'query') {
+              field = last;
+            }
+          }
           return AuthErrorModel(
-            detail: first['msg']?.toString() ?? 'Validation failed',
+            detail: field != null ? '$field: $msg' : msg,
             code: 'validation_error',
           );
         }

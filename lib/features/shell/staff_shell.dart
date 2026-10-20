@@ -51,6 +51,15 @@ abstract final class StaffShellNav {
       route: AppRoutes.staffWorkforce,
       anyOf: [AppPermissions.contractorsRead],
     ),
+    _StaffDest(
+      icon: Icons.badge_outlined,
+      label: 'Staff',
+      route: AppRoutes.staffMembers,
+      anyOf: [
+        AppPermissions.tenantMembersRead,
+        AppPermissions.tenantMembersManage,
+      ],
+    ),
     // —— mobile "More" overflow starts here (narrowPrimaryCount: 4) ——
     _StaffDest(
       icon: Icons.holiday_village_outlined,

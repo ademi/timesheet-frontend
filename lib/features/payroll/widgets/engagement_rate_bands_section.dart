@@ -44,14 +44,16 @@ class _EngagementRateBandsSectionState
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      if (!_controller.canView) {
-        return const Text(
-          'No permission to view payment rates (payments.view).',
-          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-        );
-      }
+    // Do not wrap the no-permission branch in Obx — `canView` is not reactive,
+    // and Obx with zero observables throws (office/roster without payments.view).
+    if (!_controller.canView) {
+      return const Text(
+        'No permission to view payment rates (payments.view).',
+        style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+      );
+    }
 
+    return Obx(() {
       final err = _controller.errorMessage.value;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

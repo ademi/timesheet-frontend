@@ -82,8 +82,11 @@ abstract class AppRoutes {
   static const staffBillingExportDetail = '/staff/billing/exports/detail';
   static const staffCompliance = '/staff/compliance';
   static const staffSettings = '/staff/settings';
-  static const staffAdd = '/staff/settings/add-staff';
-  static const staffDetail = '/staff/settings/staff-detail';
+
+  /// Staff directory (shell tab) — gated by tenant_members.read / .manage.
+  static const staffMembers = '/staff/members';
+  static const staffAdd = '/staff/members/add';
+  static const staffDetail = '/staff/members/detail';
   static const staffCredentialReview = '/staff/credentials-review';
 
   // ContractorShell + public / onboarding
@@ -131,6 +134,7 @@ abstract final class StaffRoutes {
   static const payments = AppRoutes.staffPayments;
   static const billing = AppRoutes.staffBillingExports;
   static const compliance = AppRoutes.staffCompliance;
+  static const members = AppRoutes.staffMembers;
   static const settings = AppRoutes.staffSettings;
 
   static const List<String> all = [
@@ -142,6 +146,7 @@ abstract final class StaffRoutes {
     payments,
     billing,
     compliance,
+    members,
     settings,
   ];
 }

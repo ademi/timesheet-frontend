@@ -67,6 +67,22 @@ class StaffDetailView extends GetView<StaffDetailController> {
                       ),
                     ),
                   ],
+                  if (controller.isProtectedTarget) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.errorBackground,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${controller.protectedRoleLabel} accounts can’t be '
+                        'edited, deactivated, or reassigned from Staff '
+                        'management (including by Admin).',
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    ),
+                  ],
                   if (err != null) ...[
                     const SizedBox(height: 12),
                     Material(
@@ -115,81 +131,104 @@ class StaffDetailView extends GetView<StaffDetailController> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Tap (i) to see what each title can and cannot do.',
-                    style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 13,
-                    ),
-                  ),
                   const SizedBox(height: 8),
-                  if (controller.isLoadingRoles.value &&
-                      controller.pickerRoles.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(child: CircularProgressIndicator()),
+                  if (controller.isProtectedTarget)
+                    Card(
+                      margin: EdgeInsets.zero,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color: AppColors.primary.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.shield_outlined,
+                          color: AppColors.primary,
+                        ),
+                        title: Text(controller.protectedRoleLabel),
+                        subtitle: const Text(
+                          'System role — not changeable here',
+                        ),
+                      ),
                     )
-                  else
-                    ...controller.pickerRoles.map((role) {
-                      final selected =
-                          controller.selectedPresetKey.value == role.key;
-                      final label = staffPresetDisplayName(
-                        role.key,
-                        fallback: role.displayName,
-                      );
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(
-                            color:
-                                selected
-                                    ? AppColors.primary
-                                    : AppColors.textMuted.withValues(
-                                      alpha: 0.35,
-                                    ),
-                            width: selected ? 2 : 1,
-                          ),
-                        ),
-                        child: ListTile(
-                          onTap:
-                              controller.canEditRoleAndStatus
-                                  ? () => controller.selectPreset(role.key)
-                                  : null,
-                          leading: Icon(
-                            selected
-                                ? Icons.radio_button_checked
-                                : Icons.radio_button_off,
-                            color:
-                                selected
-                                    ? AppColors.primary
-                                    : AppColors.textMuted,
-                          ),
-                          title: Text(label),
-                          trailing: IconButton(
-                            tooltip: 'What can $label do?',
-                            icon: const Icon(Icons.info_outline),
-                            onPressed:
-                                () => showStaffPresetInfoSheet(
-                                  context,
-                                  presetKey: role.key,
-                                  displayName: label,
-                                ),
-                          ),
-                        ),
-                      );
-                    }),
-                  if (!controller.canAssignAdmin) ...[
-                    const SizedBox(height: 4),
+                  else ...[
                     const Text(
-                      'Admin job title is only available to owners.',
+                      'Tap (i) to see what each title can and cannot do.',
                       style: TextStyle(
                         color: AppColors.textMuted,
-                        fontSize: 12,
+                        fontSize: 13,
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    if (controller.isLoadingRoles.value &&
+                        controller.pickerRoles.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else
+                      ...controller.pickerRoles.map((role) {
+                        final selected =
+                            controller.selectedPresetKey.value == role.key;
+                        final label = staffPresetDisplayName(
+                          role.key,
+                          fallback: role.displayName,
+                        );
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: BorderSide(
+                              color:
+                                  selected
+                                      ? AppColors.primary
+                                      : AppColors.textMuted.withValues(
+                                        alpha: 0.35,
+                                      ),
+                              width: selected ? 2 : 1,
+                            ),
+                          ),
+                          child: ListTile(
+                            onTap:
+                                controller.canEditRoleAndStatus
+                                    ? () => controller.selectPreset(role.key)
+                                    : null,
+                            leading: Icon(
+                              selected
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_off,
+                              color:
+                                  selected
+                                      ? AppColors.primary
+                                      : AppColors.textMuted,
+                            ),
+                            title: Text(label),
+                            trailing: IconButton(
+                              tooltip: 'What can $label do?',
+                              icon: const Icon(Icons.info_outline),
+                              onPressed:
+                                  () => showStaffPresetInfoSheet(
+                                    context,
+                                    presetKey: role.key,
+                                    displayName: label,
+                                  ),
+                            ),
+                          ),
+                        );
+                      }),
+                    if (!controller.canAssignAdmin) ...[
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Admin job title is only available to owners.',
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ],
                   const SizedBox(height: 24),
                   if (controller.canEditRoleAndStatus)

@@ -35,7 +35,6 @@ class StaffTenantSettingsController extends GetxController {
   final errorMessage = RxnString();
   final tenant = Rxn<TenantSettingsOut>();
   final subscription = Rxn<SubscriptionStatusOut>();
-  final members = <TenantMemberOut>[].obs;
   final formTemplates = <FormTemplateSummary>[].obs;
 
   final timezoneCtrl = TextEditingController();
@@ -46,11 +45,6 @@ class StaffTenantSettingsController extends GetxController {
   final defaultProgressNoteTemplateId = RxnString();
 
   bool get canManage => _session.hasPermission(AppPermissions.tenantsManage);
-  bool get canViewMembers =>
-      _session.hasPermission(AppPermissions.tenantMembersRead) ||
-      _session.hasPermission(AppPermissions.tenantMembersManage);
-  bool get canManageStaff =>
-      _session.hasPermission(AppPermissions.tenantMembersManage);
   bool get canViewBilling =>
       _session.hasPermission(AppPermissions.subscriptionView) ||
       _session.hasPermission(AppPermissions.billingView) ||
@@ -109,11 +103,6 @@ class StaffTenantSettingsController extends GetxController {
     if (canViewBilling) {
       try {
         subscription.value = await _complianceOps.getSubscription();
-      } on AppFailure catch (_) {}
-    }
-    if (canViewMembers) {
-      try {
-        members.assignAll(await _complianceOps.listTenantMembers());
       } on AppFailure catch (_) {}
     }
     isLoading.value = false;

@@ -21,6 +21,7 @@ import '../../features/jobs/bindings/jobs_binding.dart';
 import '../../features/jobs/views/jobs_list_view.dart';
 import '../../features/payroll/bindings/payroll_binding.dart';
 import '../../features/payroll/views/contractor_payments_view.dart';
+import '../../features/payroll/views/staff_list_view.dart';
 import '../../features/payroll/views/staff_payments_view.dart';
 import '../../features/payroll/views/staff_tenant_settings_view.dart';
 import '../../features/shell/contractor_shell.dart';
@@ -67,6 +68,12 @@ List<RouteBase> buildShellGoRoutes() => [
         anyOf: const [AppPermissions.contractorsRead],
         onEnter: () => EngagementsBinding().dependencies(),
         child: const WorkforceListView(),
+      ),
+      _staffTab(
+        path: AppRoutes.staffMembers,
+        anyOf: kShellTabPermissions[AppRoutes.staffMembers]!.anyOf,
+        onEnter: () => StaffListBinding().dependencies(),
+        child: const StaffListView(),
       ),
       _staffTab(
         path: AppRoutes.staffAttendanceReview,

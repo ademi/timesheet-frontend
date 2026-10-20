@@ -23,6 +23,10 @@ const Map<String, ShellTabPermission> kShellTabPermissions = {
   AppRoutes.staffWorkforce: ShellTabPermission([
     AppPermissions.contractorsRead,
   ]),
+  AppRoutes.staffMembers: ShellTabPermission([
+    AppPermissions.tenantMembersRead,
+    AppPermissions.tenantMembersManage,
+  ]),
   AppRoutes.staffAttendanceReview: ShellTabPermission([
     AppPermissions.attendanceAdjust,
     AppPermissions.visitsManage,

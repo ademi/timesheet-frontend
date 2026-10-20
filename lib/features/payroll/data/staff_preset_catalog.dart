@@ -107,9 +107,52 @@ StaffPresetInfo? staffPresetInfo(String key) =>
 String staffPresetDisplayName(String key, {String? fallback}) {
   final info = staffPresetInfo(key);
   if (info != null) return info.displayName;
+  if (isPrivilegedSystemRole(key)) {
+    final s = key.trim().toLowerCase();
+    if (s.contains('platform')) return 'Platform admin';
+    return 'Owner';
+  }
   final f = fallback?.trim();
   if (f != null && f.isNotEmpty) return f;
   return key;
+}
+
+/// Roles that must never be assigned/changed via staff create/detail UI.
+bool isPrivilegedSystemRole(String? raw) {
+  if (raw == null) return false;
+  final s = raw.trim().toLowerCase().replaceAll('.', '_');
+  if (s.isEmpty) return false;
+  return s == 'owner' ||
+      s == 'platform_admin' ||
+      s == 'platformadmin';
+}
+
+/// Map API role key / display name / aliases → preset key (`supervisor`, …).
+///
+/// List/detail responses sometimes return `role: "Supervisor / Coordinator"`
+/// without `role_key` / `preset_key`. Without normalization the UI falls back
+/// to Office.
+String? normalizeStaffPresetKey(String? raw) {
+  if (raw == null) return null;
+  final s = raw.trim().toLowerCase();
+  if (s.isEmpty) return null;
+  if (kStaffPresetKeysAll.contains(s)) return s;
+
+  for (final e in kStaffPresetCatalog.entries) {
+    if (e.value.displayName.toLowerCase() == s) return e.key;
+  }
+
+  if (s.contains('supervisor') || s.contains('coordinator')) {
+    return 'supervisor';
+  }
+  if (s.contains('office') || s.contains('intake')) return 'office';
+  if (s.contains('roster')) return 'roster';
+  if (s.contains('finance')) return 'finance';
+  if (s.contains('auditor') || s.contains('read-only') || s.contains('readonly')) {
+    return 'auditor';
+  }
+  if (s == 'admin' || s.startsWith('admin ')) return 'admin';
+  return null;
 }
 
 /// Stable picker order; unknown keys sort last by display name.

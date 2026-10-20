@@ -301,15 +301,33 @@ class TenantMemberOut {
   }
 
   factory TenantMemberOut.fromJson(Map<String, dynamic> json) {
-    final roleKey =
-        json['role_key'] as String? ??
-        json['preset_key'] as String? ??
-        (json['role'] is String ? json['role'] as String? : null);
-    final roleName =
+    String? roleKey = json['role_key'] as String? ?? json['preset_key'] as String?;
+    String? roleName =
         json['role_name'] as String? ??
-        json['display_name'] as String? ??
-        json['role_display_name'] as String? ??
-        (json['role'] is String ? json['role'] as String? : null);
+        json['role_display_name'] as String?;
+
+    final roleRaw = json['role'];
+    if (roleRaw is Map) {
+      final roleMap = Map<String, dynamic>.from(roleRaw);
+      roleKey ??=
+          roleMap['key'] as String? ??
+          roleMap['name'] as String? ??
+          roleMap['preset_key'] as String?;
+      roleName ??=
+          roleMap['display_name'] as String? ??
+          roleMap['name'] as String?;
+    } else if (roleRaw is String) {
+      roleKey ??= roleRaw;
+      roleName ??= roleRaw;
+    }
+
+    // Prefer normalized preset key when API sent a display label as `role`.
+    final normalized = _normalizePresetKeyLocal(roleKey) ??
+        _normalizePresetKeyLocal(roleName);
+    if (normalized != null) {
+      roleKey = normalized;
+    }
+
     return TenantMemberOut(
       id: json['id'].toString(),
       email: json['email'] as String? ?? '',
@@ -320,6 +338,43 @@ class TenantMemberOut {
       isActive: json['is_active'] as bool? ?? true,
     );
   }
+}
+
+/// Local mirror of catalog normalize (avoid feature↔model import cycles).
+String? _normalizePresetKeyLocal(String? raw) {
+  if (raw == null) return null;
+  final s = raw.trim().toLowerCase();
+  if (s.isEmpty) return null;
+  const keys = {
+    'admin',
+    'supervisor',
+    'office',
+    'roster',
+    'finance',
+    'auditor',
+  };
+  if (keys.contains(s)) return s;
+  // Keep privileged roles as-is (do not remap Owner → office).
+  final normalized = s.replaceAll('.', '_');
+  if (normalized == 'owner' ||
+      normalized == 'platform_admin' ||
+      normalized == 'platformadmin') {
+    return normalized == 'platformadmin' ? 'platform_admin' : normalized;
+  }
+  if (s.contains('supervisor') || s.contains('coordinator')) return 'supervisor';
+  if (s.contains('office') || s.contains('intake')) return 'office';
+  if (s.contains('roster')) return 'roster';
+  if (s.contains('finance')) return 'finance';
+  if (s.contains('auditor') || s.contains('read-only') || s.contains('readonly')) {
+    return 'auditor';
+  }
+  if (s == 'admin' || s.startsWith('admin ')) return 'admin';
+  // Display names
+  if (s == 'supervisor / coordinator') return 'supervisor';
+  if (s == 'office / intake') return 'office';
+  if (s == 'roster only') return 'roster';
+  if (s == 'read-only auditor') return 'auditor';
+  return null;
 }
 
 /// System preset from `GET /v1/tenant-members/assignable-roles`.
@@ -366,13 +421,18 @@ class TenantMemberCreateBody {
   final String? presetKey;
   final String? roleId;
 
-  Map<String, dynamic> toJson() => {
-    'full_name': fullName,
-    'email': email,
-    if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
-    if (presetKey != null && presetKey!.isNotEmpty) 'preset_key': presetKey,
-    if (roleId != null && roleId!.isNotEmpty) 'role_id': roleId,
-  };
+  Map<String, dynamic> toJson() {
+    final trimmedPhone = phone?.trim() ?? '';
+    return {
+      'full_name': fullName,
+      'email': email,
+      // Always send phone (empty string when unused) so BE optional/`""` works;
+      // omitting the key previously triggered FastAPI "Field required".
+      'phone': trimmedPhone,
+      if (presetKey != null && presetKey!.isNotEmpty) 'preset_key': presetKey,
+      if (roleId != null && roleId!.isNotEmpty) 'role_id': roleId,
+    };
+  }
 }
 
 class TenantMemberPatchBody {
