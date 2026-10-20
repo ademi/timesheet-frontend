@@ -15,6 +15,7 @@ import '../../visits/data/models/visit_models.dart';
 import '../controllers/invoice_exports_controller.dart';
 import '../data/models/billing_models.dart';
 import '../utils/visit_export_preflight.dart';
+import '../widgets/billing_tab_info_sheet.dart';
 import '../widgets/billing_ui.dart';
 
 String? _clientName(
@@ -109,107 +110,37 @@ class InvoiceExportsListView extends GetView<InvoiceExportsController> {
                     if (controller.canView)
                       Semantics(
                         label: 'Export mode',
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: SegmentedButton<int>(
-                            segments: [
-                              const ButtonSegment(
-                                value: 0,
-                                label: Text('Exports'),
-                                icon: Icon(
-                                  Icons.receipt_long_outlined,
-                                  size: 18,
-                                ),
-                              ),
-                              if (controller.canManage)
-                                const ButtonSegment(
-                                  value: 1,
-                                  label: Text('Create'),
-                                  icon: Icon(Icons.add, size: 18),
-                                ),
-                              ButtonSegment(
-                                value: 2,
-                                label: Text(
-                                  controller.hasAgeingRiskBadge
-                                      ? '90d (${controller.ageingRiskCount})'
-                                      : '90d',
-                                ),
-                                icon: const Icon(
-                                  Icons.schedule_outlined,
-                                  size: 18,
-                                ),
-                              ),
-                              ButtonSegment(
-                                value: 3,
-                                label: Text(
-                                  controller.hasBurnAlertBadge
-                                      ? 'Burn (${controller.burnAlertCount})'
-                                      : 'Burn',
-                                ),
-                                icon: Icon(
-                                  Icons.local_fire_department_outlined,
-                                  size: 18,
-                                  color:
-                                      controller.hasBurnAlertBadge
-                                          ? AppColors.error
-                                          : null,
-                                ),
-                              ),
-                              const ButtonSegment(
-                                value: 4,
-                                label: Text('PE'),
-                                icon: Icon(Icons.outgoing_mail, size: 18),
-                              ),
-                              ButtonSegment(
-                                value: 5,
-                                label: Text(
-                                  controller.hasArRiskBadge
-                                      ? 'AR (${controller.arRiskCount})'
-                                      : 'AR',
-                                ),
-                                icon: const Icon(
-                                  Icons.account_balance_outlined,
-                                  size: 18,
-                                ),
-                              ),
-                            ],
-                            selected: {tab},
-                            onSelectionChanged: (next) {
-                              final v = next.first;
-                              if (v == 1) {
-                                controller.switchToCreateTab();
-                              } else if (v == 2) {
-                                controller.switchToAgeingTab();
-                              } else if (v == 3) {
-                                controller.switchToBurnTab();
-                              } else if (v == 4) {
-                                controller.switchToPeTab();
-                              } else if (v == 5) {
-                                controller.switchToArTab();
-                              } else {
-                                controller.tabIndex.value = 0;
-                              }
-                            },
-                            style: ButtonStyle(
-                              visualDensity: VisualDensity.compact,
-                              foregroundColor: WidgetStateProperty.resolveWith((
-                                states,
-                              ) {
-                                if (states.contains(WidgetState.selected)) {
-                                  return AppColors.onPrimary;
-                                }
-                                return AppColors.textDark;
-                              }),
-                              backgroundColor: WidgetStateProperty.resolveWith((
-                                states,
-                              ) {
-                                if (states.contains(WidgetState.selected)) {
-                                  return AppColors.dark;
-                                }
-                                return AppColors.primaryLight;
-                              }),
-                            ),
-                          ),
+                        child: _BillingTabBar(
+                          selected: tab,
+                          canManage: controller.canManage,
+                          ageingLabel:
+                              controller.hasAgeingRiskBadge
+                                  ? '90d (${controller.ageingRiskCount})'
+                                  : '90d',
+                          burnLabel:
+                              controller.hasBurnAlertBadge
+                                  ? 'Burn (${controller.burnAlertCount})'
+                                  : 'Burn',
+                          burnAlert: controller.hasBurnAlertBadge,
+                          arLabel:
+                              controller.hasArRiskBadge
+                                  ? 'AR (${controller.arRiskCount})'
+                                  : 'AR',
+                          onSelect: (v) {
+                            if (v == 1) {
+                              controller.switchToCreateTab();
+                            } else if (v == 2) {
+                              controller.switchToAgeingTab();
+                            } else if (v == 3) {
+                              controller.switchToBurnTab();
+                            } else if (v == 4) {
+                              controller.switchToPeTab();
+                            } else if (v == 5) {
+                              controller.switchToArTab();
+                            } else {
+                              controller.tabIndex.value = 0;
+                            }
+                          },
                         ),
                       ),
                   ],
@@ -240,6 +171,150 @@ class InvoiceExportsListView extends GetView<InvoiceExportsController> {
           ],
         );
       }),
+    );
+  }
+}
+
+class _BillingTabBar extends StatelessWidget {
+  const _BillingTabBar({
+    required this.selected,
+    required this.canManage,
+    required this.ageingLabel,
+    required this.burnLabel,
+    required this.burnAlert,
+    required this.arLabel,
+    required this.onSelect,
+  });
+
+  final int selected;
+  final bool canManage;
+  final String ageingLabel;
+  final String burnLabel;
+  final bool burnAlert;
+  final String arLabel;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _BillingTabChip(
+            selected: selected == 0,
+            icon: Icons.receipt_long_outlined,
+            label: 'Exports',
+            infoTab: BillingTabInfo.exports,
+            onSelect: () => onSelect(0),
+          ),
+          if (canManage)
+            _BillingTabChip(
+              selected: selected == 1,
+              icon: Icons.add,
+              label: 'Create',
+              infoTab: BillingTabInfo.create,
+              onSelect: () => onSelect(1),
+            ),
+          _BillingTabChip(
+            selected: selected == 2,
+            icon: Icons.schedule_outlined,
+            label: ageingLabel,
+            infoTab: BillingTabInfo.ageing90d,
+            onSelect: () => onSelect(2),
+          ),
+          _BillingTabChip(
+            selected: selected == 3,
+            icon: Icons.local_fire_department_outlined,
+            iconColor: burnAlert ? AppColors.error : null,
+            label: burnLabel,
+            infoTab: BillingTabInfo.burn,
+            onSelect: () => onSelect(3),
+          ),
+          _BillingTabChip(
+            selected: selected == 4,
+            icon: Icons.outgoing_mail,
+            label: 'PE',
+            infoTab: BillingTabInfo.pe,
+            onSelect: () => onSelect(4),
+          ),
+          _BillingTabChip(
+            selected: selected == 5,
+            icon: Icons.account_balance_outlined,
+            label: arLabel,
+            infoTab: BillingTabInfo.ar,
+            onSelect: () => onSelect(5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BillingTabChip extends StatelessWidget {
+  const _BillingTabChip({
+    required this.selected,
+    required this.icon,
+    required this.label,
+    required this.infoTab,
+    required this.onSelect,
+    this.iconColor,
+  });
+
+  final bool selected;
+  final IconData icon;
+  final Color? iconColor;
+  final String label;
+  final BillingTabInfo infoTab;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected ? AppColors.onPrimary : AppColors.textDark;
+    final bg = selected ? AppColors.dark : AppColors.primaryLight;
+    final infoFg = selected
+        ? AppColors.onPrimary.withValues(alpha: 0.85)
+        : AppColors.textMuted;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onSelect,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 6, 2, 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 18, color: iconColor ?? fg),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: fg,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
+                  tooltip: 'About ${infoTab.shortLabel}',
+                  icon: Icon(Icons.info_outline, size: 16, color: infoFg),
+                  onPressed: () =>
+                      showBillingTabInfoSheet(context, tab: infoTab),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
