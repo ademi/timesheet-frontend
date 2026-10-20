@@ -257,22 +257,102 @@ class TenantMemberOut {
     required this.id,
     required this.email,
     this.fullName,
+    this.phone,
     this.role,
+    this.roleKey,
+    this.isActive = true,
   });
 
   final String id;
   final String email;
   final String? fullName;
+  final String? phone;
   final String? role;
+  final String? roleKey;
+  final bool isActive;
+
+  /// Display label for chips (prefer human role name, then key).
+  String get roleLabel {
+    final named = role?.trim();
+    if (named != null && named.isNotEmpty) return named;
+    final key = roleKey?.trim();
+    if (key != null && key.isNotEmpty) return key;
+    return 'Staff';
+  }
 
   factory TenantMemberOut.fromJson(Map<String, dynamic> json) {
+    final roleKey =
+        json['role_key'] as String? ??
+        json['preset_key'] as String? ??
+        (json['role'] is String ? json['role'] as String? : null);
+    final roleName =
+        json['role_name'] as String? ??
+        json['display_name'] as String? ??
+        json['role_display_name'] as String? ??
+        (json['role'] is String ? json['role'] as String? : null);
     return TenantMemberOut(
       id: json['id'].toString(),
       email: json['email'] as String? ?? '',
       fullName: json['full_name'] as String? ?? json['name'] as String?,
-      role: json['role'] as String? ?? json['role_key'] as String?,
+      phone: json['phone'] as String?,
+      role: roleName,
+      roleKey: roleKey,
+      isActive: json['is_active'] as bool? ?? true,
     );
   }
+}
+
+/// System preset from `GET /v1/tenant-members/assignable-roles`.
+class AssignableStaffRoleOut {
+  const AssignableStaffRoleOut({
+    required this.id,
+    required this.key,
+    required this.displayName,
+    this.description,
+  });
+
+  final String id;
+  final String key;
+  final String displayName;
+  final String? description;
+
+  factory AssignableStaffRoleOut.fromJson(Map<String, dynamic> json) {
+    return AssignableStaffRoleOut(
+      id: json['id'].toString(),
+      key: (json['key'] as String? ?? json['name'] as String? ?? '').trim(),
+      displayName:
+          (json['display_name'] as String? ??
+                  json['name'] as String? ??
+                  json['key'] as String? ??
+                  '')
+              .trim(),
+      description: json['description'] as String?,
+    );
+  }
+}
+
+class TenantMemberCreateBody {
+  const TenantMemberCreateBody({
+    required this.fullName,
+    required this.email,
+    this.phone,
+    this.presetKey,
+    this.roleId,
+  });
+
+  final String fullName;
+  final String email;
+  final String? phone;
+  final String? presetKey;
+  final String? roleId;
+
+  Map<String, dynamic> toJson() => {
+    'full_name': fullName,
+    'email': email,
+    if (phone != null && phone!.trim().isNotEmpty) 'phone': phone!.trim(),
+    if (presetKey != null && presetKey!.isNotEmpty) 'preset_key': presetKey,
+    if (roleId != null && roleId!.isNotEmpty) 'role_id': roleId,
+  };
 }
 
 class SharingAccessRequestOut {

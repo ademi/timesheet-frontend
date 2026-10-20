@@ -12,6 +12,7 @@ import '../../compliance_ops/data/repositories/compliance_ops_repository.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../controllers/contractor_payments_controller.dart';
+import '../controllers/staff_add_controller.dart';
 import '../controllers/staff_payments_controller.dart';
 import '../controllers/staff_tenant_settings_controller.dart';
 import '../data/datasources/payroll_remote_datasource.dart';
@@ -95,6 +96,20 @@ class StaffTenantSettingsBinding extends Bindings {
         clients: Get.find<ClientsRepository>(),
       ),
       onReenter: (c) => c.onScreenReenter(),
+    );
+  }
+}
+
+class StaffAddBinding extends Bindings {
+  @override
+  void dependencies() {
+    ComplianceOpsBinding.ensureShared();
+    if (!Get.isRegistered<SessionService>()) return;
+    putFresh(
+      () => StaffAddController(
+        complianceOps: Get.find<ComplianceOpsRepository>(),
+        session: Get.find<SessionService>(),
+      ),
     );
   }
 }

@@ -10,6 +10,7 @@ import '../bindings/auth_binding.dart';
 import '../bindings/branch_gateway_binding.dart';
 import '../bindings/first_login_binding.dart';
 import '../bindings/gateway_binding.dart';
+import '../bindings/reset_password_binding.dart';
 import '../routes/app_navigator.dart';
 import '../routes/app_routes.dart';
 import '../routes/middlewares/auth_route_utils.dart';
@@ -18,6 +19,7 @@ import '../views/branch_gateway_view.dart';
 import '../views/first_login_view.dart';
 import '../views/gateway_view.dart';
 import '../views/login_view.dart';
+import '../views/reset_password_view.dart';
 import '../views/v2/wrong_actor_view.dart';
 import 'billing_go_routes.dart';
 import 'clients_go_routes.dart';
@@ -28,6 +30,7 @@ import 'go_router_params.dart';
 import 'go_router_redirect.dart';
 import 'jobs_go_routes.dart';
 import 'shell_go_routes.dart';
+import 'staff_go_routes.dart';
 import 'visits_go_routes.dart';
 
 /// Builds the web [GoRouter] (Phase 1–5: auth, shells, domain deep links).
@@ -63,6 +66,14 @@ GoRouter createAppGoRouter({String? initialLocation}) {
         builder: (context, state) {
           FirstLoginBinding().dependencies();
           return const FirstLoginView();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.resetPassword,
+        builder: (context, state) {
+          syncGetxFromGoRouterState(state);
+          ResetPasswordBinding().dependencies();
+          return const ResetPasswordView();
         },
       ),
       GoRoute(
@@ -102,6 +113,7 @@ GoRouter createAppGoRouter({String? initialLocation}) {
       ...buildEngagementsGoRoutes(rootNavigatorKey: rootNavigatorKey),
       ...buildCredentialsGoRoutes(),
       ...buildBillingGoRoutes(),
+      ...buildStaffGoRoutes(),
       ...buildContractorOnboardingGoRoutes(),
     ],
     errorBuilder: (context, state) => UnknownRoutePage(uri: state.uri),

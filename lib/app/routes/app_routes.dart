@@ -2,6 +2,13 @@ abstract class AppRoutes {
   static const gateway = '/gateway';
   static const login = '/login';
   static const firstLogin = '/first-login';
+
+  /// Staff invite magic link → set password (`/auth/reset-password/{token}`).
+  static const resetPassword = '/auth/reset-password/:token';
+
+  static String resetPasswordWithToken(String token) =>
+      '/auth/reset-password/$token';
+
   static const adminBranchGateway = '/admin/branches';
 
   // --- Dual shells (contractor domain) ---
@@ -75,6 +82,7 @@ abstract class AppRoutes {
   static const staffBillingExportDetail = '/staff/billing/exports/detail';
   static const staffCompliance = '/staff/compliance';
   static const staffSettings = '/staff/settings';
+  static const staffAdd = '/staff/settings/add-staff';
   static const staffCredentialReview = '/staff/credentials-review';
 
   // ContractorShell + public / onboarding

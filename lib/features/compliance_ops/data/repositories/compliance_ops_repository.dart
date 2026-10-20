@@ -46,6 +46,12 @@ class ComplianceOpsRepository {
     (m) => m.fullName ?? m.email,
   );
 
+  Future<List<AssignableStaffRoleOut>> listAssignableStaffRoles() =>
+      _remote.listAssignableStaffRoles();
+
+  Future<TenantMemberOut> createTenantMember(TenantMemberCreateBody body) =>
+      _remote.createTenantMember(body);
+
   Future<void> withdrawConsent({
     required String credentialType,
     String? notes,

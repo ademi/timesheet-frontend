@@ -316,6 +316,10 @@ abstract final class ApiPaths {
   static const branches = '$_v1/branches';
   static const tenantMembers = '$_v1/tenant-members';
   static String tenantMember(String id) => '$tenantMembers/$id';
+  static const tenantMembersAssignableRoles = '$tenantMembers/assignable-roles';
+
+  /// Staff invite magic-link consume (public).
+  static const authResetPassword = '$_v1/auth/reset_password';
 
   // SIL / roster of care (B3) + vacancy (B19)
   static const silHouses = '$_v1/sil/houses';

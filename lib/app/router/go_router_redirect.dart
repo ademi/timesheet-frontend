@@ -15,6 +15,10 @@ bool isGoRouterPublicLocation(String location) {
       path == AppRoutes.firstLogin) {
     return true;
   }
+  // Staff invite magic link (`/auth/reset-password/{token}`).
+  if (path.startsWith('/auth/reset-password/')) {
+    return true;
+  }
   if (path == AppRoutes.contractorRegister ||
       path.startsWith('${AppRoutes.contractorRegister}/')) {
     return true;

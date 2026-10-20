@@ -49,6 +49,8 @@ class StaffTenantSettingsController extends GetxController {
   bool get canViewMembers =>
       _session.hasPermission(AppPermissions.tenantMembersRead) ||
       _session.hasPermission(AppPermissions.tenantMembersManage);
+  bool get canManageStaff =>
+      _session.hasPermission(AppPermissions.tenantMembersManage);
   bool get canViewBilling =>
       _session.hasPermission(AppPermissions.subscriptionView) ||
       _session.hasPermission(AppPermissions.billingView) ||

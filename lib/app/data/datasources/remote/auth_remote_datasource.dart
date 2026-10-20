@@ -98,6 +98,23 @@ class AuthRemoteDataSource {
     }
   }
 
+  /// Public magic-link consume: `POST /v1/auth/reset_password`.
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      await _plainDio.post<Map<String, dynamic>>(
+        '/v1/auth/reset_password',
+        data: {'token': token, 'new_password': newPassword},
+      );
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
+    }
+  }
+
   Future<AuthTokenModel> switchTenant(SwitchTenantRequestModel request) async {
     try {
       final response = await _authenticatedDio.post<Map<String, dynamic>>(

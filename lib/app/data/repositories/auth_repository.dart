@@ -67,6 +67,19 @@ class AuthRepository {
     }
   }
 
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      await _remote.resetPassword(token: token, newPassword: newPassword);
+    } on DioException catch (e) {
+      final authErr = parseAuthError(e);
+      if (authErr != null) throw authErr;
+      rethrow;
+    }
+  }
+
   Future<void> logout() async {
     final refresh = _storage.refreshToken;
     // Drop local tokens first so an in-flight refresh cannot persist the

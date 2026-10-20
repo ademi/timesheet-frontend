@@ -172,6 +172,33 @@ class ComplianceOpsRemoteDataSource {
     }
   }
 
+  Future<List<AssignableStaffRoleOut>> listAssignableStaffRoles() async {
+    try {
+      final response = await _dio.get<dynamic>(
+        ApiPaths.tenantMembersAssignableRoles,
+      );
+      return _parseList(response.data, AssignableStaffRoleOut.fromJson);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
+  Future<TenantMemberOut> createTenantMember(TenantMemberCreateBody body) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.tenantMembers,
+        data: body.toJson(),
+      );
+      return _require(
+        response.data,
+        TenantMemberOut.fromJson,
+        'create tenant member',
+      );
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<void> withdrawConsent({
     required String credentialType,
     String? notes,

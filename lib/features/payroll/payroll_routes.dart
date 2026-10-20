@@ -9,6 +9,7 @@ import '../shell/contractor_shell.dart';
 import '../shell/staff_shell.dart';
 import 'bindings/payroll_binding.dart';
 import 'views/contractor_payments_view.dart';
+import 'views/staff_add_view.dart';
 import 'views/staff_payments_view.dart';
 import 'views/staff_tenant_settings_view.dart';
 
@@ -39,6 +40,17 @@ abstract final class PayrollPages {
       binding: StaffTenantSettingsBinding(),
       page: () => staffShellPage(const StaffTenantSettingsView()),
       transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.staffAdd,
+      middlewares: [
+        AuthGuard(),
+        ActorGuard(),
+        PermissionGuard(anyOf: [AppPermissions.tenantMembersManage]),
+      ],
+      binding: StaffAddBinding(),
+      page: () => const StaffAddView(),
+      transition: Transition.rightToLeft,
     ),
     GetPage(
       name: AppRoutes.contractorPayments,
