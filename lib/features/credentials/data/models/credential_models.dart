@@ -430,6 +430,8 @@ class CredentialReviewContextOut {
     this.engagementId,
     this.photoIdPointsTotal,
     this.onboardingFlags = const {},
+    this.hasActiveSharingGrant,
+    this.allowSourceEvidence,
   });
 
   final List<CredentialOut> credentials;
@@ -437,6 +439,12 @@ class CredentialReviewContextOut {
   final String? engagementId;
   final int? photoIdPointsTotal;
   final Map<String, bool?> onboardingFlags;
+
+  /// When `false`, staff must request access before credentials are returned.
+  final bool? hasActiveSharingGrant;
+
+  /// `null` when there is no active grant; otherwise the grant’s evidence flag.
+  final bool? allowSourceEvidence;
 
   factory CredentialReviewContextOut.fromJson(Map<String, dynamic> json) {
     final creds = json['credentials'];
@@ -469,6 +477,8 @@ class CredentialReviewContextOut {
       photoIdPointsTotal:
           pointsRaw is num ? pointsRaw.toInt() : int.tryParse('$pointsRaw'),
       onboardingFlags: flags,
+      hasActiveSharingGrant: json['has_active_sharing_grant'] as bool?,
+      allowSourceEvidence: json['allow_source_evidence'] as bool?,
     );
   }
 }

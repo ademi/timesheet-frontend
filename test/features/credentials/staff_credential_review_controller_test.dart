@@ -130,11 +130,67 @@ void main() {
     ).called(1);
     expect(
       snacks.single,
-      'Request sent|Request sent. Waiting for contractor approval.',
+      'Request sent|Waiting for the contractor to approve on Home. '
+          'After they approve, tap Load credentials again.',
     );
     // Keep empty-state visible until contractor approves.
     expect(controller.needsShareRequest.value, isTrue);
   });
+
+  test(
+    'load sets needsShareRequest when review-context has no active grant',
+    () async {
+      when(
+        () => credentials.getReviewContext(
+          'contractor-1',
+          engagementId: 'engagement-1',
+        ),
+      ).thenAnswer(
+        (_) async => const CredentialReviewContextOut(
+          credentials: [],
+          hasActiveSharingGrant: false,
+          allowSourceEvidence: null,
+        ),
+      );
+
+      final controller = buildController();
+      await controller.load();
+
+      expect(controller.needsShareRequest.value, isTrue);
+      expect(controller.errorMessage.value, isNull);
+      expect(controller.items, isEmpty);
+      verifyNever(
+        () => pipeline.listEvidenceForContractor(any()),
+      );
+    },
+  );
+
+  test(
+    'load does not request share when grant is active but credentials empty',
+    () async {
+      when(
+        () => credentials.getReviewContext(
+          'contractor-1',
+          engagementId: 'engagement-1',
+        ),
+      ).thenAnswer(
+        (_) async => const CredentialReviewContextOut(
+          credentials: [],
+          hasActiveSharingGrant: true,
+          allowSourceEvidence: false,
+        ),
+      );
+      when(
+        () => pipeline.listEvidenceForContractor('contractor-1'),
+      ).thenAnswer((_) async => const []);
+
+      final controller = buildController();
+      await controller.load();
+
+      expect(controller.needsShareRequest.value, isFalse);
+      expect(controller.items, isEmpty);
+    },
+  );
 
   test('requestAccess fails when engagement context missing', () async {
     when(

@@ -49,6 +49,25 @@ void main() {
     expect(context.credentials, hasLength(1));
   });
 
+  test('CredentialReviewContextOut parses sharing grant flags', () {
+    final noGrant = CredentialReviewContextOut.fromJson({
+      'credentials': [],
+      'has_active_sharing_grant': false,
+      'allow_source_evidence': null,
+    });
+    expect(noGrant.hasActiveSharingGrant, isFalse);
+    expect(noGrant.allowSourceEvidence, isNull);
+    expect(noGrant.credentials, isEmpty);
+
+    final withGrant = CredentialReviewContextOut.fromJson({
+      'credentials': [],
+      'has_active_sharing_grant': true,
+      'allow_source_evidence': false,
+    });
+    expect(withGrant.hasActiveSharingGrant, isTrue);
+    expect(withGrant.allowSourceEvidence, isFalse);
+  });
+
   test('load prefers review-context pack metadata', () async {
     Get.testMode = true;
     final credentials = _MockCredentialsRepository();

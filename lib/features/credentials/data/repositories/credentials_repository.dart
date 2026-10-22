@@ -53,6 +53,8 @@ class CredentialsRepository {
       engagementId: context.engagementId,
       photoIdPointsTotal: context.photoIdPointsTotal,
       onboardingFlags: context.onboardingFlags,
+      hasActiveSharingGrant: context.hasActiveSharingGrant,
+      allowSourceEvidence: context.allowSourceEvidence,
     );
   }
 

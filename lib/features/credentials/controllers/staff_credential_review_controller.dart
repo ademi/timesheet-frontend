@@ -117,6 +117,9 @@ class StaffCredentialReviewController extends GetxController {
   bool get canRead => _session.hasPermission(AppPermissions.credentialsRead);
   bool get canManage =>
       _session.hasPermission(AppPermissions.contractorsManage);
+
+  /// Staff who can create a sharing-access request (BE: review or manage).
+  bool get canRequestShare => canReview || canManage;
   bool get canEditRequiredDocs => _canEditRequiredDocs;
   bool get isEnded => _isEnded;
   bool get hasReviewContext => _contractorId != null && _engagementId != null;
@@ -337,12 +340,14 @@ class StaffCredentialReviewController extends GetxController {
     eligibilityReasons.clear();
     try {
       List<CredentialOut> list;
+      bool? hasActiveSharingGrant;
       try {
         final context = await _repository.getReviewContext(
           contractorId,
           engagementId: engagementId,
         );
         list = context.credentials;
+        hasActiveSharingGrant = context.hasActiveSharingGrant;
         documentPack.value = context.documentPack;
         photoIdPointsTotal.value = context.photoIdPointsTotal;
         onboardingFlags
@@ -354,6 +359,7 @@ class StaffCredentialReviewController extends GetxController {
           contractorId,
           engagementId: engagementId,
         );
+        hasActiveSharingGrant = null;
         documentPack.value = null;
         photoIdPointsTotal.value = null;
         onboardingFlags.clear();
@@ -363,6 +369,15 @@ class StaffCredentialReviewController extends GetxController {
           list.where((c) => c.status != 'superseded').toList(growable: false);
       items.assignAll(current);
       _seedDecisionsFromReview(current);
+
+      // Option A: BE returns empty credentials + has_active_sharing_grant=false
+      // (no 403). Show Request access instead of "No credentials loaded."
+      if (current.isEmpty && hasActiveSharingGrant == false) {
+        needsShareRequest.value = true;
+        evidenceByCredentialId.clear();
+        return;
+      }
+
       try {
         final documents = await _pipeline.listEvidenceForContractor(
           contractorId,
@@ -407,15 +422,22 @@ class StaffCredentialReviewController extends GetxController {
       errorMessage.value = 'Open credential review from Workforce.';
       return false;
     }
+    if (!canRequestShare) {
+      errorMessage.value =
+          'You need credentials.review or contractors.manage to request access.';
+      return false;
+    }
     isRequestingShare.value = true;
     errorMessage.value = null;
     try {
       await _engagementsRepository.createSharingAccessRequest(
         engagementId: engagementId,
+        allowSourceEvidence: true,
       );
       _showSnack(
         'Request sent',
-        'Request sent. Waiting for contractor approval.',
+        'Waiting for the contractor to approve on Home. '
+            'After they approve, tap Load credentials again.',
       );
       return true;
     } on AppFailure catch (e) {

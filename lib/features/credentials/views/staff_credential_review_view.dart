@@ -219,10 +219,18 @@ class _ShareRequestEmptyState extends StatelessWidget {
           'This contractor has not shared credentials with your organisation yet.',
           style: TextStyle(color: AppColors.textMuted),
         ),
+        const SizedBox(height: 8),
+        const Text(
+          'Request access, then ask them to approve on Home. After approval, '
+          'tap Load credentials again.',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+        ),
         const SizedBox(height: 12),
         ElevatedButton(
           onPressed:
-              controller.isRequestingShare.value || !controller.hasReviewContext
+              controller.isRequestingShare.value ||
+                      !controller.hasReviewContext ||
+                      !controller.canRequestShare
                   ? null
                   : () => controller.requestAccess(),
           style: ElevatedButton.styleFrom(
