@@ -8,6 +8,7 @@ import '../../../core/responsive/page_content.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../controllers/attendance_review_controller.dart';
 import '../data/attendance_review_models.dart';
+import '../widgets/attendance_tab_info_sheet.dart';
 
 /// Prefer a short visit ref over a full UUID in list subtitles.
 String attendanceVisitSubtitleRef(String visitId) {
@@ -46,31 +47,14 @@ class AttendanceReviewView extends GetView<AttendanceReviewController> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Wrap(
                 spacing: 8,
+                runSpacing: 8,
                 children: [
-                  ChoiceChip(
-                    label: const Text('All'),
-                    selected: filter == AttendanceReviewFilter.all,
-                    onSelected: (_) =>
-                        controller.setFilter(AttendanceReviewFilter.all),
-                  ),
-                  ChoiceChip(
-                    label: const Text('GPS'),
-                    selected: filter == AttendanceReviewFilter.gps,
-                    onSelected: (_) =>
-                        controller.setFilter(AttendanceReviewFilter.gps),
-                  ),
-                  ChoiceChip(
-                    label: const Text('Variance'),
-                    selected: filter == AttendanceReviewFilter.variance,
-                    onSelected: (_) =>
-                        controller.setFilter(AttendanceReviewFilter.variance),
-                  ),
-                  ChoiceChip(
-                    label: const Text('Sync'),
-                    selected: filter == AttendanceReviewFilter.sync,
-                    onSelected: (_) =>
-                        controller.setFilter(AttendanceReviewFilter.sync),
-                  ),
+                  for (final tab in AttendanceReviewFilter.values)
+                    _AttendanceFilterChip(
+                      filter: tab,
+                      selected: filter == tab,
+                      onSelect: () => controller.setFilter(tab),
+                    ),
                 ],
               ),
             ),
@@ -289,6 +273,83 @@ class AttendanceReviewView extends GetView<AttendanceReviewController> {
     noteCtrl.dispose();
     if (result == null) return;
     await onConfirm(result);
+  }
+}
+
+class _AttendanceFilterChip extends StatelessWidget {
+  const _AttendanceFilterChip({
+    required this.filter,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final AttendanceReviewFilter filter;
+  final bool selected;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    // Custom chip (not FilterChip) so the (i) IconButton can receive taps —
+    // nested gestures inside FilterChip labels are swallowed by the chip.
+    final fg = selected ? AppColors.onCta : AppColors.textDark;
+    final bg = selected ? AppColors.cta : AppColors.surface;
+    final border =
+        selected
+            ? BorderSide.none
+            : const BorderSide(color: AppColors.textDark, width: 1);
+    final infoFg =
+        selected
+            ? AppColors.onCta.withValues(alpha: 0.9)
+            : AppColors.textMuted;
+
+    // Squared chip with small rounded corners (not pill / stadium).
+    const radius = BorderRadius.all(Radius.circular(8));
+    return Material(
+      color: bg,
+      shape: RoundedRectangleBorder(borderRadius: radius, side: border),
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        height: 36,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: onSelect,
+              borderRadius: radius,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 2, 0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (selected) ...[
+                      Icon(Icons.check, size: 16, color: fg),
+                      const SizedBox(width: 4),
+                    ],
+                    Text(
+                      filter.shortLabel,
+                      style: TextStyle(
+                        color: fg,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 36),
+              tooltip: 'About ${filter.shortLabel}',
+              icon: Icon(Icons.info_outline, size: 15, color: infoFg),
+              onPressed:
+                  () => showAttendanceTabInfoSheet(context, tab: filter),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
