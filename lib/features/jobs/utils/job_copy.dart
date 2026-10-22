@@ -15,7 +15,7 @@ String jobStatusLabel(String status) => switch (status) {
 };
 
 String locationModeLabel(String mode) => switch (mode) {
-  'site' => "Client's home",
+  'site' => "Participant's home",
   'branch' => 'Branch',
   _ => humanizeLabel(mode),
 };

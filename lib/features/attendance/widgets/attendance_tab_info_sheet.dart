@@ -53,7 +53,7 @@ _AttendanceTabInfoCopy _copyFor(AttendanceReviewFilter tab) {
             'example outside the geofence, missing GPS, or related location '
             'flags. Approve if the visit was valid; Reject if it was not.',
         youCan:
-            'Review distance from site, contractor, client, and time, then '
+            'Review distance from site, support worker, participant, and time, then '
             'Approve or Reject with an optional note.',
         notThis:
             'Not failed clock syncs (those are Sync conflicts). Schedule '

@@ -57,7 +57,7 @@ class ContractorRosterOverlay {
   factory ContractorRosterOverlay.fromJson(Map<String, dynamic> json) {
     return ContractorRosterOverlay(
       contractorId: json['contractor_id'].toString(),
-      displayName: json['display_name'] as String? ?? 'Worker',
+      displayName: json['display_name'] as String? ?? 'Support worker',
       leave: (json['leave'] as List? ?? const [])
           .whereType<Map>()
           .map((e) => LeaveIntervalOut.fromJson(Map<String, dynamic>.from(e)))

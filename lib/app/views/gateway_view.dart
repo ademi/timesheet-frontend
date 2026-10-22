@@ -38,7 +38,7 @@ class GatewayView extends GetView<GatewayController> {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'Contractor platform',
+                        'Support worker platform',
                         style: TextStyle(
                           fontSize: 13,
                           color: AppColors.primaryDark,
@@ -57,14 +57,14 @@ class GatewayView extends GetView<GatewayController> {
                                 _ActionCard(
                                   icon: Icons.login_rounded,
                                   title: 'Sign in',
-                                  subtitle: 'Staff or contractor account',
+                                  subtitle: 'Staff or support worker account',
                                   onTap: controller.goToSignIn,
                                 ),
                                 const SizedBox(height: 16),
                                 _ActionCard(
                                   icon: Icons.person_add_alt_1_rounded,
-                                  title: 'Register as contractor',
-                                  subtitle: 'Create your contractor profile',
+                                  title: 'Register as support worker',
+                                  subtitle: 'Create your support worker profile',
                                   onTap: controller.goToContractorRegister,
                                 ),
                                 const SizedBox(height: 16),

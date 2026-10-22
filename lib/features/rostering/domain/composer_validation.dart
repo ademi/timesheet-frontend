@@ -13,9 +13,9 @@ abstract final class ComposerValidation {
   static const maxParticipants = 32;
 
   static const placeRequired = 'Add a place';
-  static const participantsRequired = 'Add a client';
+  static const participantsRequired = 'Add a participant';
   static const participantsCap = 'Groups are limited to 32 participants';
-  static const oneSessionSingleClient = 'One session allows only one client';
+  static const oneSessionSingleClient = 'One session allows only one participant';
   static const supportAnchorRequired = 'Add a support item before publishing';
   static const supportAnchorStep = 'Choose a support item';
   static const scheduleRequired = 'Set start and end times';
@@ -25,7 +25,7 @@ abstract final class ComposerValidation {
   static const postalCodeRequired =
       'Enter a postal code (at least 3 characters)';
   static const allocationRequired =
-      'Enter allocation % for each client (must sum to 100)';
+      'Enter allocation % for each participant (must sum to 100)';
   static const allocationSum =
       'Custom allocation percentages must sum to 100';
 

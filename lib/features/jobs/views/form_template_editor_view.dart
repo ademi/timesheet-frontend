@@ -90,7 +90,7 @@ class _FormTemplateEditorViewState extends State<FormTemplateEditorView> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Fields contractors fill in',
+                          'Fields support workers fill in',
                           style: Get.textTheme.titleMedium,
                         ),
                       ),
@@ -208,7 +208,7 @@ class _FieldCard extends StatelessWidget {
               onChanged: (_) => controller.onLabelChanged(field),
               decoration: const InputDecoration(
                 labelText: 'Label *',
-                hintText: 'Shown to the contractor',
+                hintText: 'Shown to the support worker',
                 border: OutlineInputBorder(),
                 isDense: true,
               ),

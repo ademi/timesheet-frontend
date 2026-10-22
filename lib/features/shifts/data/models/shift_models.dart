@@ -135,7 +135,7 @@ class ShiftAssignmentOut {
     return ShiftAssignmentOut(
       id: json['id'].toString(),
       contractorId: json['contractor_id'].toString(),
-      contractorName: json['contractor_name'] as String? ?? 'Worker',
+      contractorName: json['contractor_name'] as String? ?? 'Support worker',
       visitId: json['visit_id'].toString(),
       source: json['source'] as String? ?? 'staff_assign',
       status: json['status'] as String? ?? 'active',

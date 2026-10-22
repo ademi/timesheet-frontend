@@ -56,7 +56,7 @@ String supportSegmentKindLabel(String kind) => switch (kind) {
 /// Frozen Phase 0 helper copy under the kind control.
 String? supportSegmentKindHelper(String kind) => switch (kind) {
   'sleepover' =>
-    'Worker may sleep overnight. Must be continuous and at least 8 hours, '
+    'Support worker may sleep overnight. Must be continuous and at least 8 hours, '
         'and should cross midnight. Not an hourly night shift.',
   'shadow' =>
     'Introduce a new worker — not a standing double-up. Claimable shadow is '

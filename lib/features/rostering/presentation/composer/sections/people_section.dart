@@ -61,7 +61,7 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
             children: [
               Expanded(
                 child: Text(
-                  isGroup ? 'Participants' : 'Client',
+                  isGroup ? 'Participants' : 'Participant',
                   style: Get.textTheme.titleMedium,
                 ),
               ),
@@ -111,10 +111,10 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
               onQueryChanged: (v) => controller.clientSearch.value = v,
               labelText:
                   isGroup
-                      ? 'Search clients to add'
+                      ? 'Search participants to add'
                       : replacing
                       ? 'Search replacement client'
-                      : 'Search clients',
+                      : 'Search participants',
               loading: hydrating && controller.clients.isEmpty,
               autofocus: ids.isEmpty || replacing,
               onSelected: (candidate) async {
@@ -146,7 +146,7 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
                 key: const Key('composer-change-client'),
                 onPressed: controller.beginReplaceClient,
                 icon: const Icon(Icons.swap_horiz, size: 18),
-                label: const Text('Change client'),
+                label: const Text('Change participant'),
               ),
             ),
           if (showAlloc) ...[
@@ -206,9 +206,9 @@ class ComposerPeopleSection extends GetView<RosterComposerController> {
               key: const Key('composer-worker-count'),
               value: slotsCount,
               decoration: const InputDecoration(
-                labelText: 'Worker slots',
+                labelText: 'Support worker slots',
                 helperText:
-                    'Fill on the Workers step; empty slots open for claim',
+                    'Fill on the Support workers step; empty slots open for claim',
                 border: OutlineInputBorder(),
                 isDense: true,
               ),

@@ -180,7 +180,7 @@ class _BudgetWarningsStrip extends StatelessWidget {
           ? 'A support item could not be matched to a budget envelope.'
           : 'Support item $item could not be matched to a budget envelope.';
     }
-    return 'Review this export against the client budget.';
+    return 'Review this export against the participant budget.';
   }
 
   static String _envelopeLabel(String? key) {
@@ -194,7 +194,7 @@ class _BudgetWarningsStrip extends StatelessWidget {
       case 'other':
         return 'Other';
       default:
-        return 'Client';
+        return 'Participant';
     }
   }
 }
@@ -263,7 +263,7 @@ class _ExportLineTile extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  line.clientName ?? 'Client',
+                  line.clientName ?? 'Participant',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),

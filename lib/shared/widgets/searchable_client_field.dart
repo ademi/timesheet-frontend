@@ -21,7 +21,7 @@ class SearchableClientField extends StatefulWidget {
     this.photosByClient = const {},
     this.query,
     this.onQueryChanged,
-    this.labelText = 'Search clients',
+    this.labelText = 'Search participants',
     this.hintText = 'Name, email, or phone',
     this.enabled = true,
     this.loading = false,
@@ -30,7 +30,7 @@ class SearchableClientField extends StatefulWidget {
     this.browseLimit = 8,
     this.maxResultsHeight = 260,
     this.allowClearSelection = false,
-    this.clearSelectionLabel = 'All clients',
+    this.clearSelectionLabel = 'All participants',
     this.onClearSelection,
     this.showPhotos = true,
     this.focusNode,
@@ -325,7 +325,7 @@ class _SearchableClientFieldState extends State<SearchableClientField> {
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              'No clients in this directory yet.',
+              'No participants in this directory yet.',
               style: TextStyle(color: AppColors.textMuted, fontSize: 13),
             ),
           )
@@ -333,7 +333,7 @@ class _SearchableClientFieldState extends State<SearchableClientField> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              'No clients match “$q”.',
+              'No participants match “$q”.',
               style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
             ),
           )

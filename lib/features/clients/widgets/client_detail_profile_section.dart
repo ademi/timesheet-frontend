@@ -57,7 +57,7 @@ class ClientDetailProfileSection extends StatelessWidget {
               ClientRequirementEditor(controller: controller, draft: draft),
           ] else if (!controller.isLoadingRequirements.value) ...[
             const Text(
-              'No profile requirements for this client type.',
+              'No profile requirements for this participant type.',
               style: TextStyle(color: AppColors.textMuted),
             ),
           ],

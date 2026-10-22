@@ -29,7 +29,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Create your contractor profile'), findsOneWidget);
+    expect(find.text('Create your support worker profile'), findsOneWidget);
     expect(
       find.textContaining('complete profile, legal, and documents'),
       findsOneWidget,

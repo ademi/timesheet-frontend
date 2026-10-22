@@ -331,7 +331,7 @@ class StaffCredentialReviewController extends GetxController {
     final contractorId = _contractorId;
     final engagementId = _engagementId;
     if (contractorId == null || engagementId == null) {
-      errorMessage.value = 'Open credential review from Workforce.';
+      errorMessage.value = 'Open credential review from Support workers.';
       return;
     }
     isLoading.value = true;
@@ -419,7 +419,7 @@ class StaffCredentialReviewController extends GetxController {
   Future<bool> requestAccess() async {
     final engagementId = _engagementId;
     if (engagementId == null) {
-      errorMessage.value = 'Open credential review from Workforce.';
+      errorMessage.value = 'Open credential review from Support workers.';
       return false;
     }
     if (!canRequestShare) {
@@ -436,7 +436,7 @@ class StaffCredentialReviewController extends GetxController {
       );
       _showSnack(
         'Request sent',
-        'Waiting for the contractor to approve on Home. '
+        'Waiting for the support worker to approve on Home. '
             'After they approve, tap Load credentials again.',
       );
       return true;
@@ -480,7 +480,7 @@ class StaffCredentialReviewController extends GetxController {
     }
     final engagementId = _engagementId;
     if (engagementId == null) {
-      errorMessage.value = 'Open credential review from Workforce.';
+      errorMessage.value = 'Open credential review from Support workers.';
       return;
     }
     reviewingCredentialId.value = credential.id;

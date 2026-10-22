@@ -25,7 +25,7 @@ class ClientDetailView extends GetView<ClientsController> {
 
   static const _tabLabels = [
     'Overview',
-    'Care plan',
+    'Support plan',
     'Profile & docs',
     'People',
     'Places',
@@ -38,11 +38,11 @@ class ClientDetailView extends GetView<ClientsController> {
       final client = controller.selected.value;
       if (client == null) {
         return Scaffold(
-          appBar: AppBar(title: const Text('Client')),
-          body:
-              controller.isLoading.value
-                  ? const Center(child: CircularProgressIndicator())
-                  : const Center(child: Text('Client not found.')),
+          appBar: AppBar(title: const Text('Participant')),
+        body:
+            controller.isLoading.value
+                ? const Center(child: CircularProgressIndicator())
+                  : const Center(child: Text('Participant not found.')),
         );
       }
       final err = controller.errorMessage.value;

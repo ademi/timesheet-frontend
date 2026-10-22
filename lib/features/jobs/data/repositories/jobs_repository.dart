@@ -12,8 +12,8 @@ class JobsRepository {
     final jobs = List<JobOut>.of(await _remote.listJobs());
     jobs.sort((a, b) {
       final byClient = compareNames(
-        a.clientName ?? 'No client',
-        b.clientName ?? 'No client',
+        a.clientName ?? 'No participant',
+        b.clientName ?? 'No participant',
       );
       if (byClient != 0) return byClient;
       return compareNames(a.title, b.title);

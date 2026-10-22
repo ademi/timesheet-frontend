@@ -36,7 +36,7 @@ class ClientFormView extends GetView<ClientsController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: const AppBackButton(fallbackRoute: AppRoutes.staffClients),
-        title: const Text('Edit client'),
+        title: const Text('Edit participant'),
       ),
       body: Obx(() {
         final err = controller.errorMessage.value;
@@ -83,7 +83,7 @@ class ClientFormView extends GetView<ClientsController> {
                         foregroundColor: AppColors.onPrimary,
                         minimumSize: const Size.fromHeight(48),
                       ),
-                      child: const Text('Save client'),
+                      child: const Text('Save participant'),
                     ),
                   ),
                 ),
@@ -151,7 +151,7 @@ class _CoreDetailsStep extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Name plus email or phone are required. Set client type and '
+          'Name plus email or phone are required. Set participant type and '
           'documents on the Details tab after saving.',
           style: TextStyle(fontSize: 12, color: AppColors.textMuted),
         ),

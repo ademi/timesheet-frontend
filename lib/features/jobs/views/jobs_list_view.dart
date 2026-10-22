@@ -36,7 +36,7 @@ class JobsListView extends GetView<JobsController> {
                 backgroundColor: AppColors.cta,
                 foregroundColor: AppColors.onCta,
                 icon: const Icon(Icons.add),
-                label: const Text('Add job'),
+                label: const Text('Add support'),
               ),
       body: Obx(() {
         final err = controller.errorMessage.value;
@@ -45,8 +45,8 @@ class JobsListView extends GetView<JobsController> {
         }
         final jobs = [...controller.jobs]..sort((a, b) {
           final byClient = compareNames(
-            a.clientName ?? 'No client',
-            b.clientName ?? 'No client',
+            a.clientName ?? 'No participant',
+            b.clientName ?? 'No participant',
           );
           if (byClient != 0) return byClient;
           return compareNames(a.title, b.title);
@@ -67,7 +67,7 @@ class JobsListView extends GetView<JobsController> {
                     if (jobs.isEmpty)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 32),
-                        child: Text('No jobs yet.'),
+                        child: Text('No supports yet.'),
                       )
                     else
                       ..._groupedJobTiles(context, jobs),
@@ -85,7 +85,7 @@ class JobsListView extends GetView<JobsController> {
     final children = <Widget>[];
     String? lastGroup;
     for (final job in jobs) {
-      final group = job.clientName ?? 'No client';
+      final group = job.clientName ?? 'No participant';
       if (group != lastGroup) {
         if (lastGroup != null) {
           children.add(const SizedBox(height: 8));

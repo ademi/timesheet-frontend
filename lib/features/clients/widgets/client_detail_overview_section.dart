@@ -188,7 +188,7 @@ class ClientDetailOverviewSection extends StatelessWidget {
               if (controller.isLoadingTypes.value)
                 const LinearProgressIndicator(minHeight: 2)
               else if (types.isEmpty)
-                const Text('No client types available.')
+                const Text('No participant types available.')
               else
                 DropdownButtonFormField<String>(
                   key: typeKey,

@@ -53,7 +53,7 @@ class LoginView extends GetView<AuthController> {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'Staff or contractor account',
+                      'Staff or support worker account',
                       style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
 
@@ -183,7 +183,7 @@ class LoginView extends GetView<AuthController> {
                     TextButton(
                       onPressed:
                           () => AppNavigator.push(AppRoutes.contractorRegister),
-                      child: const Text('Register as contractor'),
+                      child: const Text('Register as support worker'),
                     ),
                     const SizedBox(height: 24),
                   ],

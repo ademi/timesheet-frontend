@@ -59,7 +59,7 @@ class _ComposerWorkersSectionState extends State<ComposerWorkersSection> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Workers', style: Get.textTheme.titleMedium),
+          Text('Support workers', style: Get.textTheme.titleMedium),
           const SizedBox(height: 4),
           Text(
             open == 0
@@ -70,7 +70,7 @@ class _ComposerWorkersSectionState extends State<ComposerWorkersSection> {
           if (clientConflicts.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(
-              'Client schedule conflicts (warning only)',
+              'Participant schedule conflicts (warning only)',
               key: const Key('composer-client-conflicts-title'),
               style: const TextStyle(
                 fontSize: 12,

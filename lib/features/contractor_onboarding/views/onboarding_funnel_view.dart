@@ -27,7 +27,7 @@ class OnboardingFunnelView extends GetView<OnboardingController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Contractor onboarding'),
+        title: const Text('Support worker onboarding'),
         actions: [
           if (Get.isRegistered<AuthController>())
             IconButton(

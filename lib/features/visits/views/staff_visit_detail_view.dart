@@ -106,7 +106,7 @@ class _StaffVisitDetailViewState extends State<StaffVisitDetailView> {
                           '${v.latitude != null ? ' @ ${v.latitude}, ${v.longitude}' : ''}',
                         ),
                         if (v.contractorName?.isNotEmpty == true)
-                          Text('Contractor: ${v.contractorName}'),
+                          Text('Support worker: ${v.contractorName}'),
                         Obx(() {
                           final ndis = controller.participantNdisNumber.value;
                           if (ndis == null &&

@@ -248,7 +248,7 @@ class StaffVisitsController extends GetxController {
                 displayName:
                     (e.contractorName?.trim().isNotEmpty == true)
                         ? e.contractorName!.trim()
-                        : 'Worker',
+                        : 'Support worker',
               ),
             )
             .toList()
@@ -1012,7 +1012,7 @@ class StaffVisitsController extends GetxController {
     final shift = selectedShift.value;
     if (shift == null || !canManage || shift.status != 'draft') return;
     if (workerCount < 1) {
-      errorMessage.value = 'Workers planned must be at least 1.';
+      errorMessage.value = 'Support workers planned must be at least 1.';
       return;
     }
     isSaving.value = true;
@@ -1111,7 +1111,7 @@ class StaffVisitsController extends GetxController {
       AlertDialog(
         title: const Text('Assign anyway?'),
         content: const Text(
-          'This worker is marked Leave or Busy for this time. Assign anyway?',
+          'This support worker is marked Leave or Busy for this time. Assign anyway?',
         ),
         actions: [
           TextButton(
@@ -1346,9 +1346,9 @@ class StaffVisitsController extends GetxController {
     if (Get.testMode) return true;
     final result = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Release worker?'),
+        title: const Text('Release support worker?'),
         content: Text(
-          'Release $workerName? Hole opens for claim and eligible workers are notified.',
+          'Release $workerName? Hole opens for claim and eligible support workers are notified.',
         ),
         actions: [
           TextButton(
@@ -1368,7 +1368,7 @@ class StaffVisitsController extends GetxController {
   Future<void> releaseAssignment({
     required String shiftId,
     required String contractorId,
-    String workerName = 'Worker',
+    String workerName = 'Support worker',
     bool skipConfirm = false,
   }) async {
     if (!canManage) return;
@@ -1385,7 +1385,7 @@ class StaffVisitsController extends GetxController {
         selectedShift.value = updated;
       }
       await load();
-      lastReleaseSnack = 'Hole opened — eligible workers notified.';
+      lastReleaseSnack = 'Hole opened — eligible support workers notified.';
       if (!Get.testMode) {
         AppToast.success('Released', lastReleaseSnack!);
       }
@@ -1966,7 +1966,7 @@ class StaffVisitsController extends GetxController {
                     ),
                     DropdownMenuItem(
                       value: 'worker_no_show',
-                      child: Text('Worker no-show'),
+                      child: Text('Support worker no-show'),
                     ),
                     DropdownMenuItem(value: 'other', child: Text('Other')),
                   ],

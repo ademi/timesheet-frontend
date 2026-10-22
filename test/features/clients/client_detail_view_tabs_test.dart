@@ -106,13 +106,13 @@ void main() {
     final bar = tester.widget<SubjectTabBar>(find.byType(SubjectTabBar));
     expect(bar.labels, [
       'Overview',
-      'Care plan',
+      'Support plan',
       'Profile & docs',
       'People',
       'Places',
       'Visits',
     ]);
-    expect(bar.labels[ClientsController.tabCarePlan], 'Care plan');
+    expect(bar.labels[ClientsController.tabCarePlan], 'Support plan');
     expect(bar.labels[ClientsController.tabVisits], 'Visits');
 
     expect(find.byType(FormStickyActions), findsNothing);

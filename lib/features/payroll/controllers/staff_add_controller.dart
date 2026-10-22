@@ -179,7 +179,7 @@ class StaffAddController extends GetxController {
         e.code.contains('contractor') ||
         detail.contains('hard split') ||
         detail.contains('cannot be both')) {
-      return 'That email belongs to a contractor and can’t be used for staff.';
+      return 'That email belongs to a support worker and can’t be used for staff.';
     }
     return e.message;
   }

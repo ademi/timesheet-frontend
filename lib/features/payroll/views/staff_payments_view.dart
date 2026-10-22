@@ -199,7 +199,7 @@ class _CreateBatchTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Choose the pay period, then select the contractors to include. Each contractor will bring in all unpaid completed visits for that period.',
+                  'Choose the pay period, then select the support workers to include. Each support worker will bring in all unpaid completed visits for that period.',
                   style: TextStyle(fontSize: 13),
                 ),
                 const SizedBox(height: 12),
@@ -215,8 +215,8 @@ class _CreateBatchTab extends StatelessWidget {
                   TextField(
                     controller: controller.contractorFilterCtrl,
                     decoration: InputDecoration(
-                      labelText: 'Filter contractors',
-                      hintText: 'Search by contractor name or ID',
+                      labelText: 'Filter support workers',
+                      hintText: 'Search by support worker name or ID',
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon:
@@ -244,7 +244,7 @@ class _CreateBatchTab extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            '${controller.selectedContractorIds.length} contractors · ${controller.selectedVisitCount} visits · ${_fmtHours(controller.selectedTotalHours)} hours selected',
+                            '${controller.selectedContractorIds.length} support workers · ${controller.selectedVisitCount} visits · ${_fmtHours(controller.selectedTotalHours)} hours selected',
                           ),
                         ),
                       ],
@@ -256,7 +256,7 @@ class _CreateBatchTab extends StatelessWidget {
                   const Text('No unpaid completed visits in this period.'),
                 if (controller.contractorCandidates.isNotEmpty &&
                     controller.filteredContractorCandidates.isEmpty)
-                  const Text('No contractors match this filter.'),
+                  const Text('No support workers match this filter.'),
                 for (final contractor
                     in controller.filteredContractorCandidates)
                   Card(
@@ -287,7 +287,7 @@ class _CreateBatchTab extends StatelessWidget {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Visits in this contractor group',
+                            'Visits in this support worker group',
                             style: Get.textTheme.titleSmall,
                           ),
                         ),

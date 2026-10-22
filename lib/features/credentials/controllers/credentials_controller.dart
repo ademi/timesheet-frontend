@@ -570,7 +570,7 @@ class CredentialsController extends GetxController {
   }) async {
     final ownerId = contractorId;
     if (ownerId == null || ownerId.isEmpty) {
-      setError('Contractor id missing from session.');
+      setError('Support worker id missing from session.');
       return;
     }
     if (!_session.hasPermission(AppPermissions.documentsUpload)) {
@@ -692,7 +692,7 @@ class CredentialsController extends GetxController {
   Future<void> updateEvidence(CredentialOut credential) async {
     final ownerId = contractorId;
     if (ownerId == null || ownerId.isEmpty) {
-      errorMessage.value = 'Contractor id missing from session.';
+      errorMessage.value = 'Support worker id missing from session.';
       return;
     }
     if (!_session.hasPermission(AppPermissions.documentsUpload)) {

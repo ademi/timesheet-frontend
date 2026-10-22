@@ -21,7 +21,7 @@ class ClientsListView extends GetView<ClientsController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Clients'),
+        title: const Text('Participants'),
         actions: shellAppBarActions(),
       ),
       floatingActionButton:
@@ -32,7 +32,7 @@ class ClientsListView extends GetView<ClientsController> {
                 backgroundColor: AppColors.cta,
                 foregroundColor: AppColors.onCta,
                 icon: const Icon(Icons.add),
-                label: const Text('Add client'),
+                label: const Text('Add participant'),
               ),
       body: Obx(() {
         final err = controller.errorMessage.value;
@@ -86,8 +86,8 @@ class ClientsListView extends GetView<ClientsController> {
                         padding: const EdgeInsets.symmetric(vertical: 32),
                         child: Text(
                           controller.listSearchQuery.value.trim().isEmpty
-                              ? 'No clients yet.'
-                              : 'No clients match “${controller.listSearchQuery.value.trim()}”.',
+                              ? 'No participants yet.'
+                              : 'No participants match “${controller.listSearchQuery.value.trim()}”.',
                         ),
                       ),
                     for (final c in visible)
@@ -150,7 +150,7 @@ class _ClientsListSearchFieldState extends State<_ClientsListSearchField> {
         textInputAction: TextInputAction.search,
         onChanged: (v) => controller.listSearchQuery.value = v,
         decoration: InputDecoration(
-          labelText: 'Search clients',
+          labelText: 'Search participants',
           hintText: 'Name, email, or phone',
           border: const OutlineInputBorder(),
           isDense: true,

@@ -56,7 +56,7 @@ Widget _clientFilterSearch({
     candidates: _clientCandidates(clients),
     recentIds: prefs.load(),
     labelText: label,
-    hintText: 'Search clients',
+    hintText: 'Search participants',
     showPhotos: false,
     compactSelected: true,
     selectedId: filterId.isEmpty ? null : filterId,
@@ -405,7 +405,7 @@ class _CreateExportTab extends StatelessWidget {
                     children: [
                       _clientFilterSearch(
                         key: const Key('invoice-host-client-search'),
-                        label: 'Host client',
+                        label: 'Host participant',
                         clearLabel: 'All hosts',
                         filterId: clientFilter,
                         clients: clients,
@@ -449,7 +449,7 @@ class _CreateExportTab extends StatelessWidget {
                         ],
                         onChanged: controller.setJobFilter,
                         decoration: const InputDecoration(
-                          labelText: 'Job / support',
+                          labelText: 'Support',
                           border: OutlineInputBorder(),
                           isDense: true,
                         ),
@@ -1047,8 +1047,8 @@ class _AgeingTab extends StatelessWidget {
                   if (controller.clientFilterOptions.isNotEmpty) ...[
                     _clientFilterSearch(
                       key: const Key('invoice-ageing-client-search'),
-                      label: 'Client',
-                      clearLabel: 'All clients',
+                      label: 'Participant',
+                      clearLabel: 'All participants',
                       filterId: controller.clientIdFilter.value,
                       clients: controller.clientFilterOptions,
                       onChanged: controller.setClientFilter,

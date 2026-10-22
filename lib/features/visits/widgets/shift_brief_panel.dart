@@ -25,8 +25,8 @@ class ShiftBriefPanel extends StatelessWidget {
         Text('Shift brief', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         const Text(
-          'Host client brief — clinical details are for the job host only. '
-          'Open other participants’ Care plans separately when this is a group.',
+          'Host participant brief — clinical details are for the support host only. '
+          'Open other participants’ support plans separately when this is a group.',
           style: TextStyle(fontSize: 12, color: AppColors.textMuted),
         ),
         if (brief != null && brief!.isGroupBrief) ...[

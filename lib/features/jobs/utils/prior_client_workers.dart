@@ -7,7 +7,7 @@ const priorClientWorkerLookback = Duration(days: 90);
 const priorClientWorkerFetchLimit = 200;
 
 /// Badge copy on Assign worker dropdowns.
-const workedWithClientLabel = 'Worked with client';
+const workedWithClientLabel = 'Worked with participant';
 
 /// Counts non-cancelled visits per contractor (most recent wins ties via sort).
 Map<String, int> countPriorClientVisits(Iterable<VisitOut> visits) {

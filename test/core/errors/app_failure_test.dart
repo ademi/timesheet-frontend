@@ -118,7 +118,7 @@ void main() {
         'email_already_registered':
             'This email is already registered on another invite path.',
         'primary_site_already_exists':
-            'This client already has a primary site. Refresh and try again.',
+            'This participant already has a primary site. Refresh and try again.',
         'invite_token_invalid':
             'This registration invite is invalid or has expired.',
         'invite_email_mismatch':
@@ -380,7 +380,7 @@ void main() {
         'contractor_on_leave': 'You’re on leave for this day.',
         'shift_not_found': 'Shift not found.',
         'shift_overlap':
-            'A shift for this job already exists in that time window.',
+            'A shift for this support already exists in that time window.',
       };
 
       for (final entry in expectedMessages.entries) {
@@ -428,7 +428,7 @@ void main() {
             type: DioExceptionType.badResponse,
           ),
         ).message,
-        'This worker is no longer in your workforce.',
+        'This support worker is no longer in your directory.',
       );
     });
 
@@ -535,7 +535,7 @@ void main() {
         'support_item_required':
             'Choose a support item before publishing or generating shifts.',
         'contractor_already_assigned':
-            'That worker is already assigned to this shift.',
+            'That support worker is already assigned to this shift.',
         'visit_has_only_travel_claims':
             'This visit has travel claims but no hourly support item. Set an hourly item on the visit, then export — travel will be included automatically.',
         'visit_support_item_is_travel':
@@ -572,13 +572,13 @@ void main() {
         'trip_kms_travel_unresolvable':
             'No Provider travel / Activity Based Transport kilometre item exists in the catalogue for this support type. Import the current NDIS catalogue, or ask staff to add the travel claim with the correct item.',
         'labour_requires_rate_snapshots':
-            'Publish the shift first so each participant has a rate snapshot. Worker travel time uses that hourly support item.',
+            'Publish the shift first so each participant has a rate snapshot. Support worker travel time uses that hourly support item.',
         'labour_travel_not_permitted':
             'Provider Travel isn’t allowed for this support item in the catalogue. Choose a different support item on the visit, or use vehicle kilometres instead.',
         'labour_travel_unclaimed_exists':
-            'This shift already has an unclaimed worker travel-time claim. Edit or claim that one first, or wait until it’s exported.',
+            'This shift already has an unclaimed support worker travel-time claim. Edit or claim that one first, or wait until it’s exported.',
         'labour_snapshot_item_not_hourly':
-            'Worker travel time needs an hourly (H) support item on the participant’s rate snapshot. Update the published support item and try again.',
+            'Support worker travel time needs an hourly (H) support item on the participant’s rate snapshot. Update the published support item and try again.',
         'labour_snapshot_item_not_in_catalogue':
             'The participant’s published support item isn’t in the active catalogue. Re-publish the shift with a current catalogue item.',
       };

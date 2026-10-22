@@ -1080,8 +1080,8 @@ class RosterComposerController extends GetxController {
     if (rule.warnings.contains('worker_count_slots_mismatch') &&
         !Get.testMode) {
       AppToast.info(
-        'Workers vs slots',
-        'Worker count and required slots differ — open holes stay claimable.',
+        'Support workers vs slots',
+        'Support worker count and required slots differ — open holes stay claimable.',
       );
     }
   }
@@ -2763,8 +2763,8 @@ class RosterComposerController extends GetxController {
         title: const Text('Publish with open slots?'),
         content: Text(
           unassigned == 1
-              ? '1 worker slot is unassigned. Once published, contractors can claim it.'
-              : '$unassigned worker slots are unassigned. Once published, contractors can claim them.',
+              ? '1 support worker slot is unassigned. Once published, support workers can claim it.'
+              : '$unassigned support worker slots are unassigned. Once published, support workers can claim them.',
         ),
         actions: [
           TextButton(

@@ -41,13 +41,13 @@ abstract final class StaffShellNav {
     ),
     _StaffDest(
       icon: Icons.people_outline,
-      label: 'Clients',
+      label: 'Participants',
       route: AppRoutes.staffClients,
       anyOf: [AppPermissions.clientsRead],
     ),
     _StaffDest(
       icon: Icons.groups_outlined,
-      label: 'Workforce',
+      label: 'Support workers',
       route: AppRoutes.staffWorkforce,
       anyOf: [AppPermissions.contractorsRead],
     ),

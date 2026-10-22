@@ -213,7 +213,7 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Members',
+                          'Participants',
                           style: Get.textTheme.titleMedium,
                         ),
                       ),
@@ -223,7 +223,7 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                                 ? null
                                 : () => _promptLinkMember(context),
                         icon: const Icon(Icons.person_add_alt_1_outlined),
-                        label: const Text('Add member'),
+                        label: const Text('Add participant'),
                       ),
                     ],
                   ),
@@ -235,7 +235,7 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                   const SizedBox(height: 8),
                   if (b.members.isEmpty)
                     const Text(
-                      'No members yet. Use Add member to link a client.',
+                      'No participants yet. Use Add participant to link someone.',
                       style: TextStyle(color: AppColors.textMuted),
                     ),
                   for (final m in b.members)
@@ -298,7 +298,7 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                                 ? null
                                 : b.members.isEmpty
                                 ? () => AppToast.error(
-                                  'Add a member first',
+                                  'Add a participant first',
                                   'Compatibility rules need a housemate subject.',
                                 )
                                 : () => _promptCompatRule(context, b.members),
@@ -310,7 +310,7 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                   const SizedBox(height: 4),
                   Text(
                     b.members.isEmpty
-                        ? 'Add members before creating compatibility rules.'
+                        ? 'Add participants before creating compatibility rules.'
                         : 'Soft warn or hard-block assign when a housemate is present.',
                     style: const TextStyle(
                       color: AppColors.textMuted,
@@ -331,7 +331,7 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                       title: Text(rule.reason),
                       subtitle: Text(
                         '${rule.isHard ? 'Hard block' : 'Soft warn'}'
-                        '${rule.againstClientId != null ? ' · client ${rule.againstClientId!.substring(0, 8)}…' : ''}',
+                        '${rule.againstClientId != null ? ' · participant ${rule.againstClientId!.substring(0, 8)}…' : ''}',
                       ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline),
@@ -364,7 +364,7 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
       StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: const Text('Add house member'),
+            title: const Text('Add house participant'),
             content: SizedBox(
               width: 420,
               child: SingleChildScrollView(
@@ -380,8 +380,8 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                         excludeIds: controller.linkedClientIds,
                         loading: controller.isLoadingClients.value,
                         enabled: !controller.isSaving.value,
-                        labelText: 'Client',
-                        hintText: 'Search clients to link',
+                        labelText: 'Participant',
+                        hintText: 'Search participants to link',
                         selectedId: selectedClientId,
                         selectedLabel: selectedClientLabel,
                         compactSelected: true,
@@ -550,7 +550,7 @@ class SilHouseDetailView extends GetView<SilHouseDetailController> {
                   if (againstClientId == null || againstClientId!.isEmpty) {
                     AppToast.error(
                       'Pick a housemate',
-                      'Compatibility rules need a subject member.',
+                      'Compatibility rules need a subject participant.',
                     );
                     return;
                   }
@@ -646,7 +646,7 @@ class _RocBandEditorState extends State<_RocBandEditor> {
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: const InputDecoration(
-                    labelText: 'Workers',
+                    labelText: 'Support workers',
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),

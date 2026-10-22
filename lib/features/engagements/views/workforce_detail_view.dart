@@ -38,12 +38,12 @@ class WorkforceDetailView extends GetView<WorkforceController> {
             leading: const AppBackButton(
               fallbackRoute: AppRoutes.staffWorkforce,
             ),
-            title: const Text('Engagement'),
+            title: const Text('Support worker'),
           ),
           body:
               controller.isLoading.value
                   ? const Center(child: CircularProgressIndicator())
-                  : const Center(child: Text('Engagement not found.')),
+                  : const Center(child: Text('Support worker not found.')),
         );
       }
       EngagementOut current = selected;
@@ -181,7 +181,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Profile information is entered by the contractor. '
+            'Profile information is entered by the support worker. '
             'Staff can review it here but cannot edit it.',
             style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
@@ -467,7 +467,7 @@ class WorkforceDetailView extends GetView<WorkforceController> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Waiting for the contractor to accept the invite.',
+            'Waiting for the support worker to accept the invite.',
             style: TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
           if (controller.canManage) ...[

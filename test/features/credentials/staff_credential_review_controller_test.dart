@@ -130,7 +130,7 @@ void main() {
     ).called(1);
     expect(
       snacks.single,
-      'Request sent|Waiting for the contractor to approve on Home. '
+      'Request sent|Waiting for the support worker to approve on Home. '
           'After they approve, tap Load credentials again.',
     );
     // Keep empty-state visible until contractor approves.
@@ -210,7 +210,7 @@ void main() {
     expect(ok, isFalse);
     expect(
       controller.errorMessage.value,
-      'Open credential review from Workforce.',
+      'Open credential review from Support workers.',
     );
     verifyNever(
       () => engagements.createSharingAccessRequest(

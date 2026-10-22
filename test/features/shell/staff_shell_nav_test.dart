@@ -87,7 +87,7 @@ void main() {
     );
     final labels = StaffShellNav.destinations().map((d) => d.label).toList();
     expect(labels, contains('Home'));
-    expect(labels, contains('Workforce'));
+    expect(labels, contains('Support workers'));
     expect(labels, isNot(contains('Jobs')));
   });
 
@@ -102,7 +102,7 @@ void main() {
     );
     final labels = StaffShellNav.destinations().map((d) => d.label).toList();
     expect(labels, isNot(contains('Jobs')));
-    expect(labels, contains('Clients'));
+    expect(labels, contains('Participants'));
     expect(labels, contains('Roster'));
   });
 
@@ -135,7 +135,7 @@ void main() {
     final labels = StaffShellNav.destinations().map((d) => d.label).toList();
     expect(labels, contains('Home'));
     expect(labels, contains('Settings'));
-    expect(labels, isNot(contains('Workforce')));
+    expect(labels, isNot(contains('Support workers')));
   });
 
   testWidgets(
@@ -166,7 +166,7 @@ void main() {
 
       expect(find.byType(NavigationBar), findsOneWidget);
       expect(find.byType(NavigationRail), findsNothing);
-      expect(find.text('Workforce'), findsOneWidget);
+      expect(find.text('Support workers'), findsOneWidget);
       expect(find.text('More'), findsOneWidget);
       expect(find.text('Payments'), findsNothing);
     },
@@ -192,8 +192,8 @@ void main() {
     expect(labels.take(4).toList(), [
       'Home',
       'Roster',
-      'Clients',
-      'Workforce',
+      'Participants',
+      'Support workers',
     ]);
     expect(labels.skip(4), containsAll(['Payments', 'Billing', 'Settings']));
   });

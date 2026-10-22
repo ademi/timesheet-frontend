@@ -46,7 +46,7 @@ void main() {
     );
     expect(
       controller.errorMessage.value,
-      'This worker is no longer in your workforce.',
+      'This support worker is no longer in your directory.',
     );
   });
 }

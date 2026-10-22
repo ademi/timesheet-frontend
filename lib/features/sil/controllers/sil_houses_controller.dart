@@ -111,7 +111,7 @@ class SilHouseDetailController extends GetxController {
       ]);
     } on AppFailure catch (e) {
       if (!Get.testMode) {
-        AppToast.error('Could not load clients', e.message);
+        AppToast.error('Could not load participants', e.message);
       }
     } catch (_) {
       // Picker can still open empty; member link will fail clearly.
@@ -163,12 +163,12 @@ class SilHouseDetailController extends GetxController {
       );
       await refresh();
       if (!Get.testMode) {
-        AppToast.success('Member linked', 'Client added to this house');
+        AppToast.success('Participant linked', 'Participant added to this house');
       }
       return true;
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
-      if (!Get.testMode) AppToast.error('Could not link member', e.message);
+      if (!Get.testMode) AppToast.error('Could not link participant', e.message);
       return false;
     } finally {
       isSaving.value = false;
@@ -232,8 +232,8 @@ class SilHouseDetailController extends GetxController {
     if ((bundle.value?.members ?? const []).isEmpty) {
       if (!Get.testMode) {
         AppToast.error(
-          'Add a member first',
-          'Draft fill shift needs a linked housemate to create the job.',
+          'Add a participant first',
+          'Draft fill shift needs a linked housemate to create the support.',
         );
       }
       return null;
@@ -334,7 +334,7 @@ class SilHouseDetailController extends GetxController {
       if (!Get.testMode) {
         AppToast.error(
           'Compat rule needs a housemate',
-          'Link a member first, then choose who the rule is against.',
+          'Link a participant first, then choose who the rule is against.',
         );
       }
       return;

@@ -36,7 +36,7 @@ class _JobDetailViewState extends State<JobDetailView> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: const AppBackButton(fallbackRoute: AppRoutes.staffJobs),
-        title: Obx(() => Text(controller.selected.value?.title ?? 'Job')),
+        title: Obx(() => Text(controller.selected.value?.title ?? 'Support')),
       ),
       body: Obx(() {
         final job = controller.selected.value;
@@ -45,7 +45,7 @@ class _JobDetailViewState extends State<JobDetailView> {
             return const Center(child: CircularProgressIndicator());
           }
           return Center(
-            child: Text(controller.errorMessage.value ?? 'Job not loaded.'),
+            child: Text(controller.errorMessage.value ?? 'Support not loaded.'),
           );
         }
         final err = controller.errorMessage.value;

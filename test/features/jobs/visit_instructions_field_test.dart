@@ -13,7 +13,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Instructions for workers'), findsOneWidget);
+    expect(find.text('Instructions for support workers'), findsOneWidget);
     expect(find.byKey(const Key('visit-instructions-field')), findsOneWidget);
     expect(controller.text, 'Personal care\nTransport');
   });

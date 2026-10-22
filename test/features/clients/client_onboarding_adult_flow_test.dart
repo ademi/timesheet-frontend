@@ -189,7 +189,7 @@ void main() {
       'Preferences',
       'Contacts',
       'NDIS',
-      'Care plan',
+      'Support plan',
       'Support Coordinator',
       'Support Specialists',
       'Legal',

@@ -19,7 +19,7 @@ class JobFormView extends GetView<JobsController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('New job')),
+      appBar: AppBar(title: const Text('New support')),
       body: Obx(() {
         final err = controller.errorMessage.value;
         final useSite = controller.locationMode.value == 'site';
@@ -125,15 +125,15 @@ class JobFormView extends GetView<JobsController> {
                         recentIds: prefs.load(),
                         labelText:
                             controller.kind.value == 'standing'
-                                ? 'Client *'
-                                : 'Client (optional)',
+                                ? 'Participant *'
+                                : 'Participant (optional)',
                         showPhotos: false,
                         compactSelected: true,
                         selectedId: selectedId,
                         selectedLabel: selectedLabel,
                         allowClearSelection:
                             controller.kind.value != 'standing',
-                        clearSelectionLabel: 'Clear client',
+                        clearSelectionLabel: 'Clear participant',
                         enabled: !controller.isLoadingSites.value,
                         maxResultsHeight: 220,
                         onClearSelection:
@@ -186,12 +186,12 @@ class JobFormView extends GetView<JobsController> {
                           decoration: InputDecoration(
                             labelText:
                                 controller.isLoadingSites.value
-                                    ? 'Client site * (loading…)'
+                                    ? 'Participant site * (loading…)'
                                     : (controller.sites.isEmpty &&
                                         controller.selectedClientId.value !=
                                             null)
-                                    ? 'Client site * (none available)'
-                                    : 'Client site *',
+                                    ? 'Participant site * (none available)'
+                                    : 'Participant site *',
                             border: const OutlineInputBorder(),
                             suffixIcon:
                                 controller.isLoadingSites.value

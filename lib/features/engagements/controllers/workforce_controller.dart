@@ -468,7 +468,7 @@ class WorkforceController extends GetxController {
       return;
     }
     if (engagement.isEnded) {
-      _setError('This worker is no longer in your workforce.');
+      _setError('This support worker is no longer in your directory.');
       return;
     }
     if (detailSelectedCategories.isEmpty) {
@@ -572,8 +572,8 @@ class WorkforceController extends GetxController {
         AppToast.success(
           result.isRegistrationInvite ? 'Invite sent' : 'Engagement created',
           result.isRegistrationInvite
-              ? 'Invitation email sent. You can re-email from the workforce list.'
-              : 'Invitation email sent to this contractor.',
+              ? 'Invitation email sent. You can re-email from the support workers list.'
+              : 'Invitation email sent to this support worker.',
         );
       }
       await load();
@@ -706,7 +706,7 @@ class WorkforceController extends GetxController {
         action == 'end' ||
         action == 'withdraw';
     if (needsApprove && !canApprove) {
-      _setError('You don’t have access to approve contractors.');
+      _setError('You don’t have access to approve support workers.');
       return;
     }
     if (needsManage && !canManage) {
@@ -848,7 +848,7 @@ class WorkforceController extends GetxController {
 
   void openCredentialReview(EngagementOut engagement) {
     if (engagement.isEnded) {
-      _setError('This worker is no longer in your workforce.');
+      _setError('This support worker is no longer in your directory.');
       return;
     }
     AppNavigator.push(

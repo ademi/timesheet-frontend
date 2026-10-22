@@ -61,6 +61,6 @@ void main() {
   });
 
   test('workedWithClientLabel constant', () {
-    expect(workedWithClientLabel, 'Worked with client');
+    expect(workedWithClientLabel, 'Worked with participant');
   });
 }

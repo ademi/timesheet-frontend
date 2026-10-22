@@ -7,8 +7,8 @@ const _knownTitles = <String, String>{
   'visit.checked_in': 'Visit checked in',
   'visit.completed': 'Visit completed',
   'shift.slot_opened': 'Open shift available',
-  'engagement.invited': 'Contractor invited',
-  'engagement.accepted': 'Contractor accepted',
+  'engagement.invited': 'Support worker invited',
+  'engagement.accepted': 'Support worker accepted',
   'sharing.access_requested': 'Access requested',
 };
 

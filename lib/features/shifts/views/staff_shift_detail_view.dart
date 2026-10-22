@@ -175,7 +175,7 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                             onSave: controller.patchSelectedShiftWorkerCount,
                           ),
                         ] else ...[
-                          Text('Workers planned: ${shift.workerCount}'),
+                          Text('Support workers planned: ${shift.workerCount}'),
                         ],
                         if (shift.warnings.isNotEmpty) ...[
                           const SizedBox(height: 8),
@@ -289,7 +289,7 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
                                       shift,
                                     ),
                             icon: const Icon(Icons.person_add_outlined),
-                            label: const Text('Choose contractor'),
+                            label: const Text('Choose support worker'),
                           ),
                         ],
                         const Divider(height: 32),
@@ -327,7 +327,7 @@ class _StaffShiftDetailViewState extends State<StaffShiftDetailView> {
         builder:
             (ctx) => AlertDialog(
               title: const Text('Assign worker'),
-              content: const Text('No assignable contractors found.'),
+              content: const Text('No assignable support workers found.'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
@@ -723,7 +723,7 @@ class _WorkerCountEditorState extends State<_WorkerCountEditor> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
-                  labelText: 'Workers planned',
+                  labelText: 'Support workers planned',
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -751,7 +751,7 @@ class _WorkerCountEditorState extends State<_WorkerCountEditor> {
           const Padding(
             padding: EdgeInsets.only(top: 8),
             child: Text(
-              'Workers planned differs from roster slots.',
+              'Support workers planned differs from roster slots.',
               style: TextStyle(color: AppColors.openSlot),
             ),
           ),

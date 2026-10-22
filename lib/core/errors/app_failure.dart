@@ -494,13 +494,13 @@ class AppFailure implements Exception {
       case 'assign_gate_blocked':
         return 'Care competency or housemate compatibility blocks this assign — review the listed items or provide an audited override reason.';
       case 'compat_subject_required':
-        return 'Compatibility rules need a housemate. Link a member first, then choose who the rule is against.';
+        return 'Compatibility rules need a housemate. Link a participant first, then choose who the rule is against.';
       case 'job_not_linked':
-        return 'No job is linked to this SIL house. Retry Draft fill shift to auto-create one, or link a job under Jobs.';
+        return 'No support is linked to this SIL house. Retry Draft fill shift to auto-create one, or link support under Supports.';
       case 'sil_member_required':
-        return 'Link at least one house member before drafting a fill shift.';
+        return 'Link at least one house participant before drafting a fill shift.';
       case 'job_location_required':
-        return 'Add a client site or branch with a map location, then retry Draft fill shift.';
+        return 'Add a participant site or branch with a map location, then retry Draft fill shift.';
       case 'budget_burn_blocked':
         return 'Publishing would exceed plan budget thresholds — review burn warnings or provide an audited override reason.';
       case 'budget_override_forbidden':
@@ -517,13 +517,13 @@ class AppFailure implements Exception {
       case 'sharing_authorisation_forbidden':
         return 'Could not record sharing authorisation. Try again or contact support.';
       case 'sharing_grant_required':
-        return 'This contractor has not shared credentials with your organisation yet.';
+        return 'This support worker has not shared credentials with your organisation yet.';
       case 'invalid_transition':
         return 'This action isn’t available for the engagement’s current '
             'status. If documents are still pending, review credentials '
             'first, then try again.';
       case 'invalid_engagement_state':
-        return 'This worker is no longer in your workforce.';
+        return 'This support worker is no longer in your directory.';
       case 'visit_not_completed':
         return 'Complete the visit before exporting or adding to a payment batch.';
       case 'counsel_pending':
@@ -531,7 +531,7 @@ class AppFailure implements Exception {
       case 'legal_document_unavailable':
         return 'This legal document is not available yet.';
       case 'ndis_number_in_use':
-        return 'This NDIS number is already used by another client.';
+        return 'This NDIS number is already used by another participant.';
       case 'ndis_required':
         return 'NDIS number is required.';
       case 'engagement_not_active':
@@ -547,9 +547,9 @@ class AppFailure implements Exception {
       case 'visit_overlap':
         return 'Overlapping visit — adjust the window or use partial generate.';
       case 'clock_overlap':
-        return 'This clock time overlaps another shift for this worker.';
+        return 'This clock time overlaps another shift for this support worker.';
       case 'shift_overlap':
-        return 'A shift for this job already exists in that time window.';
+        return 'A shift for this support already exists in that time window.';
       case 'leave_in_past':
         return 'Leave cannot end before today. Choose dates that are still current or in the future.';
       case 'availability_windows_overlap':
@@ -559,9 +559,9 @@ class AppFailure implements Exception {
       case 'evidence_required':
         return 'Upload at least one evidence file before saving this credential.';
       case 'site_or_branch_required':
-        return 'Add a site or branch for this client before booking support.';
+        return 'Add a site or branch for this participant before booking support.';
       case 'standing_job_exists':
-        return 'This client already has ongoing support. Open it, or book one extra session.';
+        return 'This participant already has ongoing support. Open it, or book one extra session.';
       case 'horizon_window_too_large':
         return 'Choose a window of 14 days or less.';
       case 'horizon_truncated':
@@ -569,15 +569,15 @@ class AppFailure implements Exception {
       case 'split_blocked_by_active_visit':
         return 'Can’t change this pattern — a future visit is already in progress or completed.';
       case 'contractor_not_found':
-        return 'No contractor registered with that email/phone.';
+        return 'No support worker registered with that email/phone.';
       case 'hard_split_violation':
-        return 'This user can’t be invited as a contractor.';
+        return 'This user can’t be invited as a support worker.';
       case 'email_required_for_registration_invite':
         return 'An email address is required to send a registration invite.';
       case 'email_already_registered':
         return 'This email is already registered on another invite path.';
       case 'primary_site_already_exists':
-        return 'This client already has a primary site. Refresh and try again.';
+        return 'This participant already has a primary site. Refresh and try again.';
       case 'invite_token_invalid':
         return 'This registration invite is invalid or has expired.';
       case 'invite_email_mismatch':
@@ -611,7 +611,7 @@ class AppFailure implements Exception {
       case 'support_item_required':
         return 'Choose a support item before publishing or generating shifts.';
       case 'contractor_already_assigned':
-        return 'That worker is already assigned to this shift.';
+        return 'That support worker is already assigned to this shift.';
       case 'visit_has_only_travel_claims':
         return 'This visit has travel claims but no hourly support item. Set an hourly item on the visit, then export — travel will be included automatically.';
       case 'visit_support_item_is_travel':
@@ -634,7 +634,7 @@ class AppFailure implements Exception {
       case 'task_minutes_exceed_visit_hours':
         return 'Task minutes exceed the visit duration.';
       case 'hours_exceed_24_per_day':
-        return 'Closed clocks for a client exceed 24 hours on one day.';
+        return 'Closed clocks for a participant exceed 24 hours on one day.';
       case 'group_allocation_invalid':
         return 'Group participant allocations must sum to 100%. Fix the shift first.';
       case 'provider_abn_required':
@@ -649,7 +649,7 @@ class AppFailure implements Exception {
       case 'invalid_rejection_reason':
         return 'Pick a valid rejection reason.';
       case 'delivery_postcode_required':
-        return 'Job location needs a postcode for pricing, or set a price tier override.';
+        return 'Support location needs a postcode for pricing, or set a price tier override.';
       case 'price_limit_missing_for_tier':
         return 'That support item has no catalogue price for one of the '
             'pricing tiers (national / remote / very remote). '
@@ -672,13 +672,13 @@ class AppFailure implements Exception {
       case 'trip_kms_travel_unresolvable':
         return 'No Provider travel / Activity Based Transport kilometre item exists in the catalogue for this support type. Import the current NDIS catalogue, or ask staff to add the travel claim with the correct item.';
       case 'labour_requires_rate_snapshots':
-        return 'Publish the shift first so each participant has a rate snapshot. Worker travel time uses that hourly support item.';
+        return 'Publish the shift first so each participant has a rate snapshot. Support worker travel time uses that hourly support item.';
       case 'labour_travel_not_permitted':
         return 'Provider Travel isn’t allowed for this support item in the catalogue. Choose a different support item on the visit, or use vehicle kilometres instead.';
       case 'labour_travel_unclaimed_exists':
-        return 'This shift already has an unclaimed worker travel-time claim. Edit or claim that one first, or wait until it’s exported.';
+        return 'This shift already has an unclaimed support worker travel-time claim. Edit or claim that one first, or wait until it’s exported.';
       case 'labour_snapshot_item_not_hourly':
-        return 'Worker travel time needs an hourly (H) support item on the participant’s rate snapshot. Update the published support item and try again.';
+        return 'Support worker travel time needs an hourly (H) support item on the participant’s rate snapshot. Update the published support item and try again.';
       case 'labour_snapshot_item_not_in_catalogue':
         return 'The participant’s published support item isn’t in the active catalogue. Re-publish the shift with a current catalogue item.';
       case 'segments_required':

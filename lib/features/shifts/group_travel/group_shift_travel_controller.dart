@@ -96,8 +96,8 @@ class GroupShiftTravelController extends GetxController {
   static const therapyHalfRateNote =
       'Therapy / capacity-building supports bill Provider Travel at 50% of the hourly rate.';
   static const labourNoSnapshotHelper =
-      'Publish the shift so each participant has a rate snapshot. Worker travel time uses that hourly support item.';
-  static const workerTimeSectionTitle = 'Worker travel time';
+      'Publish the shift so each participant has a rate snapshot. Support worker travel time uses that hourly support item.';
+  static const workerTimeSectionTitle = 'Support worker travel time';
   static const vehicleSectionTitle = 'Vehicle kilometres';
 
   final step = itemStep.obs;

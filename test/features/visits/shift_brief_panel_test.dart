@@ -34,7 +34,7 @@ void main() {
 
     expect(find.text('Shift brief'), findsOneWidget);
     expect(
-      find.textContaining('Host client brief'),
+      find.textContaining('Host participant brief'),
       findsOneWidget,
     );
     expect(find.textContaining('Allergies: Peanuts'), findsOneWidget);

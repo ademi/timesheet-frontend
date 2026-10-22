@@ -15,7 +15,7 @@ void main() {
   });
 
   test('locationModeLabel never says XOR', () {
-    expect(locationModeLabel('site'), "Client's home");
+    expect(locationModeLabel('site'), "Participant's home");
     expect(locationModeLabel('branch'), 'Branch');
     expect(locationModeLabel('site').toLowerCase(), isNot(contains('xor')));
   });

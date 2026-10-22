@@ -29,7 +29,7 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Invite contractor')),
+      appBar: AppBar(title: const Text('Invite support worker')),
       body: Obx(() {
         final err = controller.errorMessage.value;
         return ListView(
@@ -49,7 +49,7 @@ class _WorkforceInviteViewState extends State<WorkforceInviteView> {
                   const SizedBox(height: 8),
                   const Text(
                     'Conditional documents (WWCC, qualifications, driving, '
-                    'vehicle) are answered by the contractor on Profile after '
+                    'vehicle) are answered by the support worker on Profile after '
                     'login — you do not set those here.',
                     style: TextStyle(color: AppColors.textMuted, fontSize: 13),
                   ),

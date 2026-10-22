@@ -143,7 +143,7 @@ class StaffComplianceController extends GetxController {
     } on AppFailure catch (e) {
       accessHistoryError.value = e.message;
     } catch (_) {
-      accessHistoryError.value = 'Could not load contractors.';
+      accessHistoryError.value = 'Could not load support workers.';
     } finally {
       isLoadingContractors.value = false;
     }
@@ -153,8 +153,8 @@ class StaffComplianceController extends GetxController {
     final name = contractor.contractorName?.trim();
     if (name != null && name.isNotEmpty) return name;
     final id = contractor.contractorId;
-    if (id.length <= 8) return 'Contractor ${id.substring(0, 4)}…';
-    return 'Contractor ${id.substring(0, 4)}…${id.substring(id.length - 4)}';
+    if (id.length <= 8) return 'Support worker ${id.substring(0, 4)}…';
+    return 'Support worker ${id.substring(0, 4)}…${id.substring(id.length - 4)}';
   }
 
   void selectContractor(EngagementOut? contractor) {
@@ -178,11 +178,11 @@ class StaffComplianceController extends GetxController {
     final contractorId = selectedContractorId.value;
     final engagementId = selectedEngagementId.value;
     if (contractorId == null || contractorId.isEmpty) {
-      accessHistoryError.value = 'Select a contractor.';
+      accessHistoryError.value = 'Select a support worker.';
       return;
     }
     if (engagementId == null || engagementId.isEmpty) {
-      accessHistoryError.value = 'Select a contractor.';
+      accessHistoryError.value = 'Select a support worker.';
       return;
     }
     isLoadingCredentials.value = true;
@@ -198,7 +198,7 @@ class StaffComplianceController extends GetxController {
         ),
       );
       if (credentialOptions.isEmpty) {
-        accessHistoryError.value = 'No credentials found for this contractor.';
+        accessHistoryError.value = 'No credentials found for this support worker.';
       }
     } on AppFailure catch (e) {
       accessHistoryError.value = e.message;

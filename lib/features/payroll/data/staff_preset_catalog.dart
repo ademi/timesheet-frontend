@@ -45,7 +45,7 @@ const kStaffPresetCatalog = <String, StaffPresetInfo>{
     key: 'admin',
     displayName: 'Admin',
     can:
-        'Near-full tenant ops: clients, contractors invite/approve, roster, '
+        'Near-full tenant ops: participants, support workers invite/approve, roster, '
         'payments, billing, credentials review, create/manage staff',
     cannot:
         'Manage platform / other tenants; assign owner or platform admin; '
@@ -55,7 +55,7 @@ const kStaffPresetCatalog = <String, StaffPresetInfo>{
     key: 'supervisor',
     displayName: 'Supervisor / Coordinator',
     can:
-        'Roster + shifts manage; invite and approve contractors; clients read + '
+        'Roster + shifts manage; invite and approve support workers; participants read + '
         'manage; credentials read/review',
     cannot:
         'Create/deactivate staff; manage billing; manage payments; manage '
@@ -65,35 +65,35 @@ const kStaffPresetCatalog = <String, StaffPresetInfo>{
     key: 'office',
     displayName: 'Office / Intake',
     can:
-        'Clients read; invite contractors; basic workforce/roster read; see '
+        'Participants read; invite support workers; basic support workers/roster read; see '
         'team list',
     cannot:
-        'Create/edit clients; manage roster; approve contractors; '
+        'Create/edit participants; manage roster; approve support workers; '
         'payments/billing; create staff; credential review/manage; RBAC',
   ),
   'roster': StaffPresetInfo(
     key: 'roster',
     displayName: 'Roster only',
     can:
-        'Shifts read + manage; jobs/visits manage; contractors read; clients '
+        'Shifts read + manage; supports/visits manage; support workers read; participants '
         'read',
     cannot:
-        'Create/edit clients; invite or approve contractors; payments/billing; '
+        'Create/edit participants; invite or approve support workers; payments/billing; '
         'create staff; credential review/manage; RBAC',
   ),
   'finance': StaffPresetInfo(
     key: 'finance',
     displayName: 'Finance',
-    can: 'Payments and billing view/manage; clients read; audit view',
+    can: 'Payments and billing view/manage; participants read; audit view',
     cannot:
-        'Invite/approve contractors; manage roster; create/edit clients; '
+        'Invite/approve support workers; manage roster; create/edit participants; '
         'create staff; credentials; RBAC',
   ),
   'auditor': StaffPresetInfo(
     key: 'auditor',
     displayName: 'Read-only auditor',
     can:
-        'Read/view across clients, contractors, roster, payments, billing, '
+        'Read/view across participants, support workers, roster, payments, billing, '
         'credentials, audit',
     cannot:
         'Any create/update/delete, invite, approve, roster manage, '

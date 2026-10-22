@@ -67,7 +67,7 @@ class StaffCredentialReviewView
                   const SizedBox(height: 12),
                   if (!controller.hasReviewContext)
                     const Text(
-                      'Open a person from Workforce to review their credentials.',
+                      'Open a person from Support workers to review their credentials.',
                       style: TextStyle(color: AppColors.textMuted),
                     ),
                   ElevatedButton(
@@ -216,7 +216,7 @@ class _ShareRequestEmptyState extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'This contractor has not shared credentials with your organisation yet.',
+          'This support worker has not shared credentials with your organisation yet.',
           style: TextStyle(color: AppColors.textMuted),
         ),
         const SizedBox(height: 8),
@@ -442,7 +442,7 @@ class _StaffCredentialCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Choose a reason so the contractor and staff team can '
+                        'Choose a reason so the support worker and staff team can '
                         'understand what needs to be fixed.',
                         style: TextStyle(
                           fontSize: 13,

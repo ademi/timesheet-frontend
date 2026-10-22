@@ -13,7 +13,7 @@ class PublicClientInviteView extends GetView<PublicClientInviteController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Client invite')),
+      appBar: AppBar(title: const Text('Participant invite')),
       body: Obx(() {
         if (controller.isLoading.value && controller.invite.value == null) {
           return const Center(child: CircularProgressIndicator());

@@ -347,11 +347,11 @@ String silWarningLabel(String code) {
     case 'roc_block_missing':
       return 'No funded ROC block for this time of day';
     case 'worker_count_slots_mismatch':
-      return 'Workers planned ≠ open slots';
+      return 'Support workers planned ≠ open slots';
     case 'vacancy_bed_underfilled':
       return 'Beds underfilled vs capacity';
     case 'vacancy_member_absent':
-      return 'Member vacant / hospital / absent';
+      return 'Participant vacant / hospital / absent';
     case 'creep_staffing_above_roc':
       return 'Staffed above funded ROC';
     case 'creep_unfunded_shift':
@@ -359,9 +359,9 @@ String silWarningLabel(String code) {
     case 'cost_occupancy_gap':
       return 'Fixed cost spread over underfilled beds';
     case 'assign_soft:mealtime_assist':
-      return 'Worker lacks mealtime assistance competency';
+      return 'Support worker lacks mealtime assistance competency';
     case 'assign_soft:bsp_support':
-      return 'Worker lacks BSP support competency';
+      return 'Support worker lacks BSP support competency';
     case 'assign_soft:housemate_compat':
       return 'Housemate compatibility preference warning';
     default:

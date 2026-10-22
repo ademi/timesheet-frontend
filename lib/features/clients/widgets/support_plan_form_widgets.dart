@@ -148,7 +148,7 @@ class SupportPlanGoalCard extends StatelessWidget {
           const SizedBox(height: 12),
           supportPlanField(measure, 'Measure', maxLines: 2),
           const SizedBox(height: 12),
-          supportPlanField(workerInstructions, 'Worker instructions', maxLines: 2),
+          supportPlanField(workerInstructions, 'Support worker instructions', maxLines: 2),
         ],
       ),
     );

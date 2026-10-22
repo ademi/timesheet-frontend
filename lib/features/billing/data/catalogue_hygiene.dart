@@ -29,7 +29,7 @@ abstract final class CatalogueHygiene {
       return const CatalogueHygieneResult(
         clearSelection: true,
         warning:
-            'Job support item is a legacy STA ratio package. '
+            'Support item is a legacy STA ratio package. '
             'Pick an unbundled item before publish.',
       );
     }
@@ -37,7 +37,7 @@ abstract final class CatalogueHygiene {
       return CatalogueHygieneResult(
         clearSelection: true,
         warning:
-            'Job support item $c is not in the active catalogue. '
+            'Support item $c is not in the active catalogue. '
             'Pick a current item before publish.',
       );
     }

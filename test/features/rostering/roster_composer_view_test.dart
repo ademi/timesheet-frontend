@@ -91,7 +91,7 @@ void main() {
 
     expect(find.byKey(const Key('composer-preset')), findsOneWidget);
     expect(find.byKey(const Key('composer-step-label')), findsOneWidget);
-    expect(find.text('1. Clients'), findsOneWidget);
+    expect(find.text('1. Participants'), findsOneWidget);
     expect(find.byKey(const Key('composer-next')), findsOneWidget);
     expect(find.byKey(const Key('composer-save-draft')), findsNothing);
     expect(find.byKey(const Key('composer-publish')), findsNothing);

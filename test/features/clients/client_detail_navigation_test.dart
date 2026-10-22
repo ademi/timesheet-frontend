@@ -106,7 +106,7 @@ void main() {
       await controller.ensureDetailHydratedFromRoute();
       await tester.pumpAndSettle();
 
-      expect(find.text('Client not found.'), findsNothing);
+      expect(find.text('Participant not found.'), findsNothing);
       expect(find.text(_client.fullName), findsWidgets);
     },
   );
@@ -172,7 +172,7 @@ void main() {
       final ctrl = Get.find<ClientsController>();
       expect(ctrl.selected.value, isNull);
       expect(ctrl.isLoading.value, isTrue);
-      expect(find.text('Client not found.'), findsNothing);
+      expect(find.text('Participant not found.'), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       await tester.pumpAndSettle();

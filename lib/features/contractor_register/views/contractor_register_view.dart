@@ -53,7 +53,7 @@ class ContractorRegisterView extends GetView<ContractorRegisterController> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Text(
-                          'Create your contractor profile',
+                          'Create your support worker profile',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,

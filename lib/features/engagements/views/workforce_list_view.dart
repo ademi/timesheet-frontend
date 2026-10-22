@@ -21,7 +21,7 @@ class WorkforceListView extends GetView<WorkforceController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Workforce'),
+        title: const Text('Support workers'),
         actions: shellAppBarActions(),
       ),
       floatingActionButton:
@@ -197,8 +197,8 @@ class WorkforceListView extends GetView<WorkforceController> {
                                               !controller
                                                   .missingDocsFilter
                                                   .value
-                                          ? 'No contractors yet.'
-                                          : 'No contractors match this filter.',
+                                          ? 'No support workers yet.'
+                                          : 'No support workers match this filter.',
                                       style: const TextStyle(
                                         color: AppColors.textMuted,
                                       ),
@@ -213,7 +213,7 @@ class WorkforceListView extends GetView<WorkforceController> {
                                               AppRoutes.staffWorkforceInvite,
                                             ),
                                         icon: const Icon(Icons.mail_outline),
-                                        label: const Text('Invite contractor'),
+                                        label: const Text('Invite support worker'),
                                       ),
                                     ],
                                   ],

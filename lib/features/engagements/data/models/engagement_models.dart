@@ -136,7 +136,7 @@ class EngagementOut {
     final email = contractorEmail?.trim() ?? '';
     if (email.isNotEmpty) return email;
     if (name.isNotEmpty) return name;
-    return 'Contractor';
+    return 'Support worker';
   }
 
   String get statusLabel => engagementStatusLabel(status);

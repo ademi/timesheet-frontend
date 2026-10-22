@@ -329,7 +329,7 @@ class _GeofenceFields extends GetView<RosterComposerController> {
             items: const [
               DropdownMenuItem<String?>(
                 value: null,
-                child: Text('Job default'),
+                child: Text('Support default'),
               ),
               DropdownMenuItem<String?>(
                 value: 'informational',

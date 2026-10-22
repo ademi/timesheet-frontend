@@ -115,7 +115,7 @@ class _FormChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final sourceLabel = switch (form.source) {
       'org' => 'Org',
-      'client' => 'Client',
+      'client' => 'Participant',
       'override' => 'Override',
       _ => form.source,
     };

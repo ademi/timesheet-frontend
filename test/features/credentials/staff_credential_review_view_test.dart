@@ -159,7 +159,7 @@ void main() {
 
     expect(
       find.text(
-        'This contractor has not shared credentials with your organisation yet.',
+        'This support worker has not shared credentials with your organisation yet.',
       ),
       findsOneWidget,
     );

@@ -311,7 +311,7 @@ class ContractorRegisterController extends GetxController {
       // Do NOT mark platform complete — first login must hit legal/notices/consents.
       AppToast.success(
         'Account created',
-        'Sign in with your new contractor account.',
+        'Sign in with your new support worker account.',
       );
       AppNavigator.offAll(AppRoutes.login);
     } on AppFailure catch (e) {

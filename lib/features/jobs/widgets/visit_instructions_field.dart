@@ -8,10 +8,10 @@ class VisitInstructionsField extends StatelessWidget {
   const VisitInstructionsField({
     super.key,
     required this.controller,
-    this.sectionTitle = 'Instructions for workers',
+    this.sectionTitle = 'Instructions for support workers',
     this.labelText = 'Further instructions (optional)',
     this.helperText =
-        'One task per line. Copied onto visits for workers to follow.',
+        'One task per line. Copied onto visits for support workers to follow.',
     this.maxLines = 4,
   });
 

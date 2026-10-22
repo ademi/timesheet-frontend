@@ -1008,7 +1008,7 @@ class ClientsController extends GetxController
             await load();
             openDetail(created, initialTab: ClientsController.tabOverview);
             AppToast.info(
-              'Client saved',
+              'Participant saved',
               'Profile photo failed: ${e.message}',
               duration: const Duration(seconds: 6),
             );
@@ -1274,7 +1274,7 @@ class ClientsController extends GetxController
       } else {
         AppToast.success(
           'Saved',
-          'Client type and profile updated. Create an invite next.',
+          'Participant type and profile updated. Create an invite next.',
         );
       }
     } on AppFailure catch (e) {
@@ -1497,7 +1497,7 @@ class ClientsController extends GetxController
     final ok =
         await Get.dialog<bool>(
           AlertDialog(
-            title: const Text('Archive client?'),
+            title: const Text('Archive participant?'),
             content: Text(
               'Archive ${client.fullName}? They will be hidden from normal '
               'workflows. Records and documents are kept for legal and audit '
@@ -1560,7 +1560,7 @@ class ClientsController extends GetxController
       await load();
       if (!Get.testMode) {
         AppToast.success(
-          'Client restored',
+          'Participant restored',
           '${restored.fullName} is ${restored.status} again.',
         );
       }
@@ -2544,7 +2544,7 @@ class _RestoreClientDialogState extends State<_RestoreClientDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Restore client?'),
+      title: const Text('Restore participant?'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -2552,7 +2552,7 @@ class _RestoreClientDialogState extends State<_RestoreClientDialog> {
           children: [
             Text(
               '${widget.clientName} will return to roster lists. Standing '
-              'jobs and visits are not automatically reopened. Client invites '
+              'supports and visits are not automatically reopened. Participant invites '
               'and document shares stay revoked.',
             ),
             const SizedBox(height: 16),

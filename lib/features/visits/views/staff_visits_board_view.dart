@@ -54,7 +54,7 @@ List<DropdownMenuItem<String>> _clientDropdownItems(
   Iterable<({String id, String name})> clients,
 ) {
   return [
-    const DropdownMenuItem(value: null, child: Text('All clients')),
+    const DropdownMenuItem(value: null, child: Text('All participants')),
     for (final c in clients)
       DropdownMenuItem(
         value: c.id,
@@ -180,7 +180,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                           items: _clientDropdownItems(clients),
                           onChanged: controller.setClientFilter,
                           decoration: const InputDecoration(
-                            labelText: 'Client',
+                            labelText: 'Participant',
                             border: OutlineInputBorder(),
                           ),
                         ),
@@ -377,7 +377,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.person_remove_outlined),
-                  title: const Text('Release worker'),
+                  title: const Text('Release support worker'),
                   onTap: () async {
                     Navigator.pop(ctx);
                     if (!context.mounted) return;
@@ -719,7 +719,7 @@ class _StaffVisitsBoardViewState extends State<StaffVisitsBoardView> {
   ) async {
     final contractorId = tile.assignmentContractorId;
     if (contractorId == null || contractorId.isEmpty) return;
-    String workerName = 'Worker';
+    String workerName = 'Support worker';
     for (final e in controller.engagements) {
       if (e.contractorId == contractorId) {
         final n = e.contractorName?.trim();

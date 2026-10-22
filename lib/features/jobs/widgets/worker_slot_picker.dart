@@ -56,8 +56,8 @@ class WorkerSlotPicker extends StatelessWidget {
             decoration: InputDecoration(
               labelText:
                   slots.length == 1
-                      ? 'Worker (optional)'
-                      : 'Worker ${i + 1} (optional)',
+                      ? 'Support worker (optional)'
+                      : 'Support worker ${i + 1} (optional)',
               border: const OutlineInputBorder(),
             ),
             items: [

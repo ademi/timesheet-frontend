@@ -141,7 +141,7 @@ class _ComposerTasksFieldState extends State<_ComposerTasksField> {
       key: const Key('composer-tasks-field'),
       controller: _text,
       sectionTitle: null,
-      labelText: 'Tasks for workers (optional)',
+      labelText: 'Tasks for support workers (optional)',
       helperText:
           'One task per line. Saved on the draft and stamped onto visits when workers are assigned.',
       maxLines: 6,

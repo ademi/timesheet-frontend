@@ -30,7 +30,7 @@ class NdisCapturePrompt extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Patient clients need an NDIS number for plan-manager exports and demos. '
+            'Participants need an NDIS number for plan-manager exports and demos. '
             'Add it on the Overview tab.',
             style: TextStyle(fontSize: 13),
           ),

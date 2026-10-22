@@ -167,7 +167,7 @@ class AttendanceReviewView extends GetView<AttendanceReviewController> {
                                                   'Record attendance despite failed clock?',
                                               body:
                                                   'This writes attendance from the '
-                                                  'contractor\'s frozen punch even '
+                                                  'support worker\'s frozen punch even '
                                                   'though the clock sync failed. '
                                                   'Only continue if you have verified '
                                                   'the visit happened.',
@@ -409,7 +409,7 @@ class _ReviewTile extends StatelessWidget {
                       ],
                       if (client != null && client.isNotEmpty) ...[
                         const SizedBox(height: 2),
-                        Text('Client: $client', style: muted),
+                        Text('Participant: $client', style: muted),
                       ],
                       if (location != null && location.isNotEmpty) ...[
                         const SizedBox(height: 2),

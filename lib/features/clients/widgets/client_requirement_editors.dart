@@ -410,7 +410,7 @@ class _SharingSwitch extends StatelessWidget {
           AppSwitchField(
             label: 'Allow sharing',
             subtitle:
-                'Grant specific contractors later from Edit client.',
+                'Grant specific support workers later from Edit participant.',
             value: draft.boolValue.value,
             onChanged: draft.setBool,
           ),

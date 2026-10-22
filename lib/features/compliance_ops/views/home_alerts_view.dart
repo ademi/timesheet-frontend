@@ -503,7 +503,7 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
 
   @override
   Widget build(BuildContext context) {
-    final title = controller.isStaff ? 'Dashboard' : 'Contractor home';
+    final title = controller.isStaff ? 'Dashboard' : 'Support worker home';
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -796,7 +796,7 @@ class _StaffDashboardGrid extends StatelessWidget {
       tiles.add(
         _StatTile(
           icon: Icons.people_outline,
-          label: 'Clients',
+          label: 'Participants',
           value: '${stats.clientsTotal}',
           detail: '${stats.clientsActive} active',
           onTap: () => controller.openRoute(AppRoutes.staffClients),
@@ -808,7 +808,7 @@ class _StaffDashboardGrid extends StatelessWidget {
       tiles.add(
         _StatTile(
           icon: Icons.groups_outlined,
-          label: 'Contractors',
+          label: 'Support workers',
           value: '${stats.contractorsActive}',
           detail:
               '${stats.contractorsInvited} invited'
@@ -822,7 +822,7 @@ class _StaffDashboardGrid extends StatelessWidget {
       tiles.add(
         _StatTile(
           icon: Icons.work_outline,
-          label: 'Jobs',
+          label: 'Supports',
           value: '${stats.jobsOpen}',
           detail: '${stats.jobsTotal} total',
           onTap: () => controller.openRoute(AppRoutes.staffJobs),

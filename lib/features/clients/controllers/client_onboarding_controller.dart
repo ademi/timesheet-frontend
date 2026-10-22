@@ -75,7 +75,7 @@ class ClientOnboardingController extends GetxController
     'Preferences',
     'Contacts',
     'NDIS',
-    'Care plan',
+    'Support plan',
     'Support Coordinator',
     'Support Specialists',
     'Legal',
@@ -422,7 +422,7 @@ class ClientOnboardingController extends GetxController
     } on AppFailure catch (e) {
       errorMessage.value = e.message;
     } catch (_) {
-      errorMessage.value = 'Could not load client for onboarding.';
+      errorMessage.value = 'Could not load participant for onboarding.';
     }
   }
 
@@ -1076,7 +1076,7 @@ class ClientOnboardingController extends GetxController
     errorMessage.value = null;
     final id = clientId;
     if (id == null) {
-      errorMessage.value = 'Create the client on the Identity step first.';
+      errorMessage.value = 'Create the participant on the Identity step first.';
       return false;
     }
 
@@ -1149,7 +1149,7 @@ class ClientOnboardingController extends GetxController
     errorMessage.value = null;
     final id = clientId;
     if (id == null) {
-      errorMessage.value = 'Create the client on the Identity step first.';
+      errorMessage.value = 'Create the participant on the Identity step first.';
       return false;
     }
     if (interpreterRequired.value &&
@@ -1255,7 +1255,7 @@ class ClientOnboardingController extends GetxController
     errorMessage.value = null;
     final id = clientId;
     if (id == null) {
-      errorMessage.value = 'Create the client on the Identity step first.';
+      errorMessage.value = 'Create the participant on the Identity step first.';
       return false;
     }
 
@@ -1421,7 +1421,7 @@ class ClientOnboardingController extends GetxController
     errorMessage.value = null;
     final id = clientId;
     if (id == null) {
-      errorMessage.value = 'Create the client on the Identity step first.';
+      errorMessage.value = 'Create the participant on the Identity step first.';
       return false;
     }
     isSavingContact.value = true;
@@ -1458,7 +1458,7 @@ class ClientOnboardingController extends GetxController
     final contactId = reuseEmergencyContactId.value;
     final legalRole = _representativeLegalRole;
     if (id == null) {
-      errorMessage.value = 'Create the client on the Identity step first.';
+      errorMessage.value = 'Create the participant on the Identity step first.';
       return false;
     }
     if (contactId == null || contactId.isEmpty) {
@@ -1593,7 +1593,7 @@ class ClientOnboardingController extends GetxController
     ndisFieldError.value = null;
     final id = clientId;
     if (id == null) {
-      errorMessage.value = 'Create the client on the Identity step first.';
+      errorMessage.value = 'Create the participant on the Identity step first.';
       return false;
     }
 
@@ -1790,7 +1790,7 @@ class ClientOnboardingController extends GetxController
     errorMessage.value = null;
     final id = clientId;
     if (id == null) {
-      errorMessage.value = 'Create the client on the Identity step first.';
+      errorMessage.value = 'Create the participant on the Identity step first.';
       return false;
     }
 
@@ -1876,7 +1876,7 @@ class ClientOnboardingController extends GetxController
     errorMessage.value = null;
     final id = clientId;
     if (id == null) {
-      errorMessage.value = 'Create the client on the Identity step first.';
+      errorMessage.value = 'Create the participant on the Identity step first.';
       return false;
     }
 
@@ -1902,7 +1902,7 @@ class ClientOnboardingController extends GetxController
     errorMessage.value = null;
     final id = clientId;
     if (id == null) {
-      errorMessage.value = 'Create the client on the Identity step first.';
+      errorMessage.value = 'Create the participant on the Identity step first.';
       return false;
     }
 
@@ -2044,7 +2044,7 @@ class ClientOnboardingController extends GetxController
     errorMessage.value = null;
     final id = clientId;
     if (id == null) {
-      errorMessage.value = 'No client created yet.';
+      errorMessage.value = 'No participant created yet.';
       return false;
     }
     if (isLegalUploading) {
@@ -2340,7 +2340,7 @@ class ClientOnboardingController extends GetxController
     errorMessage.value = null;
     final id = clientId;
     if (id == null) {
-      errorMessage.value = 'No client created yet.';
+      errorMessage.value = 'No participant created yet.';
       return false;
     }
 

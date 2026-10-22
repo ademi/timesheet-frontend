@@ -184,10 +184,10 @@ class _AccessTab extends StatelessWidget {
                       focusNode: focusNode,
                       onChanged: (_) => controller.clearSelectedContractor(),
                       decoration: InputDecoration(
-                        labelText: 'Contractor',
+                        labelText: 'Support worker',
                         hintText:
                             controller.isLoadingContractors.value
-                                ? 'Loading contractors…'
+                                ? 'Loading support workers…'
                                 : 'Search by name',
                         border: const OutlineInputBorder(),
                         suffixIcon:

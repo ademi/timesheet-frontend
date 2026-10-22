@@ -453,7 +453,7 @@ const lateCheckInReasonCodes = <String>[
 
 const lateCheckInReasonLabels = <String, String>{
   'traffic': 'Traffic / travel delay',
-  'client_delay': 'Client was not ready',
+  'client_delay': 'Participant was not ready',
   'prior_visit_overrun': 'Previous visit ran over',
   'equipment_issue': 'Equipment / admin issue',
   'other': 'Other',

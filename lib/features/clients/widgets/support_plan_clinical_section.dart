@@ -48,7 +48,7 @@ class SupportPlanClinicalSection extends StatelessWidget {
           _ClinicalDocRow(
             label: 'Behaviour support plan',
             helper:
-                'Document on file is separate from the Care plan BSP flag below — set both when a BSP applies. PDF uploads apply on Save draft / Activate.',
+                'Document on file is separate from the Support plan BSP flag below — set both when a BSP applies. PDF uploads apply on Save draft / Activate.',
             onFile: store.bspOnFile.value,
             pdfOnFile: store.bspPdfOnFile.value,
             pending: store.pendingBsp.value,

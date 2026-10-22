@@ -153,7 +153,9 @@ class _JobOrClientLabel extends StatelessWidget {
               : null;
       final label =
           name ??
-          (d.jobId != null ? 'Job ${d.jobId}' : 'Pick a client or program job');
+          (d.jobId != null
+              ? 'Support ${d.jobId}'
+              : 'Pick a participant or program support');
       return Text(
         label,
         style: const TextStyle(

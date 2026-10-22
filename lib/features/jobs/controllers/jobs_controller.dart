@@ -312,8 +312,8 @@ class JobsController extends GetxController with PendingActionMixin {
     if (isLoadingSites.value) return;
     if (sites.isEmpty) {
       clientSiteWarning.value =
-          'This client has no sites. Add a site for the client before '
-          'creating a job.';
+          'This participant has no sites. Add a site for the participant before '
+          'creating support.';
     } else {
       clientSiteWarning.value = null;
     }
@@ -347,18 +347,18 @@ class JobsController extends GetxController with PendingActionMixin {
     }
     final useSite = locationMode.value == 'site';
     if (kind.value == 'standing' && selectedClientId.value == null) {
-      errorMessage.value = 'Ongoing support needs a client.';
+      errorMessage.value = 'Ongoing support needs a participant.';
       return;
     }
     if (useSite && selectedClientId.value != null && sites.isEmpty) {
       errorMessage.value =
-          'This client has no sites. Add a site for the client before '
-          'creating a job.';
+          'This participant has no sites. Add a site for the participant before '
+          'creating support.';
       clientSiteWarning.value = errorMessage.value;
       return;
     }
     if (useSite && selectedSiteId.value == null) {
-      errorMessage.value = 'Select a client site.';
+      errorMessage.value = 'Select a participant site.';
       return;
     }
     if (!useSite && selectedBranchId.value == null) {
@@ -743,7 +743,7 @@ class JobsController extends GetxController with PendingActionMixin {
     if (job == null) return;
     final contractorId = selectedContractorId.value;
     if (contractorId == null) {
-      errorMessage.value = 'Select a contractor.';
+      errorMessage.value = 'Select a support worker.';
       return;
     }
     final start = DateTime.now().toUtc().add(const Duration(hours: 1));

@@ -15,21 +15,21 @@ enum ComposerStep {
 
 extension ComposerStepX on ComposerStep {
   String get title => switch (this) {
-    ComposerStep.clients => 'Clients',
+    ComposerStep.clients => 'Participants',
     ComposerStep.when => 'When',
     ComposerStep.place => 'Place',
     ComposerStep.support => 'Support',
     ComposerStep.forms => 'Forms',
-    ComposerStep.workers => 'Workers',
+    ComposerStep.workers => 'Support workers',
   };
 
   String get shortLabel => switch (this) {
-    ComposerStep.clients => '1. Clients',
+    ComposerStep.clients => '1. Participants',
     ComposerStep.when => '2. When',
     ComposerStep.place => '3. Place',
     ComposerStep.support => '4. Support',
     ComposerStep.forms => '5. Forms',
-    ComposerStep.workers => '6. Workers',
+    ComposerStep.workers => '6. Support workers',
   };
 
   int get index => ComposerStep.values.indexOf(this);

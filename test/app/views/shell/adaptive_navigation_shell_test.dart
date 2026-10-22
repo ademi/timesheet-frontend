@@ -10,8 +10,8 @@ void main() {
       icon: Icons.event_available_outlined,
       label: 'Roster',
     ),
-    ResponsiveDestination(icon: Icons.people_outline, label: 'Clients'),
-    ResponsiveDestination(icon: Icons.groups_outlined, label: 'Workforce'),
+    ResponsiveDestination(icon: Icons.people_outline, label: 'Participants'),
+    ResponsiveDestination(icon: Icons.groups_outlined, label: 'Support workers'),
     ResponsiveDestination(icon: Icons.payments_outlined, label: 'Payments'),
     ResponsiveDestination(icon: Icons.receipt_long_outlined, label: 'Billing'),
     ResponsiveDestination(icon: Icons.settings_outlined, label: 'Settings'),
@@ -77,8 +77,8 @@ void main() {
 
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Roster'), findsOneWidget);
-    expect(find.text('Clients'), findsOneWidget);
-    expect(find.text('Workforce'), findsOneWidget);
+    expect(find.text('Participants'), findsOneWidget);
+    expect(find.text('Support workers'), findsOneWidget);
     expect(find.text('More'), findsOneWidget);
     // Overflow labels are not on the bar until More opens.
     expect(find.text('Payments'), findsNothing);

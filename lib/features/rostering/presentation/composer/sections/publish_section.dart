@@ -35,7 +35,7 @@ class ComposerPublishSection extends GetView<RosterComposerController> {
           if (assigned > 0) ...[
             const SizedBox(height: 6),
             const Text(
-              'Workers are notified when you publish — draft assigns stay silent.',
+              'Support workers are notified when you publish — draft assigns stay silent.',
               key: Key('composer-publish-notify-hint'),
               style: TextStyle(color: AppColors.textMuted, fontSize: 12),
             ),
@@ -87,8 +87,8 @@ class ComposerPublishSection extends GetView<RosterComposerController> {
               ),
               child: Text(
                 open == 1
-                    ? '1 worker slot is unassigned. Once published, contractors can claim it.'
-                    : '$open worker slots are unassigned. Once published, contractors can claim them.',
+                    ? '1 support worker slot is unassigned. Once published, support workers can claim it.'
+                    : '$open support worker slots are unassigned. Once published, support workers can claim them.',
                 style: const TextStyle(
                   color: AppColors.textDark,
                   fontSize: 13,
