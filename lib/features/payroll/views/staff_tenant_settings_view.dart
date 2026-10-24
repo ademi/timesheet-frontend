@@ -9,9 +9,22 @@ import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/staff_tenant_settings_controller.dart';
+import 'staff_legal_document_view.dart';
 
 class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
   const StaffTenantSettingsView({super.key});
+
+  void _openLegalDoc(
+    BuildContext context, {
+    required String docKey,
+    required String title,
+  }) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => StaffLegalDocumentView(docKey: docKey, title: title),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +97,26 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                     title: const Text('Supports'),
                     subtitle: const Text('Advanced list of ongoing support'),
                     onTap: () => AppNavigator.push(AppRoutes.staffJobs),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.privacy_tip_outlined),
+                    title: const Text('Privacy policy'),
+                    subtitle: const Text('Current platform privacy notice'),
+                    onTap: () => _openLegalDoc(
+                      context,
+                      docKey: 'privacy_policy',
+                      title: 'Privacy policy',
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.description_outlined),
+                    title: const Text('Platform terms'),
+                    subtitle: const Text('Current terms of use'),
+                    onTap: () => _openLegalDoc(
+                      context,
+                      docKey: 'platform_terms',
+                      title: 'Platform terms',
+                    ),
                   ),
                   const Divider(height: 32),
                   const Text(
