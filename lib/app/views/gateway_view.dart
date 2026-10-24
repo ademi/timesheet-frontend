@@ -71,7 +71,8 @@ class GatewayView extends GetView<GatewayController> {
                                 _ActionCard(
                                   icon: Icons.business_rounded,
                                   title: 'Provider signup',
-                                  subtitle: 'Company account on the website',
+                                  subtitle:
+                                      'Opens rostiq.co to create a provider workspace',
                                   onTap: controller.openProviderSignup,
                                 ),
                               ],
@@ -81,7 +82,8 @@ class GatewayView extends GetView<GatewayController> {
                       ),
                       const SizedBox(height: 32),
                       Text(
-                        'Billing & company signup live on the landing site.',
+                        'Provider company signup is on the website '
+                        '(not inside this app). After signup, return here to sign in.',
                         style: TextStyle(
                           fontSize: 11,
                           color: AppColors.textMuted,

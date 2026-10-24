@@ -305,6 +305,12 @@ abstract final class ApiPaths {
   // Tenants (settings: timezone / public_holiday_jurisdiction)
   static const tenants = '$_v1/tenants';
   static String tenant(String id) => '$tenants/$id';
+  static const tenantsCurrent = '$_v1/tenants/current';
+  static const pilotOnboarding = '$tenantsCurrent/pilot-onboarding';
+  static const pilotOnboardingDismiss = '$pilotOnboarding/dismiss';
+
+  // Pilot feedback
+  static const feedback = '$_v1/feedback';
 
   // Subscription / notifications / branches / members
   static const subscription = '$_v1/subscription';

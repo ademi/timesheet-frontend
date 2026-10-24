@@ -78,6 +78,10 @@ abstract final class AppPermissions {
   static const complianceIncidentsManage = 'compliance.incidents.manage';
   static const complianceAuditView = 'compliance.audit.view';
 
+  /// Pilot feedback (event-demo gaps).
+  static const feedbackSubmit = 'feedback.submit';
+  static const feedbackRead = 'feedback.read';
+
   /// Superuser — UI gates treat as all permissions (mirror backend).
   static const platformAdmin = 'platform.admin';
 }

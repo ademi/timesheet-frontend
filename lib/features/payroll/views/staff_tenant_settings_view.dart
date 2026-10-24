@@ -8,6 +8,8 @@ import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
+import '../../feedback/views/feedback_list_view.dart';
+import '../../feedback/widgets/feedback_sheet.dart';
 import '../controllers/staff_tenant_settings_controller.dart';
 import 'staff_legal_document_view.dart';
 
@@ -118,6 +120,19 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                       title: 'Platform terms',
                     ),
                   ),
+                  if (canReadFeedback())
+                    ListTile(
+                      leading: const Icon(Icons.forum_outlined),
+                      title: const Text('Pilot feedback'),
+                      subtitle: const Text('Messages sent from this workspace'),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const FeedbackListView(),
+                          ),
+                        );
+                      },
+                    ),
                   const Divider(height: 32),
                   const Text(
                     'Timezone and public holiday jurisdiction (when API exposes them).',

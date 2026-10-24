@@ -23,6 +23,8 @@ import '../../visits/data/repositories/visits_repository.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
+import '../../pilot_onboarding/data/models/pilot_onboarding_models.dart';
+import '../../pilot_onboarding/data/repositories/pilot_onboarding_repository.dart';
 import '../controllers/notifications_feed_controller.dart';
 import '../data/models/compliance_ops_models.dart';
 import '../data/models/contractor_home_stats.dart';
@@ -43,6 +45,7 @@ class HomeAlertsController extends GetxController {
     CredentialsRepository? credentialsRepository,
     BillingRepository? billingRepository,
     NotificationsFeedController? notificationsFeed,
+    PilotOnboardingRepository? pilotOnboarding,
     void Function(String title, String message)? showSnack,
   }) : _repository = repository,
        _session = session,
@@ -54,6 +57,7 @@ class HomeAlertsController extends GetxController {
        _credentialsRepository = credentialsRepository,
        _billingRepository = billingRepository,
        _notificationsFeed = notificationsFeed,
+       _pilotOnboarding = pilotOnboarding,
        _showSnack = showSnack ?? _defaultSnack;
 
   final ComplianceOpsRepository _repository;
@@ -66,6 +70,7 @@ class HomeAlertsController extends GetxController {
   final CredentialsRepository? _credentialsRepository;
   final BillingRepository? _billingRepository;
   final NotificationsFeedController? _notificationsFeed;
+  final PilotOnboardingRepository? _pilotOnboarding;
   final void Function(String title, String message) _showSnack;
 
   static void _defaultSnack(String title, String message) {
@@ -83,10 +88,14 @@ class HomeAlertsController extends GetxController {
   final burnAlerts = <BurnEnvelopeAlertOut>[].obs;
   final staffProviderAbn = RxnString();
   bool _staffTenantLoaded = false;
+  final pilotOnboarding = Rxn<PilotOnboardingOut>();
+  final dismissingPilotOnboarding = false.obs;
 
   bool get hasBurnAlerts => burnAlerts.isNotEmpty;
   int get burnAlertCount => burnAlerts.length;
   int get hardBurnCount => burnAlerts.where((a) => a.isHard).length;
+  bool get showPilotOnboardingCard =>
+      isStaff && (pilotOnboarding.value?.shouldShowCard ?? false);
 
   bool get isStaff => _session.isStaff;
   bool get isContractor => _session.isContractor;
@@ -106,6 +115,13 @@ class HomeAlertsController extends GetxController {
       (_session.hasPermission(AppPermissions.subscriptionView) ||
           _session.hasPermission(AppPermissions.billingView) ||
           _session.hasPermission(AppPermissions.tenantsManage));
+
+  bool get canReadPilotOnboarding =>
+      isStaff && _session.hasPermission(AppPermissions.tenantsRead);
+
+  bool get canInviteWorkers =>
+      _session.hasPermission(AppPermissions.contractorsInvite) ||
+      _session.hasPermission(AppPermissions.contractorsManage);
 
   bool get canReadClients =>
       _session.hasPermission(AppPermissions.clientsRead) ||
@@ -201,6 +217,8 @@ class HomeAlertsController extends GetxController {
     } else {
       burnAlerts.clear();
     }
+
+    await _loadPilotOnboarding();
 
     await notificationsFuture;
 
@@ -358,6 +376,49 @@ class HomeAlertsController extends GetxController {
     } on AppFailure catch (_) {
       return (0, 0);
     }
+  }
+
+  Future<void> _loadPilotOnboarding() async {
+    final repo = _pilotOnboarding;
+    if (!canReadPilotOnboarding || repo == null) {
+      pilotOnboarding.value = null;
+      return;
+    }
+    try {
+      pilotOnboarding.value = await repo.getStatus();
+    } on AppFailure {
+      // Non-blocking: home still useful without checklist.
+      pilotOnboarding.value = null;
+    }
+  }
+
+  Future<void> dismissPilotOnboarding() async {
+    final repo = _pilotOnboarding;
+    if (repo == null || dismissingPilotOnboarding.value) return;
+    dismissingPilotOnboarding.value = true;
+    try {
+      pilotOnboarding.value = await repo.dismiss();
+    } on AppFailure catch (e) {
+      AppToast.error('Checklist', e.message);
+    } finally {
+      dismissingPilotOnboarding.value = false;
+    }
+  }
+
+  void openPilotInviteWorkers() {
+    if (canInviteWorkers) {
+      AppNavigator.push(AppRoutes.staffWorkforceInvite);
+    } else {
+      AppNavigator.go(AppRoutes.staffWorkforce);
+    }
+  }
+
+  void openPilotAddParticipants() {
+    AppNavigator.go(AppRoutes.staffClients);
+  }
+
+  void openPilotPublishRoster() {
+    AppNavigator.go(AppRoutes.staffVisits);
   }
 
   Future<void> _loadBurnAlerts() async {
@@ -712,6 +773,10 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                       ),
                       const SizedBox(height: 16),
                     ],
+                    if (controller.showPilotOnboardingCard) ...[
+                      _PilotOnboardingCard(controller: controller),
+                      const SizedBox(height: 16),
+                    ],
                     if (controller.hasBurnAlerts) ...[
                       MaterialBanner(
                         content: Text(
@@ -779,6 +844,106 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
         );
       }),
     );
+  }
+}
+
+class _PilotOnboardingCard extends StatelessWidget {
+  const _PilotOnboardingCard({required this.controller});
+
+  final HomeAlertsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final status = controller.pilotOnboarding.value;
+      if (status == null || !status.shouldShowCard) {
+        return const SizedBox.shrink();
+      }
+
+      Widget step({
+        required bool done,
+        required String label,
+        required VoidCallback onTap,
+      }) {
+        return ListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(
+            done ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: done ? AppColors.success : AppColors.textMuted,
+          ),
+          title: Text(
+            label,
+            style: TextStyle(
+              decoration: done ? TextDecoration.lineThrough : null,
+              color: done ? AppColors.textMuted : AppColors.textDark,
+            ),
+          ),
+          trailing:
+              done
+                  ? null
+                  : TextButton(onPressed: onTap, child: const Text('Go')),
+          onTap: done ? null : onTap,
+        );
+      }
+
+      final dismissing = controller.dismissingPilotOnboarding.value;
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Getting started',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                TextButton(
+                  onPressed:
+                      dismissing ? null : controller.dismissPilotOnboarding,
+                  child:
+                      dismissing
+                          ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Text('Dismiss'),
+                ),
+              ],
+            ),
+            const Text(
+              'Invite workers, add participants, then publish a roster.',
+              style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+            ),
+            step(
+              done: status.invitedWorker,
+              label: 'Invite support workers',
+              onTap: controller.openPilotInviteWorkers,
+            ),
+            step(
+              done: status.createdClient,
+              label: 'Add participants',
+              onTap: controller.openPilotAddParticipants,
+            ),
+            step(
+              done: status.publishedShift,
+              label: 'Publish a first roster shift',
+              onTap: controller.openPilotPublishRoster,
+            ),
+          ],
+        ),
+      );
+    });
   }
 }
 

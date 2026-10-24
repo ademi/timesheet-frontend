@@ -5,17 +5,19 @@ import '../../../app/controllers/auth_controller.dart';
 import '../../../app/routes/app_navigator.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/services/session_service.dart';
+import '../../feedback/widgets/feedback_button.dart';
 import '../controllers/notifications_feed_controller.dart';
 import '../data/models/notification_destination.dart';
 import '../data/models/notification_display.dart';
 
-/// Standard AppBar actions: notification bell (+ optional extras) + logout.
+/// Standard AppBar actions: feedback + notification bell (+ optional extras) + logout.
 List<Widget> shellAppBarActions({
   List<Widget> leadingActions = const [],
   VoidCallback? onRefresh,
 }) {
   return [
     ...leadingActions,
+    const FeedbackButton(),
     const NotificationBellButton(),
     if (onRefresh != null)
       IconButton(

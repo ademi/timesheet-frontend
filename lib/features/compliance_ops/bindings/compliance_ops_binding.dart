@@ -21,6 +21,8 @@ import '../../payroll/bindings/payroll_binding.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../../visits/data/repositories/visits_repository.dart';
+import '../../pilot_onboarding/data/datasources/pilot_onboarding_remote_datasource.dart';
+import '../../pilot_onboarding/data/repositories/pilot_onboarding_repository.dart';
 import '../controllers/contractor_profile_controller.dart';
 import '../controllers/notifications_feed_controller.dart';
 import '../controllers/staff_compliance_controller.dart';
@@ -127,6 +129,25 @@ class HomeAlertsBinding extends Bindings {
     BillingBinding.ensureShared();
     PayrollBinding.ensureShared();
     NotificationsFeedController.ensureRegistered();
+    if (!Get.isRegistered<ApiClient>()) {
+      Get.put<ApiClient>(ApiClient(Get.find<TokenStorage>()), permanent: true);
+    }
+    if (!Get.isRegistered<PilotOnboardingRemoteDataSource>()) {
+      Get.lazyPut<PilotOnboardingRemoteDataSource>(
+        () => PilotOnboardingRemoteDataSource(
+          authenticatedDio: Get.find<ApiClient>().dio,
+        ),
+        fenix: true,
+      );
+    }
+    if (!Get.isRegistered<PilotOnboardingRepository>()) {
+      Get.lazyPut<PilotOnboardingRepository>(
+        () => PilotOnboardingRepository(
+          remote: Get.find<PilotOnboardingRemoteDataSource>(),
+        ),
+        fenix: true,
+      );
+    }
     if (!Get.isRegistered<SessionService>()) return;
     // Permanent across tab switches; re-enter forces refresh (ABN banner, etc.).
     putOrReenter<HomeAlertsController>(
@@ -144,6 +165,10 @@ class HomeAlertsBinding extends Bindings {
                 ? Get.find<BillingRepository>()
                 : null,
         notificationsFeed: Get.find<NotificationsFeedController>(),
+        pilotOnboarding:
+            Get.isRegistered<PilotOnboardingRepository>()
+                ? Get.find<PilotOnboardingRepository>()
+                : null,
       ),
       permanent: true,
       onReenter: (c) => c.onScreenReenter(),
