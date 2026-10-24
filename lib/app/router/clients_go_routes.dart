@@ -13,6 +13,9 @@ import '../../features/clients/views/client_site_form_view.dart';
 import '../../features/clients/views/public_client_invite_view.dart';
 import '../../features/clients/views/strengths_needs_view.dart';
 import '../../features/clients/views/support_plan_view.dart';
+import '../../features/imports/bindings/imports_binding.dart';
+import '../../features/imports/data/models/import_models.dart';
+import '../../features/imports/views/csv_import_view.dart';
 import '../constants/app_permissions.dart';
 import '../routes/app_routes.dart';
 import '../routes/middlewares/auth_route_utils.dart';
@@ -52,6 +55,13 @@ List<RouteBase> buildClientsGoRoutes() => [
     anyOf: const [AppPermissions.clientsManage],
     onEnter: () => ClientsBinding().dependencies(),
     child: const ClientFormView(),
+  ),
+  _staffClientRoute(
+    path: AppRoutes.staffClientsImport,
+    anyOf: const [AppPermissions.clientsManage],
+    onEnter:
+        () => ImportsBinding(kind: ImportKind.participants).dependencies(),
+    child: const CsvImportView(),
   ),
   _staffClientRoute(
     path: AppRoutes.staffClientSupportPlan,

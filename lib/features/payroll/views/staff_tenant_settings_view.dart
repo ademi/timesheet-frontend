@@ -8,6 +8,7 @@ import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
+import '../../feature_flags/views/coming_next_view.dart';
 import '../../feedback/views/feedback_list_view.dart';
 import '../../feedback/widgets/feedback_sheet.dart';
 import '../controllers/staff_tenant_settings_controller.dart';
@@ -133,6 +134,18 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                         );
                       },
                     ),
+                  ListTile(
+                    leading: const Icon(Icons.flag_outlined),
+                    title: const Text('Coming next'),
+                    subtitle: const Text('Roadmap flags for this environment'),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ComingNextView(),
+                        ),
+                      );
+                    },
+                  ),
                   const Divider(height: 32),
                   const Text(
                     'Timezone and public holiday jurisdiction (when API exposes them).',

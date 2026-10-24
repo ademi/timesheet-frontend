@@ -18,6 +18,7 @@ import '../contractor_register/contractor_register_routes.dart';
 import '../contractor_schedule/contractor_schedule_routes.dart';
 import '../credentials/credentials_routes.dart';
 import '../engagements/engagements_routes.dart';
+import '../imports/imports_routes.dart';
 import '../jobs/jobs_routes.dart';
 import '../payroll/payroll_routes.dart';
 import '../rostering/rostering_routes.dart';
@@ -55,6 +56,7 @@ abstract final class ShellPages {
     ),
     ...EngagementsPages.routes,
     ...ClientsPages.routes,
+    ...ImportsPages.routes,
     ...JobsPages.routes,
     ...RosteringPages.routes,
     ...VisitsPages.routes,

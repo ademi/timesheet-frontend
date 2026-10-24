@@ -22,7 +22,16 @@ class WorkforceListView extends GetView<WorkforceController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Support workers'),
-        actions: shellAppBarActions(),
+        actions: [
+          if (controller.canInvite)
+            IconButton(
+              tooltip: 'Import CSV',
+              onPressed:
+                  () => AppNavigator.push(AppRoutes.staffWorkforceImport),
+              icon: const Icon(Icons.upload_file_outlined),
+            ),
+          ...shellAppBarActions(),
+        ],
       ),
       floatingActionButton:
           controller.canInvite

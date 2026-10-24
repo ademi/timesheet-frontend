@@ -316,6 +316,15 @@ abstract final class ApiPaths {
   // Pilot feedback
   static const feedback = '$_v1/feedback';
 
+  // Bulk CSV import
+  static const importsParticipantsPreview = '$_v1/imports/participants/preview';
+  static const importsParticipantsCommit = '$_v1/imports/participants/commit';
+  static const importsWorkersPreview = '$_v1/imports/workers/preview';
+  static const importsWorkersCommit = '$_v1/imports/workers/commit';
+
+  // Public feature flags (no auth)
+  static const publicFeatureFlags = '$_v1/public/feature-flags';
+
   // Subscription / notifications / branches / members
   static const subscription = '$_v1/subscription';
   static const notificationDevices = '$_v1/notifications/devices';

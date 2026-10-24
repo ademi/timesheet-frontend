@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_navigator.dart';
+import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
 import '../../../shared/models/profile_photo_models.dart';
@@ -22,7 +24,16 @@ class ClientsListView extends GetView<ClientsController> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Participants'),
-        actions: shellAppBarActions(),
+        actions: [
+          if (controller.canManage)
+            IconButton(
+              tooltip: 'Import CSV',
+              onPressed:
+                  () => AppNavigator.push(AppRoutes.staffClientsImport),
+              icon: const Icon(Icons.upload_file_outlined),
+            ),
+          ...shellAppBarActions(),
+        ],
       ),
       floatingActionButton:
           !controller.canManage

@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../features/engagements/bindings/engagements_binding.dart';
 import '../../features/engagements/views/workforce_detail_view.dart';
 import '../../features/engagements/views/workforce_invite_view.dart';
+import '../../features/imports/bindings/imports_binding.dart';
+import '../../features/imports/data/models/import_models.dart';
+import '../../features/imports/views/csv_import_view.dart';
 import '../../features/payroll/views/engagement_rate_form_view.dart';
 import '../constants/app_permissions.dart';
 import '../routes/app_routes.dart';
@@ -22,6 +25,12 @@ List<RouteBase> buildEngagementsGoRoutes({
     anyOf: const [AppPermissions.contractorsInvite],
     onEnter: () => EngagementsBinding().dependencies(),
     child: const WorkforceInviteView(),
+  ),
+  _staffRoute(
+    path: AppRoutes.staffWorkforceImport,
+    anyOf: const [AppPermissions.contractorsInvite],
+    onEnter: () => ImportsBinding(kind: ImportKind.workers).dependencies(),
+    child: const CsvImportView(),
   ),
   GoRoute(
     path: AppRoutes.staffWorkforceDetail,
