@@ -325,6 +325,9 @@ abstract final class ApiPaths {
   // Public feature flags (no auth)
   static const publicFeatureFlags = '$_v1/public/feature-flags';
 
+  /// Public trust metadata (AU residency claim when claimable).
+  static const publicPlatformInfo = '$_v1/public/platform-info';
+
   // Subscription / notifications / branches / members
   static const subscription = '$_v1/subscription';
   static const notificationDevices = '$_v1/notifications/devices';

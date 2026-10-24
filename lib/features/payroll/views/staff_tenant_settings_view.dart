@@ -11,6 +11,7 @@ import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../feature_flags/views/coming_next_view.dart';
 import '../../feedback/views/feedback_list_view.dart';
 import '../../feedback/widgets/feedback_sheet.dart';
+import '../../platform_info/widgets/data_residency_footnote.dart';
 import '../controllers/staff_tenant_settings_controller.dart';
 import 'staff_legal_document_view.dart';
 
@@ -299,6 +300,7 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                       ),
                       child: const Text('Save'),
                     ),
+                  const DataResidencyFootnote(),
                 ],
               ),
             ),
