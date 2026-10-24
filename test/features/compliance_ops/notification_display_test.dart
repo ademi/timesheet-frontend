@@ -12,13 +12,16 @@ void main() {
     });
 
     test('maps engagement.invited', () {
-      expect(notificationTitle('engagement.invited', {}), 'Contractor invited');
+      expect(
+        notificationTitle('engagement.invited', {}),
+        'Support worker invited',
+      );
     });
 
     test('maps engagement.accepted', () {
       expect(
         notificationTitle('engagement.accepted', {}),
-        'Contractor accepted',
+        'Support worker accepted',
       );
     });
 
@@ -26,6 +29,15 @@ void main() {
       expect(
         notificationTitle('sharing.access_requested', {}),
         'Access requested',
+      );
+    });
+
+    test('maps compliance.credential_expiring', () {
+      expect(
+        notificationTitle('compliance.credential_expiring', {
+          'credential_type': 'wwcc',
+        }),
+        'Credential expiring soon · Working With Children Check',
       );
     });
 

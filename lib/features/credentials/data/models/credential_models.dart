@@ -548,3 +548,68 @@ class CredentialReviewOut {
     );
   }
 }
+
+/// One band from `GET .../credentials/expiry-digest` (90/60/30/7).
+class ExpiryBandOut {
+  const ExpiryBandOut({
+    required this.withinDays,
+    required this.credentialCount,
+    required this.workerCount,
+  });
+
+  final int withinDays;
+  final int credentialCount;
+  final int workerCount;
+
+  factory ExpiryBandOut.fromJson(Map<String, dynamic> json) {
+    return ExpiryBandOut(
+      withinDays: (json['within_days'] as num?)?.toInt() ?? 0,
+      credentialCount: (json['credential_count'] as num?)?.toInt() ?? 0,
+      workerCount: (json['worker_count'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+/// Staff tenant expiry digest summary.
+class EmployerExpiryDigestOut {
+  const EmployerExpiryDigestOut({
+    required this.asOf,
+    required this.bands,
+    required this.coverageRiskShiftCount,
+  });
+
+  final DateTime asOf;
+  final List<ExpiryBandOut> bands;
+  final int coverageRiskShiftCount;
+
+  /// Prefer the tightest band that still has credentials (7 → 30 → 60 → 90).
+  ExpiryBandOut? get tightestNonEmptyBand {
+    final ordered = [...bands]
+      ..sort((a, b) => a.withinDays.compareTo(b.withinDays));
+    for (final b in ordered) {
+      if (b.credentialCount > 0) return b;
+    }
+    return null;
+  }
+
+  bool get hasExpiring => tightestNonEmptyBand != null;
+
+  factory EmployerExpiryDigestOut.fromJson(Map<String, dynamic> json) {
+    final rawBands = json['bands'];
+    final bands =
+        rawBands is List
+            ? rawBands
+                .whereType<Map>()
+                .map((e) => ExpiryBandOut.fromJson(Map<String, dynamic>.from(e)))
+                .toList(growable: false)
+            : const <ExpiryBandOut>[];
+    return EmployerExpiryDigestOut(
+      asOf:
+          DateTime.tryParse(json['as_of']?.toString() ?? '') ??
+          DateTime.now(),
+      bands: bands,
+      coverageRiskShiftCount:
+          (json['coverage_risk_shift_count'] as num?)?.toInt() ?? 0,
+    );
+  }
+}

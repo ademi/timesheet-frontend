@@ -10,6 +10,8 @@ const _knownTitles = <String, String>{
   'engagement.invited': 'Support worker invited',
   'engagement.accepted': 'Support worker accepted',
   'sharing.access_requested': 'Access requested',
+  'compliance.credential_expiring': 'Credential expiring soon',
+  'feedback.submitted': 'New feedback',
 };
 
 const _monthLabels = <String>[

@@ -10,6 +10,7 @@ import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../../../shared/utils/humanize_label.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
+import '../widgets/credential_expiry_chip.dart';
 import '../widgets/credential_provenance_chip.dart';
 import '../widgets/credential_status_chip.dart';
 import '../widgets/evidence_document_actions.dart';
@@ -290,6 +291,14 @@ class _CredentialTile extends StatelessWidget {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    CredentialExpiryChip(expiresOn: credential.expiresOn),
+                  ],
+                ),
                 const SizedBox(height: 6),
                 Text(
                   'Evidence: ${humanizeLabel(credential.evidencePresence)}',

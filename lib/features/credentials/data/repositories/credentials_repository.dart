@@ -62,4 +62,7 @@ class CredentialsRepository {
     required String engagementId,
     required CredentialReviewCreateRequest body,
   }) => _remote.createReview(engagementId: engagementId, body: body);
+
+  Future<EmployerExpiryDigestOut> getEmployerExpiryDigest() =>
+      _remote.getEmployerExpiryDigest();
 }

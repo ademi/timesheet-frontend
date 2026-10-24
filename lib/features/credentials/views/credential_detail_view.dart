@@ -8,6 +8,8 @@ import '../../../core/responsive/page_content.dart';
 import '../../../shared/utils/humanize_label.dart';
 import '../controllers/credentials_controller.dart';
 import '../data/models/credential_models.dart';
+import '../utils/credential_expiry.dart';
+import '../widgets/credential_expiry_chip.dart';
 import '../widgets/credential_provenance_chip.dart';
 import '../widgets/credential_status_chip.dart';
 import '../widgets/evidence_document_actions.dart';
@@ -102,11 +104,22 @@ class CredentialDetailView extends GetView<CredentialsController> {
                     _row('Jurisdiction', credential.jurisdiction!),
                   if (credential.identifierMasked != null)
                     _row('Identifier', credential.identifierMasked!),
-                  if (credential.expiresOn != null)
+                  if (credential.expiresOn != null) ...[
                     _row(
                       'Expires',
                       credential.expiresOn!.toIso8601String().split('T').first,
                     ),
+                    if (credentialExpiryLabel(credential.expiresOn) != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: CredentialExpiryChip(
+                            expiresOn: credential.expiresOn,
+                          ),
+                        ),
+                      ),
+                  ],
                   if (isSensitiveCredentialType(credential.credentialType))
                     const Padding(
                       padding: EdgeInsets.only(top: 12),

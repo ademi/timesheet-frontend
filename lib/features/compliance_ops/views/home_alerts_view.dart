@@ -22,6 +22,7 @@ import '../../visits/data/models/visit_models.dart';
 import '../../visits/data/repositories/visits_repository.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
+import '../../credentials/utils/credential_expiry.dart';
 import '../../payroll/data/repositories/payroll_repository.dart';
 import '../../pilot_onboarding/data/models/pilot_onboarding_models.dart';
 import '../../pilot_onboarding/data/repositories/pilot_onboarding_repository.dart';
@@ -90,12 +91,18 @@ class HomeAlertsController extends GetxController {
   bool _staffTenantLoaded = false;
   final pilotOnboarding = Rxn<PilotOnboardingOut>();
   final dismissingPilotOnboarding = false.obs;
+  final expiryDigest = Rxn<EmployerExpiryDigestOut>();
 
   bool get hasBurnAlerts => burnAlerts.isNotEmpty;
   int get burnAlertCount => burnAlerts.length;
   int get hardBurnCount => burnAlerts.where((a) => a.isHard).length;
   bool get showPilotOnboardingCard =>
       isStaff && (pilotOnboarding.value?.shouldShowCard ?? false);
+  bool get showStaffExpiryStrip =>
+      isStaff && (expiryDigest.value?.hasExpiring ?? false);
+  bool get showContractorExpiryStrip =>
+      isContractor &&
+      (contractorStats.value?.credentialsExpiringSoon ?? 0) > 0;
 
   bool get isStaff => _session.isStaff;
   bool get isContractor => _session.isContractor;
@@ -118,6 +125,12 @@ class HomeAlertsController extends GetxController {
 
   bool get canReadPilotOnboarding =>
       isStaff && _session.hasPermission(AppPermissions.tenantsRead);
+
+  bool get canReadExpiryDigest =>
+      isStaff &&
+      (_session.hasPermission(AppPermissions.credentialsRead) ||
+          _session.hasPermission(AppPermissions.credentialsManage) ||
+          _session.hasPermission(AppPermissions.credentialsReview));
 
   bool get canInviteWorkers =>
       _session.hasPermission(AppPermissions.contractorsInvite) ||
@@ -219,6 +232,7 @@ class HomeAlertsController extends GetxController {
     }
 
     await _loadPilotOnboarding();
+    await _loadExpiryDigest();
 
     await notificationsFuture;
 
@@ -338,6 +352,16 @@ class HomeAlertsController extends GetxController {
           credentials.where((c) => c.evidencePresence == 'absent').length;
       final credPending =
           credentials.where((c) => c.status == 'pending_review').length;
+      final credExpiring =
+          credentials
+              .where(
+                (c) =>
+                    c.status == 'active' ||
+                    c.status == 'approved' ||
+                    c.status == 'pending_review',
+              )
+              .where((c) => isCredentialExpiringSoon(c.expiresOn))
+              .length;
 
       contractorStats.value = ContractorHomeStats(
         visitsUpcoming: visitsUpcoming,
@@ -351,6 +375,7 @@ class HomeAlertsController extends GetxController {
         credentialsApproved: credApproved,
         credentialsMissingEvidence: credMissing,
         credentialsPendingReview: credPending,
+        credentialsExpiringSoon: credExpiring,
       );
     } on AppFailure catch (e) {
       if (!_isTenantMissingError(e)) {
@@ -390,6 +415,27 @@ class HomeAlertsController extends GetxController {
       // Non-blocking: home still useful without checklist.
       pilotOnboarding.value = null;
     }
+  }
+
+  Future<void> _loadExpiryDigest() async {
+    final repo = _credentialsRepository;
+    if (!canReadExpiryDigest || repo == null) {
+      expiryDigest.value = null;
+      return;
+    }
+    try {
+      expiryDigest.value = await repo.getEmployerExpiryDigest();
+    } on AppFailure {
+      expiryDigest.value = null;
+    }
+  }
+
+  void openStaffExpiryDigest() {
+    AppNavigator.go(AppRoutes.staffWorkforce);
+  }
+
+  void openContractorExpiringCredentials() {
+    AppNavigator.go(AppRoutes.contractorCredentials);
   }
 
   Future<void> dismissPilotOnboarding() async {
@@ -777,6 +823,71 @@ class HomeAlertsView extends GetView<HomeAlertsController> {
                       _PilotOnboardingCard(controller: controller),
                       const SizedBox(height: 16),
                     ],
+                    if (controller.showStaffExpiryStrip) ...[
+                      Builder(
+                        builder: (context) {
+                          final digest = controller.expiryDigest.value!;
+                          final band = digest.tightestNonEmptyBand!;
+                          final risk = digest.coverageRiskShiftCount;
+                          return MaterialBanner(
+                            content: Text(
+                              risk > 0
+                                  ? '${band.credentialCount} credential'
+                                      '${band.credentialCount == 1 ? '' : 's'} '
+                                      'expiring within ${band.withinDays} days'
+                                      ' · $risk shift'
+                                      '${risk == 1 ? '' : 's'} at coverage risk'
+                                  : '${band.credentialCount} credential'
+                                      '${band.credentialCount == 1 ? '' : 's'} '
+                                      'expiring within ${band.withinDays} days'
+                                      ' (${band.workerCount} worker'
+                                      '${band.workerCount == 1 ? '' : 's'})',
+                            ),
+                            leading: Icon(
+                              Icons.event_busy_outlined,
+                              color:
+                                  band.withinDays <= 7
+                                      ? AppColors.error
+                                      : AppColors.openSlot,
+                            ),
+                            backgroundColor:
+                                band.withinDays <= 7
+                                    ? AppColors.errorBackground
+                                    : AppColors.openSlotBackground,
+                            actions: [
+                              TextButton(
+                                onPressed: controller.openStaffExpiryDigest,
+                                child: const Text('Review workers'),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (controller.showContractorExpiryStrip) ...[
+                      MaterialBanner(
+                        content: Text(
+                          '${controller.contractorStats.value!.credentialsExpiringSoon} '
+                          'credential'
+                          '${controller.contractorStats.value!.credentialsExpiringSoon == 1 ? '' : 's'} '
+                          'expired or expiring within 30 days',
+                        ),
+                        leading: const Icon(
+                          Icons.event_busy_outlined,
+                          color: AppColors.error,
+                        ),
+                        backgroundColor: AppColors.errorBackground,
+                        actions: [
+                          TextButton(
+                            onPressed:
+                                controller.openContractorExpiringCredentials,
+                            child: const Text('View credentials'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     if (controller.hasBurnAlerts) ...[
                       MaterialBanner(
                         content: Text(
@@ -1142,6 +1253,16 @@ class _ContractorDashboard extends StatelessWidget {
               label: 'Pending review',
               value: '${stats.credentialsPendingReview}',
               detail: 'Awaiting staff check',
+              onTap:
+                  () => controller.openRoute(AppRoutes.contractorCredentials),
+            ),
+          if (stats.credentialsExpiringSoon > 0)
+            _StatTile(
+              icon: Icons.event_busy_outlined,
+              label: 'Expiring soon',
+              value: '${stats.credentialsExpiringSoon}',
+              detail: 'Within 30 days',
+              accent: AppColors.error,
               onTap:
                   () => controller.openRoute(AppRoutes.contractorCredentials),
             ),

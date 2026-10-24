@@ -59,6 +59,10 @@ abstract final class ApiPaths {
       '$_v1/tenants/current/contractors/$contractorId/credentials';
   static String tenantContractorCredentialsReviewContext(String contractorId) =>
       '$_v1/tenants/current/contractors/$contractorId/credentials-review-context';
+
+  /// Staff expiry bands 90/60/30/7 (`credentials.read`).
+  static const tenantCredentialsExpiryDigest =
+      '$_v1/tenants/current/credentials/expiry-digest';
   static String tenantContractor(String contractorId) =>
       '$_v1/tenants/current/contractors/$contractorId';
   static const tenantContractors = '$_v1/tenants/current/contractors';

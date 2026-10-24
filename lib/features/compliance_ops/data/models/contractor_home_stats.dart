@@ -12,6 +12,7 @@ class ContractorHomeStats {
     this.credentialsApproved = 0,
     this.credentialsMissingEvidence = 0,
     this.credentialsPendingReview = 0,
+    this.credentialsExpiringSoon = 0,
   });
 
   /// Upcoming visits in the next 14 days (scheduled/in-progress).
@@ -46,6 +47,9 @@ class ContractorHomeStats {
 
   /// Credentials pending staff review.
   final int credentialsPendingReview;
+
+  /// Active credentials expired or expiring within 30 days.
+  final int credentialsExpiringSoon;
 
   static const empty = ContractorHomeStats();
 }

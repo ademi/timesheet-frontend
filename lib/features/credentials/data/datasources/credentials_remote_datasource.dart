@@ -139,6 +139,25 @@ class CredentialsRemoteDataSource {
     }
   }
 
+  Future<EmployerExpiryDigestOut> getEmployerExpiryDigest() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.tenantCredentialsExpiryDigest,
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppFailure(
+          code: 'unknown',
+          message: 'Empty expiry-digest response',
+          presentation: AppFailurePresentation.toast,
+        );
+      }
+      return EmployerExpiryDigestOut.fromJson(data);
+    } on DioException catch (e) {
+      throw AppFailure.fromDio(e);
+    }
+  }
+
   Future<CredentialReviewOut> createReview({
     required String engagementId,
     required CredentialReviewCreateRequest body,
