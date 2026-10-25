@@ -431,7 +431,12 @@ class HomeAlertsController extends GetxController {
   }
 
   void openStaffExpiryDigest() {
-    AppNavigator.go(AppRoutes.staffWorkforce);
+    AppNavigator.go(
+      AppNavigator.location(
+        AppRoutes.staffWorkforce,
+        query: const {'filter': 'expiring'},
+      ),
+    );
   }
 
   void openContractorExpiringCredentials() {

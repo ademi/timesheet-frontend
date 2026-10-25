@@ -89,9 +89,9 @@ class _FeedbackSheetBodyState extends State<_FeedbackSheetBody> {
               : null;
       final roleLabel =
           session?.isContractor == true
-              ? 'contractor'
+              ? 'Support worker'
               : session?.isStaff == true
-              ? 'staff'
+              ? 'Staff'
               : null;
       await Get.find<FeedbackRepository>().submit(
         FeedbackCreateRequest(

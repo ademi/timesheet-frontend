@@ -15,6 +15,7 @@ import '../../../shared/utils/name_sort.dart';
 import '../../../shared/widgets/app_toast.dart';
 import '../../credentials/data/models/credential_models.dart';
 import '../../credentials/data/repositories/credentials_repository.dart';
+import '../../credentials/utils/credential_expiry.dart';
 import '../../credentials/utils/support_worker_pack.dart';
 import '../../visits/data/models/roster_overlay_models.dart';
 import '../../visits/data/models/visit_models.dart';
@@ -45,8 +46,21 @@ class WorkforceController extends GetxController {
 
   final items = <EngagementOut>[].obs;
   final pendingInvites = <ContractorRegistrationInviteOut>[].obs;
-  final statusFilter = RxnString();
-  final missingDocsFilter = false.obs;
+
+  /// Exclusive list chip: `null` = All; engagement status; [filterMissingDocs];
+  /// [filterExpiring]. Selecting one mode always clears the others.
+  final listFilter = RxnString();
+  static const filterMissingDocs = 'missing_docs';
+  static const filterExpiring = 'expiring';
+
+  /// Hard screening types counted by the Home expiry digest.
+  static const _digestHardTypes = {
+    'ndis_worker_screening',
+    'police_check',
+    'wwcc',
+  };
+  static const _expiringWithinDays = 30;
+
   final credentialsByContractor = <String, List<CredentialOut>>{}.obs;
   final isLoadingCredentials = false.obs;
   final photosByContractor = <String, ProfilePhotoOut>{}.obs;
@@ -122,14 +136,34 @@ class WorkforceController extends GetxController {
       _session.hasPermission(AppPermissions.visitsManage) ||
       _session.hasPermission(AppPermissions.jobsManage);
 
+  bool get isAllFilter => listFilter.value == null;
+  bool get isMissingDocsFilter => listFilter.value == filterMissingDocs;
+  bool get isExpiringFilter => listFilter.value == filterExpiring;
+  bool get isStatusFilter {
+    final f = listFilter.value;
+    return f != null && f != filterMissingDocs && f != filterExpiring;
+  }
+
+  bool isStatusSelected(String status) => listFilter.value == status;
+
   List<EngagementOut> get filtered {
     var list = items.toList();
-    final f = statusFilter.value;
-    if (f != null && f.isNotEmpty) {
-      list = list.where((e) => e.status == f).toList();
-    }
-    if (missingDocsFilter.value) {
+    final f = listFilter.value;
+    if (f == null) {
+      // All
+    } else if (f == filterMissingDocs) {
       list = list.where(hasMissingRequiredDocs).toList();
+    } else if (f == filterExpiring) {
+      // Align with Home digest (active engagements + hard screening types).
+      list =
+          list
+              .where(
+                (e) =>
+                    e.status == 'active' && hasDigestExpiringCredentials(e),
+              )
+              .toList();
+    } else {
+      list = list.where((e) => e.status == f).toList();
     }
     list.sort((a, b) => compareNames(a.displayName, b.displayName));
     return list;
@@ -137,9 +171,9 @@ class WorkforceController extends GetxController {
 
   /// Pending registration invites shown when filter is All or Invited.
   List<ContractorRegistrationInviteOut> get filteredPendingInvites {
-    if (missingDocsFilter.value) return const [];
-    final f = statusFilter.value;
-    if (f != null && f.isNotEmpty && f != 'invited') return const [];
+    final f = listFilter.value;
+    if (f == filterMissingDocs || f == filterExpiring) return const [];
+    if (f != null && f != 'invited') return const [];
     final list =
         pendingInvites.toList()..sort(
           (a, b) => a.email.toLowerCase().compareTo(b.email.toLowerCase()),
@@ -153,10 +187,57 @@ class WorkforceController extends GetxController {
         credentialsByContractor[engagement.contractorId] ?? const [],
       ).isNotEmpty;
 
-  Future<void> setMissingDocsFilter(bool value) async {
-    missingDocsFilter.value = value;
-    if (value) {
+  /// Matches Home digest: active hard-category creds expiring within 30 days.
+  bool hasDigestExpiringCredentials(EngagementOut engagement) {
+    final creds =
+        credentialsByContractor[engagement.contractorId] ?? const [];
+    for (final c in creds) {
+      if (!_isDigestExpiringCredential(c)) continue;
+      return true;
+    }
+    return false;
+  }
+
+  bool _isDigestExpiringCredential(CredentialOut c) {
+    if (c.status != 'active') return false;
+    if (!_digestHardTypes.contains(c.credentialType)) return false;
+    final days = daysUntilExpiry(c.expiresOn);
+    if (days == null) return false;
+    // Digest bands use expires_on >= today and <= horizon (not already expired).
+    return days >= 0 && days <= _expiringWithinDays;
+  }
+
+  String? expiringCredentialsSubtitle(EngagementOut engagement) {
+    final creds =
+        credentialsByContractor[engagement.contractorId] ?? const [];
+    String? best;
+    var bestDays = 1 << 30;
+    for (final c in creds) {
+      if (!_isDigestExpiringCredential(c)) continue;
+      final days = daysUntilExpiry(c.expiresOn)!;
+      if (days < bestDays) {
+        bestDays = days;
+        best =
+            '${c.displayLabel} · ${credentialExpiryLabel(c.expiresOn) ?? 'Expiring'}';
+      }
+    }
+    return best;
+  }
+
+  /// One chip at a time: All / status / Missing docs / Expiring.
+  Future<void> selectListFilter(String? mode) async {
+    listFilter.value = mode;
+    if (mode == filterMissingDocs || mode == filterExpiring) {
       await _ensureCredentialsLoaded();
+    }
+  }
+
+  Future<void> applyRouteFilterFromQuery() async {
+    final raw =
+        Get.parameters['filter'] ??
+        Uri.tryParse(AppNavigator.currentLocation)?.queryParameters['filter'];
+    if (raw == filterExpiring || raw == 'expiring') {
+      await selectListFilter(filterExpiring);
     }
   }
 
@@ -169,11 +250,12 @@ class WorkforceController extends GetxController {
     }
     Future.microtask(() async {
       await load();
+      await applyRouteFilterFromQuery();
       await ensureDetailHydratedFromRoute();
     });
   }
 
-  /// Tier-2 shell re-enter: soft list refresh; keep status filter / selection.
+  /// Tier-2 shell re-enter: soft list refresh; re-apply deep-link filter if any.
   void onScreenReenter() {
     final path =
         Uri.tryParse(AppNavigator.currentLocation)?.path ??
@@ -183,7 +265,7 @@ class WorkforceController extends GetxController {
 
     clearError();
     // ignore: discarded_futures
-    load();
+    load().then((_) => applyRouteFilterFromQuery());
     // ignore: discarded_futures
     ensureDetailHydratedFromRoute();
   }
@@ -275,7 +357,7 @@ class WorkforceController extends GetxController {
       photosByContractor.clear();
       // Load avatars in the background so the list can render immediately.
       _ensureListPhotosLoaded();
-      if (missingDocsFilter.value) {
+      if (isMissingDocsFilter || isExpiringFilter) {
         credentialsByContractor.clear();
         await _ensureCredentialsLoaded();
       }
@@ -811,31 +893,27 @@ class WorkforceController extends GetxController {
   }
 
   Future<void> _ensureCredentialsLoaded() async {
-    final engagementByContractor = <String, EngagementOut>{};
+    final contractorIds = <String>{};
     for (final engagement in items) {
-      engagementByContractor.putIfAbsent(
-        engagement.contractorId,
-        () => engagement,
-      );
+      contractorIds.add(engagement.contractorId);
     }
     final pending =
-        engagementByContractor.entries
-            .where((e) => !credentialsByContractor.containsKey(e.key))
+        contractorIds
+            .where((id) => !credentialsByContractor.containsKey(id))
             .toList();
     if (pending.isEmpty) return;
 
     isLoadingCredentials.value = true;
     try {
+      // No engagement_id: metadata without sharing grant (matches digest).
       final results = await Future.wait(
         pending.map(
-          (entry) => _credentialsRepository.listForTenantContractor(
-            entry.key,
-            engagementId: entry.value.id,
-          ),
+          (contractorId) =>
+              _credentialsRepository.listForTenantContractor(contractorId),
         ),
       );
       for (var i = 0; i < pending.length; i++) {
-        credentialsByContractor[pending[i].key] = results[i];
+        credentialsByContractor[pending[i]] = results[i];
       }
     } on AppFailure catch (e) {
       _setError(e.message);

@@ -30,7 +30,7 @@ class CredentialsRepository {
 
   Future<List<CredentialOut>> listForTenantContractor(
     String contractorId, {
-    required String engagementId,
+    String? engagementId,
   }) async => sortedByName(
     await _remote.listForTenantContractor(
       contractorId,

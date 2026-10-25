@@ -171,7 +171,20 @@ class WorkforceListView extends GetView<WorkforceController> {
                                   );
                                 }),
                                 title: Text(e.displayName),
-                                subtitle: Text('Status: ${e.statusLabel}'),
+                                subtitle: Text(
+                                  controller.isExpiringFilter
+                                      ? [
+                                        'Status: ${e.statusLabel}',
+                                        if (controller
+                                                .expiringCredentialsSubtitle(
+                                                  e,
+                                                ) !=
+                                            null)
+                                          controller
+                                              .expiringCredentialsSubtitle(e)!,
+                                      ].join(' · ')
+                                      : 'Status: ${e.statusLabel}',
+                                ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -192,28 +205,38 @@ class WorkforceListView extends GetView<WorkforceController> {
                                     _StatusChip(status: e.status),
                                   ],
                                 ),
-                                onTap: () => controller.openDetail(e),
+                                onTap:
+                                    controller.isExpiringFilter
+                                        ? () =>
+                                            controller.openCredentialReview(e)
+                                        : () => controller.openDetail(e),
                               ),
                             ),
-                          if (pending.isEmpty && engagements.isEmpty)
+                          if (controller.isLoadingCredentials.value &&
+                              (controller.isExpiringFilter ||
+                                  controller.isMissingDocsFilter) &&
+                              engagements.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 48),
+                              child: Center(child: CircularProgressIndicator()),
+                            )
+                          else if (pending.isEmpty && engagements.isEmpty)
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 48),
                               child: Center(
                                 child: Column(
                                   children: [
                                     Text(
-                                      controller.statusFilter.value == null &&
-                                              !controller
-                                                  .missingDocsFilter
-                                                  .value
+                                      controller.isAllFilter
                                           ? 'No support workers yet.'
+                                          : controller.isExpiringFilter
+                                          ? 'No workers with screening credentials expiring within 30 days.'
                                           : 'No support workers match this filter.',
                                       style: const TextStyle(
                                         color: AppColors.textMuted,
                                       ),
                                     ),
-                                    if (controller.statusFilter.value == null &&
-                                        !controller.missingDocsFilter.value &&
+                                    if (controller.isAllFilter &&
                                         controller.canInvite) ...[
                                       const SizedBox(height: 16),
                                       TextButton.icon(
@@ -288,56 +311,97 @@ class _WorkforceStatusFiltersState extends State<_WorkforceStatusFilters> {
           controller: _scrollController,
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.only(bottom: 4),
-          child: Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: FilterChip(
-                  label: const Text('All'),
-                  selected: controller.statusFilter.value == null,
-                  onSelected: (_) => controller.statusFilter.value = null,
-                ),
-              ),
-              for (final s in engagementStatuses)
+          child: Obx(() {
+            final loadingCreds = controller.isLoadingCredentials.value;
+            return Row(
+              children: [
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
-                    label: Text(_statusChipLabel(s)),
-                    selected: controller.statusFilter.value == s,
-                    onSelected: (_) => controller.statusFilter.value = s,
+                    label: const Text('All'),
+                    selected: controller.isAllFilter,
+                    onSelected: (_) => controller.selectListFilter(null),
                   ),
                 ),
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: FilterChip(
-                  label: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('Missing required docs'),
-                      if (controller.isLoadingCredentials.value) ...[
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Theme.of(context).colorScheme.primary,
+                for (final s in engagementStatuses)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(_statusChipLabel(s)),
+                      selected: controller.isStatusSelected(s),
+                      onSelected:
+                          (selected) => controller.selectListFilter(
+                            selected ? s : null,
                           ),
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
-                  selected: controller.missingDocsFilter.value,
-                  onSelected:
-                      controller.isLoadingCredentials.value
-                          ? null
-                          : (selected) =>
-                              controller.setMissingDocsFilter(selected),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Missing required docs'),
+                        if (loadingCreds &&
+                            controller.isMissingDocsFilter) ...[
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    selected: controller.isMissingDocsFilter,
+                    onSelected:
+                        loadingCreds
+                            ? null
+                            : (selected) => controller.selectListFilter(
+                              selected
+                                  ? WorkforceController.filterMissingDocs
+                                  : null,
+                            ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-            ],
-          ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Expiring credentials'),
+                        if (loadingCreds && controller.isExpiringFilter) ...[
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    selected: controller.isExpiringFilter,
+                    onSelected:
+                        loadingCreds
+                            ? null
+                            : (selected) => controller.selectListFilter(
+                              selected
+                                  ? WorkforceController.filterExpiring
+                                  : null,
+                            ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+            );
+          }),
         ),
       ),
     );

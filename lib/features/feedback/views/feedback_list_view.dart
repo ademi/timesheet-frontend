@@ -100,17 +100,7 @@ class _FeedbackListViewState extends State<FeedbackListView> {
                             Card(
                               child: ListTile(
                                 title: Text(item.message),
-                                subtitle: Text(
-                                  [
-                                    if (item.severity != null)
-                                      humanizeLabel(item.severity!),
-                                    if (item.roleLabel != null)
-                                      item.roleLabel!,
-                                    item.createdAt.toLocal().toString(),
-                                    if (item.screenRoute != null)
-                                      item.screenRoute!,
-                                  ].join(' · '),
-                                ),
+                                subtitle: Text(_feedbackMetaLine(item)),
                                 isThreeLine: true,
                               ),
                             ),
@@ -124,4 +114,46 @@ class _FeedbackListViewState extends State<FeedbackListView> {
       ),
     );
   }
+}
+
+String _feedbackMetaLine(FeedbackOut item) {
+  final role =
+      (item.actorRole?.trim().isNotEmpty ?? false)
+          ? item.actorRole!.trim()
+          : (item.roleLabel?.trim().isNotEmpty ?? false)
+          ? item.roleLabel!.trim()
+          : _fallbackActorRole(item.actorType);
+  final name = item.actorName?.trim();
+  return [
+    if (item.severity != null) humanizeLabel(item.severity!),
+    if (role != null) humanizeLabel(role),
+    if (name != null && name.isNotEmpty) name,
+    _formatFeedbackDateTime(item.createdAt),
+    if (item.screenRoute != null) item.screenRoute!,
+  ].join(' · ');
+}
+
+String? _fallbackActorRole(String? actorType) {
+  switch (actorType) {
+    case 'tenant_member':
+      return 'Staff';
+    case 'contractor':
+      return 'Support worker';
+    case 'platform':
+      return 'Platform';
+    default:
+      return null;
+  }
+}
+
+/// Local time as `mm/dd/yyyy, hh:mm:ss` (24-hour).
+String _formatFeedbackDateTime(DateTime value) {
+  final local = value.toLocal();
+  final mm = local.month.toString().padLeft(2, '0');
+  final dd = local.day.toString().padLeft(2, '0');
+  final yyyy = local.year.toString();
+  final hh = local.hour.toString().padLeft(2, '0');
+  final min = local.minute.toString().padLeft(2, '0');
+  final ss = local.second.toString().padLeft(2, '0');
+  return '$mm/$dd/$yyyy, $hh:$min:$ss';
 }

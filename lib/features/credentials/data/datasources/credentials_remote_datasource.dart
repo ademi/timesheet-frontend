@@ -99,15 +99,22 @@ class CredentialsRemoteDataSource {
     }
   }
 
-  /// Staff metadata list (API-003). Requires [engagementId]; no sharing grant.
+  /// Staff metadata list for a contractor.
+  ///
+  /// Pass [engagementId] only for credential-review UI (grant required; empty
+  /// list if no grant). Omit it for workforce filters (missing docs / expiry)
+  /// so metadata is visible without a sharing grant — same as the expiry digest.
   Future<List<CredentialOut>> listForTenantContractor(
     String contractorId, {
-    required String engagementId,
+    String? engagementId,
   }) async {
     try {
       final response = await _dio.get<List<dynamic>>(
         ApiPaths.tenantContractorCredentials(contractorId),
-        queryParameters: {'engagement_id': engagementId},
+        queryParameters:
+            engagementId == null
+                ? null
+                : {'engagement_id': engagementId},
       );
       return _mapList(response.data);
     } on DioException catch (e) {

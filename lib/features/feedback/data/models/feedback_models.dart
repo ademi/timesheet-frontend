@@ -34,6 +34,8 @@ class FeedbackOut {
     this.tag,
     this.roleLabel,
     this.actorType,
+    this.actorName,
+    this.actorRole,
   });
 
   final String id;
@@ -44,6 +46,10 @@ class FeedbackOut {
   final String? tag;
   final String? roleLabel;
   final String? actorType;
+  /// Server-resolved display name (tenant member / contractor / email).
+  final String? actorName;
+  /// Server-resolved role (system role name, or Staff / Support worker).
+  final String? actorRole;
 
   factory FeedbackOut.fromJson(Map<String, dynamic> json) {
     return FeedbackOut(
@@ -55,6 +61,8 @@ class FeedbackOut {
       tag: json['tag'] as String?,
       roleLabel: json['role_label'] as String?,
       actorType: json['actor_type'] as String?,
+      actorName: json['actor_name'] as String?,
+      actorRole: json['actor_role'] as String?,
     );
   }
 }
