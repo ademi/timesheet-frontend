@@ -134,8 +134,10 @@ class CsvImportView extends GetView<CsvImportController> {
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
-                    for (final row in report.rows)
-                      Card(
+                    // API row_number is CSV line (header = 1); show 1-based data rows.
+                    ...List.generate(report.rows.length, (i) {
+                      final row = report.rows[i];
+                      return Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           leading: Icon(
@@ -143,7 +145,7 @@ class CsvImportView extends GetView<CsvImportController> {
                             color:
                                 row.ok ? AppColors.success : AppColors.error,
                           ),
-                          title: Text('Row ${row.rowNumber}'),
+                          title: Text('Row ${i + 1}'),
                           subtitle: Text(
                             row.ok
                                 ? [
@@ -156,9 +158,11 @@ class CsvImportView extends GetView<CsvImportController> {
                                 ].where((s) => s.isNotEmpty).join('\n')
                                 : row.errors.join('\n'),
                           ),
-                          isThreeLine: !row.ok || (row.preview?.length ?? 0) > 1,
+                          isThreeLine:
+                              !row.ok || (row.preview?.length ?? 0) > 1,
                         ),
-                      ),
+                      );
+                    }),
                   ],
                 ],
               ),
