@@ -377,36 +377,51 @@ class _DayCell extends StatelessWidget {
           right: BorderSide(color: AppColors.divider),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (cell.onLeave)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 4),
-              child: Text(
-                'Leave',
-                style: TextStyle(fontSize: 10, color: AppColors.slate500),
-              ),
-            )
-          else if (cell.availabilityHint != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                cell.availabilityHint!,
-                style: const TextStyle(fontSize: 10, color: AppColors.slate500),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          for (final tile in cell.tiles)
-            _ShiftTile(
-              tile: tile,
-              emphasizeOpen: isUnfilledRow || tile.openSlots > 0,
-              onTap: () => onTileTap(tile),
-              onLongPress:
-                  onTileLongPress == null ? null : () => onTileLongPress!(tile),
-            ),
-        ],
+      // FittedBox absorbs 1px IntrinsicHeight/text-metric mismatches when the
+      // row height is shared across stretched day cells (common on Flutter web).
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.topLeft,
+        child: SizedBox(
+          width: RosterGridView.dayColWidth - 8,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (cell.onLeave)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    'Leave',
+                    style: TextStyle(fontSize: 10, color: AppColors.slate500),
+                  ),
+                )
+              else if (cell.availabilityHint != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    cell.availabilityHint!,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.slate500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              for (final tile in cell.tiles)
+                _ShiftTile(
+                  tile: tile,
+                  emphasizeOpen: isUnfilledRow || tile.openSlots > 0,
+                  onTap: () => onTileTap(tile),
+                  onLongPress:
+                      onTileLongPress == null
+                          ? null
+                          : () => onTileLongPress!(tile),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
