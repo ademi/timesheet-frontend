@@ -16,7 +16,7 @@ abstract final class AppEnv {
   /// Optional provider company signup on landing.
   static const String landingUrl = String.fromEnvironment(
     'LANDING_URL',
-    defaultValue: 'https://rostiq.co/signup',
+    defaultValue: 'https://rostiq.co/register',
   );
 
   /// Must match DB `platform_terms` current version for public register.
