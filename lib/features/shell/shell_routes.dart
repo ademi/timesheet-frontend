@@ -19,6 +19,7 @@ import '../contractor_schedule/contractor_schedule_routes.dart';
 import '../credentials/credentials_routes.dart';
 import '../engagements/engagements_routes.dart';
 import '../imports/imports_routes.dart';
+import '../integrations/xero/xero_routes.dart';
 import '../jobs/jobs_routes.dart';
 import '../payroll/payroll_routes.dart';
 import '../rostering/rostering_routes.dart';
@@ -63,6 +64,7 @@ abstract final class ShellPages {
     ...AttendancePages.routes,
     ...ContractorSchedulePages.routes,
     ...PayrollPages.routes,
+    ...XeroPages.routes,
     ...BillingPages.routes,
     ...ComplianceOpsPages.routes,
     ...CredentialsPages.routes,

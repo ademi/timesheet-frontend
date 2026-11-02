@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/constants/app_permissions.dart';
 import '../../../app/routes/app_navigator.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/themes/app_colors.dart';
 import '../../../core/responsive/page_content.dart';
+import '../../../core/services/session_service.dart';
 import '../../../shared/utils/humanize_label.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
@@ -14,6 +16,13 @@ import '../../feedback/widgets/feedback_sheet.dart';
 import '../../platform_info/widgets/data_residency_footnote.dart';
 import '../controllers/staff_tenant_settings_controller.dart';
 import 'staff_legal_document_view.dart';
+
+bool _canManageXero() {
+  if (!Get.isRegistered<SessionService>()) return false;
+  return Get.find<SessionService>().hasPermission(
+    AppPermissions.integrationsXeroManage,
+  );
+}
 
 class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
   const StaffTenantSettingsView({super.key});
@@ -134,6 +143,16 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                           ),
                         );
                       },
+                    ),
+                  if (_canManageXero())
+                    ListTile(
+                      leading: const Icon(Icons.account_balance_outlined),
+                      title: const Text('Integrations · Xero'),
+                      subtitle: const Text(
+                        'Optional payroll export to Xero',
+                      ),
+                      onTap:
+                          () => AppNavigator.push(AppRoutes.staffXeroSettings),
                     ),
                   ListTile(
                     leading: const Icon(Icons.flag_outlined),

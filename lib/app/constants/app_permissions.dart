@@ -45,6 +45,9 @@ abstract final class AppPermissions {
   static const paymentsManage = 'payments.manage';
   static const paymentsViewOwn = 'payments.view_own';
 
+  /// Connect / disconnect / catalogues / mappings for optional Xero export.
+  static const integrationsXeroManage = 'integrations.xero.manage';
+
   static const attendanceAdjust = 'attendance.adjust';
 
   static const notificationsReceive = 'notifications.receive';

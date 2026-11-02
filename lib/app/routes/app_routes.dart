@@ -85,6 +85,12 @@ abstract class AppRoutes {
   static const staffCompliance = '/staff/compliance';
   static const staffSettings = '/staff/settings';
 
+  /// Settings → Integrations → Xero (staff path).
+  static const staffXeroSettings = '/staff/settings/integrations/xero';
+
+  /// OAuth browser return path (matches BE default `…/settings/integrations/xero`).
+  static const xeroSettingsOAuthReturn = '/settings/integrations/xero';
+
   /// Staff directory (shell tab) — gated by tenant_members.read / .manage.
   static const staffMembers = '/staff/members';
   static const staffAdd = '/staff/members/add';

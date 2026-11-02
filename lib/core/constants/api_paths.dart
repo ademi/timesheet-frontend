@@ -305,6 +305,18 @@ abstract final class ApiPaths {
   static String paymentBatch(String id) => '$paymentBatches/$id';
   static String paymentBatchPost(String id) => '${paymentBatch(id)}/post';
   static String paymentBatchVoid(String id) => '${paymentBatch(id)}/void';
+  static String paymentBatchExportXero(String id) =>
+      '${paymentBatch(id)}/export-xero';
+
+  // Xero integrations (optional payroll export)
+  static const xero = '$_v1/integrations/xero';
+  static const xeroAuthUrl = '$xero/auth-url';
+  static const xeroCallback = '$xero/callback';
+  static const xeroDisconnect = '$xero/disconnect';
+  static const xeroEmployees = '$xero/employees';
+  static const xeroEarningsRates = '$xero/earnings-rates';
+  static const xeroEmployeeMappings = '$xero/mappings/employees';
+  static const xeroPayItemMappings = '$xero/mappings/pay-items';
 
   // Tenants (settings: timezone / public_holiday_jurisdiction)
   static const tenants = '$_v1/tenants';
