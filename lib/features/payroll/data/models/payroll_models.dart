@@ -224,6 +224,10 @@ class PaymentBatchOut {
     this.periodLabel,
     this.postedAt,
     this.lines = const [],
+    this.xeroExportStatus = 'not_sent',
+    this.xeroExportedAt,
+    this.xeroExternalIds = const [],
+    this.xeroLastError,
   });
 
   final String id;
@@ -237,9 +241,19 @@ class PaymentBatchOut {
   final DateTime updatedAt;
   final List<PaymentBatchLineOut> lines;
 
+  /// `not_sent` | `sent` | `failed` (optional Xero export; defaults not_sent).
+  final String xeroExportStatus;
+  final DateTime? xeroExportedAt;
+  final List<Map<String, dynamic>> xeroExternalIds;
+  final String? xeroLastError;
+
   bool get isDraft => status == 'draft';
   bool get isPosted => status == 'posted';
   bool get isVoid => status == 'void' || status == 'voided';
+
+  bool get xeroNotSent => xeroExportStatus == 'not_sent';
+  bool get xeroSent => xeroExportStatus == 'sent';
+  bool get xeroFailed => xeroExportStatus == 'failed';
 
   PaymentBatchOut copyWith({
     String? id,
@@ -252,6 +266,11 @@ class PaymentBatchOut {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<PaymentBatchLineOut>? lines,
+    String? xeroExportStatus,
+    DateTime? xeroExportedAt,
+    List<Map<String, dynamic>>? xeroExternalIds,
+    String? xeroLastError,
+    bool clearXeroLastError = false,
   }) {
     return PaymentBatchOut(
       id: id ?? this.id,
@@ -264,11 +283,19 @@ class PaymentBatchOut {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lines: lines ?? this.lines,
+      xeroExportStatus: xeroExportStatus ?? this.xeroExportStatus,
+      xeroExportedAt: xeroExportedAt ?? this.xeroExportedAt,
+      xeroExternalIds: xeroExternalIds ?? this.xeroExternalIds,
+      xeroLastError:
+          clearXeroLastError
+              ? null
+              : (xeroLastError ?? this.xeroLastError),
     );
   }
 
   factory PaymentBatchOut.fromJson(Map<String, dynamic> json) {
     final linesRaw = json['lines'];
+    final externalRaw = json['xero_external_ids'];
     return PaymentBatchOut(
       id: json['id'].toString(),
       tenantId: json['tenant_id'].toString(),
@@ -293,6 +320,19 @@ class PaymentBatchOut {
                   )
                   .toList(growable: false)
               : const [],
+      xeroExportStatus: json['xero_export_status'] as String? ?? 'not_sent',
+      xeroExportedAt:
+          json['xero_exported_at'] != null
+              ? DateTime.tryParse(json['xero_exported_at'].toString())
+              : null,
+      xeroExternalIds:
+          externalRaw is List
+              ? externalRaw
+                  .whereType<Map>()
+                  .map((e) => Map<String, dynamic>.from(e))
+                  .toList(growable: false)
+              : const [],
+      xeroLastError: json['xero_last_error'] as String?,
     );
   }
 }

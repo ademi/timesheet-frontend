@@ -8,6 +8,7 @@ import '../../../shared/utils/visit_datetime_format.dart';
 import '../../../shared/widgets/async_action.dart';
 import '../../compliance_ops/widgets/notification_bell_button.dart';
 import '../controllers/staff_payments_controller.dart';
+import '../data/models/payroll_models.dart';
 
 String _fmtDateTime(DateTime dt) => formatVisitDateTime(dt);
 
@@ -142,6 +143,22 @@ class _BatchesTab extends StatelessWidget {
                     '${humanizeLabel(selected.status)} · ${selected.totalAmount} ${selected.currencyCode}',
                   ),
                   if (selected.periodLabel != null) Text(selected.periodLabel!),
+                  if (controller.showXeroUi) ...[
+                    const SizedBox(height: 8),
+                    _XeroExportChip(batch: selected),
+                    if (selected.xeroFailed &&
+                        selected.xeroLastError?.trim().isNotEmpty == true)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          selected.xeroLastError!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.error,
+                          ),
+                        ),
+                      ),
+                  ],
                   const SizedBox(height: 8),
                   for (final line in selected.lines)
                     ListTile(
@@ -162,6 +179,33 @@ class _BatchesTab extends StatelessWidget {
                       child: const Text('Post batch'),
                     ),
                   if (controller.canManage && selected.isPosted) ...[
+                    if (controller.showXeroUi) ...[
+                      const SizedBox(height: 8),
+                      AsyncElevatedButton(
+                        onPressed:
+                            controller.canSendSelectedToXero
+                                ? controller.exportSelectedToXero
+                                : null,
+                        isLoading: controller.isExportingXero.value,
+                        child: Text(
+                          selected.xeroFailed
+                              ? 'Retry Send to Xero'
+                              : 'Send to Xero',
+                        ),
+                      ),
+                      if (!controller.canSendSelectedToXero &&
+                          controller.sendToXeroBlockedReason != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            controller.sendToXeroBlockedReason!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ),
+                    ],
                     const SizedBox(height: 8),
                     AsyncOutlinedButton(
                       onPressed: () => controller.voidBatch(selected),
@@ -345,6 +389,46 @@ class _ErrorBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(message, style: const TextStyle(color: AppColors.error)),
+    );
+  }
+}
+
+class _XeroExportChip extends StatelessWidget {
+  const _XeroExportChip({required this.batch});
+
+  final PaymentBatchOut batch;
+
+  @override
+  Widget build(BuildContext context) {
+    late final String label;
+    late final Color fg;
+    late final Color bg;
+    if (batch.xeroSent) {
+      label = 'Sent to Xero';
+      fg = AppColors.success;
+      bg = AppColors.successBackground;
+    } else if (batch.xeroFailed) {
+      label = 'Xero send failed';
+      fg = AppColors.error;
+      bg = AppColors.errorBackground;
+    } else {
+      label = 'Not sent to Xero';
+      fg = AppColors.draftChip;
+      bg = AppColors.draftChipBackground;
+    }
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(fontSize: 12, color: fg, fontWeight: FontWeight.w600),
+        ),
+      ),
     );
   }
 }

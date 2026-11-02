@@ -11,6 +11,8 @@ import '../../compliance_ops/bindings/compliance_ops_binding.dart';
 import '../../compliance_ops/data/repositories/compliance_ops_repository.dart';
 import '../../visits/bindings/visits_binding.dart';
 import '../../visits/data/repositories/visits_repository.dart';
+import '../../integrations/xero/bindings/xero_binding.dart';
+import '../../integrations/xero/data/repositories/xero_repository.dart';
 import '../controllers/contractor_payments_controller.dart';
 import '../controllers/staff_add_controller.dart';
 import '../controllers/staff_detail_controller.dart';
@@ -56,12 +58,17 @@ class StaffPaymentsBinding extends Bindings {
   @override
   void dependencies() {
     PayrollBinding.ensureShared();
+    XeroBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     putOrReenter(
       () => StaffPaymentsController(
         payroll: Get.find<PayrollRepository>(),
         visits: Get.find<VisitsRepository>(),
         session: Get.find<SessionService>(),
+        xero:
+            Get.isRegistered<XeroRepository>()
+                ? Get.find<XeroRepository>()
+                : null,
       ),
       onReenter: (c) => c.onScreenReenter(),
     );
