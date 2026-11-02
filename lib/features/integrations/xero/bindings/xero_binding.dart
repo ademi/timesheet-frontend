@@ -42,7 +42,10 @@ class XeroSettingsBinding extends Bindings {
     XeroBinding.ensureShared();
     if (!Get.isRegistered<SessionService>()) return;
     putOrReenter(
-      () => XeroSettingsController(session: Get.find<SessionService>()),
+      () => XeroSettingsController(
+        xero: Get.find<XeroRepository>(),
+        session: Get.find<SessionService>(),
+      ),
       onReenter: (c) => c.onScreenReenter(),
     );
   }
