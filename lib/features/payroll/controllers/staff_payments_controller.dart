@@ -416,9 +416,9 @@ class StaffPaymentsController extends GetxController {
       AlertDialog(
         title: const Text('Send to Xero?'),
         content: const Text(
-          'This creates draft timesheets in Xero Payroll for this posted '
-          'batch. Finish the pay run in Xero. Rostiq stays the source of '
-          'truth for what was worked.',
+          'Hours go as drafts; finish pay in Xero. '
+          'Rostiq keeps the record of what was worked. '
+          'This does not change Post or Void in Rostiq.',
         ),
         actions: [
           TextButton(

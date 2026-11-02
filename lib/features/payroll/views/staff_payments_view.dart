@@ -146,6 +146,14 @@ class _BatchesTab extends StatelessWidget {
                   if (controller.showXeroUi) ...[
                     const SizedBox(height: 8),
                     _XeroExportChip(batch: selected),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Hours go as drafts; finish pay in Xero.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
                     if (selected.xeroFailed &&
                         selected.xeroLastError?.trim().isNotEmpty == true)
                       Padding(

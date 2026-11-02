@@ -149,7 +149,7 @@ class StaffTenantSettingsView extends GetView<StaffTenantSettingsController> {
                       leading: const Icon(Icons.account_balance_outlined),
                       title: const Text('Integrations · Xero'),
                       subtitle: const Text(
-                        'Optional payroll export to Xero',
+                        'Optional — hours go as drafts; finish pay in Xero',
                       ),
                       onTap:
                           () => AppNavigator.push(AppRoutes.staffXeroSettings),

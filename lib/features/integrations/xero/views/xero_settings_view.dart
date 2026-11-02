@@ -34,9 +34,9 @@ class XeroSettingsView extends GetView<XeroSettingsController> {
               Text('Integrations', style: Get.textTheme.titleMedium),
               const SizedBox(height: 8),
               const Text(
-                'Connect Xero to optionally send posted payment batches as '
-                'draft timesheets. Hours stay in Rostiq until you choose '
-                'Send to Xero. Finish pay runs in Xero.',
+                'Optional: connect Xero Payroll to send posted payment batches. '
+                'Hours go as drafts; finish pay in Xero. '
+                'Without Xero, create → post → void in Payments is unchanged.',
                 style: TextStyle(fontSize: 13),
               ),
               if (err != null) ...[
@@ -119,8 +119,8 @@ class XeroSettingsView extends GetView<XeroSettingsController> {
                   Text('Mappings', style: Get.textTheme.titleSmall),
                   const SizedBox(height: 4),
                   const Text(
-                    'Map Rostiq workers to Xero employees and pay bands to '
-                    'earnings rates before Send to Xero.',
+                    'Map workers and pay bands before Send to Xero. '
+                    'Hours go as drafts; finish pay in Xero.',
                     style: TextStyle(fontSize: 13),
                   ),
                   const SizedBox(height: 12),
