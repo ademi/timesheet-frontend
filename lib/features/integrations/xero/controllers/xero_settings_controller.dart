@@ -14,24 +14,53 @@ import '../../../../core/services/session_service.dart';
 import '../../../../shared/utils/external_url.dart';
 import '../../../../shared/utils/humanize_label.dart';
 import '../../../../shared/widgets/app_toast.dart';
+import '../../../engagements/data/repositories/engagements_repository.dart';
 import '../data/models/xero_models.dart';
 import '../data/repositories/xero_repository.dart';
+
+class XeroContractorMapRow {
+  const XeroContractorMapRow({
+    required this.contractorId,
+    required this.displayName,
+    this.needsMap = false,
+  });
+
+  final String contractorId;
+  final String displayName;
+  final bool needsMap;
+}
 
 class XeroSettingsController extends GetxController {
   XeroSettingsController({
     required XeroRepository xero,
     required SessionService session,
+    required EngagementsRepository engagements,
   }) : _xero = xero,
-       _session = session;
+       _session = session,
+       _engagements = engagements;
 
   final XeroRepository _xero;
   final SessionService _session;
+  final EngagementsRepository _engagements;
 
   final isLoading = false.obs;
   final isConnecting = false.obs;
   final isDisconnecting = false.obs;
+  final isMappingLoading = false.obs;
+  final isSavingEmployees = false.obs;
+  final isSavingPayItems = false.obs;
   final errorMessage = RxnString();
   final status = Rxn<XeroConnectionStatus>();
+
+  final xeroEmployees = <XeroEmployee>[].obs;
+  final xeroEarningsRates = <XeroEarningsRate>[].obs;
+  final contractorRows = <XeroContractorMapRow>[].obs;
+
+  /// contractor_id → selected xero_employee_id (null = unmapped)
+  final employeeSelection = <String, String?>{}.obs;
+
+  /// band_key → selected xero_earnings_rate_id (null = unmapped)
+  final payItemSelection = <String, String?>{}.obs;
 
   bool get canManageXero =>
       _session.hasPermission(AppPermissions.integrationsXeroManage);
@@ -39,6 +68,15 @@ class XeroSettingsController extends GetxController {
   bool get featureEnabled => status.value?.featureEnabled ?? true;
 
   bool get isConnected => status.value?.connected ?? false;
+
+  bool get mappingIncomplete =>
+      isConnected && status.value?.mappingComplete == false;
+
+  List<String> get unmappedContractorIds =>
+      status.value?.unmappedContractorIds ?? const [];
+
+  List<String> get unmappedBandKeys =>
+      status.value?.unmappedBandKeys ?? const [];
 
   @override
   void onInit() {
@@ -54,6 +92,11 @@ class XeroSettingsController extends GetxController {
 
   Future<void> _bootstrap() async {
     await loadStatus();
+    if (isConnected) {
+      await loadMappingData();
+    } else {
+      _clearMappingCatalogues();
+    }
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (isClosed) return;
       _consumeOAuthReturnQuery();
@@ -87,6 +130,147 @@ class XeroSettingsController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  Future<void> loadMappingData() async {
+    if (!canManageXero || !isConnected) return;
+    isMappingLoading.value = true;
+    try {
+      final results = await Future.wait([
+        _xero.listEmployees(),
+        _xero.listEarningsRates(),
+        _xero.getEmployeeMappings(),
+        _xero.getPayItemMappings(),
+        _safeListEngagements(),
+      ]);
+
+      final employees = results[0] as List<XeroEmployee>;
+      final rates = results[1] as List<XeroEarningsRate>;
+      final empMaps = results[2] as XeroEmployeeMappingsOut;
+      final payMaps = results[3] as XeroPayItemMappingsOut;
+      final nameByContractor = results[4] as Map<String, String>;
+
+      xeroEmployees.assignAll(employees);
+      xeroEarningsRates.assignAll(rates);
+
+      final mappedIds = {
+        for (final row in empMaps.employees) row.contractorId: row.xeroEmployeeId,
+      };
+      final ids = <String>{
+        ...nameByContractor.keys,
+        ...mappedIds.keys,
+        ...unmappedContractorIds,
+      };
+
+      final rows =
+          ids.map((id) {
+            final name = nameByContractor[id];
+            return XeroContractorMapRow(
+              contractorId: id,
+              displayName:
+                  (name != null && name.isNotEmpty)
+                      ? name
+                      : 'Worker (${id.length > 8 ? id.substring(0, 8) : id})',
+              needsMap: unmappedContractorIds.contains(id),
+            );
+          }).toList()..sort(
+            (a, b) => a.displayName.toLowerCase().compareTo(
+              b.displayName.toLowerCase(),
+            ),
+          );
+
+      contractorRows.assignAll(rows);
+      employeeSelection
+        ..clear()
+        ..addAll({for (final id in ids) id: mappedIds[id]});
+
+      final paySel = <String, String?>{
+        for (final key in XeroBandKeys.all) key: null,
+      };
+      for (final row in payMaps.payItems) {
+        paySel[row.bandKey] = row.xeroEarningsRateId;
+      }
+      payItemSelection
+        ..clear()
+        ..addAll(paySel);
+    } on AppFailure catch (e) {
+      AppToast.error('Xero mapping', _friendlyError(e));
+    } catch (_) {
+      AppToast.error('Xero mapping', 'Could not load mapping data.');
+    } finally {
+      isMappingLoading.value = false;
+    }
+  }
+
+  void setEmployeeMapping(String contractorId, String? xeroEmployeeId) {
+    employeeSelection[contractorId] = xeroEmployeeId;
+    employeeSelection.refresh();
+  }
+
+  void setPayItemMapping(String bandKey, String? earningsRateId) {
+    payItemSelection[bandKey] = earningsRateId;
+    payItemSelection.refresh();
+  }
+
+  Future<void> saveEmployeeMappings() async {
+    if (!canManageXero || isSavingEmployees.value) return;
+    isSavingEmployees.value = true;
+    try {
+      final body = XeroEmployeeMappingsOut(
+        employees:
+            employeeSelection.entries
+                .where((e) => e.value != null && e.value!.isNotEmpty)
+                .map(
+                  (e) => XeroEmployeeMapRow(
+                    contractorId: e.key,
+                    xeroEmployeeId: e.value!,
+                  ),
+                )
+                .toList(growable: false),
+      );
+      await _xero.putEmployeeMappings(body);
+      await loadStatus();
+      await loadMappingData();
+      AppToast.success('Saved', 'Worker → Xero employee mappings updated.');
+    } on AppFailure catch (e) {
+      AppToast.error('Xero mapping', _friendlyError(e));
+    } catch (_) {
+      AppToast.error('Xero mapping', 'Could not save employee mappings.');
+    } finally {
+      isSavingEmployees.value = false;
+    }
+  }
+
+  Future<void> savePayItemMappings() async {
+    if (!canManageXero || isSavingPayItems.value) return;
+    isSavingPayItems.value = true;
+    try {
+      final body = XeroPayItemMappingsOut(
+        payItems:
+            payItemSelection.entries
+                .where((e) => e.value != null && e.value!.isNotEmpty)
+                .map(
+                  (e) => XeroPayItemMapRow(
+                    bandKey: e.key,
+                    xeroEarningsRateId: e.value!,
+                  ),
+                )
+                .toList(growable: false),
+      );
+      await _xero.putPayItemMappings(body);
+      await loadStatus();
+      await loadMappingData();
+      AppToast.success('Saved', 'Pay band → Xero earnings rate mappings updated.');
+    } on AppFailure catch (e) {
+      AppToast.error('Xero mapping', _friendlyError(e));
+    } catch (_) {
+      AppToast.error('Xero mapping', 'Could not save pay-item mappings.');
+    } finally {
+      isSavingPayItems.value = false;
+    }
+  }
+
+  Future<void> openXeroInBrowser() =>
+      openExternalUrl('https://go.xero.com/');
 
   Future<void> connect() async {
     if (!canManageXero || !featureEnabled || isConnecting.value) return;
@@ -139,6 +323,7 @@ class XeroSettingsController extends GetxController {
     try {
       await _xero.disconnect();
       await loadStatus();
+      _clearMappingCatalogues();
       AppToast.success(
         'Xero disconnected',
         'Mappings were kept. You can reconnect anytime.',
@@ -149,6 +334,28 @@ class XeroSettingsController extends GetxController {
       AppToast.error('Xero', 'Could not disconnect Xero.');
     } finally {
       isDisconnecting.value = false;
+    }
+  }
+
+  void _clearMappingCatalogues() {
+    xeroEmployees.clear();
+    xeroEarningsRates.clear();
+    contractorRows.clear();
+    employeeSelection.clear();
+    payItemSelection.clear();
+  }
+
+  Future<Map<String, String>> _safeListEngagements() async {
+    try {
+      final list = await _engagements.listTenantEngagements();
+      final byId = <String, String>{};
+      for (final e in list) {
+        if (e.isEnded) continue;
+        byId.putIfAbsent(e.contractorId, () => e.displayName);
+      }
+      return byId;
+    } catch (_) {
+      return {};
     }
   }
 
@@ -170,13 +377,9 @@ class XeroSettingsController extends GetxController {
         'You can map workers and pay items, then Send to Xero from Payments.',
       );
     } else if (xero == 'error') {
-      AppToast.error(
-        'Xero connection failed',
-        _friendlyOAuthCode(code),
-      );
+      AppToast.error('Xero connection failed', _friendlyOAuthCode(code));
     }
 
-    // Strip query so a refresh does not re-toast.
     AppNavigator.replace(AppRoutes.staffXeroSettings);
   }
 
@@ -199,6 +402,21 @@ class XeroSettingsController extends GetxController {
         return 'Xero is not configured on this environment yet.';
       case 'xero_feature_disabled':
         return 'Xero integration is turned off for this environment.';
+      case 'xero_not_connected':
+        return 'Connect Xero before loading employees or earnings rates.';
+      case 'xero_duplicate_contractor_map':
+      case 'xero_duplicate_employee_map':
+        return 'Each worker and each Xero employee can only be mapped once.';
+      case 'xero_duplicate_band_map':
+        return 'Each pay band can only be mapped once.';
+      case 'xero_invalid_band_key':
+        return 'One of the pay band keys is not allowed.';
+      case 'xero_contractor_not_in_tenant':
+        return 'A mapped worker is not on this organisation.';
+      case 'xero_employees_failed':
+        return 'Could not load Xero employees. Try again or check Payroll in Xero.';
+      case 'xero_earnings_rates_failed':
+        return 'Could not load Xero earnings rates. Try again or check Payroll in Xero.';
       case 'xero_oauth_denied':
         return 'Xero consent was denied.';
       case 'xero_token_exchange_failed':
