@@ -62,6 +62,10 @@ class XeroSettingsController extends GetxController {
   /// band_key → selected xero_earnings_rate_id (null = unmapped)
   final payItemSelection = <String, String?>{}.obs;
 
+  /// Last saved selections — used to show pending (unsaved) picks in the UI.
+  final employeeBaseline = <String, String?>{}.obs;
+  final payItemBaseline = <String, String?>{}.obs;
+
   bool get canManageXero =>
       _session.hasPermission(AppPermissions.integrationsXeroManage);
 
@@ -135,6 +139,12 @@ class XeroSettingsController extends GetxController {
     if (!canManageXero || !isConnected) return;
     isMappingLoading.value = true;
     try {
+      // Keep required unmapped ids in sync with batch activity (no full-page spinner).
+      try {
+        status.value = await _xero.getStatus();
+      } catch (_) {
+        // Keep prior status; mapping catalogues can still load.
+      }
       final results = await Future.wait([
         _xero.listEmployees(),
         _xero.listEarningsRates(),
@@ -179,9 +189,13 @@ class XeroSettingsController extends GetxController {
           );
 
       contractorRows.assignAll(rows);
+      final empSel = {for (final id in ids) id: mappedIds[id]};
       employeeSelection
         ..clear()
-        ..addAll({for (final id in ids) id: mappedIds[id]});
+        ..addAll(empSel);
+      employeeBaseline
+        ..clear()
+        ..addAll(empSel);
 
       final paySel = <String, String?>{
         for (final key in XeroBandKeys.all) key: null,
@@ -190,6 +204,9 @@ class XeroSettingsController extends GetxController {
         paySel[row.bandKey] = row.xeroEarningsRateId;
       }
       payItemSelection
+        ..clear()
+        ..addAll(paySel);
+      payItemBaseline
         ..clear()
         ..addAll(paySel);
     } on AppFailure catch (e) {
@@ -210,6 +227,19 @@ class XeroSettingsController extends GetxController {
     payItemSelection[bandKey] = earningsRateId;
     payItemSelection.refresh();
   }
+
+  bool isEmployeeMappingPending(String contractorId) =>
+      employeeSelection[contractorId] != employeeBaseline[contractorId];
+
+  bool isPayItemMappingPending(String bandKey) =>
+      payItemSelection[bandKey] != payItemBaseline[bandKey];
+
+  bool get hasPendingEmployeeMappings => employeeSelection.keys.any(
+    isEmployeeMappingPending,
+  );
+
+  bool get hasPendingPayItemMappings =>
+      XeroBandKeys.all.any(isPayItemMappingPending);
 
   Future<void> saveEmployeeMappings() async {
     if (!canManageXero || isSavingEmployees.value) return;
@@ -343,6 +373,8 @@ class XeroSettingsController extends GetxController {
     contractorRows.clear();
     employeeSelection.clear();
     payItemSelection.clear();
+    employeeBaseline.clear();
+    payItemBaseline.clear();
   }
 
   Future<Map<String, String>> _safeListEngagements() async {
@@ -388,7 +420,9 @@ class XeroSettingsController extends GetxController {
     if (uri == null) return false;
     if (kIsWeb) {
       try {
-        return await launchUrl(uri, webOnlyWindowName: '_self');
+        // New tab keeps the Flutter debug session intact; `_self` often freezes
+        // Xero login when DWDS/debugger is attached to the same tab.
+        return await launchUrl(uri, webOnlyWindowName: '_blank');
       } catch (_) {
         return false;
       }

@@ -150,6 +150,12 @@ class XeroEarningsRate {
   final String? rateType;
   final bool? currentRecord;
 
+  /// Payroll AU draft timesheets only accept ordinary/overtime earnings rates.
+  bool get isTimesheetEligible {
+    final t = (earningsType ?? '').toUpperCase().replaceAll(' ', '');
+    return t == 'ORDINARYTIMEEARNINGS' || t == 'OVERTIMEEARNINGS';
+  }
+
   factory XeroEarningsRate.fromJson(Map<String, dynamic> json) {
     return XeroEarningsRate(
       earningsRateId: json['earnings_rate_id'].toString(),

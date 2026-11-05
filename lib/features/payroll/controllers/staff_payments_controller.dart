@@ -403,7 +403,11 @@ class StaffPaymentsController extends GetxController {
   }
 
   Future<void> openBatch(PaymentBatchOut batch) async {
-    await _selectAndEnrichBatch(batch);
+    // Refresh Xero mapping status so Send enables after Settings maps are saved.
+    await Future.wait([
+      _selectAndEnrichBatch(batch),
+      _loadXeroConnection(),
+    ]);
   }
 
   Future<void> exportSelectedToXero() async {
@@ -507,9 +511,24 @@ class StaffPaymentsController extends GetxController {
         return 'Connect Xero in Settings before sending.';
       case 'xero_timesheets_failed':
       case 'xero_export_partial':
+        final raw = e.message.trim();
+        if (raw.contains('JSON') ||
+            raw.contains('deserialize') ||
+            raw.contains('<Message>')) {
+          return 'Xero rejected the timesheet format. Restart the API and retry Send.';
+        }
+        if (raw.toLowerCase().contains('pay period')) {
+          return 'Timesheet dates must match the employee pay calendar in Xero. Retry after API update.';
+        }
+        return raw.isNotEmpty
+            ? raw
+            : 'Xero could not create all timesheets. Retry if needed.';
+      case 'xero_export_calendar_missing':
+        return 'Assign a pay calendar to the Xero employee, then retry.';
+      case 'xero_export_calendar_unsupported':
         return e.message.isNotEmpty
             ? e.message
-            : 'Xero could not create all timesheets. Retry if needed.';
+            : 'Use a Weekly or Fortnightly Xero pay calendar for export.';
       case 'xero_rate_limited':
         return 'Xero rate limit — wait a minute, then retry.';
       default:
