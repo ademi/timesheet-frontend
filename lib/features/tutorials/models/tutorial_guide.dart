@@ -1,3 +1,17 @@
+/// Screenshot (or illustration) embedded in a tutorial section.
+class TutorialImage {
+  const TutorialImage({
+    required this.assetPath,
+    this.caption,
+  });
+
+  /// Path under Flutter assets, e.g. `assets/tutorials/roster-publish/board.png`.
+  final String assetPath;
+
+  /// Optional caption shown under the image (ShiftCare-style).
+  final String? caption;
+}
+
 /// One section inside a tutorial article (heading + prose + optional steps).
 class TutorialSection {
   const TutorialSection({
@@ -5,6 +19,7 @@ class TutorialSection {
     required this.heading,
     this.body,
     this.steps = const [],
+    this.images = const [],
   });
 
   final String id;
@@ -15,6 +30,9 @@ class TutorialSection {
 
   /// Numbered how-to steps that belong under this section.
   final List<String> steps;
+
+  /// Real-system screenshots for this section (0–N).
+  final List<TutorialImage> images;
 }
 
 /// Curated in-app tutorial article for staff web.
@@ -55,6 +73,10 @@ class TutorialGuide {
   /// Optional date / freshness label (e.g. "November 2026").
   final String? updatedLabel;
 
+  /// Total screenshot count across all sections.
+  int get imageCount =>
+      sections.fold(0, (sum, s) => sum + s.images.length);
+
   bool matchesRoute(String path) {
     if (path.isEmpty || routeHints.isEmpty) return false;
     for (final hint in routeHints) {
@@ -78,6 +100,10 @@ class TutorialGuide {
       if (body != null && body.toLowerCase().contains(q)) return true;
       for (final step in section.steps) {
         if (step.toLowerCase().contains(q)) return true;
+      }
+      for (final image in section.images) {
+        final caption = image.caption;
+        if (caption != null && caption.toLowerCase().contains(q)) return true;
       }
     }
     return false;

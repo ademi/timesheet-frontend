@@ -37,11 +37,19 @@ abstract final class TutorialCatalog {
           id: 'home',
           heading: 'Home and alerts',
           body:
-              'Home is your operations pulse: alerts that need attention, plus '
-              'the pilot getting-started checklist while you are ramping up.',
+              'Home (Dashboard) is your operations pulse: subscription status, '
+              'credential and plan-burn alerts, and overview counts for '
+              'participants, workers, supports, and roster.',
+          images: [
+            TutorialImage(
+              assetPath: 'assets/tutorials/getting-around/home.png',
+              caption:
+                  'Staff Home — left nav, alerts, and overview cards.',
+            ),
+          ],
           steps: [
-            'Open Home after sign-in to scan alerts and checklist items.',
-            'Work through checklist items as you configure the tenant.',
+            'Open Home after sign-in to scan alerts and overview numbers.',
+            'Follow alert links (e.g. Review workers) when something needs action.',
           ],
         ),
         TutorialSection(
@@ -61,7 +69,15 @@ abstract final class TutorialCatalog {
           heading: 'Settings',
           body:
               'Settings holds tenant preferences, integrations (such as Xero), '
-              'and pilot feedback history. It is the hub for admin setup work.',
+              'pilot feedback, legal notices, and timezone / ABN fields. It is '
+              'the hub for admin setup work.',
+          images: [
+            TutorialImage(
+              assetPath: 'assets/tutorials/getting-around/settings.png',
+              caption:
+                  'Settings — subscription, menu links, and tenant fields.',
+            ),
+          ],
         ),
       ],
     ),
@@ -85,37 +101,60 @@ abstract final class TutorialCatalog {
           id: 'board',
           heading: 'The roster board',
           body:
-              'Roster shows a staff week board for participants and workers. '
-              'Drafts stay editable until you publish; published visits are '
-              'what support workers see in their app.',
+              'Roster shows a staff week board for workers (and filters for '
+              'participant, status, and support). Live hides unpublished '
+              'drafts; switch status to see drafts when you need them.',
+          images: [
+            TutorialImage(
+              assetPath: 'assets/tutorials/roster-publish/board.png',
+              caption:
+                  'Roster week board — filters, workers, and live visit cards.',
+            ),
+          ],
           steps: [
             'Open Roster from the staff nav.',
-            'Scan the week for open slots, drafts, and published visits.',
+            'Pick the week with the date arrows, then scan rows for visits.',
+            'Use Participant / Status / Support filters to focus the board.',
           ],
         ),
         TutorialSection(
           id: 'compose',
           heading: 'Composing visits and group shifts',
           body:
-              'One-to-one visits and shared / group supports use compose flows '
-              'so people, time, and location stay consistent before publish.',
+              'Roster compose walks you through participants, session type '
+              '(one session or group), timing, and location before the visit '
+              'lands on the board.',
+          images: [
+            TutorialImage(
+              assetPath: 'assets/tutorials/roster-publish/compose.png',
+              caption:
+                  'Compose step 1 — pick participant and one session or group.',
+            ),
+          ],
           steps: [
-            'Add a visit or open roster compose to set people, time, and location.',
-            'For shared supports, use Book group shift and assign participants '
-                'and workers.',
-            'Review draft shifts on the board and edit details before publish.',
+            'From Roster, open compose / add to start a new visit.',
+            'Choose One session or Group, then search or browse a participant.',
+            'Continue through the steps for time and location, then review.',
           ],
         ),
         TutorialSection(
           id: 'publish',
           heading: 'Publishing the week',
           body:
-              'Publish when the week is ready. After publish you can still use '
-              'shift detail for windows, attendance flags, or travel adjustments.',
+              'Once published, a shift shows status Published with support item, '
+              'assignments, and travel. Workers can see assigned visits; you can '
+              'still open shift detail to adjust or cancel.',
+          images: [
+            TutorialImage(
+              assetPath: 'assets/tutorials/roster-publish/publish.png',
+              caption:
+                  'Shift detail — Published status, NDIS item, and assignments.',
+            ),
+          ],
           steps: [
             'Publish when the week looks correct so workers see assigned visits.',
-            'Open shift detail later if you need to adjust windows, attendance, '
-                'or travel.',
+            'Open a shift card from the board to review item, people, and travel.',
+            'Use Release / Cancel only when you need to change a published shift.',
           ],
         ),
       ],
@@ -140,11 +179,21 @@ abstract final class TutorialCatalog {
           id: 'participants',
           heading: 'Participants',
           body:
-              'Participants are the people you support. Profiles hold sites, '
-              'contacts, and support-plan context used when you roster.',
+              'Participants are the people you support. The list shows active '
+              'clients with contact details and sites; open a row for the full '
+              'profile used when you roster.',
+          images: [
+            TutorialImage(
+              assetPath:
+                  'assets/tutorials/participants-workers/participants.png',
+              caption:
+                  'Participants list — search, filters, and Add participant.',
+            ),
+          ],
           steps: [
-            'Open Participants and use Add participant to create a record.',
-            'Complete sites, contacts, and support-plan details from the profile.',
+            'Open Participants from the staff nav.',
+            'Use Search or Show incomplete / Show archived to find someone.',
+            'Tap Add participant to create a record, or open a row for profile details.',
           ],
         ),
         TutorialSection(
@@ -152,12 +201,19 @@ abstract final class TutorialCatalog {
           heading: 'Support workers',
           body:
               'Support workers (contractors) clock in, write notes, and appear '
-              'on the roster. Invite them by email or continue after they '
-              'register via engagement and credentials.',
+              'on the roster. Filter by status (invited, pending docs, active, '
+              'and more) and invite new workers from this list.',
+          images: [
+            TutorialImage(
+              assetPath: 'assets/tutorials/participants-workers/workers.png',
+              caption:
+                  'Support workers list — status filters and Invite.',
+            ),
+          ],
           steps: [
-            'Open Support workers to manage your contractor workforce.',
-            'Invite a worker by email, or follow engagement / credentials after '
-                'they register.',
+            'Open Support workers from the staff nav.',
+            'Use status filters to find invited, pending, or active workers.',
+            'Tap Invite to email a new worker, or open a row for engagement details.',
           ],
         ),
         TutorialSection(
@@ -192,14 +248,20 @@ abstract final class TutorialCatalog {
           id: 'how',
           heading: 'How to review',
           body:
-              'Attendance review lists visits that need attention. Open a visit '
-              'to compare scheduled vs actual times.',
+              'Attendance & variance lists exceptions (geofence, late check-in, '
+              'and more). Filter the queue, then Approve or Reject each item.',
+          images: [
+            TutorialImage(
+              assetPath: 'assets/tutorials/attendance-review/review-list.png',
+              caption:
+                  'Attendance & variance — exception cards with Approve / Reject.',
+            ),
+          ],
           steps: [
-            'Open Attendance review from the staff menu (More on narrow layouts).',
-            'Scan visits that need attention — missing punches, late clocks, or '
-                'adjustments.',
-            'Open a visit to compare scheduled vs actual times and GPS context.',
-            'Apply adjustments when you have permission, then save.',
+            'Open Attendance review from the staff nav.',
+            'Filter All / Location exceptions / Schedule variances / Sync conflicts.',
+            'Read the card (worker, participant, variance), then Approve or Reject.',
+            'Open the visit when you need scheduled vs actual times and GPS detail.',
           ],
         ),
       ],
@@ -222,23 +284,40 @@ abstract final class TutorialCatalog {
           id: 'payments',
           heading: 'Payments batches',
           body:
-              'Payments groups payable visits so you can batch work for payroll '
-              'or contractor pay runs.',
+              'Payments lists payment batches by period and status (draft, '
+              'posted, void). Create a batch when you are ready to group '
+              'payable work for a pay run.',
+          images: [
+            TutorialImage(
+              assetPath: 'assets/tutorials/payments-csv/payments.png',
+              caption:
+                  'Payments — batch list with status and Create Batch.',
+            ),
+          ],
           steps: [
-            'Open Payments to review payable visits grouped for batching.',
-            'Select visits / workers and create a payment batch when ready.',
+            'Open Payments from the staff nav.',
+            'Scan existing batches (draft / posted / void) and filter by status.',
+            'Use Create Batch when you are ready to group payable visits.',
           ],
         ),
         TutorialSection(
           id: 'billing',
           heading: 'Plan-manager CSV exports',
           body:
-              'Billing exports produce plan-manager CSV and related claim files. '
-              'Clean attendance and complete visit notes before you export.',
+              'Billing → Invoice exports lists claim/export batches with status '
+              '(finalized, void) and amounts. Create an export when attendance '
+              'and notes are clean.',
+          images: [
+            TutorialImage(
+              assetPath: 'assets/tutorials/payments-csv/billing.png',
+              caption:
+                  'Invoice exports — export list, Create, and billing monitors.',
+            ),
+          ],
           steps: [
-            'Open Billing exports for plan-manager CSV and related claim files.',
-            'Download the export and upload it to your plan-manager workflow.',
-            'Fix attendance or notes first if the export looks incomplete.',
+            'Open Billing from the staff nav to see Invoice exports.',
+            'Use Create when you are ready to build a plan-manager export.',
+            'Open a row to download or review lines; fix attendance first if needed.',
           ],
         ),
       ],
@@ -258,13 +337,20 @@ abstract final class TutorialCatalog {
           id: 'directory',
           heading: 'Staff directory',
           body:
-              'Staff members are tenant users of the staff web app — not '
-              'support workers in the field. Permissions control which nav '
-              'items and actions they see.',
+              'Staff members are tenant users with login access — not support '
+              'workers in the field. Filter by job title; each row shows role '
+              'and Active status.',
+          images: [
+            TutorialImage(
+              assetPath: 'assets/tutorials/staff-permissions/staff.png',
+              caption:
+                  'Staff directory — role filters and Add staff.',
+            ),
+          ],
           steps: [
-            'Open Staff to see tenant members.',
-            'Use Add member to invite someone; they complete invite / password '
-                'setup.',
+            'Open Staff from the staff nav.',
+            'Use job-title tabs to filter the directory.',
+            'Tap Add staff to invite someone; they complete invite / password setup.',
           ],
         ),
         TutorialSection(
@@ -296,23 +382,46 @@ abstract final class TutorialCatalog {
           id: 'connect',
           heading: 'Connect Xero',
           body:
-              'Xero lives under Settings → Integrations. You connect once via '
-              'OAuth; reconnect if the token expires later.',
+              'Xero lives under Settings → Integrations. When connected, you '
+              'see the organisation name and can Refresh or Disconnect. Worker '
+              'mappings sit on the same page.',
+          images: [
+            TutorialImage(
+              assetPath: 'assets/tutorials/xero-timesheets/xero-connect.png',
+              caption:
+                  'Xero settings — Connected status and worker mappings.',
+            ),
+          ],
           steps: [
             'Go to Settings → Integrations → Xero.',
-            'Connect your Xero organisation and complete the OAuth return.',
+            'Connect your Xero organisation (OAuth) until status shows Connected.',
+            'Map workers (and pay items) so batch exports match payroll.',
           ],
         ),
         TutorialSection(
           id: 'export',
           heading: 'Export timesheets',
           body:
-              'Map workers / settings as prompted so exports line up with '
-              'payroll, then run an export for the period you need.',
+              'Map pay-item bands (Base, Night, Saturday, etc.) to Xero Ordinary '
+              'Hours or Overtime. Posted payment batches then send to Xero '
+              'Payroll as drafts — finish pay in Xero.',
+          images: [
+            TutorialImage(
+              assetPath: 'assets/tutorials/xero-timesheets/xero-sent.png',
+              caption:
+                  'Payment batch detail — Sent to Xero (hours as drafts).',
+            ),
+            TutorialImage(
+              assetPath: 'assets/tutorials/xero-timesheets/xero-export.png',
+              caption:
+                  'Xero Pay items — map bands to Ordinary Hours or Overtime.',
+            ),
+          ],
           steps: [
-            'Map workers / settings so exports match payroll.',
-            'Run a timesheet export for the period you need.',
-            'Confirm the result in Xero.',
+            'On Xero settings, open the Pay items tab and map each used band.',
+            'Ensure workers on the batch are mapped under the Workers tab.',
+            'Open a posted payment batch and tap Send to Xero.',
+            'When status shows Sent to Xero, finish payroll in Xero (drafts).',
           ],
         ),
       ],

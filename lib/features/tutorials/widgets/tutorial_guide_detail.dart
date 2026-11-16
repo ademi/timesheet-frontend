@@ -287,6 +287,13 @@ class _ArticleSection extends StatelessWidget {
             ),
           ),
         ],
+        if (section.images.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          for (var i = 0; i < section.images.length; i++) ...[
+            _TutorialScreenshot(image: section.images[i]),
+            if (i < section.images.length - 1) const SizedBox(height: 12),
+          ],
+        ],
         if (section.steps.isNotEmpty) ...[
           const SizedBox(height: 12),
           for (var i = 0; i < section.steps.length; i++) ...[
@@ -295,6 +302,166 @@ class _ArticleSection extends StatelessWidget {
           ],
         ],
       ],
+    );
+  }
+}
+
+class _TutorialScreenshot extends StatelessWidget {
+  const _TutorialScreenshot({required this.image});
+
+  final TutorialImage image;
+
+  void _openLightbox(BuildContext context) {
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close screenshot',
+      barrierColor: Colors.black.withValues(alpha: 0.92),
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return _ScreenshotLightbox(image: image);
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: AppColors.background,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppColors.divider),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => _openLightbox(context),
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                Image.asset(
+                  image.assetPath,
+                  fit: BoxFit.fitWidth,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const SizedBox(
+                      height: 120,
+                      child: Center(
+                        child: Icon(
+                          Icons.image_not_supported_outlined,
+                          color: AppColors.slate400,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Material(
+                    color: Colors.black54,
+                    shape: const CircleBorder(),
+                    child: const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: Icon(
+                        Icons.open_in_full_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (image.caption != null && image.caption!.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            image.caption!,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textMuted,
+              height: 1.35,
+            ),
+          ),
+        ],
+        const SizedBox(height: 2),
+        const Text(
+          'Tap image to enlarge',
+          style: TextStyle(fontSize: 11, color: AppColors.slate500),
+        ),
+      ],
+    );
+  }
+}
+
+/// Full-screen screenshot viewer with pinch-zoom / pan.
+class _ScreenshotLightbox extends StatelessWidget {
+  const _ScreenshotLightbox({required this.image});
+
+  final TutorialImage image;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: MaterialType.transparency,
+      child: SafeArea(
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4,
+                child: Center(
+                  child: Image.asset(
+                    image.assetPath,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.image_not_supported_outlined,
+                        color: Colors.white54,
+                        size: 48,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                tooltip: 'Close',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black45,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ),
+            if (image.caption != null && image.caption!.isNotEmpty)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 16,
+                child: Text(
+                  image.caption!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

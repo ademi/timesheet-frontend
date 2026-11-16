@@ -116,6 +116,13 @@ flutter:
   assets:
     - assets/images/
     - assets/legal/
+    - assets/tutorials/getting-around/
+    - assets/tutorials/roster-publish/
+    - assets/tutorials/participants-workers/
+    - assets/tutorials/attendance-review/
+    - assets/tutorials/payments-csv/
+    - assets/tutorials/staff-permissions/
+    - assets/tutorials/xero-timesheets/
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

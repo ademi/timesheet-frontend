@@ -9,8 +9,8 @@ import 'tutorials_panel.dart';
 
 /// Staff-web-only floating tutorials FAB + panel overlay.
 ///
-/// Wide layouts: FAB bottom-right. Narrow: FAB bottom-left above bottom nav
-/// so it does not collide with coral Create FABs (typically bottom-right).
+/// FAB sits on the **left**, beside the nav rail (wide) or above the bottom
+/// nav (narrow), so it never covers coral Create FABs (bottom-right).
 class StaffTutorialsOverlay extends StatelessWidget {
   const StaffTutorialsOverlay({super.key, required this.child});
 
@@ -22,6 +22,10 @@ class StaffTutorialsOverlay extends StatelessWidget {
   static const double _panelHeight = 560;
   static const double _narrowBottomNavClearance = 88;
 
+  /// Approx. labeled [NavigationRail] width so the FAB sits in content,
+  /// beside the rail — not on top of it and not over Create FABs.
+  static const double _wideNavRailClearance = 112;
+
   @override
   Widget build(BuildContext context) {
     if (!kIsWeb) return child;
@@ -32,18 +36,15 @@ class StaffTutorialsOverlay extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= Breakpoints.tablet;
-        final fabLeft = wide ? null : _gap;
-        final fabRight = wide ? _gap : null;
+        final fabLeft = wide ? _wideNavRailClearance + _gap : _gap;
         final fabBottom = wide ? _gap : _narrowBottomNavClearance;
 
-        final panelRight = wide ? _gap : null;
-        final panelLeft = wide ? null : _gap;
-        final panelBottom =
-            (wide ? _gap : _narrowBottomNavClearance) + _fabSize + 12;
+        final panelLeft = fabLeft;
+        final panelBottom = fabBottom + _fabSize + 12;
         final maxPanelHeight = (constraints.maxHeight - panelBottom - _gap)
             .clamp(280.0, _panelHeight);
-        final maxPanelWidth =
-            (constraints.maxWidth - (_gap * 2)).clamp(280.0, _panelWidth);
+        final maxPanelWidth = (constraints.maxWidth - panelLeft - _gap)
+            .clamp(280.0, _panelWidth);
 
         return Stack(
           clipBehavior: Clip.none,
@@ -55,7 +56,6 @@ class StaffTutorialsOverlay extends StatelessWidget {
               }
               return Positioned(
                 left: panelLeft,
-                right: panelRight,
                 bottom: panelBottom,
                 child: SizedBox(
                   width: maxPanelWidth,
@@ -66,7 +66,6 @@ class StaffTutorialsOverlay extends StatelessWidget {
             }),
             Positioned(
               left: fabLeft,
-              right: fabRight,
               bottom: fabBottom,
               child: TutorialsFab(controller: controller),
             ),
