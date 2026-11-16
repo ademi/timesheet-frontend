@@ -9,9 +9,21 @@ void main() {
       id: 'roster',
       title: 'Building and publishing a roster week',
       summary: 'Compose and publish visits',
-      steps: ['Open Roster', 'Publish when ready'],
       tags: ['roster', 'publish'],
       routeHints: [AppRoutes.staffVisits, AppRoutes.staffRosterCompose],
+      sections: [
+        TutorialSection(
+          id: 'board',
+          heading: 'The roster board',
+          body: 'Week board for participants and workers.',
+          steps: ['Open Roster', 'Scan the week'],
+        ),
+        TutorialSection(
+          id: 'publish',
+          heading: 'Publishing the week',
+          steps: ['Publish when ready'],
+        ),
+      ],
     );
 
     test('matchesRoute for hint and nested paths', () {
@@ -21,23 +33,27 @@ void main() {
       expect(guide.matchesRoute(AppRoutes.staffHome), isFalse);
     });
 
-    test('matchesQuery across title, tags, and steps', () {
+    test('matchesQuery across title, sections, and steps', () {
       expect(guide.matchesQuery('publish'), isTrue);
       expect(guide.matchesQuery('ROSTER'), isTrue);
       expect(guide.matchesQuery('Open Roster'), isTrue);
+      expect(guide.matchesQuery('week board'), isTrue);
       expect(guide.matchesQuery('xyz-nope'), isFalse);
       expect(guide.matchesQuery(''), isTrue);
     });
   });
 
   group('TutorialCatalog', () {
-    test('ships starter guides with route hints', () {
+    test('ships article-style guides with sections and steps', () {
       expect(TutorialCatalog.guides.length, greaterThanOrEqualTo(6));
-      expect(TutorialCatalog.byId('roster-publish'), isNotNull);
+      final roster = TutorialCatalog.byId('roster-publish');
+      expect(roster, isNotNull);
+      expect(roster!.sections, isNotEmpty);
       expect(
-        TutorialCatalog.byId('roster-publish')!.matchesRoute(AppRoutes.staffVisits),
+        roster.sections.any((s) => s.steps.isNotEmpty),
         isTrue,
       );
+      expect(roster.matchesRoute(AppRoutes.staffVisits), isTrue);
     });
   });
 }

@@ -27,6 +27,7 @@ class TutorialsPanel extends StatelessWidget {
           return TutorialGuideDetail(
             guide: guide,
             onBack: controller.backToHome,
+            onClose: controller.close,
           );
         }
         return _TutorialsHome(controller: controller);
@@ -92,7 +93,8 @@ class _TutorialsHome extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'Short guides for rostering, people, attendance, and billing.',
+                      'Browse articles with clear steps for rostering, people, '
+                      'attendance, and billing.',
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textMuted,
@@ -117,7 +119,7 @@ class _TutorialsHome extends StatelessWidget {
             onChanged: controller.setSearch,
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
-              hintText: 'Search tutorials',
+              hintText: 'Search articles',
               prefixIcon: const Icon(Icons.search_rounded),
               filled: true,
               fillColor: AppColors.background,
