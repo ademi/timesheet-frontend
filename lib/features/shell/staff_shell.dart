@@ -10,6 +10,7 @@ import '../../app/views/shell/responsive_scaffold.dart';
 import '../../core/services/session_service.dart';
 import '../../shared/widgets/closed_beta_banner.dart';
 import '../compliance_ops/controllers/notifications_feed_controller.dart';
+import '../tutorials/widgets/staff_tutorials_overlay.dart';
 
 /// StaffShell nav (design §4.3).
 abstract final class StaffShellNav {
@@ -205,12 +206,14 @@ class StaffShell extends StatelessWidget {
             );
           }
 
-          return AdaptiveNavigationShell(
-            destinations: destinations,
-            selectedIndex: index,
-            onDestinationSelected: StaffShellNav.navigateTo,
-            narrowPrimaryCount: StaffShellNav.narrowPrimaryCount,
-            child: body,
+          return StaffTutorialsOverlay(
+            child: AdaptiveNavigationShell(
+              destinations: destinations,
+              selectedIndex: index,
+              onDestinationSelected: StaffShellNav.navigateTo,
+              narrowPrimaryCount: StaffShellNav.narrowPrimaryCount,
+              child: body,
+            ),
           );
         },
       );
