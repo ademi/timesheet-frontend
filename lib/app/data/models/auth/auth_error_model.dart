@@ -33,6 +33,14 @@ class AuthErrorModel implements Exception {
         code: json['code'] as String?,
       );
     }
+    // Authenticated rate-limit shape: `{ "error": "...", "code": "..." }`.
+    final errorField = json['error'];
+    if (errorField is String && errorField.isNotEmpty) {
+      return AuthErrorModel(
+        detail: errorField,
+        code: json['code'] as String?,
+      );
+    }
     final message = raw?.toString() ?? 'Something went wrong';
     return AuthErrorModel(detail: message, code: json['code'] as String?);
   }

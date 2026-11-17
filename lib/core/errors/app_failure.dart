@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../app/data/models/auth/auth_error_model.dart';
+import '../network/rate_limit.dart';
 
 /// How the UI should surface an [AppFailure].
 enum AppFailurePresentation { screen, toast, inline, reLogin, billingGate }
@@ -12,6 +13,7 @@ class AppFailure implements Exception {
     required this.message,
     required this.presentation,
     this.statusCode,
+    this.retryAfter,
     this.eligibilityReasons = const [],
     this.visitErrors = const [],
   });
@@ -20,6 +22,9 @@ class AppFailure implements Exception {
   final String message;
   final AppFailurePresentation presentation;
   final int? statusCode;
+
+  /// Server-directed wait from `Retry-After` / `retry_after` when rate limited.
+  final Duration? retryAfter;
 
   /// Parsed from `eligibility_incomplete` / `credential_gate_blocked` payloads.
   final List<String> eligibilityReasons;
@@ -83,12 +88,16 @@ class AppFailure implements Exception {
     final code = _normalizeCode(authErr?.code, detail, status);
     final reasons = _parseEligibilityReasons(e.response?.data);
     final visitErrors = _parseVisitErrors(e.response?.data);
+    final retryAfter = status == 429
+        ? rateLimitDelayFromResponse(e.response)
+        : null;
 
     return AppFailure(
       code: code,
       message: _userMessage(code, detail),
       presentation: _presentationFor(code, status),
       statusCode: status,
+      retryAfter: retryAfter,
       eligibilityReasons: reasons,
       visitErrors: visitErrors,
     );
@@ -232,6 +241,10 @@ class AppFailure implements Exception {
   }
 
   static String _normalizeCode(String? explicit, String detail, int? status) {
+    if (status == 429) return 'rate_limited';
+    if (explicit == 'rate_limit_exceeded' || explicit == 'rate_limited') {
+      return 'rate_limited';
+    }
     if (explicit != null && explicit.isNotEmpty) return explicit;
     final d = detail.trim();
     const known = [

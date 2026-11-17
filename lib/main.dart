@@ -13,6 +13,7 @@ import 'app/router/app_go_router.dart';
 import 'app/routes/app_pages.dart';
 import 'app/services/push_notification_service.dart';
 import 'app/themes/app_colors.dart';
+import 'core/auth/web_visibility.dart';
 import 'core/services/session_service.dart';
 import 'core/services/token_refresh_service.dart';
 import 'core/services/token_storage.dart';
@@ -74,14 +75,22 @@ class RostiqApp extends StatefulWidget {
 }
 
 class _RostiqAppState extends State<RostiqApp> with WidgetsBindingObserver {
+  void Function()? _unsubscribeWebVisibility;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (kIsWeb) {
+      _unsubscribeWebVisibility = subscribeWebVisibilityResume(
+        _refreshSessionIfNeeded,
+      );
+    }
   }
 
   @override
   void dispose() {
+    _unsubscribeWebVisibility?.call();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

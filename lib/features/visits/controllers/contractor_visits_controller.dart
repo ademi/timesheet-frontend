@@ -1010,8 +1010,10 @@ class ContractorVisitsController extends GetxController {
 
   static bool _isRetryableFailure(AppFailure e) {
     if (e.code == 'network_error' || e.code == 'cors_or_network') return true;
+    if (e.code == 'rate_limited') return true;
     final code = e.statusCode;
     if (code == null) return true;
+    if (code == 408 || code == 429) return true;
     return code >= 500;
   }
 }

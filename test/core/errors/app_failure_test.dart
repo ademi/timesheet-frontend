@@ -111,6 +111,30 @@ void main() {
       expect(failure.presentation, AppFailurePresentation.toast);
     });
 
+    test('maps authenticated rate_limit_exceeded with retry_after', () {
+      final failure = AppFailure.fromDio(
+        DioException(
+          requestOptions: RequestOptions(path: '/x'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/x'),
+            statusCode: 429,
+            headers: Headers.fromMap({
+              'retry-after': ['5'],
+            }),
+            data: {
+              'error': 'Too many requests',
+              'code': 'rate_limit_exceeded',
+              'retry_after': 5,
+            },
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+      expect(failure.code, 'rate_limited');
+      expect(failure.message, 'Too many attempts — try again shortly.');
+      expect(failure.retryAfter, const Duration(seconds: 5));
+    });
+
     test('maps registration invite failures to user messages', () {
       const expectedMessages = {
         'email_required_for_registration_invite':

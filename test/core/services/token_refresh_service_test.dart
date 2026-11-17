@@ -100,6 +100,40 @@ void main() {
       expect(storage.refreshToken, 'refresh');
     });
 
+    test('refreshIfNeeded waits then retries once on 429', () async {
+      await storage.persistTokens(
+        accessToken: _fakeJwt({'exp': _pastExp()}),
+        refreshToken: 'refresh',
+      );
+
+      plainDio.httpClientAdapter = _RateLimitedThenOkRefreshAdapter();
+
+      final outcome = await service.refreshIfNeeded();
+
+      expect(outcome, TokenRefreshOutcome.success);
+      expect(storage.hasValidAccessToken, isTrue);
+      expect(storage.refreshToken, 'new-refresh');
+    });
+
+    test('parallel refreshIfNeeded shares one in-flight call', () async {
+      await storage.persistTokens(
+        accessToken: _fakeJwt({'exp': _pastExp()}),
+        refreshToken: 'refresh',
+      );
+
+      final adapter = _CountingRefreshAdapter();
+      plainDio.httpClientAdapter = adapter;
+
+      final results = await Future.wait([
+        service.refreshIfNeeded(),
+        service.refreshIfNeeded(),
+        service.refreshIfNeeded(),
+      ]);
+
+      expect(results, everyElement(TokenRefreshOutcome.success));
+      expect(adapter.calls, 1);
+    });
+
     test(
       'refreshIfNeeded returns invalidRefreshToken when refresh missing',
       () async {
@@ -314,6 +348,73 @@ class _NetworkErrorAdapter implements HttpClientAdapter {
     throw DioException(
       requestOptions: options,
       type: DioExceptionType.connectionError,
+    );
+  }
+}
+
+class _RateLimitedThenOkRefreshAdapter implements HttpClientAdapter {
+  var _calls = 0;
+
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    _calls++;
+    if (_calls == 1) {
+      return ResponseBody.fromString(
+        '{"message":"Rate limit exceeded","retry_after":0}',
+        429,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+          'retry-after': ['0'],
+        },
+      );
+    }
+    final body = jsonEncode({
+      'access_token': _fakeJwt({'exp': _futureExp()}),
+      'refresh_token': 'new-refresh',
+      'token_type': 'bearer',
+    });
+    return ResponseBody.fromString(
+      body,
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+}
+
+class _CountingRefreshAdapter implements HttpClientAdapter {
+  var calls = 0;
+
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    calls++;
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    final body = jsonEncode({
+      'access_token': _fakeJwt({'exp': _futureExp()}),
+      'refresh_token': 'new-refresh',
+      'token_type': 'bearer',
+    });
+    return ResponseBody.fromString(
+      body,
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
     );
   }
 }

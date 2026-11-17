@@ -20,4 +20,15 @@ void main() {
       SyncFailureClass.retryable,
     ); // network
   });
+
+  test('408 and 429 are retryable', () {
+    expect(
+      classifySyncFailure(statusCode: 408, detail: null),
+      SyncFailureClass.retryable,
+    );
+    expect(
+      classifySyncFailure(statusCode: 429, detail: 'rate_limited'),
+      SyncFailureClass.retryable,
+    );
+  });
 }

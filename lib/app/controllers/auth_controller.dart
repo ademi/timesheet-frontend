@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../core/auth/clear_session.dart';
+import '../../core/errors/app_failure.dart';
 import '../../core/network/must_change_password.dart';
+import '../../core/network/rate_limit.dart';
 import '../../core/services/session_service.dart';
 import '../../features/billing/data/exported_visit_ids_store.dart';
 import '../../features/billing/data/repositories/ndis_catalogue_repository.dart';
@@ -41,12 +43,22 @@ class AuthController extends GetxController {
   final isLoading = false.obs;
   final isPasswordVisible = false.obs;
 
+  /// Soft cooldown after login 429 so rapid taps do not re-hit bcrypt.
+  DateTime? _loginRateLimitedUntil;
+
   void togglePasswordVisibility() => isPasswordVisible.toggle();
 
   void _showError(String message) => AppToast.error('Error', message);
 
   Future<void> login() async {
+    if (isLoading.value) return;
     if (!formKey.currentState!.validate()) return;
+
+    final until = _loginRateLimitedUntil;
+    if (until != null && DateTime.now().isBefore(until)) {
+      _showError('Too many attempts — try again shortly.');
+      return;
+    }
 
     isLoading.value = true;
     try {
@@ -54,6 +66,7 @@ class AuthController extends GetxController {
         emailController.text.trim(),
         passwordController.text,
       );
+      _loginRateLimitedUntil = null;
       if (Get.isRegistered<SessionService>()) {
         final session = Get.find<SessionService>();
         await session.clear();
@@ -77,6 +90,14 @@ class AuthController extends GetxController {
     } on DioException catch (e) {
       if (isMustChangePasswordResponse(e)) {
         redirectToFirstLoginIfNeeded(mustChangePassword: true);
+        return;
+      }
+      if (e.response?.statusCode == 429) {
+        final delay = effectiveRateLimitDelay(
+          rateLimitDelayFromResponse(e.response),
+        );
+        _loginRateLimitedUntil = DateTime.now().add(delay);
+        _showError(AppFailure.fromDio(e).message);
         return;
       }
       final parsed = parseAuthError(e);

@@ -2,6 +2,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/data/models/document/document_models.dart';
 import '../../../core/errors/app_failure.dart';
+import '../../../core/network/rate_limit.dart';
 import 'datasources/documents_remote_datasource.dart';
 
 /// Upload → finalize → poll scan; signed URL vs `/content` proxy (design §6.4).
@@ -41,21 +42,33 @@ class DocumentPipeline {
   }) async {
     DocumentOut? last;
     for (var i = 0; i < maxAttempts; i++) {
-      final docs = await _remote.listDocuments(
-        ownerType: ownerType,
-        ownerId: ownerId,
-      );
-      last = null;
-      for (final d in docs) {
-        if (d.id == documentId) {
-          last = d;
-          break;
+      try {
+        final docs = await _remote.listDocuments(
+          ownerType: ownerType,
+          ownerId: ownerId,
+        );
+        last = null;
+        for (final d in docs) {
+          if (d.id == documentId) {
+            last = d;
+            break;
+          }
         }
+        if (last != null && (last.isScanClean || last.isScanBlocked)) {
+          return last;
+        }
+        await Future<void>.delayed(interval);
+      } on AppFailure catch (e) {
+        if (e.statusCode == 429 || e.code == 'rate_limited') {
+          final delay = effectiveRateLimitDelay(
+            e.retryAfter,
+            fallback: interval,
+          );
+          await Future<void>.delayed(delay);
+          continue;
+        }
+        rethrow;
       }
-      if (last != null && (last.isScanClean || last.isScanBlocked)) {
-        return last;
-      }
-      await Future<void>.delayed(interval);
     }
     throw const AppFailure(
       code: 'unknown',

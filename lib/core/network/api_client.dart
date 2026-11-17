@@ -7,6 +7,7 @@ import '../services/token_storage.dart';
 import 'api_client_networking.dart';
 import 'auth_interceptor.dart';
 import 'cert_pins.dart';
+import 'rate_limit_interceptor.dart';
 
 /// Single Dio client for the contractor domain (design §3.2).
 ///
@@ -51,6 +52,8 @@ class ApiClient {
         authenticatedDio: dio,
       ),
     );
+    // After auth: 429 → wait Retry-After / retry_after → single retry.
+    dio.interceptors.add(RateLimitInterceptor(dio: dio));
   }
 
   static ApiClient? _instance;

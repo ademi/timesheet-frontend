@@ -13,10 +13,14 @@ const Set<String> kTerminalSyncFailureDetails = {
 };
 
 /// Network / unknown → retryable; known terminal 4xx details → terminal;
-/// other 4xx → terminal; 5xx → retryable.
+/// 408/429 → retryable (timeout / rate limit); other 4xx → terminal; 5xx → retryable.
 SyncFailureClass classifySyncFailure({int? statusCode, String? detail}) {
   if (statusCode == null) return SyncFailureClass.retryable;
   if (statusCode >= 500) return SyncFailureClass.retryable;
+  // Mirror form/media outbox: request timeout and rate limits are transient.
+  if (statusCode == 408 || statusCode == 429) {
+    return SyncFailureClass.retryable;
+  }
   if (statusCode >= 400 && statusCode < 500) {
     if (detail != null && kTerminalSyncFailureDetails.contains(detail)) {
       return SyncFailureClass.terminal;

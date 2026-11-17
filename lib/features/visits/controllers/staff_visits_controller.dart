@@ -432,8 +432,13 @@ class StaffVisitsController extends GetxController {
         await load();
         notifyRosterUpdated(created);
       }
-    } on AppFailure catch (_) {
-      // D17: list already painted — do not set errorMessage. 429 toast is mapped.
+    } on AppFailure catch (e) {
+      // D17: list already painted — do not set errorMessage.
+      if (e.code == 'rate_limited' || e.statusCode == 429) {
+        if (!Get.testMode) {
+          AppToast.error('Too many requests', e.message);
+        }
+      }
     } finally {
       _horizonInFlight = false;
       isFillingHorizon.value = false;
