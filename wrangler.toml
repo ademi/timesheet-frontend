@@ -1,0 +1,17 @@
+# Cloudflare Worker: Flutter web SPA for https://app.rostiq.co
+# Deploy: wrangler deploy (after `flutter build web …`) — see docs/web-deploy-cloudflare-workers.md
+
+name = "app_rostiq"
+account_id = "638cfa0b7112568e5e6e47d937c9192c"
+compatibility_date = "2026-11-19"
+workers_dev = false
+
+# Assets-only Worker (no `main`). Flutter uses PathUrlStrategy — SPA fallback required.
+[assets]
+directory = "./build/web"
+not_found_handling = "single-page-application"
+
+# Prod hostname only (Cloudflare manages DNS + cert when nameservers are on Cloudflare).
+[[routes]]
+pattern = "app.rostiq.co"
+custom_domain = true
