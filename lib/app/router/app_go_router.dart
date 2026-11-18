@@ -10,6 +10,7 @@ import '../bindings/auth_binding.dart';
 import '../bindings/branch_gateway_binding.dart';
 import '../bindings/first_login_binding.dart';
 import '../bindings/gateway_binding.dart';
+import '../bindings/landing_auth_handoff_binding.dart';
 import '../bindings/reset_password_binding.dart';
 import '../routes/app_navigator.dart';
 import '../routes/app_routes.dart';
@@ -18,6 +19,7 @@ import '../themes/app_colors.dart';
 import '../views/branch_gateway_view.dart';
 import '../views/first_login_view.dart';
 import '../views/gateway_view.dart';
+import '../views/landing_auth_handoff_view.dart';
 import '../views/login_view.dart';
 import '../views/reset_password_view.dart';
 import '../views/v2/wrong_actor_view.dart';
@@ -66,6 +68,20 @@ GoRouter createAppGoRouter({String? initialLocation}) {
         builder: (context, state) {
           FirstLoginBinding().dependencies();
           return const FirstLoginView();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.adminPanel,
+        builder: (context, state) {
+          LandingAuthHandoffBinding().dependencies();
+          return const LandingAuthHandoffView();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.changePassword,
+        builder: (context, state) {
+          LandingAuthHandoffBinding().dependencies();
+          return const LandingAuthHandoffView();
         },
       ),
       GoRoute(

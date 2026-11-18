@@ -74,6 +74,20 @@ void main() {
         ),
         isNull,
       );
+      expect(
+        appGoRouterRedirect(
+          _FakeContext(),
+          _FakeGoRouterState(AppRoutes.adminPanel),
+        ),
+        isNull,
+      );
+      expect(
+        appGoRouterRedirect(
+          _FakeContext(),
+          _FakeGoRouterState(AppRoutes.changePassword),
+        ),
+        isNull,
+      );
     });
 
     test('staff may open contractor invite register deep link', () async {

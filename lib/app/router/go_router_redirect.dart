@@ -12,7 +12,9 @@ bool isGoRouterPublicLocation(String location) {
   final path = locationPath(location);
   if (path == AppRoutes.gateway ||
       path == AppRoutes.login ||
-      path == AppRoutes.firstLogin) {
+      path == AppRoutes.firstLogin ||
+      path == AppRoutes.adminPanel ||
+      path == AppRoutes.changePassword) {
     return true;
   }
   // Staff invite magic link (`/auth/reset-password/{token}`).

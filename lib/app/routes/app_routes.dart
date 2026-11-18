@@ -3,6 +3,12 @@ abstract class AppRoutes {
   static const login = '/login';
   static const firstLogin = '/first-login';
 
+  /// Landing → admin web handoff (hash tokens). Not a real shell screen.
+  static const adminPanel = '/admin-panel';
+
+  /// Landing alias when `admin_must_change_password` — maps to [firstLogin].
+  static const changePassword = '/change-password';
+
   /// Staff invite magic link → set password (`/auth/reset-password/{token}`).
   static const resetPassword = '/auth/reset-password/:token';
 

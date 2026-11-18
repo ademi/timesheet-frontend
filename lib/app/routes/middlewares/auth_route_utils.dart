@@ -28,10 +28,14 @@ RouteSettings? redirectWhenUnauthenticated() {
 RouteSettings? redirectWhenMustChangePassword(String? route) {
   if (!Get.isRegistered<TokenStorage>()) return null;
   final claims = Get.find<TokenStorage>().jwtClaims;
-  if (claims?.mustChangePassword == true && route != AppRoutes.firstLogin) {
-    return const RouteSettings(name: AppRoutes.firstLogin);
+  if (claims?.mustChangePassword != true) return null;
+  // Allow first-login and landing hash handoff entry points to run.
+  if (route == AppRoutes.firstLogin ||
+      route == AppRoutes.adminPanel ||
+      route == AppRoutes.changePassword) {
+    return null;
   }
-  return null;
+  return const RouteSettings(name: AppRoutes.firstLogin);
 }
 
 /// Staff vs contractor shell mismatch → wrong-actor screen.
