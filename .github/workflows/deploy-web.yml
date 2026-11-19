@@ -1,8 +1,5 @@
 # Deploy Flutter web → Cloudflare Worker `app_rostiq` (https://app.rostiq.co).
-# Secrets (repo Settings → Secrets and variables → Actions):
-#   CLOUDFLARE_API_TOKEN   — Account: Workers Scripts Edit; Account Settings Read
-#   CLOUDFLARE_ACCOUNT_ID  — 638cfa0b7112568e5e6e47d937c9192c
-#
+
 # Deploy-only: not a required status check.
 
 name: Deploy web
@@ -54,4 +51,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.54.0"
           command: deploy
