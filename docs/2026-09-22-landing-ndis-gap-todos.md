@@ -373,7 +373,7 @@ Optional polish only: stronger header hierarchy than muted 13px line.
 
 | Sub-bullet | Status |
 |------------|--------|
-| Ops: staging/prod `PUBLIC_APP_BASE_URL` + SPA rewrite | **Ops checklist** — see `docs/web-deploy-gcs-cloudflare.md` §8/§10 + `deploy/env.example`; confirm live env outside this repo |
+| Ops: staging/prod `PUBLIC_APP_BASE_URL` + SPA rewrite | **Ops checklist** — see `docs/web-deploy-cloudflare-workers.md` + `deploy/env.example`; confirm live env outside this repo |
 | Product: invite when email already registered | **DONE** — create contractor + engagement (`existing_account`); no registration token |
 | Optional work location / service-area | **DEFERRED** — no schema yet |
 

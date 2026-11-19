@@ -115,7 +115,7 @@ Or tag a release: `git tag v1.0.0 && git push origin v1.0.0`
 
 ### Option C — No Apple account (web only)
 
-Use [web-deploy-gcs-cloudflare.md](./web-deploy-gcs-cloudflare.md) instead; no GitHub iOS workflow needed.
+Use [web-deploy-cloudflare-workers.md](./web-deploy-cloudflare-workers.md) instead; no GitHub iOS workflow needed.
 
 ---
 
